@@ -718,6 +718,16 @@ void PaintWidget::drawProjectile( QPainter& painter, Demo::EntityInfo* info )
 
 					painter.drawImage(target,*icon, source);
 					painter.restore();
+
+					/*painter.drawText(a, b, QString::number(info->delta));
+
+					x = info->Base[0];
+					y = info->Base[1];
+
+					a = (x - mapOrigin[0]) * coordsScaling;
+					b = -(y - mapOrigin[1]) * coordsScaling;
+					size = 2;
+					painter.drawEllipse(a - size, b - size, size*2, size*2);*/
 				}
 				return;
 			}
@@ -744,7 +754,7 @@ void PaintWidget::drawProjectile( QPainter& painter, Demo::EntityInfo* info )
 				painter.setBrush(brush);
 				painter.drawEllipse(a - size, b - size, size*2, size*2);
 
-				painter.drawText(a, b, QString::number(info->delta));
+				/*painter.drawText(a, b, QString::number(info->delta));
 
 				x = info->Base[0];
 				y = info->Base[1];
@@ -752,8 +762,7 @@ void PaintWidget::drawProjectile( QPainter& painter, Demo::EntityInfo* info )
 				a = (x - mapOrigin[0]) * coordsScaling;
 				b = -(y - mapOrigin[1]) * coordsScaling;
 				size = 2;
-				painter.drawEllipse(a - size, b - size, size*2, size*2);
-
+				painter.drawEllipse(a - size, b - size, size*2, size*2);*/
 
 				return;
 			}
@@ -781,10 +790,28 @@ void PaintWidget::drawGeneric( QPainter& painter, Demo::EntityInfo* info )
 		{
 		case Demo::GenericType::RocketSplash:
 			{
-				color = QColor(255, 160, 0);
-				size = 12;
 				QImage* icon = icons[24];
+				if(icon != NULL)
+				{
+					painter.save();
+					int w = icon->width() * iconScale * 1.5;
+					int h = icon->height()* iconScale * 1.5;
 
+					painter.translate(a,b);
+					int angle = info->Angle / 3.1415 * 180;
+					painter.rotate(angle);
+
+					QRect source(0, 0, icon->width(), icon->height());
+					QRect target(-w/2, -h/2, w, h);
+
+					painter.drawImage(target, *icon, source);
+					painter.restore();
+				}
+				return;
+			}
+		case Demo::GenericType::GrenadeSplash:
+			{
+				QImage* icon = icons[24];
 				if(icon != NULL)
 				{
 					painter.save();

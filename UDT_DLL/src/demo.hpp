@@ -948,7 +948,16 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		// Compute projectiles and items interpolated position and 2D angle.
 		if(entity->eType == ET_MISSILE || entity->eType == ET_ITEM)
 		{
-			const float deltaTime = 1.0f + 0.001f * (float)(newSnap->serverTime - entity->pos.trTime);
+			float deltaTime = 1.0f + 0.001f * (float)(newSnap->serverTime - entity->pos.trTime);
+
+			// Fix Grenades bouncing
+			if(deltaTime < 0.0 && deltaTime > -0.001)
+				deltaTime = 0;
+
+			while(deltaTime < -0.001f)
+				deltaTime += 1.0f;
+
+
 			info->Info.Position[0] = entity->pos.trBase[0] + deltaTime * entity->pos.trDelta[0];
 			info->Info.Position[1] = entity->pos.trBase[1] + deltaTime * entity->pos.trDelta[1];
 			info->Info.Position[2] = entity->pos.trBase[2] + deltaTime * entity->pos.trDelta[2];
