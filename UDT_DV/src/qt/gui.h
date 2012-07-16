@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QtGui/QMainWindow>
+#include <QElapsedTimer>
 #include "qt_gen/gui_gen.hpp"
 #include "demo_player.h"
 
@@ -9,6 +10,8 @@ class Gui : public QMainWindow
 	Q_OBJECT
 
 public:
+	static int UdtProgressCallback(float progress);
+
 	Gui(QWidget *parent = 0, Qt::WFlags flags = 0);
 
 	void loadDemo(QString filepath);
@@ -30,6 +33,8 @@ private:
 	bool paused;
 
 	void _parseDemo();
+	void onProgress(float progress);
+	QElapsedTimer progressTimer;
 
 public slots:
 	void playButtonPressed();	

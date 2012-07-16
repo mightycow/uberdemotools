@@ -1,5 +1,6 @@
 #include "gui.h"
 #include "demo73.hpp"
+#include "common.hpp"
 #include <QMessageBox>
 #include <QDir>
 #include <QFile>
@@ -17,12 +18,23 @@ static const char* const dataSearchDirs[] =
 	"..\\..\\..\\data\\"	// Development.
 };
 
+static Gui* gui = NULL;
+int Gui::UdtProgressCallback(float progress)
+{
+	gui->onProgress(progress);
+
+	return 0;
+}
 
 Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags), demoPlayer(this)
 {
+	gui = this;
+	_progressCallback = &UdtProgressCallback;
+
 	ui.setupUi(this);
 	connectUiElements();
+	ui.pathLineEdit->setReadOnly(true);
 
 	dataPath = "";
 	QDir dir;
@@ -319,9 +331,10 @@ void Gui::dropEvent( QDropEvent* event )
 		for (int i = 0; i < urlList.size() && i < 32; ++i)
 		{
 			ui.paintWidget->displayDemo = false;
-			ui.paintWidget->bgMessage = "Loading...";
+			ui.paintWidget->bgMessage = "Loading... 0%";
 			ui.paintWidget->repaint();
 			pathList.append(urlList.at(i).toLocalFile());
+			progressTimer.restart();
 			loadDemo(pathList[0]);
 		}
 	}
@@ -359,6 +372,21 @@ void Gui::demoFinished()
 	demoPlayer.pauseDemo();
 	paused = true;
 	ui.playButton->setText("Play");
+}
+
+void Gui::onProgress(float progress)
+{
+	if(progressTimer.elapsed() < 100)
+	{
+		return;
+	}
+
+	QString message;
+	message.sprintf("Loading... %d%%", (int)(100.0f * progress));
+	ui.paintWidget->bgMessage = message;
+	ui.paintWidget->repaint();
+
+	progressTimer.restart();
 }
 
 
