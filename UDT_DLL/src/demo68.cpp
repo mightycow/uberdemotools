@@ -270,12 +270,17 @@ void Demo68::AnalyzeConfigStringCpmaGameInfo(const std::string& input)
 	_inTl = GetCpmaConfigStringInt("tl", input.c_str());
 	if((tw == 0 && ts > 0) && !(oldTw == 0 && oldTs > 0))
 	{
-		MatchStats stats;
-		memset(&stats, 0, sizeof(stats));
-		stats.StartTime = _gameStartTime + _serverTimeOffset;
-		_matchStats.push_back(stats);
-		_writeStats = true;
-		LogInfo("New match starts: %d", stats.StartTime);
+		// The MatchStats struct is too big to be allocated on the stack.
+		MatchStats* stats = (MatchStats*)malloc(sizeof(MatchStats));
+		if(stats != NULL)
+		{
+			memset(stats, 0, sizeof(MatchStats));
+			stats->StartTime = _gameStartTime + _serverTimeOffset;
+			_matchStats.push_back(*stats);
+			_writeStats = true;
+			LogInfo("New match starts: %d", stats->StartTime);
+			free(stats);
+		}
 	}
 }
 
