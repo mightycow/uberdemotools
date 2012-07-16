@@ -9,12 +9,37 @@
 #include <QMimeData>
 #include <QUrl>
 
+
+static const char* const defaultDataDir = "..\\data\\";
+static const char* const dataSearchDirs[] =
+{
+	"..\\data\\",			// Deployment.
+	"..\\..\\..\\data\\"	// Development.
+};
+
+
 Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags), demoPlayer(this)
 {
 	ui.setupUi(this);
 	connectUiElements();
-	dataPath = "..\\..\\..\\data\\";
+
+	dataPath = "";
+	QDir dir;
+	const size_t searchDirCount = sizeof(dataSearchDirs) / sizeof(dataSearchDirs[0]);
+	for(size_t i = 0; i < searchDirCount; ++i)
+	{
+		const QString dataFolder = dataSearchDirs[i];
+		if(dir.exists(dataFolder))
+		{
+			dataPath = dataFolder;
+			break;
+		}
+	}
+	if(dataPath.isEmpty())
+	{
+		dataPath = defaultDataDir;
+	}
 	
 	paused = true;
 
