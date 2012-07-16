@@ -663,7 +663,7 @@ void Demo::AnalyzeEntityT(EntityStateT* oldState, EntityStateT* newState, int ne
 	}
 
 	// Always update the PU times to have precise measurements.
-	int puRunCount = (int)_puRuns.size();
+	const int puRunCount = (int)_puRuns.size();
 	for(int i = 0; i < puRunCount; ++i)
 	{
 		if(_puRuns[i].Ended == 0 && _serverTime >= _puRuns[i].PredictedEndTime)
@@ -708,12 +708,6 @@ void Demo::AnalyzeEntityT(EntityStateT* oldState, EntityStateT* newState, int ne
 		}
 	}
 
-	int event = newState->event & ~EV_EVENT_BITS;
-	if(newState->eType > ET_EVENTS)
-	{
-		event = newState->eType - ET_EVENTS;
-	}
-
 	// Did we process this message?
 	EntityEventInfo* eventInfo = &_inEntityEvents[newStateIndex];
 	if( _inRawSequenceAcknowledge == eventInfo->PreviousRelAck &&
@@ -728,12 +722,12 @@ void Demo::AnalyzeEntityT(EntityStateT* oldState, EntityStateT* newState, int ne
 	eventInfo->PreviousEvent = newState->event & ~EV_EVENT_BITS;
 	eventInfo->PreviousEventType = newState->eType & ~EV_EVENT_BITS;
 
-	int obituary = ET_EVENTS + (_protocol == Protocol::Dm68 ? EV_OBITUARY : EV_OBITUARY_73);
-	int death1 = ET_EVENTS + (_protocol == Protocol::Dm68 ? EV_DEATH1 : EV_DEATH1_73);
-	int death2 = ET_EVENTS + (_protocol == Protocol::Dm68 ? EV_DEATH2 : EV_DEATH2_73);
-	int death3 = ET_EVENTS + (_protocol == Protocol::Dm68 ? EV_DEATH3 : EV_DEATH3_73);
+	const int obituary = (int)ET_EVENTS + (_protocol == Protocol::Dm68 ? (int)EV_OBITUARY : (int)EV_OBITUARY_73);
+	const int death1 = (int)ET_EVENTS + (_protocol == Protocol::Dm68 ? (int)EV_DEATH1 : (int)EV_DEATH1_73);
+	const int death2 = (int)ET_EVENTS + (_protocol == Protocol::Dm68 ? (int)EV_DEATH2 : (int)EV_DEATH2_73);
+	const int death3 = (int)ET_EVENTS + (_protocol == Protocol::Dm68 ? (int)EV_DEATH3 : (int)EV_DEATH3_73);
 
-	int eventType = newState->eType & ~EV_EVENT_BITS;
+	const int eventType = newState->eType & ~EV_EVENT_BITS;
 	if(eventType == obituary) 
 	{
 		AnalyzeEntityObituaryT<DemoT, EntityStateT>(oldState, newState, newStateIndex);
@@ -999,8 +993,8 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		}
 	}
 
-	const int healthStatIdx = _protocol == Protocol::Dm68 ? STAT_HEALTH_68 : STAT_HEALTH_73;
-	const int armorStatIdx = _protocol == Protocol::Dm68 ? STAT_ARMOR_68 : STAT_ARMOR_73;
+	const int healthStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_HEALTH_68 : (int)STAT_HEALTH_73;
+	const int armorStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_ARMOR_68 : (int)STAT_ARMOR_73;
 
 	const float dotThreshold = 0.85f;
 	const float minSplashDist = 1.5f;
