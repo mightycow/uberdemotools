@@ -1,0 +1,43 @@
+0.2.0m (04.07.2012)
+FIX: Parsing strings for variables would find non-variables and return the default value
+
+0.2.0f (10.02.2012)
+FIX: The names of players connecting after the demo record start time are now recognized
+
+0.2.0e (10.02.2012)
+FIX: Memory leak in udtDestroy
+CHG: Changed the obitaries' analysis system and re-enabled it for QL
+
+0.2.0d (09.02.2012)
+ADD: Quake Live support!
+
+0.1.9m (04.02.2012)
+FIX: All config string changes sent via server commands are now applied!
+
+0.1.9l (03.02.2012)
+FIX: The demo starts with the correct scores
+
+0.1.9k (03.02.2012)
+FIX: Power-up runs durations
+FIX: Power-up runs PU detection
+
+0.1.9h (02.02.2012)
+ADD: Power-up runs
+
+0.1.9g (01.02.2012)
+ADD: Obituary events
+FIX: API argument check could crash
+
+0.1.9f (29.01.2012)
+CHG: Changed the way tw and ts (config string 672) are read and modified
+
+0.1.9e (27.01.2012)
+FIX: 'delta frame invalid' is no longer a fatal error
+FIX: 'delta frame too old' is no longer a fatal error
+FIX: 'delta parseEntitiesNum too old' is no longer a fatal error
+
+0.1.9d (27.01.2012)
+FIX: Buffer overflow risks
+
+0.1.9c (27.01.2012)
+1st: First 'good enough for the public' release

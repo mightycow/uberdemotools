@@ -1,0 +1,30 @@
+0.2.0f (10.02.2012)
+FIX: The names of players connecting after the demo record start time are now recognized
+
+0.2.0e (09.02.2012)
+FIX: Now uses the correct config string indexes for Quake Live demos (Obituaries, PU Runs)
+
+0.2.0d (09.02.2012)
+ADD: Quake Live support!
+FIX: Now accepts file and folder links (for drag'n'drop and command-line)
+
+0.1.9h (04.02.2012)
+ADD: Can now cut by time from multiple chat events
+ADD: Can now cut by time from multiple obituary events
+ADD: Can now copy to the clipboard from chat events
+ADD: Can now copy to the clipboard from obituary events
+
+0.1.9g (03.02.2012)
+FIX: Clicking cancel while parsing now removes the demo from the list
+
+0.1.9f (02.02.2012)
+ADD: Power-up runs
+
+0.1.9e (01.02.2012)
+ADD: Obituary events
+
+0.1.9d (29.01.2012)
+ADD: Ability to clear, copy and save the log
+
+0.1.9c (27.01.2012)
+1st: First 'good enough for the public' release

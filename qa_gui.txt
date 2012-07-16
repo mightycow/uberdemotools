@@ -1,0 +1,55 @@
+Q: 
+What is it?
+
+A: 
+UDT is a Quake 3 demo (*.dm_68) cutter and information display tool for Windows with a lot of features for cutting demos. For example you can cut a large selection of demos at once by selecting a range of demos and cutting by a chat string, saving you a lot of time.
+
+------------------------------------------------------------------------
+
+Q: 
+What do those numbers mean?
+
+A: 
+Those version numbers describe the DLL and GUI versions. Always fetch the files from the last folder to grab the latest version.
+- 19m_19h/udt_bin_19m_19h.rar --> Binary release, DLL 0.1.9m, GUI 0.1.9h
+- 19m_19h/udt_src_19m_19h.rar --> Source code release, DLL 0.1.9m, GUI 0.1.9h
+
+------------------------------------------------------------------------
+
+Q: 
+Why are there 2 executables with suffixes _35 and _40?
+
+A: 
+Those numbers indicate which version of the .NET run-time they require.
+The application uses WPF, which has terrible font rendering in .NET 3.5.
+.NET 3.5 is pre-installed on all Windows 7 versions.
+There is no difference in terms of functionality between the 2 versions, only the font rendering quality is different.
+
+------------------------------------------------------------------------
+
+Q: 
+What can I do with it?
+
+A:
+ - You can view the server information at the time the recording was started ('Info' tab)
+ - You can cut demos by a) manually specifying the start and end times, or b) by letting the program find certain chat events for you
+ - You can also view the player chat, obituaries and power-up runs
+ 
+------------------------------------------------------------------------
+ 
+Q:
+Can I suggest something or modify the program myself?
+
+A:
+Yes, and yes. 
+ - You are encouraged to post here to ask/suggest things, or /query myT on QuakeNet.
+ - The entire source code is licensed under the GPL. I was legally required to publish the source code of the DLL under the GPL, but I wasn't for the GUI. I decided it was best to do so for both.
+ 
+------------------------------------------------------------------------
+ 
+Q:
+Are there any known issues?
+
+A:
+- Obituaries and PU runs don't work with some demos for now. To investigate.
+- Some movables items (elevators etc) won't be animated. To investigate.

@@ -1,0 +1,101 @@
+To do:
+- Add statistics analysis for dm_73
+- Fix PU runs analysis (PU Runs doesn't work with CPMA MVD/CTF/CTFS/NTF demos?!)
+- More System Menu entries, more Contextual Menus, more ToolTips, more Ctrl-C, ...
+- Output stats/chats to clipboard/file?
+
+Done:
+- Fix the blurry fonts (JackBender)
+- Folder drag'n'drop
+- Color every 2nd listview line in light grey
+- Color-code the log (warnings in orange and errors in red) and log more stuff
+- Add a label to explain the demo list accepts folders and files drag'n'drop
+- More labels to explain the Cut by Chat input values
+- File --> Open Demo(s)...
+- File --> Open Demo Folder...
+- "Manage Demos" tab (add/remove/move up/move down)
+- "Demo Chat" tab to list all chat events
+- Better progress bar granularity
+  CutProgress = (curSnapTime - firstSnapTime) / (demoEndTime - firstSnapTime)
+- Improve cutting performance... (stop the parsing when the cut is done)
+- Show the progress bar when loading demos
+- Set the progress to bytesRead / totalBytes in the file in parsing mode
+- Improve general parsing/cutting performance - 2x speed-up
+- Proper error handling: throw std::runtime_error <--> catch(SEHException)
+- MultiViewDemo support - it's already compatible!
+- Right-click --> Cut by Time & Ctrl-T shortcut (Terifire)
+- 2 ListView instances expanding too far... (demo list & chat rules) (Terifire)
+- Cut by Time output file names have the cut times embedded (gaiia)
+- try/catch in all threads which call mainThread.Abort(threadException); (gaiia)
+- Sort chat events by time, player names, messages (gaiia)
+- Separate source code sections of the App class
+- "Demo Stats" tab (Terifire)
+- Fix the stats
+- Output file times for the cut by chat function too (gaiia)
+- The stats have PG and RG inverted (cra)
+- A bug prevents some demos from being cut because the warm-up end time is not detected properly (cra)
+- Show stats for every player that has'em (gaiia)
+- "Settings" tab to set up the output mode and output folder
+- Job cancellation
+- Quotes!
+- Fix the config string search method (and remove the DLL function udtGetConfigString)
+- Display player names (spectators, red and blue players, ffa/1v1 players)
+- "Settings" tab: skip the "Time Offsets" dialog
+- Add the quotes from quotes.txt
+- Prepare the source code for public release (use premake?)
+- "Cut by Chat" tab: ignore color codes in chat search
+- "Cut by Chat" progress seems to be 2x too low...
+- Be able to use "del" to remove demos from the list
+- Open files and folders from the command-line
+- Unified files and folders loading
+- Rewrite and rename GetCpmaInfoVar
+- AnalyzeConfigString: Check the cs index before doing useless work...
+- Be able to add cuts to a demo before calling udtParse (Cut: file path + start time + end time)
+- UDT.pdb name clash?!
+- Work in absolute server time
+- Be able to cut frags for any match
+- In cut by chat, always call udtDestroy when udtCreate is successful
+- Get rid of the DemoInfo.Demo member variable
+- Set parsing progress to (100 * totalBytesRead / totalBytesToParse)
+- Fix security and stack size issues
+- Crashes often while parsing demos - was the motherfucking tokenizer
+- Fix the "System.Windows.Data Error: 4" problem
+- Include arQon in the copyright notice
+- Now the cut demo runs the same clock as the original one
+- PU durations are wrong in the cut demos
+- Fix the "Cut by Time" help text
+- Option to skip the 'scan recursively' dialog
+- Make the "Demo List" group box larger
+- Fix the list boxes being resizeable
+- "Chat Events" tab: sorting by time is fucked up
+- "Stats" tab: show message when no xstats2 command was found
+- Update the premake4.lua for aggressive optimization and warning options
+- Move tokenizer variables to the class
+- Replace strcpy/etc with Q_strncpyz/etc
+- Create CHANGELOG.TXT
+- Fix the tw/ts handling
+- API.cpp: Every function starting with 'const int xxxCount = yyy;' can crash hard!
+- "Obituaries" tab to list all frag events
+- "PU Runs" tab to list all PU runs
+- PU Runs: durations are wrooooooooong
+- PU Runs: some runs are not recognized!
+- PU Runs: Use rel_ack, *NOT* eventParm && otherEntityNum && otherEntityNum2
+- PU Runs: Split EV_DEATH* and EV_OBITUARY handling into 2 functions
+- Clicking cancel while parsing doesn't remove the demo from the list!
+- Fix sb and sr in config strings 672 and 710
+- Fix character models? Fix the gamestate re-parsing?
+- Add multi-selection mode for "Chat Events" and "Obituaries" (Terifire)
+- QL support
+- Drag'n'drop support for shortcuts to files and folders
+- Memory leak in udtDestroy
+- The names of players connecting after the demo record start time are now recognized
+- Fixed obituaries analysis
+- ********************************************
+- Fixed string parsing for integer values
+- Fixed game start time analysis for .dm_73 demos
+
+Special thanks:
+- JackBender
+- Terifire
+- gaiia
+- cra

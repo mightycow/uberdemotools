@@ -1,0 +1,28 @@
+Uber Demo Tools (UDT) Binary Release
+
+Author: Gian 'myT' Schellenbaum
+
+==================================================================================
+
+Special thanks to...
+- cra, for...
+  - Telling me the stats have PG and RG inverted
+  - Showing me the warm-up end time is not detected properly
+- gaiia, for...
+  - Suggesting the output file names have the cut times embedded
+  - Reminding me I forgot about the exception handling of job threads
+  - Asking for the ability to sort chat events by time, player names or messages
+  - Suggesting the output file names of the cut by chat function have the cut times embedded too
+  - Asking that I show the stats for every player that has them, not just the first one
+- JackBender, for...
+  - Whining about the horrible font rendering of WPF in .NET 3.5 :-)
+- Terifire, for...
+  - Asking for the Cut by Time (Ctrl+T) shortcut
+  - Notifying me of some list view resize issues with the layout system
+  - Asking for the Statistics tab
+  - Asking for the ability to copy stuff to the Windows clipboad
+  - Asking that I allow a multi-selection mode for the "Chat" and "Obituaries" tabs
+  - ...
+  - His endless enthusiasm! :-)
+Memento_Mori, for...
+  - Noticing way too many bugs
