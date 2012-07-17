@@ -40,7 +40,6 @@ bool Gui::LogMessage(const std::string& message)
 	}
 
 	logWidget->appendPlainText(QString::fromStdString(message));
-	logWidget->appendPlainText("\n");
 
 	return true;
 }
@@ -411,16 +410,16 @@ void Gui::onProgress(float progress)
 
 void Gui::onMessage(int logLevel, const char* message)
 {
+	QString formattedMsg;
 	switch(logLevel)
 	{
-	case 0: logWidget->appendPlainText("Info: "); break;
-	case 1: logWidget->appendPlainText("Warning: "); break;
-	case 2: logWidget->appendPlainText("Error: "); break;
-	case 3: logWidget->appendPlainText("Critical: "); break;
+	case 1: formattedMsg = QString("<p style=\"color:orange\">%1</p>").arg(message); break;
+	case 2: formattedMsg = QString("<p style=\"color:red\">%1</p>").arg(message); break;
+	case 3: formattedMsg = QString("<p style=\"color:red\">%1</p>").arg(message); break;
+	default: formattedMsg = message; break;
 	}
 
-	logWidget->appendPlainText(message);
-	logWidget->appendPlainText("\n");
+	logWidget->appendHtml(formattedMsg);
 }
 
 
