@@ -280,7 +280,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
 			{
-				if(playerList[p].clientNum == info.Player)
+				if(playerList[p].clientNum == info.Player && playerList[p].name == QString::fromStdString(info.Name))
 				{
 					playerIndex = p;
 				}
@@ -389,7 +389,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
 			{
-				if(playerList[p].clientNum == number)
+				if(playerList[p].clientNum == number || playerList[p].team != TEAM_SPECTATOR)
 				{
 					playerIndex = p;
 					break;
