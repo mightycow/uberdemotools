@@ -217,7 +217,7 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="floating">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <attribute name="dockWidgetArea">
     <number>2</number>
