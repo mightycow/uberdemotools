@@ -26,6 +26,15 @@ int Gui::UdtProgressCallback(float progress)
 	return 0;
 }
 
+static QPlainTextEdit* logWidget = NULL;
+bool Gui::LogMessage( std::string message )
+{
+	if(logWidget == NULL)
+		return false;
+
+	logWidget->appendPlainText(QString::fromStdString(message) + "\n");
+}
+
 Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags), demoPlayer(this)
 {
@@ -33,6 +42,8 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	_progressCallback = &UdtProgressCallback;
 
 	ui.setupUi(this);
+	logWidget = ui.logWidget;
+
 	connectUiElements();
 	ui.pathLineEdit->setReadOnly(true);
 
@@ -199,6 +210,8 @@ void Gui::loadDemo( QString filepath )
 	ui.playButton->setText("Pause");
 	paused = false;
 	demoPlayer.playDemo();
+
+	LogMessage("Demo loaded");
 
 }
 
@@ -389,5 +402,6 @@ void Gui::onProgress(float progress)
 
 	progressTimer.restart();
 }
+
 
 

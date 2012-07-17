@@ -2,6 +2,7 @@
 
 #include <QtGui/QMainWindow>
 #include <QElapsedTimer>
+#include <QPlainTextEdit>
 #include "qt_gen/gui_gen.hpp"
 #include "demo_player.h"
 
@@ -11,6 +12,7 @@ class Gui : public QMainWindow
 
 public:
 	static int UdtProgressCallback(float progress);
+	static bool LogMessage(std::string message);
 
 	Gui(QWidget *parent = 0, Qt::WFlags flags = 0);
 
