@@ -190,7 +190,6 @@ void Gui::loadDemo( QString filepath )
 	ui.paintWidget->setScaling(origin, end);
 	ui.paintWidget->demo = demoPlayer.demo;
 	ui.paintWidget->players = &demoPlayer.playerList;
-	ui.paintWidget->spectators = &demoPlayer.spectatorList;
 	ui.paintWidget->entities = &demoPlayer.entities;	
 	ui.paintWidget->beams = &demoPlayer.beams;
 	ui.paintWidget->clock = &demoPlayer.clock;
@@ -230,7 +229,6 @@ void Gui::playButtonPressed()
 		{
 			ui.paintWidget->demo = demoPlayer.demo;
 			ui.paintWidget->players = &demoPlayer.playerList;
-			ui.paintWidget->spectators = &demoPlayer.spectatorList;
 			ui.paintWidget->entities = &demoPlayer.entities;	
 			ui.paintWidget->beams = &demoPlayer.beams;
 			ui.paintWidget->clock = &demoPlayer.clock;

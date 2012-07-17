@@ -194,6 +194,9 @@ void PaintWidget::paintDemo( QPainter& painter )
 	{
 		for(size_t i = 0; i < players->size(); i++)
 		{
+			if(players->at(i).color.alpha() == 0)
+				continue;
+
 			// Draw alive player
 			int number = players->at(i).clientNum * 2;
 			int idx = (entities->at(number)).index;
@@ -380,7 +383,7 @@ void PaintWidget::drawScores( QPainter& painter )
 	if(scoreTable.empty() || !showScore)
 		return;
 
-	if(scoreTable.size() > 2)
+	/*if(scoreTable.size() > 2)
 	{
 		int x = 30;
 		int y = 30;
@@ -395,7 +398,7 @@ void PaintWidget::drawScores( QPainter& painter )
 			y += 20;
 		}
 	}
-	else if(scoreTable.size() == 2)
+	else */if(scoreTable.size() == 2)
 	{
 		int y = 30;
 

@@ -159,32 +159,68 @@ void DemoPlayer::searchPlayers()
 	playerList.clear();
 	if(demo)
 	{
-		for(int i = 0; i < 64; i++)
+		bool added[64]; for(int i = 0; i < 64; i++) added[i] = false;
+		QStringList names; for(int i = 0; i < 64; i++) names.push_back("N/A");
+		
+		// Check the full demo for players currently connected.
+		for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); i++)
+		{
+			const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
+
+			if(QString::fromStdString(info.Name) != "N/A")
+			{
+				names[info.Player] = info.Name;
+			}
+		}
+		
+		for(size_t i = 0; i < 64; i++)
 		{
 			if(demo->_players[i].Valid)
 			{
 				Player p;
 				Demo::PlayerInfo& info = demo->_players[i].Info;
-				
+
 				p.demoTaker = false;
-				p.name = info.Name;
+				p.name = names[i];
 				p.health = -1;
 				p.armor = -1;
 				p.clientNum = info.Player;
 				p.team = info.Team;
 				p.score = 0;
-
-				// TODO: fix coloring code.
-				p.color = QColor(0, 255, 0, 255);
-
+				p.color = QColor(0, 0, 0, 0);
 				p.justDied = -1;
 
-				if(p.team != TEAM_SPECTATOR)
-					playerList.push_back(p);
-				else
-					spectatorList.push_back(p);
+				playerList.push_back(p);
+
 			}
 		}
+			
+		//for(int i = 0; i < 64; i++)
+		//{
+		//	if(demo->_players[i].Valid)
+		//	{
+		//		Player p;
+		//		Demo::PlayerInfo& info = demo->_players[i].Info;
+		//		
+		//		p.demoTaker = false;
+		//		p.name = info.Name;
+		//		p.health = -1;
+		//		p.armor = -1;
+		//		p.clientNum = info.Player;
+		//		p.team = info.Team;
+		//		p.score = 0;
+
+		//		// TODO: fix coloring code.
+		//		p.color = QColor(0, 255, 0, 255);
+
+		//		p.justDied = -1;
+
+		//		if(p.team != TEAM_SPECTATOR)
+		//			playerList.push_back(p);
+		//		else
+		//			spectatorList.push_back(p);
+		//	}
+		//}
 	}
 }
 
@@ -238,36 +274,62 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			if(entities[number].syncCooldown > SYNCMAX)
 				entities[number].syncCooldown = SYNCMAX;
 			
-			
-
-
-			
 			// Update player stats
+
+			int demoTakerIndex = -1;
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
 			{
-				if(playerList[p].name == QString(info.Name))
+				if(playerList[p].clientNum == info.Player)
 				{
 					playerIndex = p;
-					break;
 				}
+				if(playerList[p].demoTaker)
+					demoTakerIndex = p;
 			}
 			
 			if(playerIndex == -1)
 				continue;
 
-			playerList[playerIndex].health = info.Health;
-			playerList[playerIndex].armor = info.Armor;
-			playerList[playerIndex].ammo = info.CurrentAmmo;
+			DemoPlayer::Player& player = playerList[playerIndex];
+			player.health = info.Health;
+			player.armor = info.Armor;
+			player.ammo = info.CurrentAmmo;
 
-			playerList[playerIndex].demoTaker = info.demoTaker;
-			playerList[playerIndex].weapon = info.CurrentWeapon;
+			player.demoTaker = info.demoTaker;
+			player.weapon = info.CurrentWeapon;
 
-			playerList[playerIndex].score = info.Score;
-
-			if(info.demoTaker)
+			player.score = info.Score;
+			
+			switch(player.team)
 			{
-				playerList[playerIndex].color = QColor(255, 255, 255, 255);
+			case TEAM_FREE:
+				if(info.demoTaker)
+					player.color = QColor(255, 255, 255, 255);
+				else
+					player.color = QColor(50, 255, 50, 255);
+				break;
+			case TEAM_RED:
+				if(info.demoTaker)
+					player.color = QColor(255, 150, 150, 255);
+				else
+					player.color = QColor(255, 50, 50, 255);
+				break;
+			case TEAM_BLUE:
+				if(info.demoTaker)
+					player.color = QColor(150, 150, 255, 255);
+				else
+					player.color = QColor(50, 50, 255, 255);
+				break;
+			case TEAM_SPECTATOR:
+				player.color = QColor(0, 0, 0, 0);
+				break;
+			default:
+				if(playerList[demoTakerIndex].team == TEAM_RED)
+					player.color = QColor(50, 50, 255, 255);
+				else if (playerList[demoTakerIndex].team == TEAM_BLUE)
+					player.color = QColor(255, 50, 50, 255);
+				break;
 			}
 
 			// Update Railtrails 
@@ -355,6 +417,9 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 		if(info.Time == serverTime)
 		{
 			int number = info.Number + 128;
+
+			if(number >= entities.size())
+				continue;
 
 			entities[number].index = i;
 			entities[number].syncCooldown += SYNCBOOST;

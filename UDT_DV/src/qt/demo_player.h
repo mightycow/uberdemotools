@@ -71,7 +71,6 @@ public:
 
 	Demo* demo;
 	std::vector<Player> playerList;
-	std::vector<Player> spectatorList;
 	std::vector<Beam> beams;
 	std::vector<Entity> entities;
 	int warmupTime;
