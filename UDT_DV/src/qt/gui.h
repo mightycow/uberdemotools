@@ -12,7 +12,8 @@ class Gui : public QMainWindow
 
 public:
 	static int UdtProgressCallback(float progress);
-	static bool LogMessage(std::string message);
+	static void UdtMessageCallback(int logLevel, const char* message);
+	static bool LogMessage(const std::string& message);
 
 	Gui(QWidget *parent = 0, Qt::WFlags flags = 0);
 
@@ -33,10 +34,11 @@ private:
 	Ui::MyClassClass ui;
 	DemoPlayer demoPlayer;
 	bool paused;
+	QElapsedTimer progressTimer;
 
 	void _parseDemo();
 	void onProgress(float progress);
-	QElapsedTimer progressTimer;
+	void onMessage(int logLevel, const char* message);
 
 public slots:
 	void playButtonPressed();	

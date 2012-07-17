@@ -26,20 +26,32 @@ int Gui::UdtProgressCallback(float progress)
 	return 0;
 }
 
+void Gui::UdtMessageCallback(int logLevel, const char* message)
+{
+	gui->onMessage(logLevel, message);
+}
+
 static QPlainTextEdit* logWidget = NULL;
-bool Gui::LogMessage( std::string message )
+bool Gui::LogMessage(const std::string& message)
 {
 	if(logWidget == NULL)
+	{
 		return false;
+	}
 
-	logWidget->appendPlainText(QString::fromStdString(message) + "\n");
+	logWidget->appendPlainText(QString::fromStdString(message));
+	logWidget->appendPlainText("\n");
+
+	return true;
 }
+
 
 Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags), demoPlayer(this)
 {
 	gui = this;
 	_progressCallback = &UdtProgressCallback;
+	_messageCallback = &UdtMessageCallback;
 
 	ui.setupUi(this);
 	logWidget = ui.logWidget;
@@ -91,9 +103,7 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 
 Gui::~Gui()
 {
-
 }
-
 
 void Gui::connectUiElements()
 {
@@ -109,9 +119,6 @@ void Gui::connectUiElements()
 	connect(ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showHudChanged(int)));
 	connect(ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(reverseTimeChanged(int)));
 }
-
-
-
 
 bool Gui::getScalingData( QString scalingPath, int* origin, int* end ) 
 {
@@ -212,7 +219,6 @@ void Gui::loadDemo( QString filepath )
 	demoPlayer.playDemo();
 
 	LogMessage("Demo loaded");
-
 }
 
 
@@ -401,6 +407,20 @@ void Gui::onProgress(float progress)
 	ui.paintWidget->repaint();
 
 	progressTimer.restart();
+}
+
+void Gui::onMessage(int logLevel, const char* message)
+{
+	switch(logLevel)
+	{
+	case 0: logWidget->appendPlainText("Info: "); break;
+	case 1: logWidget->appendPlainText("Warning: "); break;
+	case 2: logWidget->appendPlainText("Error: "); break;
+	case 3: logWidget->appendPlainText("Critical: "); break;
+	}
+
+	logWidget->appendPlainText(message);
+	logWidget->appendPlainText("\n");
 }
 
 
