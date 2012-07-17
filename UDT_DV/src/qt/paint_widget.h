@@ -16,6 +16,7 @@ public:
 	void releaseImage();
 	bool loadImage(QString imagePath);
 	void loadIcons(QString dirPath, QStringList iconsPath);
+	void loadWeapons(QString dirPath, QStringList weaponsPath);
 
 	void resetScaling();
 	void setScaling(int* origin, int* end);
@@ -46,6 +47,7 @@ protected:
 
 	void drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha);
 	void drawDeadPlayer(QPainter &painter, int a, int b, QColor &color, float alpha);
+	void drawWeapon(QPainter &painter, int a, int b, float angle, float alpha, int weapon);
 
 	void drawItem(QPainter& painter, Demo::EntityInfo* info, float alpha);
 	void drawProjectile(QPainter& painter, Demo::EntityInfo* info);
@@ -56,6 +58,7 @@ protected:
 
 	void drawViewAngle(QPainter& painter, QPoint center, QColor color, float orientation, float angle, float radius);
 	QImage* getIcon(int type);
+	QImage* getWeapon(int type);
 
 
 private:
@@ -66,6 +69,7 @@ private:
 	float heightScaling;
 
 	std::vector<QImage*> icons;
+	std::vector<QImage*> weapons;
 	QImage* iconProxy;
 
 	struct ScoreEntry

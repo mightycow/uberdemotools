@@ -78,6 +78,16 @@ PaintWidget::~PaintWidget()
 
 		}
 	}
+
+	for(size_t i = 0; i < weapons.size(); i++)
+	{
+		if(weapons[i] != NULL)
+		{
+			delete weapons[i];
+			weapons[i] = NULL;
+
+		}
+	}
 }
 
 void PaintWidget::resetScaling()
@@ -296,6 +306,7 @@ void PaintWidget::drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor c
 		if(!dead)
 		{
 			drawViewAngle(painter, QPoint(a,b), color, orientation, angle, 50);
+			drawWeapon(painter, a, b, orientation, alpha, pI2D->CurrentWeapon);
 			drawAlivePlayer(painter, a, b, c, color, alpha);
 			
 			if(!name.isEmpty())
@@ -541,6 +552,27 @@ void PaintWidget::loadIcons(QString dirPath, QStringList iconsPath)
 	}
 }
 
+
+void PaintWidget::loadWeapons( QString dirPath, QStringList weaponsPath )
+{
+	for(size_t i = 0; i < weapons.size(); i++)
+	{
+		if(weapons[i] != NULL)
+		{
+			delete weapons[i];
+			weapons[i] = NULL;
+		}
+	}
+
+	weapons.clear();
+	for(int i = 0; i < weaponsPath.size(); i++)
+	{
+		QImage* image = new QImage(dirPath + weaponsPath[i]);
+		weapons.push_back(image);
+	}
+}
+
+
 QImage* PaintWidget::getIcon(int type )
 {
 	if(icons.size() < 21)
@@ -579,6 +611,29 @@ QImage* PaintWidget::getIcon(int type )
 	return iconProxy;
 }
 
+QImage* PaintWidget::getWeapon( int type )
+{
+	if(weapons.size() < 8)
+	{
+		return iconProxy;
+	}
+
+	switch(type)
+	{
+	case WEAPON_GAUNTLET:			return weapons[0];
+	case WEAPON_MACHINEGUN:			return weapons[1];
+	case WEAPON_SHOTGUN:			return weapons[2];
+	case WEAPON_GRENADELAUNCHER:	return weapons[3];
+	case WEAPON_ROCKETLAUNCHER:		return weapons[4];
+	case WEAPON_LIGHTNING:			return weapons[5];
+	case WEAPON_RAILGUN:			return weapons[6];
+	case WEAPON_PLASMAGUN:			return weapons[7];
+	default:						return iconProxy;
+	}
+	
+}
+
+
 void PaintWidget::drawViewAngle( QPainter& painter, QPoint center, QColor color, float orientation, float angle, float radius)
 {
 	color.setAlpha(32);
@@ -616,6 +671,29 @@ void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor
 	painter.setBrush(brush);
 	painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
 }
+
+
+void PaintWidget::drawWeapon( QPainter &painter, int a, int b, float angle, float alpha, int weapon )
+{
+	QImage* icon = getWeapon(weapon);
+
+	angle = angle - 90;
+	if(angle < 0) angle += 360;
+
+	painter.save();
+	painter.translate(a,b);
+	painter.rotate(-angle);
+	painter.translate(10,-10);
+	int w = icon->width() * iconScale * 0.6;
+	int h = icon->height()* iconScale * 0.6;
+
+	QRect source(0, 0, icon->width(), icon->height());
+	QRect target(-w/2,-h/2, w, h);					
+
+	painter.drawImage(target,*icon, source);
+	painter.restore();
+}
+
 
 void PaintWidget::drawDeadPlayer( QPainter &painter, int a, int b, QColor &color, float alpha)
 {

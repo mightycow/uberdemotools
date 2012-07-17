@@ -210,6 +210,9 @@ void Gui::loadIconData()
 	filters << "*.png";
 	QDir dir(dataPath + "icons" + QDir::separator());
 	ui.paintWidget->loadIcons(dataPath + "icons\\", dir.entryList(filters));
+
+	QDir dir2(dataPath + "weapons" + QDir::separator());
+	ui.paintWidget->loadWeapons(dataPath + "weapons\\", dir2.entryList(filters));
 }
 
 
