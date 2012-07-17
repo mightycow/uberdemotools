@@ -413,18 +413,18 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 	for(size_t i = 0; i < demo->_entityPlaybackInfos.size(); i++)
 	{
 		const Demo::EntityInfo& info = demo->_entityPlaybackInfos[i];
-
 		if(info.Time == serverTime)
 		{
-			int number = info.Number + 128;
-
-			if(number >= entities.size())
+			const int number = info.Number + 128;
+			if(number >= (int)entities.size())
+			{
 				continue;
+			}
 
-			entities[number].index = i;
-			entities[number].syncCooldown += SYNCBOOST;
-			if(entities[number].syncCooldown > SYNCMAX)
-				entities[number].syncCooldown = SYNCMAX;
+			DemoPlayer::Entity& entity = entities[number];
+			entity.index = i;
+			entity.syncCooldown += SYNCBOOST;
+			entity.syncCooldown = std::min(entity.syncCooldown, SYNCMAX);
 		}
 	}
 }
