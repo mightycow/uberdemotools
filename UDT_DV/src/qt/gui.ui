@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>905</width>
-    <height>907</height>
+    <width>812</width>
+    <height>1022</height>
    </rect>
   </property>
   <property name="contextMenuPolicy">
@@ -217,15 +217,24 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="floating">
-    <bool>true</bool>
+    <bool>false</bool>
+   </property>
+   <property name="allowedAreas">
+    <set>Qt::BottomDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea">
-    <number>2</number>
+    <number>8</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <layout class="QGridLayout" name="gridLayout_3">
      <item row="0" column="0">
       <widget class="QPlainTextEdit" name="logWidget">
+       <property name="minimumSize">
+        <size>
+         <width>400</width>
+         <height>0</height>
+        </size>
+       </property>
        <property name="undoRedoEnabled">
         <bool>false</bool>
        </property>

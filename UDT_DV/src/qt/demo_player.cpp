@@ -336,7 +336,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			if(info.BeamType == Demo::BeamType::RailTrail)
 			{
 				Beam& beam = beams[2 * playerIndex + 1];
-				if(beam.TTL < 0)
+				if(beam.TTL < -1000)
 				{
 					beam.type = Beam::Type::RG;
 					beam.TTL = 500;
