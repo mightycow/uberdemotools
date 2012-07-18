@@ -959,8 +959,8 @@ void PaintWidget::drawBeams( QPainter& painter, float* startPosition, float* end
 	float q = shiftY / n;
 	float r = -shiftX / n;
 
-	float x = startPosition[0] + q * 40 - r * 80;
-	float y = startPosition[1] + r * 40 + q * 80;
+	float x = startPosition[0] + q * 22 - r * 60;
+	float y = startPosition[1] + r * 22 + q * 60;
 
 	int a = (x - mapOrigin[0]) * coordsScaling;
 	int b = -(y - mapOrigin[1]) * coordsScaling;
