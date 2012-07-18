@@ -950,8 +950,17 @@ void PaintWidget::drawGeneric( QPainter& painter, Demo::EntityInfo* info )
 }
 void PaintWidget::drawBeams( QPainter& painter, float* startPosition, float* endPosition, DemoPlayer::Beam::Type::Id type, float alpha)
 {
-	float x = startPosition[0];
-	float y = startPosition[1];
+
+	float shiftX = endPosition[0]-startPosition[0];
+	float shiftY = endPosition[1]-startPosition[1];
+
+	float n = sqrt(shiftX*shiftX + shiftY*shiftY);
+
+	float q = shiftY / n;
+	float r = -shiftX / n;
+
+	float x = startPosition[0] + q * 40 - r * 80;
+	float y = startPosition[1] + r * 40 + q * 80;
 
 	int a = (x - mapOrigin[0]) * coordsScaling;
 	int b = -(y - mapOrigin[1]) * coordsScaling;
@@ -961,6 +970,7 @@ void PaintWidget::drawBeams( QPainter& painter, float* startPosition, float* end
 
 	int c = (z - mapOrigin[0]) * coordsScaling;
 	int d = -(w - mapOrigin[1]) * coordsScaling;
+
 
 	bool stop = false;
 	QPen pen;
