@@ -346,7 +346,6 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 					beam.endPosition[1] = info.Position[1] + sin(info.Angles[1] / 180 * 3.1415) * 3000;
 				}
 			}
-			
 		}
 	}
 

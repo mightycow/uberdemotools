@@ -47,7 +47,7 @@ protected:
 
 	void drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha);
 	void drawDeadPlayer(QPainter &painter, int a, int b, QColor &color, float alpha);
-	void drawWeapon(QPainter &painter, int a, int b, float angle, float alpha, int weapon);
+	void drawWeapon(QPainter &painter, int a, int b, float angle, float alpha, int weapon, bool firing);
 
 	void drawItem(QPainter& painter, Demo::EntityInfo* info, float alpha);
 	void drawProjectile(QPainter& painter, Demo::EntityInfo* info);
@@ -58,7 +58,7 @@ protected:
 
 	void drawViewAngle(QPainter& painter, QPoint center, QColor color, float orientation, float angle, float radius);
 	QImage* getIcon(int type);
-	QImage* getWeapon(int type);
+	QImage* getWeapon(int type, bool firing);
 
 
 private:

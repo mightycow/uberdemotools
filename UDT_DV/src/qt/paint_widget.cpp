@@ -309,7 +309,7 @@ void PaintWidget::drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor c
 		if(!dead)
 		{
 			drawViewAngle(painter, QPoint(a,b), color, orientation, angle, 50);
-			drawWeapon(painter, a, b, orientation, alpha, pI2D->CurrentWeapon);
+			drawWeapon(painter, a, b, orientation, alpha, pI2D->CurrentWeapon, pI2D->Firing);
 			drawAlivePlayer(painter, a, b, c, color, alpha);
 			
 			if(!name.isEmpty())
@@ -614,23 +614,25 @@ QImage* PaintWidget::getIcon(int type )
 	return iconProxy;
 }
 
-QImage* PaintWidget::getWeapon( int type )
+QImage* PaintWidget::getWeapon( int type, bool firing )
 {
 	if(weapons.size() < 8)
 	{
 		return iconProxy;
 	}
 
+	int shift = firing ? 1 : 0;
+
 	switch(type)
 	{
-	case WEAPON_GAUNTLET:			return weapons[0];
-	case WEAPON_MACHINEGUN:			return weapons[1];
-	case WEAPON_SHOTGUN:			return weapons[2];
-	case WEAPON_GRENADELAUNCHER:	return weapons[3];
-	case WEAPON_ROCKETLAUNCHER:		return weapons[4];
-	case WEAPON_LIGHTNING:			return weapons[5];
-	case WEAPON_RAILGUN:			return weapons[6];
-	case WEAPON_PLASMAGUN:			return weapons[7];
+	case WEAPON_GAUNTLET:			return weapons[0*2 + shift];
+	case WEAPON_MACHINEGUN:			return weapons[1*2 + shift];
+	case WEAPON_SHOTGUN:			return weapons[2*2 + shift];
+	case WEAPON_GRENADELAUNCHER:	return weapons[3*2 + shift];
+	case WEAPON_ROCKETLAUNCHER:		return weapons[4*2 + shift];
+	case WEAPON_LIGHTNING:			return weapons[5*2 + shift];
+	case WEAPON_RAILGUN:			return weapons[6*2 + shift];
+	case WEAPON_PLASMAGUN:			return weapons[7*2 + shift];
 	default:						return iconProxy;
 	}
 	
@@ -676,9 +678,9 @@ void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor
 }
 
 
-void PaintWidget::drawWeapon( QPainter &painter, int a, int b, float angle, float alpha, int weapon )
+void PaintWidget::drawWeapon( QPainter &painter, int a, int b, float angle, float alpha, int weapon, bool firing )
 {
-	QImage* icon = getWeapon(weapon);
+	QImage* icon = getWeapon(weapon, firing);
 
 	angle = angle - 90;
 	if(angle < 0) angle += 360;
