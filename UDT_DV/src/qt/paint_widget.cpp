@@ -309,7 +309,7 @@ void PaintWidget::drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor c
 		if(!dead)
 		{
 			drawViewAngle(painter, QPoint(a,b), color, orientation, angle, 50);
-			drawWeapon(painter, a, b, orientation, alpha, pI2D->CurrentWeapon, pI2D->Firing);
+			drawWeapon(painter, a, b, c, orientation, alpha, pI2D->CurrentWeapon, pI2D->Firing);
 			drawAlivePlayer(painter, a, b, c, color, alpha);
 			
 			if(!name.isEmpty())
@@ -325,7 +325,7 @@ void PaintWidget::drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor c
 				}
 				QFontMetrics fm(font);
 				int shift = fm.width(name) / 2;
-				painter.drawText(a - shift, b - 15, name);
+				painter.drawText(a - shift, b - 30, name);
 			}
 		}
 		else
@@ -678,9 +678,13 @@ void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor
 }
 
 
-void PaintWidget::drawWeapon( QPainter &painter, int a, int b, float angle, float alpha, int weapon, bool firing )
+void PaintWidget::drawWeapon( QPainter &painter, int a, int b, int c, float angle, float alpha, int weapon, bool firing )
 {
 	QImage* icon = getWeapon(weapon, firing);
+
+	if(c < 0) c = 0;
+
+	float hScaling = (300 + c) / 400.0f;
 
 	angle = angle - 90;
 	if(angle < 0) angle += 360;
@@ -688,9 +692,12 @@ void PaintWidget::drawWeapon( QPainter &painter, int a, int b, float angle, floa
 	painter.save();
 	painter.translate(a,b);
 	painter.rotate(-angle);
-	painter.translate(10,-10);
-	int w = icon->width() * iconScale * 0.6;
-	int h = icon->height()* iconScale * 0.6;
+	painter.translate(13 * hScaling,-10);
+
+	
+
+	int w = icon->width() * iconScale * 0.6 * hScaling;
+	int h = icon->height()* iconScale * 0.6 * hScaling;
 
 	QRect source(0, 0, icon->width(), icon->height());
 	QRect target(-w/2,-h/2, w, h);					
@@ -959,8 +966,8 @@ void PaintWidget::drawBeams( QPainter& painter, float* startPosition, float* end
 	float q = shiftY / n;
 	float r = -shiftX / n;
 
-	float x = startPosition[0] + q * 22 - r * 60;
-	float y = startPosition[1] + r * 22 + q * 60;
+	float x = startPosition[0] + q * 30 - r * 60;
+	float y = startPosition[1] + r * 30 + q * 60;
 
 	int a = (x - mapOrigin[0]) * coordsScaling;
 	int b = -(y - mapOrigin[1]) * coordsScaling;
