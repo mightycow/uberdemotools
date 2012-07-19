@@ -212,6 +212,7 @@ public:
 	{
 		bool valid;
 		bool demoTaker;
+		bool Firing;
 		char Name[MAX_NAME_LENGTH];
 		char Clan[MAX_NAME_LENGTH];
 		char Country[MAX_NAME_LENGTH];
@@ -1014,6 +1015,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 			info.Player = clientNum;
 			info.valid = true;
 			info.demoTaker = false;
+			info.Firing = false;
 			info.Position[0] = entity->pos.trBase[0];
 			info.Position[1] = entity->pos.trBase[1];
 			info.Position[2] = entity->pos.trBase[2];
@@ -1062,6 +1064,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 
 			if(entity->eFlags & EF_FIRING)
 			{
+				info.Firing = true;
 				switch(entity->weapon)
 				{
 				case WP_LIGHTNING:
@@ -1180,6 +1183,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		info.Player = clientNum;
 		info.valid = true;
 		info.demoTaker = true;
+		info.Firing = false;
 		info.Position[0] = entity->origin[0];
 		info.Position[1] = entity->origin[1];
 		info.Position[2] = entity->origin[2];
@@ -1229,6 +1233,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 
 		if(entity->eFlags & EF_FIRING)
 		{
+			info.Firing = true;
 			switch(entity->weapon)
 			{
 			case WP_LIGHTNING:
