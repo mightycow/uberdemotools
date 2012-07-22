@@ -223,7 +223,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 	}
 
 	// Update Players
-	for(int i = 0; i < demo->_playerPlaybackInfos.size(); i++)
+	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); i++)
 	{
 		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
 		if(info.Time == serverTime)
