@@ -176,6 +176,8 @@ void DemoPlayer::searchPlayers()
 			p.team = info.Team;
 			p.score = 0;
 			p.color = QColor(0, 0, 0, 0);
+			for(int q = 0; q < MAX_POWERUPS; q++)
+				p.powerups[q] = false;
 			p.justDied = -1;
 
 			playerList.push_back(p);
@@ -221,7 +223,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 	}
 
 	// Update Players
-	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); i++)
+	for(int i = 0; i < demo->_playerPlaybackInfos.size(); i++)
 	{
 		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
 		if(info.Time == serverTime)
@@ -234,7 +236,6 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				entities[number].syncCooldown = SYNCMAX;
 			
 			// Update player stats
-
 			int demoTakerIndex = -1;
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
@@ -256,15 +257,22 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				continue;
 
 			DemoPlayer::Player& player = playerList[playerIndex];
+
+			// Update Stats
 			player.health = info.Health;
 			player.armor = info.Armor;
 			player.ammo = info.CurrentAmmo;
-
 			player.demoTaker = info.demoTaker;
 			player.weapon = info.CurrentWeapon;
-
 			player.score = info.Score;
+
+			// Player Powerup
+			for(size_t p = 0; p < MAX_POWERUPS; p++)
+			{
+				player.powerups[p] = (info.Powerups >> p) & 0x1;
+			}
 			
+			// Update Color
 			switch(player.team)
 			{
 			case TEAM_FREE:
@@ -296,6 +304,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				break;
 			}
 
+			
 			// Update Railtrails 
 			if(info.BeamType == Demo::BeamType::RailTrail)
 			{
@@ -311,9 +320,8 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				}
 			}
 
-			//
+			
 			// Player name
-			//
 			Demo::PlayerNamePlaybackInfoVector& playerNames = demo->_playerNamesPlaybackInfos[info.Player];
 			Demo::PlayerNameInfo* nameInfo = NULL;
 			if(playerNames.size() > 0)
@@ -330,15 +338,15 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				}
 				nameInfo = &playerNames[i];
 			}
-			
 			player.name = nameInfo != NULL ? nameInfo->Name : "?";
 		}
 	}
 
+	
+	// Update Scores
 	for(size_t i = 0; i < demo->_scorePlaybackInfos.size(); i++)
 	{
 		const Demo::ScoreInfo& scoreInfo = demo->_scorePlaybackInfos[i];
-
 		if(serverTime == scoreInfo.Time)
 		{
 			int demoTakerScore = -9999;
@@ -394,6 +402,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 		}
 	}
 
+	
 	// Update Entities
 	for(size_t i = 0; i < demo->_entityPlaybackInfos.size(); i++)
 	{

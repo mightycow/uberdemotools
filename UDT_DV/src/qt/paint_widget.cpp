@@ -192,6 +192,10 @@ void PaintWidget::paintDemo( QPainter& painter )
 
 	if(players != NULL)
 	{
+
+		std::vector<PlayerData> playerData;
+
+		// Get all players
 		for(size_t i = 0; i < players->size(); i++)
 		{
 			if(players->at(i).color.alpha() == 0)
@@ -224,25 +228,49 @@ void PaintWidget::paintDemo( QPainter& painter )
 			// Draw the one closer in time
 			if(aliveAlpha >= deadAlpha && alive)
 			{
-				drawPlayer(
-					painter, 
-					alive, 
+				PlayerData pData;
+				pData.player = alive;
+				pData.dPPlayer = &players->at(i);
+				pData.alpha = aliveAlpha;
+				pData.dead = false;
+				playerData.push_back(pData);
+
+				/*drawPlayer(
+					painter,
+					alive,
+					&players->at(i),
 					players->at(i).color, 
 					players->at(i).name, 
 					aliveAlpha,
-					false);
+					false);*/
 			}
 
 			if(dead)
 			{
-				drawPlayer(
+
+				PlayerData pData;
+				pData.player = dead;
+				pData.dPPlayer = &players->at(i);
+				pData.alpha = deadAlpha;
+				pData.dead = true;
+				playerData.push_back(pData);
+
+				/*drawPlayer(
 					painter, 
 					dead, 
+					&players->at(i),
 					players->at(i).color, 
 					players->at(i).name, 
 					deadAlpha,
-					true);
+					true);*/
 			}
+		}
+		
+		// Draw alive players and corpses in depth order
+		std::sort(playerData.begin(), playerData.end());
+		for(size_t i = 0; i < playerData.size(); i++)
+		{
+			drawPlayer(painter, playerData[i]);
 		}
 
 		scoreTable.clear();
@@ -291,46 +319,47 @@ void PaintWidget::releaseImage()
 	}
 }
 
-void PaintWidget::drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor color, QString name, float alpha, bool dead )
+void PaintWidget::drawPlayer(QPainter& painter, PlayerData data)
 {
-	if(pI2D != NULL)
+	if(data.player != NULL)
 	{
-		float x = pI2D->Position[0];
-		float y = pI2D->Position[1];
-		float z = pI2D->Position[2];
+		float x = data.player->Position[0];
+		float y = data.player->Position[1];
+		float z = data.player->Position[2];
 
 		int a = (x - mapOrigin[0]) * coordsScaling;
 		int b = -(y - mapOrigin[1]) * coordsScaling;
 		int c = (z - mapOrigin[2]) * coordsScaling;
 
-		float orientation = pI2D->Angles[1];
+		float orientation = data.player->Angles[1];
 		float angle = 90; // FOV
 
-		if(!dead)
+		if(!data.dead)
 		{
-			drawViewAngle(painter, QPoint(a,b), color, orientation, angle, 50);
-			drawWeapon(painter, a, b, c, orientation, alpha, pI2D->CurrentWeapon, pI2D->Firing);
-			drawAlivePlayer(painter, a, b, c, color, alpha);
+			drawViewAngle(painter, QPoint(a,b), data.dPPlayer->color, orientation, angle, 50);
+			drawWeapon(painter, a, b, c, orientation, data.alpha, data.player->CurrentWeapon, data.player->Firing);
+			drawAlivePlayer(painter, a, b, c, data.dPPlayer->color, data.alpha);
+			drawPlayerPowerup(painter, a, b, c, data.dPPlayer);
 			
-			if(!name.isEmpty())
+			if(!data.dPPlayer->name.isEmpty())
 			{
 				QFont font;			
 				font.setPixelSize(20);
 				painter.setFont(font);
-				if(alpha < 1.0f)
+				if(data.alpha < 1.0f)
 				{
 					QPen pen;
 					pen.setColor(QColor(0, 0, 0, 128));
 					painter.setPen(pen);
 				}
 				QFontMetrics fm(font);
-				int shift = fm.width(name) / 2;
-				painter.drawText(a - shift, b - 30, name);
+				int shift = fm.width(data.dPPlayer->name) / 2;
+				painter.drawText(a - shift, b - 30, data.dPPlayer->name);
 			}
 		}
 		else
 		{
-			drawDeadPlayer(painter, a, b, color, alpha);
+			drawDeadPlayer(painter, a, b, data.dPPlayer->color, data.alpha);
 		}
 		
 	}
@@ -609,6 +638,14 @@ QImage* PaintWidget::getIcon(int type )
 		case AMMO_SLUGS:				return icons[21];
 		case WEAPON_GAUNTLET:			return icons[25];
 		case WEAPON_MACHINEGUN:			return icons[26];
+		case ITEM_QUAD:					return icons[27];
+		case ITEM_ENVIRO:				return icons[28];
+		case ITEM_HASTE:				return icons[29];
+		case ITEM_INVIS:				return icons[30];
+		case ITEM_REGEN:				return icons[31];
+		case ITEM_FLIGHT:				return icons[32];
+		case TEAM_CTF_REDFLAG:			return icons[33];
+		case TEAM_CTF_BLUEFLAG:			return icons[34];
 		default:						break;
 	}
 	return iconProxy;
@@ -676,6 +713,39 @@ void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor
 	painter.setBrush(brush);
 	painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
 }
+
+void PaintWidget::drawPlayerPowerup( QPainter &painter, int a, int b, int c, DemoPlayer::Player* player )
+{
+	if(player->powerups[1])
+	{
+		QPen pen(QColor(0, 128, 255, 255));
+		pen.setWidth(2);
+		painter.setPen(pen);
+
+		QBrush brush(QColor(0, 128, 255, 128));
+		brush.setStyle(Qt::SolidPattern);
+		painter.setBrush(brush);
+
+		int radius = 24 + c * heightScaling;
+
+		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
+	}
+	if(player->powerups[2])
+	{
+		QPen pen(QColor(255, 230, 0, 255));
+		pen.setWidth(2);
+		painter.setPen(pen);
+
+		QBrush brush(QColor(255, 230, 0, 128));
+		brush.setStyle(Qt::SolidPattern);
+		painter.setBrush(brush);
+
+		int radius = 26 + c * heightScaling;
+
+		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
+	}
+}
+
 
 
 void PaintWidget::drawWeapon( QPainter &painter, int a, int b, int c, float angle, float alpha, int weapon, bool firing )
@@ -1043,6 +1113,7 @@ void PaintWidget::setAlphaOnTransparentImage( QImage* image, float alpha )
 		}
 	}
 }
+
 
 
 

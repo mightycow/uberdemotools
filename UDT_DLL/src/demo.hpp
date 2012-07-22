@@ -849,6 +849,12 @@ void Demo::AnalyzeEntityObituaryT(EntityStateT* /*oldState*/, EntityStateT* newS
 template<class DemoT, typename EntityStateT>
 void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t* newSnap)
 {
+	const int healthStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_HEALTH_68 : (int)STAT_HEALTH_73;
+	const int armorStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_ARMOR_68 : (int)STAT_ARMOR_73;
+	const float dotThreshold = 0.85f;
+	const float minSplashDist = 1.5f;
+	std::vector<int> lgSplashPosList;
+	// Reset persistency
 	for(int i = 0; i < MAX_GENTITIES; ++i)
 	{
 		_entities[i].Valid = false;
@@ -858,7 +864,6 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		_players[i].Info.valid = false;
 	}
 
-	std::vector<int> lgSplashPosList;
 
 	// Update client-side entity data.
 	for(int i = 0; i < newSnap->numEntities; ++i)
@@ -869,6 +874,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		// Find the parsed entity.
 		const EntityStateT* const entity = &static_cast<DemoT*>(this)->_inParseEntities[pos & (MAX_PARSE_ENTITIES-1)];
 
+		// Skip players (processed later)
 		if(entity->eType == ET_PLAYER)
 		{
 			continue;
@@ -1004,44 +1010,44 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		}
 	}
 
-	const int healthStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_HEALTH_68 : (int)STAT_HEALTH_73;
-	const int armorStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_ARMOR_68 : (int)STAT_ARMOR_73;
-
-	const float dotThreshold = 0.85f;
-	const float minSplashDist = 1.5f;
+	// Save entities playback data
+	for(int i = 0; i < MAX_GENTITIES; ++i)
+	{
+		if(_entities[i].Valid)
+		{
+			_entities[i].Info.Time = newSnap->serverTime;
+			_entityPlaybackInfos.push_back(_entities[i].Info);
+		}
+	}
 
 	// Process other players in the demo
 	for(int i = 0; i < newSnap->numEntities; ++i)
 	{
-		const EntityStateT* entity = &static_cast<DemoT*>(this)->_inParseEntities[(newSnap->parseEntitiesNum + i) & (MAX_PARSE_ENTITIES-1)];
-		const int clientNum = entity->clientNum;
-		if(entity->eType == ET_PLAYER && clientNum >= 0 && clientNum < MAX_CLIENTS)
+		const EntityStateT* playerEntity = &static_cast<DemoT*>(this)->_inParseEntities[(newSnap->parseEntitiesNum + i) & (MAX_PARSE_ENTITIES-1)];
+		const int clientNum = playerEntity->clientNum;
+		if(playerEntity->eType == ET_PLAYER && clientNum >= 0 && clientNum < MAX_CLIENTS)
 		{
-			// Check this is not a corpse
-			//if(entity->weapon == 0)	continue;
-
 			PlayerInfo& info = _players[clientNum].Info;
 			info.Time = newSnap->serverTime;
 			info.Player = clientNum;
 			info.valid = true;
 			info.demoTaker = false;
 			info.Firing = false;
-			info.Position[0] = entity->pos.trBase[0];
-			info.Position[1] = entity->pos.trBase[1];
-			info.Position[2] = entity->pos.trBase[2];
-			info.Angles[0] = entity->apos.trBase[0];
-			info.Angles[1] = entity->apos.trBase[1];
-			info.Angles[2] = entity->apos.trBase[2];
+			info.Position[0] = playerEntity->pos.trBase[0];
+			info.Position[1] = playerEntity->pos.trBase[1];
+			info.Position[2] = playerEntity->pos.trBase[2];
+			info.Angles[0] = playerEntity->apos.trBase[0];
+			info.Angles[1] = playerEntity->apos.trBase[1];
+			info.Angles[2] = playerEntity->apos.trBase[2];
 			info.Armor = -1;
-			info.Flags = entity->eFlags;
+			info.Flags = playerEntity->eFlags;
 			info.Health = -1;
-			info.Powerups = 0;
+			info.Powerups = playerEntity->powerups;
 			info.Rank = -1;
 			info.Score = -1;
 			info.BeamType = BeamType::None;
 			info.CurrentAmmo = -1;
-			//info.CurrentWeapon = entity->weapon;
-			switch(entity->weapon)
+			switch(playerEntity->weapon)
 			{
 			case WP_NONE:
 				info.CurrentWeapon = 0;
@@ -1072,10 +1078,10 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 				break;
 			}
 
-			if(entity->eFlags & EF_FIRING)
+			if(playerEntity->eFlags & EF_FIRING)
 			{
 				info.Firing = true;
-				switch(entity->weapon)
+				switch(playerEntity->weapon)
 				{
 				case WP_LIGHTNING:
 					{
@@ -1184,8 +1190,8 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 	}
 
 	// Process the player taking the demo
-	const playerState_t* entity = &newSnap->ps;
-	const int clientNum = entity->clientNum;
+	const playerState_t* playerEntity = &newSnap->ps;
+	const int clientNum = playerEntity->clientNum;
 	if(clientNum >= 0 && clientNum < MAX_CLIENTS)
 	{
 		PlayerInfo& info = _players[clientNum].Info;
@@ -1194,23 +1200,32 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		info.valid = true;
 		info.demoTaker = true;
 		info.Firing = false;
-		info.Position[0] = entity->origin[0];
-		info.Position[1] = entity->origin[1];
-		info.Position[2] = entity->origin[2];
-		info.Angles[0] = entity->viewangles[0];
-		info.Angles[1] = entity->viewangles[1];
-		info.Angles[2] = entity->viewangles[2];
-		info.Armor = entity->stats[armorStatIdx];
-		info.Flags = entity->eFlags;
-		info.Health = entity->stats[healthStatIdx];
-		info.Powerups = _protocol == Protocol::Dm68 ? 0 : entity->stats[STAT_PERSISTANT_POWERUP_73]; // @TODO:
-		info.Rank = entity->persistant[PERS_RANK];
-		info.Score = entity->persistant[PERS_SCORE];
+		info.Position[0] = playerEntity->origin[0];
+		info.Position[1] = playerEntity->origin[1];
+		info.Position[2] = playerEntity->origin[2];
+		info.Angles[0] = playerEntity->viewangles[0];
+		info.Angles[1] = playerEntity->viewangles[1];
+		info.Angles[2] = playerEntity->viewangles[2];
+		info.Armor = playerEntity->stats[armorStatIdx];
+		info.Flags = playerEntity->eFlags;
+		info.Health = playerEntity->stats[healthStatIdx];
+		//info.Powerups = _protocol == Protocol::Dm68 ? 0 : playerEntity->stats[STAT_PERSISTANT_POWERUP_73]; // @TODO:
+		info.Powerups = 0;
+		for (int i = 0 ; i < MAX_POWERUPS ; i++ ) 
+		{
+			int t = playerEntity->powerups[i];
+			if (t > 0) 
+			{
+				info.Powerups |= 1 << i;
+			}
+		}
+		info.Rank = playerEntity->persistant[PERS_RANK];
+		info.Score = playerEntity->persistant[PERS_SCORE];
 		info.BeamType = BeamType::None;
-		info.CurrentAmmo = entity->ammo[entity->weapon];
+		info.CurrentAmmo = playerEntity->ammo[playerEntity->weapon];
 
-		//info.CurrentWeapon = entity->weapon;
-		switch(entity->weapon)
+		//info.CurrentWeapon = playerEntity->weapon;
+		switch(playerEntity->weapon)
 		{
 		case WP_NONE:
 			info.CurrentWeapon = 0;
@@ -1241,10 +1256,10 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 			break;
 		}
 
-		if(entity->eFlags & EF_FIRING)
+		if(playerEntity->eFlags & EF_FIRING)
 		{
 			info.Firing = true;
-			switch(entity->weapon)
+			switch(playerEntity->weapon)
 			{
 			case WP_LIGHTNING:
 				{
@@ -1352,16 +1367,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		_playerPlaybackInfos.push_back(info);
 	}
 
-	for(int i = 0; i < MAX_GENTITIES; ++i)
-	{
-		if(_entities[i].Valid)
-		{
-			_entities[i].Info.Time = newSnap->serverTime;
-			_entityPlaybackInfos.push_back(_entities[i].Info);
-		}
-	}
-
-	//Update Scores
+	//Save scores playback data
 	ScoreInfo scoreInfo;
 	scoreInfo.Score1 = _score1;
 	scoreInfo.Score2 = _score2;

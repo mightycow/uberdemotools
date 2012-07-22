@@ -49,6 +49,7 @@ public:
 		int weapon;
 		int ammo;
 		int score;
+		bool powerups[MAX_POWERUPS];
 	};
 
 	struct Beam

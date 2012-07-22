@@ -43,10 +43,27 @@ protected:
 	void drawClock(QPainter& painter);
 	void drawHud(QPainter& painter);
 	void drawScores(QPainter& painter);
-	void drawPlayer(QPainter& painter, Demo::PlayerInfo* pI2D, QColor color, QString name = "", float alpha = 1.0f, bool dead = false);
+
+	struct PlayerData
+	{
+		Demo::PlayerInfo* player;
+		DemoPlayer::Player* dPPlayer;
+		float alpha;
+		bool dead;
+
+		PlayerData() : player(NULL), dPPlayer(NULL), alpha(1.0f), dead(false){}
+
+		bool operator < (const PlayerData& rhs) const
+		{
+			return this->player->Position[2] < rhs.player->Position[2];
+		}
+	};
+
+	void drawPlayer(QPainter& painter, PlayerData data);
 
 	void drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha);
 	void drawDeadPlayer(QPainter &painter, int a, int b, QColor &color, float alpha);
+	void drawPlayerPowerup(QPainter &painter, int a, int b, int c, DemoPlayer::Player* player);
 	void drawWeapon(QPainter &painter, int a, int b, int c, float angle, float alpha, int weapon, bool firing);
 
 	void drawItem(QPainter& painter, Demo::EntityInfo* info, float alpha);
