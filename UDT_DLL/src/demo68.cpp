@@ -307,7 +307,7 @@ void Demo68::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	PlayerInfoPers* const player = &_players[clientNum];
 	if(configString.find("\"\"") != std::string::npos)
 	{
-		Q_strncpyz(player->Info.Name, "<empty_slot>", sizeof(player->Info.Name));
+		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
 		_players[clientNum].Valid = false;
 		return;
 	}
@@ -316,10 +316,17 @@ void Demo68::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	ExtractPlayerNameFromConfigString(name, configString);
 
 	player->Valid = true;
-	Q_strncpyz(player->Info.Name, name.c_str(), sizeof(player->Info.Name));
+	Q_strncpyz(player->Name, name.c_str(), sizeof(player->Name));
 	TryGetVariable(&player->Info.Handicap, configString, "hc");
 	TryGetVariable(&player->Info.Team, configString, "t");
 	TryGetVariable(&player->Info.BotSkill, configString, "l"); // @TODO: Correct?
+
+	PlayerNameInfo nameInfo;
+	nameInfo.Time = _serverTime;
+	Q_strncpyz(nameInfo.Name, name.c_str(), sizeof(nameInfo.Name));
+	nameInfo.Clan[0] = '\0';
+	nameInfo.Country[0] = '\0';
+	_playerNamesPlaybackInfos[clientNum].push_back(nameInfo);
 }
 
 void Demo68::ProtocolAnalyzeAndFixCommandString(const char* command, std::string& output)

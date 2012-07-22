@@ -208,14 +208,19 @@ public:
 		};
 	};
 
+	struct PlayerNameInfo
+	{
+		char Name[MAX_NAME_LENGTH];
+		char Clan[MAX_NAME_LENGTH];
+		char Country[MAX_NAME_LENGTH];
+		int Time; // Absolute server time, [ms].
+	};
+
 	struct PlayerInfo
 	{
 		bool valid;
 		bool demoTaker;
 		bool Firing;
-		char Name[MAX_NAME_LENGTH];
-		char Clan[MAX_NAME_LENGTH];
-		char Country[MAX_NAME_LENGTH];
 		float Position[3];
 		float Angles[3];
 		int Time; // Absolute server time, [ms].
@@ -297,6 +302,9 @@ public:
 
 	struct PlayerInfoPers
 	{
+		char Name[MAX_NAME_LENGTH];
+		char Clan[MAX_NAME_LENGTH];
+		char Country[MAX_NAME_LENGTH];
 		PlayerInfo Info;
 		bool Valid; // Valid right now?
 	};
@@ -320,6 +328,7 @@ public:
 	typedef std::vector<PuRunInfo> PuRunVector;
 	typedef std::vector<EntityEventInfo> EntityEventVector;
 	typedef std::vector<PlayerInfo> PlayerPlaybackInfoVector;
+	typedef std::vector<PlayerNameInfo> PlayerNamePlaybackInfoVector;
 	typedef std::vector<EntityInfo> EntityPlaybackInfoVector;
 	typedef std::vector<ScoreInfo> ScorePlaybackVector;
 	typedef std::vector<BeamInfo> BeamPlaybackInfoVector;
@@ -336,6 +345,7 @@ public:
 	ObituaryVector _obituaries;
 	PuRunVector _puRuns;
 	PlayerPlaybackInfoVector _playerPlaybackInfos;
+	PlayerNamePlaybackInfoVector _playerNamesPlaybackInfos[MAX_CLIENTS];
 	EntityPlaybackInfoVector _entityPlaybackInfos;
 	BeamPlaybackInfoVector _beamPlaybackInfos;
 	ScorePlaybackVector _scorePlaybackInfos;
@@ -696,7 +706,7 @@ void Demo::AnalyzeEntityT(EntityStateT* oldState, EntityStateT* newState, int ne
 		{
 			PuRunInfo info;
 			info.VirtualServerTime = GetVirtualInputTime();
-			info.PlayerName = _players[newState->clientNum].Info.Name;
+			info.PlayerName = _players[newState->clientNum].Name;
 			info.Player = newState->clientNum;
 			info.Duration = 0;
 			info.Ended = 0;
@@ -777,8 +787,8 @@ void Demo::AnalyzeEntityObituaryT(EntityStateT* /*oldState*/, EntityStateT* newS
 
 	ObituaryInfo info;
 	info.VirtualServerTime = GetVirtualInputTime();
-	info.AttackerName = _players[attacker].Info.Name;
-	info.TargetName = _players[target].Info.Name;
+	info.AttackerName = _players[attacker].Name;
+	info.TargetName = _players[target].Name;
 	info.MeanOfDeath = newState->eventParm;
 	_obituaries.push_back(info);
 

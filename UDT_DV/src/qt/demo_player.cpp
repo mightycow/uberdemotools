@@ -157,70 +157,29 @@ int DemoPlayer::searchNextEntity(int serverTime, int oldIndex, int entityNumber,
 void DemoPlayer::searchPlayers()
 {
 	playerList.clear();
-	if(demo)
+	if(!demo)
 	{
-		bool added[64]; for(int i = 0; i < 64; i++) added[i] = false;
-		QStringList names; for(int i = 0; i < 64; i++) names.push_back("N/A");
-		
-		// Check the full demo for players currently connected.
-		for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); i++)
+		return;
+	}
+
+	for(size_t i = 0; i < 64; i++)
+	{
+		if(demo->_players[i].Valid)
 		{
-			const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
+			Player p;
+			Demo::PlayerInfo& info = demo->_players[i].Info;
 
-			if(QString::fromStdString(info.Name) != "N/A")
-			{
-				names[info.Player] = info.Name;
-			}
+			p.demoTaker = false;
+			p.health = -1;
+			p.armor = -1;
+			p.clientNum = info.Player;
+			p.team = info.Team;
+			p.score = 0;
+			p.color = QColor(0, 0, 0, 0);
+			p.justDied = -1;
+
+			playerList.push_back(p);
 		}
-		
-		for(size_t i = 0; i < 64; i++)
-		{
-			if(demo->_players[i].Valid)
-			{
-				Player p;
-				Demo::PlayerInfo& info = demo->_players[i].Info;
-
-				p.demoTaker = false;
-				p.name = names[i];
-				p.health = -1;
-				p.armor = -1;
-				p.clientNum = info.Player;
-				p.team = info.Team;
-				p.score = 0;
-				p.color = QColor(0, 0, 0, 0);
-				p.justDied = -1;
-
-				playerList.push_back(p);
-
-			}
-		}
-			
-		//for(int i = 0; i < 64; i++)
-		//{
-		//	if(demo->_players[i].Valid)
-		//	{
-		//		Player p;
-		//		Demo::PlayerInfo& info = demo->_players[i].Info;
-		//		
-		//		p.demoTaker = false;
-		//		p.name = info.Name;
-		//		p.health = -1;
-		//		p.armor = -1;
-		//		p.clientNum = info.Player;
-		//		p.team = info.Team;
-		//		p.score = 0;
-
-		//		// TODO: fix coloring code.
-		//		p.color = QColor(0, 255, 0, 255);
-
-		//		p.justDied = -1;
-
-		//		if(p.team != TEAM_SPECTATOR)
-		//			playerList.push_back(p);
-		//		else
-		//			spectatorList.push_back(p);
-		//	}
-		//}
 	}
 }
 
@@ -280,12 +239,17 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
 			{
-				if(playerList[p].clientNum == info.Player && playerList[p].name == QString::fromStdString(info.Name))
+				// @TODO: Validate change.
+				//if(playerList[p].clientNum == info.Player && playerList[p].name == QString::fromStdString(info.Name))
+				if(playerList[p].clientNum == info.Player)
 				{
 					playerIndex = p;
 				}
+
 				if(playerList[p].demoTaker)
+				{
 					demoTakerIndex = p;
+				}
 			}
 			
 			if(playerIndex == -1)
@@ -346,6 +310,28 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 					beam.endPosition[1] = info.Position[1] + sin(info.Angles[1] / 180 * 3.1415) * 3000;
 				}
 			}
+
+			//
+			// Player name
+			//
+			Demo::PlayerNamePlaybackInfoVector& playerNames = demo->_playerNamesPlaybackInfos[info.Player];
+			Demo::PlayerNameInfo* nameInfo = NULL;
+			if(playerNames.size() > 0)
+			{
+				nameInfo = &playerNames[0];
+			}
+			
+			// Find the most up-to-date player name.
+			for(size_t i = 0; i < playerNames.size(); ++i)
+			{
+				if(playerNames[i].Time > time)
+				{
+					break;
+				}
+				nameInfo = &playerNames[i];
+			}
+			
+			player.name = nameInfo != NULL ? nameInfo->Name : "?";
 		}
 	}
 

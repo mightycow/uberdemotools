@@ -200,7 +200,7 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	PlayerInfoPers* const player = &_players[clientNum];
 	if(configString.find("\"\"") != std::string::npos)
 	{
-		Q_strncpyz(player->Info.Name, "<empty_slot>", sizeof(player->Info.Name));
+		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
 		_players[clientNum].Valid = false;
 		return;
 	}
@@ -211,10 +211,17 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	GetVariable(country, configString, "c");
 
 	player->Valid = true;
-	Q_strncpyz(player->Info.Name, name.c_str(), sizeof(player->Info.Name));
-	Q_strncpyz(player->Info.Clan, clan.c_str(), sizeof(player->Info.Clan));
-	Q_strncpyz(player->Info.Country, country.c_str(), sizeof(player->Info.Country));
+	Q_strncpyz(player->Name, name.c_str(), sizeof(player->Name));
+	Q_strncpyz(player->Clan, clan.c_str(), sizeof(player->Clan));
+	Q_strncpyz(player->Country, country.c_str(), sizeof(player->Country));
 	TryGetVariable(&player->Info.Handicap, configString, "hc");
 	TryGetVariable(&player->Info.Team, configString, "t");
 	TryGetVariable(&player->Info.BotSkill, configString, "l"); // @TODO: Correct?
+
+	PlayerNameInfo nameInfo;
+	nameInfo.Time = _serverTime;
+	Q_strncpyz(nameInfo.Name, name.c_str(), sizeof(nameInfo.Name));
+	Q_strncpyz(nameInfo.Clan, clan.c_str(), sizeof(nameInfo.Clan));
+	Q_strncpyz(nameInfo.Country, country.c_str(), sizeof(nameInfo.Country));
+	_playerNamesPlaybackInfos[clientNum].push_back(nameInfo);
 }

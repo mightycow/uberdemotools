@@ -7,10 +7,15 @@
 int FindVariableValueOffset(const std::string& input, const std::string& varName)
 {
 	const std::string searchFor = varName + "\\";
-	size_t idx = input.find(searchFor, 1);
+	size_t idx = input.find(searchFor);
+	if(idx == 0)
+	{
+		return 0;
+	}
+
 	while(idx != std::string::npos)
 	{
-		// Can't be wrong since we started the search at offset 1.
+		// Can't be wrong since we started the search at offset >= 1.
 		const char c = input[idx - 1];
 		if(c == '"' || c == '\\')
 		{
@@ -90,10 +95,10 @@ void GetVariable(std::string& varValue, const std::string& input, const std::str
 	}
 
 	const size_t searchForLength = varName.length() + 1;
-	const size_t idx2 = input.find("\\", (size_t)idx1 + searchForLength);
+	size_t idx2 = input.find("\\", (size_t)idx1 + searchForLength);
 	if(idx2 == std::string::npos)
 	{
-		return;
+		idx2 = (int)input.length();
 	}
 
 	const size_t startIdx = (size_t)idx1 + searchForLength;

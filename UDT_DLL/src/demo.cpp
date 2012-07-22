@@ -144,7 +144,6 @@ bool Demo::Do()
 		_players[i].Info.Team = -1;
 		_players[i].Info.Handicap = -1;
 		_players[i].Info.BotSkill = -1;
-		Q_strncpyz(_players[i].Info.Name, "<invalid>", sizeof(_players[i].Info.Name));
 	}
 
 	_entities.resize(MAX_GENTITIES);
@@ -758,7 +757,7 @@ void Demo::AnalyzePlayerState(playerState_t* oldState, playerState_t* newState)
 		}
 
 		PuRunInfo info;
-		info.PlayerName = _players[newState->clientNum].Info.Name;
+		info.PlayerName = _players[newState->clientNum].Name;
 		info.Player = newState->clientNum;
 		info.VirtualServerTime = GetVirtualInputTime();
 		info.Duration = 0;
