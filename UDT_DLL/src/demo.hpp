@@ -1224,6 +1224,7 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		info.BeamType = BeamType::None;
 		info.CurrentAmmo = playerEntity->ammo[playerEntity->weapon];
 
+
 		//info.CurrentWeapon = playerEntity->weapon;
 		switch(playerEntity->weapon)
 		{

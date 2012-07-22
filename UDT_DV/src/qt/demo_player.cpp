@@ -168,7 +168,7 @@ void DemoPlayer::searchPlayers()
 		{
 			Player p;
 			Demo::PlayerInfo& info = demo->_players[i].Info;
-
+			
 			p.demoTaker = false;
 			p.health = -1;
 			p.armor = -1;
@@ -242,7 +242,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			{
 				// @TODO: Validate change.
 				//if(playerList[p].clientNum == info.Player && playerList[p].name == QString::fromStdString(info.Name))
-				if(playerList[p].clientNum == info.Player)
+				if(playerList[p].clientNum == info.Player && playerList[p].team != TEAM_SPECTATOR)
 				{
 					playerIndex = p;
 				}
@@ -382,7 +382,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			int playerIndex = -1;
 			for(size_t p = 0; p < playerList.size(); p++)
 			{
-				if(playerList[p].clientNum == number || playerList[p].team != TEAM_SPECTATOR)
+				if(playerList[p].clientNum == number && playerList[p].team != TEAM_SPECTATOR)
 				{
 					playerIndex = p;
 					break;
@@ -486,9 +486,9 @@ void DemoPlayer::getDemoBoundingBox( int* origin, int* end )
 			float y = demo->_playerPlaybackInfos[i].Position[1];
 			float z = demo->_playerPlaybackInfos[i].Position[2];
 
-			if(x < origin[0]) origin[0] = x - 200; if(x > end[0]   ) end[0]    = x + 200;
-			if(y < end[1]   ) end[1]    = y - 200; if(y > origin[1]) origin[1] = x + 200;
-			if(z < origin[2]) origin[2] = z - 200; if(z > end[2]   ) end[2]    = x + 200;
+			if(x < origin[0]) origin[0] = x - 400; if(x > end[0]   ) end[0]    = x + 400;
+			if(y < end[1]   ) end[1]    = y - 400; if(y > origin[1]) origin[1] = x + 400;
+			if(z < origin[2]) origin[2] = z - 400; if(z > end[2]   ) end[2]    = x + 400;
 		}
 
 		for(size_t i = 0; i < demo->_entityPlaybackInfos.size(); i++)
@@ -497,9 +497,9 @@ void DemoPlayer::getDemoBoundingBox( int* origin, int* end )
 			float y = demo->_entityPlaybackInfos[i].Position[1];
 			float z = demo->_entityPlaybackInfos[i].Position[2];
 
-			if(x < origin[0]) origin[0] = x - 200; if(x > end[0]   ) end[0]    = x + 200;
-			if(y < end[1]   ) end[1]    = y - 200; if(y > origin[1]) origin[1] = x + 200;
-			if(z < origin[2]) origin[2] = z - 200; if(z > end[2]   ) end[2]    = x + 200;
+			if(x < origin[0]) origin[0] = x - 400; if(x > end[0]   ) end[0]    = x + 400;
+			if(y < end[1]   ) end[1]    = y - 400; if(y > origin[1]) origin[1] = x + 400;
+			if(z < origin[2]) origin[2] = z - 400; if(z > end[2]   ) end[2]    = x + 400;
 		}
 	}
 }

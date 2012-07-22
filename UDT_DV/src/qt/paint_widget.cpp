@@ -96,8 +96,10 @@ void PaintWidget::resetScaling()
 	mapEnd[0] = mapEnd[1] = mapEnd[2] = 100;
 
 	this->resize(800, 800);
-
-	coordsScaling = this->width() / (float)(mapEnd[0] - mapOrigin[0]);
+	
+	float sX =  this->width() / (float)(mapEnd[0] - mapOrigin[0]);
+	float sY = -this->height() / (float)(mapEnd[1] - mapOrigin[1]);
+	coordsScaling = std::min(sX, sY);
 	heightScaling = 20 / (float) (mapEnd[2] - mapOrigin[2]);
 }
 
@@ -112,10 +114,13 @@ void PaintWidget::setScaling( int* origin, int* end )
 	mapEnd[1] = end[1];
 	mapEnd[2] = end[2];
 
-
 	int w = (bgImage == NULL) ? this->width() : bgImage->width();
+	int h = (bgImage == NULL) ? this->height() : bgImage->height();
 
-	coordsScaling = w  / (float) (end[0] - origin[0]);
+	float sX =  w / (float)(mapEnd[0] - mapOrigin[0]);
+	float sY = -h / (float)(mapEnd[1] - mapOrigin[1]);
+	coordsScaling = std::min(sX, sY);
+
 	heightScaling = 20 / (float) (end[2] - origin[2]);
 }
 
@@ -276,10 +281,13 @@ void PaintWidget::paintDemo( QPainter& painter )
 		scoreTable.clear();
 		for(size_t i = 0; i < players->size(); i++)
 		{
-			ScoreEntry e;
-			e.name = players->at(i).name;
-			e.score = players->at(i).score;
-			scoreTable.push_back(e);
+			if(players->at(i).team != TEAM_SPECTATOR)
+			{
+				ScoreEntry e;
+				e.name = players->at(i).name;
+				e.score = players->at(i).score;
+				scoreTable.push_back(e);
+			}
 		}
 		if(scoreTable.size() > 2)
 		{
@@ -607,7 +615,7 @@ void PaintWidget::loadWeapons( QString dirPath, QStringList weaponsPath )
 
 QImage* PaintWidget::getIcon(int type )
 {
-	if(icons.size() < 21)
+	if(icons.size() <35)
 	{
 		return iconProxy;
 	}
@@ -716,7 +724,7 @@ void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor
 
 void PaintWidget::drawPlayerPowerup( QPainter &painter, int a, int b, int c, DemoPlayer::Player* player )
 {
-	if(player->powerups[1])
+	if(player->powerups[PW_QUAD])
 	{
 		QPen pen(QColor(0, 128, 255, 255));
 		pen.setWidth(2);
@@ -730,7 +738,7 @@ void PaintWidget::drawPlayerPowerup( QPainter &painter, int a, int b, int c, Dem
 
 		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
 	}
-	if(player->powerups[2])
+	if(player->powerups[PW_BATTLESUIT])
 	{
 		QPen pen(QColor(255, 230, 0, 255));
 		pen.setWidth(2);
@@ -743,6 +751,41 @@ void PaintWidget::drawPlayerPowerup( QPainter &painter, int a, int b, int c, Dem
 		int radius = 26 + c * heightScaling;
 
 		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
+	}
+
+	if(player->powerups[PW_REDFLAG])
+	{
+		QImage* r = getIcon(TEAM_CTF_REDFLAG);
+
+		if(r != NULL)
+		{
+			QImage icon = QImage(*r);
+
+			int w = icon.width() * iconScale;
+			int h = icon.height()* iconScale;
+
+			QRect source(0, 0, icon.width(), icon.height());
+			QRect target(a-w/2, b-h/2, w, h);
+
+			painter.drawImage(target, icon, source);
+		}
+	}
+	if(player->powerups[PW_BLUEFLAG])
+	{
+		QImage* r = getIcon(TEAM_CTF_BLUEFLAG);
+
+		if(r != NULL)
+		{
+			QImage icon = QImage(*r);
+
+			int w = icon.width() * iconScale;
+			int h = icon.height()* iconScale;
+
+			QRect source(0, 0, icon.width(), icon.height());
+			QRect target(a-w/2, b-h/2, w, h);
+
+			painter.drawImage(target, icon, source);
+		}
 	}
 }
 
