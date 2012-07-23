@@ -135,6 +135,14 @@ void Demo73::ProtocolAnalyzeConfigString(int csIndex, const std::string& input)
 	{
 		ReadScore(input.c_str(), &_score2);
 	}
+	else if(csIndex == CS_SERVERINFO)
+	{
+		int gameType = -1;
+		if(GetVariable(input, "g_gametype", &gameType))
+		{
+			_gameType = gameType;
+		}
+	}
 }
 
 void Demo73::ProtocolFixConfigString(int /*csIndex*/, const std::string& input, std::string& output)
@@ -153,18 +161,25 @@ void Demo73::ProtocolAnalyzeAndFixCommandString(const char* command, std::string
 		// Players.
 		if(csIndex >= CS_PLAYERS_73 && csIndex < CS_PLAYERS_73 + MAX_CLIENTS)
 		{
-			ProtocolAnalyzeConfigString(csIndex, command);
+			ProtocolAnalyzeConfigString(csIndex, configString);
 			output = command;
 		}
 		// Scores.
 		else if(csIndex == CS_SCORES1)
 		{
 			ReadScore(configString.c_str(), &_score1);
+			output = command;
 		}
 		// Scores.
 		else if(csIndex == CS_SCORES2)
 		{
 			ReadScore(configString.c_str(), &_score2);
+			output = command;
+		}
+		else if(csIndex == CS_SERVERINFO)
+		{
+			ProtocolAnalyzeConfigString(csIndex, configString);
+			output = command;
 		}
 	}
 	// Chat messages.
