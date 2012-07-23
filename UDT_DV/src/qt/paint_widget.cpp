@@ -456,7 +456,8 @@ void PaintWidget::DrawHud(QPainter& painter)
 		if(p.Weapon != 0)
 		{
 			QImage* const weaponIcon = GetIcon(p.Weapon);
-			DrawHudElement(painter, weaponIcon, -weaponIcon->width() / 2, QString::number(p.Ammo));
+			const int w = (int)((float)weaponIcon->width() *_iconScale * 1.5f);
+			DrawHudElement(painter, weaponIcon, -w / 2, QString::number(p.Ammo));
 		}
 	}
 }
