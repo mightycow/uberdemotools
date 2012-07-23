@@ -1,6 +1,7 @@
 #include "gui.h"
 #include "demo73.hpp"
 #include "common.hpp"
+
 #include <QMessageBox>
 #include <QDir>
 #include <QFile>
@@ -31,34 +32,23 @@ void Gui::UdtMessageCallback(int logLevel, const char* message)
 	gui->onMessage(logLevel, message);
 }
 
-static QPlainTextEdit* logWidget = NULL;
-bool Gui::LogMessage(const std::string& message)
-{
-	if(logWidget == NULL)
-	{
-		return false;
-	}
-
-	logWidget->appendPlainText(QString::fromStdString(message));
-
-	return true;
-}
+static QPlainTextEdit* logWidget = NULL; // Used by Gui::onMessage.
 
 
 Gui::Gui(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags), demoPlayer(this)
+	: QMainWindow(parent, flags), _demoPlayer(this)
 {
 	gui = this;
 	_progressCallback = &UdtProgressCallback;
 	_messageCallback = &UdtMessageCallback;
 
-	ui.setupUi(this);
-	logWidget = ui.logWidget;
+	_ui.setupUi(this);
+	logWidget = _ui.logWidget;
 
 	connectUiElements();
-	ui.pathLineEdit->setReadOnly(true);
+	_ui.pathLineEdit->setReadOnly(true);
 
-	dataPath = "";
+	DataPath = "";
 	QDir dir;
 	const size_t searchDirCount = sizeof(dataSearchDirs) / sizeof(dataSearchDirs[0]);
 	for(size_t i = 0; i < searchDirCount; ++i)
@@ -66,38 +56,18 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 		const QString dataFolder = dataSearchDirs[i];
 		if(dir.exists(dataFolder))
 		{
-			dataPath = dataFolder;
+			DataPath = dataFolder;
 			break;
 		}
 	}
-	if(dataPath.isEmpty())
+	if(DataPath.isEmpty())
 	{
-		dataPath = defaultDataDir;
+		DataPath = defaultDataDir;
 	}
 	
-	paused = true;
+	_paused = true;
 
 	loadIconData();
-
-	QString demoPath;
-
-	// Test code
-	int demo = 2;
-	switch(demo)
-	{
-	case 0:
-		{
-			loadDemo(dataPath + "Memento_Mori(POV)-vs-ischju-toxicity-2012_02_16-12_19_42.dm_73");
-			break;
-		}
-	case 1:
-		{
-			loadDemo(dataPath + "Memento_Mori(POV)-vs-sittodimitri-furiousheights-2012_06_24-16_26_00.dm_73");
-			break;
-		}
-	default:
-		break;
-	}
 }
 
 Gui::~Gui()
@@ -106,119 +76,107 @@ Gui::~Gui()
 
 void Gui::connectUiElements()
 {
-	connect(&demoPlayer, SIGNAL(entitiesUpdated()), ui.paintWidget, SLOT(repaint()));
-	connect(&demoPlayer, SIGNAL(progress(float)), this, SLOT(updateProgressSlider(float)));
-	connect(&demoPlayer, SIGNAL(demoFinished()), this, SLOT(demoFinished()));
-	connect(ui.progressSlider, SIGNAL(valueChanged(int)), this, SLOT(progressSliderValueChanged(int)));
-	connect(ui.playButton, SIGNAL(pressed()), this, SLOT(playButtonPressed()));
-	connect(ui.stopButton, SIGNAL(pressed()), this, SLOT(stopButtonPressed()));
-	connect(ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(timeScaleChanged(double)));
-	connect(ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showClockChanged(int)));
-	connect(ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showScoreChanged(int)));
-	connect(ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showHudChanged(int)));
-	connect(ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(reverseTimeChanged(int)));
+	connect(&_demoPlayer, SIGNAL(entitiesUpdated()), _ui.paintWidget, SLOT(repaint()));
+	connect(&_demoPlayer, SIGNAL(progress(float)), this, SLOT(updateProgressSlider(float)));
+	connect(&_demoPlayer, SIGNAL(demoFinished()), this, SLOT(demoFinished()));
+	connect(_ui.progressSlider, SIGNAL(valueChanged(int)), this, SLOT(progressSliderValueChanged(int)));
+	connect(_ui.playButton, SIGNAL(pressed()), this, SLOT(playButtonPressed()));
+	connect(_ui.stopButton, SIGNAL(pressed()), this, SLOT(stopButtonPressed()));
+	connect(_ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(timeScaleChanged(double)));
+	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showClockChanged(int)));
+	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showScoreChanged(int)));
+	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showHudChanged(int)));
+	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(reverseTimeChanged(int)));
 }
 
 bool Gui::getScalingData( QString scalingPath, int* origin, int* end ) 
 {
 	QFile file(scalingPath);
-	if(file.open(QIODevice::ReadOnly))
+	if(!file.open(QIODevice::ReadOnly))
 	{
-		QTextStream ts(&file);
-		while(!ts.atEnd())
-		{
-			QString line = ts.readLine();
-			QStringList tokens = line.split(" ");
-
-			if(tokens.size() != 5)
-			{
-				QMessageBox msgBox;
-				msgBox.setText("Unable to read " + scalingPath + " properly. Check the syntax, and remove any empty line.");
-				msgBox.exec();
-				return false;
-			}
-			if(tokens[0] == "origin")
-			{
-				origin[0] = tokens[2].toInt();
-				origin[1] = tokens[3].toInt();
-				origin[2] = tokens[4].toInt();
-			}
-			else if(tokens[0] == "end")
-			{
-				end[0] = tokens[2].toInt();
-				end[1] = tokens[3].toInt();
-				end[2] = tokens[4].toInt();
-			}
-		}
-	}
-	else
+		LogWarning("Failed to open %s.", scalingPath.toLocal8Bit().constData());
 		return false;
+	}
+
+	QTextStream ts(&file);
+	int lineIndex = 1;
+	while(!ts.atEnd())
+	{
+		const QString line = ts.readLine();
+		const QStringList tokens = line.split(" ");
+
+		if(tokens.size() != 5)
+		{
+			LogWarning(
+				"Unable to read %s properly. Failed at line %d. Check the syntax, and remove any empty line.", 
+				scalingPath.toLocal8Bit().constData(), 
+				lineIndex);
+			return false;
+		}
+
+		if(tokens[0] == "origin")
+		{
+			origin[0] = tokens[2].toInt();
+			origin[1] = tokens[3].toInt();
+			origin[2] = tokens[4].toInt();
+		}
+		else if(tokens[0] == "end")
+		{
+			end[0] = tokens[2].toInt();
+			end[1] = tokens[3].toInt();
+			end[2] = tokens[4].toInt();
+		}
+
+		++lineIndex;
+	}
+
 	file.close();
+
 	return true;
 }
 
-void Gui::loadDemo( QString filepath )
+void Gui::loadDemo(QString filepath)
 {
-	ui.pathLineEdit->setText(filepath);
-	
-	// Load demo
-	demoPlayer.loadDemo(ui.pathLineEdit->text());
+	_ui.pathLineEdit->setText(filepath);
 
-	QString mapName = QString::fromStdString(demoPlayer.demo->_mapName); 
+	_demoPlayer.loadDemo(_ui.pathLineEdit->text());
 
-	// Load background image and scalinda data
-	QString bgImagePath = dataPath + "maps\\" + mapName + ".png";
-	QString scalingPath = dataPath + "maps\\" + mapName + ".txt";
-
-	int origin[3]; int end[3];
-
-	bool forceData = false;
-
-	QFileInfo info(bgImagePath);
+	const QString mapName = QString::fromStdString(_demoPlayer.demo->_mapName); 
+	const QString bgImagePath = DataPath + "maps\\" + mapName + ".png";
+	const QString scalingPath = DataPath + "maps\\" + mapName + ".txt";
+	const QFileInfo info(bgImagePath);
 	if(!info.exists())
 	{
-		if(forceData)
-		{
-			QMessageBox msgBox;
-			msgBox.setText("Map data not found.");		
-			msgBox.exec();
-			ui.pathLineEdit->setText("");
-			ui.paintWidget->bgMessage = "Drag and drop a demo here.";
-			return;
-		}
-		else
-		{
-			QMessageBox msgBox;
-			msgBox.setText("Map data not found. Using default parameters. Improper visualization may occur.");		
-			msgBox.exec();
-			ui.paintWidget->bgMessage = "";
-		}
+		LogWarning("Map data %s not found. Using default parameters. Improper visualization may occur.", bgImagePath.toLocal8Bit().constData());
+		_ui.paintWidget->bgMessage = "";
 	}
 
-	// Set Scaling
+	// Set scaling from our pre-computed data.
+	int origin[3]; 
+	int end[3];
 	if(!getScalingData(scalingPath, origin, end))
 	{
-		// Get scaling data from the demo itself
-		demoPlayer.getDemoBoundingBox(origin, end);
+		// It failed, so get the scaling data from the demo itself.
+		_demoPlayer.getDemoBoundingBox(origin, end);
 	}
 
-	ui.paintWidget->releaseImage();
-	ui.paintWidget->loadImage(bgImagePath);
-	ui.paintWidget->setScaling(origin, end);
-	ui.paintWidget->demo = demoPlayer.demo;
-	ui.paintWidget->players = &demoPlayer.playerList;
-	ui.paintWidget->entities = &demoPlayer.entities;	
-	ui.paintWidget->beams = &demoPlayer.beams;
-	ui.paintWidget->clock = &demoPlayer.clock;
-	ui.paintWidget->warmupTime = &demoPlayer.warmupTime;
-	ui.paintWidget->scoreTable = &demoPlayer.scoreTable;
-	ui.paintWidget->displayDemo = true;
-	ui.progressSlider->setValue(0);
-	ui.playButton->setText("Pause");
-	paused = false;
-	demoPlayer.playDemo();
+	_ui.paintWidget->releaseImage();
+	_ui.paintWidget->loadImage(bgImagePath);
+	_ui.paintWidget->setScaling(origin, end);
+	_ui.paintWidget->demo = _demoPlayer.demo;
+	_ui.paintWidget->players = &_demoPlayer.playerList;
+	_ui.paintWidget->entities = &_demoPlayer.entities;	
+	_ui.paintWidget->beams = &_demoPlayer.beams;
+	_ui.paintWidget->clock = &_demoPlayer.clock;
+	_ui.paintWidget->warmupTime = &_demoPlayer.warmupTime;
+	_ui.paintWidget->scoreTable = &_demoPlayer.scoreTable;
+	_ui.paintWidget->displayDemo = true;
+	_ui.progressSlider->setValue(0);
+	_ui.playButton->setText("Pause");
+	_paused = false;
+	_demoPlayer.playDemo();
 
-	LogMessage("Demo loaded");
+	LogInfo("Demo loaded");
 }
 
 
@@ -226,187 +184,184 @@ void Gui::loadIconData()
 {
 	QStringList filters; 
 	filters << "*.png";
-	QDir dir(dataPath + "icons" + QDir::separator());
-	ui.paintWidget->loadIcons(dataPath + "icons\\", dir.entryList(filters));
 
-	QDir dir2(dataPath + "weapons" + QDir::separator());
-	ui.paintWidget->loadWeapons(dataPath + "weapons\\", dir2.entryList(filters));
+	const QDir iconDir(DataPath + "icons" + QDir::separator());
+	_ui.paintWidget->loadIcons(DataPath + "icons\\", iconDir.entryList(filters));
+
+	const QDir weaponsDir(DataPath + "weapons" + QDir::separator());
+	_ui.paintWidget->loadWeapons(DataPath + "weapons\\", weaponsDir.entryList(filters));
 }
-
 
 void Gui::playButtonPressed()
 {
-	if(paused)
+	if(!_paused)
 	{
-		if(demoPlayer.demo != NULL)
-		{
-			demoPlayer.playDemo();
-			paused = false;
-			ui.playButton->setText("Pause");
-		}
-		else if(demoPlayer.loadDemo(ui.pathLineEdit->text()))
-		{
-			ui.paintWidget->demo = demoPlayer.demo;
-			ui.paintWidget->players = &demoPlayer.playerList;
-			ui.paintWidget->entities = &demoPlayer.entities;	
-			ui.paintWidget->beams = &demoPlayer.beams;
-			ui.paintWidget->clock = &demoPlayer.clock;
-			ui.paintWidget->warmupTime = &demoPlayer.warmupTime;
-			ui.paintWidget->displayDemo = true;
-			ui.progressSlider->setValue(0);
-			ui.playButton->setText("Pause");
-			paused = false;
-			demoPlayer.playDemo();
-		}
-		else
-		{
-			QMessageBox msgBox;
-			msgBox.setText("Demo file not found.");
-			msgBox.exec();
-		}
+		_demoPlayer.pauseDemo();
+		_paused = true;
+		_ui.playButton->setText("Play");
+		return;
+	}
+
+	if(_demoPlayer.demo != NULL)
+	{
+		_demoPlayer.playDemo();
+		_paused = false;
+		_ui.playButton->setText("Pause");
+	}
+	else if(_demoPlayer.loadDemo(_ui.pathLineEdit->text()))
+	{
+		_ui.paintWidget->demo = _demoPlayer.demo;
+		_ui.paintWidget->players = &_demoPlayer.playerList;
+		_ui.paintWidget->entities = &_demoPlayer.entities;	
+		_ui.paintWidget->beams = &_demoPlayer.beams;
+		_ui.paintWidget->clock = &_demoPlayer.clock;
+		_ui.paintWidget->warmupTime = &_demoPlayer.warmupTime;
+		_ui.paintWidget->displayDemo = true;
+		_ui.progressSlider->setValue(0);
+		_ui.playButton->setText("Pause");
+		_paused = false;
+		_demoPlayer.playDemo();
 	}
 	else
 	{
-		demoPlayer.pauseDemo();
-		paused = true;
-		ui.playButton->setText("Play");
+		LogError("Demo file not found.");
 	}
-	
 }
 
 void Gui::stopButtonPressed()
 {
-	paused = true;
-	ui.playButton->setText("Play");
-	demoPlayer.stopDemo();
+	_paused = true;
+	_ui.playButton->setText("Play");
+	_demoPlayer.stopDemo();
 }
 
-void Gui::updateProgressSlider( float p )
+void Gui::updateProgressSlider(float progress)
 {
-	if(!ui.progressSlider->hasFocus())
-		ui.progressSlider->setValue(p * ui.progressSlider->maximum());
+	if(!_ui.progressSlider->hasFocus())
+	{
+		_ui.progressSlider->setValue(progress * _ui.progressSlider->maximum());
+	}
 }
 
-void Gui::timeScaleChanged( double v )
+void Gui::timeScaleChanged(double editValue)
 {
-	float value = v;
-	if(ui.reverseCheckBox->isChecked())
-		v = -v;
-	demoPlayer.timescale = v;
+	const float newValue = (float)editValue;
+	_demoPlayer.timescale = _ui.reverseCheckBox->isChecked() ? newValue : -newValue;
 }
 
 void Gui::showClockChanged(int state)
 {
-	ui.paintWidget->showClock = (state == Qt::Checked);
+	_ui.paintWidget->showClock = (state == Qt::Checked);
 }
 
-void Gui::showScoreChanged( int state)
+void Gui::showScoreChanged(int state)
 {
-	ui.paintWidget->showScore = (state == Qt::Checked);
+	_ui.paintWidget->showScore = (state == Qt::Checked);
 }
 
-void Gui::showHudChanged( int state)
+void Gui::showHudChanged(int state)
 {
-	ui.paintWidget->showHud = (state == Qt::Checked);
+	_ui.paintWidget->showHud = (state == Qt::Checked);
 }
 
-
-void Gui::progressSliderValueChanged(int v)
+void Gui::progressSliderValueChanged(int editValue)
 {
-	float perc = v / (float) ui.progressSlider->maximum(); 
-	demoPlayer.elapsedTime = demoPlayer.gameStartElapsed + perc * demoPlayer.gameLength;
-
-	//ui.progressSlider->clearFocus();
+	const float progressPc = editValue / (float) _ui.progressSlider->maximum(); 
+	_demoPlayer.elapsedTime = _demoPlayer.gameStartElapsed + progressPc * _demoPlayer.gameLength;
 
 	// Make sure the visualization is updated.
-	if(!demoPlayer.timer.isActive())
-		demoPlayer.update();
+	if(!_demoPlayer.timer.isActive())
+	{
+		_demoPlayer.update();
+	}
 }
 
-void Gui::reverseTimeChanged( int )
+void Gui::reverseTimeChanged(int)
 {
-	if(ui.reverseCheckBox->isChecked())
+	if(_ui.reverseCheckBox->isChecked())
 	{
-		ui.timeScaleDoubleSpinBox->setPrefix("-");
-		demoPlayer.timescale = -demoPlayer.timescale;
+		_ui.timeScaleDoubleSpinBox->setPrefix("-");
+		_demoPlayer.timescale = -_demoPlayer.timescale;
 	}
 	else
 	{
-		ui.timeScaleDoubleSpinBox->setPrefix("");
-		demoPlayer.timescale = -demoPlayer.timescale;
+		_ui.timeScaleDoubleSpinBox->setPrefix("");
+		_demoPlayer.timescale = -_demoPlayer.timescale;
 	}
 }
 
-void Gui::dropEvent( QDropEvent* event )
+void Gui::dropEvent(QDropEvent* event)
 {
+	// Check for our needed mime type, here a file or a list of files.
 	const QMimeData* mimeData = event->mimeData();
-
-	// check for our needed mime type, here a file or a list of files
-	if (mimeData->hasUrls())
+	if(!mimeData->hasUrls())
 	{
-		QStringList pathList;
-		QList<QUrl> urlList = mimeData->urls();
+		return;
+	}
 
-		// extract the local paths of the files
-		for (int i = 0; i < urlList.size() && i < 32; ++i)
-		{
-			ui.paintWidget->displayDemo = false;
-			ui.paintWidget->bgMessage = "Loading... 0%";
-			ui.paintWidget->repaint();
-			pathList.append(urlList.at(i).toLocalFile());
-			progressTimer.restart();
-			loadDemo(pathList[0]);
-		}
+	QStringList pathList;
+	const QList<QUrl> urlList = mimeData->urls();
+
+	for(int i = 0; i < urlList.size() && i < 32; ++i)
+	{
+		_ui.paintWidget->displayDemo = false;
+		_ui.paintWidget->bgMessage = "Loading... 0%";
+		_ui.paintWidget->repaint();
+		pathList.append(urlList.at(i).toLocalFile());
+		_progressTimer.restart();
+		loadDemo(pathList[0]);
 	}
 }
 
 void Gui::dragEnterEvent( QDragEnterEvent* event )
 {
+	// Check for our needed mime type, here a file or a list of files.
 	const QMimeData* mimeData = event->mimeData();
-
-	// check for our needed mime type, here a file or a list of files
-	if (mimeData->hasUrls())
+	if(!mimeData->hasUrls())
 	{
-		QStringList pathList;
-		QList<QUrl> urlList = mimeData->urls();
+		return;
+	}
 
-		// extract the local paths of the files
-		for (int i = 0; i < urlList.size() && i < 32; ++i)
+	QStringList pathList;
+	const QList<QUrl> urlList = mimeData->urls();
+
+	// Extract the local file paths.
+	for(int i = 0; i < urlList.size() && i < 32; ++i)
+	{
+		pathList.append(urlList.at(i).toLocalFile());
+	}
+
+	if(pathList.size() == 1)
+	{
+		const QStringList tokens = pathList.at(0).split(".");
+		if(tokens.back() == "dm_73" || tokens.back() == "dm_68")
 		{
-			pathList.append(urlList.at(i).toLocalFile());
-		}
-		if(pathList.size() == 1)
-		{
-			QStringList tockens = pathList.at(0).split(".");
-			if(tockens.back() == "dm_73" || tockens.back() == "dm_68")
-			{
-				
-				event->accept();
-			}
+			event->accept();
 		}
 	}
 }
 
 void Gui::demoFinished()
 {
-	demoPlayer.pauseDemo();
-	paused = true;
-	ui.playButton->setText("Play");
+	_demoPlayer.pauseDemo();
+	_paused = true;
+	_ui.playButton->setText("Play");
 }
 
 void Gui::onProgress(float progress)
 {
-	if(progressTimer.elapsed() < 100)
+	// We don't upgrade the progress more than 10x a second.
+	if(_progressTimer.elapsed() < 100)
 	{
 		return;
 	}
 
 	QString message;
 	message.sprintf("Loading... %d%%", (int)(100.0f * progress));
-	ui.paintWidget->bgMessage = message;
-	ui.paintWidget->repaint();
+	_ui.paintWidget->bgMessage = message;
+	_ui.paintWidget->repaint();
 
-	progressTimer.restart();
+	_progressTimer.restart();
 }
 
 void Gui::onMessage(int logLevel, const char* message)
@@ -414,9 +369,9 @@ void Gui::onMessage(int logLevel, const char* message)
 	QString formattedMsg;
 	switch(logLevel)
 	{
-	case 1: formattedMsg = QString("<p style=\"color:orange\">%1</p>").arg(message); break;
-	case 2: formattedMsg = QString("<p style=\"color:red\">%1</p>").arg(message); break;
-	case 3: formattedMsg = QString("<p style=\"color:red\">%1</p>").arg(message); break;
+	case 1: formattedMsg = QString("<p style=\"color:#FF7C21\">Warning: %1</p>").arg(message); break;
+	case 2: formattedMsg = QString("<p style=\"color:red\">Error: %1</p>").arg(message); break;
+	case 3: formattedMsg = QString("<p style=\"color:red\">Critical Error: %1</p>").arg(message); break;
 	default: formattedMsg = message; break;
 	}
 
