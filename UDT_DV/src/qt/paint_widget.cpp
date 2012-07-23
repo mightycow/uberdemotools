@@ -624,7 +624,8 @@ void PaintWidget::drawViewAngle( QPainter& painter, QPoint center, QColor color,
 	color.setAlpha(32);
 	QBrush brush(color);
 	painter.setBrush(brush);
-	QPen pen; pen.setWidth(0.5);
+	QPen pen; //pen.setWidthF(0.5);
+	//pen.setStyle(Qt::DotLine);
 	painter.setPen(pen);
 
 	QRectF rectangle(center.x() - radius, center.y() - radius, 2*radius, 2*radius);
@@ -636,7 +637,7 @@ void PaintWidget::drawViewAngle( QPainter& painter, QPoint center, QColor color,
 void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha)
 {
 	QPen pen;
-	pen.setWidth(2);
+	pen.setWidthF(1.5);
 	QBrush brush;
 	brush.setStyle(Qt::SolidPattern);
 	if(alpha == 1.0f)

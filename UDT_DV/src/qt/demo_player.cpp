@@ -277,7 +277,7 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			{
 			case TEAM_FREE:
 				if(info.demoTaker)
-					player.color = QColor(255, 255, 255, 255);
+					player.color = QColor(220, 255, 220, 255);
 				else
 					player.color = QColor(50, 255, 50, 255);
 				break;
@@ -297,6 +297,8 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 				player.color = QColor(0, 0, 0, 0);
 				break;
 			default:
+				if(demoTakerIndex == -1)
+					break;
 				if(playerList[demoTakerIndex].team == TEAM_RED)
 					player.color = QColor(50, 50, 255, 255);
 				else if (playerList[demoTakerIndex].team == TEAM_BLUE)
