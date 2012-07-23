@@ -27,6 +27,7 @@ Demo::Demo()
 	_lastMessageFileOffset = 0;
 	_score1 = -9999;
 	_score2 = -9999;
+	_gameType = GameType::Unknown;
 	_writeDemo = false;
 	_writeFirstBlock = false;
 

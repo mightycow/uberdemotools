@@ -316,6 +316,40 @@ public:
 		bool Valid; // Valid right now?
 	};
 
+	struct GameType
+	{
+		enum Id
+		{
+			FFA = 0,
+			Duel = 1,
+			SP = 2, // Single-player...
+			// Team games:
+			TDM = 3,
+			CA = 4,
+			CTF = 5,
+			OneFlagCTF = 6,
+			Obelisk = 7,
+			Harvester = 8,
+			FreezeTag = 9,
+			Domination = 10,
+			CTFS = 11,
+			RedRover = 12,
+			// CPMA:
+			NTF = 13,
+			TwoVsTwo = 14,
+			HoonyMode = 15,
+			Count,
+			TeamGameStart = TDM,
+			TeamGameEnd = HoonyMode,
+			Unknown
+		};
+
+		static bool IsTeamMode(GameType::Id gt)
+		{
+			return gt >= TeamGameStart && gt <= TeamGameEnd;
+		}
+	};
+
 	typedef std::map<int, std::string> CommandMap;
 	typedef std::map<int, std::string> ConfigStringMap;
 	typedef std::vector<entityState_68_t> EntityVector68;
@@ -367,6 +401,7 @@ public:
 	int _lastMessageFileOffset; // [bytes].
 	int _score1;
 	int _score2;
+	int _gameType; // GameType::Id
 	bool _writeDemo;
 	bool _writeFirstBlock;
 
