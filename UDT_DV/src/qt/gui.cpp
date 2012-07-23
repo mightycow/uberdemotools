@@ -22,14 +22,14 @@ static const char* const dataSearchDirs[] =
 static Gui* gui = NULL;
 int Gui::UdtProgressCallback(float progress)
 {
-	gui->onProgress(progress);
+	gui->OnProgress(progress);
 
 	return 0;
 }
 
 void Gui::UdtMessageCallback(int logLevel, const char* message)
 {
-	gui->onMessage(logLevel, message);
+	gui->OnMessage(logLevel, message);
 }
 
 static QPlainTextEdit* logWidget = NULL; // Used by Gui::onMessage.
@@ -45,7 +45,7 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	_ui.setupUi(this);
 	logWidget = _ui.logWidget;
 
-	connectUiElements();
+	ConnectUiElements();
 	_ui.pathLineEdit->setReadOnly(true);
 
 	DataPath = "";
@@ -67,29 +67,29 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	
 	_paused = true;
 
-	loadIconData();
+	LoadIconData();
 }
 
 Gui::~Gui()
 {
 }
 
-void Gui::connectUiElements()
+void Gui::ConnectUiElements()
 {
-	connect(&_demoPlayer, SIGNAL(entitiesUpdated()), _ui.paintWidget, SLOT(repaint()));
-	connect(&_demoPlayer, SIGNAL(progress(float)), this, SLOT(updateProgressSlider(float)));
-	connect(&_demoPlayer, SIGNAL(demoFinished()), this, SLOT(demoFinished()));
-	connect(_ui.progressSlider, SIGNAL(valueChanged(int)), this, SLOT(progressSliderValueChanged(int)));
-	connect(_ui.playButton, SIGNAL(pressed()), this, SLOT(playButtonPressed()));
-	connect(_ui.stopButton, SIGNAL(pressed()), this, SLOT(stopButtonPressed()));
-	connect(_ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(timeScaleChanged(double)));
-	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showClockChanged(int)));
-	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showScoreChanged(int)));
-	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(showHudChanged(int)));
-	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(reverseTimeChanged(int)));
+	connect(&_demoPlayer, SIGNAL(EntitiesUpdated()), _ui.paintWidget, SLOT(repaint()));
+	connect(&_demoPlayer, SIGNAL(Progress(float)), this, SLOT(UpdateProgressSlider(float)));
+	connect(&_demoPlayer, SIGNAL(DemoFinished()), this, SLOT(DemoFinished()));
+	connect(_ui.progressSlider, SIGNAL(valueChanged(int)), this, SLOT(ProgressSliderValueChanged(int)));
+	connect(_ui.playButton, SIGNAL(pressed()), this, SLOT(PlayButtonPressed()));
+	connect(_ui.stopButton, SIGNAL(pressed()), this, SLOT(StopButtonPressed()));
+	connect(_ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(TimeScaleChanged(double)));
+	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
+	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowScoreChanged(int)));
+	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowHudChanged(int)));
+	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
-bool Gui::getScalingData( QString scalingPath, int* origin, int* end ) 
+bool Gui::GetScalingData( QString scalingPath, int* origin, int* end ) 
 {
 	QFile file(scalingPath);
 	if(!file.open(QIODevice::ReadOnly))
@@ -135,92 +135,81 @@ bool Gui::getScalingData( QString scalingPath, int* origin, int* end )
 	return true;
 }
 
-void Gui::loadDemo(QString filepath)
+void Gui::LoadDemo(QString filepath)
 {
 	_ui.pathLineEdit->setText(filepath);
 
-	_demoPlayer.loadDemo(_ui.pathLineEdit->text());
+	_demoPlayer.LoadDemo(_ui.pathLineEdit->text());
 
-	const QString mapName = QString::fromStdString(_demoPlayer.demo->_mapName); 
+	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.Demo->_mapName); 
 	const QString bgImagePath = DataPath + "maps\\" + mapName + ".png";
 	const QString scalingPath = DataPath + "maps\\" + mapName + ".txt";
 	const QFileInfo info(bgImagePath);
 	if(!info.exists())
 	{
 		LogWarning("Map data %s not found. Using default parameters. Improper visualization may occur.", bgImagePath.toLocal8Bit().constData());
-		_ui.paintWidget->bgMessage = "";
+		_ui.paintWidget->BackgroundMessage = "";
 	}
 
 	// Set scaling from our pre-computed data.
 	int origin[3]; 
 	int end[3];
-	if(!getScalingData(scalingPath, origin, end))
+	if(!GetScalingData(scalingPath, origin, end))
 	{
 		// It failed, so get the scaling data from the demo itself.
-		_demoPlayer.getDemoBoundingBox(origin, end);
+		_demoPlayer.GetDemoBoundingBox(origin, end);
 	}
 
-	_ui.paintWidget->releaseImage();
-	_ui.paintWidget->loadImage(bgImagePath);
-	_ui.paintWidget->setScaling(origin, end);
-	_ui.paintWidget->demo = _demoPlayer.demo;
-	_ui.paintWidget->players = &_demoPlayer.playerList;
-	_ui.paintWidget->entities = &_demoPlayer.entities;	
-	_ui.paintWidget->beams = &_demoPlayer.beams;
-	_ui.paintWidget->clock = &_demoPlayer.clock;
-	_ui.paintWidget->warmupTime = &_demoPlayer.warmupTime;
-	_ui.paintWidget->scoreTable = &_demoPlayer.scoreTable;
-	_ui.paintWidget->displayDemo = true;
+	_ui.paintWidget->ReleaseImage();
+	_ui.paintWidget->LoadImage(bgImagePath);
+	_ui.paintWidget->SetScaling(origin, end);
+	_ui.paintWidget->DemoData = &_demoPlayer.DemoData;
+	_ui.paintWidget->DisplayDemo = true;
 	_ui.progressSlider->setValue(0);
 	_ui.playButton->setText("Pause");
 	_paused = false;
-	_demoPlayer.playDemo();
+	_demoPlayer.PlayDemo();
 
 	LogInfo("Demo loaded");
 }
 
 
-void Gui::loadIconData()
+void Gui::LoadIconData()
 {
 	QStringList filters; 
 	filters << "*.png";
 
 	const QDir iconDir(DataPath + "icons" + QDir::separator());
-	_ui.paintWidget->loadIcons(DataPath + "icons\\", iconDir.entryList(filters));
+	_ui.paintWidget->LoadIcons(DataPath + "icons\\", iconDir.entryList(filters));
 
 	const QDir weaponsDir(DataPath + "weapons" + QDir::separator());
-	_ui.paintWidget->loadWeapons(DataPath + "weapons\\", weaponsDir.entryList(filters));
+	_ui.paintWidget->LoadWeapons(DataPath + "weapons\\", weaponsDir.entryList(filters));
 }
 
-void Gui::playButtonPressed()
+void Gui::PlayButtonPressed()
 {
 	if(!_paused)
 	{
-		_demoPlayer.pauseDemo();
+		_demoPlayer.PauseDemo();
 		_paused = true;
 		_ui.playButton->setText("Play");
 		return;
 	}
 
-	if(_demoPlayer.demo != NULL)
+	if(_demoPlayer.DemoData.Demo != NULL)
 	{
-		_demoPlayer.playDemo();
+		_demoPlayer.PlayDemo();
 		_paused = false;
 		_ui.playButton->setText("Pause");
 	}
-	else if(_demoPlayer.loadDemo(_ui.pathLineEdit->text()))
+	else if(_demoPlayer.LoadDemo(_ui.pathLineEdit->text()))
 	{
-		_ui.paintWidget->demo = _demoPlayer.demo;
-		_ui.paintWidget->players = &_demoPlayer.playerList;
-		_ui.paintWidget->entities = &_demoPlayer.entities;	
-		_ui.paintWidget->beams = &_demoPlayer.beams;
-		_ui.paintWidget->clock = &_demoPlayer.clock;
-		_ui.paintWidget->warmupTime = &_demoPlayer.warmupTime;
-		_ui.paintWidget->displayDemo = true;
+		_ui.paintWidget->DemoData = &_demoPlayer.DemoData;
+		_ui.paintWidget->DisplayDemo = true;
 		_ui.progressSlider->setValue(0);
 		_ui.playButton->setText("Pause");
 		_paused = false;
-		_demoPlayer.playDemo();
+		_demoPlayer.PlayDemo();
 	}
 	else
 	{
@@ -228,14 +217,14 @@ void Gui::playButtonPressed()
 	}
 }
 
-void Gui::stopButtonPressed()
+void Gui::StopButtonPressed()
 {
 	_paused = true;
 	_ui.playButton->setText("Play");
-	_demoPlayer.stopDemo();
+	_demoPlayer.StopDemo();
 }
 
-void Gui::updateProgressSlider(float progress)
+void Gui::UpdateProgressSlider(float progress)
 {
 	if(!_ui.progressSlider->hasFocus())
 	{
@@ -243,50 +232,50 @@ void Gui::updateProgressSlider(float progress)
 	}
 }
 
-void Gui::timeScaleChanged(double editValue)
+void Gui::TimeScaleChanged(double editValue)
 {
 	const float newValue = (float)editValue;
-	_demoPlayer.timescale = _ui.reverseCheckBox->isChecked() ? newValue : -newValue;
+	_demoPlayer._timeScale = _ui.reverseCheckBox->isChecked() ? newValue : -newValue;
 }
 
-void Gui::showClockChanged(int state)
+void Gui::ShowClockChanged(int state)
 {
-	_ui.paintWidget->showClock = (state == Qt::Checked);
+	_ui.paintWidget->ShowClock = (state == Qt::Checked);
 }
 
-void Gui::showScoreChanged(int state)
+void Gui::ShowScoreChanged(int state)
 {
-	_ui.paintWidget->showScore = (state == Qt::Checked);
+	_ui.paintWidget->ShowScore = (state == Qt::Checked);
 }
 
-void Gui::showHudChanged(int state)
+void Gui::ShowHudChanged(int state)
 {
-	_ui.paintWidget->showHud = (state == Qt::Checked);
+	_ui.paintWidget->ShowHud = (state == Qt::Checked);
 }
 
-void Gui::progressSliderValueChanged(int editValue)
+void Gui::ProgressSliderValueChanged(int editValue)
 {
 	const float progressPc = editValue / (float) _ui.progressSlider->maximum(); 
-	_demoPlayer.elapsedTime = _demoPlayer.gameStartElapsed + progressPc * _demoPlayer.gameLength;
+	_demoPlayer._elapsedTime = _demoPlayer._gameStartElapsed + progressPc * _demoPlayer._gameLength;
 
 	// Make sure the visualization is updated.
-	if(!_demoPlayer.timer.isActive())
+	if(!_demoPlayer._timer.isActive())
 	{
-		_demoPlayer.update();
+		_demoPlayer.Update();
 	}
 }
 
-void Gui::reverseTimeChanged(int)
+void Gui::ReverseTimeChanged(int)
 {
 	if(_ui.reverseCheckBox->isChecked())
 	{
 		_ui.timeScaleDoubleSpinBox->setPrefix("-");
-		_demoPlayer.timescale = -_demoPlayer.timescale;
+		_demoPlayer._timeScale = -_demoPlayer._timeScale;
 	}
 	else
 	{
 		_ui.timeScaleDoubleSpinBox->setPrefix("");
-		_demoPlayer.timescale = -_demoPlayer.timescale;
+		_demoPlayer._timeScale = -_demoPlayer._timeScale;
 	}
 }
 
@@ -304,16 +293,16 @@ void Gui::dropEvent(QDropEvent* event)
 
 	for(int i = 0; i < urlList.size() && i < 32; ++i)
 	{
-		_ui.paintWidget->displayDemo = false;
-		_ui.paintWidget->bgMessage = "Loading... 0%";
+		_ui.paintWidget->DisplayDemo = false;
+		_ui.paintWidget->BackgroundMessage = "Loading... 0%";
 		_ui.paintWidget->repaint();
 		pathList.append(urlList.at(i).toLocalFile());
 		_progressTimer.restart();
-		loadDemo(pathList[0]);
+		LoadDemo(pathList[0]);
 	}
 }
 
-void Gui::dragEnterEvent( QDragEnterEvent* event )
+void Gui::dragEnterEvent(QDragEnterEvent* event)
 {
 	// Check for our needed mime type, here a file or a list of files.
 	const QMimeData* mimeData = event->mimeData();
@@ -341,14 +330,14 @@ void Gui::dragEnterEvent( QDragEnterEvent* event )
 	}
 }
 
-void Gui::demoFinished()
+void Gui::DemoFinished()
 {
-	_demoPlayer.pauseDemo();
+	_demoPlayer.PauseDemo();
 	_paused = true;
 	_ui.playButton->setText("Play");
 }
 
-void Gui::onProgress(float progress)
+void Gui::OnProgress(float progress)
 {
 	// We don't upgrade the progress more than 10x a second.
 	if(_progressTimer.elapsed() < 100)
@@ -358,13 +347,13 @@ void Gui::onProgress(float progress)
 
 	QString message;
 	message.sprintf("Loading... %d%%", (int)(100.0f * progress));
-	_ui.paintWidget->bgMessage = message;
+	_ui.paintWidget->BackgroundMessage = message;
 	_ui.paintWidget->repaint();
 
 	_progressTimer.restart();
 }
 
-void Gui::onMessage(int logLevel, const char* message)
+void Gui::OnMessage(int logLevel, const char* message)
 {
 	QString formattedMsg;
 	switch(logLevel)

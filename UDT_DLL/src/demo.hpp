@@ -218,8 +218,8 @@ public:
 
 	struct PlayerInfo
 	{
-		bool valid;
-		bool demoTaker;
+		bool Valid;
+		bool DemoTaker;
 		bool Firing;
 		float Position[3];
 		float Angles[3];
@@ -889,16 +889,16 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 	const float dotThreshold = 0.85f;
 	const float minSplashDist = 1.5f;
 	std::vector<int> lgSplashPosList;
-	// Reset persistency
+
+	// Reset persistence.
 	for(int i = 0; i < MAX_GENTITIES; ++i)
 	{
 		_entities[i].Valid = false;
 	}
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		_players[i].Info.valid = false;
+		_players[i].Info.Valid = false;
 	}
-
 
 	// Update client-side entity data.
 	for(int i = 0; i < newSnap->numEntities; ++i)
@@ -1065,8 +1065,8 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 			PlayerInfo& info = _players[clientNum].Info;
 			info.Time = newSnap->serverTime;
 			info.Player = clientNum;
-			info.valid = true;
-			info.demoTaker = false;
+			info.Valid = true;
+			info.DemoTaker = false;
 			info.Firing = false;
 			info.Position[0] = playerEntity->pos.trBase[0];
 			info.Position[1] = playerEntity->pos.trBase[1];
@@ -1232,8 +1232,8 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		PlayerInfo& info = _players[clientNum].Info;
 		info.Time = newSnap->serverTime;
 		info.Player = clientNum;
-		info.valid = true;
-		info.demoTaker = true;
+		info.Valid = true;
+		info.DemoTaker = true;
 		info.Firing = false;
 		info.Position[0] = playerEntity->origin[0];
 		info.Position[1] = playerEntity->origin[1];

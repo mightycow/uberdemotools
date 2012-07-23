@@ -1,4 +1,5 @@
 #include "paint_widget.h"
+
 #include <QPainter>
 #include <QFileInfo>
 #include <QStaticText>
@@ -7,6 +8,9 @@
 #include <QRect>
 #include <QString>
 #include <qDebug>
+
+
+static const int FollowingTextDeltaY = 35;
 
 
 static QImage* CreateProxyImage(int width, int height)
@@ -44,385 +48,374 @@ static QImage* CreateProxyImage(int width, int height)
 PaintWidget::PaintWidget(QWidget *parent)
 	: QWidget(parent)
 {
-	bgImage = NULL;
-	iconProxy = NULL;
-	demo = NULL;
-	players = NULL;
-	entities = NULL;
-	beams = NULL;
-	clock = NULL;
-	showClock = true;
-	showScore = true;
-	showHud = true;
-	float scaling = 1.0;
-	iconScale = 0.4f;
+	DemoData = NULL;
+	ShowClock = true;
+	ShowScore = true;
+	ShowHud = true;
+	DisplayDemo = false;
+	BackgroundMessage = "Drag and drop a demo here.";
 
-	displayDemo = false;
-	bgMessage = "Drag and drop a demo here.";
+	_bgImage = NULL;
+	_proxyImage = NULL;
+	_iconScale = 0.4f;
 
-	resetScaling();
+	ResetScaling();
 }
-
 
 PaintWidget::~PaintWidget()
 {
-	if(bgImage != NULL)
-		delete bgImage;
-
-	for(size_t i = 0; i < icons.size(); i++)
+	if(_bgImage != NULL)
 	{
-		if(icons[i] != NULL)
-		{
-			delete icons[i];
-			icons[i] = NULL;
+		delete _bgImage;
+	}
 
+	for(size_t i = 0; i < _icons.size(); ++i)
+	{
+		if(_icons[i] != NULL)
+		{
+			delete _icons[i];
+			_icons[i] = NULL;
 		}
 	}
 
-	for(size_t i = 0; i < weapons.size(); i++)
+	for(size_t i = 0; i < _weapons.size(); ++i)
 	{
-		if(weapons[i] != NULL)
+		if(_weapons[i] != NULL)
 		{
-			delete weapons[i];
-			weapons[i] = NULL;
-
+			delete _weapons[i];
+			_weapons[i] = NULL;
 		}
 	}
 }
 
-void PaintWidget::resetScaling()
+void PaintWidget::ResetScaling()
 {
-	mapOrigin[0] = mapOrigin[1] = mapOrigin[2] = 0;
-	mapEnd[0] = mapEnd[1] = mapEnd[2] = 100;
+	_mapOrigin[0] = _mapOrigin[1] = _mapOrigin[2] = 0;
+	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
 
-	this->resize(800, 800);
+	resize(800, 800);
 	
-	float sX =  this->width() / (float)(mapEnd[0] - mapOrigin[0]);
-	float sY = -this->height() / (float)(mapEnd[1] - mapOrigin[1]);
-	coordsScaling = std::min(sX, sY);
-	heightScaling = 20 / (float) (mapEnd[2] - mapOrigin[2]);
+	const float scaleX =  width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
+	const float scaleY = -height() / (float)(_mapEnd[1] - _mapOrigin[1]);
+	_coordsScale = std::min(scaleX, scaleY);
+	_heightScale = 20.0f / (float)(_mapEnd[2] - _mapOrigin[2]);
 }
 
-
-void PaintWidget::setScaling( int* origin, int* end )
+void PaintWidget::SetScaling(int* origin, int* end)
 {
-	mapOrigin[0] = origin[0];
-	mapOrigin[1] = origin[1];
-	mapOrigin[2] = origin[2];
+	_mapOrigin[0] = origin[0];
+	_mapOrigin[1] = origin[1];
+	_mapOrigin[2] = origin[2];
 
-	mapEnd[0] = end[0];
-	mapEnd[1] = end[1];
-	mapEnd[2] = end[2];
+	_mapEnd[0] = end[0];
+	_mapEnd[1] = end[1];
+	_mapEnd[2] = end[2];
 
-	int w = (bgImage == NULL) ? this->width() : bgImage->width();
-	int h = (bgImage == NULL) ? this->height() : bgImage->height();
-
-	float sX =  w / (float)(mapEnd[0] - mapOrigin[0]);
-	float sY = -h / (float)(mapEnd[1] - mapOrigin[1]);
-	coordsScaling = std::min(sX, sY);
-
-	heightScaling = 20 / (float) (end[2] - origin[2]);
+	const int w = (_bgImage == NULL) ? width()  : _bgImage->width();
+	const int h = (_bgImage == NULL) ? height() : _bgImage->height();
+	const float scaleX =  w / (float)(_mapEnd[0] - _mapOrigin[0]);
+	const float scaleY = -h / (float)(_mapEnd[1] - _mapOrigin[1]);
+	_coordsScale = std::min(scaleX, scaleY);
+	_heightScale = 20.0f / (float)(end[2] - origin[2]);
 }
 
-
-void PaintWidget::paintEvent( QPaintEvent* event )
+void PaintWidget::paintEvent(QPaintEvent* event)
 {
 	QPainter painter(this);
 	painter.setRenderHints(QPainter::Antialiasing, true);
-
-	painter.fillRect(this->rect(), Qt::gray);
+	painter.fillRect(rect(), Qt::gray);
 
 	QFont font;
 	font.setPixelSize(30);
 	painter.setFont(font);
 	
-	QFontMetrics fm(font);
-	int pos = fm.width(bgMessage) / 2;
+	const QFontMetrics fontMetrics(font);
+	const int posX = fontMetrics.width(BackgroundMessage) / 2;
+	painter.drawText(width() / 2 - posX, height() / 2, BackgroundMessage);
+	if(DisplayDemo)
+	{
+		PaintDemo(painter);
+	}
+}
+
+void PaintWidget::PaintDemo(QPainter& painter)
+{
+	painter.setBrushOrigin(geometry().x(), geometry().y());
+	if(_bgImage != NULL)
+	{
+		painter.drawImage(0, 0, *_bgImage);
+	}
+
+	if(DemoData == NULL)
+	{
+		return;
+	}
+
+	Demo* const demo = DemoData->Demo;
+	const std::vector<Entity>& entities = DemoData->Entities;
+	for(size_t i = 128; i < entities.size(); ++i)
+	{
+		const Entity& entity = entities[i];
+		if(entity.SyncCoolDown <= 0)
+		{
+			continue;
+		}
+
+		const float alpha = entity.SyncCoolDown / (float)(UDT_DV_SYNC_MAX);
+		Demo::EntityInfo* entityInfo = &(demo->_entityPlaybackInfos[entity.Index]);
+
+		switch(entityInfo->Type)
+		{
+		case Demo::EntityType::Item:
+			DrawItem(painter, entityInfo, alpha);
+			break;
+		case Demo::EntityType::Projectile:
+			DrawProjectile(painter, entityInfo);
+			break;
+		case Demo::EntityType::Generic:
+			DrawGeneric(painter, entityInfo);
+			break;
+		}
+	}
+
+	const std::vector<Beam>& beams = DemoData->Beams;
+	for(size_t i = 0; i < beams.size(); ++i)
+	{
+		const Beam& beam = beams[i];
+		if(beam.TimeToLive <= 0)
+		{
+			continue;
+		}
+
+		const float timeRatio = beam.TypeId == Beam::Type::RG ? 500.0f : 50.0f;
+		DrawBeams(painter, beam.StartPositions, beam.EndPositions, beam.TypeId, (float)beam.TimeToLive / timeRatio);
+	}
+
+	std::vector<PlayerData> sortedPlayers;
+	std::vector<Player>& players = DemoData->Players;
+
+	// Get all players.
+	for(size_t i = 0; i < players.size(); ++i)
+	{
+		Player& player = players[i];
+		if(player.Color.alpha() == 0)
+		{
+			continue;
+		}
+
+		// Draw living player.
+		int number = player.ClientIndex * 2;
+		const Entity* entity = &entities[number];
+		int idx = entity->Index;
+
+		// Collect data for both the living and dead player entities.
+		Demo::PlayerInfo* living = NULL;
+		Demo::PlayerInfo* dead = NULL;
+
+		float livingAlpha = 0.0f;
+		float deadAlpha = 0.0f;
+		
+		if(idx >= 0 && idx < (int)demo->_playerPlaybackInfos.size())
+		{
+			living = &(demo->_playerPlaybackInfos.at(idx));
+			livingAlpha = entity->SyncCoolDown / (float)(UDT_DV_SYNC_MAX);
+		}
+		number = player.ClientIndex * 2 + 1;
+		entity = &entities[number];
+		idx = entity->Index;
+		if(idx >= 0 && idx < (int)demo->_playerPlaybackInfos.size())
+		{
+			dead = &(demo->_playerPlaybackInfos.at(idx));
+			deadAlpha = entity->SyncCoolDown / (float)(UDT_DV_SYNC_MAX);
+		}
+		
+		// Draw the one closer in time.
+		if(livingAlpha >= deadAlpha && living)
+		{
+			PlayerData playerData;
+			playerData.DemoPlayer = living;
+			playerData.Player = &player;
+			playerData.Alpha = livingAlpha;
+			playerData.Dead = false;
+			sortedPlayers.push_back(playerData);
+		}
+		
+		if(dead)
+		{
+			PlayerData playerData;
+			playerData.DemoPlayer = dead;
+			playerData.Player = &player;
+			playerData.Alpha = deadAlpha;
+			playerData.Dead = true;
+			sortedPlayers.push_back(playerData);
+		}
+	}
+
+	// Draw living players and corpses in bottom-top order.
+	std::sort(sortedPlayers.begin(), sortedPlayers.end());
+	for(size_t i = 0; i < sortedPlayers.size(); ++i)
+	{
+		DrawPlayer(painter, sortedPlayers[i]);
+	}
+
+	DrawClock(painter);
+	DrawHud(painter);
+	DrawScores(painter);
+}
+
+bool PaintWidget::LoadImage(const QString& path)
+{
+	const QFileInfo info(path);
+	if(!info.exists())
+	{
+		return false;	
+	}
 	
-	painter.drawText(this->width() / 2 - pos, this->height() / 2, bgMessage);
+	if(_bgImage != NULL)
+	{
+		delete _bgImage;
+	}
 
-	if(displayDemo)
-		paintDemo(painter);
+	_bgImage = new QImage(path);
+	setMaximumSize(_bgImage->width(), _bgImage->height());
+	setMinimumSize(_bgImage->width(), _bgImage->height());
+
+	return true;
 }
 
-
-void PaintWidget::paintDemo( QPainter& painter )
+void PaintWidget::ReleaseImage()
 {
-	painter.setBrushOrigin(this->geometry().x(), this->geometry().y());
-	if(bgImage != NULL)
+	if(_bgImage != NULL)
 	{
-		QPoint p(0,0);
-		painter.drawImage(0, 0, *bgImage);
-	}
-
-	if(entities != NULL)
-	{
-		for(size_t i = 128; i < entities->size(); i++)
-		{
-			if(entities->at(i).syncCooldown > 0)
-			{
-				float alpha = entities->at(i).syncCooldown / (float)(SYNCMAX);
-
-				Demo::EntityInfo* p = &(demo->_entityPlaybackInfos.at(entities->at(i).index));
-
-				switch(p->Type)
-				{
-				case Demo::EntityType::Item:
-					drawItem(painter, p, alpha);
-					break;
-				case Demo::EntityType::Projectile:
-					drawProjectile(painter, p);
-					break;
-				case Demo::EntityType::Generic:
-					drawGeneric(painter, p);
-					break;
-				}
-			}
-		}
-	}
-
-	if(beams != NULL)
-	{
-		for(size_t i = 0; i < beams->size(); i++)
-		{
-			if(beams->at(i).TTL > 0)
-			{
-				if(beams->at(i).type == DemoPlayer::Beam::Type::RG)
-					drawBeams(painter, beams->at(i).startPosition, beams->at(i).endPosition, beams->at(i).type, beams->at(i).TTL / 500.0f);
-				else
-					drawBeams(painter, beams->at(i).startPosition, beams->at(i).endPosition, beams->at(i).type, beams->at(i).TTL / 50.0f);
-			}
-		}
-	}
-
-	if(players != NULL)
-	{
-
-		std::vector<PlayerData> playerData;
-
-		// Get all players
-		for(size_t i = 0; i < players->size(); i++)
-		{
-			if(players->at(i).color.alpha() == 0)
-				continue;
-
-			// Draw alive player
-			int number = players->at(i).clientNum * 2;
-			int idx = (entities->at(number)).index;
-
-			// Collect data for both the alive and dead player entities
-			Demo::PlayerInfo* alive = NULL;
-			Demo::PlayerInfo* dead = NULL;
-
-			float aliveAlpha = 0;
-			float deadAlpha = 0;
-
-			if(idx >= 0 && idx < (int)demo->_playerPlaybackInfos.size())
-			{
-				alive = &(demo->_playerPlaybackInfos.at(idx));
-				aliveAlpha = (entities->at(number)).syncCooldown / (float)(SYNCMAX);
-			}
-			number = players->at(i).clientNum * 2 + 1;
-			idx = (entities->at(number)).index;
-			if(idx >= 0 && idx < (int)demo->_playerPlaybackInfos.size())
-			{
-				dead = &(demo->_playerPlaybackInfos.at(idx));
-				deadAlpha = (entities->at(number)).syncCooldown / (float)(SYNCMAX);
-			}
-
-			// Draw the one closer in time
-			if(aliveAlpha >= deadAlpha && alive)
-			{
-				PlayerData pData;
-				pData.player = alive;
-				pData.dPPlayer = &players->at(i);
-				pData.alpha = aliveAlpha;
-				pData.dead = false;
-				playerData.push_back(pData);
-			}
-
-			if(dead)
-			{
-
-				PlayerData pData;
-				pData.player = dead;
-				pData.dPPlayer = &players->at(i);
-				pData.alpha = deadAlpha;
-				pData.dead = true;
-				playerData.push_back(pData);
-			}
-		}
-		
-		// Draw alive players and corpses in depth order
-		std::sort(playerData.begin(), playerData.end());
-		for(size_t i = 0; i < playerData.size(); i++)
-		{
-			drawPlayer(painter, playerData[i]);
-		}
-	}
-	drawClock(painter);
-	drawHud(painter);
-	drawScores(painter);
-}
-
-bool PaintWidget::loadImage(QString path)
-{
-	QFileInfo info(path);
-
-	if(info.exists())
-	{
-		if(bgImage != NULL)
-			delete bgImage;
-
-		bgImage = new QImage(path);
-		this->setMaximumSize(bgImage->width(), bgImage->height());
-		this->setMinimumSize(bgImage->width(), bgImage->height());
-		return true;
-	}
-	else
-		return false;
-}
-
-void PaintWidget::releaseImage()
-{
-	if(bgImage != NULL)
-	{
-		delete bgImage;
-		bgImage = NULL;
+		delete _bgImage;
+		_bgImage = NULL;
 	}
 }
 
-void PaintWidget::drawPlayer(QPainter& painter, PlayerData data)
+void PaintWidget::DrawPlayer(QPainter& painter, const PlayerData& data)
 {
-	if(data.player != NULL)
+	if(data.DemoPlayer == NULL)
 	{
-		float x = data.player->Position[0];
-		float y = data.player->Position[1];
-		float z = data.player->Position[2];
-
-		int a = (x - mapOrigin[0]) * coordsScaling;
-		int b = -(y - mapOrigin[1]) * coordsScaling;
-		int c = (z - mapOrigin[2]) * coordsScaling;
-
-		float orientation = data.player->Angles[1];
-		float angle = 90; // FOV
-
-		if(!data.dead)
-		{
-			drawViewAngle(painter, QPoint(a,b), data.dPPlayer->color, orientation, angle, 50);
-			drawWeapon(painter, a, b, c, orientation, data.alpha, data.player->CurrentWeapon, data.player->Firing);
-			drawAlivePlayer(painter, a, b, c, data.dPPlayer->color, data.alpha);
-			drawPlayerPowerup(painter, a, b, c, data.dPPlayer);
-			
-			if(!data.dPPlayer->name.isEmpty())
-			{
-				QFont font;			
-				font.setPixelSize(20);
-				painter.setFont(font);
-				if(data.alpha < 1.0f)
-				{
-					QPen pen;
-					pen.setColor(QColor(0, 0, 0, 128));
-					painter.setPen(pen);
-				}
-				QFontMetrics fm(font);
-				int shift = fm.width(data.dPPlayer->name) / 2;
-				painter.drawText(a - shift, b - 30, data.dPPlayer->name);
-			}
-		}
-		else
-		{
-			drawDeadPlayer(painter, a, b, data.dPPlayer->color, data.alpha);
-		}
-		
+		return;
 	}
-}
 
-void PaintWidget::drawClock(QPainter& painter)
-{
-	if(showClock && clock != NULL)
-	{	
+	const float x = data.DemoPlayer->Position[0];
+	const float y = data.DemoPlayer->Position[1];
+	const float z = data.DemoPlayer->Position[2];
 
-		QString text = clock->toString("mm:ss");
-		QFont font;
-		font.setPixelSize(30);
-		QFontMetrics fm(font);
+	const int x0 = (int)( (x - (float)_mapOrigin[0]) * _coordsScale);
+	const int y0 = (int)(-(y - (float)_mapOrigin[1]) * _coordsScale);
+	const int z0 = (int)( (z - (float)_mapOrigin[2]) * _coordsScale);
 
-		int textWidth = fm.width(text);
-		int textHeight = fm.height();
+	const float orientation = data.DemoPlayer->Angles[1];
+	const float fovAngle = 90.0f;
 
-		int v = 15 + textHeight;
-		int h = 20;
+	if(data.Dead)
+	{
+		DrawDeadPlayer(painter, x0, y0, data.Player->Color, data.Alpha);
+		return;
+	}
 
-		QBrush brush(QColor(0, 0, 0, 0));
-		painter.setBrush(brush);
-		QPen pen(QColor(0, 0, 0, 255)); pen.setWidth(1);
+	DrawViewAngle(painter, QPoint(x0,y0), data.Player->Color, orientation, fovAngle, 50);
+	DrawWeapon(painter, x0, y0, z0, orientation, data.Alpha, data.DemoPlayer->CurrentWeapon, data.DemoPlayer->Firing);
+	DrawLivingPlayer(painter, x0, y0, z0, data.Player->Color, data.Alpha);
+	DrawPlayerPowerup(painter, x0, y0, z0, data.Player);
+
+	if(data.Player->Name.isEmpty())
+	{
+		return;
+	}
+
+	QFont font;			
+	font.setPixelSize(20);
+	painter.setFont(font);
+	if(data.Alpha < 1.0f)
+	{
+		QPen pen;
+		pen.setColor(QColor(0, 0, 0, 128));
 		painter.setPen(pen);
-
-		/*if(*warmupTime < 0)
-			painter.drawText(this->width() / 2 - 45, v + 30, "(Warmup)");*/
-
-		/*QBrush brush(QColor(0,0,0, 16));
-		painter.setBrush(brush);
-		QPen pen; pen.setWidth(1);
-		painter.setPen(pen);
-
-		QPolygon polygon;
-		polygon.append(QPoint(30, v - 30));
-		polygon.append(QPoint(120, v - 30));
-		polygon.append(QPoint(120, v + 10));
-		polygon.append(QPoint(30, v + 10));
-		painter.drawPolygon(polygon, Qt::FillRule::OddEvenFill);*/
-
-		
-		painter.setFont(font);
-		painter.drawText(h, v, clock->toString("mm:ss"));
 	}
+
+	const QFontMetrics fm(font);
+	const int deltaX = fm.width(data.Player->Name) / 2;
+	painter.drawText(x0 - deltaX, y0 - 30, data.Player->Name);
 }
 
-void PaintWidget::drawScores( QPainter& painter )
+void PaintWidget::DrawClock(QPainter& painter)
 {
-	if(scoreTable->empty() || !showScore)
+	if(!ShowClock || DemoData == NULL)
+	{
+		return;
+	}
+
+	const QString clockText =  DemoData->Clock.toString("mm:ss");
+	QFont font;
+	font.setPixelSize(30);
+	const QFontMetrics fm(font);
+
+	const int textWidth = fm.width(clockText);
+	const int textHeight = fm.height();
+
+	const int v = 15 + textHeight;
+	const int h = 20;
+
+	const QBrush brush(QColor(0, 0, 0, 0));
+	painter.setBrush(brush);
+
+	QPen pen(QColor(0, 0, 0, 255)); 
+	pen.setWidth(1);
+	painter.setPen(pen);
+
+	painter.setFont(font);
+	painter.drawText(h, v, clockText);
+}
+
+void PaintWidget::DrawScores(QPainter& painter)
+{
+	std::vector<ScoreEntry>& scoreTable = DemoData->Scores;
+	if(scoreTable.empty() || !ShowScore)
 	{
 		return;
 	}
 
 	// @TODO: FFA etc support.
-	if(scoreTable->size() != 2)
+	if(scoreTable.size() != 2)
 	{
 		return;
 	}
 		
-	int y = 30;
+	const int y = 30;
 
 	QFont nameFont;
 	nameFont.setPixelSize(20);
-	QFontMetrics nameFontMetric(nameFont);
+	const QFontMetrics nameFontMetric(nameFont);
 
-	QString leftPlayer = (*scoreTable)[0].name;
-	QString rightPlayer = (*scoreTable)[1].name;
+	const QString leftPlayerName = scoreTable[0].Name;
+	const QString rightPlayerName = scoreTable[1].Name;
 
-	int leftPlayerWidth = nameFontMetric.width(leftPlayer);
-	int rightPlayerWidth = nameFontMetric.width(rightPlayer);
+	int leftPlayerNameWidth = nameFontMetric.width(leftPlayerName);
+	int rightPlayerNameWidth = nameFontMetric.width(rightPlayerName);
 
 	QFont scoreFont;
 	scoreFont.setPixelSize(25);
-	QFontMetrics scoreFontMetric(scoreFont);
+	const QFontMetrics scoreFontMetric(scoreFont);
 
-	QString leftScore = " " + QString::number((*scoreTable)[0].score) + " ";
-	QString rightScore = " " + QString::number((*scoreTable)[1].score) + " ";
+	const QString leftScore = " " + QString::number(scoreTable[0].Score) + " ";
+	const QString rightScore = " " + QString::number(scoreTable[1].Score) + " ";
 
-	int leftScoreWidth = scoreFontMetric.width(leftScore);
-	int rightScoreWidth = scoreFontMetric.width(rightScore);
+	const int leftScoreWidth = scoreFontMetric.width(leftScore);
+	const int rightScoreWidth = scoreFontMetric.width(rightScore);
 
-	int pad = 0; //scoreFontMetric.width(" - ") / 2;
+	const int pad = 0;
 
+	QPen pen; 
+	pen.setWidth(1);
 
-	QPen pen(QColor(100, 50, 50, 255)); pen.setWidth(1);
+	pen.setColor(QColor(159, 159, 159, 255));
 	painter.setPen(pen);
 	painter.setFont(nameFont);
-	painter.drawText(this->width() / 2 - leftPlayerWidth - leftScoreWidth - pad, y, leftPlayer);
-	painter.drawText(this->width() / 2 + rightScoreWidth + pad, y, rightPlayer);
+	painter.drawText(this->width() / 2 - leftPlayerNameWidth - leftScoreWidth - pad, y, leftPlayerName);
+	painter.drawText(this->width() / 2 + rightScoreWidth + pad, y, rightPlayerName);
 	painter.drawText(this->width() / 2 - scoreFontMetric.width("-") / 2, y, "-");
 
 	pen.setColor(QColor(255, 100, 100, 255));
@@ -432,662 +425,581 @@ void PaintWidget::drawScores( QPainter& painter )
 	painter.drawText(this->width() / 2 + pad, y, rightScore);
 }
 
-
-void PaintWidget::drawHud( QPainter& painter )
+void PaintWidget::DrawHud(QPainter& painter)
 {
-	if(demo == NULL || !showHud)
-		return;
-
-	int v = 35;
-
-	for(size_t i = 0; i < players->size(); i++)
+	if(DemoData == NULL || !ShowHud)
 	{
-		if(players->at(i).demoTaker)
+		return;
+	}
+
+	std::vector<Player>& players = DemoData->Players;
+	for(size_t i = 0; i < players.size(); i++)
+	{
+		const Player& p = players[i];
+		if(!p.DemoTaker)
 		{
-			const DemoPlayer::Player& p = players->at(i);
+			continue;
+		}
 
-			QFont font;
-			font.setPixelSize(20);
-			painter.setFont(font);
-			QString text = "Following " + p.name;
-			int textLen = text.length();
-			painter.drawText(this->width() / 2 - (text.length() / 2) * 10, this->height() - v - 30, text);
+		QFont font;
+		font.setPixelSize(20);
+		painter.setFont(font);
 
-			bool displayHealth = true;
-			bool displayArmor = true;
-			bool displayWeapon = true;
+		const QString text = "Following " + p.Name;
+		const int textLength = text.length();
+		painter.drawText(width() / 2 - (text.length() / 2) * 10, height() - FollowingTextDeltaY - 30, text);
 
-			if(displayHealth)
-			{
-				QImage* icon = getIcon(ITEM_HEALTH);
+		DrawHudElement(painter, GetIcon(ITEM_HEALTH), -120, QString::number(p.Health));
+		DrawHudElement(painter, GetIcon(ITEM_ARMOR_COMBAT), 80, QString::number(p.Armor));
 
-				int w = icon->width() * iconScale * 1.5f;
-				int h = icon->height()* iconScale * 1.5f;
-				int a = this->width() / 2 - 120;
-				int b = this->height() - v;
-				QRect source(0, 0, icon->width(), icon->height());
-				QRect target(a-w/2, b-h/2, w, h);
-				painter.drawImage(target, *icon, source);
-				painter.drawText(a + w/2 + 5 , b + 10, QString::number(p.health));
-
-			}
-			if(displayArmor)
-			{
-				QImage* icon = getIcon(ITEM_ARMOR_COMBAT);
-
-				int w = icon->width() * iconScale * 1.5f;
-				int h = icon->height()* iconScale * 1.5f;
-				int a = this->width() / 2 + 80;
-				int b = this->height() - v;
-				QRect source(0, 0, icon->width(), icon->height());
-				QRect target(a-w/2, b-h/2, w, h);
-				painter.drawImage(target, *icon, source);
-				painter.drawText(a + w/2 + 5 , b + 10, QString::number(p.armor));
-			}
-			if(displayWeapon && p.weapon != 0)
-			{
-				QImage* icon = getIcon(p.weapon);
-
-				int w = icon->width() * iconScale * 1.5f;
-				int h = icon->height()* iconScale * 1.5f;
-				int a = this->width() / 2 - w/2;
-				int b = this->height() - v;
-				QRect source(0, 0, icon->width(), icon->height());
-				QRect target(a-w/2, b-h/2, w, h);
-				painter.drawImage(target, *icon, source);
-
-				painter.drawText(a + w/2 + 5 , b + 10, QString::number(p.ammo));
-				
-			}
+		// @TODO: Continue drawing the last used weapon?
+		if(p.Weapon != 0)
+		{
+			QImage* const weaponIcon = GetIcon(p.Weapon);
+			DrawHudElement(painter, weaponIcon, -weaponIcon->width() / 2, QString::number(p.Ammo));
 		}
 	}
 }
 
-void PaintWidget::loadIcons(QString dirPath, QStringList iconsPath)
+void PaintWidget::DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text)
 {
-	for(size_t i = 0; i < icons.size(); i++)
+	const int w = (int)((float)icon->width() *_iconScale * 1.5f);
+	const int h = (int)((float)icon->height()*_iconScale * 1.5f);
+	const int x = width() / 2 + offsetX;
+	const int y = height() - FollowingTextDeltaY;
+	QRect source(0, 0, icon->width(), icon->height());
+	QRect target(x-w/2, y-h/2, w, h);
+	painter.drawImage(target, *icon, source);
+	painter.drawText(x + w/2 + 5 , y + 10, text);
+}
+
+void PaintWidget::LoadIcons(const QString& dirPath, const QStringList& iconsPath)
+{
+	for(size_t i = 0; i < _icons.size(); i++)
 	{
-		if(icons[i] != NULL)
+		if(_icons[i] != NULL)
 		{
-			delete icons[i];
-			icons[i] = NULL;
+			delete _icons[i];
+			_icons[i] = NULL;
 		}
 	}
 
-	icons.clear();
+	_icons.clear();
 	for(int i = 0; i < iconsPath.size(); i++)
 	{
 		QImage* image = new QImage(dirPath + iconsPath[i]);
-		icons.push_back(image);
+		_icons.push_back(image);
 	}
 
-	if(iconProxy == NULL)
+	if(_proxyImage == NULL)
 	{
-		iconProxy = CreateProxyImage(64, 64);
+		_proxyImage = CreateProxyImage(64, 64);
 	}
 }
 
-
-void PaintWidget::loadWeapons( QString dirPath, QStringList weaponsPath )
+void PaintWidget::LoadWeapons(const QString& dirPath, const QStringList& weaponsPath)
 {
-	for(size_t i = 0; i < weapons.size(); i++)
+	for(size_t i = 0; i < _weapons.size(); i++)
 	{
-		if(weapons[i] != NULL)
+		if(_weapons[i] != NULL)
 		{
-			delete weapons[i];
-			weapons[i] = NULL;
+			delete _weapons[i];
+			_weapons[i] = NULL;
 		}
 	}
 
-	weapons.clear();
+	_weapons.clear();
 	for(int i = 0; i < weaponsPath.size(); i++)
 	{
 		QImage* image = new QImage(dirPath + weaponsPath[i]);
-		weapons.push_back(image);
+		_weapons.push_back(image);
 	}
 }
 
-
-QImage* PaintWidget::getIcon(int type )
+QImage* PaintWidget::GetIcon(int type)
 {
-	if(icons.size() <35)
+	if(_icons.size() < 35)
 	{
-		return iconProxy;
+		return _proxyImage;
 	}
 
 	switch(type)
 	{
-		case ITEM_INVALID:				return icons[0];
-		case ITEM_ARMOR_SHARD:			return icons[1];
-		case ITEM_ARMOR_COMBAT:			return icons[2];
-		case ITEM_ARMOR_BODY:			return icons[3];
-		case ITEM_ARMOR_GREEN:			return icons[4];
-		case ITEM_HEALTH_SMALL:			return icons[5];
-		case ITEM_HEALTH:				return icons[6];
-		case ITEM_HEALTH_LARGE:			return icons[7];
-		case ITEM_HEALTH_MEGA :			return icons[8];
-		case WEAPON_SHOTGUN:			return icons[9];
-		case WEAPON_GRENADELAUNCHER:	return icons[10];
-		case WEAPON_ROCKETLAUNCHER:		return icons[11];
-		case WEAPON_LIGHTNING:			return icons[12];
-		case WEAPON_RAILGUN:			return icons[13];
-		case WEAPON_PLASMAGUN:			return icons[14];
-		case AMMO_SHELLS:				return icons[15];
-		case AMMO_BULLETS:				return icons[16];
-		case AMMO_GRENADES:				return icons[17];
-		case AMMO_CELLS:				return icons[18];
-		case AMMO_LIGHTNING:			return icons[19];
-		case AMMO_ROCKETS:				return icons[20];
-		case AMMO_SLUGS:				return icons[21];
-		case WEAPON_GAUNTLET:			return icons[25];
-		case WEAPON_MACHINEGUN:			return icons[26];
-		case ITEM_QUAD:					return icons[27];
-		case ITEM_ENVIRO:				return icons[28];
-		case ITEM_HASTE:				return icons[29];
-		case ITEM_INVIS:				return icons[30];
-		case ITEM_REGEN:				return icons[31];
-		case ITEM_FLIGHT:				return icons[32];
-		case TEAM_CTF_REDFLAG:			return icons[33];
-		case TEAM_CTF_BLUEFLAG:			return icons[34];
+		case ITEM_INVALID:				return _icons[0];
+		case ITEM_ARMOR_SHARD:			return _icons[1];
+		case ITEM_ARMOR_COMBAT:			return _icons[2];
+		case ITEM_ARMOR_BODY:			return _icons[3];
+		case ITEM_ARMOR_GREEN:			return _icons[4];
+		case ITEM_HEALTH_SMALL:			return _icons[5];
+		case ITEM_HEALTH:				return _icons[6];
+		case ITEM_HEALTH_LARGE:			return _icons[7];
+		case ITEM_HEALTH_MEGA :			return _icons[8];
+		case WEAPON_SHOTGUN:			return _icons[9];
+		case WEAPON_GRENADELAUNCHER:	return _icons[10];
+		case WEAPON_ROCKETLAUNCHER:		return _icons[11];
+		case WEAPON_LIGHTNING:			return _icons[12];
+		case WEAPON_RAILGUN:			return _icons[13];
+		case WEAPON_PLASMAGUN:			return _icons[14];
+		case AMMO_SHELLS:				return _icons[15];
+		case AMMO_BULLETS:				return _icons[16];
+		case AMMO_GRENADES:				return _icons[17];
+		case AMMO_CELLS:				return _icons[18];
+		case AMMO_LIGHTNING:			return _icons[19];
+		case AMMO_ROCKETS:				return _icons[20];
+		case AMMO_SLUGS:				return _icons[21];
+		case WEAPON_GAUNTLET:			return _icons[25];
+		case WEAPON_MACHINEGUN:			return _icons[26];
+		case ITEM_QUAD:					return _icons[27];
+		case ITEM_ENVIRO:				return _icons[28];
+		case ITEM_HASTE:				return _icons[29];
+		case ITEM_INVIS:				return _icons[30];
+		case ITEM_REGEN:				return _icons[31];
+		case ITEM_FLIGHT:				return _icons[32];
+		case TEAM_CTF_REDFLAG:			return _icons[33];
+		case TEAM_CTF_BLUEFLAG:			return _icons[34];
 		default:						break;
 	}
-	return iconProxy;
+
+	return _proxyImage;
 }
 
-QImage* PaintWidget::getWeapon( int type, bool firing )
+QImage* PaintWidget::GetWeapon( int type, bool firing )
 {
-	if(weapons.size() < 8)
+	if(_weapons.size() < 8)
 	{
-		return iconProxy;
+		return _proxyImage;
 	}
 
-	int shift = firing ? 1 : 0;
-
+	const int delta = firing ? 1 : 0;
 	switch(type)
 	{
-	case WEAPON_GAUNTLET:			return weapons[0*2 + shift];
-	case WEAPON_MACHINEGUN:			return weapons[1*2 + shift];
-	case WEAPON_SHOTGUN:			return weapons[2*2 + shift];
-	case WEAPON_GRENADELAUNCHER:	return weapons[3*2 + shift];
-	case WEAPON_ROCKETLAUNCHER:		return weapons[4*2 + shift];
-	case WEAPON_LIGHTNING:			return weapons[5*2 + shift];
-	case WEAPON_RAILGUN:			return weapons[6*2 + shift];
-	case WEAPON_PLASMAGUN:			return weapons[7*2 + shift];
-	default:						return iconProxy;
+	case WEAPON_GAUNTLET:			return _weapons[0*2 + delta];
+	case WEAPON_MACHINEGUN:			return _weapons[1*2 + delta];
+	case WEAPON_SHOTGUN:			return _weapons[2*2 + delta];
+	case WEAPON_GRENADELAUNCHER:	return _weapons[3*2 + delta];
+	case WEAPON_ROCKETLAUNCHER:		return _weapons[4*2 + delta];
+	case WEAPON_LIGHTNING:			return _weapons[5*2 + delta];
+	case WEAPON_RAILGUN:			return _weapons[6*2 + delta];
+	case WEAPON_PLASMAGUN:			return _weapons[7*2 + delta];
+	default:						break;
 	}
 	
+	return _proxyImage;
 }
 
-
-void PaintWidget::drawViewAngle( QPainter& painter, QPoint center, QColor color, float orientation, float angle, float radius)
+void PaintWidget::DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius)
 {
-	color.setAlpha(32);
-	QBrush brush(color);
+	QPen pen;
+	QColor newColor = color;
+	newColor.setAlpha(32);
+	const QBrush brush(newColor);
 	painter.setBrush(brush);
-	QPen pen; //pen.setWidthF(0.5);
-	//pen.setStyle(Qt::DotLine);
 	painter.setPen(pen);
 
-	QRectF rectangle(center.x() - radius, center.y() - radius, 2*radius, 2*radius);
-	int startAngle = (orientation - angle/2) * 16;
-	int spanAngle = (angle) * 16;
+	const QRectF rectangle(center.x() - radius, center.y() - radius, 2*radius, 2*radius);
+	const int startAngle = (orientation - angle/2) * 16;
+	const int spanAngle = (angle) * 16;
 	painter.drawPie(rectangle, startAngle, spanAngle);
 }
 
-void PaintWidget::drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha)
+void PaintWidget::DrawLivingPlayer(QPainter &painter, int x, int y, int z, const QColor& color, float alpha)
 {
+	QColor newColor = color;
+
 	QPen pen;
 	pen.setWidthF(1.5);
+
 	QBrush brush;
 	brush.setStyle(Qt::SolidPattern);
-	if(alpha == 1.0f)
-	{
-	}
-	else
+
+	if(alpha != 1.0f)
 	{
 		pen.setStyle(Qt::DotLine);
 		brush.setStyle(Qt::SolidPattern);
-		color.setAlpha(alpha * 255);
+		newColor.setAlpha(alpha * 255);
 	}
 
-	int radius = 20 + c * heightScaling;
-
+	const int radius = (int)(20.0f + (float)z * _heightScale);
 	brush.setColor(color);
 	painter.setPen(pen);
 	painter.setBrush(brush);
-	painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
+	painter.drawEllipse(x-radius/2, y-radius/2, radius, radius);
 }
 
-void PaintWidget::drawPlayerPowerup( QPainter &painter, int a, int b, int c, DemoPlayer::Player* player )
+void PaintWidget::DrawPlayerPowerup(QPainter& painter, int x, int y, int z, const Player* player)
 {
-	if(player->powerups[PW_QUAD])
+	if(player->Powerups[PW_QUAD])
 	{
-		QPen pen(QColor(0, 128, 255, 255));
-		pen.setWidth(2);
-		painter.setPen(pen);
-
-		QBrush brush(QColor(0, 128, 255, 128));
-		brush.setStyle(Qt::SolidPattern);
-		painter.setBrush(brush);
-
-		int radius = 24 + c * heightScaling;
-
-		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
-	}
-	if(player->powerups[PW_BATTLESUIT])
-	{
-		QPen pen(QColor(255, 230, 0, 255));
-		pen.setWidth(2);
-		painter.setPen(pen);
-
-		QBrush brush(QColor(255, 230, 0, 128));
-		brush.setStyle(Qt::SolidPattern);
-		painter.setBrush(brush);
-
-		int radius = 26 + c * heightScaling;
-
-		painter.drawEllipse(a-radius/2, b-radius/2, radius, radius);
+		DrawPlayerPowerupDisk(painter, x, y, z, 24, QColor(0, 128, 255, 255), QColor(0, 128, 255, 128));
 	}
 
-	if(player->powerups[PW_REDFLAG])
+	if(player->Powerups[PW_BATTLESUIT])
 	{
-		QImage* r = getIcon(TEAM_CTF_REDFLAG);
-
-		if(r != NULL)
-		{
-			QImage icon = QImage(*r);
-
-			int w = icon.width() * iconScale;
-			int h = icon.height()* iconScale;
-
-			QRect source(0, 0, icon.width(), icon.height());
-			QRect target(a-w/2, b-h/2, w, h);
-
-			painter.drawImage(target, icon, source);
-		}
+		DrawPlayerPowerupDisk(painter, x, y, z, 26, QColor(255, 230, 0, 255), QColor(255, 230, 0, 128));
 	}
-	if(player->powerups[PW_BLUEFLAG])
+
+	if(player->Powerups[PW_REDFLAG])
 	{
-		QImage* r = getIcon(TEAM_CTF_BLUEFLAG);
+		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(TEAM_CTF_REDFLAG));
+	}
 
-		if(r != NULL)
-		{
-			QImage icon = QImage(*r);
-
-			int w = icon.width() * iconScale;
-			int h = icon.height()* iconScale;
-
-			QRect source(0, 0, icon.width(), icon.height());
-			QRect target(a-w/2, b-h/2, w, h);
-
-			painter.drawImage(target, icon, source);
-		}
+	if(player->Powerups[PW_BLUEFLAG])
+	{
+		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(PW_BLUEFLAG));
 	}
 }
 
-
-
-void PaintWidget::drawWeapon( QPainter &painter, int a, int b, int c, float angle, float alpha, int weapon, bool firing )
+void PaintWidget::DrawPlayerPowerupDisk(QPainter& painter, int x, int y, int z, int r, const QColor& color1, const QColor& color2)
 {
-	QImage* icon = getWeapon(weapon, firing);
+	QPen pen(color1);
+	pen.setWidth(2);
+	painter.setPen(pen);
 
-	if(c < 0) c = 0;
+	QBrush brush(color2);
+	brush.setStyle(Qt::SolidPattern);
+	painter.setBrush(brush);
 
-	float hScaling = (300 + c) / 400.0f;
+	const int radius = r + (int)((float)z * _heightScale);
+	painter.drawEllipse(x-radius/2, y-radius/2, radius, radius);
+}
 
-	angle = angle - 90;
-	if(angle < 0) angle += 360;
+void PaintWidget::DrawPlayerPowerupImage(QPainter& painter, int x, int y, int z, QImage* image)
+{
+	if(image == NULL)
+	{
+		return;
+	}
+
+	const QImage icon = QImage(*image);
+	const int w = (int)((float)icon.width() * _iconScale);
+	const int h = (int)((float)icon.height()* _iconScale);
+	const QRect source(0, 0, icon.width(), icon.height());
+	const QRect target(x-w/2, y-h/2, w, h);
+	painter.drawImage(target, icon, source);
+}
+
+void PaintWidget::DrawWeapon(QPainter &painter, int x, int y, int z, float angle, float alpha, int weapon, bool firing)
+{
+	QImage* const icon = GetWeapon(weapon, firing);
+
+	angle -= 90.0f;
+	if(angle < 0.0f)
+	{
+		angle += 360.0f;
+	}
+
+	z = std::max(z, 0);
+	const float scaleZ = (float)(300 + z) / 400.0f;
 
 	painter.save();
-	painter.translate(a,b);
+	painter.translate(x,y);
 	painter.rotate(-angle);
-	painter.translate(13 * hScaling,-10);
+	painter.translate(13 * scaleZ, -10);
 
-	
+	const int w = (int)((float)icon->width() * _iconScale * 0.6f * scaleZ);
+	const int h = (int)((float)icon->height()* _iconScale * 0.6f * scaleZ);
+	const QRect source(0, 0, icon->width(), icon->height());
+	const QRect target(-w/2,-h/2, w, h);					
 
-	int w = icon->width() * iconScale * 0.6 * hScaling;
-	int h = icon->height()* iconScale * 0.6 * hScaling;
-
-	QRect source(0, 0, icon->width(), icon->height());
-	QRect target(-w/2,-h/2, w, h);					
-
-	painter.drawImage(target,*icon, source);
+	painter.drawImage(target, *icon, source);
 	painter.restore();
 }
 
-
-void PaintWidget::drawDeadPlayer( QPainter &painter, int a, int b, QColor &color, float alpha)
+void PaintWidget::DrawDeadPlayer(QPainter &painter, int x, int y, const QColor& color, float alpha)
 {
-	if(icons.size() < 22)
+	if(_icons.size() < 22)
+	{
 		return;
+	}
 
-	QImage icon = QImage(*icons[22]);
+	QImage icon = QImage(*_icons[22]);
+	SetImageAlpha(&icon, alpha);
 
-	int w = icon.width() * iconScale;
-	int h = icon.height()* iconScale;
-
-	setAlphaOnTransparentImage(&icon, alpha);
-
-	QRect source(0, 0, icon.width(), icon.height());
-	QRect target(a-w/2, b-h/2, w, h);
-
+	const int w = icon.width() * _iconScale;
+	const int h = icon.height()* _iconScale;
+	const QRect source(0, 0, icon.width(), icon.height());
+	const QRect target(x-w/2, y-h/2, w, h);
 	painter.drawImage(target, icon, source);
-	
 }
 
-void PaintWidget::drawItem( QPainter& painter, Demo::EntityInfo* info, float alpha)
+void PaintWidget::DrawItem(QPainter& painter, const Demo::EntityInfo* info, float alpha)
 {
-	if(info != NULL)
+	if(info == NULL)
 	{
-		float x = info->Position[0];
-		float y = info->Position[1];
-
-		int a = (x - mapOrigin[0]) * coordsScaling;
-		int b = -(y - mapOrigin[1]) * coordsScaling;
-
-		QImage* r = getIcon(info->ItemType);
-		
-		if(r != NULL)
-		{
-			QImage icon = QImage(*r);
-
-			int w = icon.width() * iconScale;
-			int h = icon.height()* iconScale;
-
-			if(alpha < 1)
-				setAlphaOnTransparentImage(&icon, alpha);
-
-			QRect source(0, 0, icon.width(), icon.height());
-			QRect target(a-w/2, b-h/2, w, h);
-
-			painter.drawImage(target, icon, source);
-		}
-		else
-			painter.drawEllipse(a, b, 10, 10);
-
-		bool debug = false;
-
-		if(debug)
-		{
-			QFont font;
-			font.setPixelSize(10);		
-			painter.setFont(font);
-			painter.drawText(a, b/*-10*/, QString::number(info->Number));
-			//painter.drawText(a, b+10, QString::number(info->number));
-			//return;
-		}
+		return;
 	}
-}
-void PaintWidget::drawProjectile( QPainter& painter, Demo::EntityInfo* info )
-{
-	if(info != NULL)
+
+	const float x = info->Position[0];
+	const float y = info->Position[1];
+	const int x0 = (int)( (x - (float)_mapOrigin[0]) * _coordsScale);
+	const int y0 = (int)(-(y - (float)_mapOrigin[1]) * _coordsScale);
+
+	const QImage* iconImage = GetIcon(info->ItemType);
+	if(iconImage == NULL)
 	{
-		float x = info->Position[0];
-		float y = info->Position[1];
-
-		int a = (x - mapOrigin[0]) * coordsScaling;
-		int b = -(y - mapOrigin[1]) * coordsScaling;
-		
-		QPen pen;
-		QBrush brush;
-		QColor color = Qt::white;
-		int size = 10;
-
-		switch(info->ProjectileType)
-		{
-		case Demo::ProjectileType::NotAProjectile:
-			{
-				return;
-			}
-		case Demo::ProjectileType::Rocket:
-			{
-				QImage* icon = icons[23];
-
-				if(icon != NULL)
-				{
-					painter.save();
-					painter.translate(a,b);
-					int angle = info->Angle / 3.1415 * 180;
-					painter.rotate(angle);
-					int w = icon->width() * iconScale * 1.5;
-					int h = icon->height()* iconScale * 1.5;
-
-					QRect source(0, 0, icon->width(), icon->height());
-					QRect target(-w/2,-h/2, w, h);					
-
-					painter.drawImage(target,*icon, source);
-					painter.restore();
-
-					/*painter.drawText(a, b, QString::number(info->delta));
-
-					x = info->Base[0];
-					y = info->Base[1];
-
-					a = (x - mapOrigin[0]) * coordsScaling;
-					b = -(y - mapOrigin[1]) * coordsScaling;
-					size = 2;
-					painter.drawEllipse(a - size, b - size, size*2, size*2);*/
-				}
-				return;
-			}
-		case Demo::ProjectileType::PlasmaBall:
-			{
-				color = QColor(20, 100, 255);
-				size = 4;
-				pen.setWidth(1);
-				brush.setColor(color);
-				brush.setStyle(Qt::SolidPattern);
-				painter.setPen(pen);
-				painter.setBrush(brush);
-				painter.drawEllipse(a - size, b - size, size*2, size*2);
-				return;
-			}
-		case Demo::ProjectileType::Grenade:
-			{
-				color = QColor(20, 180, 50);
-				size = 5;
-				pen.setWidth(1);
-				brush.setColor(color);
-				brush.setStyle(Qt::SolidPattern);
-				painter.setPen(pen);
-				painter.setBrush(brush);
-				painter.drawEllipse(a - size, b - size, size*2, size*2);
-
-				/*painter.drawText(a, b, QString::number(info->delta));
-
-				x = info->Base[0];
-				y = info->Base[1];
-
-				a = (x - mapOrigin[0]) * coordsScaling;
-				b = -(y - mapOrigin[1]) * coordsScaling;
-				size = 2;
-				painter.drawEllipse(a - size, b - size, size*2, size*2);*/
-
-				return;
-			}
-		}
+		painter.drawEllipse(x0, y0, 10, 10);
+		return;	
 	}
+
+	QImage icon = QImage(*iconImage);
+	if(alpha < 1.0f)
+	{
+		SetImageAlpha(&icon, alpha);
+	}
+
+	const int w = (int)((float)icon.width() * _iconScale);
+	const int h = (int)((float)icon.height()* _iconScale);
+	const QRect source(0, 0, icon.width(), icon.height());
+	const QRect target(x0-w/2, y0-h/2, w, h);
+	painter.drawImage(target, icon, source);
 }
 
-
-void PaintWidget::drawGeneric( QPainter& painter, Demo::EntityInfo* info )
+void PaintWidget::DrawProjectile(QPainter& painter, const Demo::EntityInfo* info)
 {
-	if(info != NULL)
+	if(info == NULL)
 	{
-		float x = info->Position[0];
-		float y = info->Position[1];
+		return;
+	}
 
-		int a = (x - mapOrigin[0]) * coordsScaling;
-		int b = -(y - mapOrigin[1]) * coordsScaling;
+	const float x = info->Position[0];
+	const float y = info->Position[1];
+	const int x0 = (int)( (x - (float)_mapOrigin[0]) * _coordsScale);
+	const int y0 = (int)(-(y - (float)_mapOrigin[1]) * _coordsScale);
 
-		QPen pen;
-		QBrush brush;
-		QColor color = Qt::white;
-		int size = 10;
+	QPen pen;
+	QBrush brush;
+	QColor color = Qt::white;
+	int size = 10;
 
-		switch(info->GenericType)
+	switch(info->ProjectileType)
+	{
+	case Demo::ProjectileType::NotAProjectile:
 		{
-		case Demo::GenericType::RocketSplash:
-			{
-				QImage* icon = icons[24];
-				if(icon != NULL)
-				{
-					painter.save();
-					int w = icon->width() * iconScale * 1.5;
-					int h = icon->height()* iconScale * 1.5;
-
-					painter.translate(a,b);
-					int angle = info->Angle / 3.1415 * 180;
-					painter.rotate(angle);
-
-					QRect source(0, 0, icon->width(), icon->height());
-					QRect target(-w/2, -h/2, w, h);
-
-					painter.drawImage(target, *icon, source);
-					painter.restore();
-				}
-				return;
-			}
-		case Demo::GenericType::GrenadeSplash:
-			{
-				QImage* icon = icons[24];
-				if(icon != NULL)
-				{
-					painter.save();
-					int w = icon->width() * iconScale * 1.5;
-					int h = icon->height()* iconScale * 1.5;
-
-					painter.translate(a,b);
-					int angle = info->Angle / 3.1415 * 180;
-					painter.rotate(angle);
-
-					QRect source(0, 0, icon->width(), icon->height());
-					QRect target(-w/2, -h/2, w, h);
-
-					painter.drawImage(target, *icon, source);
-					painter.restore();
-				}
-				return;
-			}
-		case Demo::GenericType::Hit:
-		case Demo::GenericType::Miss:
-			color = QColor(0, 200, 255);
-			size = 3;
-			break;
-		case Demo::GenericType::PlasmaSplash:
-			color = QColor(0, 160, 255);
-			size = 6;
-			break;
-		case Demo::GenericType::LgSplash:
-			color = QColor(0, 255, 255);
-			size = 4;
-			break;
-		default:
 			return;
 		}
-
-		pen.setWidth(1);
-		brush.setColor(color);
-		brush.setStyle(Qt::SolidPattern);
-		painter.setPen(pen);
-		painter.setBrush(brush);
-		painter.drawEllipse(a - size, b - size, size*2, size*2);
-
-		if(info->GenericType == Demo::GenericType::Hit)
+	case Demo::ProjectileType::Rocket:
 		{
-			QPen pen(QColor(0, 200, 255));
+			QImage* icon = _icons[23];
+			if(icon != NULL)
+			{
+				const float angle = RadToDeg(info->Angle);
+				painter.save();
+				painter.translate(x0, y0);
+				painter.rotate(angle);
+
+				const int w = (int)((float)icon->width() * _iconScale * 1.5f);
+				const int h = (int)((float)icon->height()* _iconScale * 1.5f);
+				const QRect source(0, 0, icon->width(), icon->height());
+				const QRect target(-w/2, -h/2, w, h);					
+				painter.drawImage(target, *icon, source);
+				painter.restore();
+			}
+			return;
+		}
+	case Demo::ProjectileType::PlasmaBall:
+		{
+			color = QColor(20, 100, 255);
+			size = 4;
+			pen.setWidth(1);
+			brush.setColor(color);
+			brush.setStyle(Qt::SolidPattern);
 			painter.setPen(pen);
-			QFont font;
-			font.setPixelSize(15);			
-			painter.setFont(font);
-			painter.drawText(a + 15, b, QString("Hit!"));
+			painter.setBrush(brush);
+			painter.drawEllipse(x0 - size, y0 - size, size*2, size*2);
+			return;
+		}
+	case Demo::ProjectileType::Grenade:
+		{
+			color = QColor(20, 180, 50);
+			size = 5;
+			pen.setWidth(1);
+			brush.setColor(color);
+			brush.setStyle(Qt::SolidPattern);
+			painter.setPen(pen);
+			painter.setBrush(brush);
+			painter.drawEllipse(x0 - size, y0 - size, size*2, size*2);
+			return;
 		}
 	}
 }
-void PaintWidget::drawBeams( QPainter& painter, float* startPosition, float* endPosition, DemoPlayer::Beam::Type::Id type, float alpha)
+
+void PaintWidget::DrawGeneric(QPainter& painter, const Demo::EntityInfo* info)
 {
-
-	float shiftX = endPosition[0]-startPosition[0];
-	float shiftY = endPosition[1]-startPosition[1];
-
-	float n = sqrt(shiftX*shiftX + shiftY*shiftY);
-
-	float q = shiftY / n;
-	float r = -shiftX / n;
-
-	float x = startPosition[0] + q * 30 - r * 60;
-	float y = startPosition[1] + r * 30 + q * 60;
-
-	int a = (x - mapOrigin[0]) * coordsScaling;
-	int b = -(y - mapOrigin[1]) * coordsScaling;
-
-	float z = endPosition[0];
-	float w = endPosition[1];
-
-	int c = (z - mapOrigin[0]) * coordsScaling;
-	int d = -(w - mapOrigin[1]) * coordsScaling;
-
-
-	bool stop = false;
-	QPen pen;
-	switch(type)
+	if(info == NULL)
 	{
-	case DemoPlayer::Beam::Type::LG:
+		return;
+	}
+
+	const float x = info->Position[0];
+	const float y = info->Position[1];
+	const int x0 = (int)( (x - (float)_mapOrigin[0]) * _coordsScale);
+	const int y0 = (int)(-(y - (float)_mapOrigin[1]) * _coordsScale);
+
+	QPen pen;
+	QBrush brush;
+	QColor color = Qt::white;
+	int size = 10;
+
+	switch(info->GenericType)
+	{
+	case Demo::GenericType::RocketSplash:
+		{
+			QImage* icon = _icons[24];
+			if(icon != NULL)
+			{
+				const float angle = RadToDeg(info->Angle);
+				painter.save();
+				painter.translate(x0, y0);
+				painter.rotate(angle);
+
+				const int w = (int)((float)icon->width() * _iconScale * 1.5f);
+				const int h = (int)((float)icon->height()* _iconScale * 1.5f);
+				const QRect source(0, 0, icon->width(), icon->height());
+				const QRect target(-w/2, -h/2, w, h);
+				painter.drawImage(target, *icon, source);
+				painter.restore();
+			}
+			return;
+		}
+	case Demo::GenericType::GrenadeSplash:
+		{
+			QImage* icon = _icons[24];
+			if(icon != NULL)
+			{
+				const float angle = RadToDeg(info->Angle);
+				painter.save();
+				painter.translate(x0, y0);
+				painter.rotate(angle);
+
+				const int w = (int)((float)icon->width() * _iconScale * 1.5f);
+				const int h = (int)((float)icon->height()* _iconScale * 1.5f);
+				const QRect source(0, 0, icon->width(), icon->height());
+				const QRect target(-w/2, -h/2, w, h);
+				painter.drawImage(target, *icon, source);
+				painter.restore();
+			}
+			return;
+		}
+	case Demo::GenericType::Hit:
+	case Demo::GenericType::Miss:
+		color = QColor(0, 200, 255);
+		size = 3;
+		break;
+	case Demo::GenericType::PlasmaSplash:
+		color = QColor(0, 160, 255);
+		size = 6;
+		break;
+	case Demo::GenericType::LgSplash:
+		color = QColor(0, 255, 255);
+		size = 4;
+		break;
+	default:
+		return;
+	}
+
+	pen.setWidth(1);
+	brush.setColor(color);
+	brush.setStyle(Qt::SolidPattern);
+	painter.setPen(pen);
+	painter.setBrush(brush);
+	painter.drawEllipse(x0 - size, y0 - size, size*2, size*2);
+
+	if(info->GenericType == Demo::GenericType::Hit)
+	{
+		const QPen pen(QColor(0, 200, 255));
+		painter.setPen(pen);
+
+		QFont font;
+		font.setPixelSize(15);			
+		painter.setFont(font);
+		painter.drawText(x0 + 15, y0, QString("Hit!"));
+	}
+}
+
+void PaintWidget::DrawBeams(QPainter& painter, const float* startPositions, const float* endPositions, Beam::Type::Id beamType, float alpha)
+{
+	const float deltaX = endPositions[0] - startPositions[0];
+	const float deltaY = endPositions[1] - startPositions[1];
+
+	const float length = sqrt(deltaX*deltaX + deltaY*deltaY);
+
+	const float q =  deltaY / length;
+	const float r = -deltaX / length;
+
+	const float x = startPositions[0] + q*30 - r*60;
+	const float y = startPositions[1] + r*30 + q*60;
+
+	const int x1 =  (x - _mapOrigin[0]) * _coordsScale;
+	const int y1 = -(y - _mapOrigin[1]) * _coordsScale;
+
+	const float z = endPositions[0];
+	const float w = endPositions[1];
+
+	const int x2 =  (z - _mapOrigin[0]) * _coordsScale;
+	const int y2 = -(w - _mapOrigin[1]) * _coordsScale;
+
+	bool drawLine = true;
+	QPen pen;
+	switch(beamType)
+	{
+	case Beam::Type::LG:
 		{
 			pen.setWidth(5);
-			pen.setColor(QColor(0, 200, 255, 80*alpha));
+			pen.setColor(QColor(0, 200, 255, (int)(80.0f*alpha)));
 			painter.setPen(pen);
 			break;
 		}
-	case DemoPlayer::Beam::Type::RG:
+	case Beam::Type::RG:
 		{
 			pen.setWidth(2);
 			pen.setColor(QColor(0, 0, 0, 0));
 			painter.setPen(pen);
 
-			QBrush brush(QColor(255,128,0,255*alpha));
+			QBrush brush(QColor(255, 128, 0, (int)(255.0f*alpha)));
 			painter.setBrush(brush);
 
-
-			int n = 100;
-			for (int i = 0; i < n; ++i) 
+			const int n = 100;
+			for(int i = 0; i < n; ++i) 
 			{
+				const int x = x1 + (x2-x1)*i/(n-1);
+				const int y = y1 + (y2-y1)*i/(n-1);
+				const qreal distance = 4;
+				const qreal circleRadius = 2;
 				painter.save();
-				int x = a + (c-a)*i/(n-1);
-				int y = b + (d-b)*i/(n-1);
 				painter.translate(x, y);
 				painter.rotate(i*(55.6 + 5*alpha));
-				qreal distance = 4;
-				qreal circleRadius = 2;
 				painter.drawEllipse(0, distance, circleRadius*2, circleRadius*2);
 				painter.restore();
 			}
-			pen.setColor(QColor(255, 0, 0, 80*alpha));
+			pen.setColor(QColor(255, 0, 0, (int)(80.0f*alpha)));
 			painter.setPen(pen);
 
 			break;
 		}
 	default:
-		stop = true;
+		drawLine = false;
 		break;
 	}
-	if(stop)
-		return;
-	
-	painter.drawLine(a,b,c,d);
+
+	if(drawLine)
+	{
+		painter.drawLine(x1, y1, x2, y2);
+	}
 }
 
-void PaintWidget::setAlphaOnTransparentImage( QImage* image, float alpha )
+void PaintWidget::SetImageAlpha(QImage* image, float alpha)
 {
-	for (int y = 0; y < image->height(); y++) {
-		for (int x = 0; x < image->height(); x++) {
-			QColor c = QColor::fromRgba(image->pixel(x, y));
-			int des_a = 255*alpha;
-			int a = c.alpha();
-			if(des_a < a)
+	for(int y = 0; y < image->height(); ++y) 
+	{
+		for(int x = 0; x < image->height(); ++x) 
+		{
+			QColor srcColor = QColor::fromRgba(image->pixel(x, y));
+			const int dstAlpha = (int)(255.0f * alpha);
+			const int srcAlpha = srcColor.alpha();
+			if(dstAlpha < srcAlpha)
 			{
-				c.setAlpha(des_a);
-				image->setPixel(x, y, c.rgba());
+				srcColor.setAlpha(dstAlpha);
+				image->setPixel(x, y, srcColor.rgba());
 			}
 		}
 	}

@@ -14,37 +14,39 @@ class Gui : public QMainWindow
 	Q_OBJECT
 
 public:
-	static int UdtProgressCallback(float progress);
+	static int	UdtProgressCallback(float progress);
 	static void UdtMessageCallback(int logLevel, const char* message);
 
 	Gui(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~Gui();
 
-	void loadDemo(QString filepath);
-	void loadIconData();
-	void connectUiElements();
+	void	LoadDemo(QString filepath);
+	void	LoadIconData();
+	void	ConnectUiElements();
 
 public slots:
-	void playButtonPressed();	
-	void stopButtonPressed();
-	void updateProgressSlider(float p);
-	void progressSliderValueChanged(int);
-	void timeScaleChanged(double v);
-	void showClockChanged(int);
-	void showScoreChanged(int);
-	void showHudChanged(int);
-	void reverseTimeChanged(int);
-	bool getScalingData(QString scalingPath, int* origin, int* end);
-	void demoFinished();
+	void	PlayButtonPressed();	
+	void	StopButtonPressed();
+	void	UpdateProgressSlider(float p);
+	void	ProgressSliderValueChanged(int);
+	void	TimeScaleChanged(double v);
+	void	ShowClockChanged(int);
+	void	ShowScoreChanged(int);
+	void	ShowHudChanged(int);
+	void	ReverseTimeChanged(int);
+	bool	GetScalingData(QString scalingPath, int* origin, int* end);
+	void	DemoFinished();
+
+protected:
+	// Qt overrides.
+	void	dragEnterEvent(QDragEnterEvent* event);
+	void	dropEvent(QDropEvent* event);
+
+	void	OnProgress(float progress);
+	void	OnMessage(int logLevel, const char* message);
 
 public:
 	QString DataPath;
-
-protected:
-	void dragEnterEvent(QDragEnterEvent* event);
-	void dropEvent(QDropEvent* event);
-	void onProgress(float progress);
-	void onMessage(int logLevel, const char* message);
 
 private:
 	Ui::MyClassClass _ui;

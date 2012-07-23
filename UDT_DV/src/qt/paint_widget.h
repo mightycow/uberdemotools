@@ -1,94 +1,85 @@
 #pragma once
 
-#include <QWidget>
-#include <QPaintEvent>
+
 #include "demo.hpp"
 #include "demo_player.h"
+
+#include <QWidget>
+#include <QPaintEvent>
+
 
 class PaintWidget : public QWidget
 {
 	Q_OBJECT
 
+protected:
+	struct PlayerData
+	{
+		Demo::PlayerInfo* DemoPlayer;
+		Player* Player;
+		float Alpha;
+		bool Dead;
+
+		PlayerData() : DemoPlayer(NULL), Player(NULL), Alpha(1.0f), Dead(false) {}
+
+		bool operator <(const PlayerData& rhs) const
+		{
+			return this->DemoPlayer->Position[2] < rhs.DemoPlayer->Position[2];
+		}
+	};
+
 public:
 	PaintWidget(QWidget *parent);
 	~PaintWidget();
 
-	void releaseImage();
-	bool loadImage(QString imagePath);
-	void loadIcons(QString dirPath, QStringList iconsPath);
-	void loadWeapons(QString dirPath, QStringList weaponsPath);
-
-	void resetScaling();
-	void setScaling(int* origin, int* end);
-
-	Demo* demo;
-	std::vector<DemoPlayer::Player>* players;
-	std::vector<DemoPlayer::Player>* spectators;
-	std::vector<DemoPlayer::Entity>* entities;	
-	std::vector<DemoPlayer::Beam>* beams;
-	std::vector<DemoPlayer::ScoreEntry>* scoreTable;
-	QTime* clock;
-	int* warmupTime;
-	
-	bool displayDemo;
-	bool showClock;
-	bool showScore;
-	bool showHud;
-	float iconScale;
-	QString bgMessage;
+	void	ReleaseImage();
+	bool	LoadImage(const QString& imagePath);
+	void	LoadIcons(const QString& dirPath, const QStringList& iconsPath);
+	void	LoadWeapons(const QString& dirPath, const QStringList& weaponsPath);
+	void	ResetScaling();
+	void	SetScaling(int* origin, int* end);
 
 protected:
-	
-	void paintEvent(QPaintEvent* event);
-	void paintDemo(QPainter& painter);
-	void drawClock(QPainter& painter);
-	void drawHud(QPainter& painter);
-	void drawScores(QPainter& painter);
+	// Qt overrides.
+	void	paintEvent(QPaintEvent* event);
 
-	struct PlayerData
-	{
-		Demo::PlayerInfo* player;
-		DemoPlayer::Player* dPPlayer;
-		float alpha;
-		bool dead;
+	void	PaintDemo(QPainter& painter);
+	void	DrawClock(QPainter& painter);
+	void	DrawHud(QPainter& painter);
+	void	DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text);
+	void	DrawScores(QPainter& painter);
+	void	DrawPlayer(QPainter& painter, const PlayerData& data);
+	void	DrawLivingPlayer(QPainter& painter, int x, int y, int z, const QColor& color, float alpha);
+	void	DrawDeadPlayer(QPainter& painter, int x, int y, const QColor& color, float alpha);
+	void	DrawPlayerPowerup(QPainter& painter, int x, int y, int z, const Player* player);
+	void	DrawPlayerPowerupDisk(QPainter& painter, int x, int y, int z, int r, const QColor& color1, const QColor& color2);
+	void	DrawPlayerPowerupImage(QPainter& painter, int x, int y, int z, QImage* image);
+	void	DrawWeapon(QPainter& painter, int x, int y, int z, float angle, float alpha, int weapon, bool firing);
+	void	DrawItem(QPainter& painter, const Demo::EntityInfo* info, float alpha);
+	void	DrawProjectile(QPainter& painter, const Demo::EntityInfo* info);
+	void	DrawGeneric(QPainter& painter, const Demo::EntityInfo* info);
+	void	DrawBeams(QPainter& painter, const float* startPositions, const float* endPositions, Beam::Type::Id type, float alpha = 1.0f);
+	void	SetImageAlpha(QImage* image, float alpha);
+	void	DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius);
+	QImage* GetIcon(int type);
+	QImage* GetWeapon(int type, bool firing);
 
-		PlayerData() : player(NULL), dPPlayer(NULL), alpha(1.0f), dead(false){}
-
-		bool operator < (const PlayerData& rhs) const
-		{
-			return this->player->Position[2] < rhs.player->Position[2];
-		}
-	};
-
-	void drawPlayer(QPainter& painter, PlayerData data);
-
-	void drawAlivePlayer(QPainter &painter, int a, int b, int c, QColor &color, float alpha);
-	void drawDeadPlayer(QPainter &painter, int a, int b, QColor &color, float alpha);
-	void drawPlayerPowerup(QPainter &painter, int a, int b, int c, DemoPlayer::Player* player);
-	void drawWeapon(QPainter &painter, int a, int b, int c, float angle, float alpha, int weapon, bool firing);
-
-	void drawItem(QPainter& painter, Demo::EntityInfo* info, float alpha);
-	void drawProjectile(QPainter& painter, Demo::EntityInfo* info);
-	void drawGeneric(QPainter& painter, Demo::EntityInfo* info);
-	void drawBeams(QPainter& painter, float* startPosition, float* endPosition, DemoPlayer::Beam::Type::Id type, float alpha = 1.0f);
-
-	void setAlphaOnTransparentImage(QImage* image, float alpha);
-
-	void drawViewAngle(QPainter& painter, QPoint center, QColor color, float orientation, float angle, float radius);
-	QImage* getIcon(int type);
-	QImage* getWeapon(int type, bool firing);
-
+public:
+	SharedDemoData* DemoData;
+	bool DisplayDemo;
+	bool ShowClock;
+	bool ShowScore;
+	bool ShowHud;
+	QString BackgroundMessage;
 
 private:
-	QImage* bgImage;	
-	int mapOrigin[3];
-	int mapEnd[3];
-	float coordsScaling;
-	float heightScaling;
-
-	std::vector<QImage*> icons;
-	std::vector<QImage*> weapons;
-	QImage* iconProxy;
-
-public slots:	
+	QImage* _bgImage;	
+	int _mapOrigin[3];
+	int _mapEnd[3];
+	float _coordsScale;
+	float _heightScale;
+	float _iconScale;
+	std::vector<QImage*> _icons;
+	std::vector<QImage*> _weapons;
+	QImage* _proxyImage;
 };
