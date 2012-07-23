@@ -239,15 +239,6 @@ void PaintWidget::paintDemo( QPainter& painter )
 				pData.alpha = aliveAlpha;
 				pData.dead = false;
 				playerData.push_back(pData);
-
-				/*drawPlayer(
-					painter,
-					alive,
-					&players->at(i),
-					players->at(i).color, 
-					players->at(i).name, 
-					aliveAlpha,
-					false);*/
 			}
 
 			if(dead)
@@ -259,15 +250,6 @@ void PaintWidget::paintDemo( QPainter& painter )
 				pData.alpha = deadAlpha;
 				pData.dead = true;
 				playerData.push_back(pData);
-
-				/*drawPlayer(
-					painter, 
-					dead, 
-					&players->at(i),
-					players->at(i).color, 
-					players->at(i).name, 
-					deadAlpha,
-					true);*/
 			}
 		}
 		
@@ -276,23 +258,6 @@ void PaintWidget::paintDemo( QPainter& painter )
 		for(size_t i = 0; i < playerData.size(); i++)
 		{
 			drawPlayer(painter, playerData[i]);
-		}
-
-		scoreTable.clear();
-		for(size_t i = 0; i < players->size(); i++)
-		{
-			if(players->at(i).team != TEAM_SPECTATOR)
-			{
-				ScoreEntry e;
-				e.name = players->at(i).name;
-				e.score = players->at(i).score;
-				scoreTable.push_back(e);
-			}
-		}
-		if(scoreTable.size() > 2)
-		{
-			std::sort(scoreTable.begin(), scoreTable.end());
-			std::reverse(scoreTable.begin(), scoreTable.end());
 		}
 	}
 	drawClock(painter);
@@ -417,84 +382,54 @@ void PaintWidget::drawClock(QPainter& painter)
 
 void PaintWidget::drawScores( QPainter& painter )
 {
-	if(scoreTable.empty() || !showScore)
+	if(scoreTable->empty() || !showScore)
+	{
 		return;
-
-	/*if(scoreTable.size() > 2)
-	{
-		int x = 30;
-		int y = 30;
-		for(size_t i = 0; i < scoreTable.size(); i++)
-		{
-			QFont font;
-			font.setPixelSize(15);
-			painter.setFont(font);
-
-			painter.drawText(x, y, scoreTable[i].name + " " + QString::number(scoreTable[i].score));
-
-			y += 20;
-		}
 	}
-	else */if(scoreTable.size() == 2)
+
+	// @TODO: FFA etc support.
+	if(scoreTable->size() != 2)
 	{
-		int y = 30;
-
-		QFont nameFont;
-		nameFont.setPixelSize(20);
-		QFontMetrics nameFontMetric(nameFont);
-		
-		QString leftPlayer = scoreTable[0].name;
-		QString rightPlayer = scoreTable[1].name;
-
-		int leftPlayerWidth = nameFontMetric.width(leftPlayer);
-		int rightPlayerWidth = nameFontMetric.width(rightPlayer);
-
-		QFont scoreFont;
-		scoreFont.setPixelSize(25);
-		QFontMetrics scoreFontMetric(scoreFont);
-
-		QString leftScore = " " + QString::number(scoreTable[0].score) + " ";
-		QString rightScore = " " + QString::number(scoreTable[1].score) + " ";
-
-		int leftScoreWidth = scoreFontMetric.width(leftScore);
-		int rightScoreWidth = scoreFontMetric.width(rightScore);
-
-		int pad = 0; //scoreFontMetric.width(" - ") / 2;
-		
-
-		QPen pen(QColor(100, 50, 50, 255)); pen.setWidth(1);
-		painter.setPen(pen);
-		painter.setFont(nameFont);
-		painter.drawText(this->width() / 2 - leftPlayerWidth - leftScoreWidth - pad, y, leftPlayer);
-		painter.drawText(this->width() / 2 + rightScoreWidth + pad, y, rightPlayer);
-		painter.drawText(this->width() / 2 - scoreFontMetric.width("-") / 2, y, "-");
-
-		pen.setColor(QColor(255, 100, 100, 255));
-		painter.setPen(pen);
-		painter.setFont(scoreFont);
-		painter.drawText(this->width() / 2 - leftScoreWidth - pad, y, leftScore);
-		painter.drawText(this->width() / 2 + pad, y, rightScore);
-
-		/*QString scoreline = leftPlayer + " - " + rightPlayer;
-		int boxWidth = fm.width(" " + scoreline + " ");
-		int boxHeight = fm.height();
-		int boxShift = boxWidth - leftWidth;
-
-		painter.save();
-		QBrush brush(QColor(100,50,50, 16));
-		painter.setBrush(brush);
-		QPen pen(QColor(100, 50, 50, 255)); pen.setWidth(1);
-		painter.setPen(pen);
-
-		QPolygon polygon;
-		polygon.append(QPoint(this->width() / 2 - leftWidth  - 2, y - boxHeight / 1 ));
-		polygon.append(QPoint(this->width() / 2 + rightWidth + 2, y - boxHeight / 1 ));
-		polygon.append(QPoint(this->width() / 2 + rightWidth + 2, y + boxHeight / 2 ));
-		polygon.append(QPoint(this->width() / 2 - leftWidth  - 2, y + boxHeight / 2 ));
-		painter.drawPolygon(polygon, Qt::FillRule::OddEvenFill);
-		painter.restore();*/
-
+		return;
 	}
+		
+	int y = 30;
+
+	QFont nameFont;
+	nameFont.setPixelSize(20);
+	QFontMetrics nameFontMetric(nameFont);
+
+	QString leftPlayer = (*scoreTable)[0].name;
+	QString rightPlayer = (*scoreTable)[1].name;
+
+	int leftPlayerWidth = nameFontMetric.width(leftPlayer);
+	int rightPlayerWidth = nameFontMetric.width(rightPlayer);
+
+	QFont scoreFont;
+	scoreFont.setPixelSize(25);
+	QFontMetrics scoreFontMetric(scoreFont);
+
+	QString leftScore = " " + QString::number((*scoreTable)[0].score) + " ";
+	QString rightScore = " " + QString::number((*scoreTable)[1].score) + " ";
+
+	int leftScoreWidth = scoreFontMetric.width(leftScore);
+	int rightScoreWidth = scoreFontMetric.width(rightScore);
+
+	int pad = 0; //scoreFontMetric.width(" - ") / 2;
+
+
+	QPen pen(QColor(100, 50, 50, 255)); pen.setWidth(1);
+	painter.setPen(pen);
+	painter.setFont(nameFont);
+	painter.drawText(this->width() / 2 - leftPlayerWidth - leftScoreWidth - pad, y, leftPlayer);
+	painter.drawText(this->width() / 2 + rightScoreWidth + pad, y, rightPlayer);
+	painter.drawText(this->width() / 2 - scoreFontMetric.width("-") / 2, y, "-");
+
+	pen.setColor(QColor(255, 100, 100, 255));
+	painter.setPen(pen);
+	painter.setFont(scoreFont);
+	painter.drawText(this->width() / 2 - leftScoreWidth - pad, y, leftScore);
+	painter.drawText(this->width() / 2 + pad, y, rightScore);
 }
 
 

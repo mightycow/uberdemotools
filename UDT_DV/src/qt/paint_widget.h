@@ -26,6 +26,7 @@ public:
 	std::vector<DemoPlayer::Player>* spectators;
 	std::vector<DemoPlayer::Entity>* entities;	
 	std::vector<DemoPlayer::Beam>* beams;
+	std::vector<DemoPlayer::ScoreEntry>* scoreTable;
 	QTime* clock;
 	int* warmupTime;
 	
@@ -88,19 +89,6 @@ private:
 	std::vector<QImage*> icons;
 	std::vector<QImage*> weapons;
 	QImage* iconProxy;
-
-	struct ScoreEntry
-	{
-		QString name;
-		int score;
-
-		bool operator < (const ScoreEntry& rhs) const
-		{
-			return score < rhs.score;
-		}
-	};
-
-	std::vector<ScoreEntry> scoreTable;
 
 public slots:	
 };

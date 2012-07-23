@@ -211,6 +211,7 @@ void Gui::loadDemo( QString filepath )
 	ui.paintWidget->beams = &demoPlayer.beams;
 	ui.paintWidget->clock = &demoPlayer.clock;
 	ui.paintWidget->warmupTime = &demoPlayer.warmupTime;
+	ui.paintWidget->scoreTable = &demoPlayer.scoreTable;
 	ui.paintWidget->displayDemo = true;
 	ui.progressSlider->setValue(0);
 	ui.playButton->setText("Pause");

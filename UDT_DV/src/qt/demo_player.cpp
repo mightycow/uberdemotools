@@ -421,6 +421,65 @@ void DemoPlayer::updateEntityList(int startIndex, int time)
 			entity.syncCooldown = std::min(entity.syncCooldown, SYNCMAX);
 		}
 	}
+
+	//
+	// Update scores
+	//
+	scoreTable.clear();
+	if(Demo::GameType::IsTeamMode((Demo::GameType::Id)demo->_gameType))
+	{
+		const int currentTime = demoStartTime + elapsedTime;
+
+		Demo::ScoreInfo* scoreInfo = NULL;
+		for(size_t i = 0; i < demo->_scorePlaybackInfos.size(); ++i)
+		{
+			Demo::ScoreInfo* info = &demo->_scorePlaybackInfos[i];
+			if(info->Time > currentTime)
+			{
+				break;
+			}
+
+			scoreInfo = info;
+		}
+
+		int scoreRed = 0;
+		int scoreBlue = 0;
+		if(scoreInfo != NULL)
+		{
+			scoreRed = scoreInfo->Score1;
+			scoreBlue = scoreInfo->Score2;
+		}
+
+		DemoPlayer::ScoreEntry e;
+		e.name = "RED";
+		e.score = scoreRed;
+		scoreTable.push_back(e);
+
+		e.name = "BLUE";
+		e.score = scoreBlue;
+		scoreTable.push_back(e);
+	}
+	else
+	{
+		for(size_t i = 0; i < playerList.size(); i++)
+		{
+			if(playerList.at(i).team == TEAM_SPECTATOR)
+			{
+				continue;
+			}
+
+			DemoPlayer::ScoreEntry e;
+			e.name = playerList[i].name;
+			e.score = playerList[i].score;
+			scoreTable.push_back(e);
+		}
+	}
+
+	if(scoreTable.size() > 2)
+	{
+		std::sort(scoreTable.begin(), scoreTable.end());
+		std::reverse(scoreTable.begin(), scoreTable.end());
+	}
 }
 
 void DemoPlayer::deSyncEntities()

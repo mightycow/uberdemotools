@@ -13,6 +13,19 @@ class DemoPlayer : public QObject
 
 public:
 
+	struct ScoreEntry
+	{
+		QString name;
+		int score;
+
+		bool operator < (const ScoreEntry& rhs) const
+		{
+			return score < rhs.score;
+		}
+	};
+
+	std::vector<ScoreEntry> scoreTable;
+
 	int serverTime;
 	int elapsedTime;
 
