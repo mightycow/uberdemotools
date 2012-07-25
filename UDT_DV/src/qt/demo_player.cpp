@@ -89,9 +89,6 @@ bool DemoPlayer::LoadDemo(const QString& path)
 
 void DemoPlayer::TimerTick()
 {
-
-	if(_timeScale < 0)
-		int asd = 0;
 	// Update elapsed time.
 	_elapsedTime += _timer.interval() * _timeScale;
 
