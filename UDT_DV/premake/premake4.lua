@@ -61,11 +61,14 @@ solution "U2DDV"
 
 		configuration "Release"
 			defines { "NDEBUG" }
-			flags { "NoMinimalRebuild", "Optimize", "NoFramePointer", "EnableSSE2", "FloatFast" } -- "NoIncrementalLink"
+			flags { "NoMinimalRebuild", "Optimize", "NoFramePointer", "EnableSSE2", "FloatFast" } -- "NoIncrementalLink"	
 			
 		--
 		-- Visual Studio
 		--
+		configuration { "vs*" }
+			files { "../rsrc/icon.rc" } -- Application icon
+		
 		configuration { "Debug", "vs*" }
 			targetdir ( "../bin/" .. _ACTION .. "/debug" )
 			buildoptions { "" } -- Directly passed to the compiler.
