@@ -1,6 +1,7 @@
 #include "demo_player.h"
 #include "api.h"
 #include "demo73.hpp"
+#include "demo68.hpp"
 
 #include <set>
 #include <qDebug>
@@ -49,9 +50,27 @@ bool DemoPlayer::LoadDemo(const QString& path)
 		DemoData.Demo = NULL;
 	}
 
-	Demo* const demo = new Demo73;
+	Demo* demo = NULL;
+	const QStringList splitPath = path.split(".");
+	const QString fileExtension = splitPath.back();
+	if(fileExtension == "dm_73")
+	{
+		demo = new Demo73;
+		demo->_protocol = Protocol::Dm73;
+	}
+	else if(fileExtension == "dm_68")
+	{
+		LogWarning("Quake 3 support is still experimental...");
+		demo = new Demo68;
+		demo->_protocol = Protocol::Dm68;
+	}
+	else
+	{
+		LogError("Unrecognized demo file extension '%s'", fileExtension.toLocal8Bit().constData());
+		return false;
+	}
+
 	demo->_inFilePath = path.toStdString().c_str();
-	demo->_protocol = Protocol::Dm73;
 	if(!demo->Do())
 	{
 		return false;
