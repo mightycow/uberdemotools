@@ -576,15 +576,15 @@ void DemoPlayer::GetDemoBoundingBox(int* origin, int* end)
 		return;
 	}
 
-	origin[0] = 9999;
-	origin[1] = -9999;
-	origin[2] = 9999;
+	float minX = 99999;
+	float minY = 99999;
+	float minZ = 99999;
 
-	end[0] = -9999;
-	end[1] = 9999;
-	end[2] = -9999;
+	float maxX = -99999;
+	float maxY = -99999;
+	float maxZ = -99999;
 
-	const int Margin = 400;
+	const int Margin = 200;
 
 	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); i++)
 	{
@@ -592,9 +592,9 @@ void DemoPlayer::GetDemoBoundingBox(int* origin, int* end)
 		float y = demo->_playerPlaybackInfos[i].Position[1];
 		float z = demo->_playerPlaybackInfos[i].Position[2];
 
-		if(x < origin[0]) origin[0] = x - Margin; if(x > end[0]   ) end[0]    = x + Margin;
-		if(y < end[1]   ) end[1]    = y - Margin; if(y > origin[1]) origin[1] = x + Margin;
-		if(z < origin[2]) origin[2] = z - Margin; if(z > end[2]   ) end[2]    = x + Margin;
+		if(x < minX) minX = x; if(x > maxX ) maxX = x;
+		if(y < minY) minY = y; if(y > maxY ) maxY = y;
+		if(z < minZ) minZ = z; if(z > maxZ ) maxZ = z;
 	}
 
 	for(size_t i = 0; i < demo->_entityPlaybackInfos.size(); i++)
@@ -603,8 +603,16 @@ void DemoPlayer::GetDemoBoundingBox(int* origin, int* end)
 		float y = demo->_entityPlaybackInfos[i].Position[1];
 		float z = demo->_entityPlaybackInfos[i].Position[2];
 
-		if(x < origin[0]) origin[0] = x - Margin; if(x > end[0]   ) end[0]    = x + Margin;
-		if(y < end[1]   ) end[1]    = y - Margin; if(y > origin[1]) origin[1] = x + Margin;
-		if(z < origin[2]) origin[2] = z - Margin; if(z > end[2]   ) end[2]    = x + Margin;
+		if(x < minX) minX = x; if(x > maxX ) maxX = x;
+		if(y < minY) minY = y; if(y > maxY ) maxY = y;
+		if(z < minZ) minZ = z; if(z > maxZ ) maxZ = z;
 	}
+
+	origin[0] = minX - Margin;
+	origin[1] = maxY + Margin;
+	origin[2] = minZ - Margin;
+
+	end[0] = maxX + Margin;
+	end[1] = minY - Margin;
+	end[2] = maxZ + Margin;
 }
