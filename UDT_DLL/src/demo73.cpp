@@ -240,3 +240,9 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	Q_strncpyz(nameInfo.Country, country.c_str(), sizeof(nameInfo.Country));
 	_playerNamesPlaybackInfos[clientNum].push_back(nameInfo);
 }
+
+void Demo73::ProtocolGetScores(int& score1, int& score2)
+{
+	score1 = _score1;
+	score2 = _score2;
+}

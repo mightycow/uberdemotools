@@ -20,6 +20,7 @@ public:
 	void ProtocolFixConfigString(int csIndex, const std::string& input, std::string& output);
 	void ProtocolAnalyzeAndFixCommandString(const char* command, std::string& output);
 	void ProtocolAnalyzeSnapshot(const clSnapshot_t* oldSnap, const clSnapshot_t* newSnap);
+	void ProtocolGetScores(int& score1, int& score2);
 
 public:
 	void AnalyzePlayerInfo(int clientNum, const std::string& configString);

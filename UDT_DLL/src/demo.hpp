@@ -67,6 +67,7 @@ protected:
 	virtual void ProtocolFixConfigString(int csIndex, const std::string& input, std::string& output) = 0;
 	virtual void ProtocolAnalyzeAndFixCommandString(const char* command, std::string& output) = 0;
 	virtual void ProtocolAnalyzeSnapshot(const clSnapshot_t* oldSnap, const clSnapshot_t* newSnap) = 0;
+	virtual void ProtocolGetScores(int& score1, int& score2) = 0;
 
 	template<class DemoT, typename EntityStateT>
 	void ParseBaselineT(msg_t* msg, msg_t* msgOut);
@@ -1403,10 +1404,13 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 		_playerPlaybackInfos.push_back(info);
 	}
 
-	//Save scores playback data
+	// Save score playback data.
+	int score1 = -9999;
+	int score2 = -9999;
+	ProtocolGetScores(score1, score2);
 	ScoreInfo scoreInfo;
-	scoreInfo.Score1 = _score1;
-	scoreInfo.Score2 = _score2;
+	scoreInfo.Score1 = score1;
+	scoreInfo.Score2 = score2;
 	scoreInfo.Time = newSnap->serverTime;
 	_scorePlaybackInfos.push_back(scoreInfo);
 }

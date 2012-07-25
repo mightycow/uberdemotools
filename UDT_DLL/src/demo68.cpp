@@ -398,3 +398,9 @@ void Demo68::ProtocolAnalyzeAndFixCommandString(const char* command, std::string
 		output = command;
 	}
 }
+
+void Demo68::ProtocolGetScores(int& score1, int& score2)
+{
+	score1 = _inSr;
+	score2 = _inSb;
+}
