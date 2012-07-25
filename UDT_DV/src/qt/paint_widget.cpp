@@ -411,7 +411,7 @@ void PaintWidget::DrawScores(QPainter& painter)
 	QPen pen; 
 	pen.setWidth(1);
 
-	pen.setColor(QColor(159, 159, 159, 255));
+	pen.setColor(QColor(127, 50, 50, 255));
 	painter.setPen(pen);
 	painter.setFont(nameFont);
 	painter.drawText(this->width() / 2 - leftPlayerNameWidth - leftScoreWidth - pad, y, leftPlayerName);

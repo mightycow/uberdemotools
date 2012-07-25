@@ -508,11 +508,11 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		}
 
 		ScoreEntry e;
-		e.Name = "RED";
+		e.Name = "TEAM RED";
 		e.Score = scoreRed;
 		scoreTable.push_back(e);
 
-		e.Name = "BLUE";
+		e.Name = "TEAM BLUE";
 		e.Score = scoreBlue;
 		scoreTable.push_back(e);
 	}
@@ -520,7 +520,7 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 	{
 		for(size_t i = 0; i < players.size(); ++i)
 		{
-			if(players.at(i).Team == TEAM_SPECTATOR)
+			if(players[i].Team == TEAM_SPECTATOR)
 			{
 				continue;
 			}
