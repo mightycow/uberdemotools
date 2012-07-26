@@ -147,7 +147,7 @@ bool Gui::GetScalingData(const QString& scalingPath, int* origin, int* end)
 
 void Gui::LoadDemo(const QString& filepath)
 {
-	if(!_demoPlayer.LoadDemo(filepath)
+	if(!_demoPlayer.LoadDemo(filepath))
 	{
 		return;
 	}
