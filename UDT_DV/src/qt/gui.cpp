@@ -14,6 +14,9 @@
 #include <QApplication>
 
 
+static const char* U2DDV_version = "0.1";
+
+
 static const char* const defaultDataDir = "..\\data\\";
 static const char* const dataSearchDirs[] =
 {
@@ -49,8 +52,6 @@ Gui::Gui()
 
 	_ui.setupUi(this);
 	logWidget = _ui.logWidget;
-	
-	//_ui.dockWidget->setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
 
 	ConnectUiElements();
 	_ui.pathLineEdit->setReadOnly(true);
@@ -75,6 +76,8 @@ Gui::Gui()
 	_paused = true;
 
 	LoadIconData();
+
+	LogInfo("Uber 2D Demo Viewer version %s is now operational!", U2DDV_version);
 }
 
 Gui::~Gui()
@@ -96,7 +99,7 @@ void Gui::ConnectUiElements()
 	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
-bool Gui::GetScalingData( QString scalingPath, int* origin, int* end ) 
+bool Gui::GetScalingData(const QString& scalingPath, int* origin, int* end) 
 {
 	QFile file(scalingPath);
 	if(!file.open(QIODevice::ReadOnly))
@@ -144,10 +147,10 @@ bool Gui::GetScalingData( QString scalingPath, int* origin, int* end )
 
 void Gui::LoadDemo(const QString& filepath)
 {
-	bool ok = _demoPlayer.LoadDemo(filepath);
-
-	if(!ok)
+	if(!_demoPlayer.LoadDemo(_ui.pathLineEdit->text()))
+	{
 		return;
+	}
 
 	_ui.pathLineEdit->setText(filepath);
 
@@ -182,8 +185,6 @@ void Gui::LoadDemo(const QString& filepath)
 
 	const QFileInfo fileInfo(filepath);
 	LogInfo("Demo '%s' loaded", fileInfo.fileName().toLocal8Bit().constData());
-
-
 }
 
 void Gui::LoadIconData()
@@ -269,10 +270,14 @@ void Gui::ProgressSliderValueChanged(int editValue)
 {
 	// This needs to run only when the user is changing the value using the slider.
 	if(!_ui.progressSlider->hasFocus())
+	{
 		return;
+	}
 
 	if(_demoPlayer.DemoData.Demo == NULL)
+	{
 		return;
+	}
 	
 	const float progressPc = editValue / (float) _ui.progressSlider->maximum(); 
 	_demoPlayer._elapsedTime = _demoPlayer._gameStartElapsed + progressPc * _demoPlayer._gameLength;
@@ -427,8 +432,11 @@ void Gui::OnQuitClicked()
 
 void Gui::OnAboutClicked()
 {
-	const QString text = "Created by:\n- Memento_Mori (2D viewer)\n- myT (core lib, build scripts)";
-	QMessageBox::about(this, tr("Uber 2D Demo Viewer"), text);
+	const QString text = 
+		QString("Created by:\n- Memento_Mori (2D viewer)\n- myT (core lib, build scripts)\n\nVersion: %1\nBuilt: %2")
+		.arg(U2DDV_version)
+		.arg(__DATE__);
+	QMessageBox::about(this, QString("Uber 2D Demo Viewer"), text);
 }
 
 void Gui::OnLogWindowClicked()
@@ -438,5 +446,7 @@ void Gui::OnLogWindowClicked()
 		_ui.dockWidget->show();
 	}
 	else
+	{
 		_ui.dockWidget->hide();
+	}
 }
