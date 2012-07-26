@@ -653,7 +653,7 @@ void PaintWidget::DrawPlayerPowerup(QPainter& painter, int x, int y, int z, cons
 
 	if(player->Powerups[PW_BLUEFLAG])
 	{
-		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(PW_BLUEFLAG));
+		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(TEAM_CTF_BLUEFLAG));
 	}
 }
 
