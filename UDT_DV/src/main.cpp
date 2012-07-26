@@ -24,6 +24,7 @@ int main(int argumentCount, char** arguments)
 
 	QApplication app(argumentCount, arguments);
 	Gui gui;
+	gui.ProcessCommandLine(argumentCount, arguments);
 	gui.show();
 
 	return app.exec();
