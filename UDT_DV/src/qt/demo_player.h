@@ -35,6 +35,8 @@ struct Player
 	int ClientIndex;
 	bool DemoTaker;
 	bool Powerups[MAX_POWERUPS];
+
+	Player() : Name(""), Color(QColor(0, 0, 0, 0)), Health(-1), Armor(-1), JustDied(-1), Team(-1), Weapon(0), Ammo(0), Score(-9999), ClientIndex(-1), DemoTaker(false){}
 };
 
 struct Beam
@@ -112,8 +114,7 @@ public:
 	void	GetDemoBoundingBox(int* origin, int* end);
 
 public slots:
-	void	TimerTick();
-	void	SearchPlayers();
+	void	TimerTick();	
 	void	MakeBeams();
 	int		SearchNextEntity(int serverTime, int oldIndex, int entityNumber, bool& sync);
 	void	UpdateEntityList(int startIndex, int time);

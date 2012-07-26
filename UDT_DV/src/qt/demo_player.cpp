@@ -100,7 +100,7 @@ bool DemoPlayer::LoadDemo(const QString& path)
 	_lastObituaryIndex = -1;
 	_obituariesChecked.resize(demo->_obituaries.size(), false);
 
-	SearchPlayers();
+	//SearchPlayers();
 	MakeBeams();
 
 	return true;
@@ -195,50 +195,13 @@ int DemoPlayer::SearchNextEntity(int serverTime, int oldIndex, int entityNumber,
 	return latestIndex;
 }
 
-void DemoPlayer::SearchPlayers()
-{
-	std::vector<Player>& players = DemoData.Players;
-	players.clear();
-
-	Demo* const demo = DemoData.Demo;
-	if(demo == NULL)
-	{
-		return;
-	}
-
-	for(size_t i = 0; i < 64; ++i)
-	{
-		if(!demo->_players[i].Valid)
-		{
-			continue;
-		}
-
-		Player p;
-		Demo::PlayerInfo& info = demo->_players[i].Info;
-
-		p.DemoTaker = false;
-		p.Health = -1;
-		p.Armor = -1;
-		p.ClientIndex = info.Player;
-		p.Team = info.Team;
-		p.Score = 0;
-		p.Color = QColor(0, 0, 0, 0);
-		p.JustDied = -1;
-		for(int q = 0; q < MAX_POWERUPS; ++q)
-		{
-			p.Powerups[q] = false;
-		}
-
-		players.push_back(p);
-	}
-}
 
 void DemoPlayer::MakeBeams()
 {
 	const std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
-	const size_t playerCount = players.size();
+	const size_t playerCount = 64;
 	beams.clear();
 	beams.resize(2 * playerCount);
 
@@ -295,7 +258,7 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		entity.SyncCoolDown += UDT_DV_SYNC_BOOST;
 		entity.SyncCoolDown = std::min(entity.SyncCoolDown, UDT_DV_SYNC_MAX);
 			
-		// Update player stats.
+		
 		int demoTakerIndex = -1;
 		int playerIndex = -1;
 		for(size_t playerIdx = 0; playerIdx < players.size(); ++playerIdx)
@@ -313,7 +276,18 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 			
 		if(playerIndex == -1)
 		{
-			continue;
+			Player p;
+			
+			p.DemoTaker = false;
+			p.ClientIndex = info.Player;
+			p.Team = info.Team;
+			for(int q = 0; q < MAX_POWERUPS; ++q)
+			{
+				p.Powerups[q] = false;
+			}
+
+			players.push_back(p);
+			playerIndex = players.size() - 1;
 		}
 
 		Player& player = players[playerIndex];
