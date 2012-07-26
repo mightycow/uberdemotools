@@ -49,6 +49,8 @@ Gui::Gui()
 
 	_ui.setupUi(this);
 	logWidget = _ui.logWidget;
+	
+	//_ui.dockWidget->setWindowFlags(Qt::Window | Qt::CustomizeWindowHint);
 
 	ConnectUiElements();
 	_ui.pathLineEdit->setReadOnly(true);
@@ -420,4 +422,14 @@ void Gui::OnAboutClicked()
 {
 	const QString text = "Created by:\n- Memento_Mori (2D viewer)\n- myT (core lib, build scripts)";
 	QMessageBox::about(this, tr("Uber 2D Demo Viewer"), text);
+}
+
+void Gui::OnLogWindowClicked()
+{
+	if(_ui.dockWidget->isHidden())
+	{
+		_ui.dockWidget->show();
+	}
+	else
+		_ui.dockWidget->hide();
 }

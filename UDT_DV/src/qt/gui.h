@@ -40,6 +40,7 @@ public slots:
 	void	OnLoadDemoClicked();
 	void	OnQuitClicked();
 	void	OnAboutClicked();
+	void	OnLogWindowClicked();
 
 protected:
 	// Qt overrides.
