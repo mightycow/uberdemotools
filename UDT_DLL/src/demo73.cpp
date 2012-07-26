@@ -213,10 +213,10 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	}
 
 	PlayerInfoPers* const player = &_players[clientNum];
-	if(configString.find("\"\"") != std::string::npos)
+	if(configString.find("\"\"") != std::string::npos || configString == "")
 	{
 		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
-		_players[clientNum].Valid = false;
+		player->Valid = false;
 		return;
 	}
 
