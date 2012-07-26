@@ -17,6 +17,7 @@ uber_ensure_qt_generated_file_exists("gui_gen.hpp")
 uber_ensure_qt_generated_file_exists("gui_gen.cpp")
 uber_ensure_qt_generated_file_exists("demo_player_gen.cpp")
 uber_ensure_qt_generated_file_exists("paint_widget_gen.cpp")
+uber_ensure_qt_generated_file_exists("rsrc_gen.cpp")
 
 solution "U2DDV"
 
@@ -35,6 +36,9 @@ solution "U2DDV"
 		uber_add_pre_build_command("moc", "gui.h", "gui_gen.cpp")
 		uber_add_pre_build_command("moc", "demo_player.h", "demo_player_gen.cpp")
 		uber_add_pre_build_command("moc", "paint_widget.h", "paint_widget_gen.cpp")
+		
+		-- Create rsrc_gen.cpp from the resources listed in U2DDV.qrc and create a resource load function invoked like this: Q_INIT_RESOURCE(U2DDV);
+		prebuildcommands { path.translate(UBER_QT_BIN_PATH_FROM_MAKEFILE .. "/rcc -name U2DDV -o ../../src/qt_gen/rsrc_gen.cpp ../../rsrc/U2DDV.qrc", nil) }
 
 		location ("../build/" .. _ACTION)
 		kind "WindowedApp"
