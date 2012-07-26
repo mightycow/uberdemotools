@@ -349,6 +349,11 @@ public:
 		{
 			return gt >= TeamGameStart && gt <= TeamGameEnd;
 		}
+
+		static bool IsFlagMode(GameType::Id gt)
+		{
+			return gt == CTF || gt == OneFlagCTF || gt == CTFS || gt == NTF;
+		}
 	};
 
 	typedef std::map<int, std::string> CommandMap;
