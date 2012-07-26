@@ -262,6 +262,9 @@ void Gui::ProgressSliderValueChanged(int editValue)
 	// This needs to run only when the user is changing the value using the slider.
 	if(!_ui.progressSlider->hasFocus())
 		return;
+
+	if(_demoPlayer.DemoData.Demo == NULL)
+		return;
 	
 	const float progressPc = editValue / (float) _ui.progressSlider->maximum(); 
 	_demoPlayer._elapsedTime = _demoPlayer._gameStartElapsed + progressPc * _demoPlayer._gameLength;
