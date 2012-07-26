@@ -17,10 +17,11 @@ public:
 	static int	UdtProgressCallback(float progress);
 	static void UdtMessageCallback(int logLevel, const char* message);
 
-	Gui(QWidget *parent = 0, Qt::WFlags flags = 0);
+	Gui();
 	~Gui();
 
-	void	LoadDemo(QString filepath);
+	void	ProcessCommandLine(int argumentCount, char** arguments);
+	void	LoadDemo(const QString& filepath);
 	void	LoadIconData();
 	void	ConnectUiElements();
 
@@ -36,9 +37,9 @@ public slots:
 	void	ReverseTimeChanged(int);
 	bool	GetScalingData(QString scalingPath, int* origin, int* end);
 	void	DemoFinished();
-	void	LoadDemoTriggered();
-	void	QuitTriggered();
-	void	AboutTriggered();
+	void	OnLoadDemoClicked();
+	void	OnQuitClicked();
+	void	OnAboutClicked();
 
 protected:
 	// Qt overrides.
@@ -56,4 +57,6 @@ private:
 	DemoPlayer _demoPlayer;
 	bool _paused;
 	QElapsedTimer _progressTimer;
+	int _argumentCount;
+	char** _arguments;
 };

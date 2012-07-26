@@ -314,7 +314,7 @@
    <sender>actionQuit</sender>
    <signal>triggered()</signal>
    <receiver>MyClassClass</receiver>
-   <slot>QuitTriggered()</slot>
+   <slot>OnQuitClicked()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -330,7 +330,7 @@
    <sender>actionOpen</sender>
    <signal>triggered()</signal>
    <receiver>MyClassClass</receiver>
-   <slot>LoadDemoTriggered()</slot>
+   <slot>OnLoadDemoClicked()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>-1</x>
@@ -346,7 +346,7 @@
    <sender>actionAbout</sender>
    <signal>triggered()</signal>
    <receiver>MyClassClass</receiver>
-   <slot>AboutTriggered()</slot>
+   <slot>OnAboutClicked()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>405</x>
@@ -360,8 +360,8 @@
   </connection>
  </connections>
  <slots>
-  <slot>LoadDemoTriggered()</slot>
-  <slot>QuitTriggered()</slot>
-  <slot>AboutTriggered()</slot>
+  <slot>OnLoadDemoClicked()</slot>
+  <slot>OnQuitClicked()</slot>
+  <slot>OnAboutClicked()</slot>
  </slots>
 </ui>

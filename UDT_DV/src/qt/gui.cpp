@@ -37,14 +37,15 @@ void Gui::UdtMessageCallback(int logLevel, const char* message)
 static QPlainTextEdit* logWidget = NULL; // Used by Gui::onMessage.
 
 
-Gui::Gui(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags), _demoPlayer(this)
+Gui::Gui()
+	: QMainWindow(NULL, 0)
+	, _demoPlayer(this)
+	, _argumentCount(0)
+	, _arguments(NULL)
 {
 	gui = this;
 	_progressCallback = &UdtProgressCallback;
 	_messageCallback = &UdtMessageCallback;
-
-
 
 	_ui.setupUi(this);
 	logWidget = _ui.logWidget;
@@ -139,7 +140,7 @@ bool Gui::GetScalingData( QString scalingPath, int* origin, int* end )
 	return true;
 }
 
-void Gui::LoadDemo(QString filepath)
+void Gui::LoadDemo(const QString& filepath)
 {
 	_ui.pathLineEdit->setText(filepath);
 
@@ -176,7 +177,6 @@ void Gui::LoadDemo(QString filepath)
 
 	LogInfo("Demo loaded");
 }
-
 
 void Gui::LoadIconData()
 {
@@ -375,11 +375,24 @@ void Gui::OnMessage(int logLevel, const char* message)
 	logWidget->appendHtml(formattedMsg);
 }
 
-void Gui::LoadDemoTriggered()
+void Gui::ProcessCommandLine(int argumentCount, char** arguments)
 {
-	QString title = "Open demo...";
-	QString directory = QDir::current().path();
-	QString filePath = QFileDialog::getOpenFileName(
+	// Keep stuff for further processing.
+	_argumentCount = argumentCount;
+	_arguments = arguments;
+
+	// Try opening a demo file right now.
+	if(argumentCount == 2 && QFile::exists(arguments[1]))
+	{
+		LoadDemo(arguments[1]);
+	}
+}
+
+void Gui::OnLoadDemoClicked()
+{
+	const QString title = "Open demo...";
+	const QString directory = QDir::current().path();
+	const QString filePath = QFileDialog::getOpenFileName(
 		this,
 		title,
 		directory,
@@ -387,21 +400,20 @@ void Gui::LoadDemoTriggered()
 		);
 
 	if(filePath.isEmpty())
+	{
 		return;
+	}
 
 	LoadDemo(filePath);
 }
 
-void Gui::QuitTriggered()
+void Gui::OnQuitClicked()
 {
-	this->close();
+	close();
 }
 
-void Gui::AboutTriggered()
+void Gui::OnAboutClicked()
 {
-	QString text = "Created by:\n\t - myT (core lib, build setup, code master) \n\t - Memento_Mori (GUI, 2D viewer, typing mokey)";
+	const QString text = "Created by:\n- Memento_Mori (2D viewer)\n- myT (core lib, build scripts)";
 	QMessageBox::about(this, tr("Uber 2D Demo Viewer"), text);
 }
-
-
-
