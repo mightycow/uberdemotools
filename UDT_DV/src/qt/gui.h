@@ -36,6 +36,9 @@ public slots:
 	void	ReverseTimeChanged(int);
 	bool	GetScalingData(QString scalingPath, int* origin, int* end);
 	void	DemoFinished();
+	void	LoadDemoTriggered();
+	void	QuitTriggered();
+	void	AboutTriggered();
 
 protected:
 	// Qt overrides.

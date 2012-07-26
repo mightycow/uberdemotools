@@ -10,6 +10,8 @@
 #include <QMessageBox>
 #include <QMimeData>
 #include <QUrl>
+#include <QFileDialog>
+#include <QApplication>
 
 
 static const char* const defaultDataDir = "..\\data\\";
@@ -41,6 +43,8 @@ Gui::Gui(QWidget *parent, Qt::WFlags flags)
 	gui = this;
 	_progressCallback = &UdtProgressCallback;
 	_messageCallback = &UdtMessageCallback;
+
+
 
 	_ui.setupUi(this);
 	logWidget = _ui.logWidget;
@@ -369,6 +373,34 @@ void Gui::OnMessage(int logLevel, const char* message)
 	}
 
 	logWidget->appendHtml(formattedMsg);
+}
+
+void Gui::LoadDemoTriggered()
+{
+	QString title = "Open demo...";
+	QString directory = QDir::current().path();
+	QString filePath = QFileDialog::getOpenFileName(
+		this,
+		title,
+		directory,
+		tr("QL demo (*.dm_73);;Q3 demo (*.dm_68)")
+		);
+
+	if(filePath.isEmpty())
+		return;
+
+	LoadDemo(filePath);
+}
+
+void Gui::QuitTriggered()
+{
+	this->close();
+}
+
+void Gui::AboutTriggered()
+{
+	QString text = "Created by:\n\t - myT (core lib, build setup, code master) \n\t - Memento_Mori (GUI, 2D viewer, typing mokey)";
+	QMessageBox::about(this, tr("Uber 2D Demo Viewer"), text);
 }
 
 
