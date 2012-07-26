@@ -175,7 +175,8 @@ void Gui::LoadDemo(const QString& filepath)
 	_paused = false;
 	_demoPlayer.PlayDemo();
 
-	LogInfo("Demo loaded");
+	const QFileInfo fileInfo(filepath);
+	LogInfo("Demo '%s' loaded", fileInfo.fileName().toLocal8Bit().constData());
 }
 
 void Gui::LoadIconData()
