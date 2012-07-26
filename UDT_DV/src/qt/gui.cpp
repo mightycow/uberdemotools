@@ -144,9 +144,12 @@ bool Gui::GetScalingData( QString scalingPath, int* origin, int* end )
 
 void Gui::LoadDemo(const QString& filepath)
 {
-	_ui.pathLineEdit->setText(filepath);
+	bool ok = _demoPlayer.LoadDemo(filepath);
 
-	_demoPlayer.LoadDemo(_ui.pathLineEdit->text());
+	if(!ok)
+		return;
+
+	_ui.pathLineEdit->setText(filepath);
 
 	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.Demo->_mapName); 
 	const QString bgImagePath = DataPath + "maps\\" + mapName + ".png";
@@ -179,6 +182,8 @@ void Gui::LoadDemo(const QString& filepath)
 
 	const QFileInfo fileInfo(filepath);
 	LogInfo("Demo '%s' loaded", fileInfo.fileName().toLocal8Bit().constData());
+
+
 }
 
 void Gui::LoadIconData()
@@ -410,6 +415,8 @@ void Gui::OnLoadDemoClicked()
 		return;
 	}
 
+	_ui.paintWidget->DisplayDemo = false;
+	_ui.paintWidget->repaint();
 	LoadDemo(filePath);
 }
 

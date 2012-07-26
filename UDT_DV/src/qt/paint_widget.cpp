@@ -133,6 +133,7 @@ void PaintWidget::paintEvent(QPaintEvent* event)
 	const QFontMetrics fontMetrics(font);
 	const int posX = fontMetrics.width(BackgroundMessage) / 2;
 	painter.drawText(width() / 2 - posX, height() / 2, BackgroundMessage);
+	
 	if(DisplayDemo)
 	{
 		PaintDemo(painter);
@@ -147,7 +148,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 		painter.drawImage(0, 0, *_bgImage);
 	}
 
-	if(DemoData == NULL)
+	if(DemoData->Demo == NULL)
 	{
 		return;
 	}
