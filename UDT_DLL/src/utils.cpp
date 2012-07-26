@@ -39,7 +39,7 @@ int GetVariable(const std::string& input, const std::string& varName)
 	const int idx = FindVariableValueOffset(input, varName);
 	if(idx == -1)
 	{
-		return -1;
+		return -9999;
 	}
 
 	const int offset = idx + 1 + (int)varName.length();
@@ -59,7 +59,7 @@ int GetCpmaConfigStringInt(const char* var, const char* str)
 
 bool GetVariable(const std::string& input, const std::string& varName, int* varValue)
 {
-	*varValue = -1;
+	*varValue = -9999;
 
 	const int idx = FindVariableValueOffset(input, varName);
 	if(idx == -1)
