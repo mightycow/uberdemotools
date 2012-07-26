@@ -23,6 +23,9 @@ int main(int argumentCount, char** arguments)
 	ResetCurrentDirectory(arguments[0]);
 
 	QApplication app(argumentCount, arguments);
+	Q_INIT_RESOURCE(U2DDV);
+	app.setWindowIcon(QIcon(":/icon.png"));
+
 	Gui gui;
 	gui.ProcessCommandLine(argumentCount, arguments);
 	gui.show();
