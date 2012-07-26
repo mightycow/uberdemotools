@@ -79,6 +79,7 @@ private:
 	float _coordsScale;
 	float _heightScale;
 	float _iconScale;
+	int _lastValidWeapon;
 	std::vector<QImage*> _icons;
 	std::vector<QImage*> _weapons;
 	QImage* _proxyImage;
