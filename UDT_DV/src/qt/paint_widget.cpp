@@ -468,7 +468,7 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 	const int w = 32;
 	const int h = 32;
 
-	const int x = 20;
+	const int xStart = 20;
 	int y = 80;
 
 	const int dy = h + 4;
@@ -477,6 +477,8 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 	std::vector<Player>& players = DemoData->Players;
 	for(size_t i = 0; i < players.size(); ++i)
 	{
+		int x = xStart;
+		int pusDrawn = 0;
 		const Player& player = players[i];
 		for(int puIdx = 0; puIdx < 16; ++puIdx)
 		{
@@ -500,10 +502,17 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 			const QRect source(0, 0, icon->width(), icon->height());
 			const QRect target(x, y, w, h);
 			painter.drawImage(target, *icon, source);
-			painter.drawText(x + w + 4, y + dyText, player.Name);
-
-			y += dy;
+			x += w + 4;
+			++pusDrawn;
 		}
+
+		if(pusDrawn == 0)
+		{
+			continue;
+		}
+
+		painter.drawText(x, y + dyText, player.Name);
+		y += dy;
 	}
 }
 
