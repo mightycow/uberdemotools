@@ -48,6 +48,7 @@ protected:
 	void	DrawHud(QPainter& painter);
 	void	DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text);
 	void	DrawScores(QPainter& painter);
+	void	DrawPowerUps(QPainter& painter);
 	void	DrawPlayer(QPainter& painter, const PlayerData& data);
 	void	DrawLivingPlayer(QPainter& painter, int x, int y, int z, const QColor& color, float alpha);
 	void	DrawDeadPlayer(QPainter& painter, int x, int y, const QColor& color, float alpha);
@@ -59,8 +60,8 @@ protected:
 	void	DrawProjectile(QPainter& painter, const Demo::EntityInfo* info);
 	void	DrawGeneric(QPainter& painter, const Demo::EntityInfo* info);
 	void	DrawBeams(QPainter& painter, const float* startPositions, const float* endPositions, Beam::Type::Id type, float alpha = 1.0f);
-	void	SetImageAlpha(QImage* image, float alpha);
 	void	DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius);
+	void	SetImageAlpha(QImage* image, float alpha);
 	QImage* GetIcon(int type);
 	QImage* GetWeapon(int type, bool firing);
 
@@ -70,6 +71,7 @@ public:
 	bool ShowClock;
 	bool ShowScore;
 	bool ShowHud;
+	bool ShowPowerUps;
 	QString BackgroundMessage;
 
 private:

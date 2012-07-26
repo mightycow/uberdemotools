@@ -12,6 +12,26 @@
 
 static const int FollowingTextDeltaY = 35;
 
+static const int ItemIdxFromPowerUpIdx[16] =
+{
+	-1, // Invalid.
+	ITEM_QUAD,
+	ITEM_ENVIRO,
+	ITEM_HASTE,
+	ITEM_INVIS,
+	ITEM_REGEN,
+	ITEM_FLIGHT,
+	TEAM_CTF_REDFLAG,
+	TEAM_CTF_BLUEFLAG,
+	TEAM_CTF_NEUTRALFLAG,
+	ITEM_SCOUT,
+	ITEM_GUARD,
+	ITEM_DOUBLER,
+	ITEM_AMMOREGEN,
+	-1, // PW_INVULNERABILITY
+	-1, // Nothing, filler.
+};
+
 
 static QImage* CreateProxyImage(int width, int height)
 {
@@ -52,6 +72,7 @@ PaintWidget::PaintWidget(QWidget *parent)
 	ShowClock = true;
 	ShowScore = true;
 	ShowHud = true;
+	ShowPowerUps = true;
 	DisplayDemo = false;
 	BackgroundMessage = "Drag and drop a demo here.";
 
@@ -263,6 +284,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 	DrawClock(painter);
 	DrawHud(painter);
 	DrawScores(painter);
+	DrawPowerUps(painter);
 }
 
 bool PaintWidget::LoadImage(const QString& path)
@@ -425,6 +447,64 @@ void PaintWidget::DrawScores(QPainter& painter)
 	painter.setFont(scoreFont);
 	painter.drawText(this->width() / 2 - leftScoreWidth - pad, y, leftScore);
 	painter.drawText(this->width() / 2 + pad, y, rightScore);
+}
+
+void PaintWidget::DrawPowerUps(QPainter& painter)
+{
+	if(DemoData == NULL || !ShowPowerUps)
+	{
+		return;
+	}
+
+	QFont fcFont;
+	fcFont.setPixelSize(16);
+
+	QPen pen; 
+	pen.setWidth(1);
+	pen.setColor(QColor(0, 0, 0, 255));
+	painter.setPen(pen);
+	painter.setFont(fcFont);
+
+	const int w = 32;
+	const int h = 32;
+
+	const int x = 20;
+	int y = 80;
+
+	const int dy = h + 4;
+	const int dyText = (h + fcFont.pixelSize()) / 2;
+
+	std::vector<Player>& players = DemoData->Players;
+	for(size_t i = 0; i < players.size(); ++i)
+	{
+		const Player& player = players[i];
+		for(int puIdx = 0; puIdx < 16; ++puIdx)
+		{
+			if(!player.Powerups[puIdx])
+			{
+				continue;
+			}
+
+			const int iconIdx = ItemIdxFromPowerUpIdx[puIdx];
+			if(iconIdx == -1)
+			{
+				continue;
+			}
+
+			const QImage* const icon = GetIcon(iconIdx);
+			if(icon == NULL)
+			{
+				continue;
+			}
+
+			const QRect source(0, 0, icon->width(), icon->height());
+			const QRect target(x, y, w, h);
+			painter.drawImage(target, *icon, source);
+			painter.drawText(x + w + 4, y + dyText, player.Name);
+
+			y += dy;
+		}
+	}
 }
 
 void PaintWidget::DrawHud(QPainter& painter)
