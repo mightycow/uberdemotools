@@ -456,3 +456,13 @@ void Gui::OnLogWindowClicked()
 		_ui.dockWidget->hide();
 	}
 }
+
+void Gui::OnLogClearClicked()
+{
+	//@TODO
+}
+
+void Gui::OnLogSaveClicked()
+{
+	//@TODO
+}
