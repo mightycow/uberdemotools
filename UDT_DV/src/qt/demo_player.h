@@ -96,9 +96,12 @@ struct SharedDemoData
 	QTime Clock;
 	Demo* Demo;
 	int WarmupTime;
+	int FollowedPlayer;
 
 	void ClearAll()
 	{
+		FollowedPlayer = -1;
+
 		Players.clear();
 		Beams.clear();
 		Scores.clear();

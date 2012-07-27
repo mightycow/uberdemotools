@@ -527,44 +527,35 @@ void PaintWidget::DrawHud(QPainter& painter)
 		return;
 	}
 
-	std::vector<Player>& players = DemoData->Players;
-	for(size_t i = 0; i < players.size(); i++)
+	if(DemoData->FollowedPlayer == -1)
+		return;
+
+	const Player& player = DemoData->Players[DemoData->FollowedPlayer];
+
+	QFont font;
+	font.setPixelSize(20);
+	painter.setFont(font);
+
+	const QString text = "Following " + player.Name;
+	const int textLength = text.length();
+	painter.drawText(width() / 2 - (text.length() / 2) * 10, height() - FollowingTextDeltaY - 30, text);
+
+	DrawHudElement(painter, GetIcon(ITEM_HEALTH), -120, QString::number(player.Health));
+	DrawHudElement(painter, GetIcon(ITEM_ARMOR_COMBAT), 80, QString::number(player.Armor));
+
+	if(player.Weapon != 0 || _lastValidWeapon != 0)
 	{
-		const Player& player = players[i];
-		if(!player.DemoTaker || player.Team == TEAM_SPECTATOR)
-		{
-			continue;
-		}
-
-		QFont font;
-		font.setPixelSize(20);
-		painter.setFont(font);
-
-		const QString text = "Following " + player.Name;
-		const int textLength = text.length();
-		painter.drawText(width() / 2 - (text.length() / 2) * 10, height() - FollowingTextDeltaY - 30, text);
-
-		DrawHudElement(painter, GetIcon(ITEM_HEALTH), -120, QString::number(player.Health));
-		DrawHudElement(painter, GetIcon(ITEM_ARMOR_COMBAT), 80, QString::number(player.Armor));
-
-		if(player.Weapon != 0 || _lastValidWeapon != 0)
-		{
-			const int weapon = player.Weapon != 0 ? player.Weapon : _lastValidWeapon;
-			QImage* const weaponIcon = GetIcon(weapon);
-			const int w = (int)((float)weaponIcon->width() *_iconScale * 1.5f);
-			DrawHudElement(painter, weaponIcon, -w / 2, QString::number(player.Ammo));
-		}
-
-		if(player.Weapon != 0)
-		{
-			_lastValidWeapon = player.Weapon;
-		}
-
-		// @TODO: Make sure only 1 player is considered as being followed.
-		// If you jump forward in time, you can sometimes see 2 HUDs overlapping.
-		// This makes sure only 1 is drawn.
-		break;
+		const int weapon = player.Weapon != 0 ? player.Weapon : _lastValidWeapon;
+		QImage* const weaponIcon = GetIcon(weapon);
+		const int w = (int)((float)weaponIcon->width() *_iconScale * 1.5f);
+		DrawHudElement(painter, weaponIcon, -w / 2, QString::number(player.Ammo));
 	}
+
+	if(player.Weapon != 0)
+	{
+		_lastValidWeapon = player.Weapon;
+	}
+	
 }
 
 void PaintWidget::DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text)

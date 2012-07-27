@@ -268,6 +268,8 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 	std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
+	DemoData.FollowedPlayer = -1;
+
 	// Find disconnected players.
 	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); ++i)
 	{
@@ -344,6 +346,9 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		player.DemoTaker = info.DemoTaker;
 		player.Weapon = info.CurrentWeapon;
 		player.Score = info.Score;
+
+		if(player.DemoTaker && player.Team != TEAM_SPECTATOR)
+			DemoData.FollowedPlayer = playerIndex;
 
 		// Player power-ups.
 		for(size_t puIdx = 0; puIdx < MAX_POWERUPS; ++puIdx)
@@ -423,20 +428,15 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		}
 
 		int demoTakerScore = -9999;
-		for(size_t j = 0; j < players.size(); ++j)
-		{
-			if(players[j].DemoTaker)
-			{
-				demoTakerScore = players[j].Score;
-				break;
-			}
-		}
+
+		if(DemoData.FollowedPlayer != -1)
+			demoTakerScore = players[DemoData.FollowedPlayer].Score;
 
 		// Fix the score for all other players.
 		const int otherScore = scoreInfo.Score1 == demoTakerScore ? scoreInfo.Score2 : scoreInfo.Score1;
 		for(size_t j = 0; j < players.size(); ++j)
 		{
-			if(!players[j].DemoTaker)
+			if(j != DemoData.FollowedPlayer)
 			{
 				players[j].Score = otherScore;
 			}
@@ -500,9 +500,8 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		entity.SyncCoolDown = std::min(entity.SyncCoolDown, UDT_DV_SYNC_MAX);
 	}
 
-	//
+	
 	// Update scores.
-	//
 	std::vector<ScoreEntry>& scoreTable = DemoData.Scores;
 	scoreTable.clear();
 	if(Demo::GameType::IsTeamMode((Demo::GameType::Id)demo->_gameType))
