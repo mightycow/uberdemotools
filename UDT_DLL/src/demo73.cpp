@@ -256,7 +256,7 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 
 		EventInfo info;
 		info.Time = _serverTime;
-		info.Event = std::string(player->Name) + " moved to " + teamName;
+		info.Event = std::string(player->Name) + " joined the " + teamName;
 		_eventPlaybackInfos.push_back(info);
 	}
 }
