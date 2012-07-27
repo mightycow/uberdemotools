@@ -10,6 +10,12 @@
     <height>722</height>
    </rect>
   </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
   <property name="contextMenuPolicy">
    <enum>Qt::NoContextMenu</enum>
   </property>
@@ -203,7 +209,7 @@
     <item>
      <widget class="PaintWidget" name="paintWidget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
@@ -220,7 +226,7 @@
   </widget>
   <widget class="QDockWidget" name="dockWidget">
    <property name="sizePolicy">
-    <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
      <horstretch>0</horstretch>
      <verstretch>0</verstretch>
     </sizepolicy>
@@ -239,7 +245,7 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents">
     <property name="sizePolicy">
-     <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+     <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
       <horstretch>0</horstretch>
       <verstretch>0</verstretch>
      </sizepolicy>
@@ -248,7 +254,7 @@
      <item row="0" column="0">
       <widget class="QPlainTextEdit" name="logWidget">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+        <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -300,21 +306,15 @@
     </property>
     <addaction name="actionAbout"/>
    </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>View</string>
-    </property>
-    <addaction name="actionLogWindow"/>
-   </widget>
    <widget class="QMenu" name="menuLog">
     <property name="title">
      <string>Log</string>
     </property>
+    <addaction name="actionToggleLog"/>
     <addaction name="actionLogClear"/>
     <addaction name="actionLogSave"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuView"/>
    <addaction name="menuLog"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -333,9 +333,9 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="actionLogWindow">
+  <action name="actionToggleLog">
    <property name="text">
-    <string>Log Window</string>
+    <string>Hide</string>
    </property>
   </action>
   <action name="actionLogClear">
@@ -422,7 +422,7 @@
    </hints>
   </connection>
   <connection>
-   <sender>actionLogWindow</sender>
+   <sender>actionToggleLog</sender>
    <signal>triggered()</signal>
    <receiver>MyClassClass</receiver>
    <slot>OnLogWindowClicked()</slot>

@@ -450,10 +450,20 @@ void Gui::OnLogWindowClicked()
 	if(_ui.dockWidget->isHidden())
 	{
 		_ui.dockWidget->show();
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 3) return;
+		QList<QAction*>actions = menus[2]->actions();
+		if(actions.size() < 1) return;
+		actions[0]->setText("Hide");
 	}
 	else
 	{
 		_ui.dockWidget->hide();
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 3) return;
+		QList<QAction*>actions = menus[2]->actions();
+		if(actions.size() < 1) return;
+		actions[0]->setText("Show");
 	}
 }
 
