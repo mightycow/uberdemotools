@@ -236,7 +236,17 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	Q_strncpyz(player->Clan, clan.c_str(), sizeof(player->Clan));
 	Q_strncpyz(player->Country, country.c_str(), sizeof(player->Country));
 	TryGetVariable(&player->Info.Handicap, configString, "hc");
+	
+	int previousTeam = player->Info.Team;
 	TryGetVariable(&player->Info.Team, configString, "t");
+	if(player->Info.Team != previousTeam)
+	{
+		EventInfo info;
+		info.Time = _serverTime;
+		info.Event = std::string(player->Name) + " moved to " + GetTeamName(player->Info.Team);
+		_eventPlaybackInfos.push_back(info);
+	}
+
 	TryGetVariable(&player->Info.BotSkill, configString, "l"); // @TODO: Correct?
 
 	PlayerNameInfo nameInfo;

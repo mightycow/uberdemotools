@@ -45,24 +45,6 @@ static void GetTimeFromMs(int totalMs, int& hours, int& minutes, int& seconds, i
 	totalMs /= 24;
 }
 
-static QString GetTeamName(int team)
-{
-	switch(team)
-	{
-	case TEAM_FREE:
-		return "game";
-	case TEAM_RED:
-		return "red Team";
-	case TEAM_BLUE:
-		return "blue Team";
-	case TEAM_SPECTATOR:
-		return "spectators";
-	}
-
-	return "unknown";
-}
-
-
 DemoPlayer::DemoPlayer(QObject *parent)
 	: QObject(parent)
 {

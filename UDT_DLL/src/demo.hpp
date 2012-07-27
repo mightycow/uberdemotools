@@ -22,6 +22,24 @@ struct DemoCut
 	int EndTimeMs;
 };
 
+
+static std::string GetTeamName(int team)
+{
+	switch(team)
+	{
+	case TEAM_FREE:
+		return "game";
+	case TEAM_RED:
+		return "red Team";
+	case TEAM_BLUE:
+		return "blue Team";
+	case TEAM_SPECTATOR:
+		return "spectators";
+	}
+
+	return "unknown";
+}
+
 struct Demo
 {
 public:
@@ -29,6 +47,8 @@ public:
 	~Demo();
 
 	bool Do();
+
+	
 
 protected:
 	void NewGamestate();
