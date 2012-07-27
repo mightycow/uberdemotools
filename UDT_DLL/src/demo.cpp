@@ -713,16 +713,6 @@ void Demo::ParseSnapshot(msg_t* msg, msg_t* msgOut)
 	_inSnapshots[_inSnapshot.messageNum & PACKET_MASK] = _inSnapshot;
 
 	_inNewSnapshots = qtrue;
-
-	//
-	// Disconnection events are encoded in server commands.
-	// That is why we leave the status as is when we process the snapshot,
-	// and we reset it when we're done processing the snapshot.
-	//
-	for(int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		_players[i].Info.Disconnected = false;
-	}
 }
 
 void Demo::AnalyzePlayerState(playerState_t* oldState, playerState_t* newState)

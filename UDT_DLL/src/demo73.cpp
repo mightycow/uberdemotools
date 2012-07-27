@@ -215,9 +215,14 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	PlayerInfoPers* const player = &_players[clientNum];
 	if(configString.find("\"\"") != std::string::npos || configString == "")
 	{
+		EventInfo info;
+		info.Time = _serverTime;
+		info.Event = std::string(_players[clientNum].Name) + " disconnected";
+		_eventPlaybackInfos.push_back(info);
+
 		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
 		player->Valid = false;
-		player->Info.Disconnected = true;
+		
 		return;
 	}
 

@@ -222,7 +222,6 @@ public:
 		bool Valid;
 		bool DemoTaker;
 		bool Firing;
-		bool Disconnected;
 		float Position[3];
 		float Angles[3];
 		int Time; // Absolute server time, [ms].
@@ -280,6 +279,12 @@ public:
 		int Score1;
 		int Score2;
 		int Time;
+	};
+
+	struct EventInfo
+	{
+		int Time;
+		std::string Event;
 	};
 
 	struct PlayerStats
@@ -376,6 +381,7 @@ public:
 	typedef std::vector<MatchStats> MatchStatsVector;
 	typedef std::vector<PlayerInfoPers> PlayerInfoVector;
 	typedef std::vector<EntityInfoPers> EntityInfoVector;
+	typedef std::vector<EventInfo> EventPlaybackVector;
 
 	// General.
 	std::string _mapName;
@@ -390,6 +396,7 @@ public:
 	EntityPlaybackInfoVector _entityPlaybackInfos;
 	BeamPlaybackInfoVector _beamPlaybackInfos;
 	ScorePlaybackVector _scorePlaybackInfos;
+	EventPlaybackVector _eventPlaybackInfos;
 	PlayerInfoVector _players; // Fixed-size array of size MAX_CLIENTS.
 	EntityInfoVector _entities; // Fixed-size array of size MAX_GENTITIES.
 	MatchStatsVector _matchStats;
