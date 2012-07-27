@@ -475,6 +475,7 @@ void Gui::OnLogClearClicked()
 void Gui::OnLogSaveClicked()
 {
 	QFileDialog dialog(this, "Select where to save the log content");
+	dialog.selectFile("U2DDV_log.txt");
 	dialog.setFileMode(QFileDialog::AnyFile);
 	dialog.setAcceptMode(QFileDialog::AcceptSave);
 	dialog.setViewMode(QFileDialog::Detail);
