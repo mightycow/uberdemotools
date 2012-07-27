@@ -222,6 +222,7 @@ public:
 		bool Valid;
 		bool DemoTaker;
 		bool Firing;
+		bool Disconnected;
 		float Position[3];
 		float Angles[3];
 		int Time; // Absolute server time, [ms].

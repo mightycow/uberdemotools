@@ -316,7 +316,8 @@ void Demo68::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	if(configString.find("\"\"") != std::string::npos || configString == "")
 	{
 		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
-		_players[clientNum].Valid = false;
+		player->Valid = false;
+		player->Info.Disconnected = true;
 		return;
 	}
 

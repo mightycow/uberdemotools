@@ -217,6 +217,7 @@ void Demo73::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	{
 		Q_strncpyz(player->Name, "<empty_slot>", sizeof(player->Name));
 		player->Valid = false;
+		player->Info.Disconnected = true;
 		return;
 	}
 
