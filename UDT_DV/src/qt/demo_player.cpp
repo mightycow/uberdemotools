@@ -9,7 +9,7 @@
 #include <limits>
 
 
-static void LogDemoEvent(QTime& clock, const char* format, ...)
+static void LogDemoEvent(const QTime& clock, const char* format, ...)
 {
 	if(!_messageCallback)
 	{
@@ -22,7 +22,7 @@ static void LogDemoEvent(QTime& clock, const char* format, ...)
 	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
 	va_end(argptr);
 
-	const QString finalMsg = clock.toString("mm:ss") + " " + msg;
+	const QString finalMsg = QString("%1 %2").arg(clock.toString("mm:ss")).arg(msg);
 	(*_messageCallback)(10, finalMsg.toLocal8Bit().constData());
 }
 
@@ -70,6 +70,7 @@ DemoPlayer::DemoPlayer(QObject *parent)
 	connect(&_timer, SIGNAL(timeout()), this, SLOT(TimerTick()));
 	_timeScale = 1.2f;
 	_lastIndex = -1;
+	_previousServerTime = 0;
 }
 
 DemoPlayer::~DemoPlayer()
@@ -79,7 +80,7 @@ DemoPlayer::~DemoPlayer()
 bool DemoPlayer::LoadDemo(const QString& path)
 {
 	DemoData.ClearAll();
-
+	
 	Demo* demo = NULL;
 	const QStringList splitPath = path.split(".");
 	const QString fileExtension = splitPath.back();
@@ -129,6 +130,8 @@ bool DemoPlayer::LoadDemo(const QString& path)
 
 	_lastObituaryIndex = -1;
 	_obituariesChecked.resize(demo->_obituaries.size(), false);
+
+	_previousServerTime = 0;
 
 	MakeBeams();
 
@@ -191,6 +194,7 @@ void DemoPlayer::StopDemo()
 	_elapsedTime = 0;
 	DemoData.WarmupTime = _demoStartTime - _gameStartTime;
 	_lastIndex = -1;
+	_previousServerTime = 0;
 	for(size_t i = 0; i < _obituariesChecked.size(); ++i)
 	{
 		_obituariesChecked[i] = false;
@@ -264,35 +268,31 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		serverTime = demo->_playerPlaybackInfos[i].Time;
 	}
 
+	const int previousServerTime = _previousServerTime;
+	_previousServerTime = serverTime + 1;
+
 	std::vector<Entity>& entities = DemoData.Entities;
 	std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
-	DemoData.FollowedPlayer = -1;
-
-	// Find disconnected players.
-	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); ++i)
+	// Log demo events.
+	const int intervalStart = previousServerTime;
+	const int intervalEnd = serverTime;
+	for(size_t i = 0; i < demo->_eventPlaybackInfos.size(); ++i)
 	{
-		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
-		if(info.Time != serverTime)
+		const Demo::EventInfo& info = demo->_eventPlaybackInfos[i];
+		if(info.Time < intervalStart)
 		{
 			continue;
 		}
-
-		// Find the player if he is already there.
-		for(size_t playerIdx = 0; playerIdx < players.size(); ++playerIdx)
+		else if(info.Time > intervalEnd)
 		{
-			const Player& player = players[playerIdx];
-			if(player.ClientIndex == info.Player)
-			{
-				if(info.Disconnected)
-				{
-					LogDemoEvent(DemoData.Clock, "%s disconnected", player.Name.toLocal8Bit().constData());
-				}
+			break;
+		}
 
-				break;
-			}
-		}	
+		const QTime zeroTime(0, 0);
+		const QTime gameTime = zeroTime.addMSecs(info.Time - _gameStartTime);
+		LogDemoEvent(gameTime, info.Event.c_str());
 	}
 
 	// Update all players, including spectators.
@@ -302,6 +302,10 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		if(info.Time != serverTime)
 		{
 			continue;
+		}
+		else if(info.Time > serverTime)
+		{
+			break;
 		}
 
 		// Boost player entity sync level.
@@ -338,7 +342,6 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		Player& player = players[playerIndex];
 		
 		// Update stats.
-		bool teamChanged = player.Team != info.Team;
 		player.Team = info.Team;
 		player.Health = info.Health;
 		player.Armor = info.Armor;
@@ -348,7 +351,9 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		player.Score = info.Score;
 
 		if(player.DemoTaker && player.Team != TEAM_SPECTATOR)
+		{
 			DemoData.FollowedPlayer = playerIndex;
+		}
 
 		// Player power-ups.
 		for(size_t puIdx = 0; puIdx < MAX_POWERUPS; ++puIdx)
@@ -408,14 +413,6 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 			nameInfo = &playerNames[i];
 		}
 		player.Name = nameInfo != NULL ? nameInfo->Name : "?";
-
-		if(teamChanged)
-		{
-			LogDemoEvent(
-				DemoData.Clock, "%s joined the %s", 
-				player.Name.toLocal8Bit().constData(), 
-				GetTeamName(info.Team).toLocal8Bit().constData());
-		}
 	}
 	
 	// Update scores.
@@ -428,9 +425,10 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		}
 
 		int demoTakerScore = -9999;
-
 		if(DemoData.FollowedPlayer != -1)
+		{
 			demoTakerScore = players[DemoData.FollowedPlayer].Score;
+		}
 
 		// Fix the score for all other players.
 		const int otherScore = scoreInfo.Score1 == demoTakerScore ? scoreInfo.Score2 : scoreInfo.Score1;
@@ -452,13 +450,13 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 			continue;
 		}
 
-		const int ClientIdx = info.ClientNum;
+		const int clientIdx = info.ClientNum;
 
 		// Update player stats.
 		int playerIndex = -1;
 		for(size_t p = 0; p < players.size(); p++)
 		{
-			if(players[p].ClientIndex == ClientIdx && players[p].Team != TEAM_SPECTATOR)
+			if(players[p].ClientIndex == clientIdx && players[p].Team != TEAM_SPECTATOR)
 			{
 				playerIndex = p;
 				break;
@@ -500,7 +498,6 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		entity.SyncCoolDown = std::min(entity.SyncCoolDown, UDT_DV_SYNC_MAX);
 	}
 
-	
 	// Update scores.
 	std::vector<ScoreEntry>& scoreTable = DemoData.Scores;
 	scoreTable.clear();

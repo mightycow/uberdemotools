@@ -158,6 +158,7 @@ private:
 	
 	int FindPlayerIndex(std::vector<Player>& players, const Demo::PlayerInfo& info, bool searchSpec);
 
+	int _previousServerTime;
 	int _demoStartTime;
 	int _demoEndTime;
 	int _demoLength;
