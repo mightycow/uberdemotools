@@ -459,10 +459,36 @@ void Gui::OnLogWindowClicked()
 
 void Gui::OnLogClearClicked()
 {
-	//@TODO
+	_ui.logWidget->clear();
 }
 
 void Gui::OnLogSaveClicked()
 {
-	//@TODO
+	QFileDialog dialog(this, "Select where to save the log content");
+	dialog.setFileMode(QFileDialog::AnyFile);
+	dialog.setAcceptMode(QFileDialog::AcceptSave);
+	dialog.setViewMode(QFileDialog::Detail);
+	dialog.setNameFilter("Text file (*.txt)");
+	dialog.setDefaultSuffix("txt");
+	if(!dialog.exec())
+	{
+		return;
+	}
+
+	const QStringList& filePaths = dialog.selectedFiles();
+	if(filePaths.size() != 1)
+	{
+		return;
+	}
+	
+	QFile file(filePaths[0]);
+	if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+	{
+		LogError("Failed to open the file '%s' for writing the log", filePaths[0].toLocal8Bit().constData());
+		return;
+	}
+
+	const QString& logText = _ui.logWidget->toPlainText();
+	file.write(logText.toLocal8Bit().constData());
+	file.close();
 }
