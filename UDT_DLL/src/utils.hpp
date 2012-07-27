@@ -13,3 +13,4 @@ extern void		ChangeVariable(const std::string& input, const std::string& cvar, c
 extern void		ChangeVariable(const std::string& input, const std::string& cvar, int val, std::string& output);
 extern int		ConvertPowerUpFlagsToValue(int flags); // Will keep/return the first power-up it finds.
 extern void		ReadScore(const char* scoreString, int* scoreValue); // Reads the score, sets it to -9999 when it fails.
+extern void		GetTeamName(std::string& teamName, int team);

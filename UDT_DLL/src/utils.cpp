@@ -165,3 +165,28 @@ void ReadScore(const char* scoreString, int* scoreValue)
 		*scoreValue = -9999;
 	}
 }
+
+void GetTeamName(std::string& teamName, int team)
+{
+	switch(team)
+	{
+	case TEAM_FREE:
+		teamName = "game";
+		break;
+
+	case TEAM_RED:
+		teamName = "red team";
+		break;
+
+	case TEAM_BLUE:
+		teamName = "blue team";
+		break;
+
+	case TEAM_SPECTATOR:
+		teamName = "spectators";
+		break;
+
+	default:
+		teamName = "unknown";
+	}
+}

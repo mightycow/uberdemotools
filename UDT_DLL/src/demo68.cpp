@@ -326,24 +326,15 @@ void Demo68::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 		return;
 	}
 
+	const int previousTeam = player->Info.Team;
+
 	std::string name;
 	ExtractPlayerNameFromConfigString(name, configString);
 
 	player->Valid = true;
 	Q_strncpyz(player->Name, name.c_str(), sizeof(player->Name));
 	TryGetVariable(&player->Info.Handicap, configString, "hc");
-
-	int previousTeam = player->Info.Team;
 	TryGetVariable(&player->Info.Team, configString, "t");
-	if(player->Info.Team != previousTeam)
-	{
-		EventInfo info;
-		info.Time = _serverTime;
-		info.Event = std::string(player->Name) + " moved to " + GetTeamName(player->Info.Team);
-		_eventPlaybackInfos.push_back(info);
-	}
-
-
 	TryGetVariable(&player->Info.BotSkill, configString, "l"); // @TODO: Correct?
 
 	PlayerNameInfo nameInfo;
@@ -352,6 +343,17 @@ void Demo68::AnalyzePlayerInfo(int clientNum, const std::string& configString)
 	nameInfo.Clan[0] = '\0';
 	nameInfo.Country[0] = '\0';
 	_playerNamesPlaybackInfos[clientNum].push_back(nameInfo);
+
+	if(player->Info.Team != previousTeam)
+	{
+		std::string teamName;
+		GetTeamName(teamName, player->Info.Team);
+
+		EventInfo info;
+		info.Time = _serverTime;
+		info.Event = std::string(player->Name) + " moved to " + teamName;
+		_eventPlaybackInfos.push_back(info);
+	}
 }
 
 void Demo68::ProtocolAnalyzeAndFixCommandString(const char* command, std::string& output)
