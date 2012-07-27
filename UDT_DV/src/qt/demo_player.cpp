@@ -268,13 +268,35 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 	std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
+	// Find disconnected players.
+	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); ++i)
+	{
+		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
+		if(info.Time != serverTime)
+		{
+			continue;
+		}
+
+		// Find the player if he is already there.
+		for(size_t playerIdx = 0; playerIdx < players.size(); ++playerIdx)
+		{
+			const Player& player = players[playerIdx];
+			if(player.ClientIndex == info.Player)
+			{
+				if(info.Disconnected)
+				{
+					LogDemoEvent(DemoData.Clock, "%s disconnected", player.Name.toLocal8Bit().constData());
+				}
+
+				break;
+			}
+		}	
+	}
+
 	// Update all players, including spectators.
 	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); ++i)
 	{
 		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
-
-		bool spec = info.Team == TEAM_SPECTATOR;
-		
 		if(info.Time != serverTime)
 		{
 			continue;
@@ -290,9 +312,11 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		// Find the player if he is already there.
 		int playerIndex = FindPlayerIndex(players, info, false);
 		
-		// If you cannot find the player in game, try with the spectators.
+		// If you cannot find the player in game, try within the spectators.
 		if(playerIndex == -1)
+		{
 			playerIndex = FindPlayerIndex(players, info, true);
+		}
 
 		// If you really did not find him, add him as new player.
 		if(playerIndex == -1)
@@ -310,7 +334,7 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		}
 
 		Player& player = players[playerIndex];
-
+		
 		// Update stats.
 		bool teamChanged = player.Team != info.Team;
 		player.Team = info.Team;
