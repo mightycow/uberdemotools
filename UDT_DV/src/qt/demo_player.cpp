@@ -41,7 +41,10 @@ static QString GetTeamName(int team)
 	case TEAM_SPECTATOR:
 		return "spectator";
 	}
+
+	return "unknown";
 }
+
 
 DemoPlayer::DemoPlayer(QObject *parent)
 	: QObject(parent)
@@ -204,7 +207,6 @@ int DemoPlayer::SearchNextEntity(int serverTime, int oldIndex, int entityNumber,
 	return latestIndex;
 }
 
-
 void DemoPlayer::MakeBeams()
 {
 	std::vector<Beam>& beams = DemoData.Beams;
@@ -228,7 +230,6 @@ void DemoPlayer::MakeBeams()
 		beams.push_back(beam);
 	}
 }
-
 
 void DemoPlayer::UpdateEntityList(int startIndex, int time)
 {
