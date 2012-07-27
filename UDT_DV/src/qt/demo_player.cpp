@@ -9,6 +9,23 @@
 #include <limits>
 
 
+static void LogDemoEvent(QTime& clock, const char* format, ...)
+{
+	if(!_messageCallback)
+	{
+		return;
+	}
+
+	char msg[MAXPRINTMSG];
+	va_list argptr;
+	va_start(argptr, format);
+	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
+	va_end(argptr);
+
+	const QString finalMsg = clock.toString("mm:ss") + " " + msg;
+	(*_messageCallback)(10, finalMsg.toLocal8Bit().constData());
+}
+
 static void GetTimeFromMs(int totalMs, int& hours, int& minutes, int& seconds, int& milliSeconds)
 {
 	milliSeconds = totalMs % 1000;
@@ -33,13 +50,13 @@ static QString GetTeamName(int team)
 	switch(team)
 	{
 	case TEAM_FREE:
-		return "Game";
+		return "game";
 	case TEAM_RED:
-		return "Red Team";
+		return "red Team";
 	case TEAM_BLUE:
-		return "Blue Team";
+		return "blue Team";
 	case TEAM_SPECTATOR:
-		return "Spectators";
+		return "spectators";
 	}
 
 	return "unknown";
@@ -365,8 +382,10 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 
 		if(teamChanged)
 		{
-			QString text = "> " + player.Name + " moved to " + GetTeamName(info.Team) + ".";
-			LogInfo(text.toStdString().c_str());
+			LogDemoEvent(
+				DemoData.Clock, "%s joined the %s", 
+				player.Name.toLocal8Bit().constData(), 
+				GetTeamName(info.Team).toLocal8Bit().constData());
 		}
 	}
 	

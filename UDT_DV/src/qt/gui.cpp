@@ -96,7 +96,6 @@ void Gui::ConnectUiElements()
 	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
 	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowScoreChanged(int)));
 	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowHudChanged(int)));
-	connect(_ui.showPUCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowPUChanged(int)));
 	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
@@ -272,7 +271,6 @@ void Gui::ShowPUChanged( int state)
 	_ui.paintWidget->ShowPowerUps = (state == Qt::Checked);
 }
 
-
 void Gui::ProgressSliderValueChanged(int editValue)
 {
 	// This needs to run only when the user is changing the value using the slider.
@@ -392,6 +390,7 @@ void Gui::OnMessage(int logLevel, const char* message)
 	case 1: formattedMsg = QString("<p style=\"color:#FF7C21\">Warning: %1</p>").arg(message); break;
 	case 2: formattedMsg = QString("<p style=\"color:red\">Error: %1</p>").arg(message); break;
 	case 3: formattedMsg = QString("<p style=\"color:red\">Critical Error: %1</p>").arg(message); break;
+	case 10: formattedMsg = QString("<p style=\"color:blue\">%1</p>").arg(message); break;
 	default: formattedMsg = message; break;
 	}
 
