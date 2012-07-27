@@ -253,7 +253,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 		}
 		
 		// Draw the one closer in time.
-		if(livingAlpha >= deadAlpha && living)
+		if(livingAlpha >= deadAlpha && living && livingAlpha > 0)
 		{
 			PlayerData playerData;
 			playerData.DemoPlayer = living;
@@ -340,7 +340,7 @@ void PaintWidget::DrawPlayer(QPainter& painter, const PlayerData& data)
 		return;
 	}
 
-	DrawViewAngle(painter, QPoint(x0,y0), data.Player->Color, orientation, fovAngle, 50);
+	DrawViewAngle(painter, QPoint(x0,y0), data.Player->Color, orientation, fovAngle, 50, data.Alpha);
 	DrawWeapon(painter, x0, y0, z0, orientation, data.Alpha, data.DemoPlayer->CurrentWeapon, data.DemoPlayer->Firing);
 	DrawLivingPlayer(painter, x0, y0, z0, data.Player->Color, data.Alpha);
 	DrawPlayerPowerup(painter, x0, y0, z0, data.Player);
@@ -408,7 +408,6 @@ void PaintWidget::DrawScores(QPainter& painter)
 		return;
 	}
 		
-	const int y = 30;
 
 	QFont nameFont;
 	nameFont.setPixelSize(20);
@@ -438,15 +437,20 @@ void PaintWidget::DrawScores(QPainter& painter)
 	pen.setColor(QColor(127, 50, 50, 255));
 	painter.setPen(pen);
 	painter.setFont(nameFont);
-	painter.drawText(this->width() / 2 - leftPlayerNameWidth - leftScoreWidth - pad, y, leftPlayerName);
-	painter.drawText(this->width() / 2 + rightScoreWidth + pad, y, rightPlayerName);
-	painter.drawText(this->width() / 2 - scoreFontMetric.width("-") / 2, y, "-");
+
+
+	const int y = 50;
+	int x = this->width() - (rightScoreWidth + rightPlayerNameWidth) - y;
+
+	painter.drawText(x - leftPlayerNameWidth - leftScoreWidth - pad, y, leftPlayerName);
+	painter.drawText(x + rightScoreWidth + pad, y, rightPlayerName);
+	painter.drawText(x - scoreFontMetric.width("-") / 2, y, "-");
 
 	pen.setColor(QColor(255, 100, 100, 255));
 	painter.setPen(pen);
 	painter.setFont(scoreFont);
-	painter.drawText(this->width() / 2 - leftScoreWidth - pad, y, leftScore);
-	painter.drawText(this->width() / 2 + pad, y, rightScore);
+	painter.drawText(x - leftScoreWidth - pad, y, leftScore);
+	painter.drawText(x + pad, y, rightScore);
 }
 
 void PaintWidget::DrawPowerUps(QPainter& painter)
@@ -527,7 +531,7 @@ void PaintWidget::DrawHud(QPainter& painter)
 	for(size_t i = 0; i < players.size(); i++)
 	{
 		const Player& player = players[i];
-		if(!player.DemoTaker)
+		if(!player.DemoTaker || player.Team == TEAM_SPECTATOR)
 		{
 			continue;
 		}
@@ -684,11 +688,11 @@ QImage* PaintWidget::GetWeapon( int type, bool firing )
 	return _proxyImage;
 }
 
-void PaintWidget::DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius)
+void PaintWidget::DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius, float alpha)
 {
-	QPen pen;
+	QPen pen(QColor(0, 0, 0, 255*alpha));
 	QColor newColor = color;
-	newColor.setAlpha(32);
+	newColor.setAlpha(64 * alpha);
 	const QBrush brush(newColor);
 	painter.setBrush(brush);
 	painter.setPen(pen);
@@ -717,7 +721,9 @@ void PaintWidget::DrawLivingPlayer(QPainter &painter, int x, int y, int z, const
 	}
 
 	const int radius = (int)(20.0f + (float)z * _heightScale);
-	brush.setColor(color);
+	QColor c(color);
+	c.setAlpha(alpha * 255);
+	brush.setColor(c);
 	painter.setPen(pen);
 	painter.setBrush(brush);
 	painter.drawEllipse(x-radius/2, y-radius/2, radius, radius);

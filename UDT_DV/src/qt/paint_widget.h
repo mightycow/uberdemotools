@@ -60,7 +60,7 @@ protected:
 	void	DrawProjectile(QPainter& painter, const Demo::EntityInfo* info);
 	void	DrawGeneric(QPainter& painter, const Demo::EntityInfo* info);
 	void	DrawBeams(QPainter& painter, const float* startPositions, const float* endPositions, Beam::Type::Id type, float alpha = 1.0f);
-	void	DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius);
+	void	DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius, float alpha);
 	void	SetImageAlpha(QImage* image, float alpha);
 	QImage* GetIcon(int type);
 	QImage* GetWeapon(int type, bool firing);

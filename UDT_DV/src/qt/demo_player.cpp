@@ -28,6 +28,20 @@ static void GetTimeFromMs(int totalMs, int& hours, int& minutes, int& seconds, i
 	totalMs /= 24;
 }
 
+static QString GetTeamName(int team)
+{
+	switch(team)
+	{
+	case TEAM_FREE:
+		return "game";
+	case TEAM_RED:
+		return "red team";
+	case TEAM_BLUE:
+		return "blue team";
+	case TEAM_SPECTATOR:
+		return "spectator";
+	}
+}
 
 DemoPlayer::DemoPlayer(QObject *parent)
 	: QObject(parent)
@@ -44,11 +58,7 @@ DemoPlayer::~DemoPlayer()
 
 bool DemoPlayer::LoadDemo(const QString& path)
 {
-	if(DemoData.Demo != NULL)
-	{
-		delete DemoData.Demo; 
-		DemoData.Demo = NULL;
-	}
+	DemoData.ClearAll();
 
 	Demo* demo = NULL;
 	const QStringList splitPath = path.split(".");
@@ -100,7 +110,6 @@ bool DemoPlayer::LoadDemo(const QString& path)
 	_lastObituaryIndex = -1;
 	_obituariesChecked.resize(demo->_obituaries.size(), false);
 
-	//SearchPlayers();
 	MakeBeams();
 
 	return true;
@@ -198,7 +207,6 @@ int DemoPlayer::SearchNextEntity(int serverTime, int oldIndex, int entityNumber,
 
 void DemoPlayer::MakeBeams()
 {
-	const std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
 	const size_t playerCount = 64;
@@ -242,10 +250,13 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 	std::vector<Player>& players = DemoData.Players;
 	std::vector<Beam>& beams = DemoData.Beams;
 
-	// Update players.
+	// Update all players, including spectators.
 	for(size_t i = 0; i < demo->_playerPlaybackInfos.size(); ++i)
 	{
 		const Demo::PlayerInfo& info = demo->_playerPlaybackInfos[i];
+
+		bool spec = info.Team == TEAM_SPECTATOR;
+		
 		if(info.Time != serverTime)
 		{
 			continue;
@@ -258,29 +269,19 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		entity.SyncCoolDown += UDT_DV_SYNC_BOOST;
 		entity.SyncCoolDown = std::min(entity.SyncCoolDown, UDT_DV_SYNC_MAX);
 			
+		// Find the player if he is already there.
+		int playerIndex = FindPlayerIndex(players, info, false);
 		
-		int demoTakerIndex = -1;
-		int playerIndex = -1;
-		for(size_t playerIdx = 0; playerIdx < players.size(); ++playerIdx)
-		{
-			const Player& player = players[playerIdx];
-			if(player.ClientIndex == info.Player && player.Team != TEAM_SPECTATOR)
-			{
-				playerIndex = playerIdx;
-			}
-			if(player.DemoTaker)
-			{
-				demoTakerIndex = playerIdx;
-			}
-		}
-			
+		// If you cannot find the player in game, try with the spectators.
+		if(playerIndex == -1)
+			playerIndex = FindPlayerIndex(players, info, true);
+
+		// If you really did not find him, add him as new player.
 		if(playerIndex == -1)
 		{
 			Player p;
-			
 			p.DemoTaker = false;
-			p.ClientIndex = info.Player;
-			p.Team = info.Team;
+			p.ClientIndex = info.Player;			
 			for(int q = 0; q < MAX_POWERUPS; ++q)
 			{
 				p.Powerups[q] = false;
@@ -293,6 +294,8 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 		Player& player = players[playerIndex];
 
 		// Update stats.
+		bool teamChanged = player.Team != info.Team;
+		player.Team = info.Team;
 		player.Health = info.Health;
 		player.Armor = info.Armor;
 		player.Ammo = info.CurrentAmmo;
@@ -322,12 +325,6 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 			player.Color = QColor(0, 0, 0, 0);
 			break;
 		default:
-			if(demoTakerIndex == -1) 
-				break;
-			if(players[demoTakerIndex].Team == TEAM_RED)
-				player.Color = QColor(50, 50, 255, 255);
-			else if (players[demoTakerIndex].Team == TEAM_BLUE)
-				player.Color = QColor(255, 50, 50, 255);
 			break;
 		}
 
@@ -364,6 +361,12 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 			nameInfo = &playerNames[i];
 		}
 		player.Name = nameInfo != NULL ? nameInfo->Name : "?";
+
+		if(teamChanged)
+		{
+			QString text = "> " + player.Name + " moved to " + GetTeamName(info.Team);
+			LogInfo(text.toStdString().c_str());
+		}
 	}
 	
 	// Update scores.
@@ -513,16 +516,41 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 	}
 }
 
+int DemoPlayer::FindPlayerIndex(std::vector<Player>& players, const Demo::PlayerInfo& info, bool searchSpec)
+{
+	const int notFound = -1;
+	for(size_t playerIdx = 0; playerIdx < players.size(); ++playerIdx)
+	{
+		const Player& player = players[playerIdx];
+		bool condition = searchSpec ? (player.ClientIndex == info.Player && player.Team != TEAM_SPECTATOR) : (player.ClientIndex == info.Player && player.Team == TEAM_SPECTATOR);
+		if(condition)
+		{
+			return playerIdx;
+		}
+	}	
+	return notFound;
+}
+
 void DemoPlayer::DeSyncEntities()
 {
 	std::vector<Entity>& entities = DemoData.Entities;
 	std::vector<Beam>& beams = DemoData.Beams;
 
-	// Reduce sync level of the items.
-	for(size_t i = 0; i < entities.size(); ++i)
+	const int playerCount = 128;
+
+	// Reduce sync level of players.
+	for(size_t i = 0; i < playerCount; ++i)
 	{
 		Entity& entity = entities[i];
-		entity.SyncCoolDown -= UDT_DV_SYNC_LOSS;
+		entity.SyncCoolDown -= UDT_DV_PLAYER_SYNC_LOSS;
+		entity.SyncCoolDown = std::max(entity.SyncCoolDown, 0);
+	}
+
+	// Reduce sync level of the items.
+	for(size_t i = playerCount; i < entities.size(); ++i)
+	{
+		Entity& entity = entities[i];
+		entity.SyncCoolDown -= UDT_DV_ITEM_SYNC_LOSS;
 		entity.SyncCoolDown = std::max(entity.SyncCoolDown, 0);
 	}
 

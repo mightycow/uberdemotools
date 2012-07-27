@@ -9,7 +9,8 @@
 
 
 #define UDT_DV_SYNC_BOOST	 50
-#define UDT_DV_SYNC_LOSS	 15
+#define UDT_DV_ITEM_SYNC_LOSS	 15
+#define UDT_DV_PLAYER_SYNC_LOSS	 2
 #define UDT_DV_SYNC_MAX		100
 
 
@@ -95,6 +96,19 @@ struct SharedDemoData
 	QTime Clock;
 	Demo* Demo;
 	int WarmupTime;
+
+	void ClearAll()
+	{
+		Players.clear();
+		Beams.clear();
+		Scores.clear();
+
+		Entities.clear();
+		Entities.resize(576);
+
+		delete Demo; 
+		Demo = NULL;
+	}
 };
 
 
@@ -137,7 +151,10 @@ public:
 	float _timeScale;
 	QTimer _timer;
 
-private:	
+private:
+	
+	int FindPlayerIndex(std::vector<Player>& players, const Demo::PlayerInfo& info, bool searchSpec);
+
 	int _demoStartTime;
 	int _demoEndTime;
 	int _demoLength;

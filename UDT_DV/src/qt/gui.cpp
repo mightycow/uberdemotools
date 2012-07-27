@@ -248,7 +248,7 @@ void Gui::UpdateProgressSlider(float progress)
 void Gui::TimeScaleChanged(double editValue)
 {
 	const float newValue = (float)editValue;
-	_demoPlayer._timeScale = _ui.reverseCheckBox->isChecked() ? newValue : -newValue;
+	_demoPlayer._timeScale = _ui.reverseCheckBox->isChecked() ? -newValue : newValue;
 }
 
 void Gui::ShowClockChanged(int state)
