@@ -559,6 +559,11 @@ void PaintWidget::DrawHud(QPainter& painter)
 		{
 			_lastValidWeapon = player.Weapon;
 		}
+
+		// @TODO: Make sure only 1 player is considered as being followed.
+		// If you jump forward in time, you can sometimes see 2 HUDs overlapping.
+		// This makes sure only 1 is drawn.
+		break;
 	}
 }
 
