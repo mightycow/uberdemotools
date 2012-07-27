@@ -34,6 +34,7 @@ public slots:
 	void	ShowClockChanged(int);
 	void	ShowScoreChanged(int);
 	void	ShowHudChanged(int);
+	void	ShowPUChanged(int);
 	void	ReverseTimeChanged(int);
 	bool	GetScalingData(const QString& scalingPath, int* origin, int* end);
 	void	DemoFinished();

@@ -133,6 +133,16 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="showPUCheckBox">
+        <property name="text">
+         <string>Show Powerups</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
        <spacer name="horizontalSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
@@ -213,7 +223,7 @@
     <bool>false</bool>
    </property>
    <property name="allowedAreas">
-    <set>Qt::BottomDockWidgetArea</set>
+    <set>Qt::BottomDockWidgetArea|Qt::RightDockWidgetArea</set>
    </property>
    <attribute name="dockWidgetArea">
     <number>8</number>
@@ -311,6 +321,7 @@
   <tabstop>showClockCheckBox</tabstop>
   <tabstop>showScoresCheckBox</tabstop>
   <tabstop>showHudCheckBox</tabstop>
+  <tabstop>showPUCheckBox</tabstop>
   <tabstop>logWidget</tabstop>
  </tabstops>
  <resources/>

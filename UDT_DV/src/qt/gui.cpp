@@ -96,6 +96,7 @@ void Gui::ConnectUiElements()
 	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
 	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowScoreChanged(int)));
 	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowHudChanged(int)));
+	connect(_ui.showPUCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowPUChanged(int)));
 	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
@@ -265,6 +266,12 @@ void Gui::ShowHudChanged(int state)
 {
 	_ui.paintWidget->ShowHud = (state == Qt::Checked);
 }
+
+void Gui::ShowPUChanged( int state)
+{
+	_ui.paintWidget->ShowPowerUps = (state == Qt::Checked);
+}
+
 
 void Gui::ProgressSliderValueChanged(int editValue)
 {

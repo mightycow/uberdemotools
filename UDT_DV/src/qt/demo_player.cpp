@@ -33,13 +33,13 @@ static QString GetTeamName(int team)
 	switch(team)
 	{
 	case TEAM_FREE:
-		return "game";
+		return "Game";
 	case TEAM_RED:
-		return "red team";
+		return "Red Team";
 	case TEAM_BLUE:
-		return "blue team";
+		return "Blue Team";
 	case TEAM_SPECTATOR:
-		return "spectator";
+		return "Spectators";
 	}
 
 	return "unknown";
@@ -365,7 +365,7 @@ void DemoPlayer::UpdateEntityList(int startIndex, int time)
 
 		if(teamChanged)
 		{
-			QString text = "> " + player.Name + " moved to " + GetTeamName(info.Team);
+			QString text = "> " + player.Name + " moved to " + GetTeamName(info.Team) + ".";
 			LogInfo(text.toStdString().c_str());
 		}
 	}
