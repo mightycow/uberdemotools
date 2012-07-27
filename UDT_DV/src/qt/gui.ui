@@ -214,7 +214,6 @@
         <height>600</height>
        </size>
       </property>
-      <zorder>logWidget</zorder>
      </widget>
     </item>
    </layout>
