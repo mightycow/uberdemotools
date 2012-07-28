@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>732</height>
+    <width>800</width>
+    <height>600</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -60,7 +60,7 @@
          <widget class="QLineEdit" name="pathLineEdit">
           <property name="minimumSize">
            <size>
-            <width>600</width>
+            <width>400</width>
             <height>0</height>
            </size>
           </property>
@@ -211,8 +211,8 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>0</width>
-        <height>0</height>
+        <width>200</width>
+        <height>200</height>
        </size>
       </property>
      </widget>
@@ -256,7 +256,7 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>300</width>
+         <width>250</width>
          <height>0</height>
         </size>
        </property>

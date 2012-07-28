@@ -118,21 +118,6 @@ PaintWidget::~PaintWidget()
 
 void PaintWidget::ResetScaling()
 {
-	/*
-	_mapOrigin[0] = _mapOrigin[1] = _mapOrigin[2] = 0;
-	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
-
-	resize(800, 800);
-
-	QRect scaledRect;
-	GetScaledRect(scaledRect);
-
-	const float scaleX =  scaledRect.width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
-	const float scaleY = -scaledRect.height() / (float)(_mapEnd[1] - _mapOrigin[1]);
-	_coordsScale = std::min(scaleX, scaleY);
-	_heightScale = HeightScaleRatio / (float)(_mapEnd[2] - _mapOrigin[2]);
-	*/
-
 	_mapOrigin[0] = _mapOrigin[1] = _mapOrigin[2] = 0;
 	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
 
@@ -1175,7 +1160,7 @@ void PaintWidget::SetImageAlpha(QImage* image, float alpha)
 
 void PaintWidget::GetUnscaledRect(QRect& rect)
 {
-	rect = QRect(0, 0, 800, 800);
+	rect = QRect(0, 0, 400, 400);
 	if(_bgImage != NULL)
 	{
 		rect.setWidth(_bgImage->width());
@@ -1200,9 +1185,7 @@ void PaintWidget::ComputeRenderScale()
 	const float sy = (float)height() / (float)unscaledRect.height();
 	
 	float scale = std::min(sx, sy);
-
-	if(scale > 1.0f)
-		scale = 1.0f;
+	scale = std::min(scale, 1.0f);
 
 	RenderScale = scale;
 }
