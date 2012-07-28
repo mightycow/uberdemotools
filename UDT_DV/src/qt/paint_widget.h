@@ -64,9 +64,12 @@ protected:
 	void	SetImageAlpha(QImage* image, float alpha);
 	QImage* GetIcon(int type);
 	QImage* GetWeapon(int type, bool firing);
+	void	GetUnscaledRect(QRect& rect);
+	void	GetScaledRect(QRect& rect);
 
 public:
 	SharedDemoData* DemoData;
+	float RenderScale;
 	bool DisplayDemo;
 	bool ShowClock;
 	bool ShowScore;
@@ -75,7 +78,7 @@ public:
 	QString BackgroundMessage;
 
 private:
-	QImage* _bgImage;	
+	QImage* _bgImage;
 	int _mapOrigin[3];
 	int _mapEnd[3];
 	float _coordsScale;

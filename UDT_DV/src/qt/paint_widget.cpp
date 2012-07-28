@@ -11,6 +11,10 @@
 
 
 static const int FollowingTextDeltaY = 35;
+static const float HeightScaleRatio = 50.0f;
+static const float PlayerRadiusBase = 15.0f;
+static const int PlayerRadiusQuad = 19;
+static const int PlayerRadiusBs = 21;
 
 static const int ItemIdxFromPowerUpIdx[16] =
 {
@@ -69,6 +73,7 @@ PaintWidget::PaintWidget(QWidget *parent)
 	: QWidget(parent)
 {
 	DemoData = NULL;
+	RenderScale = 1.0f;
 	ShowClock = true;
 	ShowScore = true;
 	ShowHud = true;
@@ -116,11 +121,14 @@ void PaintWidget::ResetScaling()
 	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
 
 	resize(800, 800);
-	
-	const float scaleX =  width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
-	const float scaleY = -height() / (float)(_mapEnd[1] - _mapOrigin[1]);
+
+	QRect scaledRect;
+	GetScaledRect(scaledRect);
+
+	const float scaleX =  scaledRect.width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
+	const float scaleY = -scaledRect.height() / (float)(_mapEnd[1] - _mapOrigin[1]);
 	_coordsScale = std::min(scaleX, scaleY);
-	_heightScale = 20.0f / (float)(_mapEnd[2] - _mapOrigin[2]);
+	_heightScale = HeightScaleRatio / (float)(_mapEnd[2] - _mapOrigin[2]);
 }
 
 void PaintWidget::SetScaling(int* origin, int* end)
@@ -133,32 +141,48 @@ void PaintWidget::SetScaling(int* origin, int* end)
 	_mapEnd[1] = end[1];
 	_mapEnd[2] = end[2];
 
-	const int w = (_bgImage == NULL) ? width()  : _bgImage->width();
-	const int h = (_bgImage == NULL) ? height() : _bgImage->height();
+	QRect rect;
+	GetUnscaledRect(rect);
+	const int w = rect.width();
+	const int h = rect.height();
 	const float scaleX =  w / (float)(_mapEnd[0] - _mapOrigin[0]);
 	const float scaleY = -h / (float)(_mapEnd[1] - _mapOrigin[1]);
 	_coordsScale = std::min(scaleX, scaleY);
-	_heightScale = 20.0f / (float)(end[2] - origin[2]);
+	_heightScale = HeightScaleRatio / (float)(end[2] - origin[2]);
 }
 
 void PaintWidget::paintEvent(QPaintEvent* event)
 {
-	QPainter painter(this);
-	painter.setRenderHints(QPainter::Antialiasing, true);
-	painter.fillRect(rect(), Qt::gray);
+	QRect offlineRect;
+	GetUnscaledRect(offlineRect);
+	const int width = offlineRect.width();
+	const int height = offlineRect.height();
+
+	QPixmap offlineBuffer(width, height);
+	QPainter offlinePainter(&offlineBuffer);
+	offlinePainter.setRenderHints(QPainter::Antialiasing, true);
+	offlinePainter.fillRect(offlineRect, Qt::gray);
 
 	QFont font;
 	font.setPixelSize(30);
-	painter.setFont(font);
-	
+	offlinePainter.setFont(font);
+
 	const QFontMetrics fontMetrics(font);
 	const int posX = fontMetrics.width(BackgroundMessage) / 2;
-	painter.drawText(width() / 2 - posX, height() / 2, BackgroundMessage);
-	
+	offlinePainter.drawText(width / 2 - posX, height / 2, BackgroundMessage);
+
 	if(DisplayDemo)
 	{
-		PaintDemo(painter);
+		PaintDemo(offlinePainter);
 	}
+
+	QRect windowRect;
+	GetScaledRect(windowRect);
+	const int scaledWidth = windowRect.width();
+	const int scaledHeight = windowRect.height();
+	QPainter windowPainter(this);
+	windowPainter.setRenderHints(QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform, true);
+	windowPainter.drawPixmap(windowRect, offlineBuffer);
 }
 
 void PaintWidget::PaintDemo(QPainter& painter)
@@ -301,8 +325,11 @@ bool PaintWidget::LoadImage(const QString& path)
 	}
 
 	_bgImage = new QImage(path);
-	setMaximumSize(_bgImage->width(), _bgImage->height());
-	setMinimumSize(_bgImage->width(), _bgImage->height());
+
+	QRect scaledRect;
+	GetScaledRect(scaledRect);
+	setMaximumSize(scaledRect.width(), scaledRect.height());
+	setMinimumSize(scaledRect.width(), scaledRect.height());
 
 	return true;
 }
@@ -408,7 +435,6 @@ void PaintWidget::DrawScores(QPainter& painter)
 		return;
 	}
 		
-
 	QFont nameFont;
 	nameFont.setPixelSize(20);
 	const QFontMetrics nameFontMetric(nameFont);
@@ -433,14 +459,15 @@ void PaintWidget::DrawScores(QPainter& painter)
 
 	QPen pen; 
 	pen.setWidth(1);
-
 	pen.setColor(QColor(127, 50, 50, 255));
 	painter.setPen(pen);
 	painter.setFont(nameFont);
 
+	QRect renderTargetRect;
+	GetUnscaledRect(renderTargetRect);
 
 	const int y = 50;
-	int x = this->width() - (rightScoreWidth + rightPlayerNameWidth) - y;
+	const int x = renderTargetRect.width() - (rightScoreWidth + rightPlayerNameWidth) - y;
 
 	painter.drawText(x - leftPlayerNameWidth - leftScoreWidth - pad, y, leftPlayerName);
 	painter.drawText(x + rightScoreWidth + pad, y, rightPlayerName);
@@ -522,13 +549,10 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 
 void PaintWidget::DrawHud(QPainter& painter)
 {
-	if(DemoData == NULL || !ShowHud)
+	if(DemoData == NULL || !ShowHud || DemoData->FollowedPlayer == -1)
 	{
 		return;
 	}
-
-	if(DemoData->FollowedPlayer == -1)
-		return;
 
 	const Player& player = DemoData->Players[DemoData->FollowedPlayer];
 
@@ -536,9 +560,12 @@ void PaintWidget::DrawHud(QPainter& painter)
 	font.setPixelSize(20);
 	painter.setFont(font);
 
+	QRect renderTargetRect;
+	GetUnscaledRect(renderTargetRect);
+
 	const QString text = "Following " + player.Name;
 	const int textLength = text.length();
-	painter.drawText(width() / 2 - (text.length() / 2) * 10, height() - FollowingTextDeltaY - 30, text);
+	painter.drawText(renderTargetRect.width() / 2 - (text.length() / 2) * 10, renderTargetRect.height() - FollowingTextDeltaY - 30, text);
 
 	DrawHudElement(painter, GetIcon(ITEM_HEALTH), -120, QString::number(player.Health));
 	DrawHudElement(painter, GetIcon(ITEM_ARMOR_COMBAT), 80, QString::number(player.Armor));
@@ -555,15 +582,17 @@ void PaintWidget::DrawHud(QPainter& painter)
 	{
 		_lastValidWeapon = player.Weapon;
 	}
-	
 }
 
 void PaintWidget::DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text)
 {
+	QRect renderTargetRect;
+	GetUnscaledRect(renderTargetRect);
+
 	const int w = (int)((float)icon->width() *_iconScale * 1.5f);
 	const int h = (int)((float)icon->height()*_iconScale * 1.5f);
-	const int x = width() / 2 + offsetX;
-	const int y = height() - FollowingTextDeltaY;
+	const int x = renderTargetRect.width() / 2 + offsetX;
+	const int y = renderTargetRect.height() - FollowingTextDeltaY;
 	QRect source(0, 0, icon->width(), icon->height());
 	QRect target(x-w/2, y-h/2, w, h);
 	painter.drawImage(target, *icon, source);
@@ -716,7 +745,7 @@ void PaintWidget::DrawLivingPlayer(QPainter &painter, int x, int y, int z, const
 		newColor.setAlpha(alpha * 255);
 	}
 
-	const int radius = (int)(20.0f + (float)z * _heightScale);
+	const int radius = (int)(PlayerRadiusBase + (float)z * _heightScale);
 	QColor c(color);
 	c.setAlpha(alpha * 255);
 	brush.setColor(c);
@@ -729,12 +758,12 @@ void PaintWidget::DrawPlayerPowerup(QPainter& painter, int x, int y, int z, cons
 {
 	if(player->Powerups[PW_QUAD])
 	{
-		DrawPlayerPowerupDisk(painter, x, y, z, 24, QColor(0, 128, 255, 255), QColor(0, 128, 255, 128));
+		DrawPlayerPowerupDisk(painter, x, y, z, PlayerRadiusQuad, QColor(0, 128, 255, 255), QColor(0, 128, 255, 128));
 	}
 
 	if(player->Powerups[PW_BATTLESUIT])
 	{
-		DrawPlayerPowerupDisk(painter, x, y, z, 26, QColor(255, 230, 0, 255), QColor(255, 230, 0, 128));
+		DrawPlayerPowerupDisk(painter, x, y, z, PlayerRadiusBs, QColor(255, 230, 0, 255), QColor(255, 230, 0, 128));
 	}
 
 	if(player->Powerups[PW_REDFLAG])
@@ -1102,6 +1131,24 @@ void PaintWidget::SetImageAlpha(QImage* image, float alpha)
 			}
 		}
 	}
+}
+
+void PaintWidget::GetUnscaledRect(QRect& rect)
+{
+	rect = QRect(0, 0, 800, 800);
+	if(_bgImage != NULL)
+	{
+		rect.setWidth(_bgImage->width());
+		rect.setHeight(_bgImage->height());
+	}
+}
+
+void PaintWidget::GetScaledRect(QRect& rect)
+{
+	GetUnscaledRect(rect);
+	const int w = (int)(RenderScale * (float)rect.width());
+	const int h = (int)(RenderScale * (float)rect.height());
+	rect = QRect(0, 0, w, h);
 }
 
 
