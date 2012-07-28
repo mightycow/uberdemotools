@@ -50,6 +50,7 @@ public slots:
 	void	OnViewPUChanged();
 	void	OnSizeModeChanged();
 	void	OnScaleSliderChanged(int);
+	void	OnFitToWindow();
 
 protected:
 	// Qt overrides.

@@ -57,6 +57,7 @@ Gui::Gui()
 	_ui.pathLineEdit->setReadOnly(true);
 	_ui.scaleLabel->hide();
 	_ui.scaleSlider->hide();
+	_ui.fitWindowButton->hide();
 
 	DataPath = "";
 	QDir dir;
@@ -604,6 +605,7 @@ void Gui::OnSizeModeChanged()
 		// Enable UI elements
 		_ui.scaleLabel->show();
 		_ui.scaleSlider->show();
+		_ui.fitWindowButton->show();
 
 		// Save current scale value and change size mode
 		_ui.scaleSlider->setValue(100 * _ui.paintWidget->RenderScale);
@@ -621,6 +623,7 @@ void Gui::OnSizeModeChanged()
 		// Disable UI elements
 		_ui.scaleLabel->hide();
 		_ui.scaleSlider->hide();
+		_ui.fitWindowButton->hide();
 
 		// Change size mode and recompute the scaling
 		_ui.paintWidget->AdaptRenderScaleToWindowSize = true;
@@ -642,4 +645,10 @@ void Gui::OnScaleSliderChanged( int editValue)
 	_ui.paintWidget->RenderScale = scale;
 	_ui.scaleLabel->setText("Scale = " + QString("%1").arg((double)scale, 3, 'f', 2) );
 	_ui.paintWidget->repaint();
+}
+
+void Gui::OnFitToWindow()
+{
+	_ui.paintWidget->ComputeRenderScale();
+	_ui.scaleSlider->setValue(100 * _ui.paintWidget->RenderScale);
 }
