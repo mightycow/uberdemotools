@@ -74,6 +74,7 @@ PaintWidget::PaintWidget(QWidget *parent)
 {
 	DemoData = NULL;
 	RenderScale = 1.0f;
+	AdaptRenderScaleToWindowSize = true;
 	ShowClock = true;
 	ShowScore = true;
 	ShowHud = true;
@@ -117,6 +118,7 @@ PaintWidget::~PaintWidget()
 
 void PaintWidget::ResetScaling()
 {
+	/*
 	_mapOrigin[0] = _mapOrigin[1] = _mapOrigin[2] = 0;
 	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
 
@@ -127,6 +129,19 @@ void PaintWidget::ResetScaling()
 
 	const float scaleX =  scaledRect.width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
 	const float scaleY = -scaledRect.height() / (float)(_mapEnd[1] - _mapOrigin[1]);
+	_coordsScale = std::min(scaleX, scaleY);
+	_heightScale = HeightScaleRatio / (float)(_mapEnd[2] - _mapOrigin[2]);
+	*/
+
+	_mapOrigin[0] = _mapOrigin[1] = _mapOrigin[2] = 0;
+	_mapEnd[0] = _mapEnd[1] = _mapEnd[2] = 100;
+
+	QRect unscaledRect;
+	GetUnscaledRect(unscaledRect);
+	resize(unscaledRect.width(), unscaledRect.height());
+
+	const float scaleX =  unscaledRect.width()  / (float)(_mapEnd[0] - _mapOrigin[0]);
+	const float scaleY = -unscaledRect.height() / (float)(_mapEnd[1] - _mapOrigin[1]);
 	_coordsScale = std::min(scaleX, scaleY);
 	_heightScale = HeightScaleRatio / (float)(_mapEnd[2] - _mapOrigin[2]);
 }
@@ -183,6 +198,22 @@ void PaintWidget::paintEvent(QPaintEvent* event)
 	QPainter windowPainter(this);
 	windowPainter.setRenderHints(QPainter::HighQualityAntialiasing | QPainter::SmoothPixmapTransform, true);
 	windowPainter.drawPixmap(windowRect, offlineBuffer);
+}
+
+void PaintWidget::resizeEvent(QResizeEvent* event)
+{
+	if(!AdaptRenderScaleToWindowSize)
+	{
+		return;
+	}
+
+	QRect unscaledRect;
+	GetUnscaledRect(unscaledRect);
+
+	const float sx = (float)width() / (float)unscaledRect.width();
+	const float sy = (float)height() / (float)unscaledRect.height();
+	const float scale = std::min(sx, sy);
+	RenderScale = scale;
 }
 
 void PaintWidget::PaintDemo(QPainter& painter)
@@ -326,10 +357,21 @@ bool PaintWidget::LoadImage(const QString& path)
 
 	_bgImage = new QImage(path);
 
-	QRect scaledRect;
-	GetScaledRect(scaledRect);
-	setMaximumSize(scaledRect.width(), scaledRect.height());
-	setMinimumSize(scaledRect.width(), scaledRect.height());
+	if(AdaptRenderScaleToWindowSize)
+	{
+		const float sx = (float)width()  / (float)_bgImage->width();
+		const float sy = (float)height() / (float)_bgImage->height();
+		const float scale = std::min(sx, sy);
+		RenderScale = scale;
+	}
+	else
+	{
+		QRect scaledRect;
+		GetScaledRect(scaledRect);
+
+		setMaximumSize(scaledRect.width(), scaledRect.height());
+		setMinimumSize(scaledRect.width(), scaledRect.height());
+	}
 
 	return true;
 }

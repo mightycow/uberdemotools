@@ -42,6 +42,7 @@ public:
 protected:
 	// Qt overrides.
 	void	paintEvent(QPaintEvent* event);
+	void	resizeEvent(QResizeEvent* event);
 
 	void	PaintDemo(QPainter& painter);
 	void	DrawClock(QPainter& painter);
@@ -70,6 +71,7 @@ protected:
 public:
 	SharedDemoData* DemoData;
 	float RenderScale;
+	bool AdaptRenderScaleToWindowSize;
 	bool DisplayDemo;
 	bool ShowClock;
 	bool ShowScore;
