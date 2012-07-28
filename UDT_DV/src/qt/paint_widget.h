@@ -38,11 +38,13 @@ public:
 	void	LoadWeapons(const QString& dirPath, const QStringList& weaponsPath);
 	void	ResetScaling();
 	void	SetScaling(int* origin, int* end);
+	void	ComputeRenderScale();
 
 protected:
 	// Qt overrides.
 	void	paintEvent(QPaintEvent* event);
 	void	resizeEvent(QResizeEvent* event);
+
 
 	void	PaintDemo(QPainter& painter);
 	void	DrawClock(QPainter& painter);

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1000</width>
-    <height>722</height>
+    <height>732</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -146,53 +146,48 @@
       </item>
       <item>
        <widget class="QCheckBox" name="reverseCheckBox">
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
         <property name="text">
          <string>Reverse Time</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="showClockCheckBox">
-        <property name="text">
-         <string>Show Clock</string>
+       <widget class="QSlider" name="scaleSlider">
+        <property name="minimum">
+         <number>10</number>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+        <property name="maximum">
+         <number>100</number>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="showScoresCheckBox">
-        <property name="text">
-         <string>Show Scores</string>
+        <property name="singleStep">
+         <number>5</number>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+        <property name="value">
+         <number>100</number>
         </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="showHudCheckBox">
-        <property name="text">
-         <string>Show HUD</string>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
-        <property name="checked">
-         <bool>true</bool>
+        <property name="tickPosition">
+         <enum>QSlider::TicksBelow</enum>
+        </property>
+        <property name="tickInterval">
+         <number>5</number>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="showPUCheckBox">
+       <widget class="QLabel" name="scaleLabel">
         <property name="text">
-         <string>Show Powerups</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
+         <string>Scale = 1.00</string>
         </property>
        </widget>
       </item>
       <item>
-       <spacer name="horizontalSpacer">
+       <spacer name="horizontalSpacer_2">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -209,15 +204,15 @@
     <item>
      <widget class="PaintWidget" name="paintWidget" native="true">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
-        <width>600</width>
-        <height>600</height>
+        <width>0</width>
+        <height>0</height>
        </size>
       </property>
      </widget>
@@ -314,7 +309,19 @@
     <addaction name="actionLogClear"/>
     <addaction name="actionLogSave"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionViewClock"/>
+    <addaction name="actionViewScores"/>
+    <addaction name="actionViewHUD"/>
+    <addaction name="actionViewPowerups"/>
+    <addaction name="separator"/>
+    <addaction name="actionSizeMode"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuView"/>
    <addaction name="menuLog"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -348,6 +355,31 @@
     <string>Save...</string>
    </property>
   </action>
+  <action name="actionViewClock">
+   <property name="text">
+    <string>Hide Clock</string>
+   </property>
+  </action>
+  <action name="actionViewScores">
+   <property name="text">
+    <string>Hide Scores</string>
+   </property>
+  </action>
+  <action name="actionViewHUD">
+   <property name="text">
+    <string>Hide HUD</string>
+   </property>
+  </action>
+  <action name="actionViewPowerups">
+   <property name="text">
+    <string>Hide Powerups</string>
+   </property>
+  </action>
+  <action name="actionSizeMode">
+   <property name="text">
+    <string>Fixed Size</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -365,10 +397,6 @@
   <tabstop>progressSlider</tabstop>
   <tabstop>timeScaleDoubleSpinBox</tabstop>
   <tabstop>reverseCheckBox</tabstop>
-  <tabstop>showClockCheckBox</tabstop>
-  <tabstop>showScoresCheckBox</tabstop>
-  <tabstop>showHudCheckBox</tabstop>
-  <tabstop>showPUCheckBox</tabstop>
   <tabstop>logWidget</tabstop>
  </tabstops>
  <resources/>
@@ -469,6 +497,102 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>actionViewClock</sender>
+   <signal>triggered()</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnViewClockChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionViewScores</sender>
+   <signal>triggered()</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnViewScoreChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionViewHUD</sender>
+   <signal>triggered()</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnViewHUDChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionViewPowerups</sender>
+   <signal>triggered()</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnViewPUChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>actionSizeMode</sender>
+   <signal>triggered()</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnSizeModeChanged()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>scaleSlider</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>MyClassClass</receiver>
+   <slot>OnScaleSliderChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>407</x>
+     <y>98</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>499</x>
+     <y>360</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>OnLoadDemoClicked()</slot>
@@ -477,5 +601,11 @@
   <slot>OnLogWindowClicked()</slot>
   <slot>OnLogClearClicked()</slot>
   <slot>OnLogSaveClicked()</slot>
+  <slot>OnViewClockChanged()</slot>
+  <slot>OnViewScoreChanged()</slot>
+  <slot>OnViewHUDChanged()</slot>
+  <slot>OnViewPUChanged()</slot>
+  <slot>OnSizeModeChanged()</slot>
+  <slot>OnScaleSliderChanged(int)</slot>
  </slots>
 </ui>

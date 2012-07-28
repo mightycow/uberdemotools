@@ -55,6 +55,8 @@ Gui::Gui()
 
 	ConnectUiElements();
 	_ui.pathLineEdit->setReadOnly(true);
+	_ui.scaleLabel->hide();
+	_ui.scaleSlider->hide();
 
 	DataPath = "";
 	QDir dir;
@@ -93,10 +95,10 @@ void Gui::ConnectUiElements()
 	connect(_ui.playButton, SIGNAL(pressed()), this, SLOT(PlayButtonPressed()));
 	connect(_ui.stopButton, SIGNAL(pressed()), this, SLOT(StopButtonPressed()));
 	connect(_ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(TimeScaleChanged(double)));
-	connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
+	/*connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
 	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowScoreChanged(int)));
 	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowHudChanged(int)));
-	connect(_ui.showPUCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowPUChanged(int)));
+	connect(_ui.showPUCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowPUChanged(int)));*/
 	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
@@ -503,4 +505,141 @@ void Gui::OnLogSaveClicked()
 	const QString& logText = _ui.logWidget->toPlainText();
 	file.write(logText.toLocal8Bit().constData());
 	file.close();
+}
+
+
+
+void Gui::OnViewClockChanged()
+{
+	if(_ui.paintWidget->ShowClock)
+	{
+		_ui.paintWidget->ShowClock = false;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 1) return;
+		actions[0]->setText("Show Clock");
+	}
+	else
+	{
+		_ui.paintWidget->ShowClock = true;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 1) return;
+		actions[0]->setText("Hide Clock");
+	}
+}
+
+void Gui::OnViewScoreChanged()
+{
+	if(_ui.paintWidget->ShowScore)
+	{
+		_ui.paintWidget->ShowScore = false;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 2) return;
+		actions[1]->setText("Show Score");
+	}
+	else
+	{
+		_ui.paintWidget->ShowScore = true;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 2) return;
+		actions[1]->setText("Hide Score");
+	}
+}
+
+void Gui::OnViewHUDChanged()
+{
+	if(_ui.paintWidget->ShowHud)
+	{
+		_ui.paintWidget->ShowHud = false;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 3) return;
+		actions[2]->setText("Show HUD");
+	}
+	else
+	{
+		_ui.paintWidget->ShowHud = true;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 3) return;
+		actions[2]->setText("Hide HUD");
+	}
+}
+
+void Gui::OnViewPUChanged()
+{
+	if(_ui.paintWidget->ShowPowerUps)
+	{
+		_ui.paintWidget->ShowPowerUps = false;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 4) return;
+		actions[3]->setText("Show Powerups");
+	}
+	else
+	{
+		_ui.paintWidget->ShowPowerUps = true;
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 4) return;
+		actions[3]->setText("Hide Powerups");
+	}
+}
+
+void Gui::OnSizeModeChanged()
+{
+	if(_ui.paintWidget->AdaptRenderScaleToWindowSize)
+	{
+		// Enable UI elements
+		_ui.scaleLabel->show();
+		_ui.scaleSlider->show();
+
+		// Save current scale value and change size mode
+		_ui.scaleSlider->setValue(100 * _ui.paintWidget->RenderScale);
+		_ui.paintWidget->AdaptRenderScaleToWindowSize = false;
+		
+		// Rename menu
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 6) return;
+		actions[5]->setText("Adapt to Window");
+	}
+	else
+	{
+		// Disable UI elements
+		_ui.scaleLabel->hide();
+		_ui.scaleSlider->hide();
+
+		// Change size mode and recompute the scaling
+		_ui.paintWidget->AdaptRenderScaleToWindowSize = true;
+		_ui.paintWidget->ComputeRenderScale();
+				
+		// Rename menu
+		QList<QMenu*> menus = this->menuBar()->findChildren<QMenu*>();
+		if(menus.size() < 4) return;
+		QList<QAction*>actions = menus[3]->actions();
+		if(actions.size() < 6) return;
+		actions[5]->setText("Fixed Size");
+	}
+}
+
+void Gui::OnScaleSliderChanged( int editValue)
+{
+	const float sliderScale = 100.0f;
+	float scale = editValue / sliderScale;
+	_ui.paintWidget->RenderScale = scale;
+	_ui.scaleLabel->setText("Scale = " + QString("%1").arg((double)scale, 3, 'f', 2) );
+	_ui.paintWidget->repaint();
 }

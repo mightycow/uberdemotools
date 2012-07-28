@@ -44,6 +44,12 @@ public slots:
 	void	OnLogWindowClicked();
 	void	OnLogClearClicked();
 	void	OnLogSaveClicked();
+	void	OnViewClockChanged();
+	void	OnViewScoreChanged();
+	void	OnViewHUDChanged();
+	void	OnViewPUChanged();
+	void	OnSizeModeChanged();
+	void	OnScaleSliderChanged(int);
 
 protected:
 	// Qt overrides.

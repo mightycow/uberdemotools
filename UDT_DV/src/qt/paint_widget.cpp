@@ -207,13 +207,8 @@ void PaintWidget::resizeEvent(QResizeEvent* event)
 		return;
 	}
 
-	QRect unscaledRect;
-	GetUnscaledRect(unscaledRect);
+	ComputeRenderScale();
 
-	const float sx = (float)width() / (float)unscaledRect.width();
-	const float sy = (float)height() / (float)unscaledRect.height();
-	const float scale = std::min(sx, sy);
-	RenderScale = scale;
 }
 
 void PaintWidget::PaintDemo(QPainter& painter)
@@ -361,7 +356,10 @@ bool PaintWidget::LoadImage(const QString& path)
 	{
 		const float sx = (float)width()  / (float)_bgImage->width();
 		const float sy = (float)height() / (float)_bgImage->height();
-		const float scale = std::min(sx, sy);
+		float scale = std::min(sx, sy);
+
+		if(scale > 1.0f) scale = 1.0f;
+
 		RenderScale = scale;
 	}
 	else
@@ -1191,6 +1189,22 @@ void PaintWidget::GetScaledRect(QRect& rect)
 	const int w = (int)(RenderScale * (float)rect.width());
 	const int h = (int)(RenderScale * (float)rect.height());
 	rect = QRect(0, 0, w, h);
+}
+
+void PaintWidget::ComputeRenderScale()
+{
+	QRect unscaledRect;
+	GetUnscaledRect(unscaledRect);
+
+	const float sx = (float)width() / (float)unscaledRect.width();
+	const float sy = (float)height() / (float)unscaledRect.height();
+	
+	float scale = std::min(sx, sy);
+
+	if(scale > 1.0f)
+		scale = 1.0f;
+
+	RenderScale = scale;
 }
 
 
