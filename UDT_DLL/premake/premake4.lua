@@ -18,7 +18,7 @@ solution "UDT"
 		files { "../src/*.cpp", "../src/*.hpp" }
 		includedirs { "../src" }
 
-		defines { "UDT_CREATE_DLL", "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		defines { "UDT_CREATE_DLL" }
 		flags { "Symbols", "NoNativeWChar", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 		
 		configuration "Debug"
@@ -32,6 +32,9 @@ solution "UDT"
 		--
 		-- Visual Studio
 		--
+		configuration { "vs*" }
+			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		
 		configuration { "Debug", "vs*" }
 			targetdir ( "../bin/" .. _ACTION .. "/debug" )
 			buildoptions { "" } -- Directly passed to the compiler.
