@@ -47,7 +47,7 @@ solution "U2DDV"
 		files { "../src/*.cpp", "../src/*.hpp", "../src/qt/*.cpp", "../src/qt/*.h", "../src/qt/*.ui", "../src/qt_gen/*.cpp", "../src/qt_gen/*.hpp" } -- Local sources
 		files { "../../UDT_DLL/src/*.cpp", "../../UDT_DLL/src/*.hpp" } -- DLL project sources included directly
 		excludes { "../../UDT_DLL/src/api.cpp" } -- Make sure we don't even try to compile api.cpp (for DLL function export)
-		includedirs { "../src" } -- Local headers
+		includedirs { "../src", "../src/qt", "../src/qt_gen" } -- Local headers
 		includedirs { "../../UDT_DLL/src" } -- DLL project headers
 		includedirs { "../qt/include" }
 		includedirs { "../qt/include/Qt" }
