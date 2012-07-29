@@ -45,6 +45,10 @@ solution "UDT"
 		--
 		-- GCC
 		--
+		configuration { "gmake" }
+			buildoptions { "-Wno-c++11-compat" } -- Directly passed to the compiler.
+			linkoptions { "" } -- Directly passed to the linker.
+		
 		configuration { "Debug", "gmake" }
 			targetdir ( "../bin/gcc/debug" )
 			buildoptions { "" } -- Directly passed to the compiler.
