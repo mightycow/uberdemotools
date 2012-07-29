@@ -220,10 +220,12 @@ bool Demo::Do()
 		elementsRead = fread(_inMsg.data, _inMsg.cursize, 1, _inFile);
 		if(elementsRead != 1)
 		{
-			LogError("Demo file was truncated.");
+			LogWarning("Demo file was truncated.");
 			DemoCompleted();
+			FixLastGameStateLastSnapshotTime();
 			CloseFiles();
-			return false;
+			FinishParsing();
+			return true;
 		}
 
 		_inMsg.readcount = 0;
