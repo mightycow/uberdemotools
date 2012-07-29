@@ -89,7 +89,7 @@ bool DemoPlayer::LoadDemo(const QString& path)
 		return false;
 	}
 
-	DemoData.Demo = demo;
+	DemoData.DemoParser = demo;
 	
 	Reset();
 
@@ -158,7 +158,7 @@ void DemoPlayer::Update()
 
 void DemoPlayer::PlayDemo()
 {
-	if(DemoData.Demo != NULL)
+	if(DemoData.DemoParser != NULL)
 	{
 		_timer.start();
 	}
@@ -186,7 +186,7 @@ void DemoPlayer::StopDemo()
 
 int DemoPlayer::SearchNextEntity(int serverTime, int oldIndex, int entityNumber, bool& sync)
 {
-	Demo* const demo = DemoData.Demo;
+	Demo* const demo = DemoData.DemoParser;
 	int latestIndex = oldIndex;
 
 	sync = false;
@@ -236,7 +236,7 @@ void DemoPlayer::MakeBeams()
 
 void DemoPlayer::UpdateEntityList(int startIndex, int time)
 {
-	Demo* const demo = DemoData.Demo;
+	Demo* const demo = DemoData.DemoParser;
 
 	// Get the closest server time.
 	int serverTime = -1;
@@ -594,7 +594,7 @@ void DemoPlayer::Reset()
 
 void DemoPlayer::GetDemoBoundingBox(int* origin, int* end)
 {
-	Demo* const demo = DemoData.Demo;
+	Demo* const demo = DemoData.DemoParser;
 	if(demo == NULL)
 	{
 		return;

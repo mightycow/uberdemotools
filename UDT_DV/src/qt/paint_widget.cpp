@@ -244,12 +244,12 @@ void PaintWidget::PaintDemo(QPainter& painter)
 		painter.drawImage(0, 0, *_bgImage);
 	}
 
-	if(DemoData->Demo == NULL)
+	if(DemoData->DemoParser == NULL)
 	{
 		return;
 	}
 
-	Demo* const demo = DemoData->Demo;
+	Demo* const demo = DemoData->DemoParser;
 	const std::vector<Entity>& entities = DemoData->Entities;
 	for(size_t i = 128; i < entities.size(); ++i)
 	{
@@ -332,7 +332,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 		{
 			PlayerData playerData;
 			playerData.DemoPlayer = living;
-			playerData.Player = &player;
+			playerData.PlayerInfo = &player;
 			playerData.Alpha = livingAlpha;
 			playerData.Dead = false;
 			sortedPlayers.push_back(playerData);
@@ -342,7 +342,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 		{
 			PlayerData playerData;
 			playerData.DemoPlayer = dead;
-			playerData.Player = &player;
+			playerData.PlayerInfo = &player;
 			playerData.Alpha = deadAlpha;
 			playerData.Dead = true;
 			sortedPlayers.push_back(playerData);
@@ -428,16 +428,16 @@ void PaintWidget::DrawPlayer(QPainter& painter, const PlayerData& data)
 
 	if(data.Dead)
 	{
-		DrawDeadPlayer(painter, x0, y0, data.Player->Color, data.Alpha);
+		DrawDeadPlayer(painter, x0, y0, data.PlayerInfo->Color, data.Alpha);
 		return;
 	}
 
-	DrawViewAngle(painter, QPoint(x0,y0), data.Player->Color, orientation, fovAngle, 50, data.Alpha);
+	DrawViewAngle(painter, QPoint(x0,y0), data.PlayerInfo->Color, orientation, fovAngle, 50, data.Alpha);
 	DrawWeapon(painter, x0, y0, z0, orientation, data.Alpha, data.DemoPlayer->CurrentWeapon, data.DemoPlayer->Firing);
-	DrawLivingPlayer(painter, x0, y0, z0, data.Player->Color, data.Alpha);
-	DrawPlayerPowerup(painter, x0, y0, z0, data.Player);
+	DrawLivingPlayer(painter, x0, y0, z0, data.PlayerInfo->Color, data.Alpha);
+	DrawPlayerPowerup(painter, x0, y0, z0, data.PlayerInfo);
 
-	if(data.Player->Name.isEmpty())
+	if(data.PlayerInfo->Name.isEmpty())
 	{
 		return;
 	}
@@ -453,8 +453,8 @@ void PaintWidget::DrawPlayer(QPainter& painter, const PlayerData& data)
 	}
 
 	const QFontMetrics fm(font);
-	const int deltaX = fm.width(data.Player->Name) / 2;
-	painter.drawText(x0 - deltaX, y0 - 30, data.Player->Name);
+	const int deltaX = fm.width(data.PlayerInfo->Name) / 2;
+	painter.drawText(x0 - deltaX, y0 - 30, data.PlayerInfo->Name);
 }
 
 void PaintWidget::DrawClock(QPainter& painter)
@@ -749,7 +749,7 @@ void PaintWidget::LoadWeapons(const QString& dirPath, const QStringList& weapons
 QImage* PaintWidget::GetItem(int type, bool respectProtocol)
 {
 	int type2 = type;
-	if(DemoData->Demo->_protocol == Protocol::Dm68 && respectProtocol)
+	if(DemoData->DemoParser->_protocol == Protocol::Dm68 && respectProtocol)
 	{
 		const int arraySize = (int)(sizeof(QlItemIndexFromQ3ItemIndex) / sizeof(QlItemIndexFromQ3ItemIndex[0]));
 		if(type2 < 0 || type2 >= arraySize)

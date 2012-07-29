@@ -154,8 +154,8 @@ void Gui::LoadDemo(const QString& filepath)
 
 	_ui.pathLineEdit->setText(filepath);
 
-	const QString protocol = _demoPlayer.DemoData.Demo->_protocol == Protocol::Dm73 ? "ql" : "q3";
-	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.Demo->_mapName); 
+	const QString protocol = _demoPlayer.DemoData.DemoParser->_protocol == Protocol::Dm73 ? "ql" : "q3";
+	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.DemoParser->_mapName); 
 	const QString filePathNoExt = DataPath + "maps\\" + protocol + "\\" + mapName;
 	const QString bgImagePath = filePathNoExt + ".png";
 	const QString scalingPath = filePathNoExt + ".txt";
@@ -214,7 +214,7 @@ void Gui::PlayButtonPressed()
 		return;
 	}
 
-	if(_demoPlayer.DemoData.Demo != NULL)
+	if(_demoPlayer.DemoData.DemoParser != NULL)
 	{
 		_demoPlayer.PlayDemo();
 		_paused = false;
@@ -284,7 +284,7 @@ void Gui::ProgressSliderValueChanged(int editValue)
 		return;
 	}
 
-	if(_demoPlayer.DemoData.Demo == NULL)
+	if(_demoPlayer.DemoData.DemoParser == NULL)
 	{
 		return;
 	}

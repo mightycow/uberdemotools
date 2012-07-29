@@ -1,12 +1,13 @@
 #pragma once
 
+
+#include "demo.hpp"
+
 #include <QObject>
 #include <QString>
 #include <QTimer>
 #include <QColor>
 #include <QTime>
-#include "demo.hpp"
-
 
 #define UDT_DV_SYNC_BOOST	 50
 #define UDT_DV_ITEM_SYNC_LOSS	 15
@@ -74,19 +75,19 @@ struct SharedDemoData
 {
 	SharedDemoData()
 	{
-		Demo = NULL;
+		DemoParser = NULL;
 		Entities.resize(576);
 	}
 
 	~SharedDemoData()
 	{
-		if(Demo == NULL)
+		if(DemoParser == NULL)
 		{
 			return;
 		}
 
-		delete Demo; 
-		Demo = NULL;
+		delete DemoParser; 
+		DemoParser = NULL;
 	}
 
 	std::vector<Player> Players;
@@ -94,7 +95,7 @@ struct SharedDemoData
 	std::vector<Entity> Entities;
 	std::vector<ScoreEntry> Scores;
 	QTime Clock;
-	Demo* Demo;
+	Demo* DemoParser;
 	int WarmupTime;
 	int FollowedPlayer;
 
@@ -109,8 +110,8 @@ struct SharedDemoData
 		Entities.clear();
 		Entities.resize(576);
 
-		delete Demo; 
-		Demo = NULL;
+		delete DemoParser; 
+		DemoParser = NULL;
 	}
 };
 

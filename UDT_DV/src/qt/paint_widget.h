@@ -16,15 +16,15 @@ protected:
 	struct PlayerData
 	{
 		Demo::PlayerInfo* DemoPlayer;
-		Player* Player;
+		Player* PlayerInfo;
 		float Alpha;
 		bool Dead;
 
-		PlayerData() : DemoPlayer(NULL), Player(NULL), Alpha(1.0f), Dead(false) {}
+		PlayerData() : DemoPlayer(NULL), PlayerInfo(NULL), Alpha(1.0f), Dead(false) {}
 
 		bool operator <(const PlayerData& rhs) const
 		{
-			return this->DemoPlayer->Position[2] < rhs.DemoPlayer->Position[2];
+			return DemoPlayer->Position[2] < rhs.DemoPlayer->Position[2];
 		}
 	};
 
