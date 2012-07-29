@@ -14,7 +14,7 @@
 #include <QApplication>
 
 
-static const char* U2DDV_version = "0.1";
+static const char* U2DDV_version = "0.1.1";
 
 
 static const char* const defaultDataDir = "..\\data\\";
