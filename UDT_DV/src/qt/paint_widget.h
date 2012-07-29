@@ -33,8 +33,9 @@ public:
 	~PaintWidget();
 
 	void	ReleaseImage();
-	bool	LoadImage(const QString& imagePath);
-	void	LoadIcons(const QString& dirPath, const QStringList& iconsPath);
+	bool	LoadMapImage(const QString& imagePath);
+	void	LoadIcons(const QString& dirPath, const QStringList& iconPaths);
+	void	LoadItems(const QString& dirPath, const QStringList& iconPaths);
 	void	LoadWeapons(const QString& dirPath, const QStringList& weaponsPath);
 	void	ResetScaling();
 	void	SetScaling(int* origin, int* end);
@@ -65,7 +66,8 @@ protected:
 	void	DrawBeams(QPainter& painter, const float* startPositions, const float* endPositions, Beam::Type::Id type, float alpha = 1.0f);
 	void	DrawViewAngle(QPainter& painter, const QPoint& center, const QColor& color, float orientation, float angle, float radius, float alpha);
 	void	SetImageAlpha(QImage* image, float alpha);
-	QImage* GetIcon(int type);
+	QImage* GetIcon(const QString& fileName);
+	QImage* GetItem(int type, bool respectProtocol = true);
 	QImage* GetWeapon(int type, bool firing);
 	void	GetUnscaledRect(QRect& rect);
 	void	GetScaledRect(QRect& rect);
@@ -82,6 +84,18 @@ public:
 	QString BackgroundMessage;
 
 private:
+	struct ItemInfo
+	{
+		QImage* Image;
+		int Index;
+	};
+
+	struct IconInfo
+	{
+		QImage* Image;
+		QString FileName;
+	};
+
 	QImage* _bgImage;
 	int _mapOrigin[3];
 	int _mapEnd[3];
@@ -89,7 +103,8 @@ private:
 	float _heightScale;
 	float _iconScale;
 	int _lastValidWeapon;
-	std::vector<QImage*> _icons;
+	std::vector<IconInfo> _icons;
+	std::vector<ItemInfo> _items;
 	std::vector<QImage*> _weapons;
 	QImage* _proxyImage;
 };

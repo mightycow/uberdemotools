@@ -14,7 +14,7 @@
 #include <QApplication>
 
 
-static const char* U2DDV_version = "0.1.1";
+static const char* U2DDV_version = "0.1.2";
 
 
 static const char* const defaultDataDir = "..\\data\\";
@@ -96,10 +96,6 @@ void Gui::ConnectUiElements()
 	connect(_ui.playButton, SIGNAL(pressed()), this, SLOT(PlayButtonPressed()));
 	connect(_ui.stopButton, SIGNAL(pressed()), this, SLOT(StopButtonPressed()));
 	connect(_ui.timeScaleDoubleSpinBox, SIGNAL(valueChanged(double)), this, SLOT(TimeScaleChanged(double)));
-	/*connect(_ui.showClockCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowClockChanged(int)));
-	connect(_ui.showScoresCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowScoreChanged(int)));
-	connect(_ui.showHudCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowHudChanged(int)));
-	connect(_ui.showPUCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ShowPUChanged(int)));*/
 	connect(_ui.reverseCheckBox, SIGNAL(stateChanged(int)), this, SLOT(ReverseTimeChanged(int)));
 }
 
@@ -158,9 +154,11 @@ void Gui::LoadDemo(const QString& filepath)
 
 	_ui.pathLineEdit->setText(filepath);
 
+	const QString protocol = _demoPlayer.DemoData.Demo->_protocol == Protocol::Dm73 ? "ql" : "q3";
 	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.Demo->_mapName); 
-	const QString bgImagePath = DataPath + "maps\\" + mapName + ".png";
-	const QString scalingPath = DataPath + "maps\\" + mapName + ".txt";
+	const QString filePathNoExt = DataPath + "maps\\" + protocol + "\\" + mapName;
+	const QString bgImagePath = filePathNoExt + ".png";
+	const QString scalingPath = filePathNoExt + ".txt";
 	const QFileInfo info(bgImagePath);
 	if(!info.exists())
 	{
@@ -178,7 +176,7 @@ void Gui::LoadDemo(const QString& filepath)
 	}
 
 	_ui.paintWidget->ReleaseImage();
-	_ui.paintWidget->LoadImage(bgImagePath);
+	_ui.paintWidget->LoadMapImage(bgImagePath);
 	_ui.paintWidget->SetScaling(origin, end);
 	_ui.paintWidget->DemoData = &_demoPlayer.DemoData;
 	_ui.paintWidget->DisplayDemo = true;
@@ -196,8 +194,11 @@ void Gui::LoadIconData()
 	QStringList filters; 
 	filters << "*.png";
 
-	const QDir iconDir(DataPath + "icons" + QDir::separator());
-	_ui.paintWidget->LoadIcons(DataPath + "icons\\", iconDir.entryList(filters));
+	const QDir iconsDir(DataPath + "icons" + QDir::separator());
+	_ui.paintWidget->LoadIcons(DataPath + "icons\\", iconsDir.entryList(filters));
+
+	const QDir itemsDir(DataPath + "items" + QDir::separator());
+	_ui.paintWidget->LoadItems(DataPath + "items\\", itemsDir.entryList(filters));
 
 	const QDir weaponsDir(DataPath + "weapons" + QDir::separator());
 	_ui.paintWidget->LoadWeapons(DataPath + "weapons\\", weaponsDir.entryList(filters));
@@ -508,8 +509,6 @@ void Gui::OnLogSaveClicked()
 	file.close();
 }
 
-
-
 void Gui::OnViewClockChanged()
 {
 	if(_ui.paintWidget->ShowClock)
@@ -638,7 +637,7 @@ void Gui::OnSizeModeChanged()
 	}
 }
 
-void Gui::OnScaleSliderChanged( int editValue)
+void Gui::OnScaleSliderChanged(int editValue)
 {
 	const float sliderScale = 100.0f;
 	float scale = editValue / sliderScale;

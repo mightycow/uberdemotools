@@ -36,6 +36,48 @@ static const int ItemIdxFromPowerUpIdx[16] =
 	-1, // Nothing, filler.
 };
 
+// @TODO:
+static const int QlItemIndexFromQ3ItemIndex[] = 
+{
+	-1, // ok
+	1, // ok
+	2, // ok
+	3, // ok
+	5, // ok
+	6, // ok
+	7, // ok
+	8, // ok
+	9, // ??? gauntlet?
+	10, // ok
+	11, // ok
+	12, // ok
+	13, // ok
+	14, // ok
+	15, // ok
+	16, // ok
+	17, // ???
+	18, // ???
+	19, // ok
+	20, // ok
+	21, // ok
+	22, // ok
+	23, // ok
+	24, // ok
+	25, // ok
+	-1, // ???
+	-1, //26,
+	-1, //27,
+	-1, //28
+	29, // ok, quad
+	30, // ok, battle suit
+	-1, //31,
+	-1, //32,
+	33, // ok, regeneration
+	35, // ok, red flag
+	36, // ok, blue flag
+	4 // ok, green armor
+};
+
 
 static QImage* CreateProxyImage(int width, int height)
 {
@@ -97,12 +139,11 @@ PaintWidget::~PaintWidget()
 		delete _bgImage;
 	}
 
-	for(size_t i = 0; i < _icons.size(); ++i)
+	for(size_t i = 0; i < _items.size(); ++i)
 	{
-		if(_icons[i] != NULL)
+		if(_items[i].Image != NULL)
 		{
-			delete _icons[i];
-			_icons[i] = NULL;
+			delete _items[i].Image;
 		}
 	}
 
@@ -111,7 +152,6 @@ PaintWidget::~PaintWidget()
 		if(_weapons[i] != NULL)
 		{
 			delete _weapons[i];
-			_weapons[i] = NULL;
 		}
 	}
 }
@@ -322,7 +362,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 	DrawPowerUps(painter);
 }
 
-bool PaintWidget::LoadImage(const QString& path)
+bool PaintWidget::LoadMapImage(const QString& path)
 {
 	const QFileInfo info(path);
 	if(!info.exists())
@@ -533,9 +573,14 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 	std::vector<Player>& players = DemoData->Players;
 	for(size_t i = 0; i < players.size(); ++i)
 	{
+		const Player& player = players[i];
+		if(player.Team == TEAM_SPECTATOR)
+		{
+			continue;
+		}
+
 		int x = xStart;
 		int pusDrawn = 0;
-		const Player& player = players[i];
 		for(int puIdx = 0; puIdx < 16; ++puIdx)
 		{
 			if(!player.Powerups[puIdx])
@@ -549,7 +594,7 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 				continue;
 			}
 
-			const QImage* const icon = GetIcon(iconIdx);
+			const QImage* const icon = GetItem(iconIdx, false);
 			if(icon == NULL)
 			{
 				continue;
@@ -592,13 +637,13 @@ void PaintWidget::DrawHud(QPainter& painter)
 	const int textLength = text.length();
 	painter.drawText(renderTargetRect.width() / 2 - (text.length() / 2) * 10, renderTargetRect.height() - FollowingTextDeltaY - 30, text);
 
-	DrawHudElement(painter, GetIcon(ITEM_HEALTH), -120, QString::number(player.Health));
-	DrawHudElement(painter, GetIcon(ITEM_ARMOR_COMBAT), 80, QString::number(player.Armor));
+	DrawHudElement(painter, GetItem(ITEM_HEALTH, false), -120, QString::number(player.Health));
+	DrawHudElement(painter, GetItem(ITEM_ARMOR_COMBAT, false), 80, QString::number(player.Armor));
 
 	if(player.Weapon != 0 || _lastValidWeapon != 0)
 	{
 		const int weapon = player.Weapon != 0 ? player.Weapon : _lastValidWeapon;
-		QImage* const weaponIcon = GetIcon(weapon);
+		QImage* const weaponIcon = GetItem(weapon, false);
 		const int w = (int)((float)weaponIcon->width() *_iconScale * 1.5f);
 		DrawHudElement(painter, weaponIcon, -w / 2, QString::number(player.Ammo));
 	}
@@ -624,22 +669,56 @@ void PaintWidget::DrawHudElement(QPainter& painter, QImage* icon, int offsetX, c
 	painter.drawText(x + w/2 + 5 , y + 10, text);
 }
 
-void PaintWidget::LoadIcons(const QString& dirPath, const QStringList& iconsPath)
+void PaintWidget::LoadIcons(const QString& dirPath, const QStringList& iconPaths)
 {
 	for(size_t i = 0; i < _icons.size(); i++)
 	{
-		if(_icons[i] != NULL)
+		if(_icons[i].Image != NULL)
 		{
-			delete _icons[i];
-			_icons[i] = NULL;
+			delete _icons[i].Image;
 		}
 	}
 
 	_icons.clear();
-	for(int i = 0; i < iconsPath.size(); i++)
+	for(int i = 0; i < iconPaths.size(); ++i)
 	{
-		QImage* image = new QImage(dirPath + iconsPath[i]);
-		_icons.push_back(image);
+		const QFileInfo fileInfo(iconPaths[i]);
+		const QString fileNameNoExt = fileInfo.baseName();
+
+		IconInfo info;
+		info.Image = new QImage(dirPath + iconPaths[i]);
+		info.FileName = fileNameNoExt.toLower();
+		_icons.push_back(info);
+	}
+}
+
+void PaintWidget::LoadItems(const QString& dirPath, const QStringList& itemPaths)
+{
+	for(size_t i = 0; i < _items.size(); i++)
+	{
+		if(_items[i].Image != NULL)
+		{
+			delete _items[i].Image;
+		}
+	}
+
+	_items.clear();
+	for(int i = 0; i < itemPaths.size(); ++i)
+	{
+		const QFileInfo fileInfo(itemPaths[i]);
+		const QString fileNameNoExt = fileInfo.baseName();
+
+		bool isInteger = false;
+		const int index = fileNameNoExt.toInt(&isInteger);
+		if(!isInteger)
+		{
+			continue;
+		}
+
+		ItemInfo info;
+		info.Image = new QImage(dirPath + itemPaths[i]);
+		info.Index = index;
+		_items.push_back(info);
 	}
 
 	if(_proxyImage == NULL)
@@ -667,54 +746,46 @@ void PaintWidget::LoadWeapons(const QString& dirPath, const QStringList& weapons
 	}
 }
 
-QImage* PaintWidget::GetIcon(int type)
+QImage* PaintWidget::GetItem(int type, bool respectProtocol)
 {
-	if(_icons.size() < 35)
+	int type2 = type;
+	if(DemoData->Demo->_protocol == Protocol::Dm68 && respectProtocol)
 	{
-		return _proxyImage;
+		const int arraySize = (int)(sizeof(QlItemIndexFromQ3ItemIndex) / sizeof(QlItemIndexFromQ3ItemIndex[0]));
+		if(type2 < 0 || type2 >= arraySize)
+		{
+			return _proxyImage;
+		}
+
+		type2 = QlItemIndexFromQ3ItemIndex[type2];
 	}
 
-	switch(type)
+	for(size_t i = 0; i < _items.size(); ++i)
 	{
-		case ITEM_INVALID:				return _icons[0];
-		case ITEM_ARMOR_SHARD:			return _icons[1];
-		case ITEM_ARMOR_COMBAT:			return _icons[2];
-		case ITEM_ARMOR_BODY:			return _icons[3];
-		case ITEM_ARMOR_GREEN:			return _icons[4];
-		case ITEM_HEALTH_SMALL:			return _icons[5];
-		case ITEM_HEALTH:				return _icons[6];
-		case ITEM_HEALTH_LARGE:			return _icons[7];
-		case ITEM_HEALTH_MEGA :			return _icons[8];
-		case WEAPON_SHOTGUN:			return _icons[9];
-		case WEAPON_GRENADELAUNCHER:	return _icons[10];
-		case WEAPON_ROCKETLAUNCHER:		return _icons[11];
-		case WEAPON_LIGHTNING:			return _icons[12];
-		case WEAPON_RAILGUN:			return _icons[13];
-		case WEAPON_PLASMAGUN:			return _icons[14];
-		case AMMO_SHELLS:				return _icons[15];
-		case AMMO_BULLETS:				return _icons[16];
-		case AMMO_GRENADES:				return _icons[17];
-		case AMMO_CELLS:				return _icons[18];
-		case AMMO_LIGHTNING:			return _icons[19];
-		case AMMO_ROCKETS:				return _icons[20];
-		case AMMO_SLUGS:				return _icons[21];
-		case WEAPON_GAUNTLET:			return _icons[25];
-		case WEAPON_MACHINEGUN:			return _icons[26];
-		case ITEM_QUAD:					return _icons[27];
-		case ITEM_ENVIRO:				return _icons[28];
-		case ITEM_HASTE:				return _icons[29];
-		case ITEM_INVIS:				return _icons[30];
-		case ITEM_REGEN:				return _icons[31];
-		case ITEM_FLIGHT:				return _icons[32];
-		case TEAM_CTF_REDFLAG:			return _icons[33];
-		case TEAM_CTF_BLUEFLAG:			return _icons[34];
-		default:						break;
+		if(type2 == _items[i].Index)
+		{
+			return _items[i].Image;
+		}
 	}
 
 	return _proxyImage;
 }
 
-QImage* PaintWidget::GetWeapon( int type, bool firing )
+QImage* PaintWidget::GetIcon(const QString& fileName)
+{
+	const QString fileNameLc = fileName.toLower();
+	for(size_t i = 0; i < _icons.size(); ++i)
+	{
+		if(fileNameLc == _icons[i].FileName)
+		{
+			return _icons[i].Image;
+		}
+	}
+
+	return _proxyImage;
+}
+
+QImage* PaintWidget::GetWeapon(int type, bool firing)
 {
 	if(_weapons.size() < 8)
 	{
@@ -793,12 +864,12 @@ void PaintWidget::DrawPlayerPowerup(QPainter& painter, int x, int y, int z, cons
 
 	if(player->Powerups[PW_REDFLAG])
 	{
-		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(TEAM_CTF_REDFLAG));
+		DrawPlayerPowerupImage(painter, x, y, z, GetItem(TEAM_CTF_REDFLAG, false));
 	}
 
 	if(player->Powerups[PW_BLUEFLAG])
 	{
-		DrawPlayerPowerupImage(painter, x, y, z, GetIcon(TEAM_CTF_BLUEFLAG));
+		DrawPlayerPowerupImage(painter, x, y, z, GetItem(TEAM_CTF_BLUEFLAG, false));
 	}
 }
 
@@ -860,12 +931,12 @@ void PaintWidget::DrawWeapon(QPainter &painter, int x, int y, int z, float angle
 
 void PaintWidget::DrawDeadPlayer(QPainter &painter, int x, int y, const QColor& color, float alpha)
 {
-	if(_icons.size() < 22)
+	if(_items.size() < 22)
 	{
 		return;
 	}
 
-	QImage icon = QImage(*_icons[22]);
+	QImage icon = *GetIcon("dead_player");
 	SetImageAlpha(&icon, alpha);
 
 	const int w = icon.width() * _iconScale;
@@ -887,7 +958,7 @@ void PaintWidget::DrawItem(QPainter& painter, const Demo::EntityInfo* info, floa
 	const int x0 = (int)( (x - (float)_mapOrigin[0]) * _coordsScale);
 	const int y0 = (int)(-(y - (float)_mapOrigin[1]) * _coordsScale);
 
-	const QImage* iconImage = GetIcon(info->ItemType);
+	const QImage* iconImage = GetItem(info->ItemType);
 	if(iconImage == NULL)
 	{
 		painter.drawEllipse(x0, y0, 10, 10);
@@ -932,7 +1003,7 @@ void PaintWidget::DrawProjectile(QPainter& painter, const Demo::EntityInfo* info
 		}
 	case Demo::ProjectileType::Rocket:
 		{
-			QImage* icon = _icons[23];
+			QImage* icon = GetIcon("rocket");
 			if(icon != NULL)
 			{
 				const float angle = RadToDeg(info->Angle);
@@ -997,7 +1068,7 @@ void PaintWidget::DrawGeneric(QPainter& painter, const Demo::EntityInfo* info)
 	{
 	case Demo::GenericType::RocketSplash:
 		{
-			QImage* icon = _icons[24];
+			QImage* icon = GetIcon("explosion");
 			if(icon != NULL)
 			{
 				const float angle = RadToDeg(info->Angle);
@@ -1016,7 +1087,7 @@ void PaintWidget::DrawGeneric(QPainter& painter, const Demo::EntityInfo* info)
 		}
 	case Demo::GenericType::GrenadeSplash:
 		{
-			QImage* icon = _icons[24];
+			QImage* icon = GetIcon("explosion");
 			if(icon != NULL)
 			{
 				const float angle = RadToDeg(info->Angle);
@@ -1061,11 +1132,6 @@ void PaintWidget::DrawGeneric(QPainter& painter, const Demo::EntityInfo* info)
 	{
 		const QPen pen(QColor(0, 200, 255));
 		painter.setPen(pen);
-
-		QFont font;
-		font.setPixelSize(15);			
-		painter.setFont(font);
-		painter.drawText(x0 + 15, y0, QString("Hit!"));
 	}
 }
 
@@ -1160,7 +1226,7 @@ void PaintWidget::SetImageAlpha(QImage* image, float alpha)
 
 void PaintWidget::GetUnscaledRect(QRect& rect)
 {
-	rect = QRect(0, 0, 400, 400);
+	rect = QRect(0, 0, 600, 600);
 	if(_bgImage != NULL)
 	{
 		rect.setWidth(_bgImage->width());
