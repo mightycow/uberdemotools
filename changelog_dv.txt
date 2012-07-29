@@ -1,0 +1,7 @@
+0.1.1 (2012.07.29)
+ADD: View modes: Fixed Size vs Adapt to Window
+FIX: Truncated demos are now accepted and a warning is emitted instead of an error (suggested by !nFerNo)
+CHG: The player disk scales 2.5x more than before (based on depth)
+
+0.1.0 (2012.07.28)
+1st: First public release \o/
