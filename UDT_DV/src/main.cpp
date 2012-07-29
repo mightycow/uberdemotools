@@ -1,26 +1,31 @@
 #include "qt/gui.h"
 
 #include <QtGui/QApplication>
-#include <Windows.h>
 #include <string>
 
 
-static void ResetCurrentDirectory(const char* exePath)
-{
-	const std::string curExePath = exePath;
-	const size_t idx = curExePath.rfind('\\');
-	if(idx == std::string::npos)
+#ifdef _WIN32
+#	include <Windows.h>
+	static void ResetCurrentDirectory(const char* exePath)
 	{
-		return;
-	}
+		const std::string curExePath = exePath;
+		const size_t idx = curExePath.rfind('\\');
+		if(idx == std::string::npos)
+		{
+			return;
+		}
 
-	const std::string curDir = curExePath.substr(0, idx);
-	SetCurrentDirectory(curDir.c_str());
-}
+		const std::string curDir = curExePath.substr(0, idx);
+		SetCurrentDirectory(curDir.c_str());
+	}
+#endif
+
 
 int main(int argumentCount, char** arguments)
 {
+#ifdef _WIN32
 	ResetCurrentDirectory(arguments[0]);
+#endif
 
 	QApplication app(argumentCount, arguments);
 	Q_INIT_RESOURCE(U2DDV);
