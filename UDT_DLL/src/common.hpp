@@ -96,7 +96,7 @@ typedef vec_t vec4_t[4];
 // TTimo
 // vsnprintf is ISO/IEC 9899:1999
 // abstracting this to make it portable
-#ifdef WIN32
+#if defined(_WIN32) || defined(_MSC_VER) // myT
 #define Q_vsnprintf _vsnprintf
 #else
 // TODO: do we need Mac define?
@@ -883,6 +883,7 @@ typedef enum
 	//ITEM_INVALID2,
 	ITEM_ARMOR_SHARD,
 	ITEM_ARMOR_COMBAT,
+
 	ITEM_ARMOR_BODY,
 	ITEM_ARMOR_GREEN,// MM
 	ITEM_HEALTH_SMALL,

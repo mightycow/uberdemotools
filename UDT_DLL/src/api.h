@@ -2,13 +2,29 @@
 #define UDT_API_H
 
 
-#ifdef UDT_CREATE_DLL
-#	define UDT_EXPORT_DLL __declspec(dllexport)
-#else
-#	define UDT_EXPORT_DLL __declspec(dllimport)
+#if defined(__GNUC__)
+#	define UDT_COMPILER_GCC
 #endif
 
-#define UDT_API(ReturnType) extern UDT_EXPORT_DLL ReturnType
+#if defined(_MSC_VER)
+#	define UDT_COMPILER_CL
+#endif
+
+#if defined(UDT_COMPILER_CL)
+	#if defined(UDT_CREATE_DLL)
+	#	define UDT_EXPORT_DLL __declspec(dllexport)
+	#else
+	#	define UDT_EXPORT_DLL __declspec(dllimport)
+	#endif
+	#define UDT_API(ReturnType) extern UDT_EXPORT_DLL ReturnType
+#elif defined(UDT_COMPILER_GCC)
+	#if defined(UDT_CREATE_DLL)
+	#	define UDT_EXPORT_DLL
+	#else
+	#	define UDT_EXPORT_DLL
+	#endif
+	#define UDT_API(ReturnType) extern ReturnType UDT_EXPORT_DLL
+#endif
 
 
 struct UdtLibrary;

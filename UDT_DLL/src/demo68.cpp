@@ -1,5 +1,7 @@
 #include "demo68.hpp"
 
+#include <stdlib.h>
+
 
 // Offset from the start of the structure == absolute address when the struct is at address 0.
 #define ESF(x) #x, (int)&((entityState_68_t*)0)->x

@@ -4,9 +4,12 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <Windows.h>
 #include <string>
 #include <stdexcept>
+
+#if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
+#	include <Windows.h> // IsDebuggerPresent, __debugbreak
+#endif
 
 
 ProgressCallback _progressCallback = NULL;
