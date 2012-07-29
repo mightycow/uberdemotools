@@ -27,7 +27,7 @@ struct Demo
 {
 public:
 	Demo();
-	~Demo();
+	virtual ~Demo();
 
 	bool Do();
 
