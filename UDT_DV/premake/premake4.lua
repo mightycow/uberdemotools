@@ -55,7 +55,6 @@ solution "U2DDV"
 		includedirs { "../qt/include/QtGui" }
 		libdirs { "../qt/lib_" .. _ACTION }
 
-		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 		flags { "Symbols", "NoNativeWChar", "NoPCH" } -- "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings"
 		
 		configuration "Debug"
@@ -71,6 +70,7 @@ solution "U2DDV"
 		-- Visual Studio
 		--
 		configuration { "vs*" }
+			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 			files { "../rsrc/icon.rc" } -- Application icon
 		
 		configuration { "Debug", "vs*" }
@@ -92,6 +92,9 @@ solution "U2DDV"
 		--
 		-- GCC
 		--
+		configuration { "gmake" }
+			-- @TODO: Add link to libqtcore and libqtgui
+		
 		configuration { "Debug", "gmake" }
 			targetdir ( "../bin/gcc/debug" )
 			buildoptions { "" } -- Directly passed to the compiler.
