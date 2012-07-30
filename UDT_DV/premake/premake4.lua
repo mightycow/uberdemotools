@@ -93,7 +93,8 @@ solution "U2DDV"
 		-- GCC
 		--
 		configuration { "gmake" }
-			-- @TODO: Add link to libqtcore and libqtgui
+			links { "QtCore4" }
+			links { "QtGui4" }
 		
 		configuration { "Debug", "gmake" }
 			targetdir ( "../bin/gcc/debug" )
