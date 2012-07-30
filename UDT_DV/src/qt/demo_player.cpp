@@ -4,7 +4,7 @@
 #include "demo68.hpp"
 
 #include <set>
-#include <qDebug>
+#include <QDebug>
 #include <math.h>
 #include <limits>
 

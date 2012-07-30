@@ -7,7 +7,7 @@
 #include <QStringList>
 #include <QRect>
 #include <QString>
-#include <qDebug>
+#include <QDebug>
 
 
 static const int FollowingTextDeltaY = 35;
