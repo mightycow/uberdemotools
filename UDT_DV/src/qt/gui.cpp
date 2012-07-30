@@ -17,11 +17,11 @@
 static const char* U2DDV_version = "0.1.2";
 
 
-static const char* const defaultDataDir = "..\\data\\";
+static const char* const defaultDataDir = "../data/";
 static const char* const dataSearchDirs[] =
 {
-	"..\\data\\",			// Deployment.
-	"..\\..\\..\\data\\"	// Development.
+	"../data/",			// Deployment.
+	"../../../data/"	// Development.
 };
 
 static Gui* gui = NULL;
@@ -64,6 +64,7 @@ Gui::Gui()
 	const size_t searchDirCount = sizeof(dataSearchDirs) / sizeof(dataSearchDirs[0]);
 	for(size_t i = 0; i < searchDirCount; ++i)
 	{
+		QDir dir;
 		const QString dataFolder = dataSearchDirs[i];
 		if(dir.exists(dataFolder))
 		{
@@ -156,7 +157,7 @@ void Gui::LoadDemo(const QString& filepath)
 
 	const QString protocol = _demoPlayer.DemoData.DemoParser->_protocol == Protocol::Dm73 ? "ql" : "q3";
 	const QString mapName = QString::fromStdString(_demoPlayer.DemoData.DemoParser->_mapName); 
-	const QString filePathNoExt = DataPath + "maps\\" + protocol + "\\" + mapName;
+	const QString filePathNoExt = QDir::toNativeSeparators(DataPath + "maps/" + protocol + "/" + mapName);
 	const QString bgImagePath = filePathNoExt + ".png";
 	const QString scalingPath = filePathNoExt + ".txt";
 	const QFileInfo info(bgImagePath);
@@ -194,14 +195,17 @@ void Gui::LoadIconData()
 	QStringList filters; 
 	filters << "*.png";
 
-	const QDir iconsDir(DataPath + "icons" + QDir::separator());
-	_ui.paintWidget->LoadIcons(DataPath + "icons\\", iconsDir.entryList(filters));
+	const QString iconsPath = QDir::toNativeSeparators(DataPath + "icons/");
+	const QDir iconsDir(iconsPath);
+	_ui.paintWidget->LoadIcons(iconsPath, iconsDir.entryList(filters));
 
-	const QDir itemsDir(DataPath + "items" + QDir::separator());
-	_ui.paintWidget->LoadItems(DataPath + "items\\", itemsDir.entryList(filters));
+	const QString itemsPath = QDir::toNativeSeparators(DataPath + "items/");
+	const QDir itemsDir(itemsPath);
+	_ui.paintWidget->LoadItems(itemsPath, itemsDir.entryList(filters));
 
-	const QDir weaponsDir(DataPath + "weapons" + QDir::separator());
-	_ui.paintWidget->LoadWeapons(DataPath + "weapons\\", weaponsDir.entryList(filters));
+	const QString weaponsPath = QDir::toNativeSeparators(DataPath + "weapons/");
+	const QDir weaponsDir(weaponsPath);
+	_ui.paintWidget->LoadWeapons(weaponsPath, weaponsDir.entryList(filters));
 }
 
 void Gui::PlayButtonPressed()
