@@ -1,3 +1,6 @@
+0.1.2 (2012.07.31)
+ADD: Linux build
+
 0.1.1 (2012.07.29)
 ADD: View modes: Fixed Size vs Adapt to Window
 FIX: Truncated demos are now accepted and a warning is emitted instead of an error (suggested by !nFerNo)
