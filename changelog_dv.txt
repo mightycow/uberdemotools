@@ -1,5 +1,7 @@
 0.1.2 (2012.07.31)
 ADD: First Linux build
+CHG: Different item indices for Q3/QL demos
+CHG: Separate folders for Q3/QL maps
 FIX: Flag icons size/alignment
 
 0.1.1 (2012.07.29)
