@@ -864,12 +864,18 @@ void PaintWidget::DrawPlayerPowerup(QPainter& painter, int x, int y, int z, cons
 
 	if(player->Powerups[PW_REDFLAG])
 	{
-		DrawPlayerPowerupImage(painter, x, y, z, GetItem(TEAM_CTF_REDFLAG, false));
+		QImage* const icon = GetItem(TEAM_CTF_REDFLAG, false);
+		const int dx = icon->width() / 6;
+		const int dy = -icon->height() / 6;
+		DrawPlayerPowerupImage(painter, x + dx, y + dy, z, icon);
 	}
 
 	if(player->Powerups[PW_BLUEFLAG])
 	{
-		DrawPlayerPowerupImage(painter, x, y, z, GetItem(TEAM_CTF_BLUEFLAG, false));
+		QImage* const icon = GetItem(TEAM_CTF_BLUEFLAG, false);
+		const int dx = icon->width() / 6;
+		const int dy = -icon->height() / 6;
+		DrawPlayerPowerupImage(painter, x + dx, y + dy, z, icon);
 	}
 }
 
