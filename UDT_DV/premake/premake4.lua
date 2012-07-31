@@ -100,9 +100,11 @@ solution "U2DDV"
 			targetdir ( "../bin/gcc/debug" )
 			buildoptions { "" } -- Directly passed to the compiler.
 			linkoptions { "" } -- Directly passed to the linker.
+			postbuildcommands { "chmod +x ../bin/gcc/debug/U2DDV" }
 			
 		configuration { "Release", "gmake" }
 			targetdir ( "../bin/gcc/release" )
 			buildoptions { "" } -- Directly passed to the compiler.
 			linkoptions { "" } -- Directly passed to the linker.
-			
+			postbuildcommands { "chmod +x ../bin/gcc/release/U2DDV" }
+
