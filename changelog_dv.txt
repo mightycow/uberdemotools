@@ -1,5 +1,6 @@
 0.1.2 (2012.07.31)
-ADD: Linux build
+ADD: First Linux build
+FIX: Flag icons size/alignment
 
 0.1.1 (2012.07.29)
 ADD: View modes: Fixed Size vs Adapt to Window
