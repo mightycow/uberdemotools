@@ -1089,9 +1089,11 @@ void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t*
 			info.Angles[0] = playerEntity->apos.trBase[0];
 			info.Angles[1] = playerEntity->apos.trBase[1];
 			info.Angles[2] = playerEntity->apos.trBase[2];
-			info.Armor = -1;
+			// Health and armor stay across snapshots (support for QL's tinfo server command).
+			// If they're invalid, the value is -9999.
+			//info.Health = -1;
+			//info.Armor = -1;
 			info.Flags = playerEntity->eFlags;
-			info.Health = -1;
 			info.Powerups = playerEntity->powerups;
 			info.Rank = -1;
 			info.Score = -1;

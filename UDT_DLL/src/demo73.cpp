@@ -194,6 +194,27 @@ void Demo73::ProtocolAnalyzeAndFixCommandString(const char* command, std::string
 		}
 		output = command;
 	}
+	else if(strstr(command, "tinfo") == command)
+	{
+		// Format: player_count <player_info> <player_info>
+		// Player info: ClientIdx LocationIdx Health Armor Weapon PUs
+		_tokenizer.Tokenize(command);
+		const int teamMateCount = atoi(_tokenizer.argv(1));
+		for(int i = 0 ; i < teamMateCount; ++i)
+		{
+			const int playerIdx = atoi(_tokenizer.argv(i*6 + 2));
+			if(playerIdx < 0 || playerIdx > MAX_CLIENTS)
+			{
+				continue;
+			}
+
+			PlayerInfo& info = _players[playerIdx].Info;
+			info.Health = atoi(_tokenizer.argv(i*6 + 4));
+			info.Armor = atoi(_tokenizer.argv(i*6 + 5));
+			info.CurrentWeapon = atoi(_tokenizer.argv(i*6 + 6));
+		}
+		output = command;
+	}
 	else
 	{
 		output = command;
