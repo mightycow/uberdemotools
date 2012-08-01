@@ -53,6 +53,7 @@ protected:
 	void	DrawHudElement(QPainter& painter, QImage* icon, int offsetX, const QString& text);
 	void	DrawScores(QPainter& painter);
 	void	DrawPowerUps(QPainter& painter);
+	void	DrawTeamMateInfo(QPainter& painter);
 	void	DrawPlayer(QPainter& painter, const PlayerData& data);
 	void	DrawLivingPlayer(QPainter& painter, int x, int y, int z, const QColor& color, float alpha);
 	void	DrawDeadPlayer(QPainter& painter, int x, int y, const QColor& color, float alpha);
@@ -81,6 +82,7 @@ public:
 	bool ShowScore;
 	bool ShowHud;
 	bool ShowPowerUps;
+	bool ShowTeamMateInfo;
 	QString BackgroundMessage;
 
 private:

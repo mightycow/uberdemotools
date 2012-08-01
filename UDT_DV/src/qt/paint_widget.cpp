@@ -121,6 +121,7 @@ PaintWidget::PaintWidget(QWidget *parent)
 	ShowScore = true;
 	ShowHud = true;
 	ShowPowerUps = true;
+	ShowTeamMateInfo = true;
 	DisplayDemo = false;
 	BackgroundMessage = "Drag and drop a demo here.";
 
@@ -360,6 +361,7 @@ void PaintWidget::PaintDemo(QPainter& painter)
 	DrawHud(painter);
 	DrawScores(painter);
 	DrawPowerUps(painter);
+	//DrawTeamMateInfo(painter); // @TODO: GUI support or drawn on the right of the map viz?
 }
 
 bool PaintWidget::LoadMapImage(const QString& path)
@@ -615,6 +617,44 @@ void PaintWidget::DrawPowerUps(QPainter& painter)
 		painter.drawText(x, y + dyText, player.Name);
 		y += dy;
 	}
+}
+
+void PaintWidget::DrawTeamMateInfo(QPainter& painter)
+{
+	if( DemoData == NULL || 
+		!ShowTeamMateInfo || 
+		DemoData->DemoParser->_protocol != Protocol::Dm73 || 
+		!Demo::GameType::IsTeamMode((Demo::GameType::Id)DemoData->DemoParser->_gameType))
+	{
+		return;
+	}
+
+	QFont font;
+	font.setPixelSize(16);
+	painter.setFont(font);
+
+	QRect unscaledRect;
+	GetUnscaledRect(unscaledRect);
+	const int x = 20;
+	int y = unscaledRect.height() - 20;
+
+	std::vector<Player>& players = DemoData->Players;
+	for(size_t i = 0; i < players.size(); ++i)
+	{
+		const Player& player = players[i];
+		if( player.Team == TEAM_SPECTATOR || 
+			player.ClientIndex == DemoData->FollowedPlayer || 
+			player.Health == -9999 ||
+			player.Armor == -9999)
+		{
+			continue;
+		}
+		
+		QString text = QString("%1  %2/%3").arg(player.Name).arg(player.Health).arg(player.Armor);
+		painter.drawText(x, y, text);
+		y -= 20;
+	}
+	painter.drawText(x, y, "Teammates: health/armor");
 }
 
 void PaintWidget::DrawHud(QPainter& painter)
@@ -1232,12 +1272,13 @@ void PaintWidget::SetImageAlpha(QImage* image, float alpha)
 
 void PaintWidget::GetUnscaledRect(QRect& rect)
 {
-	rect = QRect(0, 0, 600, 600);
+	rect = QRect(0, 0, 800, 800);
 	if(_bgImage != NULL)
 	{
 		rect.setWidth(_bgImage->width());
 		rect.setHeight(_bgImage->height());
 	}
+	//rect.setWidth(rect.width() + 300); // @TODO: Draw all the extra stuff on the right?
 }
 
 void PaintWidget::GetScaledRect(QRect& rect)
