@@ -142,9 +142,15 @@ bool Demo::Do()
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		_players[i].Valid = false;
-		_players[i].Info.Team = -1;
-		_players[i].Info.Handicap = -1;
-		_players[i].Info.BotSkill = -1;
+		_players[i].Info.Team = -9999;
+		_players[i].Info.Handicap = -9999;
+		_players[i].Info.BotSkill = -9999;
+		_players[i].Info.Health = -9999;
+		_players[i].Info.Armor = -9999;
+		_players[i].Info.CurrentWeapon = -9999;
+		_players[i].Info.CurrentAmmo = -9999;
+		_players[i].Info.Rank = -9999;
+		_players[i].Info.Score = -9999;
 	}
 
 	_entities.resize(MAX_GENTITIES);
