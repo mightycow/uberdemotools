@@ -44,10 +44,11 @@ Demo::Demo()
 	MSG_Init(&_inGamestateMsg, _inGamestateMsgData, sizeof(_inGamestateMsgData));
 
 	_outServerCommandSequence = 0;
-	_outServerMessageSequence = 0;
 	_outSnapshotsWritten = 0;
 
 	_mapName = "";
+
+	_viewerAnalysis = false;
 }
 
 Demo::~Demo()
@@ -261,7 +262,6 @@ bool Demo::Do()
 				_demoRecordStartTime = _cuts[0].StartTimeMs;
 				_demoRecordEndTime = _cuts[0].EndTimeMs;
 				_outServerCommandSequence = 0;
-				_outServerMessageSequence = 0;
 				_outSnapshotsWritten = 0;
 			}
 			else
@@ -333,10 +333,9 @@ void Demo::WriteFileBlock(msg_t* msgOut)
 	MSG_WriteByte(&_outMsg, svc_EOF);
 
 	const int length = msgOut->cursize;
-	fwrite(&_outServerMessageSequence, 4, 1, _outFile);
+	fwrite(&_inServerMessageSequence, 4, 1, _outFile);
 	fwrite(&length, 4, 1, _outFile);
-	fwrite(msgOut->data, length, 1, _outFile);
-	++_outServerMessageSequence;
+	fwrite(msgOut->data, length, 1, _outFile);;
 }
 
 void Demo::WriteFileStart()

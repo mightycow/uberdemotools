@@ -111,9 +111,9 @@ void Demo68::ProtocolParsePacketEntities(msg_t* msg, msg_t* msgOut, clSnapshot_t
 			if(_matchStats.size() > 0)
 			{
 				_matchStats[_matchStats.size() - 1].EndTime = newframe->serverTime + _serverTimeOffset;
-				LogInfo("Current match ends: %d", _matchStats[_matchStats.size() - 1].EndTime);
-				LogInfo("%d - %d", GetVirtualInputTime(), endTime);
-
+				//LogInfo("Current match ends: %d", _matchStats[_matchStats.size() - 1].EndTime);
+				//LogInfo("%d - %d", GetVirtualInputTime(), endTime);
+				/*
 				const MatchStats& match = _matchStats[_matchStats.size() - 1];
 				for(int i = 0; i < MAX_CLIENTS; ++i)
 				{
@@ -125,11 +125,11 @@ void Demo68::ProtocolParsePacketEntities(msg_t* msg, msg_t* msgOut, clSnapshot_t
 							LogInfo("Player %d: %d atts with weapon %d", i, player.WeaponAtts[j], j);
 						}
 					}
-				}
+				}*/
 			}
 		}
 	}
-
+	
 	if(!_writeStats || _matchStats.size() == 0)
 	{
 		return;
@@ -288,7 +288,7 @@ void Demo68::AnalyzeConfigStringCpmaGameInfo(const std::string& input)
 			stats->StartTime = _gameStartTime + _serverTimeOffset;
 			_matchStats.push_back(*stats);
 			_writeStats = true;
-			LogInfo("New match starts: %d", stats->StartTime);
+			//LogInfo("New match starts: %d", stats->StartTime);
 			free(stats);
 		}
 	}

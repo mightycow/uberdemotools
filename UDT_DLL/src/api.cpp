@@ -10,7 +10,7 @@
 #define UDT_API(ReturnType) UDT_EXPORT_DLL ReturnType
 
 
-static const char* VersionString = "0.2.0m";
+static const char* VersionString = "0.2.1";
 
 
 struct UdtLibrary

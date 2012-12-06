@@ -419,6 +419,7 @@ public:
 	int _gameType; // GameType::Id
 	bool _writeDemo;
 	bool _writeFirstBlock;
+	bool _viewerAnalysis;
 
 	// Input data.
 	FILE* _inFile;
@@ -447,7 +448,6 @@ public:
 	FILE* _outFile;
 	msg_t _outMsg;
 	byte _outMsgData[MAX_MSGLEN];
-	int _outServerMessageSequence; // Unreliable.
 	int _outServerCommandSequence; // Reliable.
 	int _outSnapshotsWritten;
 };
@@ -899,6 +899,11 @@ void Demo::AnalyzeEntityObituaryT(EntityStateT* /*oldState*/, EntityStateT* newS
 template<class DemoT, typename EntityStateT>
 void Demo::AnalyzeSnapshotT(const clSnapshot_t* /*oldSnap*/, const clSnapshot_t* newSnap)
 {
+	if(!_viewerAnalysis)
+	{
+		return;
+	}
+
 	const int healthStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_HEALTH_68 : (int)STAT_HEALTH_73;
 	const int armorStatIdx = (_protocol == Protocol::Dm68) ? (int)STAT_ARMOR_68 : (int)STAT_ARMOR_73;
 	const float dotThreshold = 0.85f;
