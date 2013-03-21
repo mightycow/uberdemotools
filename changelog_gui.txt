@@ -1,3 +1,7 @@
+0.2.0g (21.03.2013)
+CHG: The default text color of all ListView instances is opaque black
+ADD: Open button next to the browse button ("...") in the Output Folder row of the Settings tab
+
 0.2.0f (10.02.2012)
 FIX: The names of players connecting after the demo record start time are now recognized
 
