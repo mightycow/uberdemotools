@@ -41,7 +41,7 @@ namespace Uber.DemoTools
 
     public partial class App
     {
-        private const string GuiVersion = "0.2.0f";
+        private const string GuiVersion = "0.2.0g";
         private readonly string DllVersion = Demo.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -815,6 +815,7 @@ namespace Uber.DemoTools
             demoListView.Drop += OnDemoListBoxDragDrop;
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
+            demoListView.Foreground = new SolidColorBrush(Colors.Black);
             InitDemoListDeleteCommand();
             
             var demoListGroupBox = new GroupBox();
@@ -1202,6 +1203,7 @@ namespace Uber.DemoTools
             infoListView.Margin = new Thickness(5);
             infoListView.View = configStringGridView;
             infoListView.SelectionMode = SelectionMode.Single;
+            infoListView.Foreground = new SolidColorBrush(Colors.Black);
 
             var infoPanelGroupBox = new GroupBox();
             infoPanelGroupBox.Header = "Demo Information";

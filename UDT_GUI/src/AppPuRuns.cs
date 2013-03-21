@@ -131,6 +131,7 @@ namespace Uber.DemoTools
             eventsListView.Margin = new Thickness(5);
             eventsListView.View = demoEventsGridView;
             eventsListView.SelectionMode = SelectionMode.Single;
+            eventsListView.Foreground = new SolidColorBrush(Colors.Black);
             InitPuRunsListViewCutBinding();
 
             var infoPanelGroupBox = new GroupBox();

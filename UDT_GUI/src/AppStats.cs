@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 
 namespace Uber.DemoTools
@@ -163,6 +164,7 @@ namespace Uber.DemoTools
                 weaponStatsListView.Width = weaponStatsWidth;
                 weaponStatsListView.View = weaponStatsGridView;
                 weaponStatsListView.SelectionMode = SelectionMode.Single;
+                weaponStatsListView.Foreground = new SolidColorBrush(Colors.Black);
 
                 var weaponStatsGroupBox = new GroupBox();
                 weaponStatsGroupBox.Header = "Weapon Stats for N/A";
@@ -184,6 +186,7 @@ namespace Uber.DemoTools
                 damageStatsListView.Width = 310;
                 damageStatsListView.View = damageStatsGridView;
                 damageStatsListView.SelectionMode = SelectionMode.Single;
+                damageStatsListView.Foreground = new SolidColorBrush(Colors.Black);
 
                 var damageStatsGroupBox = new GroupBox();
                 damageStatsGroupBox.Header = "Additional Stats for N/A";

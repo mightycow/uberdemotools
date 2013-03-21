@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -33,22 +35,33 @@ namespace Uber.DemoTools
             outputFolderTextBox.Text = _config.OutputFolder;
             outputFolderTextBox.Width = 300;
 
-            var outputFolderButton = new Button();
-            outputFolderButton.HorizontalAlignment = HorizontalAlignment.Right;
-            outputFolderButton.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderButton.Margin = new Thickness(5, 0, 0, 0);
-            outputFolderButton.Content = "...";
-            outputFolderButton.Width = 40;
-            outputFolderButton.Height = 20;
-            outputFolderButton.Click += (obj, arg) => OnOutputFolderBrowseClicked();
+            var outputFolderBrowseButton = new Button();
+            outputFolderBrowseButton.HorizontalAlignment = HorizontalAlignment.Right;
+            outputFolderBrowseButton.VerticalAlignment = VerticalAlignment.Center;
+            outputFolderBrowseButton.Margin = new Thickness(5, 0, 0, 0);
+            outputFolderBrowseButton.Content = "...";
+            outputFolderBrowseButton.Width = 40;
+            outputFolderBrowseButton.Height = 20;
+            outputFolderBrowseButton.Click += (obj, arg) => OnOutputFolderBrowseClicked();
+
+            var outputFolderOpenButton = new Button();
+            outputFolderOpenButton.HorizontalAlignment = HorizontalAlignment.Right;
+            outputFolderOpenButton.VerticalAlignment = VerticalAlignment.Center;
+            outputFolderOpenButton.Margin = new Thickness(5, 0, 0, 0);
+            outputFolderOpenButton.Content = "Open";
+            outputFolderOpenButton.Width = 40;
+            outputFolderOpenButton.Height = 20;
+            outputFolderOpenButton.Click += (obj, arg) => OnOutputFolderOpenClicked();
 
             var outputFolderDockPanel = new DockPanel();
             outputFolderDockPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             outputFolderDockPanel.VerticalAlignment = VerticalAlignment.Center;
             outputFolderDockPanel.LastChildFill = true;
-            outputFolderDockPanel.Children.Add(outputFolderButton);
+            outputFolderDockPanel.Children.Add(outputFolderOpenButton);
+            outputFolderDockPanel.Children.Add(outputFolderBrowseButton);
             outputFolderDockPanel.Children.Add(outputFolderTextBox);
-            DockPanel.SetDock(outputFolderButton, Dock.Right);
+            DockPanel.SetDock(outputFolderOpenButton, Dock.Right);
+            DockPanel.SetDock(outputFolderBrowseButton, Dock.Right);
 
             var skipChatOffsetsDialogCheckBox = new CheckBox();
             skipChatOffsetsDialogCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -131,6 +144,24 @@ namespace Uber.DemoTools
                 }
 
                 _outputFolderTextBox.Text = openFolderDialog.SelectedPath;
+            }
+        }
+
+        private void OnOutputFolderOpenClicked()
+        {
+            var folderPath = _outputFolderTextBox.Text;
+            if(!Directory.Exists(folderPath))
+            {
+                return;
+            }
+
+            try
+            {
+                Process.Start(folderPath);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open the output folder: " + exception.Message);
             }
         }
 
