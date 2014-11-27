@@ -412,7 +412,7 @@ UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(udtParserContext*) udtCreateContext()
+UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb)
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
 	udtParserContext* const context = (udtParserContext*)malloc(sizeof(udtParserContext));
@@ -422,6 +422,7 @@ UDT_API(udtParserContext*) udtCreateContext()
 	}
 
 	new (context) udtParserContext;
+	context->Context.SetCrashCallback(crashCb);
 
 	return context;
 }

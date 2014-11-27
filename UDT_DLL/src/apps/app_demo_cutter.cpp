@@ -219,7 +219,7 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 	info.StartTimeMs = startSec * 1000;
 	info.EndTimeMs = endSec * 1000;
 
-	udtParserContext* const context = udtCreateContext();
+	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
 	{
 		return false;
@@ -269,7 +269,7 @@ int main(int argc, char** argv)
 	ResetCurrentDirectory(argv[0]);
 	EnsureConfigExists(ConfigFilePath);
 
-	udtParserContext* const context = udtCreateContext();
+	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
 	{
 		return __LINE__;

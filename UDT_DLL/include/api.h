@@ -204,10 +204,11 @@ extern "C"
 	// All functions returning a s32 value return an error code of type udtErrorCode::Id.
 	//
 
-	// Create a context that can be used by multiple parsers.
-	UDT_API(udtParserContext*) udtCreateContext();
+	// Creates a context that can be used by multiple parsers.
+	// If crashCb is NULL, the default crash handler will be used.
+	UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb);
 
-	// Release all the resources associated to the context.
+	// Releases all the resources associated to the context.
 	UDT_API(s32) udtDestroyContext(udtParserContext* context);
 
 	// Splits a demo into multiple sub-demos if the input demo has more than 1 gamestate server message.
@@ -219,12 +220,12 @@ extern "C"
 	// Creates sub-demos around every occurrence of a matching chat command server message.
 	UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* info);
 
-	// Read through an entire demo file.
+	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
 	// The "plugIns" arguments are of type udtParserPlugIn::Id.
 	UDT_API(s32) udtParseDemo(udtParserContext* context, const udtFileParseArg* info, const u32* plugIns, u32 plugInCount);
 
-	// Get the address and element count for the requested parse data type.
+	// Gets the address and element count for the requested parse data type.
 	// The "plugInId" argument is of type udtParserPlugIn::Id.
 	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** buffer, u32* count);
 

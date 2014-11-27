@@ -15,7 +15,7 @@ static bool RunDemoSplitter(const char* filePath)
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = NULL;
 
-	udtParserContext* const context = udtCreateContext();
+	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
 	{
 		return false;

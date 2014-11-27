@@ -104,7 +104,7 @@ static void TestAddOns(const char* filePath)
 
 	PauseConsoleApp();
 
-	udtParserContext* const context = udtCreateContext();
+	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
 	{
 		return;
