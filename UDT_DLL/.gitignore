@@ -1,4 +1,4 @@
-build
-build/
-bin
-bin/
+.build
+.build/
+.bin
+.bin/

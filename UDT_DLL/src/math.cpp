@@ -1,12 +1,12 @@
 #include "math.hpp"
 
 
-float DegToRad(float angleDeg)
+f32 DegToRad(f32 angleDeg)
 {
 	return (angleDeg / 180.0f) * UDT_PI;
 }
 
-float RadToDeg(float angleRad)
+f32 RadToDeg(f32 angleRad)
 {
 	return (angleRad / UDT_PI) * 180.0f;
 }

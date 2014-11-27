@@ -1,16 +1,73 @@
 #pragma once
 
 
-#include <string>
+#include "parser.hpp"
+#include "linear_allocator.hpp"
+#include "array.hpp"
 
 
-extern int		GetVariable(const std::string& input, const std::string& var);
-extern int		GetCpmaConfigStringInt(const char* var, const char* str); // Gets the integer value of a CPMA config string value (the name has only 2 characters).
-extern bool		GetVariable(const std::string& input, const std::string& var, int* value);
-extern bool		TryGetVariable(int* varValue, const std::string& input, const std::string& varName);
-extern void		GetVariable(std::string& var, const std::string& input, const std::string& cvar);
-extern void		ChangeVariable(const std::string& input, const std::string& cvar, const std::string newVal, std::string& output);
-extern void		ChangeVariable(const std::string& input, const std::string& cvar, int val, std::string& output);
-extern int		ConvertPowerUpFlagsToValue(int flags); // Will keep/return the first power-up it finds.
-extern void		ReadScore(const char* scoreString, int* scoreValue); // Reads the score, sets it to -9999 when it fails.
-extern void		GetTeamName(std::string& teamName, int team);
+// On Windows, MAX_PATH is 260.
+#define UDT_MAX_PATH_LENGTH 320
+
+
+template<typename T>
+T udt_min(const T a, const T b)
+{
+	return a < b ? a : b;
+}
+
+template<typename T>
+T udt_max(const T a, const T b)
+{
+	return a > b ? a : b;
+}
+
+
+struct CallbackCutDemoFileStreamCreationInfo
+{
+	const char* OutputFolderPath;
+};
+
+extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData);
+extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
+extern const char* GetFolderSeparator();
+extern u32         GetFolderSeparatorLength();
+extern bool        StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input);
+extern bool        StringCloneUpperCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input);
+extern bool        StringMakeLowerCase(char* string);
+extern bool        StringMakeUpperCase(char* string);
+extern bool        StringParseInt(s32& output, const char* string);
+extern bool        StringContains_NoCase(const char* string, const char* pattern, u32* charIndex = NULL);
+extern bool        StringStartsWith_NoCase(const char* string, const char* pattern);
+extern bool        StringEndsWith_NoCase(const char* string, const char* pattern);
+extern bool        StringEquals_NoCase(const char* a, const char* b);
+extern bool        StringContains(const char* string, const char* pattern, u32* charIndex = NULL);
+extern bool        StringStartsWith(const char* string, const char* pattern);
+extern bool        StringEndsWith(const char* string, const char* pattern);
+extern bool        StringEquals(const char* a, const char* b);
+extern bool        StringFindFirstCharacterInList(u32& index, const char* string, const char* charList);
+extern bool        StringFindLastCharacterInList(u32& index, const char* string, const char* charList);
+extern bool        StringMatchesCutByChatRule(const char* string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);
+extern bool        StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra);
+extern bool        StringHasTrailingFolderSeparator(const char* folderPath);
+extern bool        StringHasValidDemoFileExtension(const char* filePath);
+extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char** strings, u32 stringCount);
+extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b);
+extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c);
+extern bool        StringSplitLines(udtVMArray<const char*>& lines, char* inOutText);
+extern bool        StringIsNullOrEmpty(const char* string);
+extern bool        GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath);
+extern bool        GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath);
+extern bool        GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath); // Doesn't leave a trailing separator.
+extern bool        GetFileExtension(char*& fileExtension, udtVMLinearAllocator& allocator, const char* filePath);
+extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
+extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byteCount); // Will use the most appropriate unit.
+extern bool        StringParseSeconds(s32& duration, const char* buffer); // Format is minutes:seconds or seconds.
+extern bool        CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset);
+extern bool        RunParser(udtBaseParser& parser, udtStream& file);
+extern char*       AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0);
+extern char*       AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength);
+extern bool        ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString); // Gets the integer value of a config string variable.
+extern bool        ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString); // Gets a config string variable.
+extern s32         ConvertPowerUpFlagsToValue(s32 flags);
+extern const char* GetTeamName(s32 team);

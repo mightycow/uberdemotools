@@ -1,153 +1,800 @@
 #include "utils.hpp"
 #include "common.hpp"
+#include "scoped_stack_allocator.hpp"
 
 #include <cstdlib>
+#include <cstdio>
+#include <cctype>
 
 
-int FindVariableValueOffset(const std::string& input, const std::string& varName)
+static const char* LogLevels[4] =
 {
-	const std::string searchFor = varName + "\\";
-	size_t idx = input.find(searchFor);
-	if(idx == 0)
+	"",
+	"Warning: ",
+	"Error: ",
+	"Fatal: "
+};
+
+
+void CallbackConsoleMessage(s32 logLevel, const char* message)
+{
+	if(logLevel < 0 || logLevel >= 3)
 	{
-		return 0;
+		logLevel = 3;
 	}
 
-	while(idx != std::string::npos)
-	{
-		// Can't be wrong since we started the search at offset >= 1.
-		const char c = input[idx - 1];
-		if(c == '"' || c == '\\')
-		{
-			break;
-		}
-
-		idx = input.find(searchFor, idx + 1);
-	}
-
-	if(idx == std::string::npos)
-	{
-		// Didn't find your variable. Sorry.
-		return -1;
-	}
-
-	return (int)idx;
+	FILE* const file = (logLevel == 0 || logLevel == 1) ? stdout : stderr;
+	fprintf(file, LogLevels[logLevel]);
+	fprintf(file, message);
+	fprintf(file, "\n");
 }
 
-int GetVariable(const std::string& input, const std::string& varName)
+udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
 {
-	const int idx = FindVariableValueOffset(input, varName);
-	if(idx == -1)
+	udtVMLinearAllocator& tempAllocator = parser->_context->TempAllocator;
+	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
+	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
+
+	char* inputFileName = NULL;
+	if(parser->_inFilePath != NULL)
 	{
-		return -9999;
+		GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath);
+	}
+	else
+	{
+		inputFileName = AllocateString(tempAllocator, "NEW_UDT_DEMO");
 	}
 
-	const int offset = idx + 1 + (int)varName.length();
-	if(offset >= (int)input.length())
+	char* outputFilePathStart = NULL;
+	if(info != NULL && info->OutputFolderPath != NULL)
 	{
-		// Was about to go bad places.
-		return false;
+		StringPathCombine(outputFilePathStart, tempAllocator, info->OutputFolderPath, inputFileName);
+	}
+	else
+	{
+		char* inputFolderPath = NULL;
+		GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
+		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
-	return atoi(input.c_str() + offset);
+	char* startTime = NULL;
+	char* endTime = NULL;
+	FormatTimeForFileName(startTime, tempAllocator, startTimeMs);
+	FormatTimeForFileName(endTime, tempAllocator, endTimeMs);
+
+	const char* outputFilePathParts[] = { outputFilePathStart, "_CUT_", startTime, "_", endTime, udtGetFileExtensionByProtocol(parser->_protocol) };
+	char* outputFilePath = NULL;
+	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
+
+	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
+	if(stream == NULL || !stream->Open(outputFilePath, udtFileOpenMode::Write))
+	{
+		return NULL;
+	}
+
+	parser->_context->LogInfo("Writing cut demo: %s", outputFilePath);
+
+	return stream;
 }
 
-int GetCpmaConfigStringInt(const char* var, const char* str)
+const char* GetFolderSeparator()
 {
-	return GetVariable(str, var);
+#if defined(_WIN32)
+	return "\\";
+#else
+	return "/";
+#endif
 }
 
-bool GetVariable(const std::string& input, const std::string& varName, int* varValue)
+u32 GetFolderSeparatorLength()
 {
-	*varValue = -9999;
+	return 1;
+}
 
-	const int idx = FindVariableValueOffset(input, varName);
-	if(idx == -1)
-	{
-		return false;
-	}
-
-	const int offset = idx + 1 + (int)varName.length();
-	if(offset >= (int)input.length())
-	{
-		// Was about to go bad places.
-		return false;
-	}
-
-	*varValue = atoi(input.c_str() + offset);
+bool StringMakeLowerCase(char* string)
+{
+	Q_strlwr(string);
 
 	return true;
 }
 
-bool TryGetVariable(int* varValue, const std::string& input, const std::string& varName)
+bool StringMakeUpperCase(char* string)
 {
-	return GetVariable(input, varName, varValue);
+	Q_strupr(string);
+
+	return true;
 }
 
-void GetVariable(std::string& varValue, const std::string& input, const std::string& varName)
+bool StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input)
 {
-	varValue = "N/A";
-
-	const int idx1 = FindVariableValueOffset(input, varName);
-	if(idx1 == -1)
+	lowerCase = AllocateString(allocator, input);
+	if(lowerCase == NULL)
 	{
-		return;
+		return false;
 	}
 
-	const size_t searchForLength = varName.length() + 1;
-	size_t idx2 = input.find("\\", (size_t)idx1 + searchForLength);
-	if(idx2 == std::string::npos)
-	{
-		idx2 = (int)input.length();
-	}
+	StringMakeLowerCase(lowerCase);
 
-	const size_t startIdx = (size_t)idx1 + searchForLength;
-	varValue = input.substr(startIdx, idx2 - startIdx);
+	return true;
 }
 
-void ChangeVariable(const std::string& input, const std::string& varName, const std::string newVal, std::string& output)
+bool StringCloneUpperCase(char*& upperCase, udtVMLinearAllocator& allocator, const char* input)
 {
-	int val = -1;
-	if(!GetVariable(input, varName, &val))
+	upperCase = AllocateString(allocator, input);
+	if(upperCase == NULL)
 	{
-		output = input;
-		return;
+		return false;
 	}
 
-	const std::string searchFor = varName + "\\";
-	const int idx1 = FindVariableValueOffset(input, varName);
-	if(idx1 == -1)
-	{
-		output = input;
-		return;
-	}
+	StringMakeUpperCase(upperCase);
 
-	const size_t idx2 = input.find("\\", (size_t)idx1 + varName.length() + 1);
-	if(idx2 == std::string::npos)
-	{
-		output = input;
-		return;
-	}
-
-	const std::string a = input.substr(0, idx1);
-	const std::string b = input.substr(idx2);
-
-	output = a + searchFor + newVal + b;
+	return true;
 }
 
-void ChangeVariable(const std::string& input, const std::string& var, int val, std::string& output)
+bool StringParseInt(s32& output, const char* string)
 {
-	char newVal[64];
-	sprintf(newVal, "%d", val);
-	ChangeVariable(input, var, newVal, output);
+	return sscanf(string, "%d", &output) == 1;
 }
 
-int ConvertPowerUpFlagsToValue(int flags)
+bool StringContains_NoCase(const char* string, const char* pattern, u32* charIndex)
 {
-	int result = PW_NONE;
-	for(int i = PW_FIRST; i <= PW_LAST; ++i)
+	const u32 stringLength = (u32)strlen(string);
+	const u32 patternLength = (u32)strlen(pattern);
+	if(patternLength > stringLength)
 	{
-		int mask = 1 << i;
+		return false;
+	}
+
+	const u32 iend = stringLength - patternLength;
+	for(u32 i = 0; i <= iend; ++i)
+	{
+		u32 j = 0;
+		for(; pattern[j]; ++j)
+		{
+			if(::tolower(string[i + j]) != ::tolower(pattern[j]))
+			{
+				break;
+			}
+		}
+	
+		if(!pattern[j])
+		{
+			if(charIndex != NULL)
+			{
+				*charIndex = i;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool StringStartsWith_NoCase(const char* string, const char* pattern)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 patternLength = (u32)strlen(pattern);
+	if(patternLength > stringLength)
+	{
+		return false;
+	}
+
+	u32 j = 0;
+	for(; pattern[j]; ++j)
+	{
+		if(::tolower(string[j]) != ::tolower(pattern[j]))
+		{
+			break;
+		}
+	}
+
+	if(!pattern[j])
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool StringEndsWith_NoCase(const char* string, const char* pattern)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 patternLength = (u32)strlen(pattern);
+	if(patternLength > stringLength)
+	{
+		return false;
+	}
+
+	u32 i = stringLength - patternLength;
+	u32 j = 0;
+	for(; pattern[j]; ++j)
+	{
+		if(::tolower(string[i + j]) != ::tolower(pattern[j]))
+		{
+			break;
+		}
+	}
+
+	if(!pattern[j])
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool StringEquals_NoCase(const char* a, const char* b)
+{
+	return Q_stricmp(a, b) == 0;
+}
+
+bool StringContains(const char* string, const char* pattern, u32* charIndex)
+{
+	const char* const patternAddress = strstr(string, pattern);
+	if(patternAddress != NULL && charIndex != NULL)
+	{
+		*charIndex = (u32)(patternAddress - string);
+	}
+
+	return patternAddress != NULL;
+}
+
+bool StringStartsWith(const char* string, const char* pattern)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 patternLength = (u32)strlen(pattern);
+	if(patternLength > stringLength)
+	{
+		return false;
+	}
+
+	u32 j = 0;
+	for(; pattern[j]; ++j)
+	{
+		if(string[j] != pattern[j])
+		{
+			break;
+		}
+	}
+
+	if(!pattern[j])
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool StringEndsWith(const char* string, const char* pattern)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 patternLength = (u32)strlen(pattern);
+	if(patternLength > stringLength)
+	{
+		return false;
+	}
+
+	u32 i = stringLength - patternLength;
+	u32 j = 0;
+	for(; pattern[j]; ++j)
+	{
+		if(string[i + j] != pattern[j])
+		{
+			break;
+		}
+	}
+
+	if(!pattern[j])
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool StringEquals(const char* a, const char* b)
+{
+	return strcmp(a, b) == 0;
+}
+
+bool StringFindFirstCharacterInList(u32& index, const char* string, const char* charList)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 charListLength = (u32)strlen(charList);
+
+	for(u32 i = 0; i < stringLength; ++i)
+	{
+		for(u32 j = 0; j < charListLength; ++j)
+		{
+			if(string[i] == charList[j])
+			{
+				index = i;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool StringFindLastCharacterInList(u32& index, const char* string, const char* charList)
+{
+	const u32 stringLength = (u32)strlen(string);
+	const u32 charListLength = (u32)strlen(charList);
+
+	for(s32 i = (s32)stringLength - 1; i >= 0; --i)
+	{
+		for(u32 j = 0; j < charListLength; ++j)
+		{
+			if(string[i] == charList[j])
+			{
+				index = (u32)i;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool StringMatchesCutByChatRule(const char* string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
+{
+	if(string == NULL || rule.Pattern == NULL)
+	{
+		return false;
+	}
+
+	char* const input = AllocateString(allocator, string);
+	char* const pattern = AllocateString(allocator, rule.Pattern);
+
+	if(rule.IgnoreColorCodes)
+	{
+		Q_CleanStr(input);
+	}
+
+	if(!rule.CaseSensitive)
+	{
+		StringMakeLowerCase(input);
+		StringMakeLowerCase(pattern);
+	}
+
+	if(rule.ChatOperator == (u32)udtChatOperator::Contains)
+	{
+		return StringContains(input, pattern);
+	}
+	else if(rule.ChatOperator == (u32)udtChatOperator::StartsWith)
+	{
+		return StringStartsWith(input, pattern);
+	}
+	else if(rule.ChatOperator == (u32)udtChatOperator::EndsWith)
+	{
+		return StringEndsWith(input, pattern);
+	}
+
+	return false;
+}
+
+bool StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra)
+{
+	const bool isSeparatorNeeded = !StringHasTrailingFolderSeparator(folderPath);
+	const char* strings[] = 
+	{ 
+		(folderPath == NULL || *folderPath == '\0') ? "." : folderPath, 
+		isSeparatorNeeded ? GetFolderSeparator() : "", 
+		extra 
+	};
+	
+	return StringConcatenate(combinedPath, allocator, strings, UDT_COUNT_OF(strings));
+}
+
+bool StringHasTrailingFolderSeparator(const char* folderPath)
+{
+#if defined(_WIN32)
+	return StringEndsWith(folderPath, "\\") || StringEndsWith(folderPath, "/");
+#else
+	return StringEndsWith(folderPath, "/");
+#endif
+}
+
+bool GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath)
+{
+	u32 lastFolderSeparatorIndex = (u32)-1;
+	const char* fileNameStart = filePath;
+	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	{
+		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
+	}
+
+	fileName = AllocateString(allocator, fileNameStart);
+
+	return true;
+}
+
+bool StringHasValidDemoFileExtension(const char* filePath)
+{
+	for(u32 i = (u32)udtProtocol::FirstProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
+	{
+		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
+		if(StringEndsWith_NoCase(filePath, extension))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char** strings, u32 stringCount)
+{
+	if(strings == NULL || stringCount == 0)
+	{
+		return false;
+	}
+
+	u32 newLength = 0;
+	for(u32 i = 0; i < stringCount; ++i)
+	{
+		if(strings[i] == NULL)
+		{
+			return false;
+		}
+
+		newLength += (u32)strlen(strings[i]);
+	}
+
+	output = AllocateSpaceForString(allocator, newLength);
+
+	strcpy(output, strings[0]);
+	for(u32 i = 1; i < stringCount; ++i)
+	{
+		strcat(output, strings[i]);
+	}
+
+	return true;
+}
+
+bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b)
+{
+	const char* strings[] = { a, b };
+
+	return StringConcatenate(output, allocator, strings, UDT_COUNT_OF(strings));
+}
+
+bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c)
+{
+	const char* strings[] = { a, b, c };
+
+	return StringConcatenate(output, allocator, strings, UDT_COUNT_OF(strings));
+}
+
+bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
+{
+	const s32 length = (s32)strlen(inOutText);
+
+	s32 lastStart = 0;
+	for(s32 i = 0; i < length; ++i)
+	{
+		if(inOutText[i] == '\r' || inOutText[i] == '\n')
+		{
+			inOutText[i] = '\0';
+			if(i - lastStart > 0)
+			{
+				lines.Add(inOutText + lastStart);
+			}
+			lastStart = i + 1;
+		}
+	}
+
+	if(lastStart < length)
+	{
+		lines.Add(inOutText + lastStart);
+	}
+
+	return true;
+}
+
+bool StringIsNullOrEmpty(const char* string)
+{
+	return string == NULL || *string == '\0';
+}
+
+bool GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath)
+{
+	u32 lastFolderSeparatorIndex = (u32)-1;
+	const char* fileNameStart = filePath;
+	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	{
+		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
+	}
+
+	const char* const extensionDot = strrchr(fileNameStart, '.');
+	if(extensionDot == NULL)
+	{
+		fileNameNoExt = AllocateString(allocator, fileNameStart);
+		return true;
+	}
+
+	fileNameNoExt = AllocateString(allocator, fileNameStart, (u32)(extensionDot - fileNameStart));
+
+	return true;
+}
+
+bool GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath)
+{
+	u32 lastFolderSeparatorIndex = (u32)-1;
+	if(!StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	{
+		folderPath = AllocateString(allocator, "");
+
+		return true;
+	}
+
+	folderPath = AllocateSpaceForString(allocator, (u32)lastFolderSeparatorIndex);
+	strncpy(folderPath, filePath, (size_t)lastFolderSeparatorIndex);
+	folderPath[lastFolderSeparatorIndex] = '\0';
+
+	return true;
+}
+
+bool GetFileExtension(char* buffer, u32 bufferLength, const char* filePath)
+{
+	const char* const extensionDot = strrchr(filePath, '.');
+	if(extensionDot == NULL)
+	{
+		if(bufferLength > 0)
+		{
+			buffer[0] = '\0';
+		}
+
+		return false;
+	}
+
+	const size_t maxByteCount = (size_t)bufferLength - 1;
+	strncpy(buffer, extensionDot + 1, (size_t)bufferLength - 1);
+	buffer[maxByteCount] = '\0';
+
+	return true;
+}
+
+bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs)
+{
+	if(timeMs < 0)
+	{
+		return false;
+	}
+
+	const s32 secondsTotal = timeMs / 1000;
+	const s32 minutes = secondsTotal / 60;
+	const s32 seconds = secondsTotal - (minutes * 60);
+
+	s32 minutesDigits = 1;
+	s32 minutesCopy = minutes;
+	while(minutesCopy >= 10)
+	{ 
+		++minutesDigits;
+		minutesCopy /= 10;
+	}
+
+	formattedTime = AllocateSpaceForString(allocator, minutesDigits + 2);
+	if(formattedTime == NULL)
+	{
+		return false;
+	}
+
+	sprintf(formattedTime, "%d%02d", minutes, seconds);
+
+	return true;
+}
+
+bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byteCount)
+{
+	if(byteCount == 0)
+	{
+		formattedSize = AllocateString(allocator, "0 byte");
+		return true;
+	}
+
+	const char* const units[] = { "bytes", "KB", "MB", "GB", "TB" };
+
+	s32 unitIndex = 0;
+	u32 prev = 0;
+	u32 temp = byteCount;
+	while(temp >= 1024)
+	{
+		++unitIndex;
+		prev = temp;
+		temp >>= 10;
+	}
+
+	const f32 number = (f32)prev / 1024.0f;
+
+	formattedSize = (char*)allocator.Allocate(64);
+	sprintf(formattedSize, "%.3f %s", number, units[unitIndex]);
+
+	return true;
+}
+
+bool StringParseSeconds(s32& duration, const char* buffer)
+{
+	s32 minutes;
+	s32 seconds;
+	if(sscanf(buffer, "%d:%d", &minutes, &seconds) == 2)
+	{
+		duration = minutes * 60 + seconds;
+		return true;
+	}
+
+	if(sscanf(buffer, "%d", &seconds) == 1)
+	{
+		duration = seconds;
+		return true;
+	}
+
+	return false;
+}
+
+bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset)
+{
+	const u32 chunkSize = 64 * 1024;
+	u8* const chunk = allocator.Allocate(chunkSize);
+
+	const u32 fullChunkCount = (endOffset - startOffset) / chunkSize;
+	const u32 lastChunkSize = (endOffset - startOffset) % chunkSize;
+	for(u32 i = 0; i < fullChunkCount; ++i)
+	{
+		if(!input.Read(chunk, chunkSize, 1)) return false;
+		if(!output.Write(chunk, chunkSize, 1)) return false;
+	}
+
+	if(lastChunkSize != 0)
+	{
+		if(!input.Read(chunk, lastChunkSize, 1)) return false;
+		if(!output.Write(chunk, lastChunkSize, 1)) return false;
+	}
+
+	return true;
+}
+
+bool RunParser(udtBaseParser& parser, udtStream& file)
+{
+	udtContext* const context = parser._context;
+	udtVMScopedStackAllocator tempAllocator(context->TempAllocator);
+
+	size_t elementsRead;
+	udtMessage inMsg;
+	u8* const inMsgData = tempAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
+	s32 inServerMessageSequence;
+
+	inMsg.InitContext(context);
+	inMsg.InitProtocol(parser._protocol);
+
+	for(;;)
+	{
+		const u32 fileOffset = (u32)file.Offset();
+
+		elementsRead = file.Read(&inServerMessageSequence, 4, 1);
+		if(elementsRead != 1)
+		{
+			return false;
+		}
+
+		inMsg.Init(&inMsgData[0], MAX_MSGLEN);
+
+		elementsRead = file.Read(&inMsg.Buffer.cursize, 4, 1);
+		if(elementsRead != 1)
+		{
+			return false;
+		}
+
+		if(inMsg.Buffer.cursize == -1)
+		{
+			break;
+		}
+
+		if(inMsg.Buffer.cursize > inMsg.Buffer.maxsize)
+		{
+			context->LogError("Demo message length > MAX_SIZE");
+			parser.FinishParsing();
+			return false;
+		}
+
+		elementsRead = file.Read(inMsg.Buffer.data, inMsg.Buffer.cursize, 1);
+		if(elementsRead != 1)
+		{
+			context->LogWarning("Demo file was truncated.");
+			break;
+		}
+
+		inMsg.Buffer.readcount = 0;
+		if(!parser.ParseNextMessage(inMsg, inServerMessageSequence, fileOffset))
+		{
+			break;
+		}
+	}
+
+	parser.FinishParsing();
+
+	return true;
+}
+
+char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)
+{
+	if(string == NULL)
+	{
+		return NULL;
+	}
+
+	if(stringLength == 0)
+	{
+		stringLength = (u32)strlen(string);
+	}
+
+	char* newString = (char*)allocator.Allocate(stringLength + 1);
+	memcpy(newString, string, stringLength);
+	newString[stringLength] = '\0';
+
+	return newString;
+}
+
+char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
+{
+	return (char*)allocator.Allocate(stringLength + 1);
+}
+
+bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString)
+{
+	char pattern[64];
+	const size_t patternLength = strlen(varName) + 1;
+	if(patternLength + 1 > sizeof(pattern))
+	{
+		return false;
+	}
+
+	strcpy(pattern, varName);
+	strcat(pattern, "\\");
+
+	u32 index = 0;
+	if(!StringContains(configString, pattern, &index))
+	{
+		return false;
+	}
+
+	return sscanf(configString + index + patternLength, "%d", &varValue) == 1;
+}
+
+bool ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
+{
+	char* pattern = NULL;
+	if(!StringConcatenate(pattern, allocator, varName, "\\"))
+	{
+	}
+
+	u32 index = 0;
+	if(!StringContains(configString, pattern, &index))
+	{
+		return false;
+	}
+
+	const size_t patternLength = strlen(pattern);
+	const char* const valueStart = configString + index + patternLength;
+	const char* const separatorAfterValue = strchr(valueStart, '\\');
+	if(separatorAfterValue == NULL)
+	{
+		return false;
+	}
+
+	varValue = AllocateString(allocator, configString + index + patternLength, (u32)(separatorAfterValue - valueStart));
+
+	return true;
+}
+
+s32 ConvertPowerUpFlagsToValue(s32 flags)
+{
+	s32 result = PW_NONE;
+	for(s32 i = PW_FIRST; i <= PW_LAST; ++i)
+	{
+		s32 mask = 1 << i;
 		if(flags & mask)
 		{
 			result = i;
@@ -158,35 +805,14 @@ int ConvertPowerUpFlagsToValue(int flags)
 	return result;
 }
 
-void ReadScore(const char* scoreString, int* scoreValue)
-{
-	if(sscanf(scoreString, "%d", scoreValue) != 1)
-	{
-		*scoreValue = -9999;
-	}
-}
-
-void GetTeamName(std::string& teamName, int team)
+const char* GetTeamName(s32 team)
 {
 	switch(team)
 	{
-	case TEAM_FREE:
-		teamName = "game";
-		break;
-
-	case TEAM_RED:
-		teamName = "red team";
-		break;
-
-	case TEAM_BLUE:
-		teamName = "blue team";
-		break;
-
-	case TEAM_SPECTATOR:
-		teamName = "spectators";
-		break;
-
-	default:
-		teamName = "unknown";
+		case TEAM_FREE: return "game";
+		case TEAM_RED: return "red team";
+		case TEAM_BLUE: return "blue team";
+		case TEAM_SPECTATOR: return "spectators";
+		default: return "unknown";
 	}
 }

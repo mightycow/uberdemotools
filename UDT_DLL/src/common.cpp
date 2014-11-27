@@ -1,93 +1,11 @@
 #include "common.hpp"
+#include "context.hpp"
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <string>
-#include <stdexcept>
 
-#if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
-#	include <Windows.h> // IsDebuggerPresent, __debugbreak
-#endif
-
-
-ProgressCallback _progressCallback = NULL;
-MessageCallback _messageCallback = NULL;
-
-
-void LogInfo(const char* format, ...)
-{
-	if(!_messageCallback)
-	{
-		return;
-	}
-
-	char msg[MAXPRINTMSG];
-
-	va_list argptr;
-	va_start(argptr, format);
-	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
-	va_end(argptr);
-
-	(*_messageCallback)(0, msg);
-}
-
-void LogWarning(const char* format, ...)
-{
-	if(!_messageCallback)
-	{
-		return;
-	}
-
-	char msg[MAXPRINTMSG];
-
-	va_list argptr;
-	va_start(argptr, format);
-	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
-	va_end(argptr);
-
-	(*_messageCallback)(1, msg);
-}
-
-void LogError(const char* format, ...)
-{
-	if(!_messageCallback)
-	{
-		return;
-	}
-
-	char msg[MAXPRINTMSG];
-
-	va_list argptr;
-	va_start(argptr, format);
-	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
-	va_end(argptr);
-
-	(*_messageCallback)(2, msg);
-}
-
-void LogErrorAndCrash(const char* format, ...)
-{
-	char msg[MAXPRINTMSG];
-
-	va_list argptr;
-	va_start(argptr, format);
-	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
-	va_end(argptr);
-
-	if(_messageCallback)
-	{
-		(*_messageCallback)(3, msg);
-	}
-
-#if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
-	if(IsDebuggerPresent()) __debugbreak();
-#endif
-
-	const std::string errorMsg = std::string("UDT critical error: ") + msg;
-	throw std::runtime_error(errorMsg.c_str());
-}
 
 /*
 ============================================================================
@@ -100,7 +18,7 @@ these don't belong in here and should never be used by a VM
 
 short   ShortSwap (short l)
 {
-	byte    b1,b2;
+	u8    b1,b2;
 
 	b1 = l&255;
 	b2 = (l>>8)&255;
@@ -108,24 +26,24 @@ short   ShortSwap (short l)
 	return (b1<<8) + b2;
 }
 
-int    LongSwap (int l)
+s32    LongSwap (s32 l)
 {
-	byte    b1,b2,b3,b4;
+	u8    b1,b2,b3,b4;
 
 	b1 = l&255;
 	b2 = (l>>8)&255;
 	b3 = (l>>16)&255;
 	b4 = (l>>24)&255;
 
-	return ((int)b1<<24) + ((int)b2<<16) + ((int)b3<<8) + b4;
+	return ((s32)b1<<24) + ((s32)b2<<16) + ((s32)b3<<8) + b4;
 }
 
 typedef union {
-    float	f;
-    unsigned int i;
+    f32	f;
+    u32 i;
 } _FloatByteUnion;
 
-float FloatSwap (const float *f) {
+f32 FloatSwap (const f32 *f) {
 	_FloatByteUnion out;
 
 	out.f = *f;
@@ -142,37 +60,37 @@ float FloatSwap (const float *f) {
 ============================================================================
 */
 
-int Q_isprint( int c )
+s32 Q_isprint( s32 c )
 {
 	if ( c >= 0x20 && c <= 0x7E )
 		return ( 1 );
 	return ( 0 );
 }
 
-int Q_islower( int c )
+s32 Q_islower( s32 c )
 {
 	if (c >= 'a' && c <= 'z')
 		return ( 1 );
 	return ( 0 );
 }
 
-int Q_isupper( int c )
+s32 Q_isupper( s32 c )
 {
 	if (c >= 'A' && c <= 'Z')
 		return ( 1 );
 	return ( 0 );
 }
 
-int Q_isalpha( int c )
+s32 Q_isalpha( s32 c )
 {
 	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
 		return ( 1 );
 	return ( 0 );
 }
 
-const char* Q_strrchr( const char* string, int c )
+const char* Q_strrchr( const char* string, s32 c )
 {
-	char cc = (char)c;
+	char cc = (s8)c;
 	const char *s;
 	const char *sp = (const char*)0;
 
@@ -193,18 +111,10 @@ const char* Q_strrchr( const char* string, int c )
 
 // safe strncpy that ensures a trailing zero
 
-void Q_strncpyz( char *dest, const char *src, int destsize )
+void Q_strncpyz( char *dest, const char *src, s32 destsize )
 {
-	if ( !dest ) {
-		LogErrorAndCrash("Q_strncpyz: NULL dest");
-		return;
-	}
-	if ( !src ) {
-		LogErrorAndCrash("Q_strncpyz: NULL src");
-		return;
-	}
-	if ( destsize < 1 ) {
-		LogErrorAndCrash("Q_strncpyz: destsize < 1");
+	if(dest == NULL || src == NULL || destsize < 1)
+	{
 		return;
 	}
 
@@ -212,9 +122,9 @@ void Q_strncpyz( char *dest, const char *src, int destsize )
 	dest[destsize-1] = 0;
 }
 
-int Q_stricmpn( const char *s1, const char *s2, int n )
+s32 Q_stricmpn( const char *s1, const char *s2, s32 n )
 {
-	int		c1, c2;
+	s32		c1, c2;
 
 	do {
 		c1 = *s1++;
@@ -240,9 +150,9 @@ int Q_stricmpn( const char *s1, const char *s2, int n )
 	return 0;		// strings are equal
 }
 
-int Q_strncmp( const char *s1, const char *s2, int n )
+s32 Q_strncmp( const char *s1, const char *s2, s32 n )
 {
-	int		c1, c2;
+	s32		c1, c2;
 
 	do {
 		c1 = *s1++;
@@ -260,7 +170,7 @@ int Q_strncmp( const char *s1, const char *s2, int n )
 	return 0;		// strings are equal
 }
 
-int Q_stricmp( const char *s1, const char *s2 )
+s32 Q_stricmp( const char *s1, const char *s2 )
 {
 	return (s1 && s2) ? Q_stricmpn (s1, s2, 99999) : -1;
 }
@@ -288,21 +198,21 @@ char *Q_strupr( char *s1 )
 
 
 // never goes past bounds or leaves without a terminating 0
-void Q_strcat( char *dest, int size, const char *src )
+void Q_strcat( const udtContext* context, char *dest, s32 size, const char *src )
 {
-	int		l1;
+	s32		l1;
 
-	l1 = strlen( dest );
+	l1 = (s32)strlen( dest );
 	if ( l1 >= size ) {
-		LogErrorAndCrash("Q_strcat: already overflowed");
+		context->LogErrorAndCrash("Q_strcat: already overflowed");
 	}
 	Q_strncpyz( dest + l1, src, size - l1 );
 }
 
 
-int Q_PrintStrlen( const char *string )
+s32 Q_PrintStrlen( const char *string )
 {
-	int len = 0;
+	s32 len = 0;
 	const char* p = string;
 
 	if (!p)
@@ -322,9 +232,14 @@ int Q_PrintStrlen( const char *string )
 
 
 char *Q_CleanStr( char *string ) {
+	if(string == NULL)
+	{
+		return NULL;
+	}
+
 	char*	d;
 	char*	s;
-	int		c;
+	s32		c;
 
 	s = string;
 	d = string;
@@ -333,7 +248,7 @@ char *Q_CleanStr( char *string ) {
 			s++;
 		}		
 		else if ( c >= 0x20 && c <= 0x7E ) {
-			*d++ = (char)c;
+			*d++ = (s8)c;
 		}
 		s++;
 	}
