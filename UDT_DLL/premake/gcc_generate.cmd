@@ -1,2 +1,2 @@
-premake4.exe gmake
+premake5.exe gmake
 pause

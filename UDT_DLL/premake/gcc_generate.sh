@@ -1,2 +1,2 @@
 #!/bin/bash
-./premake4 gmake
+./premake5 gmake
