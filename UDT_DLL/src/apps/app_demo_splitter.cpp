@@ -9,11 +9,9 @@
 
 static bool RunDemoSplitter(const char* filePath)
 {
-	udtFileParseArg info;
+	udtParseArg info;
 	memset(&info, 0, sizeof(info));
-	info.FilePath = filePath;
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = NULL;
 
 	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
@@ -21,7 +19,7 @@ static bool RunDemoSplitter(const char* filePath)
 		return false;
 	}
 
-	const bool result = udtSplitDemo(context, &info, NULL) == udtErrorCode::None;
+	const bool result = udtSplitDemoFile(context, &info, filePath) == udtErrorCode::None;
 	udtDestroyContext(context);
 
 	return result;

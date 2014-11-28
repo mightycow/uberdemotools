@@ -210,14 +210,19 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 
 static bool CutByTime(const char* filePath, const char* outputFolder, s32 startSec, s32 endSec)
 {
-	udtCutByTimeArg info;
+	udtParseArg info;
 	memset(&info, 0, sizeof(info));
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = NULL;
-	info.FilePath = filePath;
 	info.OutputFolderPath = outputFolder;
-	info.StartTimeMs = startSec * 1000;
-	info.EndTimeMs = endSec * 1000;
+	
+	udtCut cut;
+	cut.StartTimeMs = startSec * 1000;
+	cut.EndTimeMs = endSec * 1000;
+
+	udtCutByTimeArg cutInfo;
+	cutInfo.CutCount = 1;
+	cutInfo.Cuts = &cut;
 
 	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
@@ -225,7 +230,7 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 		return false;
 	}
 
-	const bool result = udtCutDemoByTime(context, &info) == udtErrorCode::None;
+	const bool result = udtCutDemoFileByTime(context, &info, &cutInfo, filePath) == udtErrorCode::None;
 	udtDestroyContext(context);
 
 	return result;
@@ -233,18 +238,19 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 
 static bool CutByChat(udtParserContext* context, const char* filePath, const CutByChatConfig& config)
 {
-	udtCutByChatArg info;
+	udtParseArg info;
 	memset(&info, 0, sizeof(info));
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = NULL;
-	info.FilePath = filePath;
 	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
-	info.StartOffsetSec = config.StartOffsetSec;
-	info.EndOffsetSec = config.EndOffsetSec;
-	info.Rules = config.ChatRules.GetStartAddress();
-	info.RuleCount = config.ChatRules.GetSize();
 
-	return udtCutDemoByChat(context, &info) == udtErrorCode::None;
+	udtCutByChatArg chatInfo;
+	chatInfo.StartOffsetSec = config.StartOffsetSec;
+	chatInfo.EndOffsetSec = config.EndOffsetSec;
+	chatInfo.Rules = config.ChatRules.GetStartAddress();
+	chatInfo.RuleCount = config.ChatRules.GetSize();
+
+	return udtCutDemoFileByChat(context, &info, &chatInfo, filePath) == udtErrorCode::None;
 }
 
 static void PrintHelp()

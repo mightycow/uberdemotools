@@ -27,6 +27,7 @@
 
 
 struct udtParserContext;
+struct udtParserContextGroup;
 
 struct udtErrorCode
 {
@@ -104,75 +105,171 @@ extern "C"
 	typedef void (*udtCrashCallback)(const char* message);
 
 #pragma pack(push, 1)
+
+	struct udtParseArg
+	{
+		// Pointer to an array of plug-ins IDs.
+		// Of type udtParserPlugIn::Id.
+		// May be NULL.
+		// Unused when cutting.
+		const u32* PlugIns;
+
+		// May be NULL.
+		// Unused when not cutting.
+		const char* OutputFolderPath;
+
+		// May be NULL.
+		// Used for info, warning and non-fatal error messages.
+		// Fatal errors are routed through a udtCrashCallback callback.
+		udtMessageCallback MessageCb;
+
+		// May be NULL.
+		udtProgressCallback ProgressCb;
+
+		// Number of elements in the array pointed to by the PlugIns pointer.
+		// May be 0.
+		// Unused when cutting.
+		u32 PlugInCount;
+	};
+
+	struct udtMultiParseArg
+	{
+		// Used fatal errors.
+		// If NULL, the default handler will be used.
+		udtCrashCallback CrashCb;
+
+		// Pointer to an array of file paths.
+		const char* FilePaths;
+
+		// Number of elements in the array pointed by FilePaths.
+		u32 FileCount;
+
+		// The maximum amount of threads that should be used to process the demos.
+		u32 MaxThreadCount;
+	};
+
+	
+	struct udtCut
+	{
+		// Cut start time in milli-seconds.
+		s32 StartTimeMs;
+
+		// Cut end time in milli-seconds.
+		s32 EndTimeMs;
+	};
+
 	struct udtCutByTimeArg
 	{
-		const char* FilePath;
-		const char* OutputFolderPath; // May be NULL.
-		udtMessageCallback MessageCb; // May be NULL.
-		udtProgressCallback ProgressCb; // May be NULL.
-		s32 StartTimeMs;
-		s32 EndTimeMs;
+		// Pointer to an array of cut times.
+		// May not be NULL.
+		const udtCut* Cuts;
+
+		// Number of elements in the array pointed by Cuts.
+		u32 CutCount;
 	};
 
 	struct udtCutByChatRule
 	{
+		// May not be NULL.
 		const char* Pattern;
-		u32 ChatOperator; // udtChatOperator::Id
-		u32 CaseSensitive; // Non-zero means case-sensitive.
-		u32 IgnoreColorCodes; // Non-zero means color codes are ignored.
+
+		// Of type udtChatOperator::Id.
+		u32 ChatOperator;
+
+		// Non-zero means case-sensitive.
+		u32 CaseSensitive;
+
+		// Non-zero means color codes are ignored.
+		u32 IgnoreColorCodes;
 	};
 
 	struct udtCutByChatArg
 	{
-		const char* FilePath;
-		const char* OutputFolderPath; // May be NULL.
-		udtMessageCallback MessageCb; // May be NULL.
-		udtProgressCallback ProgressCb; // May be NULL.
+		// Pointer to an array of chat cutting rules.
+		// Rules are OR'd together.
+		// May not be NULL.
 		const udtCutByChatRule* Rules;
-		u32 RuleCount;
-		u32 StartOffsetSec;
-		u32 EndOffsetSec;
-	};
 
-	struct udtFileParseArg
-	{
-		const char* FilePath;
-		udtMessageCallback MessageCb; // May be NULL.
-		udtProgressCallback ProgressCb; // May be NULL.
+		// Number of elements in the array pointed to by the Rules pointer.
+		// May not be 0.
+		u32 RuleCount;
+
+		// Negative offset from the matching time, in seconds.
+		u32 StartOffsetSec;
+
+		// Positive offset from the matching time, in seconds.
+		u32 EndOffsetSec;
 	};
 
 	struct udtChatEventData
 	{
-		// Values can be NULL if extraction failed.
+		// All C string pointers can be NULL if extraction failed.
+
+		// The original, unmodified command string.
 		const char* OriginalCommand;
-		const char* ClanName; // QL only. Points to a null string if not available.
+
+		// The player's active clan name at the time the demo was recorded.
+		// Not available in protocol version 68.
+		// Points to a null string if not available.
+		const char* ClanName;
+
+		// The player's name.
 		const char* PlayerName;
+
+		// The message itself.
 		const char* Message;
 	};
 
 	struct udtParseDataChat
 	{
-		udtChatEventData Strings[2]; // Index 0 with color codes, 1 without.
+		// String data for this chat message.
+		// Index 0 with color codes, 1 without.
+		udtChatEventData Strings[2];
+
+		// The time at which the chat message was sent from the client.
 		s32 ServerTimeMs;
-		s32 PlayerIndex; // QL only. Negative if not available. Range: [0;63].
+
+		// The index of the player who sent the message.
+		// Not available in protocol version 68.
+		// Negative if not available.
+		// If available, in range [0;63].
+		s32 PlayerIndex;
 	};
 
 	struct udtMatchInfo
 	{
 		// The time between the warm-up end and the match start is the countdown phase, 
 		// whose length might vary depending on the game, mod, mode, etc.
-		s32 WarmUpEndTimeMs; // S32_MIN if the demo doesn't have the warm-up start.
-		s32 MatchStartTimeMs; // S32_MIN if the demo doesn't have the match start.
-		s32 MatchEndTimeMs; // S32_MIN if the demo doesn't have the match end.
+
+		// The time the warm-up ends (countdown start), in milli-seconds.
+		// S32_MIN if not available.
+		s32 WarmUpEndTimeMs; 
+
+		// The time the match starts (countdown end), in milli-seconds.
+		// S32_MIN if not available.
+		s32 MatchStartTimeMs;
+
+		// The time the match ends, in milli-seconds.
+		// S32_MIN if not available.
+		s32 MatchEndTimeMs;
 	};
 
 	struct udtParseDataGameState
 	{
+		// Pointer to an array of match informations.
 		const udtMatchInfo* Matches;
+
+		// Number of elements in the array pointed to by the Matches pointer.
 		u32 MatchCount;
-		u32 FileOffset; // In bytes.
-		s32 FirstSnapshotTimeMs; // Server time. 
-		s32 LastSnapshotTimeMs; // Server time.
+
+		// File offset, in bytes, where the "gamestate" message is.
+		u32 FileOffset;
+
+		// Time of the first snapshot, in milli-seconds.
+		s32 FirstSnapshotTimeMs;
+
+		// Time of the last snapshot, in milli-seconds.
+		s32 LastSnapshotTimeMs;
 	};
 
 #pragma pack(pop)
@@ -212,22 +309,37 @@ extern "C"
 	UDT_API(s32) udtDestroyContext(udtParserContext* context);
 
 	// Splits a demo into multiple sub-demos if the input demo has more than 1 gamestate server message.
-	UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info, const char* outputFolderPath);
+	UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
 
 	// Creates a sub-demo starting and ending at the specified times.
-	UDT_API(s32) udtCutDemoByTime(udtParserContext* context, const udtCutByTimeArg* info);
+	UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath);
 
 	// Creates sub-demos around every occurrence of a matching chat command server message.
-	UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* info);
+	UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
 
 	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
-	// The "plugIns" arguments are of type udtParserPlugIn::Id.
-	UDT_API(s32) udtParseDemo(udtParserContext* context, const udtFileParseArg* info, const u32* plugIns, u32 plugInCount);
+	UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
 
 	// Gets the address and element count for the requested parse data type.
 	// The "plugInId" argument is of type udtParserPlugIn::Id.
 	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** buffer, u32* count);
+
+	//
+	// The configurable API for fine-grained task selection.
+	// All functions returning a s32 value return an error code of type udtErrorCode::Id.
+	// Batch processing functions.
+	//
+
+	// Releases all the resources associated to the context group.
+	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context);
+
+	// Reads through a group of demo files.
+	// Can be configured for various analysis and data extraction tasks.
+	UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo);
+
+	// Creates sub-demos around every occurrence of a matching chat command server message.
+	UDT_API(s32) udtCutDemoFilesByChat(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
 
 #ifdef __cplusplus
 }

@@ -208,14 +208,14 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 	return success;
 }
 
-UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info, const char* outputFolderPath)
+UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	if(context == NULL || info == NULL || info->FilePath == NULL)
+	if(context == NULL || info == NULL || demoFilePath == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(info->FilePath);
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
@@ -229,7 +229,7 @@ UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info
 	}
 
 	udtFileStream file;
-	if(!file.Open(info->FilePath, udtFileOpenMode::Read))
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -239,7 +239,7 @@ UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	context->Parser.SetFilePath(info->FilePath);
+	context->Parser.SetFilePath(demoFilePath);
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
@@ -255,7 +255,7 @@ UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info
 		return (s32)udtErrorCode::None;
 	}
 
-	if(!CreateDemoFileSplit(context->Context, file, info->FilePath, outputFolderPath, &analyzer.GamestateFileOffsets[0], analyzer.GamestateFileOffsets.GetSize()))
+	if(!CreateDemoFileSplit(context->Context, file, demoFilePath, info->OutputFolderPath, &analyzer.GamestateFileOffsets[0], analyzer.GamestateFileOffsets.GetSize()))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -263,14 +263,15 @@ UDT_API(s32) udtSplitDemo(udtParserContext* context, const udtFileParseArg* info
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtCutDemoByTime(udtParserContext* context, const udtCutByTimeArg* info)
+UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath)
 {
-	if(context == NULL || info == NULL || info->FilePath == NULL || info->StartTimeMs >= info->EndTimeMs)
+	if(context == NULL || info == NULL || demoFilePath == NULL || 
+	   cutInfo == NULL || cutInfo->Cuts == NULL || cutInfo->CutCount == 0)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(info->FilePath);
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -283,7 +284,7 @@ UDT_API(s32) udtCutDemoByTime(udtParserContext* context, const udtCutByTimeArg* 
 	}
 
 	udtFileStream file;
-	if(!file.Open(info->FilePath, udtFileOpenMode::Read))
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -296,10 +297,18 @@ UDT_API(s32) udtCutDemoByTime(udtParserContext* context, const udtCutByTimeArg* 
 	CallbackCutDemoFileStreamCreationInfo streamInfo;
 	streamInfo.OutputFolderPath = info->OutputFolderPath;
 
-	context->Parser.SetFilePath(info->FilePath);
-	context->Parser.AddCut(info->StartTimeMs, info->EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
+	context->Parser.SetFilePath(demoFilePath);
 
-	context->Context.LogInfo("Processing for a timed cut: %s", info->FilePath);
+	for(u32 i = 0; i < cutInfo->CutCount; ++i)
+	{
+		const udtCut& cut = cutInfo->Cuts[i];
+		if(cut.StartTimeMs < cut.EndTimeMs)
+		{
+			context->Parser.AddCut(cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
+		}
+	}
+
+	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
 
 	if(!RunParser(context->Parser, file))
 	{
@@ -309,7 +318,7 @@ UDT_API(s32) udtCutDemoByTime(udtParserContext* context, const udtCutByTimeArg* 
 	return (s32)udtErrorCode::None;
 }
 
-static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugInCutByChat& plugIn, udtProtocol::Id protocol, const udtCutByChatArg* info)
+static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugInCutByChat& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath)
 {
 	context->Reset();
 	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
@@ -318,7 +327,7 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 	}
 
 	udtFileStream file;
-	if(!file.Open(info->FilePath, udtFileOpenMode::Read))
+	if(!file.Open(filePath, udtFileOpenMode::Read))
 	{
 		return false;
 	}
@@ -328,10 +337,10 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 		return false;
 	}
 
-	context->Parser.SetFilePath(info->FilePath);
+	context->Parser.SetFilePath(filePath);
 	context->Parser.AddPlugIn(&plugIn);
 
-	context->Context.LogInfo("Processing for chat analysis: %s", info->FilePath);
+	context->Context.LogInfo("Processing for chat analysis: %s", filePath);
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
@@ -348,9 +357,10 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 	return true;
 }
 
-UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* info)
+UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
 {
-	if(context == NULL || info == NULL || info->FilePath == NULL || info->Rules == NULL || info->RuleCount == 0)
+	if(context == NULL || info == NULL || demoFilePath == NULL || 
+	   chatInfo == NULL || chatInfo->Rules == NULL || chatInfo->RuleCount == 0)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -360,14 +370,14 @@ UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* 
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(info->FilePath);
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	udtParserPlugInCutByChat plugIn(*info);
-	if(!GetCutByChatMergedSections(context, plugIn, protocol, info))
+	udtParserPlugInCutByChat plugIn(*chatInfo);
+	if(!GetCutByChatMergedSections(context, plugIn, protocol, info, demoFilePath))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -379,7 +389,7 @@ UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* 
 	}
 
 	udtFileStream file;
-	if(!file.Open(info->FilePath, udtFileOpenMode::Read))
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -389,7 +399,7 @@ UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	context->Parser.SetFilePath(info->FilePath);
+	context->Parser.SetFilePath(demoFilePath);
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
@@ -400,7 +410,7 @@ UDT_API(s32) udtCutDemoByChat(udtParserContext* context, const udtCutByChatArg* 
 		context->Parser.AddCut(sections[i].StartTimeMs, sections[i].EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
 	}
 
-	context->Context.LogInfo("Processing for chat cut(s): %s", info->FilePath);
+	context->Context.LogInfo("Processing for chat cut(s): %s", demoFilePath);
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
@@ -441,21 +451,22 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtParseDemo(udtParserContext* context, const udtFileParseArg* info, const u32* plugIns, u32 plugInCount)
+UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	if(context == NULL || info == NULL || plugIns == NULL || plugInCount == 0)
+	if(context == NULL || info == NULL || demoFilePath == 0 ||
+	   info->PlugInCount == 0 || info->PlugIns == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
 	context->Reset();
 
-	for(u32 i = 0; i < plugInCount; ++i)
+	for(u32 i = 0; i < info->PlugInCount; ++i)
 	{
-		context->CreateAndAddPlugIn(plugIns[i]);
+		context->CreateAndAddPlugIn(info->PlugIns[i]);
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(info->FilePath);
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return udtErrorCode::InvalidArgument;
@@ -467,7 +478,7 @@ UDT_API(s32) udtParseDemo(udtParserContext* context, const udtFileParseArg* info
 	}
 
 	udtFileStream file;
-	if(!file.Open(info->FilePath, udtFileOpenMode::Read))
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
 		return udtErrorCode::OperationFailed;
 	}
@@ -479,7 +490,7 @@ UDT_API(s32) udtParseDemo(udtParserContext* context, const udtFileParseArg* info
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	context->Parser.SetFilePath(info->FilePath);
+	context->Parser.SetFilePath(demoFilePath);
 	if(!RunParser(context->Parser, file))
 	{
 		return udtErrorCode::OperationFailed;
@@ -499,6 +510,42 @@ UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** 
 	{
 		return udtErrorCode::OperationFailed;
 	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO:
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo)
+{
+	if(context == NULL || info == NULL || extraInfo == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO:
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCutDemoFilesByChat(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
+{
+	if(context == NULL || info == NULL || extraInfo == NULL || chatInfo == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO:
 
 	return (s32)udtErrorCode::None;
 }

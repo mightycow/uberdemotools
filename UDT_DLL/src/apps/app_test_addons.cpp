@@ -96,11 +96,11 @@ static void PrintGameState(udtParserContext* context)
 
 static void TestAddOns(const char* filePath)
 {
-	udtFileParseArg info;
+	udtParseArg info;
 	memset(&info, 0, sizeof(info));
-	info.FilePath = filePath;
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = NULL;
+	info.PlugIns = parseOptions;
+	info.PlugInCount = (u32)countof(parseOptions);
 
 	PauseConsoleApp();
 
@@ -110,7 +110,7 @@ static void TestAddOns(const char* filePath)
 		return;
 	}
 
-	udtParseDemo(context, &info, parseOptions, (u32)countof(parseOptions));
+	udtParseDemoFile(context, &info, filePath);
 
 	PrintChat(context);
 	PrintGameState(context);
