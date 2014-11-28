@@ -38,5 +38,6 @@ struct udtBaseParserPlugIn
 	virtual void  ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void  FinishAnalysis() {}
 	virtual u32   GetElementCount() const = 0;
+	virtual u32   GetElementSize() const = 0;
 	virtual void* GetFirstElementAddress() = 0;
 };

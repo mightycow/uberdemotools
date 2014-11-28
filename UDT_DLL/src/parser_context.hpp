@@ -16,13 +16,21 @@ private:
 		udtParserPlugIn::Id Id;
 	};
 
+	struct PlugInData
+	{
+		u8* Items;
+		u32 ItemCount;
+	};
+
 public:
 	udtParserContext();
 	~udtParserContext();
 
 	void Reset();
 	void CreateAndAddPlugIn(u32 plugInId);
-	bool GetDataInfo(u32 plugInId, void** buffer, u32* count);
+	bool GetDataInfo(u32 demoIdx, u32 plugInId, void** buffer, u32* count);
+	void StartDemo();
+	void EndDemo();
 
 private:
 	void DestroyPlugIns();
@@ -32,4 +40,6 @@ public:
 	udtBaseParser Parser;
 	udtVMLinearAllocator PlugInAllocator;
 	udtVMArray<AddOnItem> PlugIns;
+	udtVMArray<PlugInData> DataItems; // There are PlugIns.Size() * DemoCount elements.
+	u32 DemoCount;
 };

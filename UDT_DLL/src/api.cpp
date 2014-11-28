@@ -245,10 +245,12 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	DemoSplitterAnalyzer analyzer;
 	context->Parser.AddPlugIn(&analyzer);
+	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
+	context->EndDemo();
 
 	if(analyzer.GamestateFileOffsets.GetSize() <= 1)
 	{
@@ -310,10 +312,12 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 
 	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
 
+	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
+	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
@@ -344,10 +348,12 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
+	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return false;
 	}
+	context->EndDemo();
 
 	if(plugIn.Analyzer.MergedCutSections.IsEmpty())
 	{
@@ -414,10 +420,12 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
+	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
+	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
@@ -491,22 +499,25 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	context->Parser.SetFilePath(demoFilePath);
+	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return udtErrorCode::OperationFailed;
 	}
+	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** buffer, u32* count)
+UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
 {
-	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL)
+	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||
+	   demoIdx >= context->DemoCount)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!context->GetDataInfo(plugInId, buffer, count))
+	if(!context->GetDataInfo(demoIdx, plugInId, buffer, count))
 	{
 		return udtErrorCode::OperationFailed;
 	}
@@ -518,6 +529,26 @@ struct udtParserContextGroup
 {
 	udtParserContext* Contexts;
 	u32 ContextCount;
+
+	void StartDemo(u32 contextIdx)
+	{
+		if(contextIdx >= ContextCount)
+		{
+			return;
+		}
+
+		Contexts[contextIdx].StartDemo();
+	}
+
+	void EndDemo(u32 contextIdx)
+	{
+		if(contextIdx >= ContextCount)
+		{
+			return;
+		}
+
+		Contexts[contextIdx].EndDemo();
+	}
 };
 
 static bool CreateContextGroup(udtParserContextGroup** contextGroupPtr, u32 contextCount)

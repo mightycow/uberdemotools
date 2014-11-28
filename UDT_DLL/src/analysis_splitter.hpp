@@ -14,6 +14,7 @@ public:
 
 	void  ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
 	u32   GetElementCount() const { return GamestateFileOffsets.GetSize(); }
+	u32   GetElementSize() const { return (u32)sizeof(u32); };
 	void* GetFirstElementAddress() { return GetElementCount() > 0 ? GamestateFileOffsets.GetStartAddress() : NULL; }
 
 	udtVMArray<u32> GamestateFileOffsets;

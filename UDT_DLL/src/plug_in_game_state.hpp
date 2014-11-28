@@ -18,6 +18,7 @@ public:
 	void  ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
 	void  FinishAnalysis();
 	u32   GetElementCount() const { return _gameStates.GetSize(); }
+	u32   GetElementSize() const { return (u32)sizeof(udtParseDataGameState); }
 	void* GetFirstElementAddress() { return _gameStates.GetStartAddress(); }
 
 private:

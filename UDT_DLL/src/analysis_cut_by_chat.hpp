@@ -73,6 +73,11 @@ public:
 		return Analyzer.MergedCutSections.GetSize();
 	}
 
+	u32 GetElementSize() const 
+	{
+		return (u32)sizeof(udtCutByChatAnalyzer::CutSection);
+	};
+
 	void* GetFirstElementAddress() 
 	{
 		return GetElementCount() > 0 ? Analyzer.MergedCutSections.GetStartAddress() : NULL;

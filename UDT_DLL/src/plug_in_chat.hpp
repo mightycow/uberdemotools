@@ -15,6 +15,7 @@ public:
 
 	void  ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
 	u32   GetElementCount() const { return ChatEvents.GetSize(); }
+	u32   GetElementSize() const { return (u32)sizeof(udtParseDataChat); }
 	void* GetFirstElementAddress() { return ChatEvents.GetStartAddress(); }
 
 private:

@@ -18,7 +18,7 @@ static void PrintChat(udtParserContext* context)
 {
 	void* buffer = NULL;
 	u32 count = 0;
-	if(udtGetDemoDataInfo(context, (u32)udtParserPlugIn::Chat, &buffer, &count) < 0)
+	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::Chat, &buffer, &count) < 0)
 	{
 		return;
 	}
@@ -66,7 +66,7 @@ static void PrintGameState(udtParserContext* context)
 {
 	void* buffer = NULL;
 	u32 count = 0;
-	if(udtGetDemoDataInfo(context, (u32)udtParserPlugIn::GameState, &buffer, &count) < 0)
+	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::GameState, &buffer, &count) < 0)
 	{
 		return;
 	}

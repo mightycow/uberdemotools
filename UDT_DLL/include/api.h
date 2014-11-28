@@ -323,7 +323,7 @@ extern "C"
 
 	// Gets the address and element count for the requested parse data type.
 	// The "plugInId" argument is of type udtParserPlugIn::Id.
-	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** buffer, u32* count);
+	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count);
 
 	//
 	// The configurable API for fine-grained task selection.
@@ -333,10 +333,16 @@ extern "C"
 
 	// Reads through a group of demo files.
 	// Can be configured for various analysis and data extraction tasks.
-	UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo);
+	UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo);
+
+	// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+	UDT_API(s32) udtGetGroupContextCount(udtParserContextGroup* contextGroup, u32* count);
+	UDT_API(s32) udtGetGroupContext(udtParserContextGroup* contextGroup, u32 contextIdx, udtParserContext** context);
+	UDT_API(s32) udtGetGroupDemoCount(udtParserContextGroup* contextGroup, u32* count);
+	UDT_API(s32) udtGetContextDemoCount(udtParserContext* context, u32* count);
 
 	// Releases all the resources associated to the context group.
-	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context);
+	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);
 
 	// Creates sub-demos around every occurrence of a matching chat command server message.
 	UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
