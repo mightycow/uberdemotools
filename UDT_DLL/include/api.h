@@ -139,7 +139,7 @@ extern "C"
 		udtCrashCallback CrashCb;
 
 		// Pointer to an array of file paths.
-		const char* FilePaths;
+		const char** FilePaths;
 
 		// Number of elements in the array pointed by FilePaths.
 		u32 FileCount;
@@ -331,15 +331,15 @@ extern "C"
 	// Batch processing functions.
 	//
 
-	// Releases all the resources associated to the context group.
-	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context);
-
 	// Reads through a group of demo files.
 	// Can be configured for various analysis and data extraction tasks.
 	UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo);
 
+	// Releases all the resources associated to the context group.
+	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context);
+
 	// Creates sub-demos around every occurrence of a matching chat command server message.
-	UDT_API(s32) udtCutDemoFilesByChat(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
+	UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
 
 #ifdef __cplusplus
 }

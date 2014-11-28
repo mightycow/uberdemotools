@@ -514,35 +514,134 @@ UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 plugInId, void** 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* context)
+struct udtParserContextGroup
 {
-	if(context == NULL)
+	udtParserContext* Contexts;
+	u32 ContextCount;
+};
+
+static bool CreateContextGroup(udtParserContextGroup** contextGroupPtr, u32 contextCount)
+{
+	if(contextCount == 0)
+	{
+		return false;
+	}
+
+	const size_t byteCount = sizeof(udtParserContextGroup) + contextCount * sizeof(udtParserContext);
+	udtParserContextGroup* const contextGroup = (udtParserContextGroup*)malloc(byteCount);
+	if(contextGroup == NULL)
+	{
+		return false;
+	}
+
+	new (contextGroup) udtParserContextGroup;
+
+	udtParserContext* const contexts = (udtParserContext*)(contextGroup + 1);
+	for(u32 i = 0; i < contextCount; ++i)
+	{
+		new (contexts + i) udtParserContext;
+	}
+
+	contextGroup->Contexts = contexts;
+	contextGroup->ContextCount = contextCount;
+	*contextGroupPtr = contextGroup;
+
+	return true;
+}
+
+static void DestroyContextGroup(udtParserContextGroup* contextGroup)
+{
+	if(contextGroup == NULL)
+	{
+		return;
+	}
+
+	udtParserContext* it = (udtParserContext*)(contextGroup + 1);
+	for(u32 i = 0; i < contextGroup->ContextCount; ++i)
+	{
+		it->~udtParserContext();
+	}
+
+	contextGroup->~udtParserContextGroup();
+}
+
+static u32 ComputeFinalThreadCount(const udtMultiParseArg* /*extraInfo*/)
+{
+	// @TODO:
+	return 1;
+}
+
+UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
+{
+	if(contextGroup == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
+	DestroyContextGroup(contextGroup);
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
+{
+	if(contextGroup == NULL || info == NULL || extraInfo == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const u32 threadCount = ComputeFinalThreadCount(extraInfo);
+	if(threadCount == 1)
+	{
+		udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
+		if(context == NULL)
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		for(u32 i = 0; i < extraInfo->FileCount; ++i)
+		{
+			udtParseDemoFile(context, info, extraInfo->FilePaths[i]);
+		}
+
+		udtDestroyContext(context);
+
+		return (s32)udtErrorCode::None;
+	}
+
+	if(!CreateContextGroup(contextGroup, threadCount))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
 	// @TODO:
 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo)
+UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
-	if(context == NULL || info == NULL || extraInfo == NULL)
+	if(info == NULL || extraInfo == NULL || chatInfo == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	// @TODO:
-
-	return (s32)udtErrorCode::None;
-}
-
-UDT_API(s32) udtCutDemoFilesByChat(udtParserContextGroup** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
-{
-	if(context == NULL || info == NULL || extraInfo == NULL || chatInfo == NULL)
+	const u32 threadCount = ComputeFinalThreadCount(extraInfo);
+	if(threadCount == 1)
 	{
-		return (s32)udtErrorCode::InvalidArgument;
+		udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
+		if(context == NULL)
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		for(u32 i = 0; i < extraInfo->FileCount; ++i)
+		{
+			udtCutDemoFileByChat(context, info, chatInfo, extraInfo->FilePaths[i]);
+		}
+
+		udtDestroyContext(context);
+
+		return (s32)udtErrorCode::None;
 	}
 
 	// @TODO:
