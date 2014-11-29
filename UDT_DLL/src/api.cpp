@@ -611,6 +611,24 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	return (s32)udtErrorCode::None;
 }
 
+static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
+{
+	udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		udtCutDemoFileByChat(context, info, chatInfo, extraInfo->FilePaths[i]);
+	}
+
+	udtDestroyContext(context);
+
+	return (s32)udtErrorCode::None;
+}
+
 UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
 	if(info == NULL || extraInfo == NULL || chatInfo == NULL)
@@ -622,20 +640,7 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
-		if(context == NULL)
-		{
-			return (s32)udtErrorCode::OperationFailed;
-		}
-
-		for(u32 i = 0; i < extraInfo->FileCount; ++i)
-		{
-			udtCutDemoFileByChat(context, info, chatInfo, extraInfo->FilePaths[i]);
-		}
-
-		udtDestroyContext(context);
-
-		return (s32)udtErrorCode::None;
+		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
 	}
 
 	// @TODO:
