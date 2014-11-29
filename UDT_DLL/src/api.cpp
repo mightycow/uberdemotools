@@ -4,6 +4,7 @@
 #include "utils.hpp"
 #include "file_system.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
 #include "analysis_cut_by_chat.hpp"
 
@@ -562,12 +563,6 @@ static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 	contextGroup->~udtParserContextGroup();
 }
 
-static u32 ComputeFinalThreadCount(const udtMultiParseArg* /*extraInfo*/)
-{
-	// @TODO:
-	return 1;
-}
-
 UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 {
 	if(contextGroup == NULL)
@@ -587,8 +582,9 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const u32 threadCount = ComputeFinalThreadCount(extraInfo);
-	if(threadCount == 1)
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
 	{
 		udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
 		if(context == NULL)
@@ -606,7 +602,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 		return (s32)udtErrorCode::None;
 	}
 
-	if(!CreateContextGroup(contextGroup, threadCount))
+	if(!CreateContextGroup(contextGroup, threadAllocator.Threads.GetSize()))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -622,8 +618,9 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const u32 threadCount = ComputeFinalThreadCount(extraInfo);
-	if(threadCount == 1)
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
 	{
 		udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
 		if(context == NULL)

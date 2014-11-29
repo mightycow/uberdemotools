@@ -253,6 +253,37 @@ static bool CutByChat(udtParserContext* context, const char* filePath, const Cut
 	return udtCutDemoFileByChat(context, &info, &chatInfo, filePath) == udtErrorCode::None;
 }
 
+static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByChatConfig& config)
+{
+	udtVMArray<const char*> filePaths;
+	const u32 fileCount = files.GetSize();
+	filePaths.Resize(fileCount);
+	for(u32 i = 0; i < fileCount; ++i)
+	{
+		filePaths[i] = files[i].Path;
+	}
+
+	udtParseArg info;
+	memset(&info, 0, sizeof(info));
+	info.MessageCb = &CallbackConsoleMessage;
+	info.ProgressCb = NULL;
+	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
+
+	udtMultiParseArg threadInfo;
+	memset(&threadInfo, 0, sizeof(threadInfo));
+	threadInfo.FilePaths = filePaths.GetStartAddress();
+	threadInfo.FileCount = fileCount;
+	threadInfo.MaxThreadCount = 4;
+
+	udtCutByChatArg chatInfo;
+	chatInfo.StartOffsetSec = config.StartOffsetSec;
+	chatInfo.EndOffsetSec = config.EndOffsetSec;
+	chatInfo.Rules = config.ChatRules.GetStartAddress();
+	chatInfo.RuleCount = config.ChatRules.GetSize();
+
+	return udtCutDemoFilesByChat(&info, &threadInfo, &chatInfo) == udtErrorCode::None;
+}
+
 static void PrintHelp()
 {
 	printf("???? help for UDT_cutter ????\n");
@@ -338,14 +369,7 @@ int main(int argc, char** argv)
 		query.TempAllocator = &tempAlloc;
 		GetDirectoryFileList(query);
 
-		int errorCode = -666;
-		for(u32 i = 0; i < files.GetSize(); ++i)
-		{
-			printf("\n");
-			errorCode -= CutByChat(context, files[i].Path, config) ? 1 : 0;
-		}
-
-		return errorCode;
+		return CutByChatMultiple(files, config);
 	}
 
 	printf("Four arguments, enabling cut by time.\n");

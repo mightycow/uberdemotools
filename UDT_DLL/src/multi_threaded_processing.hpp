@@ -7,7 +7,8 @@
 
 struct udtDemoThreadAllocator
 {
-	void Process(const char** filePaths, u32 fileCount, u32 maxThreadCount);
+	// Returns true if more than 1 thread should be launched.
+	bool Process(const char** filePaths, u32 fileCount, u32 maxThreadCount);
 
 	struct ThreadData
 	{
@@ -16,6 +17,7 @@ struct udtDemoThreadAllocator
 		u32 FileCount;
 	};
 
-	udtVMArray<u32> FinalFileIndices;
+	udtVMArray<const char*> FilePaths;
+	//udtVMArray<u64> FileSizes;
 	udtVMArray<ThreadData> Threads;
 };
