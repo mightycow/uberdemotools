@@ -245,12 +245,10 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	DemoSplitterAnalyzer analyzer;
 	context->Parser.AddPlugIn(&analyzer);
-	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
-	context->EndDemo();
 
 	if(analyzer.GamestateFileOffsets.GetSize() <= 1)
 	{
@@ -312,12 +310,10 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 
 	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
 
-	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
-	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
@@ -348,12 +344,10 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return false;
 	}
-	context->EndDemo();
 
 	if(plugIn.Analyzer.MergedCutSections.IsEmpty())
 	{
@@ -420,12 +414,10 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
-	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
@@ -468,11 +460,7 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	}
 
 	context->Reset();
-
-	for(u32 i = 0; i < info->PlugInCount; ++i)
-	{
-		context->CreateAndAddPlugIn(info->PlugIns[i]);
-	}
+	context->CreateAndAddPlugIns(info->PlugIns, info->PlugInCount);
 
 	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
@@ -499,12 +487,10 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	context->Parser.SetFilePath(demoFilePath);
-	context->StartDemo();
 	if(!RunParser(context->Parser, file))
 	{
 		return udtErrorCode::OperationFailed;
 	}
-	context->EndDemo();
 
 	return (s32)udtErrorCode::None;
 }
@@ -529,26 +515,6 @@ struct udtParserContextGroup
 {
 	udtParserContext* Contexts;
 	u32 ContextCount;
-
-	void StartDemo(u32 contextIdx)
-	{
-		if(contextIdx >= ContextCount)
-		{
-			return;
-		}
-
-		Contexts[contextIdx].StartDemo();
-	}
-
-	void EndDemo(u32 contextIdx)
-	{
-		if(contextIdx >= ContextCount)
-		{
-			return;
-		}
-
-		Contexts[contextIdx].EndDemo();
-	}
 };
 
 static bool CreateContextGroup(udtParserContextGroup** contextGroupPtr, u32 contextCount)
@@ -676,6 +642,61 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	}
 
 	// @TODO:
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)
+{
+	if(contextGroup == NULL || count == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*count = contextGroup->ContextCount;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetContextFromGroup(udtParserContextGroup* contextGroup, u32 contextIdx, udtParserContext** context)
+{
+	if(contextGroup == NULL || context == NULL || contextIdx >= contextGroup->ContextCount)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*context = &contextGroup->Contexts[contextIdx];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetDemoCountFromGroup(udtParserContextGroup* contextGroup, u32* count)
+{
+	if(contextGroup == NULL || count == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	u32 demoCount = 0;
+	for(u32 ctxIdx = 0, ctxCount = contextGroup->ContextCount; ctxIdx < ctxCount; ++ctxIdx)
+	{
+		const udtParserContext& context = contextGroup->Contexts[ctxIdx];
+		demoCount += context.GetDemoCount();
+	}
+
+	*count = demoCount;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count)
+{
+	if(context == NULL || count == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*count = context->GetDemoCount();
 
 	return (s32)udtErrorCode::None;
 }

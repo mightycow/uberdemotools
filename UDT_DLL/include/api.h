@@ -335,11 +335,17 @@ extern "C"
 	// Can be configured for various analysis and data extraction tasks.
 	UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo);
 
-	// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-	UDT_API(s32) udtGetGroupContextCount(udtParserContextGroup* contextGroup, u32* count);
-	UDT_API(s32) udtGetGroupContext(udtParserContextGroup* contextGroup, u32 contextIdx, udtParserContext** context);
-	UDT_API(s32) udtGetGroupDemoCount(udtParserContextGroup* contextGroup, u32* count);
-	UDT_API(s32) udtGetContextDemoCount(udtParserContext* context, u32* count);
+	// Gets the amount of contexts stored in the context group.
+	UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count);
+
+	// Gets a context in a context group.
+	UDT_API(s32) udtGetContextFromGroup(udtParserContextGroup* contextGroup, u32 contextIdx, udtParserContext** context);
+
+	// Gets the total demo count for which plug-in data is stored in a context group.
+	UDT_API(s32) udtGetDemoCountFromGroup(udtParserContextGroup* contextGroup, u32* count);
+
+	// Gets the demo count for which plug-in data is stored in a context.
+	UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count);
 
 	// Releases all the resources associated to the context group.
 	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);
