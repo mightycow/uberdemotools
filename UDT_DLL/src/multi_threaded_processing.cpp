@@ -141,6 +141,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 // @TODO: Move this.
 extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
+extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
 
 static void ThreadFunction(void* userData)
 {
@@ -151,22 +152,45 @@ static void ThreadFunction(void* userData)
 	}
 
 	udtParsingSharedData* const shared = data->Shared;
-	const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+	if(shared->JobType >= (u32)udtParsingJobType::Count)
+	{
+		return;
+	}
+
 	const udtParseArg* const info = shared->ParseInfo;
 	const u32 startIdx = data->FirstFileIndex;
 	const u32 endIdx = startIdx + data->FileCount;
-	for(u32 i = startIdx; i < endIdx; ++i)
+
+	if(shared->JobType == (u32)udtParsingJobType::CutByChat)
 	{
-		CutByChat(data->Context, info, chatInfo, shared->FilePaths[i]);
+		const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+		for(u32 i = startIdx; i < endIdx; ++i)
+		{
+			CutByChat(data->Context, info, chatInfo, shared->FilePaths[i]);
+		}
+	}
+	else if(shared->JobType == (u32)udtParsingJobType::General)
+	{
+		for(u32 i = startIdx; i < endIdx; ++i)
+		{
+			ParseDemoFile(data->Context, info, shared->FilePaths[i], false);
+		}
 	}
 }
 
-bool udtMultiThreadedParsing::Process(udtParserContext* contexts, 
-									  udtDemoThreadAllocator& threadInfo, 
+bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
+									  udtDemoThreadAllocator& threadInfo,
 									  const udtParseArg* parseInfo,
 									  const udtMultiParseArg* multiParseInfo,
+									  udtParsingJobType::Id jobType,
 									  const void* jobTypeSpecificInfo)
 {
+	assert(contexts != NULL);
+	assert(parseInfo != NULL);
+	assert(multiParseInfo != NULL);
+	assert(jobTypeSpecificInfo != NULL);
+	assert(jobType < (u32)udtParsingJobType::Count);
+
 	const u32 threadCount = threadInfo.Threads.GetSize();
 
 	udtParsingSharedData sharedData;
@@ -175,6 +199,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	sharedData.MultiParseInfo = multiParseInfo;
 	sharedData.ParseInfo = parseInfo;
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();
+	sharedData.JobType = (u32)jobType;
 
 	bool success = true;
 	udtVMArray<udtThread> threads;

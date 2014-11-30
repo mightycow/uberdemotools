@@ -5,12 +5,23 @@
 #include "array.hpp"
 
 
+struct udtParsingJobType
+{
+	enum Id
+	{
+		General,
+		CutByChat,
+		Count
+	};
+};
+
 struct udtParsingSharedData
 {
 	const char** FilePaths;
 	const udtParseArg* ParseInfo;
 	const udtMultiParseArg* MultiParseInfo;
 	const void* JobTypeSpecificInfo; // udtCutByChatArg etc
+	u32 JobType; // Of type udtParsingJobType.
 };
 
 struct udtParsingThreadData
@@ -39,5 +50,6 @@ struct udtMultiThreadedParsing
                  udtDemoThreadAllocator& threadInfo, 
 				 const udtParseArg* parseInfo, 
 				 const udtMultiParseArg* multiParseInfo,
+				 udtParsingJobType::Id jobType,
 				 const void* jobTypeSpecificInfo);
 };
