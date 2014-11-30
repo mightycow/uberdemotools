@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "threads.hpp"
 #include "parser_context.hpp"
+#include "system.hpp"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -41,7 +42,12 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		return false;
 	}
 
-	// @TODO: Get the processor's core count.
+	u32 processorCoreCount = 1;
+	GetProcessorCoreCount(processorCoreCount);
+	if(processorCoreCount == 1)
+	{
+		return false;
+	}
 
 	// Get file sizes and make sure we have enough data to process
 	// to even consider launching new threads.
@@ -64,6 +70,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Prepare the final thread array.
 	maxThreadCount = udt_min(maxThreadCount, (u32)4);
+	maxThreadCount = udt_min(maxThreadCount, processorCoreCount);
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / MIN_BYTE_SIZE_PER_THREAD));
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
@@ -91,7 +98,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Sort files by thread index.
 	qsort(files.GetStartAddress(), (size_t)fileCount, sizeof(FileInfo), &SortByThreadIndexAscending);
-	assert(files[0].ThreadIdx == 0);
+	assert(files[0].ThreadIdx == 0); // Ascending order means thread 0 is always first.
 
 	// Build and finalize the arrays.
 	u32 threadIdx = 0;
@@ -112,6 +119,22 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	}
 	Threads[threadIdx].FirstFileIndex = firstFileIdx;
 	Threads[threadIdx].FileCount = fileCount - firstFileIdx;
+
+#if defined(UDT_DEBUG)
+	// The following is to catch errors in the file distribution across threads.
+	for(u32 i = 0; i < finalThreadCount; ++i)
+	{
+		const u32 first = Threads[i].FirstFileIndex;
+
+		u64 totalByteCount = 0;
+		for(u32 j = 0; j < Threads[i].FileCount; ++i)
+		{
+			totalByteCount += udtFileStream::GetFileLength(FilePaths[first + j]);
+		}
+
+		assert(Threads[i].TotalByteCount == totalByteCount);
+	}
+#endif
 
 	return true;
 }

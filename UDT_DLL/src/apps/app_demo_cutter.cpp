@@ -4,6 +4,7 @@
 #include "shared.hpp"
 #include "file_system.hpp"
 #include "parser_context.hpp"
+#include "timer.hpp"
 
 #include <stdio.h>
 
@@ -369,7 +370,19 @@ int main(int argc, char** argv)
 		query.TempAllocator = &tempAlloc;
 		GetDirectoryFileList(query);
 
+		udtTimer timer;
+		timer.Start();
 		const bool success = CutByChatMultiple(files, config);
+		timer.Stop();
+		u64 totalByteCount = 0;
+		for(u32 i = 0, count = files.GetSize(); i < count; ++i)
+		{
+			totalByteCount += files[i].Size;
+		}
+		printf("Batch processing time: %d ms\n", (int)timer.GetElapsedMs());
+		const f64 elapsedSec = (f64)timer.GetElapsedMs() / 1000.0;
+		const f64 megs = (f64)totalByteCount / (f64)(1 << 20);
+		printf("Throughput: %.1f MB/s\n", (float)(megs / elapsedSec));
 
 		return success ? 0 : 999;
 	}
