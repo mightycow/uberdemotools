@@ -1,6 +1,8 @@
 #include "multi_threaded_processing.hpp"
 #include "file_stream.hpp"
 #include "utils.hpp"
+#include "threads.hpp"
+#include "parser_context.hpp"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -64,12 +66,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	maxThreadCount = udt_min(maxThreadCount, (u32)4);
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / MIN_BYTE_SIZE_PER_THREAD));
 	Threads.Resize(finalThreadCount);
-	for(u32 i = 0; i < finalThreadCount; ++i)
-	{
-		Threads[i].FileCount = 0;
-		Threads[i].FirstFileIndex = 0;
-		Threads[i].TotalByteCount = 0;
-	}
+	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 
 	// Sort files by size.
 	qsort(files.GetStartAddress(), (size_t)fileCount, sizeof(FileInfo), &SortByFileSizesDescending);
@@ -117,4 +114,71 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	Threads[threadIdx].FileCount = fileCount - firstFileIdx;
 
 	return true;
+}
+
+// @TODO: Move this.
+extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
+
+static void ThreadFunction(void* userData)
+{
+	udtParsingThreadData* const data = (udtParsingThreadData*)userData;
+	if(data == NULL)
+	{
+		return;
+	}
+
+	udtParsingSharedData* const shared = data->Shared;
+	const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+	const udtParseArg* const info = shared->ParseInfo;
+	const u32 startIdx = data->FirstFileIndex;
+	const u32 endIdx = startIdx + data->FileCount;
+	for(u32 i = startIdx; i < endIdx; ++i)
+	{
+		CutByChat(data->Context, info, chatInfo, shared->FilePaths[i]);
+	}
+}
+
+bool udtMultiThreadedParsing::Process(udtParserContext* contexts, 
+									  udtDemoThreadAllocator& threadInfo, 
+									  const udtParseArg* parseInfo,
+									  const udtMultiParseArg* multiParseInfo,
+									  const void* jobTypeSpecificInfo)
+{
+	const u32 threadCount = threadInfo.Threads.GetSize();
+
+	udtParsingSharedData sharedData;
+	memset(&sharedData, 0, sizeof(sharedData));
+	sharedData.JobTypeSpecificInfo = jobTypeSpecificInfo;
+	sharedData.MultiParseInfo = multiParseInfo;
+	sharedData.ParseInfo = parseInfo;
+	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();
+
+	bool success = true;
+	udtVMArray<udtThread> threads;
+	threads.Resize(threadCount);
+	for(u32 i = 0; i < threadCount; ++i)
+	{
+		udtThread& thread = threads[i];
+		new (&thread) udtThread;
+		threadInfo.Threads[i].Context = contexts + i;
+		threadInfo.Threads[i].Shared = &sharedData;
+		if(!thread.CreateAndStart(&ThreadFunction, &threadInfo.Threads[i]))
+		{
+			success = false;
+			goto thread_clean_up;
+		}
+	}
+
+	for(u32 i = 0; i < threadCount; ++i)
+	{
+		threads[i].Join();
+	}
+
+thread_clean_up:
+	for(u32 i = 0; i < threadCount; ++i)
+	{
+		threads[i].Release();
+	}
+
+	return success;
 }

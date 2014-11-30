@@ -12,7 +12,8 @@ struct udtThread
 	~udtThread();
 
 	bool CreateAndStart(ThreadEntryPoint entryPoint, void* userData);
-	bool Wait();
+	bool Join();
+	void Release();
 
 	// Do not use directly.
 	void InvokeUserFunction();

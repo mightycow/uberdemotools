@@ -358,6 +358,83 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 	return true;
 }
 
+// @TODO: Move this.
+bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
+{
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	udtParserPlugInCutByChat plugIn(*chatInfo);
+	if(!GetCutByChatMergedSections(context, plugIn, protocol, info, demoFilePath))
+	{
+		return false;
+	}
+
+	context->Reset();
+	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(demoFilePath);
+
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
+
+	const udtCutByChatAnalyzer::CutSectionVector& sections = plugIn.Analyzer.MergedCutSections;
+	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
+	{
+		context->Parser.AddCut(sections[i].StartTimeMs, sections[i].EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
+	}
+
+	context->Context.LogInfo("Processing for chat cut(s): %s", demoFilePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
+{
+	if(context == NULL || info == NULL || demoFilePath == NULL ||
+	   chatInfo == NULL || chatInfo->Rules == NULL || chatInfo->RuleCount == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(!CutByChat(context, info, chatInfo, demoFilePath))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+/*
 UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
 {
 	if(context == NULL || info == NULL || demoFilePath == NULL || 
@@ -422,7 +499,7 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 
 	return (s32)udtErrorCode::None;
 }
-
+*/
 UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb)
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -643,9 +720,18 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
 	}
 
-	// @TODO:
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
+	}
 
-	return (s32)udtErrorCode::None;
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, chatInfo);
+
+	DestroyContextGroup(contextGroup);
+
+	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)

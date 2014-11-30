@@ -369,7 +369,9 @@ int main(int argc, char** argv)
 		query.TempAllocator = &tempAlloc;
 		GetDirectoryFileList(query);
 
-		return CutByChatMultiple(files, config);
+		const bool success = CutByChatMultiple(files, config);
+
+		return success ? 0 : 999;
 	}
 
 	printf("Four arguments, enabling cut by time.\n");

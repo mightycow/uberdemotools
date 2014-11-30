@@ -51,14 +51,7 @@ udtThread::udtThread()
 
 udtThread::~udtThread()
 {
-	if(_threadhandle != NULL)
-	{
-#if defined(UDT_WINDOWS)
-		CloseHandle((HANDLE)_threadhandle);
-#else
-		free(_threadhandle);
-#endif
-	}
+	Release();
 }
 
 bool udtThread::CreateAndStart(ThreadEntryPoint entryPoint, void* userData)
@@ -97,7 +90,7 @@ bool udtThread::CreateAndStart(ThreadEntryPoint entryPoint, void* userData)
 #endif
 }
 
-bool udtThread::Wait()
+bool udtThread::Join()
 {
 	if(_threadhandle == NULL)
 	{
@@ -109,6 +102,20 @@ bool udtThread::Wait()
 #else
 	return pthread_join((pthread_t*)_threadhandle, NULL) == 0;
 #endif
+}
+
+void udtThread::Release()
+{
+	if(_threadhandle != NULL)
+	{
+#if defined(UDT_WINDOWS)
+		CloseHandle((HANDLE)_threadhandle);
+#else
+		free(_threadhandle);
+#endif
+
+		_threadhandle = NULL;
+	}
 }
 
 void udtThread::InvokeUserFunction()
