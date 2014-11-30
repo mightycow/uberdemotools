@@ -61,6 +61,7 @@ local function ApplyProjectSettings()
 	
 	filter "action:vs*"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		links { "Winmm" }
 	
 	filter { "action:vs*", "configurations:Debug" }
 		buildoptions { "" } -- Directly passed to the compiler.
