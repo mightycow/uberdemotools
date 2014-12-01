@@ -661,7 +661,10 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 {
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
-		udtParseDemoFile(context, info, extraInfo->FilePaths[i]);
+		if(!ParseDemoFile(context, info, extraInfo->FilePaths[i], false))
+		{
+			return udtErrorCode::OperationFailed;
+		}
 	}
 
 	return (s32)udtErrorCode::None;
@@ -672,6 +675,15 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	if(contextGroup == NULL || info == NULL || extraInfo == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
+		{
+			return udtErrorCode::InvalidArgument;
+		}
 	}
 
 	udtDemoThreadAllocator threadAllocator;
@@ -703,7 +715,12 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
-		udtCutDemoFileByChat(context, info, chatInfo, extraInfo->FilePaths[i]);
+		const s32 errorCode = udtCutDemoFileByChat(context, info, chatInfo, extraInfo->FilePaths[i]);
+		if(errorCode != (s32)udtErrorCode::None)
+		{
+			udtDestroyContext(context);
+			return errorCode;
+		}
 	}
 
 	udtDestroyContext(context);
