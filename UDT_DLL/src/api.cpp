@@ -350,11 +350,6 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 		return false;
 	}
 
-	if(plugIn.Analyzer.MergedCutSections.IsEmpty())
-	{
-		return false;
-	}
-
 	return true;
 }
 
@@ -371,6 +366,11 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 	if(!GetCutByChatMergedSections(context, plugIn, protocol, info, demoFilePath))
 	{
 		return false;
+	}
+
+	if(plugIn.Analyzer.MergedCutSections.IsEmpty())
+	{
+		return true;
 	}
 
 	context->Reset();

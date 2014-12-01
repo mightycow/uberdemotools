@@ -20,6 +20,7 @@ static const char* DefaultConfig =
 "RecursiveSearch 0\n"
 "UseCustomOutputFolder 0\n"
 "CustomOutputFolder \"\"\n"
+"MaxThreadCount 4\n"
 "\n"
 "[ChatRule]\n"
 "ChatOperator Contains\n"
@@ -40,6 +41,7 @@ struct CutByChatConfig
 {
 	CutByChatConfig()
 	{
+		MaxThreadCount = 4;
 		StartOffsetSec = 10;
 		EndOffsetSec = 10;
 		RecursiveSearch = false;
@@ -47,6 +49,7 @@ struct CutByChatConfig
 		CustomOutputFolder = NULL;
 	}
 
+	int MaxThreadCount;
 	int StartOffsetSec;
 	int EndOffsetSec;
 	bool RecursiveSearch;
@@ -181,7 +184,11 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 		}
 		else
 		{
-			if(StringEquals(tokenizer.argv(0), "StartOffset"))
+			if(StringEquals(tokenizer.argv(0), "MaxThreadCount"))
+			{
+				if(StringParseInt(tempInt, tokenizer.argv(1)) && tempInt > 0) config.MaxThreadCount = tempInt;
+			}
+			else if(StringEquals(tokenizer.argv(0), "StartOffset"))
 			{
 				if(StringParseInt(tempInt, tokenizer.argv(1))) config.StartOffsetSec = tempInt;
 			}
@@ -274,7 +281,7 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	memset(&threadInfo, 0, sizeof(threadInfo));
 	threadInfo.FilePaths = filePaths.GetStartAddress();
 	threadInfo.FileCount = fileCount;
-	threadInfo.MaxThreadCount = 4;
+	threadInfo.MaxThreadCount = (u32)config.MaxThreadCount;
 
 	udtCutByChatArg chatInfo;
 	chatInfo.StartOffsetSec = config.StartOffsetSec;

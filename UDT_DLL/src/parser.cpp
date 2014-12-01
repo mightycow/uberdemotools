@@ -347,7 +347,7 @@ void udtBaseParser::WriteLastMessage()
 	stream->Write(&length, 4, 1);
 	stream->Close();
 
-	_context->LogInfo("Stopped writing the demo.");
+	//_context->LogInfo("Stopped writing the demo.");
 }
 
 void udtBaseParser::ParseCommandString()
