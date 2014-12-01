@@ -1,5 +1,7 @@
 #include "shared.hpp"
 #include "utils.hpp"
+#include "file_system.hpp"
+#include "timer.hpp"
 #include "api.h"
 
 #include <stdio.h>
@@ -14,11 +16,11 @@ static const u32 parseOptions[] =
 };
 
 
-static void PrintChat(udtParserContext* context)
+static void PrintChat(udtParserContext* context, u32 demoIndex)
 {
 	void* buffer = NULL;
 	u32 count = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::Chat, &buffer, &count) < 0)
+	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Chat, &buffer, &count) < 0)
 	{
 		return;
 	}
@@ -62,11 +64,11 @@ static void PrintChat(udtParserContext* context)
 	}
 }
 
-static void PrintGameState(udtParserContext* context)
+static void PrintGameState(udtParserContext* context, u32 demoIndex)
 {
 	void* buffer = NULL;
 	u32 count = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::GameState, &buffer, &count) < 0)
+	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::GameState, &buffer, &count) < 0)
 	{
 		return;
 	}
@@ -102,20 +104,105 @@ static void TestAddOns(const char* filePath)
 	info.PlugIns = parseOptions;
 	info.PlugInCount = (u32)countof(parseOptions);
 
-	PauseConsoleApp();
-
 	udtParserContext* const context = udtCreateContext(NULL);
 	if(context == NULL)
 	{
 		return;
 	}
 
-	udtParseDemoFile(context, &info, filePath);
+	if(udtParseDemoFile(context, &info, filePath) != udtErrorCode::None)
+	{
+		udtDestroyContext(context);
+		return;
+	}
 
-	PrintChat(context);
-	PrintGameState(context);
+	PrintChat(context, 0);
+	PrintGameState(context, 0);
 
 	udtDestroyContext(context);
+}
+
+static void TestAddOnsThreaded(const udtVMArray<udtFileInfo>& files)
+{
+	const u32 fileCount = files.GetSize();
+	udtVMArray<const char*> filePaths;
+	filePaths.Resize(fileCount);
+	for(u32 i = 0; i < fileCount; ++i)
+	{
+		filePaths[i] = files[i].Path;
+	}
+
+	udtParseArg info;
+	memset(&info, 0, sizeof(info));
+	info.MessageCb = &CallbackConsoleMessage;
+	info.PlugIns = parseOptions;
+	info.PlugInCount = (u32)countof(parseOptions);
+
+	udtMultiParseArg extraInfo;
+	memset(&extraInfo, 0, sizeof(extraInfo));
+	extraInfo.FilePaths = filePaths.GetStartAddress();
+	extraInfo.FileCount = fileCount;
+	extraInfo.MaxThreadCount = 4;
+
+	udtTimer timer;
+	timer.Start();
+	udtParserContextGroup* contextGroup = NULL;
+	if(udtParseDemoFiles(&contextGroup, &info, &extraInfo) != udtErrorCode::None)
+	{
+		udtDestroyContextGroup(contextGroup);
+		return;
+	}
+	timer.Stop();
+
+	u64 totalByteCount = 0;
+	for(u32 i = 0, count = files.GetSize(); i < count; ++i)
+	{
+		totalByteCount += files[i].Size;
+	}
+	printf("Batch processing time: %d ms\n", (int)timer.GetElapsedMs());
+	const f64 elapsedSec = (f64)timer.GetElapsedMs() / 1000.0;
+	const f64 megs = (f64)totalByteCount / (f64)(1 << 20);
+	printf("Throughput: %.1f MB/s\n", (float)(megs / elapsedSec));
+
+	u32 contextCount = 0;
+	if(udtGetContextCountFromGroup(contextGroup, &contextCount) != udtErrorCode::None)
+	{
+		udtDestroyContextGroup(contextGroup);
+		return;
+	}
+
+	for(u32 i = 0; i < contextCount; ++i)
+	{
+		udtParserContext* context;
+		if(udtGetContextFromGroup(contextGroup, i, &context) != udtErrorCode::None)
+		{
+			continue;
+		}
+
+		u32 demoCount = 0;
+		if(udtGetDemoCountFromContext(context, &demoCount) != udtErrorCode::None)
+		{
+			continue;
+		}
+
+		for(u32 j = 0; j < demoCount; ++j)
+		{
+			printf("\n");
+			printf("Demo %d of %d (context %d of %d)\n", (int)(j + 1), (int)demoCount, (int)(i + 1), (int)contextCount);
+			printf("\n");
+			PauseConsoleApp();
+
+			PrintChat(context, j);
+			PrintGameState(context, j);
+		}
+	}
+
+	udtDestroyContextGroup(contextGroup);
+}
+
+bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
+{
+	return StringHasValidDemoFileExtension(name);
 }
 
 int main(int argc, char** argv)
@@ -128,13 +215,35 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	if(!udtFileStream::Exists(argv[1]) || !StringHasValidDemoFileExtension(argv[1]))
+	if(udtFileStream::Exists(argv[1]) && StringHasValidDemoFileExtension(argv[1]))
 	{
-		printf("Invalid file path: '%s'\n", argv[1]);
+		TestAddOns(argv[1]);
+	}
+	else if(IsValidDirectory(argv[1]))
+	{
+		udtVMArray<udtFileInfo> files;
+		udtVMLinearAllocator persistAlloc;
+		udtVMLinearAllocator tempAlloc;
+		persistAlloc.Init(1 << 24, 4096);
+		tempAlloc.Init(1 << 24, 4096);
+
+		udtFileListQuery query;
+		memset(&query, 0, sizeof(query));
+		query.FileFilter = &KeepOnlyDemoFiles;
+		query.Files = &files;
+		query.FolderPath = argv[1];
+		query.PersistAllocator = &persistAlloc;
+		query.Recursive = false;
+		query.TempAllocator = &tempAlloc;
+		GetDirectoryFileList(query);
+
+		TestAddOnsThreaded(files);
+	}
+	else
+	{
+		printf("Invalid file/folder path: '%s'\n", argv[1]);
 		return 2;
 	}
-
-	TestAddOns(argv[1]);
 
 	PauseConsoleApp();
 
