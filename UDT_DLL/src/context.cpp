@@ -42,7 +42,7 @@ udtContext::~udtContext()
 	Destroy();
 }
 
-bool udtContext::Init(udtMessageCallback messageCb, udtProgressCallback progressCb)
+bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb)
 {
 	_messageCallback = messageCb;
 	_progressCallback = progressCb;

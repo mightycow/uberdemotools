@@ -127,7 +127,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		const u32 first = Threads[i].FirstFileIndex;
 
 		u64 totalByteCount = 0;
-		for(u32 j = 0; j < Threads[i].FileCount; ++i)
+		for(u32 j = 0; j < Threads[i].FileCount; ++j)
 		{
 			totalByteCount += udtFileStream::GetFileLength(FilePaths[first + j]);
 		}
@@ -164,6 +164,11 @@ static void ThreadFunction(void* userData)
 	if(shared->JobType == (u32)udtParsingJobType::CutByChat)
 	{
 		const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+		if(chatInfo == NULL)
+		{
+			return;
+		}
+
 		for(u32 i = startIdx; i < endIdx; ++i)
 		{
 			CutByChat(data->Context, info, chatInfo, shared->FilePaths[i]);
@@ -188,7 +193,6 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	assert(contexts != NULL);
 	assert(parseInfo != NULL);
 	assert(multiParseInfo != NULL);
-	assert(jobTypeSpecificInfo != NULL);
 	assert(jobType < (u32)udtParsingJobType::Count);
 
 	const u32 threadCount = threadInfo.Threads.GetSize();

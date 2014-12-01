@@ -59,7 +59,11 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 
 u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 {
+	assert(_addressSpaceStart != NULL);
+
 	byteCount = (byteCount + 3) & (~3); // Will make sure the next alignment is 4-byte aligned, just like this one.
+	assert(_firstFreeByteIndex + byteCount <= _reservedByteCount); // We didn't reserve enough address space!
+
 	if(_firstFreeByteIndex + byteCount > _committedByteCount)
 	{
 		// How many more commit chunks do we need?

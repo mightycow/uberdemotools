@@ -224,7 +224,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	context->Reset();
 
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -279,7 +279,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	}
 
 	context->Reset();
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -322,7 +322,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugInCutByChat& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath)
 {
 	context->Reset();
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb))
 	{
 		return false;
 	}
@@ -374,7 +374,7 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 	}
 
 	context->Reset();
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb))
 	{
 		return false;
 	}
@@ -483,7 +483,7 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 		return false;
 	}
 
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb))
 	{
 		return false;
 	}
@@ -636,10 +636,10 @@ static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 		return;
 	}
 
-	udtParserContext* it = (udtParserContext*)(contextGroup + 1);
-	for(u32 i = 0; i < contextGroup->ContextCount; ++i)
+	const u32 contextCount = contextGroup->ContextCount;
+	for(u32 i = 0; i < contextCount; ++i)
 	{
-		it->~udtParserContext();
+		contextGroup->Contexts[i].~udtParserContext();
 	}
 
 	contextGroup->~udtParserContextGroup();
@@ -687,9 +687,10 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 		return udtParseDemoFiles_SingleThread((*contextGroup)->Contexts, info, extraInfo);
 	}
 	
-	// @TODO:
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process((*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
 
-	return (s32)udtErrorCode::None;
+	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
 }
 
 static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
