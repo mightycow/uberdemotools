@@ -113,8 +113,8 @@ void udtVMLinearAllocator::Purge()
 		return;
 	}
 
-	const u32 pageSizeM1 = UDT_MEMORY_PAGE_SIZE - 1;
-	u8* const memoryToDecommit = (u8*)((u32)(_addressSpaceStart + _firstFreeByteIndex + pageSizeM1) & (~pageSizeM1));
+	const uptr pageSizeM1 = (uptr)(UDT_MEMORY_PAGE_SIZE - 1);
+	u8* const memoryToDecommit = (u8*)((uptr)(_addressSpaceStart + _firstFreeByteIndex + pageSizeM1) & (~pageSizeM1));
 	u8* const committedEnd = _addressSpaceStart + _committedByteCount;
 	const u32 byteCount = (u32)(committedEnd - memoryToDecommit);
 	VirtualMemoryDecommit(memoryToDecommit, byteCount);

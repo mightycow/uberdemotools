@@ -191,7 +191,7 @@ struct udtTimerImpl
 		timespec endTime;
 		GetAbsoluteTime(&endTime);
 
-		return GetElapsedTimeNs(StartTime, endTime);
+		return ::GetElapsedTimeNs(StartTime, endTime);
 	}
 
 	clockid_t ClockId;

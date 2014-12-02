@@ -252,9 +252,9 @@ void udtHuffman::OffsetReceive(idHuffmanNode *node, s32 *ch, u8 *fin, s32 *offse
 	{
 		// myT: The following is equivalent to: node = get_bit(_bloc, fin) ? node->right : node->left
 		// myT: It kills any possibility that the compiler might generate a conditional branch.
-		const s32 bit = get_bit(_bloc, fin); 
-		const s32 mask = bit | (-bit);
-		const s32 result = (((s32)node->right ^ (s32)node->left) & mask) ^ (s32)node->left;
+		const sptr bit = (sptr)get_bit(_bloc, fin); 
+		const sptr mask = bit | (-bit);
+		const sptr result = (((sptr)node->right ^ (sptr)node->left) & mask) ^ (sptr)node->left;
 		node = (idHuffmanNode*)result;
 	}
 

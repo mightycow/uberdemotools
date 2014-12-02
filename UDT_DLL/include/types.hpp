@@ -34,6 +34,14 @@
 
 #endif
 
+#if defined(UDT_X86)
+typedef s32 sptr;
+typedef u32 uptr;
+#else
+typedef s64 sptr;
+typedef u64 uptr;
+#endif
+
 typedef float  f32;
 typedef double f64;
 

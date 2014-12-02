@@ -56,7 +56,7 @@ local function ApplyProjectSettings()
 		links { "Winmm" }
 		
 	filter "system:not windows"
-		links { "" }
+		links { "pthread", "rt" }
 
 	--
 	-- Visual Studio

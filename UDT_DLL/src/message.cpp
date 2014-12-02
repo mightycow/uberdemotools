@@ -238,7 +238,7 @@ playerState_t communication
 // 68
 //
 
-#define PSF(x) #x,(s32)&((idPlayerState68*)0)->x
+#define PSF(x) #x,(s32)(sptr)(&((idPlayerState68*)0)->x)
 
 static const idNetField PlayerStateFields68[] =
 {
@@ -300,7 +300,7 @@ static const s32 PlayerStateFieldCount68 = sizeof(PlayerStateFields68) / sizeof(
 // 73
 //
 
-#define PSF(x) #x,(s32)&((idPlayerState73*)0)->x
+#define PSF(x) #x,(s32)(sptr)(&((idPlayerState73*)0)->x)
 
 static const idNetField PlayerStateFields73[] =
 {
@@ -362,7 +362,7 @@ static const s32 PlayerStateFieldCount73 = sizeof(PlayerStateFields73) / sizeof(
 // 90
 //
 
-#define PSF(x) #x,(s32)&((idPlayerState90*)0)->x
+#define PSF(x) #x,(s32)(sptr)(&((idPlayerState90*)0)->x)
 
 static const idNetField PlayerStateFields90[] =
 {

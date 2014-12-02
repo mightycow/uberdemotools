@@ -6,6 +6,7 @@
 #else
 #	include <pthread.h>
 #	include <stdlib.h>
+#	include <string.h>
 #endif
 
 
@@ -100,7 +101,7 @@ bool udtThread::Join()
 #if defined(UDT_WINDOWS)
 	return WaitForSingleObject((HANDLE)_threadhandle, INFINITE) == WAIT_OBJECT_0;
 #else
-	return pthread_join((pthread_t*)_threadhandle, NULL) == 0;
+	return pthread_join(*(pthread_t*)_threadhandle, NULL) == 0;
 #endif
 }
 
@@ -124,7 +125,7 @@ bool udtThread::TimedJoin(u32 timeoutMs)
 	}
 	ts.tv_nsec += (long)timeoutMs * (long)1000000;
 
-	return pthread_timedjoin_np((pthread_t*)_threadhandle, NULL, &ts) == 0;
+	return pthread_timedjoin_np(*(pthread_t*)_threadhandle, NULL, &ts) == 0;
 
 #else
 
