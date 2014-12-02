@@ -405,12 +405,11 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	if(!RunParser(context->Parser, file))
-	{
-		return false;
-	}
+	context->Context.SetCallbacks(info->MessageCb, NULL);
+	const bool result = RunParser(context->Parser, file);
+	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb);
 
-	return true;
+	return result;
 }
 
 UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
@@ -672,7 +671,8 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 
 UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
-	if(contextGroup == NULL || info == NULL || extraInfo == NULL)
+	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -730,9 +730,25 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 
 UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
-	if(info == NULL || extraInfo == NULL || chatInfo == NULL)
+	if(info == NULL || extraInfo == NULL || chatInfo == NULL ||
+	   chatInfo->Rules == NULL || chatInfo->RuleCount == 0 || 
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
+		{
+			return udtErrorCode::InvalidArgument;
+		}
 	}
 
 	udtDemoThreadAllocator threadAllocator;
