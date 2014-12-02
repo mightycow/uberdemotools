@@ -3,8 +3,10 @@
 #include "shared.hpp"
 #include "utils.hpp"
 #include "analysis_splitter.hpp"
+#include "stack_trace.hpp"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
 static bool RunDemoSplitter(const char* filePath)
@@ -32,6 +34,17 @@ static void PrintHelp()
 	printf("Syntax: UDT_splitter demo_path\n");
 }
 
+static void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_splitter");
+
+	exit(666);
+}
+
 int main(int argc, char** argv)
 {
 	ResetCurrentDirectory(argv[0]);
@@ -49,6 +62,8 @@ int main(int argc, char** argv)
 		PrintHelp();
 		return 2;
 	}
+
+	udtSetCrashHandler(&CrashHandler);
 
 	const bool success = RunDemoSplitter(argv[1]);
 

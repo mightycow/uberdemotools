@@ -82,7 +82,7 @@ local function ApplyProjectSettings()
 	--
 	filter "action:gmake"
 		buildoptions { "-Wno-c++11-compat -Wno-invalid-offsetof" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		linkoptions { "-rdynamic" } -- Directly passed to the linker.
 	
 	filter { "action:gmake", "configurations:Debug" }
 		buildoptions { "" } -- Directly passed to the compiler.

@@ -2,9 +2,11 @@
 #include "utils.hpp"
 #include "file_system.hpp"
 #include "timer.hpp"
+#include "stack_trace.hpp"
 #include "api.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define countof(array) (sizeof(array) / sizeof(array[0]))
@@ -202,9 +204,20 @@ static void TestAddOnsThreaded(const udtVMArray<udtFileInfo>& files)
 	udtDestroyContextGroup(contextGroup);
 }
 
-bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 {
 	return StringHasValidDemoFileExtension(name);
+}
+
+static void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_test_addons");
+
+	exit(666);
 }
 
 int main(int argc, char** argv)
@@ -216,6 +229,8 @@ int main(int argc, char** argv)
 		printf("No file path given.\n");
 		return 1;
 	}
+
+	udtSetCrashHandler(&CrashHandler);
 
 	if(udtFileStream::Exists(argv[1]) && StringHasValidDemoFileExtension(argv[1]))
 	{

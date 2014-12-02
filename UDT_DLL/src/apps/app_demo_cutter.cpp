@@ -5,8 +5,10 @@
 #include "file_system.hpp"
 #include "parser_context.hpp"
 #include "timer.hpp"
+#include "stack_trace.hpp"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
 static const char* ConfigFilePath = "udt_cutter.cfg";
@@ -304,15 +306,28 @@ static void PrintHelp()
 	printf("All the rules/variables are read from the config file udt_cutter.cfg\n");
 }
 
-bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 {
 	return StringHasValidDemoFileExtension(name);
+}
+
+static void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_cutter");
+
+	exit(666);
 }
 
 int main(int argc, char** argv)
 {
 	ResetCurrentDirectory(argv[0]);
 	EnsureConfigExists(ConfigFilePath);
+
+	udtSetCrashHandler(&CrashHandler);
 
 	udtParserContext* const context = udtCreateContext();
 	if(context == NULL)
