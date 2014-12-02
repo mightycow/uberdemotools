@@ -204,6 +204,11 @@ struct udtTimerImpl
 udtTimer::udtTimer()
 {
 	_data = (udtTimerImpl*)malloc(sizeof(udtTimerImpl));
+	_data->ClockId = CLOCK_MONOTONIC;
+	_data->StartTime.tv_sec = 0;
+	_data->StartTime.tv_nsec = 0;
+	_data->ElapsedNs = 0;
+	_data->Running = false;
 }
 
 udtTimer::~udtTimer()
