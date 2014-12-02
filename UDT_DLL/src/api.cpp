@@ -4,6 +4,7 @@
 #include "utils.hpp"
 #include "file_system.hpp"
 #include "timer.hpp"
+#include "crash.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
@@ -136,6 +137,13 @@ UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
 	}
 	
 	return udtProtocol::Invalid;
+}
+
+UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
+{
+	SetCrashHandler(crashHandler);
+
+	return (s32)udtErrorCode::None;
 }
 
 static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
@@ -467,7 +475,7 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb)
+UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
 	udtParserContext* const context = (udtParserContext*)malloc(sizeof(udtParserContext));
@@ -477,7 +485,6 @@ UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb)
 	}
 
 	new (context) udtParserContext;
-	context->Context.SetCrashCallback(crashCb);
 
 	return context;
 }
@@ -724,7 +731,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 
 static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
-	udtParserContext* context = udtCreateContext(extraInfo->CrashCb);
+	udtParserContext* context = udtCreateContext();
 	if(context == NULL)
 	{
 		return (s32)udtErrorCode::OperationFailed;

@@ -105,7 +105,7 @@ static void TestAddOns(const char* filePath)
 	info.PlugIns = parseOptions;
 	info.PlugInCount = (u32)countof(parseOptions);
 
-	udtParserContext* const context = udtCreateContext(NULL);
+	udtParserContext* const context = udtCreateContext();
 	if(context == NULL)
 	{
 		return;

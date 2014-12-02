@@ -20,18 +20,9 @@
 extern const s32 HuffmanLUT[256];
 
 
-static void DefaultCrashCallback(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, "Fatal error: %s\n", message);
-	exit(666);
-}
-
-
 udtContext::udtContext()
 	: _messageCallback(NULL)
 	, _progressCallback(NULL)
-	, _crashCallback(&DefaultCrashCallback)
 	, _huffmanInitialized(false)
 {
 	TempAllocator.Init(1 << 24, 4096);
@@ -49,14 +40,6 @@ bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback 
 	_progressContext = progressContext;
 
 	return true;
-}
-
-void udtContext::SetCrashCallback(udtCrashCallback crashCb) 
-{
-	if(crashCb != NULL)
-	{
-		_crashCallback = crashCb;
-	}
 }
 
 void udtContext::SafeInitHuffman()

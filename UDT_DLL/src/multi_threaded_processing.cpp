@@ -263,6 +263,9 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	sharedData.FileSizes = threadInfo.FileSizes.GetStartAddress();
 	sharedData.JobType = (u32)jobType;
 
+	udtTimer timer;
+	timer.Start();
+
 	bool success = true;
 	udtVMArray<udtThread> threads;
 	threads.Resize(threadCount);
@@ -279,8 +282,6 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		}
 	}
 
-	udtTimer timer;
-	timer.Start();
 	for(;;)
 	{
 		// Find the first non-finished thread.

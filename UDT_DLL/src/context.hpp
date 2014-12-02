@@ -20,7 +20,6 @@ public:
 	~udtContext();
 
 	bool	SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext);
-	void    SetCrashCallback(udtCrashCallback crashCb);
 	void	SafeInitHuffman();
 	void    Reset();
 	void	Destroy();

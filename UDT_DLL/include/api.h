@@ -138,10 +138,6 @@ extern "C"
 
 	struct udtMultiParseArg
 	{
-		// Used fatal errors.
-		// If NULL, the default handler will be used.
-		udtCrashCallback CrashCb;
-
 		// Pointer to an array of file paths.
 		const char** FilePaths;
 
@@ -305,9 +301,12 @@ extern "C"
 	// All functions returning a s32 value return an error code of type udtErrorCode::Id.
 	//
 
+	// Sets the global fatal error handler.
+	// If you pass NULL, will set it back to the default handler.
+	UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler);
+
 	// Creates a context that can be used by multiple parsers.
-	// If crashCb is NULL, the default crash handler will be used.
-	UDT_API(udtParserContext*) udtCreateContext(udtCrashCallback crashCb);
+	UDT_API(udtParserContext*) udtCreateContext();
 
 	// Releases all the resources associated to the context.
 	UDT_API(s32) udtDestroyContext(udtParserContext* context);
