@@ -5,21 +5,21 @@
 
 
 #if defined(UDT_MSVC)
-	#if defined(UDT_CREATE_DLL)
-	#	define UDT_EXPORT_DLL __declspec(dllexport)
-	#else
-	#	define UDT_EXPORT_DLL __declspec(dllimport)
-	#endif
-#	define UDT_API_DECL(ReturnType) extern UDT_EXPORT_DLL ReturnType
-#	define UDT_API_DEF(ReturnType)  UDT_EXPORT_DLL ReturnType
+#	if defined(UDT_CREATE_DLL)
+#		define UDT_EXPORT_DLL          __declspec(dllexport)
+#	else
+#		define UDT_EXPORT_DLL          __declspec(dllimport)
+#	endif
+#	define UDT_API_DECL(ReturnType)    extern UDT_EXPORT_DLL ReturnType
+#	define UDT_API_DEF(ReturnType)     UDT_EXPORT_DLL ReturnType
 #elif defined(UDT_GCC)
-	#if defined(UDT_CREATE_DLL)
-	#	define UDT_EXPORT_DLL
-	#else
-	#	define UDT_EXPORT_DLL
-	#endif
-#	define UDT_API_DECL(ReturnType) extern ReturnType UDT_EXPORT_DLL
-#	define UDT_API_DEF(ReturnType)  ReturnType UDT_EXPORT_DLL
+#	if defined(UDT_CREATE_DLL)
+#		define UDT_EXPORT_DLL
+#	else
+#		define UDT_EXPORT_DLL
+#	endif
+#	define UDT_API_DECL(ReturnType)    extern ReturnType UDT_EXPORT_DLL
+#	define UDT_API_DEF(ReturnType)     ReturnType UDT_EXPORT_DLL
 #endif
 
 
@@ -52,7 +52,8 @@ struct udtProtocol
 	{
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 		AfterLastProtocol,
-		FirstProtocol = Dm68
+		FirstProtocol = Dm68,
+		Count = AfterLastProtocol - 1
 	};
 };
 #undef UDT_PROTOCOL_ITEM
@@ -73,7 +74,7 @@ struct udtChatOperator
 // 2. plug-in type (internal)
 // 3. plug-in data type (for the user)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat, udtParserPlugInChat, udtParseDataChat) \
+	N(Chat,      udtParserPlugInChat,      udtParseDataChat) \
 	N(GameState, udtParserPlugInGameState, udtParseDataGameState)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
@@ -105,7 +106,7 @@ extern "C"
 	typedef void (*udtCrashCallback)(const char* message);
 
 #pragma pack(push, 1)
-
+	
 	struct udtParseArg
 	{
 		// Pointer to an array of plug-ins IDs.
@@ -134,6 +135,9 @@ extern "C"
 		// May be 0.
 		// Unused when cutting.
 		u32 PlugInCount;
+
+		// Zero to proceed, non-zero to cancel the current operation.
+		s32 CancelOperation;
 	};
 
 	struct udtMultiParseArg

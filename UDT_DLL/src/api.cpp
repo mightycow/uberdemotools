@@ -288,7 +288,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	DemoSplitterAnalyzer analyzer;
 	context->Parser.AddPlugIn(&analyzer);
-	if(!RunParser(context->Parser, file))
+	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -353,7 +353,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 
 	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
 
-	if(!RunParser(context->Parser, file))
+	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -387,7 +387,7 @@ static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugI
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	if(!RunParser(context->Parser, file))
+	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return false;
 	}
@@ -448,7 +448,7 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	context->Context.SetCallbacks(info->MessageCb, NULL, NULL);
-	const bool result = RunParser(context->Parser, file);
+	const bool result = RunParser(context->Parser, file, info->CancelOperation);
 	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
 
 	return result;
@@ -542,7 +542,7 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	context->Parser.SetFilePath(demoFilePath);
-	if(!RunParser(context->Parser, file))
+	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return false;
 	}
@@ -767,11 +767,10 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 	{
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
-		const s32 errorCode = udtCutDemoFileByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
-		if(errorCode != (s32)udtErrorCode::None)
+		if(!CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]))
 		{
 			udtDestroyContext(context);
-			return errorCode;
+			return (s32)udtErrorCode::OperationFailed;
 		}
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
