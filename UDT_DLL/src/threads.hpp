@@ -13,6 +13,7 @@ struct udtThread
 
 	bool CreateAndStart(ThreadEntryPoint entryPoint, void* userData);
 	bool Join();
+	bool TimedJoin(u32 timeoutMs);
 	void Release();
 
 	// Do not use directly.

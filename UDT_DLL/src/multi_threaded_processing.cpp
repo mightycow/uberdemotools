@@ -75,6 +75,11 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / MIN_BYTE_SIZE_PER_THREAD));
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
+	for(u32 i = 0; i < finalThreadCount; ++i)
+	{
+		Threads[i].Finished = false;
+		Threads[i].Stop = false;
+	}
 
 	// Sort files by size.
 	qsort(files.GetStartAddress(), (size_t)fileCount, sizeof(FileInfo), &SortByFileSizesDescending);
@@ -182,6 +187,8 @@ static void ThreadFunction(void* userData)
 			ParseDemoFile(data->Context, info, shared->FilePaths[i], false);
 		}
 	}
+	
+	data->Finished = true;
 }
 
 bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
@@ -198,11 +205,16 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 
 	const u32 threadCount = threadInfo.Threads.GetSize();
 
+	// @TODO:
+	udtParseArg newParseInfo = *parseInfo;
+	newParseInfo.ProgressCb = NULL;
+	newParseInfo.ProgressContext = NULL;
+
 	udtParsingSharedData sharedData;
 	memset(&sharedData, 0, sizeof(sharedData));
 	sharedData.JobTypeSpecificInfo = jobTypeSpecificInfo;
 	sharedData.MultiParseInfo = multiParseInfo;
-	sharedData.ParseInfo = parseInfo;
+	sharedData.ParseInfo = &newParseInfo;
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();
 	sharedData.JobType = (u32)jobType;
 
@@ -222,11 +234,45 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		}
 	}
 
+	for(;;)
+	{
+		// Find the first non-finished thread.
+		u32 threadIdx = (u32)-1;
+		for(u32 i = 0; i < threadCount; ++i)
+		{
+			if(!threadInfo.Threads[i].Finished)
+			{
+				threadIdx = i;
+			}
+		}
+
+		if(threadIdx == (u32)-1)
+		{
+			// All threads are done or something went wrong.
+			break;
+		}
+
+		udtParsingThreadData& data = threadInfo.Threads[threadIdx];
+		if(threads[threadIdx].TimedJoin(UDT_MIN_PROGRESS_TIME_MS))
+		{
+			data.Finished = true;
+		}
+
+		// The actual progress is that of the slowest thread.
+		f32 progress = 2.0f;
+		for(u32 i = 0; i < threadCount; ++i)
+		{
+			progress = udt_min(progress, threadInfo.Threads[i].Progress);
+		}
+
+		(*parseInfo->ProgressCb)(progress, parseInfo->ProgressContext);
+	}
+	
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		threads[i].Join();
 	}
-
+	
 thread_clean_up:
 	for(u32 i = 0; i < threadCount; ++i)
 	{

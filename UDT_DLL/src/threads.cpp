@@ -98,9 +98,38 @@ bool udtThread::Join()
 	}
 	
 #if defined(UDT_WINDOWS)
-	return WaitForSingleObject((HANDLE)_threadhandle, INFINITE) != WAIT_OBJECT_0;
+	return WaitForSingleObject((HANDLE)_threadhandle, INFINITE) == WAIT_OBJECT_0;
 #else
 	return pthread_join((pthread_t*)_threadhandle, NULL) == 0;
+#endif
+}
+
+bool udtThread::TimedJoin(u32 timeoutMs)
+{
+	if(_threadhandle == NULL)
+	{
+		return false;
+	}
+
+#if defined(UDT_WINDOWS)
+
+	return WaitForSingleObject((HANDLE)_threadhandle, (DWORD)timeoutMs) == WAIT_OBJECT_0;
+
+#elif defined(_GNU_SOURCE)
+
+	timespec ts;
+	if(clock_gettime(CLOCK_REALTIME, &ts) == -1)
+	{
+		return false;
+	}
+	ts.tv_nsec += (long)timeoutMs * (long)1000000;
+
+	return pthread_timedjoin_np((pthread_t*)_threadhandle, NULL, &ts) == 0;
+
+#else
+
+#	error pthread_timedjoin_np doesn't exist on your platform
+
 #endif
 }
 

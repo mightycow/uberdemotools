@@ -32,6 +32,8 @@ struct udtParsingThreadData
 	u32 FirstFileIndex;
 	u32 FileCount;
 	f32 Progress;
+	bool Finished;
+	bool Stop;
 };
 
 struct udtDemoThreadAllocator

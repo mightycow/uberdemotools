@@ -92,16 +92,16 @@ struct udtParserPlugIn
 extern "C" 
 {
 #endif
-
-	// Return 0 to continue, anything else to cancel.
-	typedef s32 (*udtProgressCallback)(f32 progress, void* userData);
+	
+	// "userData" is the member variable udtParseArg::ProgressContext that you pass to API functions.
+	typedef void (*udtProgressCallback)(f32 progress, void* userData);
 
 	// Log levels: 0=info, 1=warning, 2=error, 3=error+crash.
 	typedef void (*udtMessageCallback)(s32 logLevel, const char* message);
 
 	// Called when UDT can't recover from the error.
 	// Implement to throw an exception, generate a stack trace, etc.
-	// Default behavior: calls exit.
+	// Default behavior: calls the C function exit.
 	typedef void (*udtCrashCallback)(const char* message);
 
 #pragma pack(push, 1)

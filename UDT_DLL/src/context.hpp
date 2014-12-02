@@ -29,7 +29,7 @@ public:
 	void	LogWarning(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
 	void	LogError(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
 	void	LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
-	bool	NotifyProgress(f32 progress) const; // Returns true if execution should stop.
+	void	NotifyProgress(f32 progress) const; // Returns true if execution should stop.
 
 public:
 	char	ReadStringBuffer[MAX_STRING_CHARS];

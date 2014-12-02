@@ -39,21 +39,21 @@ struct SingleThreadProgressContext
 	u64 ProcessedByteCount;
 	u64 CurrentJobByteCount;
 	udtProgressCallback UserCallback;
-	udtTimer* Timer;
 	void* UserData;
+	udtTimer* Timer;
 };
 
-static s32 SingleThreadProgressCallback(f32 jobProgress, void* userData)
+static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 {
 	SingleThreadProgressContext* const context = (SingleThreadProgressContext*)userData;
 	if(context == NULL || context->Timer == NULL || context->UserCallback == NULL)
 	{
-		return 0;
+		return;
 	}
 
 	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
 	{
-		return 0;
+		return;
 	}
 
 	context->Timer->Restart();
@@ -62,7 +62,7 @@ static s32 SingleThreadProgressCallback(f32 jobProgress, void* userData)
 	const u64 totalProcessed = context->ProcessedByteCount + jobProcessed;
 	const f32 realProgress = udt_clamp((f32)totalProcessed / (f32)context->TotalByteCount, 0.0f, 1.0f);
 
-	return (*context->UserCallback)(realProgress, context->UserData);
+	(*context->UserCallback)(realProgress, context->UserData);
 }
 
 UDT_API(const char*) udtGetVersionString()

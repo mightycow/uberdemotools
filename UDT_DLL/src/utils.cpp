@@ -30,11 +30,9 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 	fprintf(file, "\n");
 }
 
-s32 CallbackConsoleProgress(f32 progress, void* /*userData*/)
+void CallbackConsoleProgress(f32 progress, void*)
 {
 	printf("Progress: %f\n", progress);
-
-	return 0;
 }
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
@@ -731,10 +729,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file)
 			timer.Restart();
 			const u64 currentByteCount = (u64)fileOffset - fileStartOffset;
 			const f32 currentProgress = (f32)currentByteCount / (f32)maxByteCount;
-			if(parser._context->NotifyProgress(currentProgress))
-			{
-				return false;
-			}
+			parser._context->NotifyProgress(currentProgress);
 		}
 	}
 
