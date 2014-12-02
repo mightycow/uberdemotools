@@ -9,6 +9,8 @@
 // On Windows, MAX_PATH is 260.
 #define UDT_MAX_PATH_LENGTH 320
 
+#define UDT_MIN_PROGRESS_TIME_MS 50
+
 
 template<typename T>
 T udt_min(const T a, const T b)
@@ -22,6 +24,12 @@ T udt_max(const T a, const T b)
 	return a > b ? a : b;
 }
 
+template<typename T>
+T udt_clamp(const T x, const T a, const T b)
+{
+	return udt_min(udt_max(x, a), b);
+}
+
 
 struct CallbackCutDemoFileStreamCreationInfo
 {
@@ -30,7 +38,7 @@ struct CallbackCutDemoFileStreamCreationInfo
 
 extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData);
 extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
-extern s32	       CallbackConsoleProgress(f32 progress);
+extern s32	       CallbackConsoleProgress(f32 progress, void* userData);
 extern const char* GetFolderSeparator();
 extern u32         GetFolderSeparatorLength();
 extern bool        StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input);

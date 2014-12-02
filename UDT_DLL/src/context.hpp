@@ -19,7 +19,7 @@ public:
 	udtContext();
 	~udtContext();
 
-	bool	SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb);
+	bool	SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext);
 	void    SetCrashCallback(udtCrashCallback crashCb);
 	void	SafeInitHuffman();
 	void    Reset();
@@ -42,8 +42,9 @@ public:
 	udtVMLinearAllocator    TempAllocator;
 
 private:
-	udtMessageCallback      _messageCallback; // Can be NULL.
+	udtMessageCallback      _messageCallback;  // Can be NULL.
 	udtProgressCallback     _progressCallback; // Can be NULL.
-	udtCrashCallback        _crashCallback; // Can *NOT* be NULL.
+	udtCrashCallback        _crashCallback;    // Can *NOT* be NULL.
+	void*                   _progressContext;  // Can be NULL.
 	bool					_huffmanInitialized;
 };

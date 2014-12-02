@@ -94,7 +94,7 @@ extern "C"
 #endif
 
 	// Return 0 to continue, anything else to cancel.
-	typedef s32(*udtProgressCallback)(f32 progress);
+	typedef s32 (*udtProgressCallback)(f32 progress, void* userData);
 
 	// Log levels: 0=info, 1=warning, 2=error, 3=error+crash.
 	typedef void (*udtMessageCallback)(s32 logLevel, const char* message);
@@ -125,6 +125,10 @@ extern "C"
 
 		// May be NULL.
 		udtProgressCallback ProgressCb;
+
+		// May be NULL.
+		// This is passed as "userData" to "ProgressCb".
+		void* ProgressContext;
 
 		// Number of elements in the array pointed to by the PlugIns pointer.
 		// May be 0.

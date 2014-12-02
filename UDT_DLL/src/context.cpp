@@ -42,10 +42,11 @@ udtContext::~udtContext()
 	Destroy();
 }
 
-bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb)
+bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext)
 {
 	_messageCallback = messageCb;
 	_progressCallback = progressCb;
+	_progressContext = progressContext;
 
 	return true;
 }
@@ -164,7 +165,7 @@ bool udtContext::NotifyProgress(f32 progress) const
 {
 	if(_progressCallback != NULL)
 	{
-		return (*_progressCallback)(progress) != 0;
+		return (*_progressCallback)(progress, _progressContext) != 0;
 	}
 
 	return false;

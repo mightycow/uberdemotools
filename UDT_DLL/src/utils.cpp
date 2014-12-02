@@ -30,7 +30,7 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 	fprintf(file, "\n");
 }
 
-s32 CallbackConsoleProgress(f32 progress)
+s32 CallbackConsoleProgress(f32 progress, void* /*userData*/)
 {
 	printf("Progress: %f\n", progress);
 
@@ -726,7 +726,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file)
 			break;
 		}
 
-		if(timer.GetElapsedMs() >= 50)
+		if(timer.GetElapsedMs() >= UDT_MIN_PROGRESS_TIME_MS)
 		{
 			timer.Restart();
 			const u64 currentByteCount = (u64)fileOffset - fileStartOffset;
