@@ -71,6 +71,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	// Prepare the final thread array.
 	maxThreadCount = udt_min(maxThreadCount, (u32)4);
 	maxThreadCount = udt_min(maxThreadCount, processorCoreCount);
+	maxThreadCount = udt_min(maxThreadCount, fileCount);
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / MIN_BYTE_SIZE_PER_THREAD));
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
