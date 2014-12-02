@@ -565,52 +565,6 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	return (s32)udtErrorCode::None;
 }
 
-
-/*
-UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == 0 ||
-	   info->PlugInCount == 0 || info->PlugIns == NULL)
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	context->Reset();
-	context->CreateAndAddPlugIns(info->PlugIns, info->PlugInCount);
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return udtErrorCode::InvalidArgument;
-	}
-
-	if(!context->Context.Init(info->MessageCb, info->ProgressCb))
-	{
-		return udtErrorCode::OperationFailed;
-	}
-
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return udtErrorCode::OperationFailed;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol))
-	{
-		return udtErrorCode::OperationFailed;
-	}
-
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
-
-	context->Parser.SetFilePath(demoFilePath);
-	if(!RunParser(context->Parser, file))
-	{
-		return udtErrorCode::OperationFailed;
-	}
-
-	return (s32)udtErrorCode::None;
-}
-*/
 UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
 {
 	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||

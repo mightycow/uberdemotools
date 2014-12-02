@@ -4,6 +4,7 @@
 #include "threads.hpp"
 #include "parser_context.hpp"
 #include "system.hpp"
+#include "timer.hpp"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -110,6 +111,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	u32 threadIdx = 0;
 	u32 firstFileIdx = 0;
 	FilePaths.Resize(fileCount);
+	FileSizes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(files[i].ThreadIdx != threadIdx)
@@ -122,6 +124,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		}
 
 		FilePaths[i] = files[i].FilePath;
+		FileSizes[i] = files[i].ByteCount;
 	}
 	Threads[threadIdx].FirstFileIndex = firstFileIdx;
 	Threads[threadIdx].FileCount = fileCount - firstFileIdx;
@@ -149,6 +152,37 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
 extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
 
+struct MultiThreadedProgressContext
+{
+	u64 TotalByteCount;
+	u64 ProcessedByteCount;
+	u64 CurrentJobByteCount;
+	f32* Progress;
+	udtTimer* Timer;
+};
+
+static void MultiThreadedProgressProgressCallback(f32 jobProgress, void* userData)
+{
+	MultiThreadedProgressContext* const context = (MultiThreadedProgressContext*)userData;
+	if(context == NULL || context->Timer == NULL || context->Progress == NULL)
+	{
+		return;
+	}
+
+	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	{
+		return;
+	}
+
+	context->Timer->Restart();
+
+	const u64 jobProcessed = (u64)((f64)context->CurrentJobByteCount * (f64)jobProgress);
+	const u64 totalProcessed = context->ProcessedByteCount + jobProcessed;
+	const f32 realProgress = udt_clamp((f32)totalProcessed / (f32)context->TotalByteCount, 0.0f, 1.0f);
+
+	*context->Progress = realProgress;
+}
+
 static void ThreadFunction(void* userData)
 {
 	udtParsingThreadData* const data = (udtParsingThreadData*)userData;
@@ -163,31 +197,46 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
-	const udtParseArg* const info = shared->ParseInfo;
+	if(shared->JobType == (u32)udtParsingJobType::CutByChat && shared->JobTypeSpecificInfo == NULL)
+	{
+		return;
+	}
+
 	const u32 startIdx = data->FirstFileIndex;
 	const u32 endIdx = startIdx + data->FileCount;
 
-	if(shared->JobType == (u32)udtParsingJobType::CutByChat)
+	udtTimer timer;
+	timer.Start();
+
+	MultiThreadedProgressContext progressContext;
+	progressContext.TotalByteCount = data->TotalByteCount;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.Timer = &timer;
+	progressContext.Progress = &data->Progress;
+
+	udtParseArg newParseInfo = *shared->ParseInfo;
+	newParseInfo.ProgressCb = &MultiThreadedProgressProgressCallback;
+	newParseInfo.ProgressContext = &progressContext;
+
+	for(u32 i = startIdx; i < endIdx; ++i)
 	{
-		const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
-		if(chatInfo == NULL)
+		const u64 currentJobByteCount = shared->FileSizes[i];
+		progressContext.CurrentJobByteCount = currentJobByteCount;
+
+		if(shared->JobType == (u32)udtParsingJobType::CutByChat)
 		{
-			return;
+			const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+			CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
+		}
+		else if(shared->JobType == (u32)udtParsingJobType::General)
+		{
+			ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
 		}
 
-		for(u32 i = startIdx; i < endIdx; ++i)
-		{
-			CutByChat(data->Context, info, chatInfo, shared->FilePaths[i]);
-		}
+		progressContext.ProcessedByteCount += currentJobByteCount;
 	}
-	else if(shared->JobType == (u32)udtParsingJobType::General)
-	{
-		for(u32 i = startIdx; i < endIdx; ++i)
-		{
-			ParseDemoFile(data->Context, info, shared->FilePaths[i], false);
-		}
-	}
-	
+
 	data->Finished = true;
 }
 
@@ -205,17 +254,13 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 
 	const u32 threadCount = threadInfo.Threads.GetSize();
 
-	// @TODO:
-	udtParseArg newParseInfo = *parseInfo;
-	newParseInfo.ProgressCb = NULL;
-	newParseInfo.ProgressContext = NULL;
-
 	udtParsingSharedData sharedData;
 	memset(&sharedData, 0, sizeof(sharedData));
 	sharedData.JobTypeSpecificInfo = jobTypeSpecificInfo;
 	sharedData.MultiParseInfo = multiParseInfo;
-	sharedData.ParseInfo = &newParseInfo;
+	sharedData.ParseInfo = parseInfo;
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();
+	sharedData.FileSizes = threadInfo.FileSizes.GetStartAddress();
 	sharedData.JobType = (u32)jobType;
 
 	bool success = true;
@@ -234,6 +279,8 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		}
 	}
 
+	udtTimer timer;
+	timer.Start();
 	for(;;)
 	{
 		// Find the first non-finished thread.
@@ -257,6 +304,13 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		{
 			data.Finished = true;
 		}
+
+		if(timer.GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+		{
+			continue;
+		}
+
+		timer.Restart();
 
 		// The actual progress is that of the slowest thread.
 		f32 progress = 2.0f;

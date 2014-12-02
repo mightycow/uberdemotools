@@ -18,6 +18,7 @@ struct udtParsingJobType
 struct udtParsingSharedData
 {
 	const char** FilePaths;
+	u64* FileSizes;
 	const udtParseArg* ParseInfo;
 	const udtMultiParseArg* MultiParseInfo;
 	const void* JobTypeSpecificInfo; // udtCutByChatArg etc
@@ -42,7 +43,7 @@ struct udtDemoThreadAllocator
 	bool Process(const char** filePaths, u32 fileCount, u32 maxThreadCount);
 
 	udtVMArray<const char*> FilePaths;
-	//udtVMArray<u64> FileSizes;
+	udtVMArray<u64> FileSizes;
 	udtVMArray<udtParsingThreadData> Threads;
 };
 
