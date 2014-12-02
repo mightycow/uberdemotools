@@ -221,7 +221,7 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 	udtParseArg info;
 	memset(&info, 0, sizeof(info));
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = NULL;
+	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = outputFolder;
 	
 	udtCut cut;
@@ -249,7 +249,7 @@ static bool CutByChat(udtParserContext* context, const char* filePath, const Cut
 	udtParseArg info;
 	memset(&info, 0, sizeof(info));
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = NULL;
+	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
 
 	udtCutByChatArg chatInfo;
@@ -274,7 +274,7 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	udtParseArg info;
 	memset(&info, 0, sizeof(info));
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = NULL;
+	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
 
 	udtMultiParseArg threadInfo;

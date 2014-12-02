@@ -1,5 +1,6 @@
 #include "utils.hpp"
 #include "common.hpp"
+#include "timer.hpp"
 #include "scoped_stack_allocator.hpp"
 
 #include <cstdlib>
@@ -27,6 +28,13 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 	fprintf(file, LogLevels[logLevel]);
 	fprintf(file, message);
 	fprintf(file, "\n");
+}
+
+s32 CallbackConsoleProgress(f32 progress)
+{
+	printf("Progress: %f\n", progress);
+
+	return 0;
 }
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
@@ -669,6 +677,12 @@ bool RunParser(udtBaseParser& parser, udtStream& file)
 	inMsg.InitContext(context);
 	inMsg.InitProtocol(parser._protocol);
 
+	udtTimer timer;
+	timer.Start();
+
+	const u64 fileStartOffset = (u64)file.Offset();
+	const u64 fileEnd = file.Length();
+	const u64 maxByteCount = fileEnd - fileStartOffset;
 	for(;;)
 	{
 		const u32 fileOffset = (u32)file.Offset();
@@ -710,6 +724,17 @@ bool RunParser(udtBaseParser& parser, udtStream& file)
 		if(!parser.ParseNextMessage(inMsg, inServerMessageSequence, fileOffset))
 		{
 			break;
+		}
+
+		if(timer.GetElapsedMs() >= 50)
+		{
+			timer.Restart();
+			const u64 currentByteCount = (u64)fileOffset - fileStartOffset;
+			const f32 currentProgress = (f32)currentByteCount / (f32)maxByteCount;
+			if(parser._context->NotifyProgress(currentProgress))
+			{
+				return false;
+			}
 		}
 	}
 

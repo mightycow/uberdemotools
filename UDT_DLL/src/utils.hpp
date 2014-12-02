@@ -30,6 +30,7 @@ struct CallbackCutDemoFileStreamCreationInfo
 
 extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData);
 extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
+extern s32	       CallbackConsoleProgress(f32 progress);
 extern const char* GetFolderSeparator();
 extern u32         GetFolderSeparatorLength();
 extern bool        StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input);

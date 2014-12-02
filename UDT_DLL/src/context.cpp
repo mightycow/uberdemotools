@@ -160,12 +160,14 @@ void udtContext::LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...)
 	(*_crashCallback)(msg);
 }
 
-void udtContext::NotifyProgress(f32 progress) const
+bool udtContext::NotifyProgress(f32 progress) const
 {
 	if(_progressCallback != NULL)
 	{
-		(*_progressCallback)(progress);
+		return (*_progressCallback)(progress) != 0;
 	}
+
+	return false;
 }
 
 const s32 HuffmanLUT[256] = 
