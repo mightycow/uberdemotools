@@ -1,11 +1,18 @@
 #include "linear_allocator.hpp"
 #include "virtual_memory.hpp"
+#include "crash.hpp"
 
 #include <assert.h>
 
 
 // We don't use large pages (which are 1 MB large instead of 4 KB large).
-#define UDT_MEMORY_PAGE_SIZE 4096
+#define UDT_MEMORY_PAGE_SIZE    4096
+
+#if defined(UDT_DEBUG)
+#	define UDT_ASSERT_OR_FATAL(exp)    assert(exp)
+#else
+#	define UDT_ASSERT_OR_FATAL(exp)    FatalError(__FILE__, __LINE__, __FUNCTION__, #exp)
+#endif
 
 
 udtVMLinearAllocator::udtVMLinearAllocator()
@@ -30,8 +37,8 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 	}
 
 	// Let's reserve at least 2 pages and commit whole pages.
-	assert(reservedByteCount >= UDT_MEMORY_PAGE_SIZE * 2);
-	assert((commitByteCountGranularity % UDT_MEMORY_PAGE_SIZE) == 0);
+	UDT_ASSERT_OR_FATAL(reservedByteCount >= UDT_MEMORY_PAGE_SIZE * 2);
+	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % UDT_MEMORY_PAGE_SIZE) == 0);
 
 	u8* const data = (u8*)VirtualMemoryReserve(reservedByteCount);
 	if(data == NULL)
@@ -59,10 +66,10 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 
 u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 {
-	assert(_addressSpaceStart != NULL);
+	UDT_ASSERT_OR_FATAL(_addressSpaceStart != NULL);
 
 	byteCount = (byteCount + 3) & (~3); // Will make sure the next alignment is 4-byte aligned, just like this one.
-	assert(_firstFreeByteIndex + byteCount <= _reservedByteCount); // We didn't reserve enough address space!
+	UDT_ASSERT_OR_FATAL(_firstFreeByteIndex + byteCount <= _reservedByteCount); // We didn't reserve enough address space!
 
 	if(_firstFreeByteIndex + byteCount > _committedByteCount)
 	{
@@ -72,6 +79,7 @@ u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 		const u32 newByteCount = chunkCount * _commitByteCountGranularity;
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
+			UDT_ASSERT_OR_FATAL(false && "VirtualMemoryCommit failed");
 			return NULL;
 		}
 		_committedByteCount += newByteCount;
