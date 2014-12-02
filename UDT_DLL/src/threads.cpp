@@ -128,7 +128,7 @@ bool udtThread::TimedJoin(u32 timeoutMs)
 
 #else
 
-#	error pthread_timedjoin_np doesn't exist on your platform
+#	error "pthread_timedjoin_np doesn't exist on your platform"
 
 #endif
 }

@@ -1,7 +1,7 @@
 #include "system.hpp"
 
 
-#if defined(UDT_WINDOWS)
+#if defined(UDT_WINDOWS) && !(defined(__MINGW32__) || defined (__MINGW64__))
 
 
 #include <Windows.h>
@@ -44,6 +44,15 @@ bool GetProcessorCoreCount(u32& coreCount)
 	coreCount = count;
 
 	return true;
+}
+
+
+#elif defined(UDT_WINDOWS) && (defined(__MINGW32__) || defined (__MINGW64__))
+
+
+bool GetProcessorCoreCount(u32&)
+{
+	return false;
 }
 
 

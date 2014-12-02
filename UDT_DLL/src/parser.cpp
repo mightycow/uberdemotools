@@ -3,8 +3,8 @@
 
 
 udtBaseParser::udtBaseParser() 
-	: _inParseEntities((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
-	, _inEntityBaselines((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
+	: _inEntityBaselines((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
+	, _inParseEntities((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
 	, _inSnapshots((u32)(PACKET_BACKUP * sizeof(idLargestClientSnapshot)))
 {
 	_context = NULL;

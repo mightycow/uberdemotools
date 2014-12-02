@@ -50,6 +50,13 @@ local function ApplyProjectSettings()
 		
 	filter { "configurations:Release", "platforms:x64" }
 		targetdir ( path_bin.."/".._ACTION.."/x64/release" )
+		
+	filter "system:windows"
+		defines { "WIN32" }
+		links { "Winmm" }
+		
+	filter "system:not windows"
+		links { "" }
 
 	--
 	-- Visual Studio
@@ -61,7 +68,6 @@ local function ApplyProjectSettings()
 	
 	filter "action:vs*"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
-		links { "Winmm" }
 	
 	filter { "action:vs*", "configurations:Debug" }
 		buildoptions { "" } -- Directly passed to the compiler.
