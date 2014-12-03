@@ -41,12 +41,15 @@ static void PrintProgress(const char* label, int step, int total)
 
 	for(int i = 0; i < pos; ++i)
 	{
-		printf("%c", '=');
+		printf("=");
 	}
 
-	printf("% *c", width - pos + 1, ']');
+	for(int i = 0, end = width - pos + 1; i < end; ++i)
+	{
+		printf(" ");
+	}
 
-	printf(" %3d%%\r", percent);
+	printf("] %3d%%\r", percent);
 
 	fflush(stdout);
 }

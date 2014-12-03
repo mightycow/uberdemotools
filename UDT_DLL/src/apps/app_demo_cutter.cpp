@@ -315,14 +315,11 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
 		{
-			char* fileName;
+			char* fileName = NULL;
 			tempAllocator.Clear();
-			if(!GetFileName(fileName, tempAllocator, filePaths[i]))
-			{
-				fileName = "?";
-			}
+			GetFileName(fileName, tempAllocator, filePaths[i]);
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName, udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName != NULL ? fileName : "?", udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
