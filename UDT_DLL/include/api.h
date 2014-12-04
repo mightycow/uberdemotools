@@ -69,6 +69,17 @@ struct udtChatOperator
 	};
 };
 
+struct udtCrashType
+{
+	enum Id
+	{
+		FatalError,
+		ReadAccess,
+		WriteAccess,
+		Count
+	};
+};
+
 // Macro arguments:
 // 1. enum name 
 // 2. plug-in type (internal)
@@ -298,6 +309,9 @@ extern "C"
 
 	// Returns Protocol::Invalid if invalid.
 	UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath);
+
+	// Raises the type of error asked for.
+	UDT_API(s32) udtCrash(udtCrashType::Id crashType);
 
 	//
 	// The configurable API for fine-grained task selection.

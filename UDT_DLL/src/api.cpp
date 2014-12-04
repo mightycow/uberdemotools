@@ -139,6 +139,34 @@ UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
 	return udtProtocol::Invalid;
 }
 
+UDT_API(s32) udtCrash(udtCrashType::Id crashType)
+{
+	if((u32)crashType >= (u32)udtCrashType::Count)
+	{
+		return udtErrorCode::InvalidArgument;
+	}
+
+	switch(crashType)
+	{
+		case udtCrashType::FatalError:
+			FatalError(__FILE__, __LINE__, __FUNCTION__, "udtCrash test");
+			break;
+
+		case udtCrashType::ReadAccess:
+			printf("Bullshit: %d\n", *(int*)0);
+			break;
+
+		case udtCrashType::WriteAccess:
+			*(int*)0 = 1337;
+			break;
+
+		default:
+			break;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
 UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
 {
 	SetCrashHandler(crashHandler);

@@ -46,6 +46,14 @@ namespace Uber.DemoTools
             Count
         }
 
+        public enum udtCrashType : uint
+        {
+            FatalError,
+		    ReadAccess,
+		    WriteAccess,
+		    Count
+        }
+
         public enum udtParserPlugIn : uint
         {
             Chat,
@@ -104,21 +112,10 @@ namespace Uber.DemoTools
 		    public UInt32 StartOffsetSec;
 		    public UInt32 EndOffsetSec;
 	    }
-        /*
-        [StructLayout(LayoutKind.Sequential)]
-	    public struct udtChatEventData
-	    {
-		    public IntPtr OriginalCommand; // const char*
-		    public IntPtr ClanName; // const char*
-		    public IntPtr PlayerName; // const char*
-		    public IntPtr Message; // const char*
-	    }
-        */
+
 	    [StructLayout(LayoutKind.Sequential)]
         public struct udtParseDataChat
 	    {
-            //[MarshalAsAttribute(, SizeConst = 2)]
-		    //public udtChatEventData[] Strings;
             public IntPtr OriginalCommand; // const char*
             public IntPtr ClanName; // const char*
             public IntPtr PlayerName; // const char*
@@ -168,7 +165,10 @@ namespace Uber.DemoTools
 	    extern static private udtProtocol udtGetProtocolByFilePath(string filePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtSetCrashHandler(udtCrashCallback crashHandler);
+        extern static private udtErrorCode udtCrash(udtCrashType crashType);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtSetCrashHandler(IntPtr crashHandler);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 	    extern static private udtParserContextRef udtCreateContext();
@@ -226,6 +226,19 @@ namespace Uber.DemoTools
             }
 
             return Marshal.PtrToStringAnsi(version) ?? "N/A";
+        }
+
+        public static bool Crash(udtCrashType crashType)
+        {
+            return udtCrash(crashType) == udtErrorCode.None;
+        }
+
+        public static bool SetFatalErrorHandler(udtCrashCallback handler)
+        {
+            GCHandle.Alloc(handler);
+            var address = Marshal.GetFunctionPointerForDelegate(handler);
+
+            return udtSetCrashHandler(address) == udtErrorCode.None;
         }
 
         public static DemoInfo ParseDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)

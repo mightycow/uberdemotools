@@ -116,6 +116,8 @@ namespace Uber.DemoTools
         {
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
+            UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
+
             LoadConfig();
 
             _altListBoxBg = new AlternatingListBoxBackground(Colors.White, Color.FromRgb(223, 223, 223));
@@ -1277,6 +1279,11 @@ namespace Uber.DemoTools
 
                 File.WriteAllText(saveFileDialog.FileName,  GetLog());
             }
+        }
+
+        private void FatalErrorHandler(string errorMessage)
+        {
+            throw new Exception(errorMessage);
         }
     }
 }
