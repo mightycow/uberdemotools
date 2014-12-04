@@ -26,6 +26,7 @@ namespace Uber.DemoTools
         private CheckBox _folderScanModeCheckBox = null;
         private CheckBox _skipFolderScanModeCheckBox = null;
         private FrameworkElement _skipRecursiveDialog = null;
+        private TextBox _maxThreadCountTextBox = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<ListView> ListViews { get { return null; } }
@@ -40,6 +41,7 @@ namespace Uber.DemoTools
         {
             config.OutputToInputFolder = _outputModeCheckBox.IsChecked ?? false;
             config.OutputFolder = _outputFolderTextBox.Text;
+            GetMaxThreadCount(ref config.MaxThreadCount);
         }
 
         public void PopulateViews(DemoInfo demoInfo)
@@ -119,6 +121,14 @@ namespace Uber.DemoTools
             folderScanModeCheckBox.Checked += (obj, args) => OnFolderScanRecursiveChecked();
             folderScanModeCheckBox.Unchecked += (obj, args) => OnFolderScanRecursiveUnchecked();
 
+            var maxThreadCountTextBox = new TextBox();
+            _maxThreadCountTextBox = maxThreadCountTextBox;
+            maxThreadCountTextBox.ToolTip = "The maximum number of threads that you allow UDT to use during batch process operations";
+            maxThreadCountTextBox.HorizontalAlignment = HorizontalAlignment.Left;
+            maxThreadCountTextBox.VerticalAlignment = VerticalAlignment.Center;
+            maxThreadCountTextBox.Text = _app.Config.MaxThreadCount.ToString();
+            maxThreadCountTextBox.Width = 25;
+
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
@@ -127,6 +137,7 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Chat History", skipChatOffsetsDialogCheckBox));
             panelList.Add(App.CreateTuple("Recursive Scan", skipFolderScanModeCheckBox));
             panelList.Add(App.CreateTuple("=> Recursive", folderScanModeCheckBox));
+            panelList.Add(App.CreateTuple("Max Thread Count", maxThreadCountTextBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -225,6 +236,20 @@ namespace Uber.DemoTools
         private void OnFolderScanRecursiveUnchecked()
         {
             _app.Config.ScanFoldersRecursively = false;
+        }
+
+        private void GetMaxThreadCount(ref int maxThreadCount)
+        {
+            int value = 0;
+            if(!int.TryParse(_maxThreadCountTextBox.Text, out value))
+            {
+                return;
+            }
+
+            if(value > 0)
+            {
+                maxThreadCount = value;
+            }
         }
     }
 }
