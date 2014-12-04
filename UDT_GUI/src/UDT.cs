@@ -320,8 +320,8 @@ namespace Uber.DemoTools
                 for(uint j = 0; j < demoCount; ++j)
                 {
                     var info = new DemoInfo();
-                    info.FilePath = "N/A";
-                    info.Protocol = "N/A";
+                    info.FilePath = "?";
+                    info.Protocol = "?";
 
                     uint inputIdx = 0;
                     if(udtGetDemoInputIndex(context, j, ref inputIdx) == udtErrorCode.None)

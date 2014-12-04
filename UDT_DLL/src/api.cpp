@@ -667,6 +667,12 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 		totalByteCount += byteCount;
 	}
 
+	context->InputIndices.Resize(extraInfo->FileCount);
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		context->InputIndices[i] = i;
+	}
+
 	SingleThreadProgressContext progressContext;
 	progressContext.Timer = &timer;
 	progressContext.UserCallback = info->ProgressCb;
@@ -881,7 +887,8 @@ UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count)
 
 UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* demoInputIdx)
 {
-	if(context == NULL || demoInputIdx == NULL || demoIdx >= context->GetDemoCount())
+	if(context == NULL || demoInputIdx == NULL || 
+	   demoIdx >= context->GetDemoCount() || demoIdx >= context->InputIndices.GetSize())
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}

@@ -276,12 +276,12 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		udtParserContext* const context = contexts + i;
-		const u32 fileCount = threadInfo.Threads[i].FileCount;
-		const u32 firstFileIdx = threadInfo.Threads[i].FirstFileIndex;
-		context->InputIndices.Resize(fileCount);
-		for(u32 j = 0; j < fileCount; ++j)
+		const u32 demoCount = threadInfo.Threads[i].FileCount;
+		const u32 firstDemoIdx = threadInfo.Threads[i].FirstFileIndex;
+		context->InputIndices.Resize(demoCount);
+		for(u32 j = 0; j < demoCount; ++j)
 		{
-			context->InputIndices[j] = threadInfo.InputIndices[firstFileIdx + j];
+			context->InputIndices[j] = threadInfo.InputIndices[firstDemoIdx + j];
 		}
 
 		udtThread& thread = threads[i];
