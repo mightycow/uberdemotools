@@ -8,6 +8,15 @@ using System.Windows.Controls;
 
 namespace Uber.DemoTools
 {
+    public enum ComponentType
+    {
+        Settings,
+        ChatEvents,
+        CutByTime,
+        CutByChat,
+        Count
+    }
+
     public interface AppComponent
     {
         void PopulateViews(DemoInfo demoInfo);
@@ -15,6 +24,7 @@ namespace Uber.DemoTools
 
         FrameworkElement RootControl { get; }
         List<ListView> ListViews { get; }
+        ComponentType Type { get; }
     }
 
     public class AppSettingsComponent : AppComponent
@@ -30,6 +40,7 @@ namespace Uber.DemoTools
 
         public FrameworkElement RootControl { get; private set; }
         public List<ListView> ListViews { get { return null; } }
+        public ComponentType Type { get { return ComponentType.Settings; } }
 
         public AppSettingsComponent(App app)
         {

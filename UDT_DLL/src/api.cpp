@@ -22,7 +22,9 @@
 
 #define UDT_API UDT_API_DEF
 
-static const char* VersionString = "0.0.0";
+
+static const char* VersionString = "0.3.0";
+
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
 static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =

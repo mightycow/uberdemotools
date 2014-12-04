@@ -98,8 +98,9 @@ namespace Uber.DemoTools
         private List<FrameworkElement> _rootElements = new List<FrameworkElement>();
         private List<DemoInfo> _demos = new List<DemoInfo>();
         private AlternatingListBoxBackground _altListBoxBg = null;
-        private UDT_DLL.udtParseArg _parseArg = new UDT_DLL.udtParseArg();
         private List<AppComponent> _appComponents = new List<AppComponent>();
+        private AppComponent _cutByTimeComponent = null;
+        private IntPtr _mainThreadContext = IntPtr.Zero;
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
@@ -108,9 +109,20 @@ namespace Uber.DemoTools
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
 
+        public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
+
         public UdtConfig Config
         {
             get { return _config; }
+        }
+
+        public DemoInfo SelectedDemo
+        {
+            get
+            {
+                var index = _demoListView.SelectedIndex;
+                return (index == -1) ? null : _demos[index];
+            }
         }
 
         public App(string[] cmdLineArgs)
@@ -136,10 +148,12 @@ namespace Uber.DemoTools
             var demoChatTab = new TabItem();
             demoChatTab.Header = "Chat";
             demoChatTab.Content = chatEvents.RootControl;
-            
+
+            _cutByTimeComponent = new CutByTimeComponent(this);
+            _appComponents.Add(_cutByTimeComponent);
             var cutTimeTab = new TabItem();
             cutTimeTab.Header = "Cut by Time";
-            cutTimeTab.Content = new Label(); // @TODO:
+            cutTimeTab.Content = _cutByTimeComponent.RootControl;
 
             var cutChatTab = new TabItem();
             cutChatTab.Header = "Cut by Chat";
@@ -810,7 +824,7 @@ namespace Uber.DemoTools
             AddDemos(droppedFilePaths, droppedFolderPaths);
         }
 
-        private void DisableUiNonThreadSafe()
+        public void DisableUiNonThreadSafe()
         {
             _progressGroupBox.Visibility = Visibility.Visible;
             _progressBar.Value = 0;
@@ -820,7 +834,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private void EnableUiThreadSafe()
+        public void EnableUiThreadSafe()
         {
             VoidDelegate guiResetter = delegate
             {
@@ -894,7 +908,7 @@ namespace Uber.DemoTools
             _demoListView.Items.Add(item);
         }
 
-        private string GetOutputFolder()
+        public string GetOutputFolder()
         {
             return _config.OutputToInputFolder ? null : _config.OutputFolder;
         }
@@ -908,16 +922,16 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
-            _parseArg.CancelOperation = 0;
-            _parseArg.MessageCb = DemoLoggingCallback;
-            _parseArg.OutputFolderPath = outputFolderPtr;
-            _parseArg.ProgressCb = DemoProgressCallback;
-            _parseArg.ProgressContext = IntPtr.Zero;
+            ParseArg.CancelOperation = 0;
+            ParseArg.MessageCb = DemoLoggingCallback;
+            ParseArg.OutputFolderPath = outputFolderPtr;
+            ParseArg.ProgressCb = DemoProgressCallback;
+            ParseArg.ProgressContext = IntPtr.Zero;
 
             List<DemoInfo> demoInfos = null;
             try
             {
-                demoInfos = UDT_DLL.ParseDemos(ref _parseArg, filePaths, _config.MaxThreadCount);
+                demoInfos = UDT_DLL.ParseDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {
@@ -992,7 +1006,7 @@ namespace Uber.DemoTools
             Serializer.FromXml("Config.xml", out _config);
         }
 
-        private void SaveConfig()
+        public void SaveConfig()
         {
             foreach(var component in _appComponents)
             {
@@ -1019,7 +1033,7 @@ namespace Uber.DemoTools
             return a2.CompareTo(b2);
         }
 
-        private static bool GetTimeSeconds(string text, out int time)
+        public static bool GetTimeSeconds(string text, out int time)
         {
             time = -1;
 
@@ -1046,7 +1060,7 @@ namespace Uber.DemoTools
             return false;
         }
 
-        private static bool GetOffsetSeconds(string text, out int time)
+        public static bool GetOffsetSeconds(string text, out int time)
         {
             time = -1;
 
@@ -1102,9 +1116,106 @@ namespace Uber.DemoTools
             }
         }
 
+        private bool ParseMinutesSeconds(string time, out int totalSeconds)
+        {
+            totalSeconds = -1;
+
+            int colonIdx = time.IndexOf(':');
+            if(colonIdx < 0)
+            {
+                return false;
+            }
+
+            int minutes = -1;
+            if(!int.TryParse(time.Substring(0, colonIdx), out minutes))
+            {
+                return false;
+            }
+
+            int seconds = -1;
+            if(!int.TryParse(time.Substring(colonIdx + 1), out seconds))
+            {
+                return false;
+            }
+
+            totalSeconds = 60 * minutes + seconds;
+
+            return true;
+        }
+
+        public static string FormatMinutesSeconds(int totalSeconds)
+        {
+            var minutes = totalSeconds / 60;
+            var seconds = totalSeconds % 60;
+
+            return minutes.ToString() + ":" + seconds.ToString("00");
+        }
+
         public void OnCutByTimeContextClicked(ListView listView)
         {
-            // @TODO:
+            var items = listView.SelectedItems;
+            if(items.Count == 0)
+            {
+                return;
+            }
+
+            var cutByTimeComponent = _cutByTimeComponent as CutByTimeComponent;
+            if(cutByTimeComponent == null)
+            {
+                return;
+            }
+
+            int startOffset = _config.ChatCutStartOffset;
+            int endOffset = _config.ChatCutEndOffset;
+            if(!_config.SkipChatOffsetsDialog)
+            {
+                var dialog = new TimeOffsetsDialog(_window, _config.ChatCutStartOffset, _config.ChatCutEndOffset);
+                if(!dialog.Valid)
+                {
+                    return;
+                }
+
+                startOffset = dialog.StartOffset;
+                endOffset = dialog.EndOffset;
+            }
+
+            int startTime = int.MaxValue;
+            int endTime = int.MinValue;
+            foreach(var item in items)
+            {
+                var listViewItem = item as ListViewItem;
+                if(listViewItem == null)
+                {
+                    continue;
+                }
+
+                var info = listViewItem.Content as TimedEventDisplayInfo;
+                if(info == null)
+                {
+                    continue;
+                }
+
+                int time = 0;
+                if(!ParseMinutesSeconds(info.Time, out time))
+                {
+                    continue;
+                }
+
+                startTime = Math.Min(startTime, time);
+                endTime = Math.Max(endTime, time);
+            }
+
+            if(startTime == int.MaxValue && endTime == int.MinValue)
+            {
+                return;
+            }
+
+            startTime -= startOffset;
+            endTime += endOffset;
+
+            cutByTimeComponent.SetStartAndEndTimes(startTime, endTime);
+            
+            _tabControl.SelectedIndex = 3;
         }
 
         public static void CopyListViewRowsToClipboard(ListView listView)
@@ -1136,7 +1247,7 @@ namespace Uber.DemoTools
 
         private void OnCancelJobClicked()
         {
-            _parseArg.CancelOperation = 1;
+            ParseArg.CancelOperation = 1;
             LogWarning("Job canceled!");
         }
 
@@ -1146,7 +1257,7 @@ namespace Uber.DemoTools
             _progressBar.Dispatcher.Invoke(valueSetter);
         }
 
-        private static UDT_DLL.udtProtocol GetProtocolFromFilePath(string filePath)
+        public static UDT_DLL.udtProtocol GetProtocolFromFilePath(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLower();
             if(!ProtocolFileExtDic.ContainsKey(extension))
@@ -1188,7 +1299,7 @@ namespace Uber.DemoTools
             LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
         }
 
-        private void DemoLoggingCallback(int logLevel, string message)
+        public void DemoLoggingCallback(int logLevel, string message)
         {
             switch(logLevel)
             {
@@ -1211,7 +1322,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private void DemoProgressCallback(float progress, IntPtr userData)
+        public void DemoProgressCallback(float progress, IntPtr userData)
         {
             SetProgressThreadSafe(100.0 * (double)progress);
         }
@@ -1285,6 +1396,30 @@ namespace Uber.DemoTools
         private void FatalErrorHandler(string errorMessage)
         {
             throw new Exception(errorMessage);
+        }
+
+        public void JoinJobThread()
+        {
+            if(_jobThread != null)
+            {
+                _jobThread.Join();
+            }
+        }
+
+        public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
+        {
+            _jobThread = new Thread(entryPoint);
+            _jobThread.Start(userData);
+        }
+
+        public IntPtr GetMainThreadContext()
+        {
+            if(_mainThreadContext == IntPtr.Zero)
+            {
+                _mainThreadContext = UDT_DLL.CreateContext();
+            }
+
+            return _mainThreadContext;
         }
     }
 }

@@ -103,6 +103,7 @@
     <Compile Include="src\Tuple.cs" />
     <Compile Include="src\PinnedObject.cs" />
     <Compile Include="src\AppChatEvents.cs" />
+	<Compile Include="src\AppTimeCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

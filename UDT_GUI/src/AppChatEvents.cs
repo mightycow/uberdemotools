@@ -38,6 +38,7 @@ namespace Uber.DemoTools
     {
         public FrameworkElement RootControl { get; private set; }
         public List<ListView> ListViews { get { return new List<ListView> { _chatEventsListView }; } }
+        public ComponentType Type { get { return ComponentType.ChatEvents; } }
 
         public ChatEventsComponent(App app)
         {

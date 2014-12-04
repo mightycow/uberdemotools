@@ -11,129 +11,155 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public class TimeOffsetsDialog
     {
-        private class CutByTimeInfo
+        private int _startOffset = -1;
+        private int _endOffset = -1;
+        private bool _valid = false;
+
+        public int StartOffset
         {
-            public string InFilePath = "<invalid>";
-            public string OutFilePath = "<invalid>";
-            public int StartTime = -1;
-            public int EndTime = -1;
-            public List<Demo.GameStateInfo> GameStates = null;
+            get { return _startOffset; }
         }
 
-        private class TimeOffsetsDialog
+        public int EndOffset
         {
-            private int _startOffset = -1;
-            private int _endOffset = -1;
-            private bool _valid = false;
+            get { return _endOffset; }
+        }
 
-            public int StartOffset
+        public bool Valid
+        {
+            get { return _valid; }
+        }
+
+        public TimeOffsetsDialog(Window parent, int startOffset, int endOffset)
+        {
+            var startTimeEditBox = new TextBox();
+            startTimeEditBox.Width = 50;
+            startTimeEditBox.Text = "10";
+            startTimeEditBox.ToolTip = "seconds OR minutes:seconds";
+
+            var endTimeEditBox = new TextBox();
+            endTimeEditBox.Width = 50;
+            endTimeEditBox.Text = "10";
+            endTimeEditBox.ToolTip = "seconds OR minutes:seconds";
+
+            var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
+            panelList.Add(App.CreateTuple("Start Time", startTimeEditBox));
+            panelList.Add(App.CreateTuple("End Time", endTimeEditBox));
+            var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
+            optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            optionsPanel.VerticalAlignment = VerticalAlignment.Center;
+
+            var cutOptionsGroupBox = new GroupBox();
+            cutOptionsGroupBox.Header = "Cut Configuration";
+            cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            cutOptionsGroupBox.Margin = new Thickness(5);
+            cutOptionsGroupBox.Content = optionsPanel;
+
+            var okButton = new Button();
+            okButton.Content = "OK";
+            okButton.Width = 75;
+            okButton.Height = 25;
+            okButton.Margin = new Thickness(5);
+            okButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var cancelButton = new Button();
+            cancelButton.Content = "Cancel";
+            cancelButton.Width = 75;
+            cancelButton.Height = 25;
+            cancelButton.Margin = new Thickness(5);
+            cancelButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var rootPanel = new DockPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            rootPanel.VerticalAlignment = VerticalAlignment.Center;
+            rootPanel.Children.Add(cutOptionsGroupBox);
+            rootPanel.Children.Add(cancelButton);
+            rootPanel.Children.Add(okButton);
+
+            DockPanel.SetDock(cutOptionsGroupBox, Dock.Top);
+            DockPanel.SetDock(cancelButton, Dock.Right);
+            DockPanel.SetDock(okButton, Dock.Right);
+
+            var window = new Window();
+            okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
+            cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
+
+            window.WindowStyle = WindowStyle.ToolWindow;
+            window.AllowsTransparency = false;
+            window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
+            window.ShowInTaskbar = false;
+            window.Width = 240;
+            window.Height = 180;
+            window.Left = parent.Left + (parent.Width - window.Width) / 2;
+            window.Top = parent.Top + (parent.Height - window.Height) / 2;
+            window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            window.Title = "Cut Offsets";
+            window.Content = rootPanel;
+            window.ShowDialog();
+
+            _valid = window.DialogResult ?? false;
+            if(!_valid)
             {
-                get { return _startOffset; }
+                return;
             }
 
-            public int EndOffset
+            if(!int.TryParse(startTimeEditBox.Text, out _startOffset))
             {
-                get { return _endOffset; }
+                _valid = false;
+                return;
             }
 
-            public bool Valid
+            if(!int.TryParse(endTimeEditBox.Text, out _endOffset))
             {
-                get { return _valid; }
+                _valid = false;
+                return;
             }
 
-            public TimeOffsetsDialog(Window parent, int startOffset, int endOffset)
+            if(_startOffset <= 0 || _endOffset <= 0)
             {
-                var startTimeEditBox = new TextBox();
-                startTimeEditBox.Width = 50;
-                startTimeEditBox.Text = "10";
-                startTimeEditBox.ToolTip = "seconds OR minutes:seconds";
-
-                var endTimeEditBox = new TextBox();
-                endTimeEditBox.Width = 50;
-                endTimeEditBox.Text = "10";
-                endTimeEditBox.ToolTip = "seconds OR minutes:seconds";
-
-                var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-                panelList.Add(CreateTuple("Start Time", startTimeEditBox));
-                panelList.Add(CreateTuple("End Time", endTimeEditBox));
-                var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
-                optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
-                optionsPanel.VerticalAlignment = VerticalAlignment.Center;
-
-                var cutOptionsGroupBox = new GroupBox();
-                cutOptionsGroupBox.Header = "Cut Configuration";
-                cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-                cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
-                cutOptionsGroupBox.Margin = new Thickness(5);
-                cutOptionsGroupBox.Content = optionsPanel;
-
-                var okButton = new Button();
-                okButton.Content = "OK";
-                okButton.Width = 75;
-                okButton.Height = 25;
-                okButton.Margin = new Thickness(5);
-                okButton.HorizontalAlignment = HorizontalAlignment.Right;
-
-                var cancelButton = new Button();
-                cancelButton.Content = "Cancel";
-                cancelButton.Width = 75;
-                cancelButton.Height = 25;
-                cancelButton.Margin = new Thickness(5);
-                cancelButton.HorizontalAlignment = HorizontalAlignment.Right;
-
-                var rootPanel = new DockPanel();
-                rootPanel.HorizontalAlignment = HorizontalAlignment.Center;
-                rootPanel.VerticalAlignment = VerticalAlignment.Center;
-                rootPanel.Children.Add(cutOptionsGroupBox);
-                rootPanel.Children.Add(cancelButton);
-                rootPanel.Children.Add(okButton);
-
-                DockPanel.SetDock(cutOptionsGroupBox, Dock.Top);
-                DockPanel.SetDock(cancelButton, Dock.Right);
-                DockPanel.SetDock(okButton, Dock.Right);
-
-                var window = new Window();
-                okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
-                cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
-
-                window.WindowStyle = WindowStyle.ToolWindow;
-                window.AllowsTransparency = false;
-                window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
-                window.ShowInTaskbar = false;
-                window.Width = 240;
-                window.Height = 180;
-                window.Left = parent.Left + (parent.Width - window.Width) / 2;
-                window.Top = parent.Top + (parent.Height - window.Height) / 2;
-                window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
-                window.Title = "Cut Offsets";
-                window.Content = rootPanel;
-                window.ShowDialog();
-
-                _valid = window.DialogResult ?? false;
-                if(!_valid)
-                {
-                    return;
-                }
-
-                if(!int.TryParse(startTimeEditBox.Text, out _startOffset))
-                {
-                    _valid = false;
-                    return;
-                }
-
-                if(!int.TryParse(endTimeEditBox.Text, out _endOffset))
-                {
-                    _valid = false;
-                    return;
-                }
-
-                if(_startOffset <= 0 || _endOffset <= 0)
-                {
-                    _valid = false;
-                }
+                _valid = false;
             }
+        }
+    }
+
+    public class CutByTimeComponent : AppComponent
+    {
+        private App _app;
+
+        public FrameworkElement RootControl { get; private set; }
+        public List<ListView> ListViews { get { return null; } }
+        public ComponentType Type { get { return ComponentType.CutByTime; } }
+
+        public CutByTimeComponent(App app)
+        {
+            _app = app;
+            RootControl = CreateCutByTimeTab();
+        }
+
+        public void PopulateViews(DemoInfo demoInfo)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SetStartAndEndTimes(int startTime, int endTime)
+        {
+            _startTimeEditBox.Text = App.FormatMinutesSeconds(startTime);
+            _endTimeEditBox.Text = App.FormatMinutesSeconds(endTime);
+        }
+
+        private class CutByTimeInfo
+        {
+            public string FilePath = null;
+            public int StartTime = -1;
+            public int EndTime = -1;
         }
 
         private TextBox _startTimeEditBox = null;
@@ -154,8 +180,8 @@ namespace Uber.DemoTools
             endTimeEditBox.ToolTip = "seconds OR minutes:seconds";
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(CreateTuple("Start Time", startTimeEditBox));
-            panelList.Add(CreateTuple("End Time", endTimeEditBox));
+            panelList.Add(App.CreateTuple("Start Time", startTimeEditBox));
+            panelList.Add(App.CreateTuple("End Time", endTimeEditBox));
             var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
             optionsPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -216,45 +242,40 @@ namespace Uber.DemoTools
 
         private void OnCutByTimeClicked()
         {
-            if(_demoListView.SelectedIndex == -1)
+            var demo = _app.SelectedDemo;
+            if(demo == null)
             {
-                LogError("No demo was selected. Please select one to proceed.");
+                _app.LogError("No demo was selected. Please select one to proceed.");
                 return;
             }
 
             int startTime = -1;
-            if(!GetTimeSeconds(_startTimeEditBox.Text, out startTime))
+            if(!App.GetTimeSeconds(_startTimeEditBox.Text, out startTime))
             {
-                LogError("Invalid start time. Format must be (seconds) or (minutes:seconds)");
+                _app.LogError("Invalid start time. Format must be (seconds) or (minutes:seconds)");
                 return;
             }
 
             int endTime = -1;
-            if(!GetTimeSeconds(_endTimeEditBox.Text, out endTime))
+            if(!App.GetTimeSeconds(_endTimeEditBox.Text, out endTime))
             {
-                LogError("Invalid end time. Format must be (seconds) or (minutes:seconds)");
+                _app.LogError("Invalid end time. Format must be (seconds) or (minutes:seconds)");
                 return;
             }
 
-            DisableUiNonThreadSafe();
-
-            if(_jobThread != null)
-            {
-                _jobThread.Join();
-            }
+            _app.DisableUiNonThreadSafe();
+            _app.JoinJobThread();
+            _app.SaveConfig();
 
             var startString = _startTimeEditBox.Text.Replace(":", "");
             var endString = _endTimeEditBox.Text.Replace(":", "");
 
             var info = new CutByTimeInfo();
-            info.InFilePath = _demos[_demoListView.SelectedIndex].FilePath;
-            info.OutFilePath = GenerateOutputFilePath(info.InFilePath, startString, endString);
+            info.FilePath = demo.FilePath;
             info.StartTime = startTime;
             info.EndTime = endTime;
-            info.GameStates = _demos[_demoListView.SelectedIndex].DemoGameStates;
 
-            _jobThread = new Thread(DemoCutByTimeThread);
-            _jobThread.Start(info);
+            _app.StartJobThread(DemoCutByTimeThread, info);
         }
 
         private void DemoCutByTimeThread(object arg)
@@ -271,107 +292,41 @@ namespace Uber.DemoTools
 
         private void DemoCutByTimeThreadImpl(object arg)
         {
-            var timer = new Stopwatch();
-            timer.Start();
-
-            Demo.ProgressCallback progressCb = (progressPc) =>
-            {
-                if(timer.ElapsedMilliseconds < 50)
-                {
-                    return _cancelJobValue;
-                }
-
-                timer.Stop();
-                timer.Reset();
-                timer.Start();
-
-                SetProgressThreadSafe(100.0 * (double)progressPc);
-
-                return _cancelJobValue;
-            };
-
             var info = (CutByTimeInfo)arg;
-            var protocol = GetProtocolFromFilePath(info.InFilePath);
-            if(protocol == DemoProtocol.Invalid)
+            var protocol = App.GetProtocolFromFilePath(info.FilePath);
+            if(protocol == UDT_DLL.udtProtocol.Invalid)
             {
-                LogError("Unrecognized protocol for demo '{0}'", Path.GetFileName(info.InFilePath));
-                EnableUiThreadSafe();
+                _app.LogError("Unrecognized protocol for demo '{0}'", Path.GetFileName(info.FilePath));
+                _app.EnableUiThreadSafe();
                 return;
             }
 
-            var startTimeDisplay = FormatMinutesSeconds(info.StartTime);
-            var endTimeDisplay = FormatMinutesSeconds(info.EndTime);
-            LogInfo("Writing cut: {0}-{1}", startTimeDisplay, endTimeDisplay);
+            var outputFolder = _app.GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
-            var cut = new DemoCut();
-            cut.FilePath = info.OutFilePath;
-            cut.StartTimeMs = info.StartTime * 1000;
-            cut.EndTimeMs = info.EndTime * 1000;
+            var parseArg = _app.ParseArg;
+            parseArg.CancelOperation = 0;
+            parseArg.MessageCb = _app.DemoLoggingCallback;
+            parseArg.OutputFolderPath = outputFolderPtr;
+            parseArg.ProgressCb = _app.DemoProgressCallback;
+            parseArg.ProgressContext = IntPtr.Zero;
+            _app.ParseArg = parseArg;
 
-            var cuts = new List<DemoCut>();
-            cuts.Add(cut);
-
-            int totalParseTime = 0;
-            List<int> gsParseTimes = new List<int>();
-            List<List<DemoCut>> gsCutsList = new List<List<DemoCut>>();
-            Demo.CreateCutList(cuts, info.GameStates, ref gsCutsList, ref gsParseTimes, ref totalParseTime);
-            
+            var startTimeDisplay = App.FormatMinutesSeconds(info.StartTime);
+            var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
+            _app.LogInfo("Writing cut: {0}-{1}", startTimeDisplay, endTimeDisplay);
+           
             try
             {
-                var gsIdx = gsCutsList.FindIndex(cutList => cutList.Count == 1);
-                if(gsIdx >= 0)
-                {
-                    var gameState = info.GameStates[gsIdx];
-                    Demo.Cut(protocol, info.InFilePath, progressCb, DemoLoggingCallback, cuts, gameState);
-                }
-                else
-                {
-                    LogError("Cut list creation must have failed... couldn't find the cut in the list :-(");
-                }
+                UDT_DLL.CutByTime(_app.GetMainThreadContext(), ref _app.ParseArg, info.FilePath, info.StartTime, info.EndTime);
             }
-            catch(SEHException exception) 
+            catch(Exception exception)
             {
-                LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
+                _app.LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
             }
 
-            timer.Stop();
-
-            EnableUiThreadSafe();
-        }
-
-        private string FormatMinutesSeconds(int totalSeconds)
-        {
-            var minutes = totalSeconds / 60;
-            var seconds = totalSeconds % 60;
-
-            return minutes.ToString() + ":" + seconds.ToString("00");
-        }
-
-        private bool ParseMinutesSeconds(string time, out int totalSeconds)
-        {
-            totalSeconds = -1;
-
-            int colonIdx = time.IndexOf(':');
-            if(colonIdx < 0)
-            {
-                return false;
-            }
-
-            int minutes = -1;
-            if(!int.TryParse(time.Substring(0, colonIdx), out minutes))
-            {
-                return false;
-            }
-
-            int seconds = -1;
-            if(!int.TryParse(time.Substring(colonIdx + 1), out seconds))
-            {
-                return false;
-            }
-
-            totalSeconds = 60 * minutes + seconds;
-
-            return true;
+            Marshal.FreeHGlobal(outputFolderPtr);
+            _app.EnableUiThreadSafe();
         }
     }
 }

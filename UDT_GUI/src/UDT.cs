@@ -241,6 +241,35 @@ namespace Uber.DemoTools
             return udtSetCrashHandler(address) == udtErrorCode.None;
         }
 
+        public static IntPtr CreateContext()
+        {
+            return udtCreateContext();
+        }
+
+        public static bool CutByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
+        {
+            if(context == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            parseArg.PlugInCount = 0;
+            parseArg.PlugIns = IntPtr.Zero;
+
+            var cut = new udtCut();
+            cut.StartTimeMs = startTimeSec * 1000;
+            cut.EndTimeMs = endTimeSec * 1000;
+            var pinnedCut = new PinnedObject(cut);
+            var cutInfo = new udtCutByTimeArg();
+            cutInfo.Cuts = pinnedCut.Address;
+            cutInfo.CutCount = 1;
+
+            var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePath) == udtErrorCode.None;
+            pinnedCut.Free();
+
+            return success;
+        }
+
         public static DemoInfo ParseDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
         {
             if(context == IntPtr.Zero)
