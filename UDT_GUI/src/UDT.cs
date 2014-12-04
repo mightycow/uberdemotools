@@ -3,235 +3,219 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-using UdtHandle = System.IntPtr;
+using udtParserContextRef = System.IntPtr;
+using udtParserContextGroupRef = System.IntPtr;
+using System.IO;
 
 
 namespace Uber.DemoTools
 {
-    public class DemoCut
+    public unsafe class UDT_DLL
     {
-        public DemoCut Clone()
-        {
-            var cut = new DemoCut();
-            cut.FilePath = FilePath;
-            cut.StartTimeMs = StartTimeMs;
-            cut.EndTimeMs = EndTimeMs;
+        private const string _dllPath = "UDT.dll";
 
-            return cut;
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        public delegate void udtProgressCallback(float progress, IntPtr userData);
+
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        public delegate void udtMessageCallback(int logLevel, string message);
+
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        public delegate void udtCrashCallback(string message);
+
+        public enum udtProtocol
+        {
+            Invalid,
+            Dm68,
+            Dm73,
+            Dm90
         }
 
-        public string FilePath = "<invalid>";
-        public int StartTimeMs = -1;
-        public int EndTimeMs = -1;
-    }
+        public enum udtErrorCode : int
+        {
+            None,
+            InvalidArgument,
+            OperationFailed
+        }
 
-    public enum DemoProtocol
-    {
-        Invalid,
-        Dm68,
-        Dm73
-    }
+        public enum udtChatOperator : int
+        {
+            Contains,
+            StartsWith,
+            EndsWith,
+            Count
+        }
 
-    public unsafe class Demo
-    {
-        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-        public delegate int ProgressCallback(float progress);
+        public enum udtParserPlugIn : uint
+        {
+            Chat,
+            GameState,
+            Count
+        }
 
-        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-        public delegate void MessageCallback(int logLevel, string message);
+        [StructLayout(LayoutKind.Sequential)]
+        public struct udtParseArg
+        {
+            public IntPtr PlugIns; // u32*
+            public IntPtr OutputFolderPath; // const char*
+            public udtMessageCallback MessageCb;
+            public udtProgressCallback ProgressCb;
+            public IntPtr ProgressContext; // void*
+            public UInt32 PlugInCount;
+            public Int32 CancelOperation;
+        }
 
-        private const string _dllPath = "UDT.dll";
+        [StructLayout(LayoutKind.Sequential)]
+        public struct udtMultiParseArg
+	    {
+		    public IntPtr FilePaths; // const char**
+		    public UInt32 FileCount;
+		    public UInt32 MaxThreadCount;
+	    }
+	
+        [StructLayout(LayoutKind.Sequential)]
+	    public struct udtCut
+	    {
+		    public Int32 StartTimeMs;
+		    public Int32 EndTimeMs;
+	    }
+
+        [StructLayout(LayoutKind.Sequential)]
+	    public struct udtCutByTimeArg
+	    {
+            public IntPtr Cuts; // const udtCut*
+		    public UInt32 CutCount;
+	    }
+
+        [StructLayout(LayoutKind.Sequential)]
+	    public struct udtCutByChatRule
+	    {
+		    public IntPtr Pattern; // const char*
+		    public UInt32 ChatOperator;
+		    public UInt32 CaseSensitive;
+		    public UInt32 IgnoreColorCodes;
+	    }
+
+        [StructLayout(LayoutKind.Sequential)]
+	    public struct udtCutByChatArg
+	    {
+		    public IntPtr Rules; // const udtCutByChatRule*
+		    public UInt32 RuleCount;
+		    public UInt32 StartOffsetSec;
+		    public UInt32 EndOffsetSec;
+	    }
+        /*
+        [StructLayout(LayoutKind.Sequential)]
+	    public struct udtChatEventData
+	    {
+		    public IntPtr OriginalCommand; // const char*
+		    public IntPtr ClanName; // const char*
+		    public IntPtr PlayerName; // const char*
+		    public IntPtr Message; // const char*
+	    }
+        */
+	    [StructLayout(LayoutKind.Sequential)]
+        public struct udtParseDataChat
+	    {
+            //[MarshalAsAttribute(, SizeConst = 2)]
+		    //public udtChatEventData[] Strings;
+            public IntPtr OriginalCommand; // const char*
+            public IntPtr ClanName; // const char*
+            public IntPtr PlayerName; // const char*
+            public IntPtr Message; // const char*
+            public IntPtr OriginalCommandNoCol; // const char*
+            public IntPtr ClanNameNoCol; // const char*
+            public IntPtr PlayerNameNoCol; // const char*
+            public IntPtr MessageNoCol; // const char*
+		    public Int32 ServerTimeMs;
+		    public Int32 PlayerIndex;
+	    }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct udtMatchInfo
+        {
+            public Int32 WarmUpEndTimeMs; 
+            public Int32 MatchStartTimeMs;
+            public Int32 MatchEndTimeMs;
+        }
+
+	    [StructLayout(LayoutKind.Sequential)]
+        public struct udtParseDataGameState
+	    {
+		    public IntPtr Matches; // const udtMatchInfo*
+		    public UInt32 MatchCount;
+		    public UInt32 FileOffset;
+		    public Int32 FirstSnapshotTimeMs;
+		    public Int32 LastSnapshotTimeMs;
+	    }
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private IntPtr udtCreate(int protocolId);
+	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private Int32 udtIsValidProtocol(udtProtocol protocol);
+
+	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private UInt32 udtGetSizeOfIdEntityState(udtProtocol protocol);
+
+	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private UInt32 udtGetSizeOfidClientSnapshot(udtProtocol protocol);
+
+	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private IntPtr udtGetFileExtensionByProtocol(udtProtocol protocol);
+
+	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private udtProtocol udtGetProtocolByFilePath(string filePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private void udtDestroy(UdtHandle lib);
+        extern static private udtErrorCode udtSetCrashHandler(udtCrashCallback crashHandler);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtSetProgressCallback(UdtHandle lib, ProgressCallback callback);
+	    extern static private udtParserContextRef udtCreateContext();
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtSetMessageCallback(UdtHandle lib, MessageCallback callback);
+	    extern static private udtErrorCode udtDestroyContext(udtParserContextRef context);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtSetFileStartOffset(UdtHandle lib, int fileStartOffset);
+	    extern static private udtErrorCode udtSplitDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtSetServerTimeOffset(UdtHandle lib, int serverTimeOffset);
+        extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-	    extern static private int udtAddCut(UdtHandle lib, string filePath, int startTimeMs, int endTimeMs);
+        extern static private udtErrorCode udtCutDemoFileByChat(udtParserContextRef context, ref udtParseArg info, ref udtCutByChatArg chatInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtParse(UdtHandle lib, string filePath, ProgressCallback progressCb, MessageCallback messageCb);
+        extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetWarmupEndTimeMs(UdtHandle lib, ref int warmupEndTimeMs);
+        extern static private udtErrorCode udtGetDemoDataInfo(udtParserContextRef context, UInt32 demoIdx, udtParserPlugIn plugInId, ref IntPtr buffer, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetFirstSnapshotTimeMs(UdtHandle lib, ref int firstSnapshotTimeMs);
+        extern static private udtErrorCode udtParseDemoFiles(ref udtParserContextGroupRef contextGroup, ref udtParseArg info, ref udtMultiParseArg extraInfo);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetGameStateCount(UdtHandle lib, ref int gameStateCount);
+        extern static private udtErrorCode udtGetContextCountFromGroup(udtParserContextGroupRef contextGroup, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetGameStateFileOffset(UdtHandle lib, int gameStateIdx, ref int fileOffset);
+        extern static private udtErrorCode udtGetContextFromGroup(udtParserContextGroupRef contextGroup, UInt32 contextIdx, ref udtParserContextRef context);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetGameStateServerTimeOffset(UdtHandle lib, int gameStateIdx, ref int serverTimeOffset);
+        extern static private udtErrorCode udtGetDemoCountFromGroup(udtParserContextGroupRef contextGroup, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetGameStateFirstSnapshotTime(UdtHandle lib, int gameStateIdx, ref int firstSnapshotTime);
+        extern static private udtErrorCode udtGetDemoCountFromContext(udtParserContextRef context, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetGameStateLastSnapshotTime(UdtHandle lib, int gameStateIdx, ref int lastSnapshotTime);
+        extern static private udtErrorCode udtGetDemoInputIndex(udtParserContextRef context, UInt32 demoIdx, ref UInt32 demoInputIdx);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetServerCommandCount(UdtHandle lib, ref int cmdCount);
+        extern static private udtErrorCode udtDestroyContextGroup(udtParserContextGroupRef contextGroup);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetServerCommandSequence(UdtHandle lib, int cmdIndex, ref int seqNumber);
+        extern static private udtErrorCode udtCutDemoFilesByChat(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByChatArg chatInfo);
 
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetServerCommandMessage(UdtHandle lib, int cmdIndex, byte* valueBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetConfigStringCount(UdtHandle lib, ref int csCount);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetConfigStringValue(UdtHandle lib, int csIndex, byte* valueBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetConfigStringIndex(UdtHandle lib, int udtCsIndex, ref int quakeCsIndex);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetChatStringCount(UdtHandle lib, ref int chatCount);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetChatStringMessage(UdtHandle lib, int chatIndex, byte* valueBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetChatStringTime(UdtHandle lib, int chatIndex, ref int time);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetObituaryCount(UdtHandle lib, ref int obituaryCount);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetObituaryTime(UdtHandle lib, int obituaryIndex, ref int time);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetObituaryAttackerName(UdtHandle lib, int obituaryIndex, byte* nameBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetObituaryTargetName(UdtHandle lib, int obituaryIndex, byte* nameBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetObituaryMeanOfDeath(UdtHandle lib, int obituaryIndex, ref int mod);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunCount(UdtHandle lib, ref int puRunCount);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunTime(UdtHandle lib, int puRunIndex, ref int time);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunPlayerName(UdtHandle lib, int puRunIndex, byte* nameBuffer, int bufferLength);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunPu(UdtHandle lib, int puRunIndex, ref int pu);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunDuration(UdtHandle lib, int puRunIndex, ref int durationMs);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunKillCount(UdtHandle lib, int puRunIndex, ref int kills);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunTeamKillCount(UdtHandle lib, int puRunIndex, ref int teamKills);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtGetPuRunSelfKill(UdtHandle lib, int puRunIndex, ref int selfKill);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtCutDemoTime(string inFilePath, string outFilePath, int startTimeMs, int endTimeMs, ProgressCallback progressCb, MessageCallback messageCb);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private int udtCutDemoChat(string inFilePath, string outFilePath, string[] chatEntries, int chatEntryCount, int startOffsetSecs, int endOffsetSecs);
-
-        // -------------------------------------------------------------
-
-        private UdtHandle _demo;
-        private ASCIIEncoding _encoding = new ASCIIEncoding();
-        private const int _stringBufferSize = 64 * 1024;
-
-        public class ChatStringInfo
-        {
-            public string Message;
-            public int Time;
-        }
-
-        public class ConfigStringInfo
-        {
-            public string Value;
-            public int Index;
-        }
-
-        public class ServerCommandInfo
-        {
-            public string Command;
-            public int Sequence;
-        }
-
-        public class GameStateInfo
-        {
-            public int FileOffset;
-            public int ServerTimeOffset;
-            public int FirstSnapshotTime;
-            public int LastSnapshotTime;
-        }
-
-        public class FragInfo
-        {
-            public int Time;
-            public int Mod;
-            public string AttackerName;
-            public string TargetName;
-        }
-
-        public class PuRunInfo
-        {
-            public int Time;
-            public int Pu;
-            public int Duration; // [ms]
-            public int Kills;
-            public int TeamKills;
-            public int SelfKill; // Non-zero if the player kills himself with the PU :-)
-            public string PlayerName;
-        }
-
-        public int WarmupEndTimeMs
-        {
-            get; private set;
-        }
-
-        public int FirstSnapshotTimeMs
-        {
-            get; private set;
-        }
-
-        public Demo(DemoProtocol protocol)
-        {
-            _demo = udtCreate((int)protocol);
-        }
-
-        public void Destroy()
-        {
-            udtDestroy(_demo);
-        }
+        private static UInt32[] PlugInArray = new UInt32[] { (UInt32)udtParserPlugIn.Chat, (UInt32)udtParserPlugIn.GameState };
 
         public static string GetVersion()
         {
@@ -244,320 +228,146 @@ namespace Uber.DemoTools
             return Marshal.PtrToStringAnsi(version) ?? "N/A";
         }
 
-        public bool Parse(string filePath, ProgressCallback progressCb, MessageCallback messageCb)
+        public static DemoInfo ParseDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
         {
-            var result = udtParse(_demo, filePath, progressCb, messageCb);
-            if(result != 0)
+            if(context == IntPtr.Zero)
             {
-                return false;
+                return null;
             }
 
-            int warmupEndTimeMs = -1;
-            udtGetWarmupEndTimeMs(_demo, ref warmupEndTimeMs);
-            WarmupEndTimeMs = warmupEndTimeMs;
+            filePath = Path.GetFullPath(filePath);
+            var protocol = udtGetProtocolByFilePath(filePath);
+            if(protocol == udtProtocol.Invalid)
+            {
+                return null;
+            }
 
-            int firstSnapshotTimeMs = -1;
-            udtGetFirstSnapshotTimeMs(_demo, ref firstSnapshotTimeMs);
-            FirstSnapshotTimeMs = firstSnapshotTimeMs;
+            var pinnedPlugIns = new PinnedObject(PlugInArray);
+            parseArg.PlugInCount = (UInt32)PlugInArray.Length;
+            parseArg.PlugIns = pinnedPlugIns.Address;
+            var result = udtParseDemoFile(context, ref parseArg, filePath);
+            pinnedPlugIns.Free();
+            if(result != udtErrorCode.None)
+            {
+                return null;
+            }
 
-            return true;
+            var info = new DemoInfo();
+            info.FilePath = filePath;
+            info.Protocol = protocol.ToString();
+            ExtractDemoInfo(context, 0, ref info);
+
+            return info;
         }
 
-        public static void CreateCutList(List<DemoCut> cuts, List<GameStateInfo> gameStates, ref List<List<DemoCut>> gsCutsList, ref List<int> gsParseTimes, ref int totalParseTime)
+        public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
-            gsCutsList = new List<List<DemoCut>>();
-            foreach(var gameState in gameStates)
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
             {
-                var gsCuts = new List<DemoCut>();
-                var matches = cuts.FindAll(c => c.StartTimeMs >= gameState.FirstSnapshotTime && c.StartTimeMs < gameState.LastSnapshotTime);
-                foreach(var match in matches)
+                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+            }
+
+            var pinnedPlugIns = new PinnedObject(PlugInArray);
+            parseArg.PlugInCount = (UInt32)PlugInArray.Length;
+            parseArg.PlugIns = pinnedPlugIns.Address;
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            udtParserContextGroupRef contextGroup = IntPtr.Zero;
+            var result = udtParseDemoFiles(ref contextGroup, ref parseArg, ref multiParseArg);
+            pinnedPlugIns.Free();
+            pinnedFilePaths.Free();
+            for(var i = 0; i < filePathArray.Length; ++i)
+            {
+                Marshal.FreeHGlobal(filePathArray[i]);
+            }
+
+            if(result != udtErrorCode.None)
+            {
+                udtDestroyContextGroup(contextGroup);
+                return null;
+            }
+
+            uint contextCount = 0;
+            if(udtGetContextCountFromGroup(contextGroup, ref contextCount) != udtErrorCode.None)
+            {
+                udtDestroyContextGroup(contextGroup);
+                return null;
+            }
+
+            var infoList = new List<DemoInfo>();
+            for(uint i = 0; i < contextCount; ++i)
+            {
+                udtParserContextRef context = IntPtr.Zero;
+                if(udtGetContextFromGroup(contextGroup, i, ref context) != udtErrorCode.None)
                 {
-                    var cut = match.Clone();
-                    cut.EndTimeMs = Math.Min(cut.EndTimeMs, gameState.LastSnapshotTime - 40); // Make sure the cut doesn't cross game state boundaries.
-                    if(cut.EndTimeMs > cut.StartTimeMs)
+                    udtDestroyContextGroup(contextGroup);
+                    return null;
+                }
+
+                uint demoCount = 0;
+                if(udtGetDemoCountFromContext(context, ref demoCount) != udtErrorCode.None)
+                {
+                    udtDestroyContextGroup(contextGroup);
+                    return null;
+                }
+
+                for(uint j = 0; j < demoCount; ++j)
+                {
+                    var info = new DemoInfo();
+                    info.FilePath = "N/A";
+                    info.Protocol = "N/A";
+
+                    uint inputIdx = 0;
+                    if(udtGetDemoInputIndex(context, j, ref inputIdx) == udtErrorCode.None)
                     {
-                        gsCuts.Add(cut);
+                        info.FilePath = Path.GetFullPath(filePaths[(int)inputIdx]);
+                        info.Protocol = udtGetProtocolByFilePath(filePaths[(int)inputIdx]).ToString();
                     }
+                    
+                    ExtractDemoInfo(context, j, ref info);
+                    infoList.Add(info);
                 }
-
-                gsCutsList.Add(gsCuts);
             }
 
-            totalParseTime = 0;
-            gsParseTimes = new List<int>();
-            foreach(var gsCuts in gsCutsList)
+            udtDestroyContextGroup(contextGroup);
+
+            return infoList;
+        }
+
+        private static void ExtractDemoInfo(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        {
+            ExtractChatEvents(context, demoIdx, ref info);
+        }
+
+        private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        {
+            uint chatEventCount = 0;
+            IntPtr chatEvents = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Chat, ref chatEvents, ref chatEventCount) != udtErrorCode.None)
             {
-                int gsParseTime = 0;
-                foreach(var cut in gsCuts)
-                {
-                    gsParseTime += cut.EndTimeMs - cut.StartTimeMs;
-                }
-
-                totalParseTime += gsParseTime;
-
-                gsParseTimes.Add(gsParseTime);
+                return;
             }
-        }
-        
-        public static bool Cut(DemoProtocol protocol, string filePath, ProgressCallback progressCb, MessageCallback messageCb, List<DemoCut> cuts, GameStateInfo gameState)
-        {
-            if(cuts.Count == 0)
+
+            for(uint i = 0; i < chatEventCount; ++i)
             {
-                return true;
+                var address = new IntPtr(chatEvents.ToInt64() + i * sizeof(udtParseDataChat));
+                var data = (udtParseDataChat)Marshal.PtrToStructure(address, typeof(udtParseDataChat));
+
+                int totalSeconds = data.ServerTimeMs / 1000;
+                int minutes = totalSeconds / 60;
+                int seconds = totalSeconds % 60;
+                var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
+                var player = Marshal.PtrToStringAnsi(data.PlayerNameNoCol);
+                var message = Marshal.PtrToStringAnsi(data.MessageNoCol);
+                var item = new ChatEventDisplayInfo(time, player ?? "N/A", message ?? "N/A");
+                info.ChatEvents.Add(item);
             }
-
-            UdtHandle demo = udtCreate((int)protocol);
-            if(demo == IntPtr.Zero)
-            {
-                return false;
-            }
-
-            udtSetFileStartOffset(demo, gameState.FileOffset);
-            udtSetServerTimeOffset(demo, gameState.ServerTimeOffset);
-
-            foreach(var cut in cuts)
-            {
-                udtAddCut(demo, cut.FilePath, cut.StartTimeMs, cut.EndTimeMs);
-            }
-
-            var result = udtParse(demo, filePath, progressCb, messageCb) != 0;
-
-            udtDestroy(demo);
-
-            return result;
-        }
-        
-        private unsafe string GetChatString(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetChatStringMessage(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        private int GetChatTime(int index)
-        {
-            int time = int.MinValue;
-            udtGetChatStringTime(_demo, index, ref time);
-
-            return time;
-        }
-
-        public List<ChatStringInfo> GetChatStrings()
-        {
-            var list = new List<ChatStringInfo>();
-
-            int chatStringCount = 0;
-            udtGetChatStringCount(_demo, ref chatStringCount);
-            for(int i = 0; i < chatStringCount; ++i)
-            {
-                var info = new ChatStringInfo();
-                info.Message = GetChatString(i);
-                info.Time = GetChatTime(i);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        public List<GameStateInfo> GetGameStates()
-        {
-            var list = new List<GameStateInfo>();
-
-            int gameStateCount = 0;
-            udtGetGameStateCount(_demo, ref gameStateCount);
-            for(int i = 0; i < gameStateCount; ++i)
-            {
-                var info = new GameStateInfo();
-                udtGetGameStateFileOffset(_demo, i, ref info.FileOffset);
-                udtGetGameStateServerTimeOffset(_demo, i, ref info.ServerTimeOffset);
-                udtGetGameStateFirstSnapshotTime(_demo, i, ref info.FirstSnapshotTime);
-                udtGetGameStateLastSnapshotTime(_demo, i, ref info.LastSnapshotTime);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        private unsafe string GetObituaryAttackerString(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetObituaryAttackerName(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        private unsafe string GetObituaryTargetString(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetObituaryTargetName(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        public List<FragInfo> GetFrags()
-        {
-            var list = new List<FragInfo>();
-
-            int fragCount = 0;
-            udtGetObituaryCount(_demo, ref fragCount);
-            for(int i = 0; i < fragCount; ++i)
-            {
-                var info = new FragInfo();
-                udtGetObituaryTime(_demo, i, ref info.Time);
-                udtGetObituaryMeanOfDeath(_demo, i, ref info.Mod);
-                info.AttackerName = GetObituaryAttackerString(i);
-                info.TargetName = GetObituaryTargetString(i);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        private unsafe string GetPuRunPlayerName(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetPuRunPlayerName(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        public List<PuRunInfo> GetPuRuns()
-        {
-            var list = new List<PuRunInfo>();
-
-            int puRunCount = 0;
-            udtGetPuRunCount(_demo, ref puRunCount);
-            for(int i = 0; i < puRunCount; ++i)
-            {
-                var info = new PuRunInfo();
-                info.PlayerName = GetPuRunPlayerName(i);
-                udtGetPuRunTime(_demo, i, ref info.Time);
-                udtGetPuRunPu(_demo, i, ref info.Pu);
-                udtGetPuRunDuration(_demo, i, ref info.Duration);
-                udtGetPuRunKillCount(_demo, i, ref info.Kills);
-                udtGetPuRunTeamKillCount(_demo, i, ref info.TeamKills);
-                udtGetPuRunSelfKill(_demo, i, ref info.SelfKill);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        private unsafe string GetServerCommandMessage(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetServerCommandMessage(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        private int GetServerCommandSequence(int index)
-        {
-            int seqNumber = -1;
-            udtGetServerCommandSequence(_demo, index, ref seqNumber);
-
-            return seqNumber;
-        }
-
-        public List<ServerCommandInfo> GetServerCommands()
-        {
-            var list = new List<ServerCommandInfo>();
-
-            int cmdCount = 0;
-            udtGetServerCommandCount(_demo, ref cmdCount);
-            for(int i = 0; i < cmdCount; ++i)
-            {
-                var info = new ServerCommandInfo();
-                info.Command = GetServerCommandMessage(i);
-                info.Sequence = GetServerCommandSequence(i);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        private unsafe string GetConfigStringValue(int index)
-        {
-            var bufferArray = new byte[_stringBufferSize];
-            fixed(byte* bufferPtr = bufferArray)
-            {
-                udtGetConfigStringValue(_demo, index, bufferPtr, _stringBufferSize);
-            }
-
-            return _encoding.GetString(bufferArray, 0, GetStringLength(bufferArray));
-        }
-
-        private int GetConfigStringIndex(int index)
-        {
-            int quakeIndex = -1;
-            udtGetConfigStringIndex(_demo, index, ref quakeIndex);
-
-            return quakeIndex;
-        }
-
-        public List<ConfigStringInfo> GetConfigStrings()
-        {
-            var list = new List<ConfigStringInfo>();
-
-            int csCount = 0;
-            udtGetConfigStringCount(_demo, ref csCount);
-            for(int i = 0; i < csCount; ++i)
-            {
-                var info = new ConfigStringInfo();
-                info.Value = GetConfigStringValue(i);
-                info.Index = GetConfigStringIndex(i);
-                list.Add(info);
-            }
-
-            return list;
-        }
-
-        static public void CutDemoTime(string inFilePath, string outFilePath, int startTimeMs, int endTimeMs, ProgressCallback progressCb, MessageCallback messageCb)
-        {
-            udtCutDemoTime(inFilePath, outFilePath, startTimeMs, endTimeMs, progressCb, messageCb);
-        }
-
-        static public void CutDemoChat(string inFilePath, string outFilePath, List<string> chatEntries, int startOffsetSecs, int endOffsetSecs)
-        {
-            string[] entries = new string[chatEntries.Count];
-            for(int i = 0; i < chatEntries.Count; ++i)
-            {
-                entries[i] = chatEntries[i];
-            }
-
-            udtCutDemoChat(inFilePath, outFilePath, entries, chatEntries.Count, startOffsetSecs, endOffsetSecs);
-        }
-
-        static private int GetStringLength(byte[] bufferArray)
-        {
-            int length = 0;
-            for(int i = 0; i < bufferArray.Length; ++i)
-            {
-                if(bufferArray[i] == '\0')
-                {
-                    break;
-                }
-
-                ++length;
-            }
-
-            return length;
         }
     }
 }

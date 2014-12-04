@@ -11,26 +11,80 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public class TimedEventDisplayInfo
     {
-        private class ChatEventDisplayInfo : TimedEventDisplayInfo
+        public string Time { get; set; }
+    }
+
+    public class ChatEventDisplayInfo : TimedEventDisplayInfo
+    {
+        public ChatEventDisplayInfo(string time, string player, string message)
         {
-            public ChatEventDisplayInfo(string time, string player, string message)
-            {
-                Time = time;
-                Player = player;
-                Message = message;
-            }
-
-            public override string ToString()
-            {
-                return string.Format("[{0}] <{1}> {2}", Time, Player, Message);
-            }
-
-            public string Player { get; set; }
-            public string Message { get; set; }
+            Time = time;
+            Player = player;
+            Message = message;
         }
 
+        public override string ToString()
+        {
+            return string.Format("[{0}] <{1}> {2}", Time, Player, Message);
+        }
+
+        public string Player { get; set; }
+        public string Message { get; set; }
+    }
+
+    public class ChatEventsComponent : AppComponent
+    {
+        public FrameworkElement RootControl { get; private set; }
+        public List<ListView> ListViews { get { return new List<ListView> { _chatEventsListView }; } }
+
+        public ChatEventsComponent(App app)
+        {
+            _app = app;
+            RootControl = CreateDemoChatTab();
+        }
+
+        public void PopulateViews(DemoInfo demoInfo)
+        {
+            var cutByTimeItem = new MenuItem();
+            cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
+            cutByTimeItem.Command = _cutByTimeCommand;
+            cutByTimeItem.Click += (obj, args) => OnCutByTimeFromChatContextClicked();
+
+            var copyItem = new MenuItem();
+            copyItem.Header = "Copy to Clipboard (Ctrl+C)";
+            copyItem.Command = _copyChatCommand;
+            copyItem.Click += (obj, args) => OnCopyFromChatContextClicked();
+
+            var eventsContextMenu = new ContextMenu();
+            eventsContextMenu.Items.Add(cutByTimeItem);
+            eventsContextMenu.Items.Add(copyItem);
+
+            var chatEvents = new ObservableCollection<ListViewItem>();
+            foreach(var chatEvent in demoInfo.ChatEvents)
+            {
+                var item = new ListViewItem();
+                item.Content = chatEvent;
+                item.ContextMenu = eventsContextMenu;
+                chatEvents.Add(item);
+            }
+
+            _chatEventsListView.ItemsSource = chatEvents;
+            if(chatEvents.Count > 0)
+            {
+                _chatEventsListView.SelectedIndex = 0;
+            }
+        }
+
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        private App _app;
+        private static RoutedCommand _cutByTimeCommand = new RoutedCommand(); // @TODO: Move this.
+        private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private ListView _chatEventsListView = null;
         private bool _chatEventsAscending = true;
         private string _chatEventsLastProperty = "";
@@ -180,50 +234,18 @@ namespace Uber.DemoTools
 
         private void InitChatEventsListViewCutBinding()
         {
-            AddKeyBinding(_chatEventsListView, Key.T, _cutByChatCommand, (obj, args) => OnCutByTimeFromChatContextClicked());
+            AddKeyBinding(_chatEventsListView, Key.T, _cutByTimeCommand, (obj, args) => OnCutByTimeFromChatContextClicked());
             AddKeyBinding(_chatEventsListView, Key.C, _copyChatCommand, (obj, args) => OnCopyFromChatContextClicked());
-        }
-
-        private void PopulateChatEventsListView(DemoInfo demoInfo)
-        {
-            var cutByTimeItem = new MenuItem();
-            cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
-            cutByTimeItem.Command = _cutByChatCommand;
-            cutByTimeItem.Click += (obj, args) => OnCutByTimeFromChatContextClicked();
-
-            var copyItem = new MenuItem();
-            copyItem.Header = "Copy to Clipboard (Ctrl+C)";
-            copyItem.Command = _copyChatCommand;
-            copyItem.Click += (obj, args) => OnCopyFromChatContextClicked();
-
-            var eventsContextMenu = new ContextMenu();
-            eventsContextMenu.Items.Add(cutByTimeItem);
-            eventsContextMenu.Items.Add(copyItem);
-
-            var chatEvents = new ObservableCollection<ListViewItem>();
-            foreach(var chatEvent in demoInfo.ChatEvents)
-            {
-                var item = new ListViewItem();
-                item.Content = chatEvent;
-                item.ContextMenu = eventsContextMenu;
-                chatEvents.Add(item);
-            }
-
-            _chatEventsListView.ItemsSource = chatEvents;
-            if(chatEvents.Count > 0)
-            {
-                _chatEventsListView.SelectedIndex = 0;
-            }
         }
 
         private void OnCutByTimeFromChatContextClicked()
         {
-            OnCutByTimeContextClicked(_chatEventsListView);
+            _app.OnCutByTimeContextClicked(_chatEventsListView);
         }
 
         private void OnCopyFromChatContextClicked()
         {
-            CopyListViewRowsToClipboard(_chatEventsListView);
+            App.CopyListViewRowsToClipboard(_chatEventsListView);
         }
     }
 }

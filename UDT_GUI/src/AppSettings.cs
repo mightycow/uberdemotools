@@ -8,8 +8,18 @@ using System.Windows.Controls;
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public interface AppComponent
     {
+        void PopulateViews(DemoInfo demoInfo);
+        void SaveToConfigObject(UdtConfig config);
+
+        FrameworkElement RootControl { get; }
+        List<ListView> ListViews { get; }
+    }
+
+    public class AppSettingsComponent : AppComponent
+    {
+        private App _app = null;
         private CheckBox _outputModeCheckBox = null;
         private TextBox _outputFolderTextBox = null;
         private FrameworkElement _outputFolderRow = null;
@@ -17,13 +27,33 @@ namespace Uber.DemoTools
         private CheckBox _skipFolderScanModeCheckBox = null;
         private FrameworkElement _skipRecursiveDialog = null;
 
-        private FrameworkElement CreateSettingsTab()
+        public FrameworkElement RootControl { get; private set; }
+        public List<ListView> ListViews { get { return null; } }
+
+        public AppSettingsComponent(App app)
+        {
+            _app = app;
+            RootControl = CreateSettingsControl();
+        }
+
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            config.OutputToInputFolder = _outputModeCheckBox.IsChecked ?? false;
+            config.OutputFolder = _outputFolderTextBox.Text;
+        }
+
+        public void PopulateViews(DemoInfo demoInfo)
+        {
+            // Nothing to do.
+        }
+
+        private FrameworkElement CreateSettingsControl()
         {
             var outputModeCheckBox = new CheckBox();
             _outputModeCheckBox = outputModeCheckBox;
             outputModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             outputModeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            outputModeCheckBox.IsChecked = _config.OutputToInputFolder;
+            outputModeCheckBox.IsChecked = _app.Config.OutputToInputFolder;
             outputModeCheckBox.Content = " Output cut demos to the input demos' folders?";
             outputModeCheckBox.Checked += (obj, args) => OnSameOutputChecked();
             outputModeCheckBox.Unchecked += (obj, args) => OnSameOutputUnchecked();
@@ -32,7 +62,7 @@ namespace Uber.DemoTools
             _outputFolderTextBox = outputFolderTextBox;
             outputFolderTextBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             outputFolderTextBox.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderTextBox.Text = _config.OutputFolder;
+            outputFolderTextBox.Text = _app.Config.OutputFolder;
             outputFolderTextBox.Width = 300;
 
             var outputFolderBrowseButton = new Button();
@@ -66,7 +96,7 @@ namespace Uber.DemoTools
             var skipChatOffsetsDialogCheckBox = new CheckBox();
             skipChatOffsetsDialogCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             skipChatOffsetsDialogCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            skipChatOffsetsDialogCheckBox.IsChecked = _config.SkipChatOffsetsDialog;
+            skipChatOffsetsDialogCheckBox.IsChecked = _app.Config.SkipChatOffsetsDialog;
             skipChatOffsetsDialogCheckBox.Content = " Skip the 'Chat Offsets' dialog";
             skipChatOffsetsDialogCheckBox.Checked += (obj, args) => OnSkipChatOffsetsChecked();
             skipChatOffsetsDialogCheckBox.Unchecked += (obj, args) => OnSkipChatOffsetsUnchecked();
@@ -75,7 +105,7 @@ namespace Uber.DemoTools
             _skipFolderScanModeCheckBox = skipFolderScanModeCheckBox;
             skipFolderScanModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             skipFolderScanModeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            skipFolderScanModeCheckBox.IsChecked = _config.SkipScanFoldersRecursivelyDialog;
+            skipFolderScanModeCheckBox.IsChecked = _app.Config.SkipScanFoldersRecursivelyDialog;
             skipFolderScanModeCheckBox.Content = " Skip the dialog asking if folder scanning should be recursive";
             skipFolderScanModeCheckBox.Checked += (obj, args) => OnSkipFolderScanRecursiveChecked();
             skipFolderScanModeCheckBox.Unchecked += (obj, args) => OnSkipFolderScanRecursiveUnchecked();
@@ -84,7 +114,7 @@ namespace Uber.DemoTools
             _folderScanModeCheckBox = folderScanModeCheckBox;
             folderScanModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             folderScanModeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            folderScanModeCheckBox.IsChecked = _config.SkipScanFoldersRecursivelyDialog;
+            folderScanModeCheckBox.IsChecked = _app.Config.SkipScanFoldersRecursivelyDialog;
             folderScanModeCheckBox.Content = " Scan subfolders recursively?";
             folderScanModeCheckBox.Checked += (obj, args) => OnFolderScanRecursiveChecked();
             folderScanModeCheckBox.Unchecked += (obj, args) => OnFolderScanRecursiveUnchecked();
@@ -92,11 +122,11 @@ namespace Uber.DemoTools
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(CreateTuple("Output Mode", outputModeCheckBox));
-            panelList.Add(CreateTuple("=>  Output Folder", outputFolderDockPanel));
-            panelList.Add(CreateTuple("Chat History", skipChatOffsetsDialogCheckBox));
-            panelList.Add(CreateTuple("Recursive Scan", skipFolderScanModeCheckBox));
-            panelList.Add(CreateTuple("=> Recursive", folderScanModeCheckBox));
+            panelList.Add(App.CreateTuple("Output Mode", outputModeCheckBox));
+            panelList.Add(App.CreateTuple("=>  Output Folder", outputFolderDockPanel));
+            panelList.Add(App.CreateTuple("Chat History", skipChatOffsetsDialogCheckBox));
+            panelList.Add(App.CreateTuple("Recursive Scan", skipFolderScanModeCheckBox));
+            panelList.Add(App.CreateTuple("=> Recursive", folderScanModeCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -105,9 +135,9 @@ namespace Uber.DemoTools
 
             var settingStackPanel = settingsPanel as StackPanel;
             _outputFolderRow = settingStackPanel.Children[OutputFolderIndex] as FrameworkElement;
-            _outputFolderRow.Visibility = _config.OutputToInputFolder ? Visibility.Collapsed : Visibility.Visible;
+            _outputFolderRow.Visibility = _app.Config.OutputToInputFolder ? Visibility.Collapsed : Visibility.Visible;
             _skipRecursiveDialog = settingStackPanel.Children[SkipRecursiveDialogIndex] as FrameworkElement;
-            _skipRecursiveDialog.Visibility = _config.SkipScanFoldersRecursivelyDialog ? Visibility.Visible : Visibility.Collapsed;
+            _skipRecursiveDialog.Visibility = _app.Config.SkipScanFoldersRecursivelyDialog ? Visibility.Visible : Visibility.Collapsed;
 
             var settingsGroupBox = new GroupBox();
             settingsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -122,13 +152,13 @@ namespace Uber.DemoTools
         private void OnSameOutputChecked()
         {
             _outputFolderRow.Visibility = Visibility.Collapsed;
-            _config.OutputToInputFolder = true;
+            _app.Config.OutputToInputFolder = true;
         }
 
         private void OnSameOutputUnchecked()
         {
             _outputFolderRow.Visibility = Visibility.Visible;
-            _config.OutputToInputFolder = false;
+            _app.Config.OutputToInputFolder = false;
         }
 
         private void OnOutputFolderBrowseClicked()
@@ -161,40 +191,40 @@ namespace Uber.DemoTools
             }
             catch(Exception exception)
             {
-                LogError("Failed to open the output folder: " + exception.Message);
+                _app.LogError("Failed to open the output folder: " + exception.Message);
             }
         }
 
         private void OnSkipChatOffsetsChecked()
         {
-            _config.SkipChatOffsetsDialog = true;
+            _app.Config.SkipChatOffsetsDialog = true;
         }
 
         private void OnSkipChatOffsetsUnchecked()
         {
-            _config.SkipChatOffsetsDialog = false;
+            _app.Config.SkipChatOffsetsDialog = false;
         }
 
         private void OnSkipFolderScanRecursiveChecked()
         {
             _skipRecursiveDialog.Visibility = Visibility.Visible;
-            _config.SkipScanFoldersRecursivelyDialog = true;
+            _app.Config.SkipScanFoldersRecursivelyDialog = true;
         }
 
         private void OnSkipFolderScanRecursiveUnchecked()
         {
             _skipRecursiveDialog.Visibility = Visibility.Collapsed;
-            _config.SkipScanFoldersRecursivelyDialog = false;
+            _app.Config.SkipScanFoldersRecursivelyDialog = false;
         }
 
         private void OnFolderScanRecursiveChecked()
         {
-            _config.ScanFoldersRecursively = true;
+            _app.Config.ScanFoldersRecursively = true;
         }
 
         private void OnFolderScanRecursiveUnchecked()
         {
-            _config.ScanFoldersRecursively = false;
+            _app.Config.ScanFoldersRecursively = false;
         }
     }
 }
