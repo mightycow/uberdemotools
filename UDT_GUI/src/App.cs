@@ -918,7 +918,7 @@ namespace Uber.DemoTools
             {
                 demoInfos = UDT_DLL.ParseDemos(ref _parseArg, filePaths, _config.MaxThreadCount);
             }
-            catch(SEHException exception)
+            catch(Exception exception)
             {
                 LogError("Caught an exception while parsing demos: {0}", exception.Message);
                 demoInfos = null;
