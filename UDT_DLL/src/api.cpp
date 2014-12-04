@@ -878,3 +878,15 @@ UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count)
 
 	return (s32)udtErrorCode::None;
 }
+
+UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* demoInputIdx)
+{
+	if(context == NULL || demoInputIdx == NULL || demoIdx >= context->GetDemoCount())
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*demoInputIdx = context->InputIndices[demoIdx];
+
+	return (s32)udtErrorCode::None;
+}

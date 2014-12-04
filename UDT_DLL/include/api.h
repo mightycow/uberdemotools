@@ -151,7 +151,6 @@ extern "C"
 		// The maximum amount of threads that should be used to process the demos.
 		u32 MaxThreadCount;
 	};
-
 	
 	struct udtCut
 	{
@@ -353,6 +352,9 @@ extern "C"
 
 	// Gets the demo count for which plug-in data is stored in a context.
 	UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count);
+
+	// Gets the input index of the specified demo.
+	UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* demoInputIdx);
 
 	// Releases all the resources associated to the context group.
 	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);

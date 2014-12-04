@@ -34,6 +34,7 @@ public:
 	udtBaseParser Parser;
 	udtVMLinearAllocator PlugInAllocator;
 	udtVMArray<AddOnItem> PlugIns; // There are DemoCount * PlugInCountPerDemo elements.
+	udtVMArray<u32> InputIndices;
 	u32 DemoCount;
 	u32 PlugInCountPerDemo;
 };

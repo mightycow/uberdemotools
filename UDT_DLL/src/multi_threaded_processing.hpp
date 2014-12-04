@@ -44,6 +44,7 @@ struct udtDemoThreadAllocator
 
 	udtVMArray<const char*> FilePaths;
 	udtVMArray<u64> FileSizes;
+	udtVMArray<u32> InputIndices;
 	udtVMArray<udtParsingThreadData> Threads;
 };
 

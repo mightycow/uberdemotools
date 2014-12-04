@@ -18,6 +18,7 @@ struct FileInfo
 	u64 ByteCount;
 	const char* FilePath;
 	u32 ThreadIdx;
+	u32 InputIdx;
 };
 
 static int SortByFileSizesDescending(const void* aPtr, const void* bPtr)
@@ -61,6 +62,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		files[i].FilePath = filePaths[i];
 		files[i].ByteCount = byteCount;
 		files[i].ThreadIdx = (u32)-1;
+		files[i].InputIdx = i;
 		totalByteCount += byteCount;
 	}
 
@@ -112,6 +114,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	u32 firstFileIdx = 0;
 	FilePaths.Resize(fileCount);
 	FileSizes.Resize(fileCount);
+	InputIndices.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(files[i].ThreadIdx != threadIdx)
@@ -125,6 +128,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 		FilePaths[i] = files[i].FilePath;
 		FileSizes[i] = files[i].ByteCount;
+		InputIndices[i] = files[i].InputIdx;
 	}
 	Threads[threadIdx].FirstFileIndex = firstFileIdx;
 	Threads[threadIdx].FileCount = fileCount - firstFileIdx;
@@ -271,6 +275,15 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	threads.Resize(threadCount);
 	for(u32 i = 0; i < threadCount; ++i)
 	{
+		udtParserContext* const context = contexts + i;
+		const u32 fileCount = threadInfo.Threads[i].FileCount;
+		const u32 firstFileIdx = threadInfo.Threads[i].FirstFileIndex;
+		context->InputIndices.Resize(fileCount);
+		for(u32 j = 0; j < fileCount; ++j)
+		{
+			context->InputIndices[j] = threadInfo.InputIndices[firstFileIdx + j];
+		}
+
 		udtThread& thread = threads[i];
 		new (&thread) udtThread;
 		threadInfo.Threads[i].Context = contexts + i;

@@ -9,10 +9,12 @@
 #define UDT_MEMORY_PAGE_SIZE    4096
 
 #if defined(UDT_DEBUG)
-#	define UDT_ASSERT_OR_FATAL(exp)    assert(exp)
+#	define UDT_ASSERT_OR_FATAL(exp)    assert((exp))
 #else
 #	define UDT_ASSERT_OR_FATAL(exp)    if(!(exp)) FatalError(__FILE__, __LINE__, __FUNCTION__, #exp)
 #endif
+
+#define UDT_ASSERT_OR_FATAL_ALWAYS(msg)    UDT_ASSERT_OR_FATAL((msg, false))
 
 
 udtVMLinearAllocator::udtVMLinearAllocator()
@@ -79,7 +81,7 @@ u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 		const u32 newByteCount = chunkCount * _commitByteCountGranularity;
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
-			UDT_ASSERT_OR_FATAL(false && "VirtualMemoryCommit failed");
+			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
 			return NULL;
 		}
 		_committedByteCount += newByteCount;
