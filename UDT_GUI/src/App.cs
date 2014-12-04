@@ -38,6 +38,7 @@ namespace Uber.DemoTools
 
     public class DemoInfo
     {
+        public int InputIndex;
         public string FilePath;
         public string Protocol;
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();

@@ -333,12 +333,14 @@ namespace Uber.DemoTools
                 for(uint j = 0; j < demoCount; ++j)
                 {
                     var info = new DemoInfo();
+                    info.InputIndex = 0;
                     info.FilePath = "?";
                     info.Protocol = "?";
 
                     uint inputIdx = 0;
                     if(udtGetDemoInputIndex(context, j, ref inputIdx) == udtErrorCode.None)
                     {
+                        info.InputIndex = (int)inputIdx;
                         info.FilePath = Path.GetFullPath(filePaths[(int)inputIdx]);
                         info.Protocol = udtGetProtocolByFilePath(filePaths[(int)inputIdx]).ToString();
                     }
@@ -349,6 +351,9 @@ namespace Uber.DemoTools
             }
 
             udtDestroyContextGroup(contextGroup);
+
+            // Keep the original input order.
+            infoList.Sort((a, b) => a.InputIndex - b.InputIndex);
 
             return infoList;
         }
