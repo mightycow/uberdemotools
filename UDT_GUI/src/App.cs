@@ -42,7 +42,7 @@ namespace Uber.DemoTools
         public string FilePath;
         public string Protocol;
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
-        // @TODO:
+        public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
     }
 
     public class App
@@ -802,7 +802,12 @@ namespace Uber.DemoTools
             _infoListView.Items.Clear();
             _infoListView.Items.Add(new ConfigStringDisplayInfo("Folder Path", Path.GetDirectoryName(demoInfo.FilePath) ?? "N/A"));
             _infoListView.Items.Add(new ConfigStringDisplayInfo("File Name", Path.GetFileNameWithoutExtension(demoInfo.FilePath) ?? "N/A"));
-            // @TODO:
+            _infoListView.Items.Add(new ConfigStringDisplayInfo("Protocol", demoInfo.Protocol));
+
+            foreach(var tuple in demoInfo.Generic)
+            {
+                _infoListView.Items.Add(new ConfigStringDisplayInfo(tuple.Item1, tuple.Item2));
+            }
         }
 
         private void OnDemoListSelectionChanged()

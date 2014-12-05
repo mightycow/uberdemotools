@@ -84,7 +84,7 @@ namespace Uber.DemoTools
         }
 
         private App _app;
-        private static RoutedCommand _cutByTimeCommand = new RoutedCommand(); // @TODO: Move this.
+        private static RoutedCommand _cutByTimeCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private ListView _chatEventsListView = null;
         private bool _chatEventsAscending = true;

@@ -246,6 +246,17 @@ namespace Uber.DemoTools
             return udtCreateContext();
         }
 
+        public static string GetProtocolAsString(udtProtocol protocol)
+        {
+            switch(protocol)
+            {
+                case udtProtocol.Dm68: return "68 (Quake 3's last protocol)";
+                case udtProtocol.Dm73: return "73 (Quake Live's old protocol)";
+                case udtProtocol.Dm90: return "90 (Quake Live's current protocol)";
+                default: return "?";
+            }
+        }
+
         public static bool CutDemoByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
         {
             if(context == IntPtr.Zero)
@@ -430,9 +441,11 @@ namespace Uber.DemoTools
                     uint inputIdx = 0;
                     if(udtGetDemoInputIndex(context, j, ref inputIdx) == udtErrorCode.None)
                     {
+                        var filePath = filePaths[(int)inputIdx];
+                        var protocol = udtGetProtocolByFilePath(filePath);
                         info.InputIndex = (int)inputIdx;
-                        info.FilePath = Path.GetFullPath(filePaths[(int)inputIdx]);
-                        info.Protocol = udtGetProtocolByFilePath(filePaths[(int)inputIdx]).ToString();
+                        info.FilePath = Path.GetFullPath(filePath);
+                        info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
                     }
                     
                     ExtractDemoInfo(context, j, ref info);
@@ -451,6 +464,7 @@ namespace Uber.DemoTools
         private static void ExtractDemoInfo(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
         {
             ExtractChatEvents(context, demoIdx, ref info);
+            ExtractGameStateEvents(context, demoIdx, ref info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
@@ -475,6 +489,54 @@ namespace Uber.DemoTools
                 var message = Marshal.PtrToStringAnsi(data.MessageNoCol);
                 var item = new ChatEventDisplayInfo(time, player ?? "N/A", message ?? "N/A");
                 info.ChatEvents.Add(item);
+            }
+        }
+
+        private static string FormatMinutesSecondsFromMs(int totalMs)
+        {
+            return totalMs == Int32.MinValue ? "?" : App.FormatMinutesSeconds(totalMs / 1000);
+        }
+
+        private static string FormatBytes(uint bytes)
+        {
+            return bytes.ToString() + (bytes == 0 ? " byte" : " bytes");
+        }
+
+        private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        {
+            uint gsEventCount = 0;
+            IntPtr gsEvents = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.GameState, ref gsEvents, ref gsEventCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
+            const string space = "   ";
+
+            for(uint i = 0; i < gsEventCount; ++i)
+            {
+                var gsAddress = new IntPtr(gsEvents.ToInt64() + i * sizeof(udtParseDataGameState));
+                var gsData = (udtParseDataGameState)Marshal.PtrToStructure(gsAddress, typeof(udtParseDataGameState));
+
+                var firstSnapTime = App.FormatMinutesSeconds(gsData.FirstSnapshotTimeMs / 1000);
+                var lastSnapTime = App.FormatMinutesSeconds(gsData.LastSnapshotTimeMs / 1000);
+                info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
+                info.Generic.Add(Tuple.Create(space + "File offset", FormatBytes(gsData.FileOffset)));
+                info.Generic.Add(Tuple.Create(space + "Snapshots", firstSnapTime + " - " + lastSnapTime));
+                info.Generic.Add(Tuple.Create(space + "Matches", gsData.MatchCount.ToString()));
+  
+                var matchCount = gsData.MatchCount;
+                for(uint j = 0; j < matchCount; ++j)
+                {
+                    var matchAddress = new IntPtr(gsData.Matches.ToInt64() + j * sizeof(udtMatchInfo));
+                    var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
+
+                    var desc = space + "Match #" + (j + 1).ToString();
+                    var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
+                    var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
+                    var val = start + " - " + end;
+                    info.Generic.Add(Tuple.Create(desc, val));
+                }
             }
         }
     }
