@@ -126,6 +126,7 @@ namespace Uber.DemoTools
             public IntPtr MessageNoCol; // const char*
 		    public Int32 ServerTimeMs;
 		    public Int32 PlayerIndex;
+            public Int32 GameStateIndex;
 	    }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -524,14 +525,13 @@ namespace Uber.DemoTools
                 return;
             }
 
-            info.GameStateCount = (int)gsEventCount;
-
             const string space = "   ";
 
             for(uint i = 0; i < gsEventCount; ++i)
             {
                 var gsAddress = new IntPtr(gsEvents.ToInt64() + i * sizeof(udtParseDataGameState));
                 var gsData = (udtParseDataGameState)Marshal.PtrToStructure(gsAddress, typeof(udtParseDataGameState));
+                info.GameStateIndices.Add(gsData.FileOffset);
 
                 var firstSnapTime = App.FormatMinutesSeconds(gsData.FirstSnapshotTimeMs / 1000);
                 var lastSnapTime = App.FormatMinutesSeconds(gsData.LastSnapshotTimeMs / 1000);

@@ -18,6 +18,7 @@ struct udtCutByChatAnalyzer
 public:
 	struct CutSection
 	{
+		// @TODO: s32 GameStateIndex;
 		s32 StartTimeMs;
 		s32 EndTimeMs;
 	};

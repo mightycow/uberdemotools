@@ -21,6 +21,7 @@ static const char* nullString = "";
 udtParserPlugInChat::udtParserPlugInChat() : ChatEvents(1 << 20, 4096)
 {
 	_chatStringAllocator.Init(1 << 24, 4096);
+	_gameStateIndex = -1;
 }
 
 udtParserPlugInChat::~udtParserPlugInChat()
@@ -37,6 +38,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	
 	udtParseDataChat chatEvent;
 	memset(&chatEvent, 0, sizeof(chatEvent));
+	chatEvent.GameStateIndex = _gameStateIndex;
 	chatEvent.ServerTimeMs = parser._inServerTime;
 	chatEvent.PlayerIndex = S32_MIN;
 
@@ -83,4 +85,9 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	}
 	
 	ChatEvents.Add(chatEvent);
+}
+
+void udtParserPlugInChat::ProcessGamestateMessage(const udtGamestateCallbackArg&, udtBaseParser&)
+{
+	++_gameStateIndex;
 }

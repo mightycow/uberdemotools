@@ -43,7 +43,7 @@ namespace Uber.DemoTools
         public string Protocol = "?";
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
-        public int GameStateCount = 0;
+        public List<UInt32> GameStateIndices = new List<UInt32>();
     }
 
     public class App
@@ -587,7 +587,7 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return displayInfo.Demo.GameStateCount > 1;
+            return displayInfo.Demo.GameStateIndices.Count > 1;
         }
 
         private void InitDemoListSplitCommand()

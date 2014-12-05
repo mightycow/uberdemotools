@@ -249,6 +249,10 @@ extern "C"
 		// Negative if not available.
 		// If available, in range [0;63].
 		s32 PlayerIndex;
+
+		// The index of the last gamestate message after which this chat event occurred.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
 	};
 
 	struct udtMatchInfo
