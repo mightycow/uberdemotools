@@ -18,6 +18,11 @@ bool GetProcessorCoreCount(u32& coreCount)
 	}
 		
 	buffer = (PSYSTEM_LOGICAL_PROCESSOR_INFORMATION)malloc((size_t)bufferByteCount);
+	if(buffer == NULL)
+	{
+		return false;
+	}
+
 	if(GetLogicalProcessorInformation(buffer, &bufferByteCount) == FALSE)
 	{
 		free(buffer);
