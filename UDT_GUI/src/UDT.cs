@@ -257,6 +257,19 @@ namespace Uber.DemoTools
             }
         }
 
+        public static bool SplitDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
+        {
+            if(context == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            parseArg.PlugInCount = 0;
+            parseArg.PlugIns = IntPtr.Zero;
+
+            return udtSplitDemoFile(context, ref parseArg, filePath) == udtErrorCode.None;
+        }
+
         public static bool CutDemoByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
         {
             if(context == IntPtr.Zero)
@@ -510,6 +523,8 @@ namespace Uber.DemoTools
             {
                 return;
             }
+
+            info.GameStateCount = (int)gsEventCount;
 
             const string space = "   ";
 

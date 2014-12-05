@@ -228,11 +228,7 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 	}
 
 	const bool success = CopyFileRange(file, outputFile, tempAllocator, startOffset, endOffset);
-	if(success)
-	{
-		context.LogInfo("Done!");
-	}
-	else
+	if(!success)
 	{
 		context.LogError("File copy failed");
 	}

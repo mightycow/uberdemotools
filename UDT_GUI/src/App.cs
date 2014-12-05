@@ -38,11 +38,12 @@ namespace Uber.DemoTools
 
     public class DemoInfo
     {
-        public int InputIndex;
-        public string FilePath;
-        public string Protocol;
+        public int InputIndex = 0;
+        public string FilePath = "?";
+        public string Protocol = "?";
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
+        public int GameStateCount = 0;
     }
 
     public class App
@@ -103,6 +104,7 @@ namespace Uber.DemoTools
         private IntPtr _mainThreadContext = IntPtr.Zero;
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
+        private static RoutedCommand _splitDemoCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
@@ -360,6 +362,7 @@ namespace Uber.DemoTools
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             demoListView.Foreground = new SolidColorBrush(Colors.Black);
             InitDemoListDeleteCommand();
+            InitDemoListSplitCommand();
             
             var demoListGroupBox = new GroupBox();
             demoListGroupBox.Header = "Demo List";
@@ -571,6 +574,30 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
+        private bool CanExecuteSplitCommand(ListViewItem item)
+        {
+            if(item == null)
+            {
+                return false;
+            }
+
+            var displayInfo = item.Content as DemoDisplayInfo;
+            if(displayInfo == null)
+            {
+                return false;
+            }
+
+            return displayInfo.Demo.GameStateCount > 1;
+        }
+
+        private void InitDemoListSplitCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _splitDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(args.Source as ListViewItem); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
         private void InitLogListBoxClearCommand()
         {
             var inputGesture = new KeyGesture(Key.X, ModifierKeys.Control);
@@ -631,11 +658,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            if(_jobThread != null)
-            {
-                _jobThread.Join();
-            }
-
+            JoinJobThread();
             SaveConfig();
             _application.Shutdown();
         }
@@ -778,23 +801,52 @@ namespace Uber.DemoTools
             removeButton.Margin = new Thickness(5);
             removeButton.Click += (obj, args) => OnRemoveDemoClicked();
 
-            var buttonPanel = new StackPanel();
-            buttonPanel.HorizontalAlignment = HorizontalAlignment.Left;
-            buttonPanel.VerticalAlignment = VerticalAlignment.Top;
-            buttonPanel.Margin = new Thickness(5);
-            buttonPanel.Orientation = Orientation.Vertical;
-            buttonPanel.Children.Add(addButton);
-            buttonPanel.Children.Add(addFolderButton);
-            buttonPanel.Children.Add(removeButton);
+            var demoListButtonPanel = new StackPanel();
+            demoListButtonPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            demoListButtonPanel.VerticalAlignment = VerticalAlignment.Top;
+            demoListButtonPanel.Margin = new Thickness(5);
+            demoListButtonPanel.Orientation = Orientation.Vertical;
+            demoListButtonPanel.Children.Add(addButton);
+            demoListButtonPanel.Children.Add(addFolderButton);
+            demoListButtonPanel.Children.Add(removeButton);
 
-            var buttonGroupBox = new GroupBox();
-            buttonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            buttonGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            buttonGroupBox.Margin = new Thickness(5);
-            buttonGroupBox.Header = "Demo List Actions";
-            buttonGroupBox.Content = buttonPanel;
+            var demoListButtonGroupBox = new GroupBox();
+            demoListButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            demoListButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            demoListButtonGroupBox.Margin = new Thickness(5);
+            demoListButtonGroupBox.Header = "Demo List Actions";
+            demoListButtonGroupBox.Content = demoListButtonPanel;
 
-            return buttonGroupBox;
+            var splitButton = new Button();
+            splitButton.Content = "Split Demo";
+            splitButton.Width = 75;
+            splitButton.Height = 25;
+            splitButton.Margin = new Thickness(5);
+            splitButton.Click += (obj, args) => OnSplitDemoClicked();
+
+            var demoButtonPanel = new StackPanel();
+            demoButtonPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            demoButtonPanel.VerticalAlignment = VerticalAlignment.Top;
+            demoButtonPanel.Margin = new Thickness(5);
+            demoButtonPanel.Orientation = Orientation.Vertical;
+            demoButtonPanel.Children.Add(splitButton);
+
+            var demoButtonGroupBox = new GroupBox();
+            demoButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            demoButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            demoButtonGroupBox.Margin = new Thickness(5);
+            demoButtonGroupBox.Header = "Demo Actions";
+            demoButtonGroupBox.Content = demoButtonPanel;
+
+            var rootPanel = new WrapPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            rootPanel.Margin = new Thickness(5);
+            rootPanel.Orientation = Orientation.Horizontal;
+            rootPanel.Children.Add(demoListButtonGroupBox);
+            rootPanel.Children.Add(demoButtonGroupBox);
+
+            return rootPanel;
         }
 
         private void PopulateInfoListView(DemoInfo demoInfo)
@@ -907,13 +959,8 @@ namespace Uber.DemoTools
             DisableUiNonThreadSafe();
             _demoListView.Background = _demoListViewBackground;
 
-            if(_jobThread != null)
-            {
-                _jobThread.Join();
-            }
-
-            _jobThread = new Thread(DemoAddThread);
-            _jobThread.Start(filePaths);
+            JoinJobThread();
+            StartJobThread(DemoAddThread, filePaths);
         }
 
         private void DemoAddThread(object arg)
@@ -944,8 +991,14 @@ namespace Uber.DemoTools
             removeDemoItem.Command = _deleteDemoCommand;
             removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
 
+            var splitDemoItem = new MenuItem();
+            splitDemoItem.Header = "Split";
+            splitDemoItem.Command = _splitDemoCommand;
+            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
+
             var demosContextMenu = new ContextMenu();
             demosContextMenu.Items.Add(removeDemoItem);
+            demosContextMenu.Items.Add(splitDemoItem);
 
             var item = new ListViewItem();
             item.Content = info;
@@ -1165,6 +1218,67 @@ namespace Uber.DemoTools
                 _demoListView.Items.RemoveAt(demoIndex);
                 _demos.RemoveAt(demoIndex);
             }
+        }
+
+        private void DemoSplitThread(object arg)
+        {
+            try
+            {
+                DemoSplitThreadImpl(arg);
+            }
+            catch(Exception exception)
+            {
+                EntryPoint.RaiseException(exception);
+            }
+        }
+
+        private void DemoSplitThreadImpl(object arg)
+        {
+            var filePath = arg as string;
+            if(filePath == null)
+            {
+                return;
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+
+            Marshal.WriteInt32(CancelOperation, 0);
+            ParseArg.CancelOperation = CancelOperation;
+            ParseArg.MessageCb = DemoLoggingCallback;
+            ParseArg.OutputFolderPath = outputFolderPtr;
+            ParseArg.ProgressCb = DemoProgressCallback;
+            ParseArg.ProgressContext = IntPtr.Zero;
+
+            try
+            {
+                LogInfo("Splitting demo: {0}", filePath);
+                UDT_DLL.SplitDemo(GetMainThreadContext(), ref ParseArg, filePath);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while splitting a demo: {0}", exception.Message);
+            }
+
+            Marshal.FreeHGlobal(outputFolderPtr);
+
+            EnableUiThreadSafe();
+        }
+
+        private void OnSplitDemoClicked()
+        {
+            var demo = SelectedDemo;
+            if(demo == null)
+            {
+                LogWarning("No demo selected. Not doing anything. (Only one demo can be selected.)");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+            _demoListView.Background = _demoListViewBackground;
+
+            JoinJobThread();
+            StartJobThread(DemoSplitThread, demo.FilePath);
         }
 
         private bool ParseMinutesSeconds(string time, out int totalSeconds)
