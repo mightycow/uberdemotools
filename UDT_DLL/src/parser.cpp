@@ -237,13 +237,14 @@ bool udtBaseParser::ParseServerMessage()
 		const udtCutInfo cut = _cuts[0];
 		const s32 gameTime = GetVirtualInputTime();
 
-		if(!_outWriteMessage && gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs)
+		if(_inGameStateIndex == cut.GameStateIndex && !_outWriteMessage &&
+		   gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs)
 		{
 			const bool wroteMessage = _outWriteMessage;
 			_outWriteMessage = true;
 			_outWriteFirstMessage = _outWriteMessage && !wroteMessage;
 		}
-		else if(_outWriteMessage && gameTime > cut.EndTimeMs)
+		else if(_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs)
 		{
 			WriteLastMessage();
 			_outWriteMessage = false;
