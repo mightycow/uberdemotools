@@ -38,8 +38,8 @@ bool VirtualMemoryDecommitAndRelease(void* address, u32 /*byteCount*/)
 void* VirtualMemoryReserve(u32 byteCount)
 {
 	// "some implementations require fd to be -1 if MAP_ANONYMOUS is specified, and portable applications should ensure this."
-	//void* const address = mmap(NULL, (size_t)byteCount, PROT_NONE, MAP_ANONYMOUS, -1, 0);
-	// @NOTE: Unfortunately, the code above didn't work on the Linux I tried that one.
+	// void* const address = mmap(NULL, (size_t)byteCount, PROT_NONE, MAP_ANONYMOUS, -1, 0);
+	// @NOTE: Unfortunately, the code above didn't work on the Linux I tried it on...
 
 	const int fd = open("/dev/zero", O_RDWR);
 	void* const address = mmap(NULL, (size_t)byteCount, PROT_NONE, MAP_PRIVATE | MAP_FILE, fd, 0);
