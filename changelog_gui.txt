@@ -1,6 +1,9 @@
 0.3.0 (05.12.2014)
 CHG: Support for the DLL's new codebase (see changelog_dll.txt)
 REM: Removed the following tabs: Obituaries, PU Runs, Stats
+ADD: An option for the maximum thread count UDT is allowed to use during batch processing
+ADD: Demo splitting
+ADD: New quotes \o/
 
 0.2.0g (21.03.2013)
 CHG: The default text color of all ListView instances is opaque black

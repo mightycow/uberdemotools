@@ -3,7 +3,7 @@ CHG: New codebase!
 ADD: Support for demo protocol 90
 FIX: Cut demos having weird grenade trails and bounce issues, elevator and door animations, etc
 ADD: Support for multi-threaded batch processing
-ADD: Context re-use, custom fatal error handler, ...
+ADD: Context re-use, custom fatal error handler, demo splitting, ...
 ADD: A parser plug-in system for configurable analysis and data extraction tasks
 
 0.2.1 (06.12.2012)
