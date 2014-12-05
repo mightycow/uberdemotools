@@ -149,8 +149,9 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
-        public void SetStartAndEndTimes(int startTime, int endTime)
+        public void SetCutInfo(int gsIndex, int startTime, int endTime)
         {
+            _gameStateIndexEditBox.Text = gsIndex.ToString();
             _startTimeEditBox.Text = App.FormatMinutesSeconds(startTime);
             _endTimeEditBox.Text = App.FormatMinutesSeconds(endTime);
         }
@@ -158,12 +159,14 @@ namespace Uber.DemoTools
         private class CutByTimeInfo
         {
             public string FilePath = null;
+            public UInt32 FileOffset = 0;
             public int StartTime = -1;
             public int EndTime = -1;
         }
 
         private TextBox _startTimeEditBox = null;
         private TextBox _endTimeEditBox = null;
+        private TextBox _gameStateIndexEditBox = null;
 
         private FrameworkElement CreateCutByTimeTab()
         {
@@ -179,9 +182,16 @@ namespace Uber.DemoTools
             endTimeEditBox.Text = "00:20";
             endTimeEditBox.ToolTip = "seconds OR minutes:seconds";
 
+            var gameStateIndexEditBox = new TextBox();
+            _gameStateIndexEditBox = gameStateIndexEditBox;
+            gameStateIndexEditBox.Width = 50;
+            gameStateIndexEditBox.Text = "0";
+            gameStateIndexEditBox.ToolTip = "The index of the last GameState message that comes before this time";
+
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Start Time", startTimeEditBox));
             panelList.Add(App.CreateTuple("End Time", endTimeEditBox));
+            panelList.Add(App.CreateTuple("GameState Index", gameStateIndexEditBox));
             var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
             optionsPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -263,14 +273,19 @@ namespace Uber.DemoTools
                 return;
             }
 
+            int gameStateIndex = -1;
+            if(!int.TryParse(_gameStateIndexEditBox.Text, out gameStateIndex) || gameStateIndex >= demo.GameStateFileOffsets.Count)
+            {
+                _app.LogError("Invalid GameState index. Valid range for this demo: {0}-{1}", 0, demo.GameStateFileOffsets.Count - 1);
+                return;
+            }
+
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
             _app.SaveConfig();
 
-            var startString = _startTimeEditBox.Text.Replace(":", "");
-            var endString = _endTimeEditBox.Text.Replace(":", "");
-
             var info = new CutByTimeInfo();
+            info.FileOffset = demo.GameStateFileOffsets[gameStateIndex];
             info.FilePath = demo.FilePath;
             info.StartTime = startTime;
             info.EndTime = endTime;
@@ -305,6 +320,8 @@ namespace Uber.DemoTools
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
             Marshal.WriteInt32(_app.CancelOperation, 0);
+            // @TODO:
+            //_app.ParseArg.FileOffset = info.FileOffset;
             _app.ParseArg.CancelOperation = _app.CancelOperation;
             _app.ParseArg.MessageCb = _app.DemoLoggingCallback;
             _app.ParseArg.OutputFolderPath = outputFolderPtr;

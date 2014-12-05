@@ -127,6 +127,7 @@ namespace Uber.DemoTools
 		    public Int32 ServerTimeMs;
 		    public Int32 PlayerIndex;
             public Int32 GameStateIndex;
+            public Int32 Reserved1;
 	    }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -501,7 +502,7 @@ namespace Uber.DemoTools
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
                 var player = Marshal.PtrToStringAnsi(data.PlayerNameNoCol);
                 var message = Marshal.PtrToStringAnsi(data.MessageNoCol);
-                var item = new ChatEventDisplayInfo(time, player ?? "N/A", message ?? "N/A");
+                var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player ?? "N/A", message ?? "N/A");
                 info.ChatEvents.Add(item);
             }
         }
@@ -531,7 +532,7 @@ namespace Uber.DemoTools
             {
                 var gsAddress = new IntPtr(gsEvents.ToInt64() + i * sizeof(udtParseDataGameState));
                 var gsData = (udtParseDataGameState)Marshal.PtrToStructure(gsAddress, typeof(udtParseDataGameState));
-                info.GameStateIndices.Add(gsData.FileOffset);
+                info.GameStateFileOffsets.Add(gsData.FileOffset);
 
                 var firstSnapTime = App.FormatMinutesSeconds(gsData.FirstSnapshotTimeMs / 1000);
                 var lastSnapTime = App.FormatMinutesSeconds(gsData.LastSnapshotTimeMs / 1000);

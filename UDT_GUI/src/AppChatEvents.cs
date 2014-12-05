@@ -10,16 +10,12 @@ using System.Windows.Media;
 
 
 namespace Uber.DemoTools
-{
-    public class TimedEventDisplayInfo
+{    
+    public class ChatEventDisplayInfo
     {
-        public string Time { get; set; }
-    }
-
-    public class ChatEventDisplayInfo : TimedEventDisplayInfo
-    {
-        public ChatEventDisplayInfo(string time, string player, string message)
+        public ChatEventDisplayInfo(int gsIndex, string time, string player, string message)
         {
+            GameStateIndex = gsIndex;
             Time = time;
             Player = player;
             Message = message;
@@ -30,6 +26,8 @@ namespace Uber.DemoTools
             return string.Format("[{0}] <{1}> {2}", Time, Player, Message);
         }
 
+        public int GameStateIndex { get; set; }
+        public string Time { get; set; }
         public string Player { get; set; }
         public string Message { get; set; }
     }
@@ -120,6 +118,9 @@ namespace Uber.DemoTools
 
                     switch(_propertyName)
                     {
+                        case "GameStateIndex":
+                            return x.GameStateIndex.CompareTo(y.GameStateIndex);
+
                         case "Time":
                             return App.CompareTimeStrings(y.Time, x.Time);
 
@@ -166,38 +167,49 @@ namespace Uber.DemoTools
 
         private FrameworkElement CreateDemoChatTab()
         {
-            var column0 = new GridViewColumn();
-            var header0 = new GridViewColumnHeader();
-            header0.Content = "Time";
-            header0.Tag = "Time";
-            header0.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
-            column0.Header = header0;
-            column0.Width = 75;
-            column0.DisplayMemberBinding = new Binding("Time");
+            var columnGS = new GridViewColumn();
+            var headerGS = new GridViewColumnHeader();
+            headerGS.ToolTip = "GameState Index";
+            headerGS.Content = "GS";
+            headerGS.Tag = "GameStateIndex";
+            headerGS.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnGS.Header = headerGS;
+            columnGS.Width = 25;
+            columnGS.DisplayMemberBinding = new Binding("GameStateIndex");
 
-            var column1 = new GridViewColumn();
-            var header1 = new GridViewColumnHeader();
-            header1.Content = "Player Name";
-            header1.Tag = "Player";
-            header1.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
-            column1.Header = header1;
-            column1.Width = 175;
-            column1.DisplayMemberBinding = new Binding("Player");
+            var columnTime = new GridViewColumn();
+            var headerTime = new GridViewColumnHeader();
+            headerTime.Content = "Time";
+            headerTime.Tag = "Time";
+            headerTime.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnTime.Header = headerTime;
+            columnTime.Width = 75;
+            columnTime.DisplayMemberBinding = new Binding("Time");
 
-            var column2 = new GridViewColumn();
-            var header2 = new GridViewColumnHeader();
-            header2.Content = "Message";
-            header2.Tag = "Message";
-            header2.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
-            column2.Header = header2;
-            column2.Width = 340;
-            column2.DisplayMemberBinding = new Binding("Message");
+            var columnName = new GridViewColumn();
+            var headername = new GridViewColumnHeader();
+            headername.Content = "Player Name";
+            headername.Tag = "Player";
+            headername.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnName.Header = headername;
+            columnName.Width = 175;
+            columnName.DisplayMemberBinding = new Binding("Player");
+
+            var columnMessage = new GridViewColumn();
+            var headerMessage = new GridViewColumnHeader();
+            headerMessage.Content = "Message";
+            headerMessage.Tag = "Message";
+            headerMessage.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnMessage.Header = headerMessage;
+            columnMessage.Width = 315;
+            columnMessage.DisplayMemberBinding = new Binding("Message");
 
             var demoEventsGridView = new GridView();
             demoEventsGridView.AllowsColumnReorder = false;
-            demoEventsGridView.Columns.Add(column0);
-            demoEventsGridView.Columns.Add(column1);
-            demoEventsGridView.Columns.Add(column2);
+            demoEventsGridView.Columns.Add(columnGS);
+            demoEventsGridView.Columns.Add(columnTime);
+            demoEventsGridView.Columns.Add(columnName);
+            demoEventsGridView.Columns.Add(columnMessage);
 
             var eventsListView = new ListView();
             _chatEventsListView = eventsListView;

@@ -43,7 +43,7 @@ namespace Uber.DemoTools
         public string Protocol = "?";
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
-        public List<UInt32> GameStateIndices = new List<UInt32>();
+        public List<UInt32> GameStateFileOffsets = new List<UInt32>();
     }
 
     public class App
@@ -587,7 +587,7 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return displayInfo.Demo.GameStateIndices.Count > 1;
+            return displayInfo.Demo.GameStateFileOffsets.Count > 1;
         }
 
         private void InitDemoListSplitCommand()
@@ -1344,6 +1344,7 @@ namespace Uber.DemoTools
                 endOffset = dialog.EndOffset;
             }
 
+            int gsIndex = 0;
             int startTime = int.MaxValue;
             int endTime = int.MinValue;
             foreach(var item in items)
@@ -1354,7 +1355,7 @@ namespace Uber.DemoTools
                     continue;
                 }
 
-                var info = listViewItem.Content as TimedEventDisplayInfo;
+                var info = listViewItem.Content as ChatEventDisplayInfo;
                 if(info == null)
                 {
                     continue;
@@ -1366,6 +1367,7 @@ namespace Uber.DemoTools
                     continue;
                 }
 
+                gsIndex = info.GameStateIndex;
                 startTime = Math.Min(startTime, time);
                 endTime = Math.Max(endTime, time);
             }
@@ -1378,7 +1380,7 @@ namespace Uber.DemoTools
             startTime -= startOffset;
             endTime += endOffset;
 
-            cutByTimeComponent.SetStartAndEndTimes(startTime, endTime);
+            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
             
             _tabControl.SelectedIndex = 3;
         }
