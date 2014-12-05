@@ -110,6 +110,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
 
         public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
+        public IntPtr CancelOperation = IntPtr.Zero;
 
         public UdtConfig Config
         {
@@ -127,6 +128,9 @@ namespace Uber.DemoTools
 
         public App(string[] cmdLineArgs)
         {
+            CancelOperation = Marshal.AllocHGlobal(4);
+            Marshal.WriteInt32(CancelOperation, 0);
+
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
@@ -922,7 +926,8 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
-            ParseArg.CancelOperation = 0;
+            Marshal.WriteInt32(CancelOperation, 0);
+            ParseArg.CancelOperation = CancelOperation;
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.OutputFolderPath = outputFolderPtr;
             ParseArg.ProgressCb = DemoProgressCallback;
@@ -1247,7 +1252,7 @@ namespace Uber.DemoTools
 
         private void OnCancelJobClicked()
         {
-            ParseArg.CancelOperation = 1;
+            Marshal.WriteInt32(CancelOperation, 1);
             LogWarning("Job canceled!");
         }
 

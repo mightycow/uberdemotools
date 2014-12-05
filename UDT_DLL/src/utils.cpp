@@ -662,7 +662,7 @@ bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& al
 	return true;
 }
 
-bool RunParser(udtBaseParser& parser, udtStream& file, const s32& cancelOperation)
+bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
 {
 	udtContext* const context = parser._context;
 	udtVMScopedStackAllocator tempAllocator(context->TempAllocator);
@@ -683,7 +683,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32& cancelOperatio
 	const u64 maxByteCount = fileEnd - fileStartOffset;
 	for(;;)
 	{
-		if(cancelOperation != 0)
+		if(cancelOperation != NULL && *cancelOperation != 0)
 		{
 			return false;
 		}

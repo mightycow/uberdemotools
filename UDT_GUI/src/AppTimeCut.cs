@@ -304,7 +304,8 @@ namespace Uber.DemoTools
             var outputFolder = _app.GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
-            _app.ParseArg.CancelOperation = 0;
+            Marshal.WriteInt32(_app.CancelOperation, 0);
+            _app.ParseArg.CancelOperation = _app.CancelOperation;
             _app.ParseArg.MessageCb = _app.DemoLoggingCallback;
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
             _app.ParseArg.ProgressCb = _app.DemoProgressCallback;

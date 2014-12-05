@@ -69,8 +69,8 @@ namespace Uber.DemoTools
             public udtMessageCallback MessageCb;
             public udtProgressCallback ProgressCb;
             public IntPtr ProgressContext; // void*
+            public IntPtr CancelOperation; // s32*
             public UInt32 PlugInCount;
-            public Int32 CancelOperation;
         }
 
         [StructLayout(LayoutKind.Sequential)]

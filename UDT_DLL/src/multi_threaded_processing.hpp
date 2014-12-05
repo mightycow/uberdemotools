@@ -35,6 +35,7 @@ struct udtParsingThreadData
 	f32 Progress;
 	bool Finished;
 	bool Stop;
+	bool Result;
 };
 
 struct udtDemoThreadAllocator

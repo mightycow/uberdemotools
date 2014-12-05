@@ -142,13 +142,14 @@ extern "C"
 		// This is passed as "userData" to "ProgressCb".
 		void* ProgressContext;
 
+		// May be NULL.
+		// Zero to proceed, non-zero to cancel the current operation.
+		s32* CancelOperation;
+
 		// Number of elements in the array pointed to by the PlugIns pointer.
 		// May be 0.
 		// Unused when cutting.
 		u32 PlugInCount;
-
-		// Zero to proceed, non-zero to cancel the current operation.
-		s32 CancelOperation;
 	};
 
 	struct udtMultiParseArg
