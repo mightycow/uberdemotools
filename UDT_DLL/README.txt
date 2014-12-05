@@ -5,6 +5,7 @@ This file contains the following sections:
 
 LICENSE
 GENERAL NOTES
+SPECIAL THANKS
 
 LICENSE
 =======

@@ -1,7 +1,8 @@
 0.3.0 (05.12.2014)
-CHG: Support for the DLL's new codebase (see changelog_dll.txt)
+CHG: Support for the DLL's new codebase and interface (see changelog_dll.txt)
 REM: Removed the following tabs: Obituaries, PU Runs, Stats
 ADD: An option for the maximum thread count UDT is allowed to use during batch processing
+FIX: The Cancel button now cancels jobs ASAP, not after processing of the current demo is done
 ADD: Demo splitting
 ADD: New quotes \o/
 
