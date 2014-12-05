@@ -18,7 +18,7 @@ and clan is optional
 static const char* nullString = "";
 
 
-udtParserPlugInChat::udtParserPlugInChat()
+udtParserPlugInChat::udtParserPlugInChat() : ChatEvents(1 << 20, 4096)
 {
 	_chatStringAllocator.Init(1 << 24, 4096);
 }
