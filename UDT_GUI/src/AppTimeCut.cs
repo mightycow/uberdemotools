@@ -304,13 +304,11 @@ namespace Uber.DemoTools
             var outputFolder = _app.GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
-            var parseArg = _app.ParseArg;
-            parseArg.CancelOperation = 0;
-            parseArg.MessageCb = _app.DemoLoggingCallback;
-            parseArg.OutputFolderPath = outputFolderPtr;
-            parseArg.ProgressCb = _app.DemoProgressCallback;
-            parseArg.ProgressContext = IntPtr.Zero;
-            _app.ParseArg = parseArg;
+            _app.ParseArg.CancelOperation = 0;
+            _app.ParseArg.MessageCb = _app.DemoLoggingCallback;
+            _app.ParseArg.OutputFolderPath = outputFolderPtr;
+            _app.ParseArg.ProgressCb = _app.DemoProgressCallback;
+            _app.ParseArg.ProgressContext = IntPtr.Zero;
 
             var startTimeDisplay = App.FormatMinutesSeconds(info.StartTime);
             var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
