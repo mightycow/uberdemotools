@@ -68,7 +68,23 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udt
 	FormatTimeForFileName(startTime, tempAllocator, startTimeMs);
 	FormatTimeForFileName(endTime, tempAllocator, endTimeMs);
 
-	const char* outputFilePathParts[] = { outputFilePathStart, "_CUT_", startTime, "_", endTime, udtGetFileExtensionByProtocol(parser->_protocol) };
+	const int gsIndex = parser->_inGameStateIndex;
+	char gsIndexStr[16];
+	if(gsIndex > 0)
+	{
+		sprintf(gsIndexStr, "gs%d_", gsIndex);
+	}
+
+	const char* outputFilePathParts[] = 
+	{ 
+		outputFilePathStart, 
+		"_CUT_", 
+		gsIndex > 0 ? gsIndexStr : "",
+		startTime, 
+		"_", 
+		endTime, 
+		udtGetFileExtensionByProtocol(parser->_protocol) 
+	};
 	char* outputFilePath = NULL;
 	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
 
