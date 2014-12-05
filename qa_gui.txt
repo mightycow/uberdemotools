@@ -2,7 +2,8 @@ Q:
 What is it?
 
 A: 
-UDT is a Quake 3 demo (*.dm_68) cutter and information display tool for Windows with a lot of features for cutting demos. For example you can cut a large selection of demos at once by selecting a range of demos and cutting by a chat string, saving you a lot of time.
+UDT is a Quake 3 (*.dm_68) and Quake Live (*.dm_73, *.dm_90) demo cutter and information display tool for Windows with a lot of features for cutting demos.
+For instance, you can cut a large selection of demos at once by selecting a range of demos and cutting "by chat" (matching a string pattern in the global chat), saving you a lot of time.
 
 ------------------------------------------------------------------------
 
@@ -17,13 +18,11 @@ Those version numbers describe the DLL and GUI versions. Always fetch the files 
 ------------------------------------------------------------------------
 
 Q: 
-Why are there 2 executables with suffixes _35 and _40?
+What do I need to run it?
 
 A: 
-Those numbers indicate which version of the .NET run-time they require.
-The application uses WPF, which has terrible font rendering in .NET 3.5.
-.NET 3.5 is pre-installed on all Windows 7 versions.
-There is no difference in terms of functionality between the 2 versions, only the font rendering quality is different.
+The UDT GUI requires .NET Framework 4 Client Profile
+The .DLL and command-line executables have no third-party dependencies.
 
 ------------------------------------------------------------------------
 
@@ -31,9 +30,9 @@ Q:
 What can I do with it?
 
 A:
- - You can view the server information at the time the recording was started ('Info' tab)
- - You can cut demos by a) manually specifying the start and end times, or b) by letting the program find certain chat events for you
- - You can also view the player chat, obituaries and power-up runs
+ - You can view some information about the selected demo ('Info' tab)
+ - You can cut demos by a) manually specifying the start and end times, or b) by letting the program find chat events matching your rules and cutting around the matches
+ - You can also view the global chat log
  
 ------------------------------------------------------------------------
  
@@ -42,14 +41,16 @@ Can I suggest something or modify the program myself?
 
 A:
 Yes, and yes. 
- - You are encouraged to post here to ask/suggest things, or /query myT on QuakeNet.
+ - You are encouraged to post on ESR to ask questions, report problems, request features, etc. You can also /query myT on QuakeNet.
  - The entire source code is licensed under the GPL. I was legally required to publish the source code of the DLL under the GPL, but I wasn't for the GUI. I decided it was best to do so for both.
  
-------------------------------------------------------------------------
+ ------------------------------------------------------------------------
  
-Q:
-Are there any known issues?
-
-A:
-- Obituaries and PU runs don't work with some demos for now. To investigate.
-- Some movables items (elevators etc) won't be animated. To investigate.
+ Q:
+ Is there a repository where I can grab the most current sources?
+ 
+ A:
+ Yes, the project is hosted on Google Code.
+ Here is the project page: https://code.google.com/p/uberdemotools/
+ Here is the URL to use for a git clone: https://code.google.com/p/uberdemotools/
+ Note that the "master" branch is for major releases mostly, bleeding-edge code will be found in the "develop" branch or a fork of it.

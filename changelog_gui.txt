@@ -1,3 +1,7 @@
+0.3.0 (05.12.2014)
+CHG: Support for the DLL's new codebase (see changelog_dll.txt)
+REM: Removed the following tabs: Obituaries, PU Runs, Stats
+
 0.2.0g (21.03.2013)
 CHG: The default text color of all ListView instances is opaque black
 ADD: Open button next to the browse button ("...") in the Output Folder row of the Settings tab
