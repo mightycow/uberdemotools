@@ -69,6 +69,7 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udt
 	FormatTimeForFileName(endTime, tempAllocator, endTimeMs);
 
 	const int gsIndex = parser->_inGameStateIndex;
+	const bool outputGsIndex = gsIndex > 0;
 	char gsIndexStr[16];
 	if(gsIndex > 0)
 	{
@@ -79,7 +80,7 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udt
 	{ 
 		outputFilePathStart, 
 		"_CUT_", 
-		gsIndex > 0 ? gsIndexStr : "",
+		outputGsIndex ? gsIndexStr : "",
 		startTime, 
 		"_", 
 		endTime, 

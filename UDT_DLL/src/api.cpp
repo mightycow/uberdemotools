@@ -458,7 +458,14 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 		return false;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol))
+	const s32 gsIndex = plugIn.Analyzer.MergedCutSections[0].GameStateIndex;
+	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
+	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return false;
+	}
+	
+	if(!context->Parser.Init(&context->Context, protocol, gsIndex))
 	{
 		return false;
 	}

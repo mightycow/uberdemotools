@@ -35,7 +35,7 @@ udtBaseParser::~udtBaseParser()
 
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)
 {
-	if(context == NULL || !udtIsValidProtocol(protocol))
+	if(context == NULL || !udtIsValidProtocol(protocol) || gameStateIndex < 0)
 	{
 		return false;
 	}
@@ -58,6 +58,15 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_inLinearAllocator.Init(1 << 24, 4096);
 
 	_inGameStateIndex = gameStateIndex - 1;
+	_inGameStateFileOffsets.Clear();
+	if(gameStateIndex > 0)
+	{
+		_inGameStateFileOffsets.Resize(gameStateIndex);
+		for(s32 i = 0; i < gameStateIndex; ++i)
+		{
+			_inGameStateFileOffsets[0] = 0;
+		}
+	}
 
 	return true;
 }
@@ -106,6 +115,7 @@ void udtBaseParser::Reset()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
+	_inGameStateFileOffsets.Clear();
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -505,6 +515,7 @@ void udtBaseParser::ParseGamestate()
 	}
 
 	++_inGameStateIndex;
+	_inGameStateFileOffsets.Add(_inFileOffset);
 }
 
 void udtBaseParser::ParseSnapshot()

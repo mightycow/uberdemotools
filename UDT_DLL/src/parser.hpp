@@ -100,6 +100,7 @@ public:
 	typedef udtVMArray<u8> EntityVector;
 	typedef udtVMArray<u8> SnapshotVector;
 	typedef udtVMArray<udtBaseParserPlugIn*> PlugInVector;
+	typedef udtVMArray<u32> FileOffsetVector;
 
 public:
 	// General.
@@ -124,6 +125,7 @@ public:
 	s32 _inParseEntitiesNum;
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
+	FileOffsetVector _inGameStateFileOffsets;
 	EntityVector _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
 	EntityVector _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
 	ServerCommandVector _inCommands;
