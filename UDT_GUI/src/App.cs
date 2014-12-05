@@ -117,12 +117,49 @@ namespace Uber.DemoTools
             get { return _config; }
         }
 
+        public Window MainWindow
+        {
+            get { return _window; }
+        }
+
         public DemoInfo SelectedDemo
         {
             get
             {
                 var index = _demoListView.SelectedIndex;
                 return (index == -1) ? null : _demos[index];
+            }
+        }
+
+        public List<DemoInfo> SelectedDemos
+        {
+            get
+            {
+                var items = _demoListView.SelectedItems;
+                if(items.Count == 0)
+                {
+                    return null;
+                }
+
+                var demos = new List<DemoInfo>();
+                foreach(var item in items)
+                {
+                    var listViewItem = item as ListViewItem;
+                    if(listViewItem == null)
+                    {
+                        continue;
+                    }
+
+                    var displayInfo = listViewItem.Content as DemoDisplayInfo;
+                    if(displayInfo == null)
+                    {
+                        continue;
+                    }
+
+                    demos.Add(displayInfo.Demo);
+                }
+
+                return demos;
             }
         }
 
@@ -159,9 +196,11 @@ namespace Uber.DemoTools
             cutTimeTab.Header = "Cut by Time";
             cutTimeTab.Content = _cutByTimeComponent.RootControl;
 
+            var cutByChat = new CutByChatComponent(this);
+            _appComponents.Add(cutByChat);
             var cutChatTab = new TabItem();
             cutChatTab.Header = "Cut by Chat";
-            cutChatTab.Content = new Label(); // @TODO:
+            cutChatTab.Content = cutByChat.RootControl;
 
             var settings = new AppSettingsComponent(this);
             _appComponents.Add(settings);
@@ -919,9 +958,11 @@ namespace Uber.DemoTools
 
         private void DemoAddThreadImpl(object arg)
         {
-            var filePaths = (List<string>)arg;
-
-            SetProgressThreadSafe(0.0);
+            var filePaths = arg as List<string>;
+            if(filePaths == null)
+            {
+                return;
+            }
 
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);

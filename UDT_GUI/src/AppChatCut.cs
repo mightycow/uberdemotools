@@ -13,14 +13,37 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public class CutByChatComponent : AppComponent
     {
-        private class CutByChatInfo
+        public FrameworkElement RootControl { get; private set; }
+        public List<ListView> ListViews { get { return new List<ListView> { _chatRulesListView }; } }
+        public ComponentType Type { get { return ComponentType.CutByChat; } }
+
+        public CutByChatComponent(App app)
         {
-            public List<DemoDisplayInfo> Demos = null;
-            public int StartOffset = 0;
-            public int EndOffset = 0;
+            _app = app;
+            RootControl = CreateCutByChatTab();
         }
+
+        public void PopulateViews(DemoInfo demoInfo)
+        { 
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            int time = 0;
+            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
+            {
+                _app.Config.ChatCutStartOffset = time;
+            }
+            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
+            {
+                _app.Config.ChatCutEndOffset = time;
+            }
+        }
+
+        private App _app;
 
         private class ChatRuleDisplayInfo
         {
@@ -60,7 +83,7 @@ namespace Uber.DemoTools
             chatRulesListView.SelectionMode = SelectionMode.Single;
             chatRulesListView.Width = 485;
             chatRulesListView.Foreground = new SolidColorBrush(Colors.Black);
-            foreach(var rule in _config.ChatRules)
+            foreach(var rule in _app.Config.ChatRules)
             {
                 chatRulesListView.Items.Add(new ChatRuleDisplayInfo(rule));
             }
@@ -129,18 +152,18 @@ namespace Uber.DemoTools
             var startTimeOffsetEditBox = new TextBox();
             _startTimeOffsetEditBox = startTimeOffsetEditBox;
             startTimeOffsetEditBox.Width = 40;
-            startTimeOffsetEditBox.Text = _config.ChatCutStartOffset.ToString();
+            startTimeOffsetEditBox.Text = _app.Config.ChatCutStartOffset.ToString();
             startTimeOffsetEditBox.ToolTip = "How many seconds before the chat event do we start the cut?";
 
             var endTimeOffsetEditBox = new TextBox();
             _endTimeOffsetEditBox = endTimeOffsetEditBox;
             endTimeOffsetEditBox.Width = 40;
-            endTimeOffsetEditBox.Text = _config.ChatCutEndOffset.ToString();
+            endTimeOffsetEditBox.Text = _app.Config.ChatCutEndOffset.ToString();
             endTimeOffsetEditBox.ToolTip = "How many seconds after the chat event do we start the cut?";
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            panelList.Add(CreateTuple("End Time Offset", endTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
             var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
             optionsPanel.VerticalAlignment = VerticalAlignment.Center;
@@ -174,58 +197,23 @@ namespace Uber.DemoTools
 
         private void OnCutByChatClicked()
         {
-            if(_demoListView.SelectedItems.Count == 0)
+            var demos = _app.SelectedDemos;
+            if(demos == null)
             {
                 return;
             }
 
-            DisableUiNonThreadSafe();
+            _app.DisableUiNonThreadSafe();
+            _app.JoinJobThread();
+            _app.SaveConfig();
 
-            if(_jobThread != null)
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
             {
-                _jobThread.Join();
+                filePaths.Add(demo.FilePath);
             }
 
-            var demos = new List<DemoDisplayInfo>();
-            foreach(var item in _demoListView.SelectedItems)
-            {
-                var listViewItem = item as ListViewItem;
-                if(listViewItem == null)
-                {
-                    continue;
-                }
-
-                var displayInfo = listViewItem.Content as DemoDisplayInfo;
-                if(displayInfo == null)
-                {
-                    continue;
-                }
-
-                demos.Add(displayInfo);
-            }
-
-            int startOffset = -1;
-            if(!GetOffsetSeconds(_startTimeOffsetEditBox.Text, out startOffset))
-            {
-                return;
-            }
-
-            int endOffset = -1;
-            if(!GetOffsetSeconds(_endTimeOffsetEditBox.Text, out endOffset))
-            {
-                return;
-            }
-
-            _config.ChatCutStartOffset = startOffset;
-            _config.ChatCutEndOffset = endOffset;
-
-            var info = new CutByChatInfo();
-            info.Demos = demos;
-            info.StartOffset = startOffset;
-            info.EndOffset = endOffset;
-
-            _jobThread = new Thread(DemoCutByChatThread);
-            _jobThread.Start(info);
+            _app.StartJobThread(DemoCutByChatThread, filePaths);
         }
 
         private void DemoCutByChatThread(object arg)
@@ -240,289 +228,36 @@ namespace Uber.DemoTools
             }
         }
 
-        private class CutByChatDemoInfo
-        {
-            public DemoDisplayInfo Info = null;
-            public int DemoParseTime = 0;
-            public int CutCount = 0;
-            public List<int> GsParseTimes = new List<int>();
-            public List<List<DemoCut>> GsCutsList = new List<List<DemoCut>>();
-        }
-
         private void DemoCutByChatThreadImpl(object arg)
         {
-            var threadInfo = (CutByChatInfo)arg;
-            var demos = threadInfo.Demos;
-
-            int totalParseTime = 0;
-            var demoList = new List<CutByChatDemoInfo>();
-
-            foreach(var info in demos)
-            {
-                var cutSections = new List<Tuple<int, int>>();
-                var mergedCutSections = new List<Tuple<int, int>>();
-                var inFilePath = info.Demo.FilePath;
-
-                var chatEntries = info.Demo.DemoChatEvents;
-                foreach(var chatEntry in chatEntries)
-                {
-                    var nameAndMessage = chatEntry.Message.Split(new string[] { ": " }, 2, StringSplitOptions.None);
-                    if(nameAndMessage.Length != 2 || !IsChatMessageMatching(nameAndMessage[1]))
-                    {
-                        continue;
-                    }
-
-                    int msgTime = chatEntry.Time;
-                    int startTime = msgTime - threadInfo.StartOffset * 1000;
-                    int endTime = msgTime + threadInfo.EndOffset * 1000;
-                    cutSections.Add(Tuple.Create(startTime, endTime));
-                }
-
-                MergeRanges(cutSections, mergedCutSections);
-                if(mergedCutSections.Count == 0)
-                {
-                    LogInfo("Processing demo {0}... no chat match found", Path.GetFileNameWithoutExtension(info.Demo.FilePath));
-                    continue;
-                }
-
-                var cuts = new List<DemoCut>();
-                foreach(var cutSection in mergedCutSections)
-                {
-                    var startTimeDisplay = FormatMinutesSeconds(cutSection.Item1 / 1000);
-                    var endTimeDisplay = FormatMinutesSeconds(cutSection.Item2 / 1000);
-                    var startTime = startTimeDisplay.Replace(":", "");
-                    var endTime = endTimeDisplay.Replace(":", "");
-                    var outFilePath = GenerateOutputFilePath(inFilePath, startTime, endTime);
-
-                    var cut = new DemoCut();
-                    cut.FilePath = outFilePath;
-                    cut.StartTimeMs = cutSection.Item1;
-                    cut.EndTimeMs = cutSection.Item2;
-                    cuts.Add(cut);
-                }
-
-                var gameStates = info.Demo.DemoGameStates;
-                int demoParseTime = 0;
-                List<int> gsParseTimes = new List<int>();
-                List<List<DemoCut>> gsCutsList = new List<List<DemoCut>>();
-                Demo.CreateCutList(cuts, gameStates, ref gsCutsList, ref gsParseTimes, ref demoParseTime);
-
-                totalParseTime += demoParseTime;
-
-                int cutCount = 0;
-                foreach(var gsCuts in gsCutsList)
-                {
-                    cutCount += gsCuts.Count;
-                }
-
-                if(cutCount == 0)
-                {
-                    continue;
-                }
-
-                var info2 = new CutByChatDemoInfo();
-                info2.Info = info;
-                info2.CutCount = cutCount;
-                info2.DemoParseTime = demoParseTime;
-                info2.GsParseTimes = gsParseTimes;
-                info2.GsCutsList = gsCutsList;
-                demoList.Add(info2);
-            }
-
-            double progressScale = 100.0 / (double)totalParseTime;
-            double progress = 0.0;
-
-            foreach(var demoInfo in demoList)
-            {
-                var info = demoInfo.Info;
-                var cutCount = demoInfo.CutCount;
-                var inFilePath = info.Demo.FilePath;
-                var protocol = GetProtocolFromFilePath(inFilePath);
-
-                LogInfo("Processing demo {0}... with {1} cut{2}", Path.GetFileNameWithoutExtension(inFilePath), cutCount, cutCount == 1 ? "" : "s");
-
-                if(demoInfo.GsCutsList.Count != demoInfo.GsParseTimes.Count)
-                {
-                    LogError("Cut/parse time count mismatch.");
-                    continue;
-                }
-
-                if(demoInfo.GsCutsList.Count == 0)
-                {
-                    LogError("Cut/parse time count is zero.");
-                    continue;
-                }
-
-                for(int i = 0; i < demoInfo.GsCutsList.Count; ++i)
-                {
-                    var cuts = demoInfo.GsCutsList[i];
-                    var duration = (double)demoInfo.GsParseTimes[i];
-                    var gameState = demoInfo.Info.Demo.DemoGameStates[i];
-                    if(cuts.Count == 0)
-                    {
-                        // We can safely skip this.
-                        continue;
-                    }
-
-                    var timer = new Stopwatch();
-                    timer.Start();
-
-                    Demo.ProgressCallback progressCb = (progressPc) =>
-                    {
-                        if(timer.ElapsedMilliseconds < 50)
-                        {
-                            return _cancelJobValue;
-                        }
-
-                        timer.Stop();
-                        timer.Reset();
-                        timer.Start();
-
-                        var realProgress = progress + progressScale * duration * (double)progressPc;
-                        SetProgressThreadSafe(realProgress);
-
-                        return _cancelJobValue;
-                    };
-
-                    try
-                    {
-                        Demo.Cut(protocol, inFilePath, progressCb, DemoLoggingCallback, cuts, gameState);
-                    }
-                    catch(SEHException exception)
-                    {
-                        LogError("Caught an exception while cutting demo '{0}': {1}", Path.GetFileNameWithoutExtension(inFilePath), exception.Message);
-                    }
-
-                    if(_cancelJobValue != 0)
-                    {
-                        break;
-                    }
-
-                    progress += progressScale * duration;
-                    SetProgressThreadSafe(progress);
-
-                    timer.Stop();
-                }
-            }
-
-            EnableUiThreadSafe();
-        }
-
-        private void MergeRanges(List<Tuple<int, int>> ranges, List<Tuple<int, int>> result)
-        {
-            if(ranges.Count == 0)
+            var filePaths = arg as List<string>;
+            if(filePaths == null)
             {
                 return;
             }
 
-            int idx = 0;
-            var current = ranges[idx++];
+            var outputFolder = _app.GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
 
+            Marshal.WriteInt32(_app.CancelOperation, 0);
+            _app.ParseArg.CancelOperation = _app.CancelOperation;
+            _app.ParseArg.MessageCb = _app.DemoLoggingCallback;
+            _app.ParseArg.OutputFolderPath = outputFolderPtr;
+            _app.ParseArg.ProgressCb = _app.DemoProgressCallback;
+            _app.ParseArg.ProgressContext = IntPtr.Zero;
 
-            for(; idx < ranges.Count; ++idx)
-            {
-                if(current.Item2 >= ranges[idx].Item1)
-                {
-                    int item2 = Math.Max(current.Item2, ranges[idx].Item2);
-                    current = new Tuple<int, int>(current.Item1, item2);
-                }
-                else
-                {
-                    result.Add(current);
-                    current = ranges[idx];
-                }
-            }
-
-            result.Add(current);
-        }
-
-        private bool ChatMessageContains(ChatRule chatRule, string message)
-        {
-            if(chatRule.CaseSensitive)
-            {
-                return message.Contains(chatRule.Value);
-            }
-
-            return message.ToLower().Contains(chatRule.Value.ToLower());
-        }
-
-        private bool ChatMessageStartsWith(ChatRule chatRule, string message)
-        {
-            if(chatRule.CaseSensitive)
-            {
-                return message.StartsWith(chatRule.Value);
-            }
-
-            return message.ToLower().StartsWith(chatRule.Value.ToLower());
-        }
-
-        private bool ChatMessageEndsWith(ChatRule chatRule, string message)
-        {
-            if(chatRule.CaseSensitive)
-            {
-                return message.EndsWith(chatRule.Value);
-            }
-
-            return message.ToLower().EndsWith(chatRule.Value.ToLower());
-        }
-
-        private bool ChatMessageMatchesRegEx(ChatRule chatRule, string message)
-        {
             try
             {
-                var regEx = new Regex(chatRule.Value, chatRule.CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase);
-                return regEx.IsMatch(message);
+                var config = _app.Config;
+                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, config.ChatCutStartOffset, config.ChatCutEndOffset, config.MaxThreadCount);
             }
             catch(Exception exception)
             {
-                LogError("Caught an exception: " + exception.Message);
+                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
             }
 
-            return false;
-        }
-
-        private bool IsChatMessageMatching(string message)
-        {
-            var chatRules = _config.ChatRules;
-            foreach(var chatRule in chatRules)
-            {
-                var msg = message;
-                if(chatRule.IgnoreColors)
-                {
-                    msg = DemoInfo.ColorCodeRegEx.Replace(message, "");
-                }
-
-                if(chatRule.Operator.ToLower() == "contains")
-                {
-                    if(ChatMessageContains(chatRule, msg))
-                    {
-                        return true;
-                    }
-                }
-                else if(chatRule.Operator.ToLower() == "startswith")
-                {
-                    if(ChatMessageStartsWith(chatRule, msg))
-                    {
-                        return true;
-                    }
-                }
-                else if(chatRule.Operator.ToLower() == "endswith")
-                {
-                    if(ChatMessageEndsWith(chatRule, msg))
-                    {
-                        return true;
-                    }
-                }
-                else if(chatRule.Operator.ToLower() == "matchesregex")
-                {
-                    if(ChatMessageMatchesRegEx(chatRule, msg))
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            Marshal.FreeHGlobal(outputFolderPtr);
+            _app.EnableUiThreadSafe();
         }
 
         private void OnAddChatRuleClicked()
@@ -533,7 +268,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            _config.ChatRules.Add(rule);
+            _app.Config.ChatRules.Add(rule);
             _chatRulesListView.Items.Add(new ChatRuleDisplayInfo(rule));
         }
 
@@ -542,11 +277,11 @@ namespace Uber.DemoTools
             int idx = _chatRulesListView.SelectedIndex;
             if(idx < 0 || idx >= _chatRulesListView.Items.Count)
             {
-                LogWarning("No rule was selected. Editing nothing.");
+                _app.LogWarning("No rule was selected. Editing nothing.");
                 return;
             }
 
-            var rule = _config.ChatRules[idx];
+            var rule = _app.Config.ChatRules[idx];
             if(!ShowChatRuleEditDialog(rule))
             {
                 return;
@@ -560,12 +295,12 @@ namespace Uber.DemoTools
             int idx = _chatRulesListView.SelectedIndex;
             if(idx < 0 || idx >= _chatRulesListView.Items.Count)
             {
-                LogWarning("No rule was selected. Removed nothing.");
+                _app.LogWarning("No rule was selected. Removed nothing.");
                 return;
             }
 
             _chatRulesListView.Items.RemoveAt(idx);
-            _config.ChatRules.RemoveAt(idx);
+            _app.Config.ChatRules.RemoveAt(idx);
         }
 
         private bool ShowChatRuleEditDialog(ChatRule chatRule)
@@ -574,7 +309,6 @@ namespace Uber.DemoTools
             ruleNamesDic.Add(new Tuple<string, string>("Contains", "Contains"));
             ruleNamesDic.Add(new Tuple<string, string>("Starts With", "StartsWith"));
             ruleNamesDic.Add(new Tuple<string, string>("Ends With", "EndsWith"));
-            ruleNamesDic.Add(new Tuple<string, string>("Matches RegEx", "MatchesRegEx"));
 
             var operatorComboBox = new ComboBox();
             operatorComboBox.Width = 150;
@@ -599,10 +333,10 @@ namespace Uber.DemoTools
             colorsCheckBox.IsChecked = chatRule.IgnoreColors;
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(CreateTuple("Operator", operatorComboBox));
-            panelList.Add(CreateTuple("Value", valueEditBox));
-            panelList.Add(CreateTuple("Case Sensitive?", caseCheckBox));
-            panelList.Add(CreateTuple("Ignore Colors?", colorsCheckBox));
+            panelList.Add(App.CreateTuple("Operator", operatorComboBox));
+            panelList.Add(App.CreateTuple("Value", valueEditBox));
+            panelList.Add(App.CreateTuple("Case Sensitive?", caseCheckBox));
+            panelList.Add(App.CreateTuple("Ignore Colors?", colorsCheckBox));
             var rulePanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             rulePanel.HorizontalAlignment = HorizontalAlignment.Center;
             rulePanel.VerticalAlignment = VerticalAlignment.Center;
@@ -643,6 +377,7 @@ namespace Uber.DemoTools
             okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
             cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
 
+            var appWindow = _app.MainWindow;
             window.WindowStyle = WindowStyle.ToolWindow;
             window.AllowsTransparency = false;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
@@ -651,8 +386,8 @@ namespace Uber.DemoTools
             window.Content = rootPanel;
             window.Width = 420;
             window.Height = 280;
-            window.Left = _window.Left + (_window.Width - window.Width) / 2;
-            window.Top = _window.Top + (_window.Height - window.Height) / 2;
+            window.Left = appWindow.Left + (appWindow.Width - window.Width) / 2;
+            window.Top = appWindow.Top + (appWindow.Height - window.Height) / 2;
             window.ShowDialog();
 
             var result = window.DialogResult ?? false;

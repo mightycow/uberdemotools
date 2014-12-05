@@ -246,7 +246,7 @@ namespace Uber.DemoTools
             return udtCreateContext();
         }
 
-        public static bool CutByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
+        public static bool CutDemoByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
         {
             if(context == IntPtr.Zero)
             {
@@ -300,6 +300,67 @@ namespace Uber.DemoTools
             ExtractDemoInfo(context, 0, ref info);
 
             return info;
+        }
+
+        private static UInt32 GetOperatorFromString(string op)
+        {
+            udtChatOperator result;
+            if(!Enum.TryParse<udtChatOperator>(op, false, out result))
+            {
+                return (UInt32)udtChatOperator.Contains;
+            }
+
+            return (UInt32)result;
+        }
+
+        public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
+        {
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+            }
+
+            var rulesArray = new UDT_DLL.udtCutByChatRule[rules.Count];
+            for(var i = 0; i < rules.Count; ++i)
+            {
+                rulesArray[i].CaseSensitive = (UInt32)(rules[i].CaseSensitive ? 1 : 0);
+                rulesArray[i].ChatOperator = GetOperatorFromString(rules[i].Operator);
+                rulesArray[i].IgnoreColorCodes = (UInt32)(rules[i].IgnoreColors ? 1 : 0);
+                rulesArray[i].Pattern = Marshal.StringToHGlobalAnsi(rules[i].Value);
+            }
+
+            parseArg.PlugInCount = 0;
+            parseArg.PlugIns = IntPtr.Zero;
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var pinnedRules = new PinnedObject(rulesArray);
+            var cutByChatArg = new udtCutByChatArg();
+            cutByChatArg.StartOffsetSec = (UInt32)startOffset;
+            cutByChatArg.EndOffsetSec = (UInt32)endOffset;
+            cutByChatArg.RuleCount = (UInt32)rulesArray.Length;
+            cutByChatArg.Rules = pinnedRules.Address;
+
+            var result = udtCutDemoFilesByChat(ref parseArg, ref multiParseArg, ref cutByChatArg);
+
+            pinnedFilePaths.Free();
+            for(var i = 0; i < filePathArray.Length; ++i)
+            {
+                Marshal.FreeHGlobal(filePathArray[i]);
+            }
+
+            pinnedRules.Free();
+            for(var i = 0; i < rulesArray.Length; ++i)
+            {
+                Marshal.FreeHGlobal(rulesArray[i].Pattern);
+            }
+
+            return result == udtErrorCode.None;
         }
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)

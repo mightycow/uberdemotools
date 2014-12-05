@@ -317,7 +317,7 @@ namespace Uber.DemoTools
            
             try
             {
-                UDT_DLL.CutByTime(_app.GetMainThreadContext(), ref _app.ParseArg, info.FilePath, info.StartTime, info.EndTime);
+                UDT_DLL.CutDemoByTime(_app.GetMainThreadContext(), ref _app.ParseArg, info.FilePath, info.StartTime, info.EndTime);
             }
             catch(Exception exception)
             {
