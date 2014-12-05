@@ -25,7 +25,7 @@ public:
 	udtBaseParser();
 	~udtBaseParser();
 
-	bool	Init(udtContext* context, udtProtocol::Id protocol);
+	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0);
 	void	SetFilePath(const char* filePath); // May return NULL if not reading the input demo from a file.
 	void    Reset();
 	void	Destroy();
@@ -35,7 +35,7 @@ public:
 
 	u32	    GetAllocatedByteCount() const;
 
-	void	AddCut(s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData = NULL);
+	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
 	void                  InsertOrUpdateConfigString(const udtConfigString& cs);
@@ -76,6 +76,7 @@ public:
 		udtDemoStreamCreator StreamCreator;
 		udtStream* Stream; // Requires manual destruction.
 		void* UserData;
+		s32 GameStateIndex;
 		s32 StartTimeMs;
 		s32 EndTimeMs;
 	};
@@ -122,6 +123,7 @@ public:
 	s32 _inChecksumFeed;
 	s32 _inParseEntitiesNum;
 	s32 _inServerTime;
+	s32 _inGameStateIndex;
 	EntityVector _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
 	EntityVector _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
 	ServerCommandVector _inCommands;

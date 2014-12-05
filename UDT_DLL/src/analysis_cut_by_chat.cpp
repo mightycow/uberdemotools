@@ -17,7 +17,7 @@ static void MergeRanges(udtCutByChatAnalyzer::CutSectionVector& result, const ud
 	for(u32 i = 1, count = ranges.GetSize(); i < count; ++i)
 	{
 		const udtCutByChatAnalyzer::CutSection it = ranges[i];
-		if(current.EndTimeMs >= it.StartTimeMs)
+		if(current.EndTimeMs >= it.StartTimeMs && current.GameStateIndex == it.GameStateIndex)
 		{
 			current.EndTimeMs = udt_max(current.EndTimeMs, it.EndTimeMs);
 		}
@@ -32,7 +32,7 @@ static void MergeRanges(udtCutByChatAnalyzer::CutSectionVector& result, const ud
 }
 
 
-void udtCutByChatAnalyzer::ProcessOriginalCommandMessage(udtContext& context, const char* commandMessage, s32 serverTimeMs)
+void udtCutByChatAnalyzer::ProcessOriginalCommandMessage(udtContext& context, const char* commandMessage, s32 serverTimeMs, s32 gsIndex)
 {
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
 	tokenizer.Tokenize(commandMessage);
@@ -61,6 +61,7 @@ void udtCutByChatAnalyzer::ProcessOriginalCommandMessage(udtContext& context, co
 	const s32 endTimeMs = serverTimeMs + (s32)_info.EndOffsetSec * 1000;
 
 	CutSection cutSection;
+	cutSection.GameStateIndex = gsIndex;
 	cutSection.StartTimeMs = startTimeMs;
 	cutSection.EndTimeMs = endTimeMs;
 	_cutSections.Add(cutSection);

@@ -71,6 +71,8 @@ namespace Uber.DemoTools
             public IntPtr ProgressContext; // void*
             public IntPtr CancelOperation; // s32*
             public UInt32 PlugInCount;
+            public Int32 GameStateIndex;
+            public UInt32 FileOffset;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -86,6 +88,8 @@ namespace Uber.DemoTools
 	    {
 		    public Int32 StartTimeMs;
 		    public Int32 EndTimeMs;
+            public Int32 GameStateIndex;
+            public Int32 Reserved1;
 	    }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -283,6 +287,7 @@ namespace Uber.DemoTools
             parseArg.PlugIns = IntPtr.Zero;
 
             var cut = new udtCut();
+            cut.GameStateIndex = parseArg.GameStateIndex;
             cut.StartTimeMs = startTimeSec * 1000;
             cut.EndTimeMs = endTimeSec * 1000;
             var pinnedCut = new PinnedObject(cut);

@@ -150,6 +150,14 @@ extern "C"
 		// May be 0.
 		// Unused when cutting.
 		u32 PlugInCount;
+
+		// The index of the game state that will be read when starting at offset FileOffset.
+		// Unused in batch operations.
+		s32 GameStateIndex;
+
+		// The offset, in bytes, at which to start reading from the file.
+		// Unused in batch operations.
+		u32 FileOffset;
 	};
 
 	struct udtMultiParseArg
@@ -171,6 +179,12 @@ extern "C"
 
 		// Cut end time in milli-seconds.
 		s32 EndTimeMs;
+
+		// The game state index for which this cut is applied
+		s32 GameStateIndex;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByTimeArg

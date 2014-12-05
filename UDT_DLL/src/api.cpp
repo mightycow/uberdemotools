@@ -358,7 +358,12 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol))
+	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -373,7 +378,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		const udtCut& cut = cutInfo->Cuts[i];
 		if(cut.StartTimeMs < cut.EndTimeMs)
 		{
-			context->Parser.AddCut(cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
+			context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
 		}
 	}
 
@@ -466,7 +471,8 @@ bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutB
 	const udtCutByChatAnalyzer::CutSectionVector& sections = plugIn.Analyzer.MergedCutSections;
 	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
 	{
-		context->Parser.AddCut(sections[i].StartTimeMs, sections[i].EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
+		const udtCutByChatAnalyzer::CutSection& section = sections[i];
+		context->Parser.AddCut(section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
 	}
 
 	context->Context.LogInfo("Processing for chat cut(s): %s", demoFilePath);

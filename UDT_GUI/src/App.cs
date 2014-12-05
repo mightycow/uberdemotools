@@ -1014,6 +1014,20 @@ namespace Uber.DemoTools
             return _config.OutputToInputFolder ? null : _config.OutputFolder;
         }
 
+        public void InitParseArg()
+        {
+            Marshal.WriteInt32(CancelOperation, 0);
+            ParseArg.CancelOperation = CancelOperation;
+            ParseArg.MessageCb = DemoLoggingCallback;
+            ParseArg.ProgressCb = DemoProgressCallback;
+            ParseArg.ProgressContext = IntPtr.Zero;
+            ParseArg.FileOffset = 0;
+            ParseArg.GameStateIndex = 0;
+            ParseArg.OutputFolderPath = IntPtr.Zero;
+            ParseArg.PlugInCount = 0;
+            ParseArg.PlugIns = IntPtr.Zero;
+        }
+
         private void DemoAddThreadImpl(object arg)
         {
             var filePaths = arg as List<string>;
@@ -1024,13 +1038,8 @@ namespace Uber.DemoTools
 
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
-
-            Marshal.WriteInt32(CancelOperation, 0);
-            ParseArg.CancelOperation = CancelOperation;
-            ParseArg.MessageCb = DemoLoggingCallback;
+            InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
-            ParseArg.ProgressCb = DemoProgressCallback;
-            ParseArg.ProgressContext = IntPtr.Zero;
 
             List<DemoInfo> demoInfos = null;
             try
@@ -1242,13 +1251,8 @@ namespace Uber.DemoTools
 
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
-
-            Marshal.WriteInt32(CancelOperation, 0);
-            ParseArg.CancelOperation = CancelOperation;
-            ParseArg.MessageCb = DemoLoggingCallback;
+            InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
-            ParseArg.ProgressCb = DemoProgressCallback;
-            ParseArg.ProgressContext = IntPtr.Zero;
 
             try
             {

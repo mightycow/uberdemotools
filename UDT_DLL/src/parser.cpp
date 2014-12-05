@@ -20,6 +20,7 @@ udtBaseParser::udtBaseParser()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
+	_inGameStateIndex = -1;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -32,7 +33,7 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol)
+bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)
 {
 	if(context == NULL || !udtIsValidProtocol(protocol))
 	{
@@ -55,6 +56,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol)
 
 	// Reserve lots of address space up front, commit 4 KB at once.
 	_inLinearAllocator.Init(1 << 24, 4096);
+
+	_inGameStateIndex = gameStateIndex - 1;
 
 	return true;
 }
@@ -102,6 +105,7 @@ void udtBaseParser::Reset()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
+	_inGameStateIndex = -1;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -298,9 +302,10 @@ u32 udtBaseParser::GetAllocatedByteCount() const
 	return (u32)arrayByteCount + _inLinearAllocator.GetCommittedByteCount();
 }
 
-void udtBaseParser::AddCut(s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData)
+void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData)
 {
 	udtCutInfo cut;
+	cut.GameStateIndex = gsIndex;
 	cut.StartTimeMs = startTimeMs;
 	cut.EndTimeMs = endTimeMs;
 	cut.Stream = NULL;
@@ -497,6 +502,8 @@ void udtBaseParser::ParseGamestate()
 			PlugIns[i]->ProcessGamestateMessage(info, *this);
 		}
 	}
+
+	++_inGameStateIndex;
 }
 
 void udtBaseParser::ParseSnapshot()

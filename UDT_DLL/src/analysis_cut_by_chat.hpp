@@ -18,7 +18,7 @@ struct udtCutByChatAnalyzer
 public:
 	struct CutSection
 	{
-		// @TODO: s32 GameStateIndex;
+		s32 GameStateIndex;
 		s32 StartTimeMs;
 		s32 EndTimeMs;
 	};
@@ -35,7 +35,7 @@ public:
 	{
 	}
 
-	void ProcessOriginalCommandMessage(udtContext& context, const char* commandMessage, s32 serverTimeMs);
+	void ProcessOriginalCommandMessage(udtContext& context, const char* commandMessage, s32 serverTimeMs, s32 gsIndex);
 	void MergeCutSections();
 
 	CutSectionVector MergedCutSections;
@@ -61,7 +61,7 @@ public:
 
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
 	{
-		Analyzer.ProcessOriginalCommandMessage(*parser._context, info.String, parser._inServerTime);
+		Analyzer.ProcessOriginalCommandMessage(*parser._context, info.String, parser._inServerTime, parser._inGameStateIndex);
 	}
 
 	void FinishAnalysis()

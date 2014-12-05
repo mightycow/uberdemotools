@@ -160,6 +160,7 @@ namespace Uber.DemoTools
         {
             public string FilePath = null;
             public UInt32 FileOffset = 0;
+            public Int32 GameStateIndex = 0;
             public int StartTime = -1;
             public int EndTime = -1;
         }
@@ -285,6 +286,7 @@ namespace Uber.DemoTools
             _app.SaveConfig();
 
             var info = new CutByTimeInfo();
+            info.GameStateIndex = gameStateIndex;
             info.FileOffset = demo.GameStateFileOffsets[gameStateIndex];
             info.FilePath = demo.FilePath;
             info.StartTime = startTime;
@@ -318,26 +320,19 @@ namespace Uber.DemoTools
 
             var outputFolder = _app.GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
-
-            Marshal.WriteInt32(_app.CancelOperation, 0);
-            // @TODO:
-            //_app.ParseArg.FileOffset = info.FileOffset;
-            _app.ParseArg.CancelOperation = _app.CancelOperation;
-            _app.ParseArg.MessageCb = _app.DemoLoggingCallback;
+            _app.InitParseArg();
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
-            _app.ParseArg.ProgressCb = _app.DemoProgressCallback;
-            _app.ParseArg.ProgressContext = IntPtr.Zero;
+            _app.ParseArg.FileOffset = info.FileOffset;
+            _app.ParseArg.GameStateIndex = info.GameStateIndex;
 
-            var startTimeDisplay = App.FormatMinutesSeconds(info.StartTime);
-            var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
-            _app.LogInfo("Writing cut: {0}-{1}", startTimeDisplay, endTimeDisplay);
-           
             try
             {
                 UDT_DLL.CutDemoByTime(_app.GetMainThreadContext(), ref _app.ParseArg, info.FilePath, info.StartTime, info.EndTime);
             }
             catch(Exception exception)
             {
+                var startTimeDisplay = App.FormatMinutesSeconds(info.StartTime);
+                var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
                 _app.LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
             }
 
