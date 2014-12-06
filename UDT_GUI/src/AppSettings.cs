@@ -157,9 +157,9 @@ namespace Uber.DemoTools
 
             var settingStackPanel = settingsPanel as StackPanel;
             _outputFolderRow = settingStackPanel.Children[OutputFolderIndex] as FrameworkElement;
-            _outputFolderRow.Visibility = _app.Config.OutputToInputFolder ? Visibility.Collapsed : Visibility.Visible;
+            SetActive(_outputFolderRow, !_app.Config.OutputToInputFolder);
             _skipRecursiveDialog = settingStackPanel.Children[SkipRecursiveDialogIndex] as FrameworkElement;
-            _skipRecursiveDialog.Visibility = _app.Config.SkipScanFoldersRecursivelyDialog ? Visibility.Visible : Visibility.Collapsed;
+            SetActive(_skipRecursiveDialog, _app.Config.SkipScanFoldersRecursivelyDialog);
 
             var settingsGroupBox = new GroupBox();
             settingsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -173,13 +173,13 @@ namespace Uber.DemoTools
 
         private void OnSameOutputChecked()
         {
-            _outputFolderRow.Visibility = Visibility.Collapsed;
+            SetActive(_outputFolderRow, false);
             _app.Config.OutputToInputFolder = true;
         }
 
         private void OnSameOutputUnchecked()
         {
-            _outputFolderRow.Visibility = Visibility.Visible;
+            SetActive(_outputFolderRow, true);
             _app.Config.OutputToInputFolder = false;
         }
 
@@ -229,13 +229,13 @@ namespace Uber.DemoTools
 
         private void OnSkipFolderScanRecursiveChecked()
         {
-            _skipRecursiveDialog.Visibility = Visibility.Visible;
+            SetActive(_skipRecursiveDialog, true);
             _app.Config.SkipScanFoldersRecursivelyDialog = true;
         }
 
         private void OnSkipFolderScanRecursiveUnchecked()
         {
-            _skipRecursiveDialog.Visibility = Visibility.Collapsed;
+            SetActive(_skipRecursiveDialog, false);
             _app.Config.SkipScanFoldersRecursivelyDialog = false;
         }
 
@@ -261,6 +261,11 @@ namespace Uber.DemoTools
             {
                 maxThreadCount = value;
             }
+        }
+
+        private void SetActive(FrameworkElement element, bool active)
+        {
+            element.Opacity = active ? 1.0 : 0.5;
         }
     }
 }
