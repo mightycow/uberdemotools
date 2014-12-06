@@ -677,6 +677,8 @@ namespace Uber.DemoTools
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
                 openFileDialog.InitialDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                // @TODO: Set InitialDirectory to the custom input path
+                //openFileDialog.InitialDirectory = ;
                 openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73;*.dm_90)|*.dm_73;*.dm_90";
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
@@ -695,7 +697,9 @@ namespace Uber.DemoTools
             {
                 openFolderDialog.Description = "Browse for a folder containing demo files";
                 openFolderDialog.ShowNewFolderButton = true;
-                openFolderDialog.RootFolder = Environment.SpecialFolder.Desktop;
+                //openFolderDialog.RootFolder = Environment.SpecialFolder.Desktop;
+                // @TODO: Set SelectedPath to the custom input path and stop setting RootFolder
+                //openFolderDialog.SelectedPath = ;
                 if(openFolderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
