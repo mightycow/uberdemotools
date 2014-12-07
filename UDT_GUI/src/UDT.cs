@@ -542,8 +542,8 @@ namespace Uber.DemoTools
                 var firstSnapTime = App.FormatMinutesSeconds(gsData.FirstSnapshotTimeMs / 1000);
                 var lastSnapTime = App.FormatMinutesSeconds(gsData.LastSnapshotTimeMs / 1000);
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
-                info.Generic.Add(Tuple.Create(space + "File offset", FormatBytes(gsData.FileOffset)));
-                info.Generic.Add(Tuple.Create(space + "Snapshots", firstSnapTime + " - " + lastSnapTime));
+                info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(gsData.FileOffset)));
+                info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
                 info.Generic.Add(Tuple.Create(space + "Matches", gsData.MatchCount.ToString()));
   
                 var matchCount = gsData.MatchCount;

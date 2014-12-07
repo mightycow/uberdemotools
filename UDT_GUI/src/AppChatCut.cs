@@ -50,13 +50,13 @@ namespace Uber.DemoTools
             public ChatRuleDisplayInfo(ChatRule rule)
             {
                 Operator = rule.Operator;
-                Value = rule.Value;
+                Pattern = rule.Value;
                 CaseSensitive = rule.CaseSensitive;
                 IgnoreColors = rule.IgnoreColors;
             }
 
             public string Operator { get; set; }
-            public string Value { get; set; }
+            public string Pattern { get; set; }
             public bool CaseSensitive { get; set; }
             public bool IgnoreColors { get; set; }
         }
@@ -70,7 +70,7 @@ namespace Uber.DemoTools
             var chatRulesGridView = new GridView();
             chatRulesGridView.AllowsColumnReorder = false;
             chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Operator", Width = 100, DisplayMemberBinding = new Binding("Operator") });
-            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Value", Width = 175, DisplayMemberBinding = new Binding("Value") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Pattern", Width = 175, DisplayMemberBinding = new Binding("Pattern") });
             chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Case Sensitive", Width = 100, DisplayMemberBinding = new Binding("CaseSensitive") });
             chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Ignore Colors", Width = 100, DisplayMemberBinding = new Binding("IgnoreColors") });
 
@@ -175,6 +175,22 @@ namespace Uber.DemoTools
             timeOffsetsGroupBox.Margin = new Thickness(5);
             timeOffsetsGroupBox.Content = optionsPanel;
 
+            var helpTextBlock = new TextBlock();
+            helpTextBlock.Margin = new Thickness(5);
+            helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
+            helpTextBlock.Text =
+                "UDT will create a cut section for each global chat command that matches at least one of the rules you defined." +
+                "\nWhen parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
+                "\n\nThe StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." + 
+                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well)." +
+                "\n\nExample: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with start and end time offsets 10 and 8." +
+                "\nUDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
+
+            var helpGroupBox = new GroupBox();
+            helpGroupBox.Margin = new Thickness(5);
+            helpGroupBox.Header = "Help";
+            helpGroupBox.Content = helpTextBlock;
+
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
@@ -183,6 +199,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(chatRulesGroupBox);
             rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
+            rootPanel.Children.Add(helpGroupBox);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -335,7 +352,7 @@ namespace Uber.DemoTools
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Operator", operatorComboBox));
-            panelList.Add(App.CreateTuple("Value", valueEditBox));
+            panelList.Add(App.CreateTuple("Pattern", valueEditBox));
             panelList.Add(App.CreateTuple("Case Sensitive?", caseCheckBox));
             panelList.Add(App.CreateTuple("Ignore Colors?", colorsCheckBox));
             var rulePanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);

@@ -187,7 +187,7 @@ namespace Uber.DemoTools
             _gameStateIndexEditBox = gameStateIndexEditBox;
             gameStateIndexEditBox.Width = 50;
             gameStateIndexEditBox.Text = "0";
-            gameStateIndexEditBox.ToolTip = "The 0-based index of the last GameState message that comes before this time range";
+            gameStateIndexEditBox.ToolTip = "The 0-based index of the last GameState message that comes before the content you want to cut";
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Start Time", startTimeEditBox));
@@ -220,16 +220,19 @@ namespace Uber.DemoTools
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
 
-            var helpLabel = new Label();
-            helpLabel.Margin = new Thickness(5);
-            helpLabel.Content =
-                "The times are absolute server times." +
-                "\nThe format is either (seconds) or (minutes:seconds)";
+            var helpTextBlock = new TextBlock();
+            helpTextBlock.Margin = new Thickness(5);
+            helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
+            helpTextBlock.Text =
+                "The times are server times, not match times." +
+                "\nTime format is either (seconds) or (minutes:seconds)." +
+                "\n\nThe GameState index is the 0-based index of the last GameState message that comes before the content you want to cut." +
+                "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"Info\" tab.";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
-            helpGroupBox.Content = helpLabel;
+            helpGroupBox.Content = helpTextBlock;
 
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;

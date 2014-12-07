@@ -857,20 +857,20 @@ namespace Uber.DemoTools
             demoButtonGroupBox.Header = "Demo Actions";
             demoButtonGroupBox.Content = demoButtonPanel;
 
-            var helpLabel = new TextBlock();
-            helpLabel.Margin = new Thickness(5);
-            helpLabel.TextWrapping = TextWrapping.WrapWithOverflow;
-            helpLabel.Text =
-                "In UDT, splitting means creating 1 file per GameState message when there is more than one.\n" +
+            var helpTextBlock = new TextBlock();
+            helpTextBlock.Margin = new Thickness(5);
+            helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
+            helpTextBlock.Text =
+                "In UDT, splitting means creating one file per GameState message when there is more than one.\n" +
                 "\nIn Quake's network protocol, the GameState message is sent to the client when a map is (re-)loaded." +
                 "\nThe usual case is that the demo only contains one GameState message at the very beginning of the file." +
-                "\nBecause that specific message is never delta-encoded, demo content can be copied as-is without any advanced parsing and processing.\n" +
+                "\nBecause that specific message is never delta-encoded or dependent on previous data, demo content can be copied as-is without any advanced parsing nor processing.\n" +
                 "\nOn the other hand, cutting at specific timestamps does requires that all messages be decoded in order and re-encoded accordingly and is therefore a much more costly operation.";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
-            helpGroupBox.Content = helpLabel;
+            helpGroupBox.Content = helpTextBlock;
 
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
