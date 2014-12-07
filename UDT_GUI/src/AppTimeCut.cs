@@ -187,7 +187,7 @@ namespace Uber.DemoTools
             _gameStateIndexEditBox = gameStateIndexEditBox;
             gameStateIndexEditBox.Width = 50;
             gameStateIndexEditBox.Text = "0";
-            gameStateIndexEditBox.ToolTip = "The index of the last GameState message that comes before this time";
+            gameStateIndexEditBox.ToolTip = "The 0-based index of the last GameState message that comes before this time range";
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Start Time", startTimeEditBox));
@@ -275,10 +275,19 @@ namespace Uber.DemoTools
             }
 
             int gameStateIndex = -1;
-            if(!int.TryParse(_gameStateIndexEditBox.Text, out gameStateIndex) || gameStateIndex >= demo.GameStateFileOffsets.Count)
+            if(!int.TryParse(_gameStateIndexEditBox.Text, out gameStateIndex) || gameStateIndex < 0 || gameStateIndex >= demo.GameStateFileOffsets.Count)
             {
-                _app.LogError("Invalid GameState index. Valid range for this demo: {0}-{1}", 0, demo.GameStateFileOffsets.Count - 1);
-                return;
+                if(demo.GameStateFileOffsets.Count > 1)
+                {
+                    _app.LogError("Invalid GameState index. Valid range for this demo: {0}-{1}", 0, demo.GameStateFileOffsets.Count - 1);
+                    return;
+                }
+                else
+                {
+                    _gameStateIndexEditBox.Text = "0";
+                    gameStateIndex = 0;
+                    _app.LogWarning("Invalid GameState index. The only valid value for this demo is 0. UDT set it right for you.");
+                }
             }
 
             _app.DisableUiNonThreadSafe();
