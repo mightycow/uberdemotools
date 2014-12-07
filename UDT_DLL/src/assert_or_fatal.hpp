@@ -12,4 +12,4 @@
 #	define UDT_ASSERT_OR_FATAL(exp)    if(!(exp)) FatalError(__FILE__, __LINE__, __FUNCTION__, #exp)
 #endif
 
-#define UDT_ASSERT_OR_FATAL_ALWAYS(msg)    UDT_ASSERT_OR_FATAL((msg, false))
+#define UDT_ASSERT_OR_FATAL_ALWAYS(msg)    UDT_ASSERT_OR_FATAL((msg && false))
