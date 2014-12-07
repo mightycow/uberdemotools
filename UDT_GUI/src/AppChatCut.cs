@@ -200,12 +200,18 @@ namespace Uber.DemoTools
             var demos = _app.SelectedDemos;
             if(demos == null)
             {
+                _app.LogError("No demo was selected. Please select one to proceed.");
                 return;
+            }
+
+            _app.SaveConfig();
+            if(_app.Config.ChatRules.Count == 0)
+            {
+                _app.LogError("Not chat matching rules defined. Please add at least one to proceed.");
             }
 
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
-            _app.SaveConfig();
 
             var filePaths = new List<string>();
             foreach(var demo in demos)

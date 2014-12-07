@@ -1328,7 +1328,7 @@ namespace Uber.DemoTools
             var demo = SelectedDemo;
             if(demo == null)
             {
-                LogWarning("No demo selected. Not doing anything. (Only one demo can be selected.)");
+                LogError("No demo selected. Please select one to proceed.");
                 return;
             }
 
