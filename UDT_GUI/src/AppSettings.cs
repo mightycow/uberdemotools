@@ -37,6 +37,10 @@ namespace Uber.DemoTools
         private CheckBox _skipFolderScanModeCheckBox = null;
         private FrameworkElement _skipRecursiveDialog = null;
         private TextBox _maxThreadCountTextBox = null;
+        private TextBox _inputFolderTextBox = null;
+        private FrameworkElement _inputFolderRow = null;
+        private CheckBox _useInputFolderForBrowsingCheckBox = null;
+        private CheckBox _useInputFolderOnStartUp = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<ListView> ListViews { get { return null; } }
@@ -52,6 +56,9 @@ namespace Uber.DemoTools
         {
             config.OutputToInputFolder = _outputModeCheckBox.IsChecked ?? false;
             config.OutputFolder = _outputFolderTextBox.Text;
+            config.InputFolder = _inputFolderTextBox.Text;
+            config.UseInputFolderAsDefaultBrowsingLocation = _useInputFolderForBrowsingCheckBox.IsChecked ?? false;
+            config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUp.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
         }
 
@@ -71,40 +78,10 @@ namespace Uber.DemoTools
             outputModeCheckBox.Checked += (obj, args) => OnSameOutputChecked();
             outputModeCheckBox.Unchecked += (obj, args) => OnSameOutputUnchecked();
 
-            var outputFolderTextBox = new TextBox();
-            _outputFolderTextBox = outputFolderTextBox;
-            outputFolderTextBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            outputFolderTextBox.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderTextBox.Text = _app.Config.OutputFolder;
-            outputFolderTextBox.Width = 300;
-
-            var outputFolderBrowseButton = new Button();
-            outputFolderBrowseButton.HorizontalAlignment = HorizontalAlignment.Right;
-            outputFolderBrowseButton.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderBrowseButton.Margin = new Thickness(5, 0, 0, 0);
-            outputFolderBrowseButton.Content = "...";
-            outputFolderBrowseButton.Width = 40;
-            outputFolderBrowseButton.Height = 20;
-            outputFolderBrowseButton.Click += (obj, arg) => OnOutputFolderBrowseClicked();
-
-            var outputFolderOpenButton = new Button();
-            outputFolderOpenButton.HorizontalAlignment = HorizontalAlignment.Right;
-            outputFolderOpenButton.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderOpenButton.Margin = new Thickness(5, 0, 0, 0);
-            outputFolderOpenButton.Content = "Open";
-            outputFolderOpenButton.Width = 40;
-            outputFolderOpenButton.Height = 20;
-            outputFolderOpenButton.Click += (obj, arg) => OnOutputFolderOpenClicked();
-
-            var outputFolderDockPanel = new DockPanel();
-            outputFolderDockPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            outputFolderDockPanel.VerticalAlignment = VerticalAlignment.Center;
-            outputFolderDockPanel.LastChildFill = true;
-            outputFolderDockPanel.Children.Add(outputFolderOpenButton);
-            outputFolderDockPanel.Children.Add(outputFolderBrowseButton);
-            outputFolderDockPanel.Children.Add(outputFolderTextBox);
-            DockPanel.SetDock(outputFolderOpenButton, Dock.Right);
-            DockPanel.SetDock(outputFolderBrowseButton, Dock.Right);
+            var outputFolderRow = CreateFolderRow(
+                ref _outputFolderTextBox, 
+                _app.Config.OutputFolder, 
+                "Browse for the folder the processed demos will get written to");
 
             var skipChatOffsetsDialogCheckBox = new CheckBox();
             skipChatOffsetsDialogCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -140,15 +117,42 @@ namespace Uber.DemoTools
             maxThreadCountTextBox.Text = _app.Config.MaxThreadCount.ToString();
             maxThreadCountTextBox.Width = 25;
 
+            var useInputFolderForBrowsingCheckBox = new CheckBox();
+            _useInputFolderForBrowsingCheckBox = useInputFolderForBrowsingCheckBox;
+            useInputFolderForBrowsingCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            useInputFolderForBrowsingCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            useInputFolderForBrowsingCheckBox.IsChecked = _app.Config.UseInputFolderAsDefaultBrowsingLocation;
+            useInputFolderForBrowsingCheckBox.Content = " Use input folder as default browsing location?";
+            useInputFolderForBrowsingCheckBox.Checked += (obj, args) => OnInputFolderForBrowsingChecked();
+            useInputFolderForBrowsingCheckBox.Unchecked += (obj, args) => OnInputFolderForBrowsingUnchecked();
+
+            var useInputFolderOnStartUp = new CheckBox();
+            _useInputFolderOnStartUp = useInputFolderOnStartUp;
+            useInputFolderOnStartUp.HorizontalAlignment = HorizontalAlignment.Left;
+            useInputFolderOnStartUp.VerticalAlignment = VerticalAlignment.Center;
+            useInputFolderOnStartUp.IsChecked = _app.Config.OpenDemosFromInputFolderOnStartUp;
+            useInputFolderOnStartUp.Content = " Open demos from input folder on application start-up?";
+            useInputFolderOnStartUp.Checked += (obj, args) => OnUseInputFolderOnStartUpChecked();
+            useInputFolderOnStartUp.Unchecked += (obj, args) => OnUseInputFolderOnStartUpUnchecked();
+
+            var inputFolderRow = CreateFolderRow(
+                ref _inputFolderTextBox,
+                _app.Config.InputFolder,
+                "Browse for the folder demos will be read or searched from");
+
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
+            const int InputFolderIndex = 8;
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Output Mode", outputModeCheckBox));
-            panelList.Add(App.CreateTuple("=>  Output Folder", outputFolderDockPanel));
+            panelList.Add(App.CreateTuple("=>  Output Folder", outputFolderRow));
             panelList.Add(App.CreateTuple("Chat History", skipChatOffsetsDialogCheckBox));
             panelList.Add(App.CreateTuple("Recursive Scan", skipFolderScanModeCheckBox));
             panelList.Add(App.CreateTuple("=> Recursive", folderScanModeCheckBox));
             panelList.Add(App.CreateTuple("Max Thread Count", maxThreadCountTextBox));
+            panelList.Add(App.CreateTuple("Browsing Location", useInputFolderForBrowsingCheckBox));
+            panelList.Add(App.CreateTuple("Open on Start-up", useInputFolderOnStartUp));
+            panelList.Add(App.CreateTuple("=> Input Folder", inputFolderRow));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -160,6 +164,8 @@ namespace Uber.DemoTools
             SetActive(_outputFolderRow, !_app.Config.OutputToInputFolder);
             _skipRecursiveDialog = settingStackPanel.Children[SkipRecursiveDialogIndex] as FrameworkElement;
             SetActive(_skipRecursiveDialog, _app.Config.SkipScanFoldersRecursivelyDialog);
+            _inputFolderRow = settingStackPanel.Children[InputFolderIndex] as FrameworkElement;
+            UpdateInputFolderActive();
 
             var settingsGroupBox = new GroupBox();
             settingsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -169,6 +175,46 @@ namespace Uber.DemoTools
             settingsGroupBox.Content = settingsPanel;
 
             return settingsGroupBox;
+        }
+
+        private FrameworkElement CreateFolderRow(ref TextBox textBox, string defaultValue, string browseDesc)
+        {
+            var folderTextBox = new TextBox();
+            textBox = folderTextBox;
+            folderTextBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            folderTextBox.VerticalAlignment = VerticalAlignment.Center;
+            folderTextBox.Text = defaultValue;
+            folderTextBox.Width = 300;
+
+            var folderBrowseButton = new Button();
+            folderBrowseButton.HorizontalAlignment = HorizontalAlignment.Right;
+            folderBrowseButton.VerticalAlignment = VerticalAlignment.Center;
+            folderBrowseButton.Margin = new Thickness(5, 0, 0, 0);
+            folderBrowseButton.Content = "...";
+            folderBrowseButton.Width = 40;
+            folderBrowseButton.Height = 20;
+            folderBrowseButton.Click += (obj, arg) => BrowseForFolder(folderTextBox, browseDesc);
+
+            var folderOpenButton = new Button();
+            folderOpenButton.HorizontalAlignment = HorizontalAlignment.Right;
+            folderOpenButton.VerticalAlignment = VerticalAlignment.Center;
+            folderOpenButton.Margin = new Thickness(5, 0, 0, 0);
+            folderOpenButton.Content = "Open";
+            folderOpenButton.Width = 40;
+            folderOpenButton.Height = 20;
+            folderOpenButton.Click += (obj, arg) => OpenFolder(folderTextBox.Text);
+
+            var folderDockPanel = new DockPanel();
+            folderDockPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            folderDockPanel.VerticalAlignment = VerticalAlignment.Center;
+            folderDockPanel.LastChildFill = true;
+            folderDockPanel.Children.Add(folderOpenButton);
+            folderDockPanel.Children.Add(folderBrowseButton);
+            folderDockPanel.Children.Add(folderTextBox);
+            DockPanel.SetDock(folderOpenButton, Dock.Right);
+            DockPanel.SetDock(folderBrowseButton, Dock.Right);
+
+            return folderDockPanel;
         }
 
         private void OnSameOutputChecked()
@@ -183,25 +229,27 @@ namespace Uber.DemoTools
             _app.Config.OutputToInputFolder = false;
         }
 
-        private void OnOutputFolderBrowseClicked()
+        private void BrowseForFolder(TextBox folderTextBox, string desc)
         {
             using(var openFolderDialog = new System.Windows.Forms.FolderBrowserDialog())
             {
-                openFolderDialog.Description = "Browse for a folder the processed demos will get written to";
+                openFolderDialog.Description = desc;
                 openFolderDialog.ShowNewFolderButton = true;
-                openFolderDialog.RootFolder = Environment.SpecialFolder.Desktop;
+                if(!string.IsNullOrWhiteSpace(folderTextBox.Text) && Directory.Exists(folderTextBox.Text))
+                {
+                    openFolderDialog.SelectedPath = folderTextBox.Text;
+                }
                 if(openFolderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
                 }
 
-                _outputFolderTextBox.Text = openFolderDialog.SelectedPath;
+                folderTextBox.Text = openFolderDialog.SelectedPath;
             }
         }
 
-        private void OnOutputFolderOpenClicked()
+        private void OpenFolder(string folderPath)
         {
-            var folderPath = _outputFolderTextBox.Text;
             if(!Directory.Exists(folderPath))
             {
                 return;
@@ -213,7 +261,7 @@ namespace Uber.DemoTools
             }
             catch(Exception exception)
             {
-                _app.LogError("Failed to open the output folder: " + exception.Message);
+                _app.LogError("Failed to open the folder: " + exception.Message);
             }
         }
 
@@ -247,6 +295,35 @@ namespace Uber.DemoTools
         private void OnFolderScanRecursiveUnchecked()
         {
             _app.Config.ScanFoldersRecursively = false;
+        }
+
+        private void UpdateInputFolderActive()
+        {
+            SetActive(_inputFolderRow, _app.Config.UseInputFolderAsDefaultBrowsingLocation || _app.Config.OpenDemosFromInputFolderOnStartUp);
+        }
+
+        private void OnInputFolderForBrowsingChecked()
+        {
+            _app.Config.UseInputFolderAsDefaultBrowsingLocation = true;
+            UpdateInputFolderActive();
+        }
+
+        private void OnInputFolderForBrowsingUnchecked()
+        {
+            _app.Config.UseInputFolderAsDefaultBrowsingLocation = false;
+            UpdateInputFolderActive();
+        }
+
+        private void OnUseInputFolderOnStartUpChecked()
+        {
+            _app.Config.OpenDemosFromInputFolderOnStartUp = true;
+            UpdateInputFolderActive();
+        }
+
+        private void OnUseInputFolderOnStartUpUnchecked()
+        {
+            _app.Config.OpenDemosFromInputFolderOnStartUp = false;
+            UpdateInputFolderActive();
         }
 
         private void GetMaxThreadCount(ref int maxThreadCount)

@@ -34,6 +34,9 @@ namespace Uber.DemoTools
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
         public int MaxThreadCount = 4;
+        public string InputFolder = "";
+        public bool UseInputFolderAsDefaultBrowsingLocation = false;
+        public bool OpenDemosFromInputFolderOnStartUp = false;
     }
 
     public class DemoInfo
@@ -490,6 +493,14 @@ namespace Uber.DemoTools
                 }
             }
 
+            if(cmdLineArgs.Length == 0 && 
+                _config.OpenDemosFromInputFolderOnStartUp &&
+                !string.IsNullOrWhiteSpace(_config.InputFolder) &&
+                Directory.Exists(_config.InputFolder))
+            {
+                folderPaths.Add(_config.InputFolder);
+            }
+
             AddDemos(filePaths, folderPaths);
         }
 
@@ -669,16 +680,18 @@ namespace Uber.DemoTools
             _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
         }
 
+        
+
         private void OnOpenDemo()
         {
+            
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 // @TODO: Construct the filter programmatically.
+                var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
-                openFileDialog.InitialDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                // @TODO: Set InitialDirectory to the custom input path
-                //openFileDialog.InitialDirectory = ;
+                openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73;*.dm_90)|*.dm_73;*.dm_90";
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
@@ -695,11 +708,13 @@ namespace Uber.DemoTools
         {
             using(var openFolderDialog = new System.Windows.Forms.FolderBrowserDialog())
             {
+                var folderPath = GetDefaultBrowsingFolder();
                 openFolderDialog.Description = "Browse for a folder containing demo files";
                 openFolderDialog.ShowNewFolderButton = true;
-                //openFolderDialog.RootFolder = Environment.SpecialFolder.Desktop;
-                // @TODO: Set SelectedPath to the custom input path and stop setting RootFolder
-                //openFolderDialog.SelectedPath = ;
+                if(folderPath != null)
+                {
+                    openFolderDialog.SelectedPath = folderPath;
+                }
                 if(openFolderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
@@ -995,7 +1010,7 @@ namespace Uber.DemoTools
             }
         }
 
-        delegate void VoidDelegate();
+        public delegate void VoidDelegate();
 
         private void AddDemo(DemoDisplayInfo info)
         {
@@ -1031,7 +1046,26 @@ namespace Uber.DemoTools
 
         public string GetOutputFolder()
         {
-            return _config.OutputToInputFolder ? null : _config.OutputFolder;
+            if(_config.OutputToInputFolder || 
+                string.IsNullOrWhiteSpace(_config.OutputFolder) || 
+                !Directory.Exists(_config.OutputFolder))
+            {
+                return null;
+            }
+
+            return _config.OutputFolder;
+        }
+
+        public string GetDefaultBrowsingFolder()
+        {
+            if(!_config.UseInputFolderAsDefaultBrowsingLocation ||
+                string.IsNullOrWhiteSpace(_config.InputFolder) ||
+                !Directory.Exists(_config.InputFolder))
+            {
+                return null;
+            }
+
+            return _config.InputFolder;
         }
 
         public void InitParseArg()
