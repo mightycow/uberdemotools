@@ -1,3 +1,22 @@
+0.3.1 (07.12.2014)
+CHG: All settings are always drawn and editable
+CHG: If a setting is currently inactive, it is grayed out (but still editable)
+ADD: Option: input folder
+ADD: Option: use input folder as default browsing location
+ADD: Option: open demos from input folder at start-up
+CHG: Improved error reporting when operations can't start
+FIX: Cut by Time now verifies that the GS index isn't negative
+CHG: In Cut by Time, if the GS index is wrong and there's only 1 possible value, UDT will correct the value and proceed
+ADD: Lots of explanations in help texts embedded in the UI itself
+
+0.3.0 (05.12.2014)
+CHG: Support for the DLL's new codebase and interface (see changelog_dll.txt)
+REM: Removed the following tabs: Obituaries, PU Runs, Stats
+ADD: An option for the maximum thread count UDT is allowed to use during batch processing
+FIX: The Cancel button now cancels jobs ASAP, not after processing of the current demo is done
+ADD: Demo splitting
+ADD: New quotes \o/
+
 0.2.0g (21.03.2013)
 CHG: The default text color of all ListView instances is opaque black
 ADD: Open button next to the browse button ("...") in the Output Folder row of the Settings tab

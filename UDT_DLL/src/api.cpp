@@ -1,567 +1,938 @@
 #include "api.h"
-#include "demo.hpp"
-#include "demo68.hpp"
-#include "demo73.hpp"
-#include "cutter.hpp"
+#include "parser_context.hpp"
+#include "common.hpp"
+#include "utils.hpp"
+#include "file_system.hpp"
+#include "timer.hpp"
+#include "crash.hpp"
+#include "scoped_stack_allocator.hpp"
+#include "multi_threaded_processing.hpp"
+#include "analysis_splitter.hpp"
+#include "analysis_cut_by_chat.hpp"
 
-#include <limits.h>
+// For malloc and free.
+#include <stdlib.h>
+#if defined(UDT_MSVC)
+#	include <malloc.h>
+#endif
+
+// For the placement new operator.
+#include <new>
 
 
-#define UDT_API(ReturnType) UDT_EXPORT_DLL ReturnType
+#define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.2.1";
+static const char* VersionString = "0.3.0";
 
 
-struct UdtLibrary
+#define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
+static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
 {
-	Demo* demo;
+	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
+	".after_last"
+};
+#undef UDT_PROTOCOL_ITEM
+
+
+
+struct SingleThreadProgressContext
+{
+	u64 TotalByteCount;
+	u64 ProcessedByteCount;
+	u64 CurrentJobByteCount;
+	udtProgressCallback UserCallback;
+	void* UserData;
+	udtTimer* Timer;
 };
 
+static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
+{
+	SingleThreadProgressContext* const context = (SingleThreadProgressContext*)userData;
+	if(context == NULL || context->Timer == NULL || context->UserCallback == NULL)
+	{
+		return;
+	}
+
+	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	{
+		return;
+	}
+
+	context->Timer->Restart();
+
+	const u64 jobProcessed = (u64)((f64)context->CurrentJobByteCount * (f64)jobProgress);
+	const u64 totalProcessed = context->ProcessedByteCount + jobProcessed;
+	const f32 realProgress = udt_clamp((f32)totalProcessed / (f32)context->TotalByteCount, 0.0f, 1.0f);
+
+	(*context->UserCallback)(realProgress, context->UserData);
+}
 
 UDT_API(const char*) udtGetVersionString()
 {
 	return VersionString;
 }
 
-UDT_API(UdtHandle) udtCreate(int protocolId)
+UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)
 {
-	if(protocolId != Protocol::Dm68 && protocolId != Protocol::Dm73)
-	{
-		return NULL;
-	}
-
-	UdtLibrary* lib = new UdtLibrary;
-	switch(protocolId)
-	{
-	case Protocol::Dm68:
-		lib->demo = new Demo68;
-		break;
-
-	case Protocol::Dm73:
-		lib->demo = new Demo73;
-		break;
-
-	default:
-		delete lib;
-		return NULL;
-	}
-
-	lib->demo->_protocol = (Protocol::Id)protocolId;
-
-	return lib;
+	return (protocol >= udtProtocol::AfterLastProtocol || (s32)protocol < (s32)1) ? 0 : 1;
 }
 
-UDT_API(void) udtDestroy(UdtHandle lib)
+UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 {
-	if(lib)
+	if(protocol == udtProtocol::Dm68)
 	{
-		if(lib->demo)
+		return sizeof(idEntityState68);
+	}
+
+	if(protocol == udtProtocol::Dm73)
+	{
+		return sizeof(idEntityState73);
+	}
+
+	if(protocol == udtProtocol::Dm90)
+	{
+		return sizeof(idEntityState90);
+	}
+
+	return 0;
+}
+
+UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
+{
+	if(protocol == udtProtocol::Dm68)
+	{
+		return sizeof(idClientSnapshot68);
+	}
+
+	if(protocol == udtProtocol::Dm73)
+	{
+		return sizeof(idClientSnapshot73);
+	}
+
+	if(protocol == udtProtocol::Dm90)
+	{
+		return sizeof(idClientSnapshot90);
+	}
+
+	return 0;
+}
+
+UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return NULL;
+	}
+
+	return DemoFileExtensions[protocol];
+}
+
+UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
+{
+	for(s32 i = (s32)udtProtocol::Invalid + 1; i < (s32)udtProtocol::AfterLastProtocol; ++i)
+	{
+		if(StringEndsWith_NoCase(filePath, DemoFileExtensions[i]))
 		{
-			delete lib->demo;
+			return (udtProtocol::Id)i;
+		}
+	}
+	
+	return udtProtocol::Invalid;
+}
+
+UDT_API(s32) udtCrash(udtCrashType::Id crashType)
+{
+	if((u32)crashType >= (u32)udtCrashType::Count)
+	{
+		return udtErrorCode::InvalidArgument;
+	}
+
+	switch(crashType)
+	{
+		case udtCrashType::FatalError:
+			FatalError(__FILE__, __LINE__, __FUNCTION__, "udtCrash test");
+			break;
+
+		case udtCrashType::ReadAccess:
+			printf("Bullshit: %d\n", *(int*)0);
+			break;
+
+		case udtCrashType::WriteAccess:
+			*(int*)0 = 1337;
+			break;
+
+		default:
+			break;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
+{
+	SetCrashHandler(crashHandler);
+
+	return (s32)udtErrorCode::None;
+}
+
+static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
+{
+	if(endOffset <= startOffset)
+	{
+		return false;
+	}
+
+	if(file.Seek((s32)startOffset, udtSeekOrigin::Start) != 0)
+	{
+		return false;
+	}
+
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(filePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	udtVMLinearAllocator& tempAllocator = context.TempAllocator;
+	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
+
+	char* fileName = NULL;
+	if(!GetFileNameWithoutExtension(fileName, tempAllocator, filePath))
+	{
+		fileName = AllocateString(tempAllocator, "NEW_UDT_SPLIT_DEMO");
+	}
+	
+	char* outputFilePathStart = NULL;
+	if(outputFolderPath == NULL)
+	{
+		char* inputFolderPath = NULL;
+		GetFolderPath(inputFolderPath, tempAllocator, filePath);
+		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, fileName);
+	}
+	else
+	{
+		StringPathCombine(outputFilePathStart, tempAllocator, outputFolderPath, fileName);
+	}
+
+	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
+	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart, index + 1, udtGetFileExtensionByProtocol(protocol));
+
+	context.LogInfo("Writing demo %s...", newFilePath);
+
+	udtFileStream outputFile;
+	if(!outputFile.Open(newFilePath, udtFileOpenMode::Write))
+	{
+		context.LogError("Could not open file");
+		return false;
+	}
+
+	const bool success = CopyFileRange(file, outputFile, tempAllocator, startOffset, endOffset);
+	if(!success)
+	{
+		context.LogError("File copy failed");
+	}
+
+	return success;
+}
+
+static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, const u32* fileOffsets, const u32 count)
+{
+	if(fileOffsets == NULL || count == 0)
+	{
+		return true;
+	}
+
+	// Exactly one gamestate message starting with the file.
+	if(count == 1 && fileOffsets[0] == 0)
+	{
+		return true;
+	}
+
+	const u32 fileLength = (u32)file.Length();
+
+	bool success = true;
+
+	u32 start = 0;
+	u32 end = 0;
+	u32 indexOffset = 0;
+	for(u32 i = 0; i < count; ++i)
+	{
+		end = fileOffsets[i];
+		if(start == end)
+		{
+			++indexOffset;
+			start = end;
+			continue;
 		}
 
-		delete lib;
+		success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, i - indexOffset, start, end);
+
+		start = end;
 	}
 
-	_progressCallback = NULL;
-	_messageCallback = NULL;
+	end = fileLength;
+	success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, count - indexOffset, start, end);
+
+	return success;
 }
 
-UDT_API(int) udtSetProgressCallback(UdtHandle lib, ProgressCallback callback)
+UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	if(lib == NULL || callback == NULL)
+	if(context == NULL || info == NULL || demoFilePath == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	_progressCallback = callback;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtSetMessageCallback(UdtHandle lib, MessageCallback callback)
-{
-	if(lib == NULL || callback == NULL)
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	_messageCallback = callback;
+	context->Reset();
 
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtSetFileStartOffset(UdtHandle lib, int fileStartOffset)
-{
-	if(lib == NULL || fileStartOffset < 0)
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	lib->demo->_fileStartOffset = fileStartOffset;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtSetServerTimeOffset(UdtHandle lib, int serverTimeOffset)
-{
-	if(lib == NULL || serverTimeOffset < 0)
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	lib->demo->_serverTimeOffset = serverTimeOffset;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtAddCut(UdtHandle lib, const char* filePath, int startTimeMs, int endTimeMs)
-{
-	if(lib == NULL || filePath == NULL)
+	if(!context->Parser.Init(&context->Context, protocol))
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	DemoCut cut;
-	cut.StartTimeMs = startTimeMs;
-	cut.EndTimeMs = endTimeMs;
-	cut.FilePath = filePath;
-	lib->demo->_cuts.push_back(cut);
+	context->Parser.SetFilePath(demoFilePath);
 
-	return ErrorCode::None;
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	DemoSplitterAnalyzer analyzer;
+	context->Parser.AddPlugIn(&analyzer);
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(analyzer.GamestateFileOffsets.GetSize() <= 1)
+	{
+		return (s32)udtErrorCode::None;
+	}
+
+	if(!CreateDemoFileSplit(context->Context, file, demoFilePath, info->OutputFolderPath, &analyzer.GamestateFileOffsets[0], analyzer.GamestateFileOffsets.GetSize()))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtParse(UdtHandle lib, const char* filePath, ProgressCallback progressCb, MessageCallback messageCb)
+UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath)
 {
-	if(lib == NULL || filePath == NULL)
+	if(context == NULL || info == NULL || demoFilePath == NULL || 
+	   cutInfo == NULL || cutInfo->Cuts == NULL || cutInfo->CutCount == 0)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	CallbackCutDemoFileStreamCreationInfo streamInfo;
+	streamInfo.OutputFolderPath = info->OutputFolderPath;
+
+	context->Parser.SetFilePath(demoFilePath);
+
+	for(u32 i = 0; i < cutInfo->CutCount; ++i)
+	{
+		const udtCut& cut = cutInfo->Cuts[i];
+		if(cut.StartTimeMs < cut.EndTimeMs)
+		{
+			context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
+		}
+	}
+
+	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+static bool GetCutByChatMergedSections(udtParserContext* context, udtParserPlugInCutByChat& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath)
+{
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(filePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(filePath);
+	context->Parser.AddPlugIn(&plugIn);
+
+	context->Context.LogInfo("Processing for chat analysis: %s", filePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+// @TODO: Move this.
+bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
+{
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	udtParserPlugInCutByChat plugIn(*chatInfo);
+	if(!GetCutByChatMergedSections(context, plugIn, protocol, info, demoFilePath))
+	{
+		return false;
+	}
+
+	if(plugIn.Analyzer.MergedCutSections.IsEmpty())
+	{
+		return true;
+	}
+
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	const s32 gsIndex = plugIn.Analyzer.MergedCutSections[0].GameStateIndex;
+	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
+	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return false;
 	}
 	
-	_progressCallback = progressCb;
-	_messageCallback = messageCb;
+	if(!context->Parser.Init(&context->Context, protocol, gsIndex))
+	{
+		return false;
+	}
 
-	lib->demo->_inFilePath = filePath;
-	lib->demo->_outFilePath = "[invalid]";
-	lib->demo->_demoRecordStartTime = INT_MIN;
-	lib->demo->_demoRecordEndTime = INT_MIN;
-	lib->demo->Do();
+	context->Parser.SetFilePath(demoFilePath);
+
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
+
+	const udtCutByChatAnalyzer::CutSectionVector& sections = plugIn.Analyzer.MergedCutSections;
+	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
+	{
+		const udtCutByChatAnalyzer::CutSection& section = sections[i];
+		context->Parser.AddCut(section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
+	}
+
+	context->Context.LogInfo("Processing for chat cut(s): %s", demoFilePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	context->Context.SetCallbacks(info->MessageCb, NULL, NULL);
+	const bool result = RunParser(context->Parser, file, info->CancelOperation);
+	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
+
+	return result;
+}
+
+UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
+{
+	if(context == NULL || info == NULL || demoFilePath == NULL ||
+	   chatInfo == NULL || chatInfo->Rules == NULL || chatInfo->RuleCount == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(!CutByChat(context, info, chatInfo, demoFilePath))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(udtParserContext*) udtCreateContext()
+{
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	udtParserContext* const context = (udtParserContext*)malloc(sizeof(udtParserContext));
+	if(context == NULL)
+	{
+		return NULL;
+	}
+
+	new (context) udtParserContext;
+
+	return context;
+}
+
+UDT_API(s32) udtDestroyContext(udtParserContext* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	context->~udtParserContext();
+	free(context);
+
+	return (s32)udtErrorCode::None;
+}
+
+// @TODO: Move this.
+bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
+{
+	if(clearPlugInData)
+	{
+		context->Reset();
+	}
+	else
+	{
+		context->ResetButKeepPlugInData();
+	}
 	
-	return ErrorCode::None;
+	context->CreateAndAddPlugIns(info->PlugIns, info->PlugInCount);
+
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	context->Parser.SetFilePath(demoFilePath);
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
 }
 
-UDT_API(int) udtGetWarmupEndTimeMs(UdtHandle lib, int* warmupEndTimeMs)
+UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	if(lib == NULL || warmupEndTimeMs == NULL)
+	if(context == NULL || info == NULL || demoFilePath == 0 ||
+	   info->PlugInCount == 0 || info->PlugIns == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*warmupEndTimeMs = lib->demo->_gameStartTime;
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return udtErrorCode::InvalidArgument;
+	}
 
-	return ErrorCode::None;
+	if(!ParseDemoFile(context, info, demoFilePath, true))
+	{
+		return udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetFirstSnapshotTimeMs(UdtHandle lib, int* firstSnapshotTimeMs)
+UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
 {
-	if(lib == NULL || firstSnapshotTimeMs == NULL)
+	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||
+	   demoIdx >= context->DemoCount)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*firstSnapshotTimeMs = lib->demo->_demoFirstSnapTime;
+	if(!context->GetDataInfo(demoIdx, plugInId, buffer, count))
+	{
+		return udtErrorCode::OperationFailed;
+	}
 
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetGameStateCount(UdtHandle lib, int* gameStateCount)
+struct udtParserContextGroup
 {
-	if(lib == NULL || gameStateCount == NULL)
+	udtParserContext* Contexts;
+	u32 ContextCount;
+};
+
+static bool CreateContextGroup(udtParserContextGroup** contextGroupPtr, u32 contextCount)
+{
+	if(contextCount == 0)
 	{
-		return ErrorCode::InvalidArgument;
+		return false;
 	}
 
-	*gameStateCount = (int)lib->demo->_gameStates.size();
+	const size_t byteCount = sizeof(udtParserContextGroup) + contextCount * sizeof(udtParserContext);
+	udtParserContextGroup* const contextGroup = (udtParserContextGroup*)malloc(byteCount);
+	if(contextGroup == NULL)
+	{
+		return false;
+	}
 
-	return ErrorCode::None;
+	new (contextGroup) udtParserContextGroup;
+
+	udtParserContext* const contexts = (udtParserContext*)(contextGroup + 1);
+	for(u32 i = 0; i < contextCount; ++i)
+	{
+		new (contexts + i) udtParserContext;
+	}
+
+	contextGroup->Contexts = contexts;
+	contextGroup->ContextCount = contextCount;
+	*contextGroupPtr = contextGroup;
+
+	return true;
 }
 
-UDT_API(int) udtGetGameStateFileOffset(UdtHandle lib, int gameStateIdx, int* fileOffset)
+static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 {
-	if(lib == NULL || fileOffset == NULL || gameStateIdx < 0 || gameStateIdx >= (int)lib->demo->_gameStates.size())
+	if(contextGroup == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return;
 	}
 
-	*fileOffset = (int)lib->demo->_gameStates[gameStateIdx].FileOffset;
+	const u32 contextCount = contextGroup->ContextCount;
+	for(u32 i = 0; i < contextCount; ++i)
+	{
+		contextGroup->Contexts[i].~udtParserContext();
+	}
 
-	return ErrorCode::None;
+	contextGroup->~udtParserContextGroup();
 }
 
-UDT_API(int) udtGetGameStateServerTimeOffset(UdtHandle lib, int gameStateIdx, int* serverTimeOffset)
+UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 {
-	if(lib == NULL || serverTimeOffset == NULL || gameStateIdx < 0 || gameStateIdx >= (int)lib->demo->_gameStates.size())
+	if(contextGroup == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*serverTimeOffset = (int)lib->demo->_gameStates[gameStateIdx].ServerTimeOffset;
+	DestroyContextGroup(contextGroup);
 
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetGameStateFirstSnapshotTime(UdtHandle lib, int gameStateIdx, int* firstSnapshotTime)
+static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
-	if(lib == NULL || firstSnapshotTime == NULL || gameStateIdx < 0 || gameStateIdx >= (int)lib->demo->_gameStates.size())
+	udtTimer timer;
+	timer.Start();
+
+	udtVMArray<u64> fileSizes;
+	fileSizes.Resize(extraInfo->FileCount);
+
+	u64 totalByteCount = 0;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
-		return ErrorCode::InvalidArgument;
+		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
+		fileSizes[i] = byteCount;
+		totalByteCount += byteCount;
 	}
 
-	*firstSnapshotTime = (int)lib->demo->_gameStates[gameStateIdx].FirstSnapshotTime;
+	context->InputIndices.Resize(extraInfo->FileCount);
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		context->InputIndices[i] = i;
+	}
 
-	return ErrorCode::None;
+	SingleThreadProgressContext progressContext;
+	progressContext.Timer = &timer;
+	progressContext.UserCallback = info->ProgressCb;
+	progressContext.UserData = info->ProgressContext;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.TotalByteCount = totalByteCount;
+
+	udtParseArg newInfo = *info;
+	newInfo.ProgressCb = &SingleThreadProgressCallback;
+	newInfo.ProgressContext = &progressContext;
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const u64 jobByteCount = fileSizes[i];
+		progressContext.CurrentJobByteCount = jobByteCount;
+		if(!ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false))
+		{
+			return udtErrorCode::OperationFailed;
+		}
+		progressContext.ProcessedByteCount += jobByteCount;
+	}
+
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetGameStateLastSnapshotTime(UdtHandle lib, int gameStateIdx, int* lastSnapshotTime)
+UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
-	if(lib == NULL || lastSnapshotTime == NULL || gameStateIdx < 0 || gameStateIdx >= (int)lib->demo->_gameStates.size())
+	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*lastSnapshotTime = (int)lib->demo->_gameStates[gameStateIdx].LastSnapshotTime;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
+		{
+			return udtErrorCode::InvalidArgument;
+		}
+	}
 
-	return ErrorCode::None;
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	const u32 threadCount = threadJob ? threadAllocator.Threads.GetSize() : 1;
+	if(!CreateContextGroup(contextGroup, threadCount))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(!threadJob)
+	{
+		return udtParseDemoFiles_SingleThread((*contextGroup)->Contexts, info, extraInfo);
+	}
+	
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process((*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
+
+	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
 }
 
-UDT_API(int) udtGetServerCommandCount(UdtHandle lib, int* cmdCount)
+static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
-	if(lib == NULL || cmdCount == NULL)
+	udtParserContext* context = udtCreateContext();
+	if(context == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	*cmdCount = (int)lib->demo->_inCommands.size();
+	udtTimer timer;
+	timer.Start();
 
-	return ErrorCode::None;
+	udtVMArray<u64> fileSizes;
+	fileSizes.Resize(extraInfo->FileCount);
+
+	u64 totalByteCount = 0;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
+		fileSizes[i] = byteCount;
+		totalByteCount += byteCount;
+	}
+
+	SingleThreadProgressContext progressContext;
+	progressContext.Timer = &timer;
+	progressContext.UserCallback = info->ProgressCb;
+	progressContext.UserData = info->ProgressContext;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.TotalByteCount = totalByteCount;
+
+	udtParseArg newInfo = *info;
+	newInfo.ProgressCb = &SingleThreadProgressCallback;
+	newInfo.ProgressContext = &progressContext;
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const u64 jobByteCount = fileSizes[i];
+		progressContext.CurrentJobByteCount = jobByteCount;
+		if(!CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]))
+		{
+			udtDestroyContext(context);
+			return (s32)udtErrorCode::OperationFailed;
+		}
+		progressContext.ProcessedByteCount += jobByteCount;
+	}
+
+	udtDestroyContext(context);
+
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetServerCommandSequence(UdtHandle lib, int cmdIndex, int* seqNumber)
+UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
-	if(lib == NULL || seqNumber == NULL || cmdIndex < 0 || cmdIndex >= (int)lib->demo->_inCommands.size())
+	if(info == NULL || extraInfo == NULL || chatInfo == NULL ||
+	   chatInfo->Rules == NULL || chatInfo->RuleCount == 0 || 
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	Demo::ChatMap::const_iterator it = lib->demo->_inCommands.begin();
-	for(int i = 0; i < cmdIndex; ++i)
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
 	{
-		++it;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*seqNumber = it->first;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
+		{
+			return udtErrorCode::InvalidArgument;
+		}
+	}
 
-	return ErrorCode::None;
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
+	{
+		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
+	}
+
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
+	}
+
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByChat, chatInfo);
+
+	DestroyContextGroup(contextGroup);
+
+	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
 }
 
-UDT_API(int) udtGetServerCommandMessage(UdtHandle lib, int cmdIndex, char* valueBuffer, int bufferLength)
+UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)
 {
-	if(lib == NULL || valueBuffer == NULL || bufferLength <= 0 || cmdIndex < 0 || cmdIndex >= (int)lib->demo->_inCommands.size())
+	if(contextGroup == NULL || count == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	Demo::ChatMap::const_iterator it = lib->demo->_inCommands.begin();
-	for(int i = 0; i < cmdIndex; ++i)
-	{
-		++it;
-	}
+	*count = contextGroup->ContextCount;
 
-	Q_strncpyz(valueBuffer, it->second.c_str(), bufferLength);
-
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetConfigStringCount(UdtHandle lib, int* csCount)
+UDT_API(s32) udtGetContextFromGroup(udtParserContextGroup* contextGroup, u32 contextIdx, udtParserContext** context)
 {
-	if(lib == NULL || csCount == NULL)
+	if(contextGroup == NULL || context == NULL || contextIdx >= contextGroup->ContextCount)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*csCount = (int)lib->demo->_inConfigStrings.size();
+	*context = &contextGroup->Contexts[contextIdx];
 
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetConfigStringValue(UdtHandle lib, int csIndex, char* valueBuffer, int bufferLength)
+UDT_API(s32) udtGetDemoCountFromGroup(udtParserContextGroup* contextGroup, u32* count)
 {
-	if(lib == NULL || valueBuffer == NULL || bufferLength <= 0 || csIndex < 0 || csIndex >= MAX_CONFIGSTRINGS)
+	if(contextGroup == NULL || count == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	Demo::ChatMap::const_iterator it = lib->demo->_inConfigStrings.begin();
-	for(int i = 0; i < csIndex; ++i)
+	u32 demoCount = 0;
+	for(u32 ctxIdx = 0, ctxCount = contextGroup->ContextCount; ctxIdx < ctxCount; ++ctxIdx)
 	{
-		++it;
+		const udtParserContext& context = contextGroup->Contexts[ctxIdx];
+		demoCount += context.GetDemoCount();
 	}
 
-	Q_strncpyz(valueBuffer, it->second.c_str(), bufferLength);
+	*count = demoCount;
 
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetConfigStringIndex(UdtHandle lib, int udtCsIndex, int* quakeCsIndex)
+UDT_API(s32) udtGetDemoCountFromContext(udtParserContext* context, u32* count)
 {
-	if(lib == NULL || quakeCsIndex == NULL || udtCsIndex < 0 || udtCsIndex >= (int)lib->demo->_inConfigStrings.size())
+	if(context == NULL || count == NULL)
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	Demo::ChatMap::const_iterator it = lib->demo->_inConfigStrings.begin();
-	for(int i = 0; i < udtCsIndex; ++i)
-	{
-		++it;
-	}
+	*count = context->GetDemoCount();
 
-	*quakeCsIndex = it->first;
-
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(int) udtGetChatStringCount(UdtHandle lib, int* chatCount)
+UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* demoInputIdx)
 {
-	if(lib == NULL || chatCount == NULL)
+	if(context == NULL || demoInputIdx == NULL || 
+	   demoIdx >= context->GetDemoCount() || demoIdx >= context->InputIndices.GetSize())
 	{
-		return ErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	*chatCount = (int)lib->demo->_chatMessages.size();
+	*demoInputIdx = context->InputIndices[demoIdx];
 
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetChatStringMessage(UdtHandle lib, int chatIndex, char* valueBuffer, int bufferLength)
-{
-	if(lib == NULL || valueBuffer == NULL || bufferLength <= 0 || chatIndex < 0 || chatIndex >= (int)lib->demo->_chatMessages.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	Demo::ChatMap::const_iterator it = lib->demo->_chatMessages.begin();
-	for(int i = 0; i < chatIndex; ++i)
-	{
-		++it;
-	}
-
-	Q_strncpyz(valueBuffer, it->second.c_str(), bufferLength);
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetChatStringTime(UdtHandle lib, int chatIndex, int* time)
-{
-	if(lib == NULL || time == NULL || chatIndex < 0 || chatIndex >= (int)lib->demo->_chatMessages.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	Demo::ChatMap::const_iterator it = lib->demo->_chatMessages.begin();
-	for(int i = 0; i < chatIndex; ++i)
-	{
-		++it;
-	}
-
-	*time = it->first;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetObituaryCount(UdtHandle lib, int* obituaryCount)
-{
-	if(lib == NULL || obituaryCount == NULL)
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*obituaryCount = (int)lib->demo->_obituaries.size();
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetObituaryTime(UdtHandle lib, int obituaryIndex, int* time)
-{
-	if(lib == NULL || time == NULL || obituaryIndex < 0 || obituaryIndex >= (int)lib->demo->_obituaries.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*time = lib->demo->_obituaries[obituaryIndex].VirtualServerTime;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetObituaryAttackerName(UdtHandle lib, int obituaryIndex, char* nameBuffer, int bufferLength)
-{
-	if(lib == NULL || nameBuffer == NULL || bufferLength <= 0 || obituaryIndex < 0 || obituaryIndex >= (int)lib->demo->_obituaries.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	Q_strncpyz(nameBuffer, lib->demo->_obituaries[obituaryIndex].AttackerName.c_str(), bufferLength);
-
-	return ErrorCode::None;
-}
-
-// Get the target player name of an obituary event.
-UDT_API(int) udtGetObituaryTargetName(UdtHandle lib, int obituaryIndex, char* nameBuffer, int bufferLength)
-{
-	if(lib == NULL || nameBuffer == NULL || bufferLength <= 0 || obituaryIndex < 0 || obituaryIndex >= (int)lib->demo->_obituaries.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	Q_strncpyz(nameBuffer, lib->demo->_obituaries[obituaryIndex].TargetName.c_str(), bufferLength);
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetObituaryMeanOfDeath(UdtHandle lib, int obituaryIndex, int* mod)
-{
-	if(lib == NULL || mod == NULL || obituaryIndex < 0 || obituaryIndex >= (int)lib->demo->_obituaries.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*mod = lib->demo->_obituaries[obituaryIndex].MeanOfDeath;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunCount(UdtHandle lib, int* puRunCount)
-{
-	if(lib == NULL || puRunCount == NULL)
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*puRunCount = (int)lib->demo->_puRuns.size();
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunTime(UdtHandle lib, int puRunIndex, int* time)
-{
-	if(lib == NULL || time == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*time = lib->demo->_puRuns[puRunIndex].VirtualServerTime;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunPlayerName(UdtHandle lib, int puRunIndex, char* nameBuffer, int bufferLength)
-{
-	if(lib == NULL || nameBuffer == NULL || bufferLength <= 0 || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	Q_strncpyz(nameBuffer, lib->demo->_puRuns[puRunIndex].PlayerName.c_str(), bufferLength);
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunPu(UdtHandle lib, int puRunIndex, int* pu)
-{
-	if(lib == NULL || pu == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*pu = lib->demo->_puRuns[puRunIndex].Pu;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunDuration(UdtHandle lib, int puRunIndex, int* durationMs)
-{
-	if(lib == NULL || durationMs == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*durationMs = lib->demo->_puRuns[puRunIndex].Duration;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunKillCount(UdtHandle lib, int puRunIndex, int* kills)
-{
-	if(lib == NULL || kills == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*kills = lib->demo->_puRuns[puRunIndex].Kills;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunTeamKillCount(UdtHandle lib, int puRunIndex, int* teamKills)
-{
-	if(lib == NULL || teamKills == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*teamKills = lib->demo->_puRuns[puRunIndex].TeamKills;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtGetPuRunSelfKill(UdtHandle lib, int puRunIndex, int* selfKill)
-{
-	if(lib == NULL || selfKill == NULL || puRunIndex < 0 || puRunIndex >= (int)lib->demo->_puRuns.size())
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	*selfKill = lib->demo->_puRuns[puRunIndex].SelfKill;
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtCutDemoTime(const char* inFilePath, const char* outFilePath, int startTimeMs, int endTimeMs, ProgressCallback progressCb, MessageCallback messageCb)
-{
-	if(inFilePath == NULL || outFilePath == NULL || startTimeMs < 0 || endTimeMs < 0)
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	CutDemoTime(inFilePath, outFilePath, startTimeMs, endTimeMs, progressCb, messageCb);
-
-	return ErrorCode::None;
-}
-
-UDT_API(int) udtCutDemoChat(const char* inFilePath, const char* outFilePath, const char** chatEntries, int chatEntryCount, int startOffsetSecs, int endOffsetSecs)
-{
-	if(inFilePath == NULL || outFilePath == NULL || chatEntries == NULL || chatEntryCount <= 0 || startOffsetSecs < 0 || endOffsetSecs < 0)
-	{
-		return ErrorCode::InvalidArgument;
-	}
-
-	std::vector<std::string> chatVector;
-	for(int i = 0; i < chatEntryCount; ++i)
-	{
-		chatVector.push_back(chatEntries[i]);
-	}
-
-	CutDemoChat(inFilePath, outFilePath, chatVector, startOffsetSecs, endOffsetSecs);
-
-	return ErrorCode::None;
+	return (s32)udtErrorCode::None;
 }

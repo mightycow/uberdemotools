@@ -2,44 +2,38 @@
 
 
 #include "api.h"
+#include "types.hpp"
 
 #include <string.h>
 #include <stdio.h>
 
 
-extern ProgressCallback _progressCallback;
-extern MessageCallback _messageCallback;
-
-extern void LogInfo(const char* format, ...);
-extern void LogWarning(const char* format, ...);
-extern void LogError(const char* format, ...);
-extern void LogErrorAndCrash(const char* format, ...);
-
-typedef int qbool;
+typedef s32 qbool;
 #define qfalse (qbool)(0)
 #define qtrue (qbool)(!0)
 typedef qbool qboolean;
 
 #if defined(Q3_VM)
-typedef int intptr_t;
+typedef s32 s32ptr_t;
 #elif defined(_MSC_VER)
 #include <stddef.h>
 typedef __int64 int64_t;
 typedef __int32 int32_t;
 typedef __int16 int16_t;
-typedef __int8 int8_t;
+typedef __int8  int8_t;
 typedef unsigned __int64 uint64_t;
 typedef unsigned __int32 uint32_t;
 typedef unsigned __int16 uint16_t;
-typedef unsigned __int8 uint8_t;
+typedef unsigned __int8	 uint8_t;
 typedef ptrdiff_t intptr_t;
 #else
-#include <stdint.h>
+//#include <stds32.h>
+//#include <stdint.h>
 #endif
 
 typedef unsigned char		byte;
 
-typedef int		qhandle_t;
+typedef s32		qhandle_t;
 
 typedef float vec_t;
 typedef vec_t vec2_t[2];
@@ -105,8 +99,8 @@ typedef vec_t vec4_t[4];
 
 //endianness
 extern short ShortSwap (short l);
-extern int LongSwap (int l);
-extern float FloatSwap (const float *f);
+extern s32 LongSwap (s32 l);
+extern f32 FloatSwap (const f32 *f);
 
 #define LittleShort
 #define LittleLong
@@ -120,11 +114,11 @@ extern float FloatSwap (const float *f);
 
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s {
-	int			serverTime;
-	int			angles[3];
-	int			buttons;
-	byte		weapon;
-	signed char	forwardmove, rightmove, upmove;
+	s32			serverTime;
+	s32			angles[3];
+	s32			buttons;
+	u8		weapon;
+	s8	forwardmove, rightmove, upmove;
 } usercmd_t;
 
 // if entityState->solid == SOLID_BMODEL, modelindex is an inline model number
@@ -132,20 +126,23 @@ typedef struct usercmd_s {
 
 typedef enum {
 	TR_STATIONARY,
-	TR_INTERPOLATE,				// non-parametric, but interpolate between snapshots
+	TR_INTERPOLATE,				// non-parametric, but s32erpolate between snapshots
 	TR_LINEAR,
 	TR_LINEAR_STOP,
 	TR_SINE,					// value = base + sin( time / duration ) * delta
 	TR_GRAVITY
 } trType_t;
 
-typedef struct {
+// 68: this
+// 73: this + s32 gravity
+struct idTrajectoryBase
+{
 	trType_t	trType;
-	int		trTime;
-	int		trDuration;			// if non 0, trTime + trDuration = stop time
-	vec3_t	trBase;
-	vec3_t	trDelta;			// velocity, etc
-} trajectory_t;
+	s32			trTime;
+	s32			trDuration;			// if non 0, trTime + trDuration = stop time
+	vec3_t		trBase;
+	vec3_t		trDelta;			// velocity, etc
+};
 
 // entityState_t is the information conveyed from the server
 // in an update message about entities that the client will
@@ -153,16 +150,17 @@ typedef struct {
 // Different eTypes may use the information in different ways
 // The messages are delta compressed, so it doesn't really matter if
 // the structure size is fairly large
-typedef struct entityState_s {
-	int		number;			// entity index
-	int		eType;			// entityType_t
-	int		eFlags;
+struct idEntityStateBase
+{
+	s32		number;			// entity index
+	s32		eType;			// entityType_t
+	s32		eFlags;
 
-	trajectory_t	pos;	// for calculating position
-	trajectory_t	apos;	// for calculating angles
+	idTrajectoryBase	pos;
+	idTrajectoryBase	apos;
 
-	int		time;
-	int		time2;
+	s32		time;
+	s32		time2;
 
 	vec3_t	origin;
 	vec3_t	origin2;
@@ -170,84 +168,56 @@ typedef struct entityState_s {
 	vec3_t	angles;
 	vec3_t	angles2;
 
-	int		otherEntityNum;	// shotgun sources, etc
-	int		otherEntityNum2;
+	s32		otherEntityNum;	// shotgun sources, etc
+	s32		otherEntityNum2;
 
-	int		groundEntityNum;	// -1 = in air
+	s32		groundEntityNum;	// -1 = in air
 
-	int		constantLight;	// r + (g<<8) + (b<<16) + (intensity<<24)
-	int		loopSound;		// constantly loop this sound
+	s32		constantLight;	// r + (g<<8) + (b<<16) + (s32ensity<<24)
+	s32		loopSound;		// constantly loop this sound
 
-	int		modelindex;
-	int		modelindex2;
-	int		clientNum;		// 0 to (MAX_CLIENTS - 1), for players and corpses
-	int		frame;
+	s32		modelindex;
+	s32		modelindex2;
+	s32		clientNum;		// 0 to (MAX_CLIENTS - 1), for players and corpses
+	s32		frame;
 
-	int		solid;			// for client side prediction, trap_linkentity sets this properly
+	s32		solid;			// for client side prediction, trap_linkentity sets this properly
 
-	int		event;			// impulse events -- muzzle flashes, footsteps, etc
-	int		eventParm;
+	s32		event;			// impulse events -- muzzle flashes, footsteps, etc
+	s32		eventParm;
 
 	// for players
-	int		powerups;		// bit flags
-	int		weapon;			// determines weapon and flash model, etc
-	int		legsAnim;		// mask off ANIM_TOGGLEBIT
-	int		torsoAnim;		// mask off ANIM_TOGGLEBIT
+	s32		powerups;		// bit flags
+	s32		weapon;			// determines weapon and flash model, etc
+	s32		legsAnim;		// mask off ANIM_TOGGLEBIT
+	s32		torsoAnim;		// mask off ANIM_TOGGLEBIT
 
-	int		generic1;
-} entityState_68_t;
+	s32		generic1;
+};
 
-typedef struct {
-	trType_t	trType;
-	int			trTime;
-	int			trDuration;			// if non 0, trTime + trDuration = stop time
-	vec3_t		trBase;
-	vec3_t		trDelta;			// velocity, etc
-	int			gravity;
-} trajectory_dm73_t;
+struct idEntityState68 : idEntityStateBase
+{
+};
 
-typedef struct entityState_73_s {
-	int		number;
-	int		eType;
-	int		eFlags;
+struct idEntityState73 : idEntityStateBase
+{
+	// New in dm_73.
+	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
+	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
+};
 
-	trajectory_dm73_t	pos;
-	trajectory_dm73_t	apos;
+struct idEntityState90 : idEntityStateBase
+{
+	// New in dm_73.
+	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
+	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
 
-	int		time;
-	int		time2;
+	// New in dm_90.
+	int		jumpTime;
+	qbool	doubleJumped;
+};
 
-	vec3_t	origin;
-	vec3_t	origin2;
-
-	vec3_t	angles;
-	vec3_t	angles2;
-
-	int		otherEntityNum;
-	int		otherEntityNum2;
-
-	int		groundEntityNum;
-
-	int		constantLight;
-	int		loopSound;
-
-	int		modelindex;
-	int		modelindex2;
-	int		clientNum;
-	int		frame;
-
-	int		solid;
-
-	int		event;
-	int		eventParm;
-
-	int		powerups;
-	int		weapon;
-	int		legsAnim;
-	int		torsoAnim;
-
-	int		generic1;
-} entityState_73_t;
+typedef idEntityState90 idLargestEntityState;
 
 /*
 ========================================================================
@@ -327,16 +297,18 @@ typedef enum {
 #define CS_FIRST_PLACE          659
 #define CS_SECOND_PLACE         660
 #define CS_AD_WAIT              681
-#define CS_CPMA_GAME_INFO          672
-#define CS_CPMA_ROUND_INFO         710
+// Quake Live 688 689 ???
+// CPMA
+#define CS_CPMA_GAME_INFO       672
+#define CS_CPMA_ROUND_INFO      710
 
 #define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
 
 #define	MAX_GAMESTATE_CHARS	16000
 typedef struct {
-	int			stringOffsets[MAX_CONFIGSTRINGS];
-	char		stringData[MAX_GAMESTATE_CHARS];
-	int			dataCount;
+	s32			stringOffsets[MAX_CONFIGSTRINGS];
+	s8		stringData[MAX_GAMESTATE_CHARS];
+	s32			dataCount;
 } gameState_t;
 
 //=========================================================
@@ -361,105 +333,119 @@ typedef struct {
 // playerState_t is a full superset of entityState_t as it is used by players,
 // so if a playerState_t is transmitted, the entityState_t can be fully derived
 // from it.
-typedef struct playerState_s {
-	int			commandTime;	// cmd->serverTime of last executed command
-	int			pm_type;
-	int			bobCycle;		// for view bobbing and footstep generation
-	int			pm_flags;		// ducked, jump_held, etc
-	int			pm_time;
+struct idPlayerStateBase
+{
+	s32			commandTime;	// cmd->serverTime of last executed command
+	s32			pm_type;
+	s32			bobCycle;		// for view bobbing and footstep generation
+	s32			pm_flags;		// ducked, jump_held, etc
+	s32			pm_time;
 
 	vec3_t		origin;
 	vec3_t		velocity;
-	int			weaponTime;
-	int			gravity;
-	int			speed;
-	int			delta_angles[3];	// add to command angles to get view direction
+	s32			weaponTime;
+	s32			gravity;
+	s32			speed;
+	s32			delta_angles[3];	// add to command angles to get view direction
 									// changed by spawns, rotating objects, and teleporters
 
-	int			groundEntityNum;// ENTITYNUM_NONE = in air
+	s32			groundEntityNum;// ENTITYNUM_NONE = in air
 
-	int			legsTimer;		// don't change low priority animations until this runs out
-	int			legsAnim;		// mask off ANIM_TOGGLEBIT
+	s32			legsTimer;		// don't change low priority animations until this runs out
+	s32			legsAnim;		// mask off ANIM_TOGGLEBIT
 
-	int			torsoTimer;		// don't change low priority animations until this runs out
-	int			torsoAnim;		// mask off ANIM_TOGGLEBIT
+	s32			torsoTimer;		// don't change low priority animations until this runs out
+	s32			torsoAnim;		// mask off ANIM_TOGGLEBIT
 
-	int			movementDir;	// a number 0 to 7 that represents the reletive angle
+	s32			movementDir;	// a number 0 to 7 that represents the reletive angle
 								// of movement to the view angle (axial and diagonals)
 								// when at rest, the value will remain unchanged
 								// used to twist the legs during strafing
 
-	vec3_t		grapplePoint;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
+	vec3_t		grapplePos32;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
 
-	int			eFlags;			// copied to entityState_t->eFlags
+	s32			eFlags;			// copied to entityState_t->eFlags
 
-	int			eventSequence;	// pmove generated events
-	int			events[MAX_PS_EVENTS];
-	int			eventParms[MAX_PS_EVENTS];
+	s32			eventSequence;	// pmove generated events
+	s32			events[MAX_PS_EVENTS];
+	s32			eventParms[MAX_PS_EVENTS];
 
-	int			externalEvent;	// events set on player from another source
-	int			externalEventParm;
-	int			externalEventTime;
+	s32			externalEvent;	// events set on player from another source
+	s32			externalEventParm;
+	s32			externalEventTime;
 
-	int			clientNum;		// ranges from 0 to MAX_CLIENTS-1
-	int			weapon;			// copied to entityState_t->weapon
-	int			weaponstate;
+	s32			clientNum;		// ranges from 0 to MAX_CLIENTS-1
+	s32			weapon;			// copied to entityState_t->weapon
+	s32			weaponstate;
 
 	vec3_t		viewangles;		// for fixed views
-	int			viewheight;
+	s32			viewheight;
 
 	// damage feedback
-	int			damageEvent;	// when it changes, latch the other parms
-	int			damageYaw;
-	int			damagePitch;
-	int			damageCount;
+	s32			damageEvent;	// when it changes, latch the other parms
+	s32			damageYaw;
+	s32			damagePitch;
+	s32			damageCount;
 
-	int			stats[MAX_STATS];
-	int			persistant[MAX_PERSISTANT];	// stats that aren't cleared on death
-	int			powerups[MAX_POWERUPS];	// level.time that the powerup runs out
-	int			ammo[MAX_WEAPONS];
+	s32			stats[MAX_STATS];
+	s32			persistant[MAX_PERSISTANT];	// stats that aren't cleared on death
+	s32			powerups[MAX_POWERUPS];	// level.time that the powerup runs out
+	s32			ammo[MAX_WEAPONS];
 
-	int			generic1;
-	int			loopSound;
-	int			jumppad_ent;	// jumppad entity hit this frame
+	s32			generic1;
+	s32			loopSound;
+	s32			jumppad_ent;	// jumppad entity hit this frame
 
 	// not communicated over the net at all
-	int			ping;			// server to game info for scoreboard
-	int			pmove_framecount;	// FIXME: don't transmit over the network
-	int			jumppad_frame;
-	int			entityEventSequence;
-} playerState_t;
+	s32			ping;			// server to game info for scoreboard
+	s32			pmove_framecount;	// FIXME: don't transmit over the network
+	s32			jumppad_frame;
+	s32			entityEventSequence;
+};
 
+struct idPlayerState68 : idPlayerStateBase
+{
+};
+
+struct idPlayerState73 : idPlayerStateBase
+{
+};
+
+struct idPlayerState90 : idPlayerStateBase
+{
+	qboolean doubleJumped;
+	int jumpTime;
+	int unknown1;
+	int unknown2;
+	int unknown3;
+	vec3_t grapplePoint; // location of grapple to pull towards if PMF_GRAPPLE_PULL
+};
+
+typedef idPlayerState90 idLargestPlayerState;
 
 //====================================================================
 
-int Q_isprint( int c );
-int Q_islower( int c );
-int Q_isupper( int c );
-int Q_isalpha( int c );
+s32 Q_isprint( s32 c );
+s32 Q_islower( s32 c );
+s32 Q_isupper( s32 c );
+s32 Q_isalpha( s32 c );
 
 // portable case insensitive compare
-int			Q_stricmp( const char *s1, const char *s2 );
-int			Q_strncmp( const char *s1, const char *s2, int n );
-int			Q_stricmpn( const char *s1, const char *s2, int n );
+s32			Q_stricmp( const char *s1, const char *s2 );
+s32			Q_strncmp( const char *s1, const char *s2, s32 n );
+s32			Q_stricmpn( const char *s1, const char *s2, s32 n );
 char		*Q_strlwr( char *s1 );
 char		*Q_strupr( char *s1 );
-const char	*Q_strrchr( const char* string, int c );
+const char	*Q_strrchr( const char* string, s32 c );
 
 // buffer size safe library replacements
-void	Q_strncpyz( char *dest, const char *src, int destsize );
-void	Q_strcat( char *dest, int size, const char *src );
+void	Q_strncpyz( char *dest, const char *src, s32 destsize );
+void	Q_strcat( char *dest, s32 size, const char *src );
 
 // strlen that discounts Quake color sequences
-int Q_PrintStrlen( const char *string );
+s32 Q_PrintStrlen( const char *string );
 // removes color sequences from string
 char *Q_CleanStr( char *string );
-
-//=============================================
-
-extern const char* va( const char* format, ... );
-
-//=============================================
 
 /*
 ==============================================================
@@ -494,11 +480,11 @@ typedef enum {
 
 typedef struct {
 	netadrtype_t type;
-	byte ip[4];
+	u8 ip[4];
 	unsigned short port;
 } netadr_t;
 
-#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented into multiple packets
+#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented s32o multiple packets
 
 /*
 ==============================================================
@@ -534,7 +520,8 @@ PROTOCOL
 //
 // server to client
 //
-enum svc_ops_e {
+enum svc_ops_e
+{
 	svc_bad,
 	svc_nop,
 	svc_gamestate,
@@ -543,9 +530,12 @@ enum svc_ops_e {
 	svc_serverCommand,			// [string] to be executed by client game module
 	svc_download,				// [short] size [size bytes]
 	svc_snapshot,
-	svc_EOF
+	svc_EOF,
+	// svc_extension follows a svc_EOF, followed by another svc_* ...
+	// this keeps legacy clients compatible.
+	svc_extension,
+	svc_voip,     // not wrapped in USE_VOIP, so this value is reserved.
 };
-
 
 //
 // client to server
@@ -560,29 +550,68 @@ enum clc_ops_e {
 };
 
 // snapshots are a view of the server at a given time
-typedef struct {
+struct idClientSnapshotBase
+{
 	qbool		valid;			// cleared if delta parsing was invalid
-	int				snapFlags;		// rate delayed and dropped commands
+	s32				snapFlags;		// rate delayed and dropped commands
 
-	int				serverTime;		// server time the message is valid for (in msec)
+	s32				serverTime;		// server time the message is valid for (in msec)
 
-	int				messageNum;		// copied from netchan->incoming_sequence
-	int				deltaNum;		// messageNum the delta is from
-	int				ping;			// time from when cmdNum-1 was sent to time packet was reeceived
-	byte			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
+	s32				messageNum;		// copied from netchan->incoming_sequence
+	s32				deltaNum;		// messageNum the delta is from
+	s32				ping;			// time from when cmdNum-1 was sent to time packet was reeceived
+	u8			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
 
-	int				cmdNum;			// the next cmdNum the server is expecting
-	playerState_t	ps;						// complete information about the current player at this time
+	s32				cmdNum;			// the next cmdNum the server is expecting
 
-	int				numEntities;			// all of the entities that need to be presented
-	int				parseEntitiesNum;		// at the time of this snapshot
+	s32				numEntities;			// all of the entities that need to be presented
+	s32				parseEntitiesNum;		// at the time of this snapshot
 
-	int				serverCommandNum;		// execute all commands up to this before
+	s32				serverCommandNum;		// execute all commands up to this before
 	// making the snapshot current
-} clSnapshot_t;
+
+	//PlayerStateType	ps;						// complete information about the current player at this time
+};
+
+struct idClientSnapshot68 : idClientSnapshotBase
+{
+	idPlayerState68 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot73 : idClientSnapshotBase
+{
+	idPlayerState73 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot90 : idClientSnapshotBase
+{
+	idPlayerState90 ps; // complete information about the current player at this time
+};
+
+typedef idClientSnapshot90 idLargestClientSnapshot;
+
+inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol)
+{
+	if(protocol == udtProtocol::Dm68)
+	{
+		return &((idClientSnapshot68*)snap)->ps;
+	}
+
+	if(protocol == udtProtocol::Dm73)
+	{
+		return &((idClientSnapshot73*)snap)->ps;
+	}
+
+	if(protocol == udtProtocol::Dm90)
+	{
+		return &((idClientSnapshot90*)snap)->ps;
+	}
+
+	return NULL;
+}
 
 // allow a lot of command backups for very fast systems
-// multiple commands may be combined into a single packet, so this
+// multiple commands may be combined s32o a single packet, so this
 // needs to be larger than PACKET_BACKUP
 #define	CMD_BACKUP		64
 #define	CMD_MASK		(CMD_BACKUP - 1)
@@ -813,7 +842,7 @@ typedef enum {
 	STAT_WEAPONS_68,					// 16 bit fields
 	STAT_ARMOR_68,				
 	STAT_DEAD_YAW_68,					// look this direction when dead (FIXME: get rid of?)
-	STAT_CLIENTS_READY_68,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
+	STAT_CLIENTS_READY_68,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
 	STAT_MAX_HEALTH_68					// health / armor limit, changable by handicap
 } statIndex_68_t;
 
@@ -824,7 +853,7 @@ typedef enum {
 	STAT_WEAPONS_73,					// 16 bit fields
 	STAT_ARMOR_73,				
 	STAT_DEAD_YAW_73,					// look this direction when dead (FIXME: get rid of?)
-	STAT_CLIENTS_READY_73,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
+	STAT_CLIENTS_READY_73,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
 	STAT_MAX_HEALTH_73					// health / armor limit, changable by handicap
 } statIndex_73_t;
 
@@ -834,7 +863,7 @@ typedef enum {
 // NOTE: may not have more than 16
 typedef enum {
 	PERS_SCORE,						// !!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!
-	PERS_HITS,						// total points damage inflicted so damage beeps can sound on change
+	PERS_HITS,						// total pos32s damage inflicted so damage beeps can sound on change
 	PERS_RANK,						// player rank or team rank
 	PERS_TEAM,						// player team
 	PERS_SPAWN_COUNT,				// incremented every respawn

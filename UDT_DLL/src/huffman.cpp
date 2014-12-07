@@ -9,76 +9,73 @@
 #define NYT HUFF_MAX					/* NYT = Not Yet Transmitted */
 #define INTERNAL_NODE (HUFF_MAX+1)
 
-static int			bloc = 0;
 
-void	Huff_putBit( int bit, byte *fout, int *offset) {
-	bloc = *offset;
-	if ((bloc&7) == 0) {
-		fout[(bloc>>3)] = 0;
+void	udtHuffman::PutBit( s32 bit, u8 *fout, s32 *offset) {
+	_bloc = *offset;
+	if ((_bloc&7) == 0) {
+		fout[(_bloc>>3)] = 0;
 	}
-	fout[(bloc>>3)] |= bit << (bloc&7);
-	bloc++;
-	*offset = bloc;
+	fout[(_bloc>>3)] |= bit << (_bloc&7);
+	_bloc++;
+	*offset = _bloc;
 }
 
-int		Huff_getBit( byte *fin, int *offset) {
-	int t;
-	bloc = *offset;
-	t = (fin[(bloc>>3)] >> (bloc&7)) & 0x1;
-	bloc++;
-	*offset = bloc;
+s32		udtHuffman::GetBit( u8 *fin, s32 *offset) {
+	s32 t;
+	_bloc = *offset;
+	t = (fin[(_bloc>>3)] >> (_bloc&7)) & 0x1;
+	_bloc++;
+	*offset = _bloc;
 	return t;
+}
+
+s32	udtHuffman::GetBloc()
+{
+	return _bloc;
+}
+
+void udtHuffman::SetBloc(s32 bloc)
+{
+	_bloc = bloc;
 }
 
 /* Add a bit to the output file (buffered) */
-#if defined(_MSC_VER)
-static __forceinline void add_bit (char bit, byte *fout) {
-#else
-static __inline__ void add_bit (char bit, byte *fout) {
-#endif
+static UDT_FORCE_INLINE void add_bit (s32& bloc, s8 bit, u8 *fout) {
 	if ((bloc&7) == 0) {
 		fout[(bloc>>3)] = 0;
 	}
 	fout[(bloc>>3)] |= bit << (bloc&7);
 	bloc++;
 }
-/*
-// @myT: Original function.
-static void add_bit (char bit, byte *fout) {
-	if ((bloc&7) == 0) {
-		fout[(bloc>>3)] = 0;
-	}
-	fout[(bloc>>3)] |= bit << (bloc&7);
-	bloc++;
-}
-*/
+
 /* Receive one bit from the input file (buffered) */
-static int get_bit (byte *fin) {
-	int t;
+static UDT_FORCE_INLINE s32 get_bit(s32& bloc, u8 *fin)
+{
+	s32 t;
 	t = (fin[(bloc>>3)] >> (bloc&7)) & 0x1;
 	bloc++;
 	return t;
 }
 
-static node_t **get_ppnode(huff_t* huff) {
-	node_t **tppnode;
+static idHuffmanNode **get_ppnode(idHuffmanTree* huff) {
+	idHuffmanNode **tppnode;
 	if (!huff->freelist) {
 		return &(huff->nodePtrs[huff->blocPtrs++]);
 	} else {
 		tppnode = huff->freelist;
-		huff->freelist = (node_t **)*tppnode;
+		huff->freelist = (idHuffmanNode **)*tppnode;
 		return tppnode;
 	}
 }
 
-static void free_ppnode(huff_t* huff, node_t **ppnode) {
-	*ppnode = (node_t *)huff->freelist;
+static void free_ppnode(idHuffmanTree* huff, idHuffmanNode **ppnode) {
+	*ppnode = (idHuffmanNode *)huff->freelist;
 	huff->freelist = ppnode;
 }
 
 /* Swap the location of these two nodes in the tree */
-static void swap (huff_t* huff, node_t *node1, node_t *node2) { 
-	node_t *par1, *par2;
+static void swap (idHuffmanTree* huff, idHuffmanNode *node1, idHuffmanNode *node2) { 
+	idHuffmanNode *par1, *par2;
 
 	par1 = node1->parent;
 	par2 = node2->parent;
@@ -108,8 +105,8 @@ static void swap (huff_t* huff, node_t *node1, node_t *node2) {
 }
 
 /* Swap these two nodes in the linked list (update ranks) */
-static void swaplist(node_t *node1, node_t *node2) {
-	node_t *par1;
+static void swaplist(idHuffmanNode *node1, idHuffmanNode *node2) {
+	idHuffmanNode *par1;
 
 	par1 = node1->next;
 	node1->next = node2->next;
@@ -140,8 +137,8 @@ static void swaplist(node_t *node1, node_t *node2) {
 }
 
 /* Do the increments */
-static void increment(huff_t* huff, node_t *node) {
-	node_t *lnode;
+static void increment(idHuffmanTree* huff, idHuffmanNode *node) {
+	idHuffmanNode *lnode;
 
 	if (!node) {
 		return;
@@ -178,8 +175,8 @@ static void increment(huff_t* huff, node_t *node) {
 	}
 }
 
-void Huff_addRef(huff_t* huff, byte ch) {
-	node_t *tnode, *tnode2;
+void udtHuffman::AddRef(idHuffmanTree* huff, u8 ch) {
+	idHuffmanNode *tnode, *tnode2;
 	if (huff->loc[ch] == NULL) { /* if this is the first transmission of this node */
 		tnode = &(huff->nodeList[huff->blocNode++]);
 		tnode2 = &(huff->nodeList[huff->blocNode++]);
@@ -248,185 +245,55 @@ void Huff_addRef(huff_t* huff, byte ch) {
 }
 
 /* Get a symbol */
-int Huff_Receive (node_t *node, int *ch, byte *fin) {
-	while (node && node->symbol == INTERNAL_NODE) {
-		if (get_bit(fin)) {
-			node = node->right;
-		} else {
-			node = node->left;
-		}
+void udtHuffman::OffsetReceive(idHuffmanNode *node, s32 *ch, u8 *fin, s32 *offset)
+{
+	_bloc = *offset;
+	while(node && node->symbol == INTERNAL_NODE)
+	{
+		// myT: The following is equivalent to: node = get_bit(_bloc, fin) ? node->right : node->left
+		// myT: It kills any possibility that the compiler might generate a conditional branch.
+		const sptr bit = (sptr)get_bit(_bloc, fin); 
+		const sptr mask = bit | (-bit);
+		const sptr result = (((sptr)node->right ^ (sptr)node->left) & mask) ^ (sptr)node->left;
+		node = (idHuffmanNode*)result;
 	}
-	if (!node) {
-		return 0;
-//		Com_Error(ERR_DROP, "Illegal tree!\n");
-	}
-	return (*ch = node->symbol);
-}
 
-/* Get a symbol */
-void Huff_offsetReceive (node_t *node, int *ch, byte *fin, int *offset) {
-	bloc = *offset;
-	while (node && node->symbol == INTERNAL_NODE) {
-		if (get_bit(fin)) {
-			node = node->right;
-		} else {
-			node = node->left;
-		}
-	}
-	if (!node) {
+	if(!node)
+	{
 		*ch = 0;
 		return;
-//		Com_Error(ERR_DROP, "Illegal tree!\n");
 	}
+
 	*ch = node->symbol;
-	*offset = bloc;
+	*offset = _bloc;
 }
 
 /* Send the prefix code for this node */
 
-static void send(node_t *node, node_t *child, byte *fout) 
+static void send(s32& bloc, idHuffmanNode *node, idHuffmanNode *child, u8 *fout) 
 {
 	if(node->parent) 
 	{
-		send(node->parent, node, fout);
+		send(bloc, node->parent, node, fout);
 	}
 
 	if(child)
 	{
 		// @myT: The ternary op helps the compiler avoid the conditional branch.
-		add_bit(node->right == child ? 1 : 0, fout);
-	}
-}
-/*
-// @myT: Original function.
-static void send(node_t *node, node_t *child, byte *fout) {
-	if (node->parent) {
-		send(node->parent, node, fout);
-	}
-	if (child) {
-		if (node->right == child) {
-			add_bit(1, fout);
-		} else {
-			add_bit(0, fout);
-		}
-	}
-}
-*/
-/* Send a symbol */
-void Huff_transmit (huff_t *huff, int ch, byte *fout) {
-	int i;
-	if (huff->loc[ch] == NULL) { 
-		/* node_t hasn't been transmitted, send a NYT, then the symbol */
-		Huff_transmit(huff, NYT, fout);
-		for (i = 7; i >= 0; i--) {
-			add_bit((char)((ch >> i) & 0x1), fout);
-		}
-	} else {
-		send(huff->loc[ch], NULL, fout);
+		add_bit(bloc, node->right == child ? 1 : 0, fout);
 	}
 }
 
-void Huff_offsetTransmit (huff_t *huff, int ch, byte *fout, int *offset) {
-	bloc = *offset;
-	send(huff->loc[ch], NULL, fout);
-	*offset = bloc;
-}
-#ifdef KEEP_ME
-void Huff_Decompress(msg_t *mbuf, int offset) {
-	int			ch, cch, i, j, size;
-	byte		seq[65536];
-	byte*		buffer;
-	huff_t		huff;
-
-	size = mbuf->cursize - offset;
-	buffer = mbuf->data + offset;
-
-	if ( size <= 0 ) {
-		return;
-	}
-
-	Com_Memset(&huff, 0, sizeof(huff_t));
-	// Initialize the tree & list with the NYT node 
-	huff.tree = huff.lhead = huff.ltail = huff.loc[NYT] = &(huff.nodeList[huff.blocNode++]);
-	huff.tree->symbol = NYT;
-	huff.tree->weight = 0;
-	huff.lhead->next = huff.lhead->prev = NULL;
-	huff.tree->parent = huff.tree->left = huff.tree->right = NULL;
-
-	cch = buffer[0]*256 + buffer[1];
-	// don't overflow with bad messages
-	if ( cch > mbuf->maxsize - offset ) {
-		cch = mbuf->maxsize - offset;
-	}
-	bloc = 16;
-
-	for ( j = 0; j < cch; j++ ) {
-		ch = 0;
-		// don't overflow reading from the messages
-		// FIXME: would it be better to have a overflow check in get_bit ?
-		if ( (bloc >> 3) > size ) {
-			seq[j] = 0;
-			break;
-		}
-		Huff_Receive(huff.tree, &ch, buffer);				/* Get a character */
-		if ( ch == NYT ) {								/* We got a NYT, get the symbol associated with it */
-			ch = 0;
-			for ( i = 0; i < 8; i++ ) {
-				ch = (ch<<1) + get_bit(buffer);
-			}
-		}
-
-		seq[j] = (byte)ch;									/* Write symbol */
-
-		Huff_addRef(&huff, (byte)ch);								/* Increment node */
-	}
-	mbuf->cursize = cch + offset;
-	Com_Memcpy(mbuf->data + offset, seq, cch);
+void udtHuffman::OffsetTransmit (idHuffmanTree *huff, s32 ch, u8 *fout, s32 *offset) {
+	_bloc = *offset;
+	send(_bloc, huff->loc[ch], NULL, fout);
+	*offset = _bloc;
 }
 
-void Huff_Compress(msg_t *mbuf, int offset) {
-	int			i, ch, size;
-	byte		seq[65536];
-	byte*		buffer;
-	huff_t		huff;
-
-	size = mbuf->cursize - offset;
-	buffer = mbuf->data+ + offset;
-
-	if (size<=0) {
-		return;
-	}
-
-	Com_Memset(&huff, 0, sizeof(huff_t));
-	// Add the NYT (not yet transmitted) node into the tree/list */
-	huff.tree = huff.lhead = huff.loc[NYT] =  &(huff.nodeList[huff.blocNode++]);
-	huff.tree->symbol = NYT;
-	huff.tree->weight = 0;
-	huff.lhead->next = huff.lhead->prev = NULL;
-	huff.tree->parent = huff.tree->left = huff.tree->right = NULL;
-	huff.loc[NYT] = huff.tree;
-
-	seq[0] = (byte)(size>>8);
-	seq[1] = (byte)(size&0xff);
-
-	bloc = 16;
-
-	for (i=0; i<size; i++ ) {
-		ch = buffer[i];
-		Huff_transmit(&huff, ch, seq);						/* Transmit symbol */
-		Huff_addRef(&huff, (byte)ch);								/* Do update */
-	}
-
-	bloc += 8;												// next byte
-
-	mbuf->cursize = (bloc>>3) + offset;
-	Com_Memcpy(mbuf->data+offset, seq, (bloc>>3));
-}
-#endif
-void Huff_Init(huffman_t *huff) {
-
-	Com_Memset(&huff->compressor, 0, sizeof(huff_t));
-	Com_Memset(&huff->decompressor, 0, sizeof(huff_t));
+void udtHuffman::Init(idHuffmanCodec *huff) 
+{
+	Com_Memset(&huff->compressor, 0, sizeof(idHuffmanTree));
+	Com_Memset(&huff->decompressor, 0, sizeof(idHuffmanTree));
 
 	// Initialize the tree & list with the NYT node 
 	huff->decompressor.tree = huff->decompressor.lhead = huff->decompressor.ltail = huff->decompressor.loc[NYT] = &(huff->decompressor.nodeList[huff->decompressor.blocNode++]);
@@ -435,7 +302,7 @@ void Huff_Init(huffman_t *huff) {
 	huff->decompressor.lhead->next = huff->decompressor.lhead->prev = NULL;
 	huff->decompressor.tree->parent = huff->decompressor.tree->left = huff->decompressor.tree->right = NULL;
 
-	// Add the NYT (not yet transmitted) node into the tree/list */
+	// Add the NYT (not yet transmitted) node s32o the tree/list */
 	huff->compressor.tree = huff->compressor.lhead = huff->compressor.loc[NYT] =  &(huff->compressor.nodeList[huff->compressor.blocNode++]);
 	huff->compressor.tree->symbol = NYT;
 	huff->compressor.tree->weight = 0;

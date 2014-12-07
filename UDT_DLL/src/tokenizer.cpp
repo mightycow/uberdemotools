@@ -8,12 +8,12 @@
 static const char* cmd_null_string = "";
 
 
-int	CommandLineTokenizer::argc() const
+s32	CommandLineTokenizer::argc() const
 {
 	return cmd_argc;
 }
 
-const char* CommandLineTokenizer::argv(int arg) const
+const char* CommandLineTokenizer::argv(s32 arg) const
 {
 	if ( (unsigned)arg >= (unsigned)cmd_argc )
 		return cmd_null_string;

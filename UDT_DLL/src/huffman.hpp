@@ -1,54 +1,62 @@
 #pragma once
 
 
-#include "message.hpp"
+#include "common.hpp"
 
 
-/* This is based on the Adaptive Huffman algorithm described in Sayood's Data
- * Compression book.  The ranks are not actually stored, but implicitly defined
- * by the location of a node within a doubly-linked list */
+/*
+This is based on the Adaptive Huffman algorithm described in Sayood's Data
+Compression book. The ranks are not actually stored, but implicitly defined
+by the location of a node within a doubly-linked list.
+*/
 
-#define HUFF_MAX 256 /* Maximum symbol */
+#define HUFF_MAX 256 // Maximum symbol
 
-typedef struct nodetype {
-	struct	nodetype *left, *right, *parent; /* tree structure */ 
-	struct	nodetype *next, *prev; /* doubly-linked list */
-	struct	nodetype **head; /* highest ranked node in block */
-	int		weight;
-	int		symbol;
-} node_t;
+struct idHuffmanNode;
+struct idHuffmanNode 
+{
+	idHuffmanNode *left, *right, *parent; // tree structure
+	idHuffmanNode *next, *prev; // doubly-linked list
+	idHuffmanNode **head; // highest ranked node in block
+	s32		weight;
+	s32		symbol;
+};
 
-typedef struct {
-	int			blocNode;
-	int			blocPtrs;
+struct idHuffmanTree
+{
+	s32			blocNode;
+	s32			blocPtrs;
 
-	node_t*		tree;
-	node_t*		lhead;
-	node_t*		ltail;
-	node_t*		loc[HUFF_MAX+1];
-	node_t**	freelist;
+	idHuffmanNode*		tree;
+	idHuffmanNode*		lhead;
+	idHuffmanNode*		ltail;
+	idHuffmanNode*		loc[HUFF_MAX+1];
+	idHuffmanNode**		freelist;
 
-	node_t		nodeList[768];
-	node_t*		nodePtrs[768];
-} huff_t;
+	idHuffmanNode		nodeList[768];
+	idHuffmanNode*		nodePtrs[768];
+};
 
-typedef struct {
-	huff_t		compressor;
-	huff_t		decompressor;
-} huffman_t;
+struct idHuffmanCodec
+{
+	idHuffmanTree		compressor;
+	idHuffmanTree		decompressor;
+};
 
-void	Huff_Compress(msg_t *buf, int offset);
-void	Huff_Decompress(msg_t *buf, int offset);
-void	Huff_Init(huffman_t *huff);
-void	Huff_addRef(huff_t* huff, byte ch);
-int		Huff_Receive (node_t *node, int *ch, byte *fin);
-void	Huff_transmit (huff_t *huff, int ch, byte *fout);
-void	Huff_offsetReceive (node_t *node, int *ch, byte *fin, int *offset);
-void	Huff_offsetTransmit (huff_t *huff, int ch, byte *fout, int *offset);
-void	Huff_putBit( int bit, byte *fout, int *offset);
-int		Huff_getBit( byte *fout, int *offset);
+struct udtHuffman
+{
+public:
+	udtHuffman() { _bloc = 0; }
 
-#define SV_ENCODE_START		4
-#define CL_ENCODE_START		12
-#define SV_DECODE_START		CL_ENCODE_START
-#define CL_DECODE_START		SV_ENCODE_START
+	void	Init(idHuffmanCodec *huff);
+	void	AddRef(idHuffmanTree* huff, u8 ch);
+	void	OffsetReceive (idHuffmanNode *node, s32 *ch, u8 *fin, s32 *offset);
+	void	OffsetTransmit (idHuffmanTree *huff, s32 ch, u8 *fout, s32 *offset);
+	void	PutBit( s32 bit, u8 *fout, s32 *offset);
+	s32		GetBit( u8 *fout, s32 *offset);
+	s32		GetBloc();
+	void	SetBloc(s32 bloc);
+
+private:
+	s32		_bloc;
+};

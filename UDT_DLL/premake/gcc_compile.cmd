@@ -27,7 +27,7 @@ if %choice%==1 (
 )
 
 set gmake_config=%gmake_target%_%gmake_arch%
-cd ..\build\gmake
+cd ..\.build\gmake
 
 @echo on
 mingw32-make.exe clean

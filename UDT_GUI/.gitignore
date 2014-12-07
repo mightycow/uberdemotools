@@ -1,0 +1,6 @@
+.bin
+.bin/
+.build
+.build/
+*.suo
+*.user

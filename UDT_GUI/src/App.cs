@@ -1,8 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,7 +8,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -37,41 +33,40 @@ namespace Uber.DemoTools
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
+        public int MaxThreadCount = 4;
+        public string InputFolder = "";
+        public bool UseInputFolderAsDefaultBrowsingLocation = false;
+        public bool OpenDemosFromInputFolderOnStartUp = false;
     }
 
-    public partial class App
+    public class DemoInfo
     {
-        private const string GuiVersion = "0.2.0g";
-        private readonly string DllVersion = Demo.GetVersion();
+        public int InputIndex = 0;
+        public string FilePath = "?";
+        public string Protocol = "?";
+        public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
+        public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
+        public List<UInt32> GameStateFileOffsets = new List<UInt32>();
+    }
+
+    public class App
+    {
+        private const string GuiVersion = "0.3.1";
+        private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
         {
             ".dm_68",
-            ".dm_73"
+            ".dm_73",
+            ".dm_90"
         };
 
-        private static readonly Dictionary<string, DemoProtocol> ProtocolFileExtDic = new Dictionary<string, DemoProtocol>
+        private static readonly Dictionary<string, UDT_DLL.udtProtocol> ProtocolFileExtDic = new Dictionary<string, UDT_DLL.udtProtocol>
         {
-            { ".dm_68", DemoProtocol.Dm68 },
-            { ".dm_73", DemoProtocol.Dm73 }
+            { ".dm_68", UDT_DLL.udtProtocol.Dm68 },
+            { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
+            { ".dm_90", UDT_DLL.udtProtocol.Dm90 }
         };
-
-        private class TimedEventDisplayInfo
-        {
-            public string Time { get; set; }
-        }
-
-        private class ConfigStringSearchInfo
-        {
-            public ConfigStringSearchInfo(string key, string description)
-            {
-                Key = key;
-                Description = description;
-            }
-
-            public string Key = "";
-            public string Description = "";
-        }
 
         private class ConfigStringDisplayInfo
         {
@@ -84,513 +79,13 @@ namespace Uber.DemoTools
             public string Description { get; set; }
             public string Value { get; set; }
         }
-        
+
         private class DemoDisplayInfo
         {
             public string FileName { get; set; }
             public DemoInfo Demo { get; set; }
         }
 
-        private class Xstats2Info
-        {
-            public List<WeaponStatsDisplayInfo> WeaponStats = new List<WeaponStatsDisplayInfo>(); // xstats2
-            public List<StatDisplayInfo> DamageAndArmorStats = new List<StatDisplayInfo>(); // xstats2
-            public string WeaponStatsPlayerName = "N/A"; // xstats2
-        }
-
-        private class PlayerInfo
-        {
-            public PlayerInfo(string name, int csIdx, int teamIdx)
-            {
-                Name = name;
-                CsIndex = csIdx;
-                TeamIndex = teamIdx;
-            }
-
-            public string Name = "N/A";
-            public int CsIndex = -1;
-            public int TeamIndex = -1;
-        }
-
-        private class DemoInfo
-        {
-            public static ConfigStringSearchInfo[] ConfigStringServerInfos = new ConfigStringSearchInfo[]
-            {
-                new ConfigStringSearchInfo("mapname", "Map Name"),
-                new ConfigStringSearchInfo("mode_current", "Game Mode"),
-                new ConfigStringSearchInfo("server_gameplay", "Gameplay"),
-                new ConfigStringSearchInfo("game", "Game"),
-                new ConfigStringSearchInfo("gamename", "Game Name"),
-                new ConfigStringSearchInfo("gameversion", "Game Version"),
-                new ConfigStringSearchInfo("sv_hostname", "Host Name"),
-                new ConfigStringSearchInfo("GTV_CN", "GTV"),
-                new ConfigStringSearchInfo("version", "Version"),
-                new ConfigStringSearchInfo(".location", "Location"),
-                new ConfigStringSearchInfo(".IRC", "IRC channel"),
-                new ConfigStringSearchInfo(".admin", "Admin"),
-                new ConfigStringSearchInfo("sv_allowDownload", "Allow Download"),
-                new ConfigStringSearchInfo("sv_fps", "FPS"),
-                new ConfigStringSearchInfo("g_gametype", "Game Type")
-            };
-
-            public static ConfigStringSearchInfo[] ConfigStringSystemInfos = new ConfigStringSearchInfo[]
-            {
-                new ConfigStringSearchInfo("g_synchronousClients", "Synchronous Clients"),
-                new ConfigStringSearchInfo("timescale", "Time Scale"),
-                new ConfigStringSearchInfo("fs_game", "Mod"),
-                new ConfigStringSearchInfo("sv_pure", "Synchronous Clients"),
-                new ConfigStringSearchInfo("sv_cheats", "Cheats")
-            };
-
-            public static ConfigStringSearchInfo[] ConfigStringCpmaGameInfo = new ConfigStringSearchInfo[]
-            {
-                new ConfigStringSearchInfo("tl", "Time Limit")
-            };
-
-            public string FilePath = "<invalid>";
-            public DemoProtocol Protocol = DemoProtocol.Invalid;
-            public List<Demo.ConfigStringInfo> DemoConfigStrings = null; // Raw data.
-            public List<Demo.ChatStringInfo> DemoChatEvents = null; // Raw data.
-            public List<Demo.ServerCommandInfo> DemoServerCommands = null; // Raw data.
-            public List<Demo.GameStateInfo> DemoGameStates = new List<Demo.GameStateInfo>();
-            public List<Demo.FragInfo> DemoFragEvents = new List<Demo.FragInfo>();
-            public List<Demo.PuRunInfo> DemoPuRuns = new List<Demo.PuRunInfo>();
-            public int DemoWarmupEndTimeMs = -1;
-            public List<ConfigStringDisplayInfo> ConfigStrings = new List<ConfigStringDisplayInfo>();
-            public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
-            public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
-            public List<PuRunDisplayInfo> PuRuns = new List<PuRunDisplayInfo>();
-            public List<Xstats2Info> Xstats2Infos = new List<Xstats2Info>();
-            public List<PlayerInfo> Players = new List<PlayerInfo>();
-
-            public static Regex ColorCodeRegEx = new Regex(@"\^.", RegexOptions.Compiled);
-            public static Regex PlayerNameRegEx = new Regex(@"n\\([^\\]+)", RegexOptions.Compiled);
-            public static Regex ConfigStringRegEx = new Regex(@"\\([^\\]+)", RegexOptions.Compiled);
-        }
-
-        private enum ConfigStringIndex
-        {
-            MaxPlayCount = 64,
-            ServerInfo = 0, // Players_Blue Players_Red
-            SystemInfo = 1,
-            FirstPlayer_68 = 544,
-            LastPlayer_68 = FirstPlayer_68 + MaxPlayCount - 1,
-            FirstPlayer_73 = 529,
-            LastPlayer_73 = FirstPlayer_73 + MaxPlayCount - 1,
-            CpmaGameInfo = 672
-        }
-
-        private DemoInfo CreateDemoInfo(string filePath, Demo demo)
-        {
-            var demoInfo = new DemoInfo();
-            demoInfo.FilePath = filePath;
-            demoInfo.Protocol = GetProtocolFromFilePath(filePath);
-            demoInfo.DemoChatEvents = demo.GetChatStrings();
-            demoInfo.DemoConfigStrings = demo.GetConfigStrings();
-            demoInfo.DemoServerCommands = demo.GetServerCommands();
-            demoInfo.DemoGameStates = demo.GetGameStates();
-            demoInfo.DemoFragEvents = demo.GetFrags();
-            demoInfo.DemoPuRuns = demo.GetPuRuns();
-            demoInfo.DemoWarmupEndTimeMs = demo.WarmupEndTimeMs;
-
-            var chatEvents = demoInfo.DemoChatEvents;
-            var fragEvents = demoInfo.DemoFragEvents;
-            var puRuns = demoInfo.DemoPuRuns;
-            var configStrings = demoInfo.DemoConfigStrings;
-
-            ExtractPlayerNames(demoInfo);
-
-            var serverInfo = configStrings.Find(csi => csi.Index == (int)ConfigStringIndex.ServerInfo);
-            if(serverInfo != null)
-            {
-                ExtractServerInfo(demoInfo, serverInfo.Value);
-            }
-
-            var systemInfo = configStrings.Find(csi => csi.Index == (int)ConfigStringIndex.SystemInfo);
-            if(systemInfo != null)
-            {
-                ExtractSystemInfo(demoInfo, systemInfo.Value);
-            }
-
-            if(demoInfo.Protocol == DemoProtocol.Dm68)
-            {
-                var cpmaGameInfo = configStrings.Find(csi => csi.Index == (int)ConfigStringIndex.CpmaGameInfo);
-                if(cpmaGameInfo != null)
-                {
-                    ExtractCpmaGameInfo(demoInfo, cpmaGameInfo.Value);
-                }
-            }
-
-            foreach(var chatEvent in chatEvents)
-            {
-                int time = chatEvent.Time / 1000;
-                int minutes = time / 60;
-                int seconds = time % 60;
-                var timeStr = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var cleanMessage = DemoInfo.ColorCodeRegEx.Replace(chatEvent.Message, "");
-                var nameAndMessage = cleanMessage.Split(new string[] { ": " }, 2, StringSplitOptions.None);
-                if(nameAndMessage.Length != 2)
-                {
-                    continue;
-                }
-
-                var name = nameAndMessage[0];
-                var message = nameAndMessage[1];
-                if(demoInfo.Protocol == DemoProtocol.Dm73 && name.Length > 3)
-                {
-                    name = name.Substring(3);
-                }
-
-                demoInfo.ChatEvents.Add(new ChatEventDisplayInfo(timeStr, name, message));
-            }
-
-            foreach(var fragEvent in fragEvents)
-            {
-                int time = fragEvent.Time / 1000;
-                int minutes = time / 60;
-                int seconds = time % 60;
-                var timeStr = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-
-                var attacker = fragEvent.AttackerName;
-                var target = fragEvent.TargetName;
-                var mod = (fragEvent.Mod >= 0 && fragEvent.Mod < _meansOfDeath.Length) ? _meansOfDeath[fragEvent.Mod] : "unknown";
-
-                demoInfo.FragEvents.Add(new FragEventDisplayInfo(timeStr, attacker, target, mod));
-            }
-
-            foreach(var puRun in puRuns)
-            {
-                int time = puRun.Time / 1000;
-                int minutes = time / 60;
-                int seconds = time % 60;
-                var timeStr = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-
-                int duration = puRun.Duration / 1000;
-                var durationStr = string.Format("{0}s", duration);
-
-                var player = puRun.PlayerName;
-                var pu = (puRun.Pu >= 0 && puRun.Pu < _puNames.Length) ? _puNames[puRun.Pu] : "N/A";
-                var kills = puRun.Kills.ToString();
-                var teamKills = puRun.TeamKills.ToString();
-                var selfKill = puRun.SelfKill != 0 ? "Yes" : "No";
-
-                demoInfo.PuRuns.Add(new PuRunDisplayInfo(timeStr, player, pu, durationStr, kills, teamKills, selfKill));
-            }
-
-            if(demoInfo.Protocol == DemoProtocol.Dm68)
-            {
-                ExtractXstats2Info(demoInfo);
-            }
-
-            return demoInfo;
-        }
-
-        private bool GetConfigString(string values, string key, out string result)
-        {
-            result = "";
-
-            var idx = values.IndexOf(key + @"\");
-            if(idx < 0)
-            {
-                return false;
-            }
-            idx += key.Length;
-
-            var match = DemoInfo.ConfigStringRegEx.Match(values, idx);
-            if(!match.Success)
-            {
-                return false;
-            }
-
-            result = match.Groups[1].Value;
-
-            return true;
-        }
-
-        private void ExtractServerInfo(DemoInfo demoInfo, string values)
-        {
-            string value = "";
-            foreach(var info in DemoInfo.ConfigStringServerInfos)
-            {
-                if(GetConfigString(values, info.Key, out value))
-                {
-                    demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo(info.Description, value));
-                }
-            }
-        }
-
-        private void ExtractSystemInfo(DemoInfo demoInfo, string values)
-        {
-            string value = "";
-            foreach(var info in DemoInfo.ConfigStringSystemInfos)
-            {
-                if(GetConfigString(values, info.Key, out value))
-                {
-                    demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo(info.Description, value));
-                }
-            }
-        }
-
-        private void ExtractCpmaGameInfo(DemoInfo demoInfo, string values)
-        {
-            string value = "";
-            foreach(var info in DemoInfo.ConfigStringCpmaGameInfo)
-            {
-                if(GetConfigString(values, info.Key, out value))
-                {
-                    demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo(info.Description, value));
-                }
-            }
-        }
-
-        private enum TeamIndex
-        {
-            Free,
-            Red,
-            Blue,
-            Spectator
-        }
-
-        private static int GetConfigStringFirstPlayerId(DemoInfo demoInfo)
-        {
-            return demoInfo.Protocol == DemoProtocol.Dm68 ? (int)ConfigStringIndex.FirstPlayer_68 : (int)ConfigStringIndex.FirstPlayer_73;
-        }
-
-        private static int GetConfigStringLastPlayerId(DemoInfo demoInfo)
-        {
-            return demoInfo.Protocol == DemoProtocol.Dm68 ? (int)ConfigStringIndex.LastPlayer_68 : (int)ConfigStringIndex.LastPlayer_73;
-        }
-
-        private void ExtractPlayerNames(DemoInfo demoInfo)
-        {
-            var allPlayers = demoInfo.Players;
-            var players = new List<PlayerInfo>();
-            var spectators = new List<PlayerInfo>();
-            var redPlayers = new List<PlayerInfo>();
-            var bluePlayers = new List<PlayerInfo>();
-
-            var playerConfigs = demoInfo.DemoConfigStrings.FindAll(csi => csi.Index >= GetConfigStringFirstPlayerId(demoInfo) && csi.Index <= GetConfigStringLastPlayerId(demoInfo));
-            foreach(var cs in playerConfigs)
-            {
-                var match = DemoInfo.PlayerNameRegEx.Match(cs.Value);
-                if(!match.Success)
-                {
-                    continue;
-                }
-
-                var playerName = DemoInfo.ColorCodeRegEx.Replace(match.Groups[1].Value, "");
-                var teamIdxStr = "";
-                if(!GetConfigString(cs.Value, "t", out teamIdxStr))
-                {
-                    continue;
-                }
-
-                var teamIdx = 0;
-                if(!int.TryParse(teamIdxStr, out teamIdx))
-                {
-                    continue;
-                }
-
-                allPlayers.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-
-                switch(teamIdx)
-                {
-                    case (int)TeamIndex.Free:
-                        players.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-                        break;
-
-                    case (int)TeamIndex.Spectator:
-                        spectators.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-                        break;
-
-                    case (int)TeamIndex.Blue:
-                        bluePlayers.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-                        break;
-                    
-                    case (int)TeamIndex.Red:
-                        redPlayers.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-                        break;
-
-                    default:
-                        players.Add(new PlayerInfo(playerName, cs.Index, teamIdx));
-                        break;
-                }
-            }
-
-            if(redPlayers.Count > 0 && bluePlayers.Count > 0)
-            {
-                demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo("Red Team", FormatPlayerList(redPlayers)));
-                demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo("Blue Team", FormatPlayerList(bluePlayers)));
-            }
-            else
-            {
-                demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo("Players", FormatPlayerList(players)));
-            }
-
-            demoInfo.ConfigStrings.Add(new ConfigStringDisplayInfo("Spectators", FormatPlayerList(spectators)));
-        }
-
-        private string FormatPlayerList(List<PlayerInfo> players)
-        {
-            if(players.Count == 0)
-            {
-                return "";
-            }
-
-            var list = players[0].Name;
-            for(int i = 1; i < players.Count; ++i)
-            {
-                list += " | ";
-                list += players[i].Name;
-            }
-
-            return list;
-        }
-
-        private void ExtractXstats2Info(DemoInfo demoInfo)
-        {
-            var commands = demoInfo.DemoServerCommands;
-            var configStrings = demoInfo.DemoConfigStrings;
-
-            foreach(var command in commands)
-            {
-                if(!command.Command.StartsWith("xstats2 "))
-                {
-                    continue;
-                }
-
-                var tokens = command.Command.Split(new char[] { ' ' });
-                if(tokens.Length < 3)
-                {
-                    LogWarning("xtats2: Too few arguments");
-                    continue;
-                }
-
-                int flags = -1;
-                if(!int.TryParse(tokens[2], out flags))
-                {
-                    LogWarning("xtats2: Unreadable weapon flags");
-                    continue;
-                }
-
-                int weaponCount = 0;
-                foreach(var searchInfo in WeaponStatsInfos)
-                {
-                    if((flags & searchInfo.FlagMask) != 0)
-                    {
-                        ++weaponCount;
-                    }
-                }
-
-                if(tokens.Length < 3 + 6 * weaponCount)
-                {
-                    LogWarning("xtats2: Too few arguments");
-                    continue;
-                }
-
-                var xstats2Info = new Xstats2Info();
-
-                int idx = 3;
-                foreach(var searchInfo in WeaponStatsInfos)
-                {
-                    if((flags & searchInfo.FlagMask) == 0)
-                    {
-                        continue;
-                    }
-
-                    var info = new WeaponStatsDisplayInfo();
-                    info.Weapon = searchInfo.WeaponName;
-                    info.Hits = FormatWeaponStat(tokens[idx++]);
-                    info.Atts = FormatWeaponStat(tokens[idx++]);
-                    info.Kills = FormatWeaponStat(tokens[idx++]);
-                    info.Deaths = FormatWeaponStat(tokens[idx++]);
-                    info.Take = FormatWeaponStat(tokens[idx++]);
-                    info.Drop = FormatWeaponStat(tokens[idx++]);
-                    info.Acc = ComputeAccuracy(info.Hits, info.Atts);
-                    xstats2Info.WeaponStats.Add(info);
-                }
-
-                if(!ParseDamageAndArmourStats(xstats2Info, tokens, idx))
-                {
-                    continue;
-                }
-
-                if(!ExtractPlayerName(demoInfo, xstats2Info, tokens, configStrings))
-                {
-                    continue;
-                }
-
-                demoInfo.Xstats2Infos.Add(xstats2Info);
-            }
-        }
-
-        private bool ParseDamageAndArmourStats(Xstats2Info demoInfo, string[] tokens, int idx)
-        {
-            if(idx + xstats2EndStatsInfos.Length >= tokens.Length)
-            {
-                LogWarning("xtats2: Too few arguments");
-                return false;
-            }
-
-            foreach(var statName in xstats2EndStatsInfos)
-            {
-                demoInfo.DamageAndArmorStats.Add(new StatDisplayInfo(statName, tokens[idx++]));
-            }
-
-            return true;
-        }
-
-        private bool ExtractPlayerName(DemoInfo demoInfo, Xstats2Info statsInfo, string[] tokens, List<Demo.ConfigStringInfo> configStrings)
-        {
-            int playerId = -1;
-            if(!int.TryParse(tokens[1], out playerId))
-            {
-                LogWarning("xtats2: Unreadable player ID");
-                return false;
-            }
-
-            int csIdx = configStrings.FindIndex(cs => cs.Index == GetConfigStringFirstPlayerId(demoInfo) + playerId);
-            if(csIdx < 0)
-            {
-                LogWarning("xtats2: Invalid player ID");
-                return false;
-            }
-
-            // Extract the player's name.
-            var match = DemoInfo.PlayerNameRegEx.Match(configStrings[csIdx].Value);
-            if(!match.Success)
-            {
-                LogWarning("xtats2: Failed to extract the player's name from the matching config string");
-                return false;
-            }
-
-            statsInfo.WeaponStatsPlayerName = DemoInfo.ColorCodeRegEx.Replace(match.Groups[1].Value, "");
-
-            return true;
-        }
-
-        private bool ExtractPlayerName(DemoInfo demoInfo, int playerIdx, out string playerName)
-        {
-            playerName = "N/A";
-
-            var cs = demoInfo.DemoConfigStrings.Find(csi => csi.Index == GetConfigStringFirstPlayerId(demoInfo) + playerIdx);
-            if(cs == null)
-            {
-                return false;
-            }
-
-            // Extract the player's name.
-            var match = DemoInfo.PlayerNameRegEx.Match(cs.Value);
-            if(!match.Success)
-            {
-                return false;
-            }
-
-            playerName = DemoInfo.ColorCodeRegEx.Replace(match.Groups[1].Value, "");
-
-            return true;
-        }
-        
         private UdtConfig _config = new UdtConfig();
         private Application _application = null;
         private Thread _jobThread = null;
@@ -601,26 +96,86 @@ namespace Uber.DemoTools
         private ListBox _logListBox = null;
         private ProgressBar _progressBar = null;
         private Button _cancelJobButton = null;
-        private int _cancelJobValue = 0;
         private GroupBox _progressGroupBox = null;
         private DockPanel _rootPanel = null;
         private TabControl _tabControl = null;
         private List<FrameworkElement> _rootElements = new List<FrameworkElement>();
         private List<DemoInfo> _demos = new List<DemoInfo>();
         private AlternatingListBoxBackground _altListBoxBg = null;
+        private List<AppComponent> _appComponents = new List<AppComponent>();
+        private AppComponent _cutByTimeComponent = null;
+        private IntPtr _mainThreadContext = IntPtr.Zero;
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
-        private static RoutedCommand _cutByFragCommand = new RoutedCommand();
-        private static RoutedCommand _cutByPuRunCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
+        private static RoutedCommand _splitDemoCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
 
+        public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
+        public IntPtr CancelOperation = IntPtr.Zero;
+
+        public UdtConfig Config
+        {
+            get { return _config; }
+        }
+
+        public Window MainWindow
+        {
+            get { return _window; }
+        }
+
+        public DemoInfo SelectedDemo
+        {
+            get
+            {
+                var index = _demoListView.SelectedIndex;
+                return (index == -1) ? null : _demos[index];
+            }
+        }
+
+        public List<DemoInfo> SelectedDemos
+        {
+            get
+            {
+                var items = _demoListView.SelectedItems;
+                if(items.Count == 0)
+                {
+                    return null;
+                }
+
+                var demos = new List<DemoInfo>();
+                foreach(var item in items)
+                {
+                    var listViewItem = item as ListViewItem;
+                    if(listViewItem == null)
+                    {
+                        continue;
+                    }
+
+                    var displayInfo = listViewItem.Content as DemoDisplayInfo;
+                    if(displayInfo == null)
+                    {
+                        continue;
+                    }
+
+                    demos.Add(displayInfo.Demo);
+                }
+
+                return demos;
+            }
+        }
+
         public App(string[] cmdLineArgs)
         {
+            CancelOperation = Marshal.AllocHGlobal(4);
+            Marshal.WriteInt32(CancelOperation, 0);
+
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
+
+            UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
 
             LoadConfig();
 
@@ -634,33 +189,29 @@ namespace Uber.DemoTools
             demosTab.Header = "Info";
             demosTab.Content = CreateDemoInfoTab();
 
+            var chatEvents = new ChatEventsComponent(this);
+            _appComponents.Add(chatEvents);
             var demoChatTab = new TabItem();
             demoChatTab.Header = "Chat";
-            demoChatTab.Content = CreateDemoChatTab();
-            
+            demoChatTab.Content = chatEvents.RootControl;
+
+            _cutByTimeComponent = new CutByTimeComponent(this);
+            _appComponents.Add(_cutByTimeComponent);
             var cutTimeTab = new TabItem();
             cutTimeTab.Header = "Cut by Time";
-            cutTimeTab.Content = CreateCutByTimeTab();
+            cutTimeTab.Content = _cutByTimeComponent.RootControl;
 
+            var cutByChat = new CutByChatComponent(this);
+            _appComponents.Add(cutByChat);
             var cutChatTab = new TabItem();
             cutChatTab.Header = "Cut by Chat";
-            cutChatTab.Content = CreateCutByChatTab();
+            cutChatTab.Content = cutByChat.RootControl;
 
-            var demoFragsTab = new TabItem();
-            demoFragsTab.Header = "Obituaries";
-            demoFragsTab.Content = CreateDemoFragTab();
-
-            var demoPuRunTab = new TabItem();
-            demoPuRunTab.Header = "PU Runs";
-            demoPuRunTab.Content = CreateDemoPuRunTab();
-
-            var statsTab = new TabItem();
-            statsTab.Header = "Stats";
-            statsTab.Content = CreateStatsTab();
-
+            var settings = new AppSettingsComponent(this);
+            _appComponents.Add(settings);
             var settingsTab = new TabItem();
             settingsTab.Header = "Settings";
-            settingsTab.Content = CreateSettingsTab();
+            settingsTab.Content = settings.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -672,9 +223,6 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demoChatTab);
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
-            tabControl.Items.Add(demoFragsTab);
-            tabControl.Items.Add(demoPuRunTab);
-            tabControl.Items.Add(statsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -817,6 +365,7 @@ namespace Uber.DemoTools
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             demoListView.Foreground = new SolidColorBrush(Colors.Black);
             InitDemoListDeleteCommand();
+            InitDemoListSplitCommand();
             
             var demoListGroupBox = new GroupBox();
             demoListGroupBox.Header = "Demo List";
@@ -860,17 +409,22 @@ namespace Uber.DemoTools
             _rootElements.Remove(progressGroupBox); // Only the cancel button can remain active at all times.
 
             _altListBoxBg.ApplyTo(_infoListView);
-            _altListBoxBg.ApplyTo(_chatRulesListView);
-            _altListBoxBg.ApplyTo(_chatEventsListView);
-            _altListBoxBg.ApplyTo(_fragEventsListView);
-            _altListBoxBg.ApplyTo(_puRunsListView);
             _altListBoxBg.ApplyTo(_demoListView);
             _altListBoxBg.ApplyTo(_logListBox);
-            foreach(var info in _xstats2WidgetInfos)
+            foreach(var component in _appComponents)
             {
-                _altListBoxBg.ApplyTo(info.WeaponStatsListView);
-                _altListBoxBg.ApplyTo(info.DamageStatsListView);
+                var listViews = component.ListViews;
+                if(listViews == null)
+                {
+                    continue;
+                }
+
+                foreach(var listView in listViews)
+                {
+                    _altListBoxBg.ApplyTo(listView);
+                }
             }
+
             _logListBox.Resources.Add(SystemColors.HighlightBrushKey, new SolidColorBrush(Color.FromRgb(255, 255, 191)));
 
             var label = new Label { Content = "You can drag'n'drop files and folders here.", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
@@ -878,11 +432,11 @@ namespace Uber.DemoTools
             _demoListView.Background = brush;
 
             var window = new Window();
-#if UDT_DOT_NET_40
+
             TextOptions.SetTextRenderingMode(window, TextRenderingMode.ClearType);
             TextOptions.SetTextHintingMode(window, TextHintingMode.Fixed);
             TextOptions.SetTextFormattingMode(window, TextFormattingMode.Display);
-#endif
+
             _window = window;
             window.Closing += (obj, args) => OnQuit();
             window.WindowStyle = WindowStyle.SingleBorderWindow;
@@ -896,23 +450,14 @@ namespace Uber.DemoTools
             window.MinWidth = 1024;
             window.MinHeight = 768;
 
-            LogInfo("UDT is now operational!");
+#if UDT_X64
+            const string arch = "x64";
+#else
+            const string arch = "x86";
+#endif
+            LogInfo("UDT {0} is now operational!", arch);
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
-
-#if UDT_DOT_NET_40
-            const string DotNetVersion = "4.0";
-#else
-            const string DotNetVersion = "3.5";
-#endif
-
-#if UDT_DOT_NET_CLIENT_PROFILE
-            const string DotNetProfile = " Client Profile";
-#else
-            const string DotNetProfile = "";
-#endif
-
-            LogInfo("Running on .NET " + DotNetVersion + DotNetProfile);
 
             ProcessCommandLine(cmdLineArgs);
 
@@ -946,6 +491,14 @@ namespace Uber.DemoTools
                 {
                     folderPaths.Add(Path.GetFullPath(arg));
                 }
+            }
+
+            if(cmdLineArgs.Length == 0 && 
+                _config.OpenDemosFromInputFolderOnStartUp &&
+                !string.IsNullOrWhiteSpace(_config.InputFolder) &&
+                Directory.Exists(_config.InputFolder))
+            {
+                folderPaths.Add(_config.InputFolder);
             }
 
             AddDemos(filePaths, folderPaths);
@@ -1032,6 +585,30 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
+        private bool CanExecuteSplitCommand(ListViewItem item)
+        {
+            if(item == null)
+            {
+                return false;
+            }
+
+            var displayInfo = item.Content as DemoDisplayInfo;
+            if(displayInfo == null)
+            {
+                return false;
+            }
+
+            return displayInfo.Demo.GameStateFileOffsets.Count > 1;
+        }
+
+        private void InitDemoListSplitCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _splitDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(args.Source as ListViewItem); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
         private void InitLogListBoxClearCommand()
         {
             var inputGesture = new KeyGesture(Key.X, ModifierKeys.Control);
@@ -1092,11 +669,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            if(_jobThread != null)
-            {
-                _jobThread.Join();
-            }
-
+            JoinJobThread();
             SaveConfig();
             _application.Shutdown();
         }
@@ -1107,14 +680,19 @@ namespace Uber.DemoTools
             _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
         }
 
+        
+
         private void OnOpenDemo()
         {
+            
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
+                // @TODO: Construct the filter programmatically.
+                var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
-                openFileDialog.InitialDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73)|*.dm_73"; // @TODO: Construct the filter programmatically.
+                openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73;*.dm_90)|*.dm_73;*.dm_90";
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
@@ -1130,9 +708,13 @@ namespace Uber.DemoTools
         {
             using(var openFolderDialog = new System.Windows.Forms.FolderBrowserDialog())
             {
+                var folderPath = GetDefaultBrowsingFolder();
                 openFolderDialog.Description = "Browse for a folder containing demo files";
                 openFolderDialog.ShowNewFolderButton = true;
-                openFolderDialog.RootFolder = Environment.SpecialFolder.Desktop;
+                if(folderPath != null)
+                {
+                    openFolderDialog.SelectedPath = folderPath;
+                }
                 if(openFolderDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
@@ -1145,7 +727,7 @@ namespace Uber.DemoTools
         private void ShowAboutWindow()
         {
             var textPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            textPanelList.Add(CreateTuple("Version", "1.3.3.7"));
+            textPanelList.Add(CreateTuple("Version", GuiVersion));
             textPanelList.Add(CreateTuple("Developer", "myT"));
             var textPanel = WpfHelper.CreateDualColumnPanel(textPanelList, 100, 1);
 
@@ -1179,12 +761,12 @@ namespace Uber.DemoTools
             window.ShowDialog();
         }
 
-        private static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, FrameworkElement b)
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, FrameworkElement b)
         {
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, b);
         }
 
-        private static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, string b)
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, string b)
         {
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, new Label { Content = b });
         }
@@ -1238,23 +820,68 @@ namespace Uber.DemoTools
             removeButton.Margin = new Thickness(5);
             removeButton.Click += (obj, args) => OnRemoveDemoClicked();
 
-            var buttonPanel = new StackPanel();
-            buttonPanel.HorizontalAlignment = HorizontalAlignment.Left;
-            buttonPanel.VerticalAlignment = VerticalAlignment.Top;
-            buttonPanel.Margin = new Thickness(5);
-            buttonPanel.Orientation = Orientation.Vertical;
-            buttonPanel.Children.Add(addButton);
-            buttonPanel.Children.Add(addFolderButton);
-            buttonPanel.Children.Add(removeButton);
+            var demoListButtonPanel = new StackPanel();
+            demoListButtonPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            demoListButtonPanel.VerticalAlignment = VerticalAlignment.Top;
+            demoListButtonPanel.Margin = new Thickness(5);
+            demoListButtonPanel.Orientation = Orientation.Vertical;
+            demoListButtonPanel.Children.Add(addButton);
+            demoListButtonPanel.Children.Add(addFolderButton);
+            demoListButtonPanel.Children.Add(removeButton);
 
-            var buttonGroupBox = new GroupBox();
-            buttonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            buttonGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            buttonGroupBox.Margin = new Thickness(5);
-            buttonGroupBox.Header = "Demo List Actions";
-            buttonGroupBox.Content = buttonPanel;
+            var demoListButtonGroupBox = new GroupBox();
+            demoListButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            demoListButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            demoListButtonGroupBox.Margin = new Thickness(5);
+            demoListButtonGroupBox.Header = "Demo List Actions";
+            demoListButtonGroupBox.Content = demoListButtonPanel;
 
-            return buttonGroupBox;
+            var splitButton = new Button();
+            splitButton.Content = "Split Demo";
+            splitButton.Width = 75;
+            splitButton.Height = 25;
+            splitButton.Margin = new Thickness(5);
+            splitButton.Click += (obj, args) => OnSplitDemoClicked();
+
+            var demoButtonPanel = new StackPanel();
+            demoButtonPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            demoButtonPanel.VerticalAlignment = VerticalAlignment.Top;
+            demoButtonPanel.Margin = new Thickness(5);
+            demoButtonPanel.Orientation = Orientation.Vertical;
+            demoButtonPanel.Children.Add(splitButton);
+
+            var demoButtonGroupBox = new GroupBox();
+            demoButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            demoButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            demoButtonGroupBox.Margin = new Thickness(5);
+            demoButtonGroupBox.Header = "Demo Actions";
+            demoButtonGroupBox.Content = demoButtonPanel;
+
+            var helpTextBlock = new TextBlock();
+            helpTextBlock.Margin = new Thickness(5);
+            helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
+            helpTextBlock.Text =
+                "In UDT, splitting means creating one file per GameState message when there is more than one.\n" +
+                "\nIn Quake's network protocol, the GameState message is sent to the client when a map is (re-)loaded." +
+                "\nThe usual case is that the demo only contains one GameState message at the very beginning of the file." +
+                "\nBecause that specific message is never delta-encoded or dependent on previous data, demo content can be copied as-is without any advanced parsing nor processing.\n" +
+                "\nOn the other hand, cutting at specific timestamps does requires that all messages be decoded in order and re-encoded accordingly and is therefore a much more costly operation.";
+
+            var helpGroupBox = new GroupBox();
+            helpGroupBox.Margin = new Thickness(5);
+            helpGroupBox.Header = "Help";
+            helpGroupBox.Content = helpTextBlock;
+
+            var rootPanel = new WrapPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            rootPanel.Margin = new Thickness(5);
+            rootPanel.Orientation = Orientation.Horizontal;
+            rootPanel.Children.Add(demoListButtonGroupBox);
+            rootPanel.Children.Add(demoButtonGroupBox);
+            rootPanel.Children.Add(helpGroupBox);
+
+            return rootPanel;
         }
 
         private void PopulateInfoListView(DemoInfo demoInfo)
@@ -1262,10 +889,11 @@ namespace Uber.DemoTools
             _infoListView.Items.Clear();
             _infoListView.Items.Add(new ConfigStringDisplayInfo("Folder Path", Path.GetDirectoryName(demoInfo.FilePath) ?? "N/A"));
             _infoListView.Items.Add(new ConfigStringDisplayInfo("File Name", Path.GetFileNameWithoutExtension(demoInfo.FilePath) ?? "N/A"));
-            _infoListView.Items.Add(new ConfigStringDisplayInfo("Game Start", FormatMinutesSeconds(demoInfo.DemoWarmupEndTimeMs / 1000)));
-            foreach(var configInfo in demoInfo.ConfigStrings)
+            _infoListView.Items.Add(new ConfigStringDisplayInfo("Protocol", demoInfo.Protocol));
+
+            foreach(var tuple in demoInfo.Generic)
             {
-                _infoListView.Items.Add(configInfo);
+                _infoListView.Items.Add(new ConfigStringDisplayInfo(tuple.Item1, tuple.Item2));
             }
         }
 
@@ -1280,10 +908,10 @@ namespace Uber.DemoTools
             var demoInfo = _demos[idx];
 
             PopulateInfoListView(demoInfo);
-            PopulateChatEventsListView(demoInfo);
-            PopulateFragEventsListView(demoInfo);
-            PopulatePuRunsListView(demoInfo);
-            PopulateStats(demoInfo);
+            foreach(var tab in _appComponents)
+            {
+                tab.PopulateViews(demoInfo);
+            }
         }
 
         private void OnDemoListBoxDragEnter(object sender, DragEventArgs e)
@@ -1331,7 +959,7 @@ namespace Uber.DemoTools
             AddDemos(droppedFilePaths, droppedFolderPaths);
         }
 
-        private void DisableUiNonThreadSafe()
+        public void DisableUiNonThreadSafe()
         {
             _progressGroupBox.Visibility = Visibility.Visible;
             _progressBar.Value = 0;
@@ -1341,7 +969,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private void EnableUiThreadSafe()
+        public void EnableUiThreadSafe()
         {
             VoidDelegate guiResetter = delegate
             {
@@ -1353,7 +981,6 @@ namespace Uber.DemoTools
                 }
             };
 
-            _cancelJobValue = 0;
             _window.Dispatcher.Invoke(guiResetter);
         }
 
@@ -1367,13 +994,8 @@ namespace Uber.DemoTools
             DisableUiNonThreadSafe();
             _demoListView.Background = _demoListViewBackground;
 
-            if(_jobThread != null)
-            {
-                _jobThread.Join();
-            }
-
-            _jobThread = new Thread(DemoAddThread);
-            _jobThread.Start(filePaths);
+            JoinJobThread();
+            StartJobThread(DemoAddThread, filePaths);
         }
 
         private void DemoAddThread(object arg)
@@ -1388,7 +1010,7 @@ namespace Uber.DemoTools
             }
         }
 
-        delegate void VoidDelegate();
+        public delegate void VoidDelegate();
 
         private void AddDemo(DemoDisplayInfo info)
         {
@@ -1404,8 +1026,14 @@ namespace Uber.DemoTools
             removeDemoItem.Command = _deleteDemoCommand;
             removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
 
+            var splitDemoItem = new MenuItem();
+            splitDemoItem.Header = "Split";
+            splitDemoItem.Command = _splitDemoCommand;
+            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
+
             var demosContextMenu = new ContextMenu();
             demosContextMenu.Items.Add(removeDemoItem);
+            demosContextMenu.Items.Add(splitDemoItem);
 
             var item = new ListViewItem();
             item.Content = info;
@@ -1416,95 +1044,87 @@ namespace Uber.DemoTools
             _demoListView.Items.Add(item);
         }
 
-        private void DemoAddThreadImpl(object arg)
+        public string GetOutputFolder()
         {
-            var filePaths = (List<string>)arg;
-            var fileLengths = new List<long>();
-
-            long totalBytesToParse = 0;
-            foreach(var filePath in filePaths)
+            if(_config.OutputToInputFolder || 
+                string.IsNullOrWhiteSpace(_config.OutputFolder) || 
+                !Directory.Exists(_config.OutputFolder))
             {
-                var length = new FileInfo(filePath).Length;
-                fileLengths.Add(length);
-                totalBytesToParse += length;
+                return null;
             }
 
-            var progress = 0.0;
-            var progressStep = 100.0 / (double)totalBytesToParse;
+            return _config.OutputFolder;
+        }
 
-            var timer = new Stopwatch();
-            timer.Start();
-
-            for(int i = 0; i < filePaths.Count; ++i)
+        public string GetDefaultBrowsingFolder()
+        {
+            if(!_config.UseInputFolderAsDefaultBrowsingLocation ||
+                string.IsNullOrWhiteSpace(_config.InputFolder) ||
+                !Directory.Exists(_config.InputFolder))
             {
-                var filePath = filePaths[i];
-                var fileLength = fileLengths[i];
+                return null;
+            }
+
+            return _config.InputFolder;
+        }
+
+        public void InitParseArg()
+        {
+            Marshal.WriteInt32(CancelOperation, 0);
+            ParseArg.CancelOperation = CancelOperation;
+            ParseArg.MessageCb = DemoLoggingCallback;
+            ParseArg.ProgressCb = DemoProgressCallback;
+            ParseArg.ProgressContext = IntPtr.Zero;
+            ParseArg.FileOffset = 0;
+            ParseArg.GameStateIndex = 0;
+            ParseArg.OutputFolderPath = IntPtr.Zero;
+            ParseArg.PlugInCount = 0;
+            ParseArg.PlugIns = IntPtr.Zero;
+        }
+
+        private void DemoAddThreadImpl(object arg)
+        {
+            var filePaths = arg as List<string>;
+            if(filePaths == null)
+            {
+                return;
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            InitParseArg();
+            ParseArg.OutputFolderPath = outputFolderPtr;
+
+            List<DemoInfo> demoInfos = null;
+            try
+            {
+                demoInfos = UDT_DLL.ParseDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while parsing demos: {0}", exception.Message);
+                demoInfos = null;
+            }
+
+            if(demoInfos == null || demoInfos.Count != filePaths.Count)
+            {
+                Marshal.FreeHGlobal(outputFolderPtr);
+                EnableUiThreadSafe();
+                return;
+            }
+
+            foreach(var demoInfo in demoInfos)
+            {
                 var demoDisplayInfo = new DemoDisplayInfo();
-                demoDisplayInfo.Demo = new DemoInfo();
-                demoDisplayInfo.FileName = Path.GetFileNameWithoutExtension(filePath);
-
-                var protocol = GetProtocolFromFilePath(filePath);
-                if(protocol == DemoProtocol.Invalid)
-                {
-                    LogError("Unrecognized protocol for demo '{0}'", Path.GetFileName(filePath));
-                    progress += (double)fileLength * progressStep;
-                    SetProgressThreadSafe(progress);    
-                    continue;
-                }
-
-                Demo.ProgressCallback progressCb = (progressPc) =>
-                {
-                    if(timer.ElapsedMilliseconds < 50)
-                    {
-                        return _cancelJobValue;
-                    }
-
-                    timer.Stop();
-                    timer.Reset();
-                    timer.Start();
-
-                    var realProgress = progress + (double)fileLength * progressStep * (double)progressPc;
-                    SetProgressThreadSafe(realProgress);
-
-                    return _cancelJobValue;
-                };
+                demoDisplayInfo.Demo = demoInfo;
+                demoDisplayInfo.FileName = Path.GetFileNameWithoutExtension(demoInfo.FilePath);
+                _demos.Add(demoInfo);
 
                 VoidDelegate itemAdder = delegate { AddDemo(demoDisplayInfo); };
                 _demoListView.Dispatcher.Invoke(itemAdder);
-
-                DemoInfo demoInfo = null;
-                try
-                {
-                    var demo = new Demo(protocol);
-                    demo.Parse(filePath, progressCb, DemoLoggingCallback);
-                    demoInfo = CreateDemoInfo(filePath, demo);
-                    demo.Destroy();
-                }
-                catch(SEHException exception)
-                {
-                    LogError("Caught an exception while parsing demo '{0}': {1}", demoDisplayInfo.FileName, exception.Message);
-                    progress += (double)fileLength * progressStep;
-                    SetProgressThreadSafe(progress);
-                    VoidDelegate itemRemover = delegate { RemoveListViewItem(demoDisplayInfo, _demoListView); };
-                    _demoListView.Dispatcher.Invoke(itemRemover);
-                    continue;
-                }
-
-                if(_cancelJobValue != 0)
-                {
-                    VoidDelegate itemRemover = delegate { RemoveListViewItem(demoDisplayInfo, _demoListView); };
-                    _demoListView.Dispatcher.Invoke(itemRemover);
-                    break;
-                }
-
-                _demos.Add(demoInfo);
-
-                progress += (double)fileLength * progressStep;
-                SetProgressThreadSafe(progress);
-
-                demoDisplayInfo.Demo = demoInfo;
             }
 
+            Marshal.FreeHGlobal(outputFolderPtr);
             EnableUiThreadSafe();
         }
 
@@ -1553,20 +1173,12 @@ namespace Uber.DemoTools
             Serializer.FromXml("Config.xml", out _config);
         }
 
-        private void SaveConfig()
+        public void SaveConfig()
         {
-            int time = 0;
-            if(GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
+            foreach(var component in _appComponents)
             {
-                _config.ChatCutStartOffset = time;
+                component.SaveToConfigObject(_config);
             }
-            if(GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
-            {
-                _config.ChatCutEndOffset = time;
-            }
-
-            _config.OutputToInputFolder = _outputModeCheckBox.IsChecked ?? false;
-            _config.OutputFolder = _outputFolderTextBox.Text;
 
             Serializer.ToXml("Config.xml", _config);
         }
@@ -1588,7 +1200,7 @@ namespace Uber.DemoTools
             return a2.CompareTo(b2);
         }
 
-        private static bool GetTimeSeconds(string text, out int time)
+        public static bool GetTimeSeconds(string text, out int time)
         {
             time = -1;
 
@@ -1615,7 +1227,7 @@ namespace Uber.DemoTools
             return false;
         }
 
-        private static bool GetOffsetSeconds(string text, out int time)
+        public static bool GetOffsetSeconds(string text, out int time)
         {
             time = -1;
 
@@ -1671,10 +1283,107 @@ namespace Uber.DemoTools
             }
         }
 
-        private void OnCutByTimeContextClicked(ListView listView)
+        private void DemoSplitThread(object arg)
+        {
+            try
+            {
+                DemoSplitThreadImpl(arg);
+            }
+            catch(Exception exception)
+            {
+                EntryPoint.RaiseException(exception);
+            }
+        }
+
+        private void DemoSplitThreadImpl(object arg)
+        {
+            var filePath = arg as string;
+            if(filePath == null)
+            {
+                return;
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            InitParseArg();
+            ParseArg.OutputFolderPath = outputFolderPtr;
+
+            try
+            {
+                LogInfo("Splitting demo: {0}", filePath);
+                UDT_DLL.SplitDemo(GetMainThreadContext(), ref ParseArg, filePath);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while splitting a demo: {0}", exception.Message);
+            }
+
+            Marshal.FreeHGlobal(outputFolderPtr);
+
+            EnableUiThreadSafe();
+        }
+
+        private void OnSplitDemoClicked()
+        {
+            var demo = SelectedDemo;
+            if(demo == null)
+            {
+                LogError("No demo selected. Please select one to proceed.");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+            _demoListView.Background = _demoListViewBackground;
+
+            JoinJobThread();
+            StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private bool ParseMinutesSeconds(string time, out int totalSeconds)
+        {
+            totalSeconds = -1;
+
+            int colonIdx = time.IndexOf(':');
+            if(colonIdx < 0)
+            {
+                return false;
+            }
+
+            int minutes = -1;
+            if(!int.TryParse(time.Substring(0, colonIdx), out minutes))
+            {
+                return false;
+            }
+
+            int seconds = -1;
+            if(!int.TryParse(time.Substring(colonIdx + 1), out seconds))
+            {
+                return false;
+            }
+
+            totalSeconds = 60 * minutes + seconds;
+
+            return true;
+        }
+
+        public static string FormatMinutesSeconds(int totalSeconds)
+        {
+            var minutes = totalSeconds / 60;
+            var seconds = totalSeconds % 60;
+
+            return minutes.ToString() + ":" + seconds.ToString("00");
+        }
+
+        public void OnCutByTimeContextClicked(ListView listView)
         {
             var items = listView.SelectedItems;
             if(items.Count == 0)
+            {
+                return;
+            }
+
+            var cutByTimeComponent = _cutByTimeComponent as CutByTimeComponent;
+            if(cutByTimeComponent == null)
             {
                 return;
             }
@@ -1693,6 +1402,7 @@ namespace Uber.DemoTools
                 endOffset = dialog.EndOffset;
             }
 
+            int gsIndex = 0;
             int startTime = int.MaxValue;
             int endTime = int.MinValue;
             foreach(var item in items)
@@ -1703,7 +1413,7 @@ namespace Uber.DemoTools
                     continue;
                 }
 
-                var info = listViewItem.Content as TimedEventDisplayInfo;
+                var info = listViewItem.Content as ChatEventDisplayInfo;
                 if(info == null)
                 {
                     continue;
@@ -1715,6 +1425,7 @@ namespace Uber.DemoTools
                     continue;
                 }
 
+                gsIndex = info.GameStateIndex;
                 startTime = Math.Min(startTime, time);
                 endTime = Math.Max(endTime, time);
             }
@@ -1727,13 +1438,12 @@ namespace Uber.DemoTools
             startTime -= startOffset;
             endTime += endOffset;
 
-            _startTimeEditBox.Text = FormatMinutesSeconds(startTime);
-            _endTimeEditBox.Text = FormatMinutesSeconds(endTime);
-
+            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
+            
             _tabControl.SelectedIndex = 3;
         }
 
-        private static void CopyListViewRowsToClipboard(ListView listView)
+        public static void CopyListViewRowsToClipboard(ListView listView)
         {
             var stringBuilder = new StringBuilder();
 
@@ -1762,39 +1472,8 @@ namespace Uber.DemoTools
 
         private void OnCancelJobClicked()
         {
-            _cancelJobValue = 1;
-            LogWarning("Job cancelled!");
-        }
-
-        private string GenerateOutputFilePath(string inFilePath, string startTime, string endTime)
-        {
-            string result = "";
-            VoidDelegate delayedCall = delegate { result = GenerateOutputFilePathImpl(inFilePath, startTime, endTime); };
-            _window.Dispatcher.Invoke(delayedCall);
-
-            return result;
-        }
-
-        private string GenerateOutputFilePathImpl(string inFilePath, string startTime, string endTime)
-        {
-            var outputSame = _outputModeCheckBox.IsChecked ?? false;
-            if(!outputSame)
-            {
-                
-
-                var outputFolder = _outputFolderTextBox.Text;
-                if(Directory.Exists(outputFolder))
-                {
-                    return Path.Combine(outputFolder, Path.GetFileNameWithoutExtension(inFilePath)) + "_cut_" + startTime + "_" + endTime + Path.GetExtension(inFilePath);
-                }
-                else
-                {
-                    _outputModeCheckBox.IsChecked = true;
-                    LogWarning("The selected output folder {0} is invalid, switching to the 'output at input folder' mode for you...", outputFolder);
-                }
-            }
-
-            return Path.Combine(Path.GetDirectoryName(inFilePath), Path.GetFileNameWithoutExtension(inFilePath)) + "_cut_" + startTime + "_" + endTime + Path.GetExtension(inFilePath);
+            Marshal.WriteInt32(CancelOperation, 1);
+            LogWarning("Job canceled!");
         }
 
         private void SetProgressThreadSafe(double value)
@@ -1803,12 +1482,12 @@ namespace Uber.DemoTools
             _progressBar.Dispatcher.Invoke(valueSetter);
         }
 
-        private static DemoProtocol GetProtocolFromFilePath(string filePath)
+        public static UDT_DLL.udtProtocol GetProtocolFromFilePath(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLower();
             if(!ProtocolFileExtDic.ContainsKey(extension))
             {
-                return DemoProtocol.Invalid;
+                return UDT_DLL.udtProtocol.Invalid;
             }
 
             var prot = ProtocolFileExtDic[extension];
@@ -1830,22 +1509,22 @@ namespace Uber.DemoTools
             _logListBox.Dispatcher.Invoke(itemAdder);
         }
 
-        private void LogInfo(string message, params object[] args)
+        public void LogInfo(string message, params object[] args)
         {
             LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
         }
 
-        private void LogWarning(string message, params object[] args)
+        public void LogWarning(string message, params object[] args)
         {
             LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
         }
 
-        private void LogError(string message, params object[] args)
+        public void LogError(string message, params object[] args)
         {
             LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
         }
 
-        private void DemoLoggingCallback(int logLevel, string message)
+        public void DemoLoggingCallback(int logLevel, string message)
         {
             switch(logLevel)
             {
@@ -1866,6 +1545,11 @@ namespace Uber.DemoTools
                     LogInfo(message);
                     break;
             }
+        }
+
+        public void DemoProgressCallback(float progress, IntPtr userData)
+        {
+            SetProgressThreadSafe(100.0 * (double)progress);
         }
 
         private string GetLog()
@@ -1932,6 +1616,35 @@ namespace Uber.DemoTools
 
                 File.WriteAllText(saveFileDialog.FileName,  GetLog());
             }
+        }
+
+        private void FatalErrorHandler(string errorMessage)
+        {
+            throw new Exception(errorMessage);
+        }
+
+        public void JoinJobThread()
+        {
+            if(_jobThread != null)
+            {
+                _jobThread.Join();
+            }
+        }
+
+        public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
+        {
+            _jobThread = new Thread(entryPoint);
+            _jobThread.Start(userData);
+        }
+
+        public IntPtr GetMainThreadContext()
+        {
+            if(_mainThreadContext == IntPtr.Zero)
+            {
+                _mainThreadContext = UDT_DLL.CreateContext();
+            }
+
+            return _mainThreadContext;
         }
     }
 }

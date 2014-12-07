@@ -28,13 +28,14 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+	<BaseIntermediateOutputPath>.build</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>.bin\x86\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -46,7 +47,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>.bin\x86\Release\</OutputPath>
     <DefineConstants>
     </DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -62,25 +63,25 @@
   <PropertyGroup Condition=" '$(TargetFrameworkProfile)' == 'Client' ">
     <DefineConstants>UDT_DOT_NET_CLIENT_PROFILE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFrameworkVersion)' == 'v4.0' ">
-    <AssemblyName>UDT_GUI_40</AssemblyName>
-    <DefineConstants>UDT_DOT_NET_40</DefineConstants>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+	<DefineConstants>UDT_X64</DefineConstants>
+    <OutputPath>.bin\x64\Debug\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>BasicCorrectnessRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetFrameworkVersion)' == 'v3.5' ">
-    <AssemblyName>UDT_GUI_35</AssemblyName>
-    <DefineConstants>UDT_DOT_NET_35</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(TargetFrameworkVersion)' == 'Debug|v4.0' ">
-    <OutputPath>bin\Debug40\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(TargetFrameworkVersion)' == 'Release|v4.0' ">
-    <OutputPath>bin\Release40\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(TargetFrameworkVersion)' == 'Debug|v3.5' ">
-    <OutputPath>bin\Debug35\</OutputPath>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(TargetFrameworkVersion)' == 'Release|v3.5' ">
-    <OutputPath>bin\Release35\</OutputPath>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <DefineConstants>UDT_X64</DefineConstants>
+    <OutputPath>.bin\x64\Release\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Properties\Resources.Designer.cs">
@@ -88,13 +89,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="src\AppChatCut.cs" />
-    <Compile Include="src\AppChatEvents.cs" />
-    <Compile Include="src\AppFragEvents.cs" />
-    <Compile Include="src\AppPuRuns.cs" />
     <Compile Include="src\AppSettings.cs" />
-    <Compile Include="src\AppStats.cs" />
-    <Compile Include="src\AppTimeCut.cs" />
     <Compile Include="src\EntryPoint.cs" />
     <Compile Include="src\App.cs" />
     <Compile Include="src\IconHelper.cs" />
@@ -103,9 +98,13 @@
     <Compile Include="src\Quotes.cs" />
     <Compile Include="src\Serializer.cs" />
     <Compile Include="src\Shortcut.cs" />
-    <Compile Include="src\Tuple.cs" />
     <Compile Include="src\UDT.cs" />
     <Compile Include="src\WpfHelper.cs" />
+    <Compile Include="src\Tuple.cs" />
+    <Compile Include="src\PinnedObject.cs" />
+    <Compile Include="src\AppChatEvents.cs" />
+	<Compile Include="src\AppTimeCut.cs" />
+	<Compile Include="src\AppChatCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
