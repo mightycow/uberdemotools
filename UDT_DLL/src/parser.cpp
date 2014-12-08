@@ -146,6 +146,10 @@ void udtBaseParser::Reset()
 void udtBaseParser::SetFilePath(const char* filePath)
 {
 	_inFilePath = AllocatePermanentString(filePath);
+
+	char* fileName = NULL;
+	GetFileName(fileName, _inLinearAllocator, filePath);
+	_inFileName = fileName;
 }
 
 void udtBaseParser::Destroy()

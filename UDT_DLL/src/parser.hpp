@@ -115,6 +115,7 @@ public:
 
 	// Input.
 	const char* _inFilePath;
+	const char* _inFileName;
 	udtMessage _inMsg; // This instance does *NOT* have ownership of the raw message data.
 	u32 _inFileOffset;
 	s32 _inServerMessageSequence; // Unreliable.
