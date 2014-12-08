@@ -53,7 +53,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Get file sizes and make sure we have enough data to process
 	// to even consider launching new threads.
-	udtVMArray<FileInfo> files;
+	udtVMArray<FileInfo> files((u32)sizeof(FileInfo) * fileCount);
 	u64 totalByteCount = 0;
 	files.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)

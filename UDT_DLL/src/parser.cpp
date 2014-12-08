@@ -5,6 +5,8 @@
 udtBaseParser::udtBaseParser() 
 	: _inEntityBaselines((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
 	, _inParseEntities((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
+	, _inCommands(1 << 20)
+	, _inConfigStrings((u32)(2 * MAX_CONFIGSTRINGS * sizeof(udtConfigString)))
 	, _inSnapshots((u32)(PACKET_BACKUP * sizeof(idLargestClientSnapshot)))
 {
 	_context = NULL;
@@ -26,6 +28,9 @@ udtBaseParser::udtBaseParser()
 	_outSnapshotsWritten = 0;
 	_outWriteFirstMessage = false;
 	_outWriteMessage = false;
+
+	// Reserve lots of address space up front.
+	_inLinearAllocator.Init(1 << 24, 4096);
 }
 
 udtBaseParser::~udtBaseParser()
@@ -53,9 +58,6 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	memset(&_inEntityBaselines[0], 0, MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
 	_inSnapshots.Resize(PACKET_BACKUP * _protocolSizeOfClientSnapshot);
 	memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
-
-	// Reserve lots of address space up front, commit 4 KB at once.
-	_inLinearAllocator.Init(1 << 24, 4096);
 
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
