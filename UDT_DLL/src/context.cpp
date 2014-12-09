@@ -25,7 +25,7 @@ udtContext::udtContext()
 	, _progressCallback(NULL)
 	, _huffmanInitialized(false)
 {
-	TempAllocator.Init(1 << 24, 4096);
+	TempAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtContext::~udtContext()

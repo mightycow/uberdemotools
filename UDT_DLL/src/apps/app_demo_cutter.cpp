@@ -337,7 +337,7 @@ int main(int argc, char** argv)
 
 	CutByChatConfig config;
 	udtVMLinearAllocator configAllocator;
-	configAllocator.Init(1 << 24, 4096);
+	configAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 	if(!ReadConfig(config, context->Context, configAllocator, ConfigFilePath))
 	{
 		printf("Could not load config file.\n");
@@ -379,8 +379,8 @@ int main(int argc, char** argv)
 		udtVMArray<udtFileInfo> files;
 		udtVMLinearAllocator persistAlloc;
 		udtVMLinearAllocator tempAlloc;
-		persistAlloc.Init(1 << 24, 4096);
-		tempAlloc.Init(1 << 24, 4096);
+		persistAlloc.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
+		tempAlloc.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 
 		udtFileListQuery query;
 		memset(&query, 0, sizeof(query));

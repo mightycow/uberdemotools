@@ -37,6 +37,14 @@ static int SortByThreadIndexAscending(const void* aPtr, const void* bPtr)
 	return (int)(a - b);
 }
 
+udtDemoThreadAllocator::udtDemoThreadAllocator()
+	: FilePaths(1 << 20)
+	, FileSizes(1 << 20)
+	, InputIndices(1 << 20)
+	, Threads(1 << 16)
+{
+}
+
 bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 maxThreadCount)
 {
 	if(maxThreadCount <= 1 || fileCount <= 1)
@@ -299,7 +307,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	timer.Start();
 
 	bool success = true;
-	udtVMArray<udtThread> threads;
+	udtVMArray<udtThread> threads((u32)sizeof(udtThread) * threadCount);
 	threads.Resize(threadCount);
 	for(u32 i = 0; i < threadCount; ++i)
 	{

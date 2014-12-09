@@ -37,7 +37,7 @@ udtParserContext::udtParserContext()
 {
 	DemoCount = 0;
 	PlugInCountPerDemo = 0;
-	PlugInAllocator.Init(1 << 24, 4096);
+	PlugInAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtParserContext::~udtParserContext()

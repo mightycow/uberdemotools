@@ -18,9 +18,9 @@ and clan is optional
 static const char* nullString = "";
 
 
-udtParserPlugInChat::udtParserPlugInChat() : ChatEvents(1 << 20, 4096)
+udtParserPlugInChat::udtParserPlugInChat() : ChatEvents(1 << 20)
 {
-	_chatStringAllocator.Init(1 << 24, 4096);
+	_chatStringAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 	_gameStateIndex = -1;
 }
 

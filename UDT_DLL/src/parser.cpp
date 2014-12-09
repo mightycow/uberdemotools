@@ -30,7 +30,7 @@ udtBaseParser::udtBaseParser()
 	_outWriteMessage = false;
 
 	// Reserve lots of address space up front.
-	_inLinearAllocator.Init(1 << 24, 4096);
+	_inLinearAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtBaseParser::~udtBaseParser()
