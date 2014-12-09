@@ -1,3 +1,8 @@
+0.3.2 (09.12.2014)
+CHG: If operations on one or more demos fail in a batch process, it won't stop/invalidate everything (see changelog_dll.txt)
+FIX: The recursive scan mode check box was initialized with the wrong option's value (because of that, the recursive scan mode option would be loaded wrong)
+FIX: Closing the window during a job will no longer freeze the application instead of quitting immediately
+
 0.3.1 (07.12.2014)
 CHG: All settings are always drawn and editable
 CHG: If a setting is currently inactive, it is grayed out (but still editable)

@@ -4,6 +4,9 @@
 #include "allocator.hpp"
 
 
+#define    UDT_MEMORY_PAGE_SIZE    4096
+
+
 //
 // A virtual-memory based linear allocator.
 // It pointer bumps like any linear allocator, 

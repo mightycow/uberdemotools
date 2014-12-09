@@ -6,9 +6,6 @@
 #include <string.h> // For memmove.
 
 
-#define UDT_MEMORY_PAGE_SIZE 4096
-
-
 //
 // A resizeable array class that:
 // - only handles POD data types

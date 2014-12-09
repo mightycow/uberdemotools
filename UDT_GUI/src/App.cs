@@ -51,7 +51,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.3.1";
+        private const string GuiVersion = "0.3.2";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -117,6 +117,8 @@ namespace Uber.DemoTools
         public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
         public IntPtr CancelOperation = IntPtr.Zero;
 
+        static public App Instance { get; private set; }
+
         public UdtConfig Config
         {
             get { return _config; }
@@ -170,6 +172,8 @@ namespace Uber.DemoTools
 
         public App(string[] cmdLineArgs)
         {
+            Instance = this;
+
             CancelOperation = Marshal.AllocHGlobal(4);
             Marshal.WriteInt32(CancelOperation, 0);
 
@@ -669,7 +673,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            JoinJobThread();
+            Marshal.WriteInt32(CancelOperation, 1);
             SaveConfig();
             _application.Shutdown();
         }
@@ -680,11 +684,8 @@ namespace Uber.DemoTools
             _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
         }
 
-        
-
         private void OnOpenDemo()
         {
-            
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 // @TODO: Construct the filter programmatically.
@@ -1106,7 +1107,7 @@ namespace Uber.DemoTools
                 demoInfos = null;
             }
 
-            if(demoInfos == null || demoInfos.Count != filePaths.Count)
+            if(demoInfos == null)
             {
                 Marshal.FreeHGlobal(outputFolderPtr);
                 EnableUiThreadSafe();
@@ -1522,6 +1523,21 @@ namespace Uber.DemoTools
         public void LogError(string message, params object[] args)
         {
             LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
+        }
+
+        static public void GlobalLogInfo(string message, params object[] args)
+        {
+            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
+        }
+
+        static public void GlobalLogWarning(string message, params object[] args)
+        {
+            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
+        }
+
+        static public void GlobalLogError(string message, params object[] args)
+        {
+            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
         }
 
         public void DemoLoggingCallback(int logLevel, string message)

@@ -1,3 +1,15 @@
+0.3.1 (09.12.2014)
+FIX: If the VM linear allocator's reserve size isn't a multiple of the commit granularity (which itself is a page size multiple), it's made to become one
+FIX: Reserving enough address space for config string descriptors
+FIX: Reserving enough address space for file descriptors in the batch process thread function
+CHG: Reserving a lot more address space for server command descriptors
+FIX: When the input demo is truncated, parsing doesn't fail anymore
+CHG: A warning message is sent when a demo file is truncated
+CHG: In batch operations, you must now supply an array of error codes
+CHG: If operations on one or more demos fail in a batch process, it won't stop/invalidate everything
+CHG: In udtParseDemoFiles, if some demos can't be parsed, you can still access all the data for those where it succeeded
+CHG: Drop a fatal error when reserving address space from the linear allocator isn't possible (might happen easily in the x86 build)
+
 0.3.0 (05.12.2014)
 CHG: New codebase!
 ADD: Support for demo protocol 90

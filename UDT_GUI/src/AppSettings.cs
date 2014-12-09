@@ -104,7 +104,7 @@ namespace Uber.DemoTools
             _folderScanModeCheckBox = folderScanModeCheckBox;
             folderScanModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             folderScanModeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            folderScanModeCheckBox.IsChecked = _app.Config.SkipScanFoldersRecursivelyDialog;
+            folderScanModeCheckBox.IsChecked = _app.Config.ScanFoldersRecursively;
             folderScanModeCheckBox.Content = " Scan subfolders recursively?";
             folderScanModeCheckBox.Checked += (obj, args) => OnFolderScanRecursiveChecked();
             folderScanModeCheckBox.Unchecked += (obj, args) => OnFolderScanRecursiveUnchecked();

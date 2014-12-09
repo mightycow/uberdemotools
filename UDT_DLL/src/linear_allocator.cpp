@@ -28,13 +28,24 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 		return false;
 	}
 
-	// Let's reserve at least 2 pages and commit whole pages.
-	UDT_ASSERT_OR_FATAL(reservedByteCount >= UDT_MEMORY_PAGE_SIZE * 2);
-	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % UDT_MEMORY_PAGE_SIZE) == 0);
+	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % (u32)UDT_MEMORY_PAGE_SIZE) == 0);
+
+	// Ensure the reserve size is a multiple of the commit granularity.
+	// If it is, leave it as is. If it's not, bump it up to the next multiple.
+	reservedByteCount = (reservedByteCount + commitByteCountGranularity - 1) & (~(commitByteCountGranularity - 1));
+
+	// Make sure we reserve at least 2 memory pages while still respecting the commit granularity.
+	if(reservedByteCount < (u32)(UDT_MEMORY_PAGE_SIZE * 2))
+	{
+		reservedByteCount += commitByteCountGranularity;
+	}
+
+	UDT_ASSERT_OR_FATAL(reservedByteCount >= (u32)(UDT_MEMORY_PAGE_SIZE * 2));
 
 	u8* const data = (u8*)VirtualMemoryReserve(reservedByteCount);
 	if(data == NULL)
 	{
+		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed");
 		return false;
 	}
 
@@ -42,6 +53,7 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 	{
 		if(!VirtualMemoryCommit(data, commitByteCountGranularity))
 		{
+			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
 			VirtualMemoryDecommitAndRelease(data, reservedByteCount);
 			return false;
 		}
