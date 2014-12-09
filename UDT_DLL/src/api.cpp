@@ -23,7 +23,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.3.0";
+static const char* VersionString = "0.3.1";
 
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
@@ -710,6 +710,7 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
 		context->InputIndices[i] = i;
+		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
 	}
 
 	SingleThreadProgressContext progressContext;
@@ -726,33 +727,37 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
+		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
+		{
+			break;
+		}
+
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
-		if(!ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false))
+
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
 		{
-			return udtErrorCode::OperationFailed;
+			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
 		}
+		else
+		{
+			const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
+			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
+		}
+
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
-	return (s32)udtErrorCode::None;
+	return GetErrorCode(true, info->CancelOperation);
 }
 
 UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
 	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
-	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL || extraInfo->OutputErrorCodes == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			return udtErrorCode::InvalidArgument;
-		}
 	}
 
 	udtDemoThreadAllocator threadAllocator;
@@ -771,7 +776,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	udtMultiThreadedParsing parser;
 	const bool success = parser.Process((*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
 
-	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
+	return GetErrorCode(success, info->CancelOperation);
 }
 
 static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
@@ -808,28 +813,47 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 	newInfo.ProgressCb = &SingleThreadProgressCallback;
 	newInfo.ProgressContext = &progressContext;
 
+	context->InputIndices.Resize(extraInfo->FileCount);
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
+		context->InputIndices[i] = i;
+		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
+	}
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
+		{
+			break;
+		}
+
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
-		if(!CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]))
+
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
 		{
-			udtDestroyContext(context);
-			return (s32)udtErrorCode::OperationFailed;
+			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
 		}
+		else
+		{
+			const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
+			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
+		}
+
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
 	udtDestroyContext(context);
 
-	return (s32)udtErrorCode::None;
+	return GetErrorCode(true, info->CancelOperation);
 }
 
 UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
 {
 	if(info == NULL || extraInfo == NULL || chatInfo == NULL ||
 	   chatInfo->Rules == NULL || chatInfo->RuleCount == 0 || 
-	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL)
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL || extraInfo->OutputErrorCodes == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -866,7 +890,7 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 
 	DestroyContextGroup(contextGroup);
 
-	return (s32)(success ? udtErrorCode::None : udtErrorCode::OperationFailed);
+	return GetErrorCode(success, info->CancelOperation);
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)

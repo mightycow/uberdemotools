@@ -35,7 +35,9 @@ namespace Uber.DemoTools
         {
             None,
             InvalidArgument,
-            OperationFailed
+            OperationFailed,
+            OperationCanceled,
+            Unprocessed
         }
 
         public enum udtChatOperator : int
@@ -79,6 +81,7 @@ namespace Uber.DemoTools
         public struct udtMultiParseArg
 	    {
 		    public IntPtr FilePaths; // const char**
+            public IntPtr OutputErrorCodes; // s32*
 		    public UInt32 FileCount;
 		    public UInt32 MaxThreadCount;
 	    }
@@ -247,6 +250,19 @@ namespace Uber.DemoTools
             return udtSetCrashHandler(address) == udtErrorCode.None;
         }
 
+        public static string GetErrorCodeString(udtErrorCode errorCode)
+        {
+            switch(errorCode)
+            {
+                case udtErrorCode.None: return "no error";
+                case udtErrorCode.InvalidArgument: return "invalid argument";
+                case udtErrorCode.OperationFailed: return "operation failed";
+                case udtErrorCode.Unprocessed: return "unprocessed";
+            }
+
+            return "invalid error code";
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();
@@ -396,6 +412,7 @@ namespace Uber.DemoTools
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
+            var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
@@ -407,23 +424,27 @@ namespace Uber.DemoTools
             parseArg.PlugIns = pinnedPlugIns.Address;
 
             var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
             var multiParseArg = new udtMultiParseArg();
             multiParseArg.FileCount = (UInt32)filePathArray.Length;
             multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
             multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
 
             udtParserContextGroupRef contextGroup = IntPtr.Zero;
             var result = udtParseDemoFiles(ref contextGroup, ref parseArg, ref multiParseArg);
             pinnedPlugIns.Free();
             pinnedFilePaths.Free();
+            pinnedErrorCodes.Free();
             for(var i = 0; i < filePathArray.Length; ++i)
             {
                 Marshal.FreeHGlobal(filePathArray[i]);
             }
 
-            if(result != udtErrorCode.None)
+            if(result != udtErrorCode.None && result != udtErrorCode.OperationCanceled)
             {
                 udtDestroyContextGroup(contextGroup);
+                App.GlobalLogError("Failed to parse demos: " + GetErrorCodeString(result));
                 return null;
             }
 
@@ -453,20 +474,30 @@ namespace Uber.DemoTools
 
                 for(uint j = 0; j < demoCount; ++j)
                 {
-                    var info = new DemoInfo();
-                    info.InputIndex = 0;
-                    info.FilePath = "?";
-                    info.Protocol = "?";
-
                     uint inputIdx = 0;
-                    if(udtGetDemoInputIndex(context, j, ref inputIdx) == udtErrorCode.None)
+                    if(udtGetDemoInputIndex(context, j, ref inputIdx) != udtErrorCode.None)
                     {
-                        var filePath = filePaths[(int)inputIdx];
-                        var protocol = udtGetProtocolByFilePath(filePath);
-                        info.InputIndex = (int)inputIdx;
-                        info.FilePath = Path.GetFullPath(filePath);
-                        info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
+                        continue;
                     }
+
+                    var errorCode = errorCodeArray[(int)inputIdx];
+                    if(errorCode != (Int32)udtErrorCode.None)
+                    {
+                        if(errorCode != (Int32)udtErrorCode.Unprocessed && errorCode != (Int32)udtErrorCode.OperationCanceled)
+                        {
+                            var fileName = Path.GetFileName(filePaths[(int)inputIdx]);
+                            var errorCodeString = GetErrorCodeString((udtErrorCode)errorCode);
+                            App.GlobalLogError("Failed to parse demo file {0}: {1}", fileName, errorCodeString);
+                        }
+                        continue;
+                    }
+
+                    var filePath = filePaths[(int)inputIdx];
+                    var protocol = udtGetProtocolByFilePath(filePath);
+                    var info = new DemoInfo();
+                    info.InputIndex = (int)inputIdx;
+                    info.FilePath = Path.GetFullPath(filePath);
+                    info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
                     
                     ExtractDemoInfo(context, j, ref info);
                     infoList.Add(info);

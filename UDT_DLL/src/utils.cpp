@@ -679,6 +679,16 @@ bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& al
 	return true;
 }
 
+s32 GetErrorCode(bool success, s32* cancel)
+{
+	if(success)
+	{
+		return (s32)udtErrorCode::None;
+	}
+
+	return (s32)((cancel != NULL && *cancel != 0) ? udtErrorCode::OperationCanceled : udtErrorCode::OperationFailed);
+}
+
 bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
 {
 	udtContext* const context = parser._context;

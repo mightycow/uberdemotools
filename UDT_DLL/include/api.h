@@ -35,7 +35,9 @@ struct udtErrorCode
 	{
 		None,
 		InvalidArgument,
-		OperationFailed
+		OperationFailed,
+		OperationCanceled,
+		Unprocessed
 	};
 };
 
@@ -165,7 +167,10 @@ extern "C"
 		// Pointer to an array of file paths.
 		const char** FilePaths;
 
-		// Number of elements in the array pointed by FilePaths.
+		// Pointer to an array of returned error codes.
+		s32* OutputErrorCodes;
+
+		// Number of elements in the arrays pointed by FilePaths and OutputErrorCodes.
 		u32 FileCount;
 
 		// The maximum amount of threads that should be used to process the demos.

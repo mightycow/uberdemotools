@@ -193,17 +193,20 @@ static void ThreadFunction(void* userData)
 	udtParsingThreadData* const data = (udtParsingThreadData*)userData;
 	if(data == NULL)
 	{
+		data->Finished = true;
 		return;
 	}
 
 	udtParsingSharedData* const shared = data->Shared;
 	if(shared->JobType >= (u32)udtParsingJobType::Count)
 	{
+		data->Finished = true;
 		return;
 	}
 
 	if(shared->JobType == (u32)udtParsingJobType::CutByChat && shared->JobTypeSpecificInfo == NULL)
 	{
+		data->Finished = true;
 		return;
 	}
 
@@ -224,35 +227,44 @@ static void ThreadFunction(void* userData)
 	newParseInfo.ProgressCb = &MultiThreadedProgressProgressCallback;
 	newParseInfo.ProgressContext = &progressContext;
 
-	data->Result = true;
+	s32* const errorCodes = shared->MultiParseInfo->OutputErrorCodes;
 
 	for(u32 i = startIdx; i < endIdx; ++i)
 	{
+		if(shared->ParseInfo->CancelOperation != NULL && *shared->ParseInfo->CancelOperation != 0)
+		{
+			break;
+		}
+
+		const u32 errorCodeIdx = data->Context->InputIndices[i - startIdx];
 		const u64 currentJobByteCount = shared->FileSizes[i];
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
-		bool result = false;
-		if(shared->JobType == (u32)udtParsingJobType::CutByChat)
+		const udtProtocol::Id protocol = udtGetProtocolByFilePath(shared->FilePaths[i]);
+		if(protocol == udtProtocol::Invalid)
 		{
-			const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
-			result = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
+			errorCodes[errorCodeIdx] = (s32)udtErrorCode::InvalidArgument;
 		}
-		else if(shared->JobType == (u32)udtParsingJobType::General)
+		else
 		{
-			result = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
-		}
-
-		if(!result)
-		{
-			data->Result = false;
-			goto finish;
+			bool success = false;
+			if(shared->JobType == (u32)udtParsingJobType::CutByChat)
+			{
+				const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+				success = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
+			}
+			else if(shared->JobType == (u32)udtParsingJobType::General)
+			{
+				success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
+			}
+			errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 		}
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
 	}
 
-finish:
-	data->Finished = true;	
+	data->Result = true;
+	data->Finished = true;
 }
 
 bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
@@ -277,6 +289,11 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();
 	sharedData.FileSizes = threadInfo.FileSizes.GetStartAddress();
 	sharedData.JobType = (u32)jobType;
+	
+	for(u32 i = 0, count = multiParseInfo->FileCount; i < count; ++i)
+	{
+		multiParseInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
+	}
 
 	udtTimer timer;
 	timer.Start();
@@ -347,13 +364,10 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		(*parseInfo->ProgressCb)(progress, parseInfo->ProgressContext);
 	}
 	
+	// If the above code is correct and never fails, this is redundant.
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		threads[i].Join();
-		if(!threadInfo.Threads[i].Result)
-		{
-			success = false;
-		}
 	}
 	
 thread_clean_up:
