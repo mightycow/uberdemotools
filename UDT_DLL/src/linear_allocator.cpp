@@ -45,6 +45,7 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 	u8* const data = (u8*)VirtualMemoryReserve(reservedByteCount);
 	if(data == NULL)
 	{
+		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed");
 		return false;
 	}
 
@@ -52,6 +53,7 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 	{
 		if(!VirtualMemoryCommit(data, commitByteCountGranularity))
 		{
+			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
 			VirtualMemoryDecommitAndRelease(data, reservedByteCount);
 			return false;
 		}
