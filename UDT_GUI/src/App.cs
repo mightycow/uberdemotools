@@ -673,7 +673,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            JoinJobThread();
+            Marshal.WriteInt32(CancelOperation, 1);
             SaveConfig();
             _application.Shutdown();
         }
@@ -684,11 +684,8 @@ namespace Uber.DemoTools
             _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
         }
 
-        
-
         private void OnOpenDemo()
         {
-            
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
                 // @TODO: Construct the filter programmatically.
