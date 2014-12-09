@@ -362,6 +362,7 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
         {
+            var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
@@ -381,9 +382,11 @@ namespace Uber.DemoTools
             parseArg.PlugIns = IntPtr.Zero;
 
             var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
             var multiParseArg = new udtMultiParseArg();
             multiParseArg.FileCount = (UInt32)filePathArray.Length;
             multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
             multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
 
             var pinnedRules = new PinnedObject(rulesArray);
@@ -394,8 +397,8 @@ namespace Uber.DemoTools
             cutByChatArg.Rules = pinnedRules.Address;
 
             var result = udtCutDemoFilesByChat(ref parseArg, ref multiParseArg, ref cutByChatArg);
-
             pinnedFilePaths.Free();
+            pinnedErrorCodes.Free();
             for(var i = 0; i < filePathArray.Length; ++i)
             {
                 Marshal.FreeHGlobal(filePathArray[i]);
