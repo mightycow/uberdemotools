@@ -2,7 +2,7 @@
 #include "utils.hpp"
 
 
-static const char* meansOfDeath[] =
+static const char* meansOfDeath_Q3[] =
 {
 	"unknown",
 	"shotgun",
@@ -30,15 +30,68 @@ static const char* meansOfDeath[] =
 	"grapple"
 };
 
-const char* GetMeanOfDeathName(s32 mod)
+static const char* meansOfDeath_QL[] =
 {
-	if(mod < 0 || mod >= (s32)UDT_COUNT_OF(meansOfDeath))
+	"unknown",
+	"shotgun",
+	"gauntlet",
+	"machine gun",
+	"grenade",
+	"grenade splash",
+	"rocket",
+	"rocket splash",
+	"plasma",
+	"plasma splash",
+	"railgun",
+	"lightning",
+	"BFG",
+	"BFG splash",
+	"water",
+	"slime",
+	"lava",
+	"crush",
+	"telefrag",
+	"fall",
+	"suicide",
+	"target laser",
+	"trigger hurt",
+// mission pack start
+	"nailgun",
+	"chaingun",
+	"proximity mine",
+	"kamikaze",
+	"juiced",
+// mission pack end
+	"grapple",
+// QL start
+	"team switch",
+	"thaw",
+	"unknown",
+	"heavy machine gun"
+// QL end
+};
+
+
+const char* GetMeanOfDeathName(s32 mod, udtProtocol::Id protocol)
+{
+	if(protocol == udtProtocol::Dm68)
+	{
+		if(mod < 0 || mod >= (s32)UDT_COUNT_OF(meansOfDeath_Q3))
+		{
+			mod = 0;
+		}
+
+		return meansOfDeath_Q3[mod];
+	}
+
+	if(mod < 0 || mod >= (s32)UDT_COUNT_OF(meansOfDeath_QL))
 	{
 		mod = 0;
 	}
 
-	return meansOfDeath[mod];
+	return meansOfDeath_QL[mod];
 }
+
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
@@ -79,7 +132,7 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 			info.AttackerIdx = attacker;
 			info.TargetName = targetName;
 			info.AttackerName = attackerName;
-			info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath);
+			info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath, parser._protocol);
 			Obituaries.Add(info);
 		}
 	}
