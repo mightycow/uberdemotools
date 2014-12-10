@@ -101,6 +101,7 @@ public:
 	typedef udtVMArray<u8> SnapshotVector;
 	typedef udtVMArray<udtBaseParserPlugIn*> PlugInVector;
 	typedef udtVMArray<u32> FileOffsetVector;
+	typedef udtVMArray<idEntityStateBase*> EntityPointerVector;
 
 public:
 	// General.
@@ -134,6 +135,7 @@ public:
 	udtVMLinearAllocator _inLinearAllocator;
 	SnapshotVector _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
 	idLargestClientSnapshot _inSnapshot;
+	EntityPointerVector _inParsedEntities; // The entities that were read in the last call to ParsePacketEntities.
 
 	// Output.
 	CutVector _cuts;

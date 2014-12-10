@@ -1545,7 +1545,7 @@ Can go from either a baseline or a previous packet_entity
 ==================
 */
 
-void udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
+bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
 	s32			i, lc;
 	s32			*fromF, *toF;
@@ -1560,7 +1560,7 @@ void udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 	{
 		Com_Memset(to, 0, _protocolSizeOfEntityState);
 		to->number = MAX_GENTITIES - 1;
-		return;
+		return false;
 	}
 
 	// check for no delta
@@ -1568,7 +1568,7 @@ void udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 	{
 		Com_Memcpy(to, from, _protocolSizeOfEntityState);
 		to->number = number;
-		return;
+		return false;
 	}
 
 	lc = ReadByte();
@@ -1639,4 +1639,6 @@ void udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		// no change
 		*toF = *fromF;
 	}
+
+	return true;
 }

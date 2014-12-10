@@ -681,6 +681,8 @@ void udtBaseParser::ParseSnapshot()
 		info.ServerTime = _inServerTime;
 		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
 		info.Snapshot = &newSnap;
+		info.Entities = _inParsedEntities.GetStartAddress();
+		info.EntityCount = _inParsedEntities.GetSize();
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{
@@ -737,6 +739,8 @@ void udtBaseParser::WriteGameState()
 
 void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
+	_inParsedEntities.Clear();
+
 	newframe->parseEntitiesNum = _inParseEntitiesNum;
 	newframe->numEntities = 0;
 
@@ -933,7 +937,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 //
 void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged)
 {
-	// Save the parsed entity state s32o the big circular buffer so
+	// Save the parsed entity state into the big circular buffer so
 	// it can be used as the source for a later delta.
 	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (MAX_PARSE_ENTITIES-1));
 
@@ -943,7 +947,10 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	} 
 	else 
 	{
-		msg.ReadDeltaEntity(old, state, newnum);
+		if(msg.ReadDeltaEntity(old, state, newnum))
+		{
+			_inParsedEntities.Add(state);
+		}
 	}
 
 	// The entity was delta removed?

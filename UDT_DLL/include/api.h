@@ -87,8 +87,9 @@ struct udtCrashType
 // 2. plug-in type (internal)
 // 3. plug-in data type (for the user)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,      udtParserPlugInChat,      udtParseDataChat) \
-	N(GameState, udtParserPlugInGameState, udtParseDataGameState)
+	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
+	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
+	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
 struct udtParserPlugIn
@@ -311,6 +312,20 @@ extern "C"
 
 		// Time of the last snapshot, in milli-seconds.
 		s32 LastSnapshotTimeMs;
+	};
+
+	struct udtParseDataObituary
+	{
+		const char* AttackerName;
+		const char* TargetName;
+		const char* MeanOfDeathName;
+		const char* Reserved1;
+		s32 GameStateIndex;
+		s32 ServerTimeMs;
+		s32 AttackerIdx;
+		s32 TargetIdx;
+		s32 MeanOfDeath;
+		s32 Reserved2;
 	};
 
 #pragma pack(pop)

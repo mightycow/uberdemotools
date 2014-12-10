@@ -15,16 +15,18 @@ struct udtGamestateCallbackArg
 
 struct udtSnapshotCallbackArg
 {
-	s32 ServerTime;
-	s32 SnapshotArrayIndex;
 	idClientSnapshotBase* Snapshot;
+	idEntityStateBase** Entities;
+	s32 SnapshotArrayIndex;
+	u32 EntityCount;
+	s32 ServerTime;
 };
 
 struct udtCommandCallbackArg
 {
-	s32 CommandSequence;
-	u32 StringLength;
 	const char* String;
+	u32 StringLength;
+	s32 CommandSequence;
 };
 
 
