@@ -27,8 +27,6 @@ public:
 
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	const char* GetPlayerNameBuffer() const { return (const char*)_playerNamesAllocator.GetStartAddress(); }
-
 	ObituaryArray Obituaries;
 
 private:

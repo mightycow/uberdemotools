@@ -514,6 +514,25 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
+UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath)
+{
+	if(context == NULL || info == NULL || demoFilePath == NULL ||
+	   fragInfo == NULL || fragInfo->MinFragCount < 2 || fragInfo->TimeBetweenFragsSec == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO:
+	// ...
+
+	return (s32)udtErrorCode::OperationFailed;
+}
+
 UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -595,12 +614,6 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	   info->PlugInCount == 0 || info->PlugIns == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return udtErrorCode::InvalidArgument;
 	}
 
 	if(!ParseDemoFile(context, info, demoFilePath, true))
@@ -735,16 +748,8 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
-		}
-		else
-		{
-			const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
-			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-		}
+		const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
@@ -830,16 +835,8 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
-		}
-		else
-		{
-			const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
-			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-		}
+		const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
@@ -863,15 +860,6 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			return udtErrorCode::InvalidArgument;
-		}
-	}
-
 	udtDemoThreadAllocator threadAllocator;
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
@@ -891,6 +879,26 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	DestroyContextGroup(contextGroup);
 
 	return GetErrorCode(success, info->CancelOperation);
+}
+
+UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
+{
+	if(info == NULL || extraInfo == NULL || fragInfo == NULL ||
+	   fragInfo->MinFragCount < 2 || fragInfo->TimeBetweenFragsSec == 0 ||
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL || extraInfo->OutputErrorCodes == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO:
+	// ...
+
+	return (s32)udtErrorCode::OperationFailed;
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)
