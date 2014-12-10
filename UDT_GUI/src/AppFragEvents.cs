@@ -11,126 +11,45 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public class FragEventDisplayInfo : CuttabbleByTimeDisplayInfo
     {
-        private readonly string[] _meansOfDeath = new string[]
+        public FragEventDisplayInfo(int gsIndex, string time, string attacker, string target, string mod)
         {
-            "Unknown",
-            "Shotgun",
-            "Gauntlet",
-            "Machine Gun",
-            "Grenade Launcher",
-            "Grenade Splash",
-            "Rocket Launcher",
-            "Rocket Splash",
-            "Plasma Gun",
-            "Plasma Splash",
-            "Railgun",
-            "Lightning Gun",
-            "BFG",
-            "BFG Splash",
-            "Water",
-            "Slime",
-            "Lava",
-            "Crush",
-            "Telefrag",
-            "Fall",
-            "Suicide",
-            "Laser",
-            "Trigger",
-            "Grapple"
-        };
-
-        private class FragEventDisplayInfo : TimedEventDisplayInfo
-        {
-            public FragEventDisplayInfo(string time, string attacker, string target, string mod)
-            {
-                Time = time;
-                Attacker = attacker;
-                Target = target;
-                Mod = mod;
-            }
-
-            public override string ToString()
-            {
-                return string.Format("[{0}] <{1}> {2} <{3}>", Time, Attacker, Mod, Target);
-            }
-
-            public string Attacker { get; set; }
-            public string Target { get; set; }
-            public string Mod { get; set; }
+            GameStateIndex = gsIndex;
+            Time = time;
+            Attacker = attacker;
+            Target = target;
+            Mod = mod;
         }
 
+        public override string ToString()
+        {
+            return string.Format("[{0}] <{1}> {2} <{3}>", Time, Attacker, Mod, Target);
+        }
+
+        public string Attacker { get; set; }
+        public string Target { get; set; }
+        public string Mod { get; set; }
+    }
+
+    public class FragEventsComponent : AppComponent
+    {
+        private static RoutedCommand _cutByFragCommand = new RoutedCommand();
+        private static RoutedCommand _copyFragCommand = new RoutedCommand();
         private ListView _fragEventsListView = null;
+        private App _app = null;
 
-        private FrameworkElement CreateDemoFragTab()
+        public FrameworkElement RootControl { get; private set; }
+        public List<ListView> ListViews { get { return new List<ListView> { _fragEventsListView }; } }
+        public ComponentType Type { get { return ComponentType.FragEvents; } }
+
+        public FragEventsComponent(App app)
         {
-            var column0 = new GridViewColumn();
-            var header0 = new GridViewColumnHeader();
-            header0.Content = "Time";
-            header0.Tag = "Time";
-            column0.Header = header0;
-            column0.Width = 75;
-            column0.DisplayMemberBinding = new Binding("Time");
-
-            var column1 = new GridViewColumn();
-            var header1 = new GridViewColumnHeader();
-            header1.Content = "Attacker";
-            header1.Tag = "Attacker";
-            column1.Header = header1;
-            column1.Width = 175;
-            column1.DisplayMemberBinding = new Binding("Attacker");
-
-            var column2 = new GridViewColumn();
-            var header2 = new GridViewColumnHeader();
-            header2.Content = "Target";
-            header2.Tag = "Target";
-            column2.Header = header2;
-            column2.Width = 175;
-            column2.DisplayMemberBinding = new Binding("Target");
-
-            var column3 = new GridViewColumn();
-            var header3 = new GridViewColumnHeader();
-            header3.Content = "Mean of Death";
-            header3.Tag = "Mod";
-            column3.Header = header3;
-            column3.Width = 175;
-            column3.DisplayMemberBinding = new Binding("Mod");
-
-            var demoEventsGridView = new GridView();
-            demoEventsGridView.AllowsColumnReorder = false;
-            demoEventsGridView.Columns.Add(column0);
-            demoEventsGridView.Columns.Add(column1);
-            demoEventsGridView.Columns.Add(column2);
-            demoEventsGridView.Columns.Add(column3);
-
-            var eventsListView = new ListView();
-            _fragEventsListView = eventsListView;
-            eventsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
-            eventsListView.VerticalAlignment = VerticalAlignment.Stretch;
-            eventsListView.Margin = new Thickness(5);
-            eventsListView.View = demoEventsGridView;
-            eventsListView.SelectionMode = SelectionMode.Extended;
-            eventsListView.Foreground = new SolidColorBrush(Colors.Black);
-            InitFragEventsListViewCutBinding();
-
-            var infoPanelGroupBox = new GroupBox();
-            infoPanelGroupBox.Header = "Obituary Events";
-            infoPanelGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            infoPanelGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
-            infoPanelGroupBox.Margin = new Thickness(5);
-            infoPanelGroupBox.Content = eventsListView;
-
-            return infoPanelGroupBox;
+            _app = app;
+            RootControl = CreateDemoFragTab();
         }
 
-        private void InitFragEventsListViewCutBinding()
-        {
-            AddKeyBinding(_fragEventsListView, Key.T, _cutByFragCommand, (obj, args) => OnCutByTimeFromFragsContextClicked());
-            AddKeyBinding(_fragEventsListView, Key.C, _copyFragCommand, (obj, args) => OnCopyFromFragsContextClicked());
-        }
-
-        private void PopulateFragEventsListView(DemoInfo demoInfo)
+        public void PopulateViews(DemoInfo demoInfo)
         {
             var cutByTimeItem = new MenuItem();
             cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
@@ -160,14 +79,96 @@ namespace Uber.DemoTools
             }
         }
 
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        private FrameworkElement CreateDemoFragTab()
+        {
+            var columnGS = new GridViewColumn();
+            var headerGS = new GridViewColumnHeader();
+            headerGS.ToolTip = "GameState Index";
+            headerGS.Content = "GS";
+            headerGS.Tag = "GameStateIndex";
+            columnGS.Header = headerGS;
+            columnGS.Width = 25;
+            columnGS.DisplayMemberBinding = new Binding("GameStateIndex");
+
+            var columnTime = new GridViewColumn();
+            var headerTime = new GridViewColumnHeader();
+            headerTime.Content = "Time";
+            headerTime.Tag = "Time";
+            columnTime.Header = headerTime;
+            columnTime.Width = 75;
+            columnTime.DisplayMemberBinding = new Binding("Time");
+
+            var columnAtt = new GridViewColumn();
+            var headerAtt = new GridViewColumnHeader();
+            headerAtt.Content = "Attacker";
+            headerAtt.Tag = "Attacker";
+            columnAtt.Header = headerAtt;
+            columnAtt.Width = 165;
+            columnAtt.DisplayMemberBinding = new Binding("Attacker");
+
+            var columnTarget = new GridViewColumn();
+            var headerTarget = new GridViewColumnHeader();
+            headerTarget.Content = "Target";
+            headerTarget.Tag = "Target";
+            columnTarget.Header = headerTarget;
+            columnTarget.Width = 165;
+            columnTarget.DisplayMemberBinding = new Binding("Target");
+
+            var columnMOD = new GridViewColumn();
+            var headerMOD = new GridViewColumnHeader();
+            headerMOD.Content = "Mean of Death";
+            headerMOD.Tag = "Mod";
+            columnMOD.Header = headerMOD;
+            columnMOD.Width = 165;
+            columnMOD.DisplayMemberBinding = new Binding("Mod");
+
+            var demoEventsGridView = new GridView();
+            demoEventsGridView.AllowsColumnReorder = false;
+            demoEventsGridView.Columns.Add(columnGS);
+            demoEventsGridView.Columns.Add(columnTime);
+            demoEventsGridView.Columns.Add(columnAtt);
+            demoEventsGridView.Columns.Add(columnTarget);
+            demoEventsGridView.Columns.Add(columnMOD);
+
+            var eventsListView = new ListView();
+            _fragEventsListView = eventsListView;
+            eventsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
+            eventsListView.VerticalAlignment = VerticalAlignment.Stretch;
+            eventsListView.Margin = new Thickness(5);
+            eventsListView.View = demoEventsGridView;
+            eventsListView.SelectionMode = SelectionMode.Extended;
+            eventsListView.Foreground = new SolidColorBrush(Colors.Black);
+            InitFragEventsListViewCutBinding();
+
+            var infoPanelGroupBox = new GroupBox();
+            infoPanelGroupBox.Header = "Obituary Events";
+            infoPanelGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            infoPanelGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            infoPanelGroupBox.Margin = new Thickness(5);
+            infoPanelGroupBox.Content = eventsListView;
+
+            return infoPanelGroupBox;
+        }
+
+        private void InitFragEventsListViewCutBinding()
+        {
+            App.AddKeyBinding(_fragEventsListView, Key.T, _cutByFragCommand, (obj, args) => OnCutByTimeFromFragsContextClicked());
+            App.AddKeyBinding(_fragEventsListView, Key.C, _copyFragCommand, (obj, args) => OnCopyFromFragsContextClicked());
+        }
+
         private void OnCutByTimeFromFragsContextClicked()
         {
-            OnCutByTimeContextClicked(_fragEventsListView);
+            _app.OnCutByTimeContextClicked(_fragEventsListView);
         }
 
         private void OnCopyFromFragsContextClicked()
         {
-            CopyListViewRowsToClipboard(_fragEventsListView);
+            App.CopyListViewRowsToClipboard(_fragEventsListView);
         }
     }
 }

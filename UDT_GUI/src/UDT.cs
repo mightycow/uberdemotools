@@ -60,6 +60,7 @@ namespace Uber.DemoTools
         {
             Chat,
             GameState,
+            Obituaries,
             Count
         }
 
@@ -155,6 +156,21 @@ namespace Uber.DemoTools
 		    public Int32 LastSnapshotTimeMs;
 	    }
 
+        [StructLayout(LayoutKind.Sequential)]
+        struct udtParseDataObituary
+	    {
+		    public IntPtr AttackerName; // const char*
+            public IntPtr TargetName; // const char*
+            public IntPtr MeanOfDeathName; // const char*
+            public IntPtr Reserved1;
+            public Int32 GameStateIndex;
+            public Int32 ServerTimeMs;
+            public Int32 AttackerIdx;
+            public Int32 TargetIdx;
+            public Int32 MeanOfDeath;
+            public Int32 Reserved2;
+	    };
+
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
@@ -224,7 +240,13 @@ namespace Uber.DemoTools
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByChat(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByChatArg chatInfo);
 
-        private static UInt32[] PlugInArray = new UInt32[] { (UInt32)udtParserPlugIn.Chat, (UInt32)udtParserPlugIn.GameState };
+        // The list of plug-ins activated when loading demos.
+        private static UInt32[] PlugInArray = new UInt32[] 
+        { 
+            (UInt32)udtParserPlugIn.Chat, 
+            (UInt32)udtParserPlugIn.GameState,
+            (UInt32)udtParserPlugIn.Obituaries
+        };
 
         public static string GetVersion()
         {
@@ -519,6 +541,7 @@ namespace Uber.DemoTools
         {
             ExtractChatEvents(context, demoIdx, ref info);
             ExtractGameStateEvents(context, demoIdx, ref info);
+            ExtractObituaries(context, demoIdx, ref info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
@@ -539,9 +562,9 @@ namespace Uber.DemoTools
                 int minutes = totalSeconds / 60;
                 int seconds = totalSeconds % 60;
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var player = Marshal.PtrToStringAnsi(data.PlayerNameNoCol);
-                var message = Marshal.PtrToStringAnsi(data.MessageNoCol);
-                var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player ?? "N/A", message ?? "N/A");
+                var player = Marshal.PtrToStringAnsi(data.PlayerNameNoCol) ?? "N/A";
+                var message = Marshal.PtrToStringAnsi(data.MessageNoCol) ?? "N/A";
+                var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player, message);
                 info.ChatEvents.Add(item);
             }
         }
@@ -569,21 +592,21 @@ namespace Uber.DemoTools
 
             for(uint i = 0; i < gsEventCount; ++i)
             {
-                var gsAddress = new IntPtr(gsEvents.ToInt64() + i * sizeof(udtParseDataGameState));
-                var gsData = (udtParseDataGameState)Marshal.PtrToStructure(gsAddress, typeof(udtParseDataGameState));
-                info.GameStateFileOffsets.Add(gsData.FileOffset);
+                var address = new IntPtr(gsEvents.ToInt64() + i * sizeof(udtParseDataGameState));
+                var data = (udtParseDataGameState)Marshal.PtrToStructure(address, typeof(udtParseDataGameState));
+                info.GameStateFileOffsets.Add(data.FileOffset);
 
-                var firstSnapTime = App.FormatMinutesSeconds(gsData.FirstSnapshotTimeMs / 1000);
-                var lastSnapTime = App.FormatMinutesSeconds(gsData.LastSnapshotTimeMs / 1000);
+                var firstSnapTime = App.FormatMinutesSeconds(data.FirstSnapshotTimeMs / 1000);
+                var lastSnapTime = App.FormatMinutesSeconds(data.LastSnapshotTimeMs / 1000);
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
-                info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(gsData.FileOffset)));
+                info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
-                info.Generic.Add(Tuple.Create(space + "Matches", gsData.MatchCount.ToString()));
+                info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
   
-                var matchCount = gsData.MatchCount;
+                var matchCount = data.MatchCount;
                 for(uint j = 0; j < matchCount; ++j)
                 {
-                    var matchAddress = new IntPtr(gsData.Matches.ToInt64() + j * sizeof(udtMatchInfo));
+                    var matchAddress = new IntPtr(data.Matches.ToInt64() + j * sizeof(udtMatchInfo));
                     var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
 
                     var desc = space + "Match #" + (j + 1).ToString();
@@ -592,6 +615,33 @@ namespace Uber.DemoTools
                     var val = start + " - " + end;
                     info.Generic.Add(Tuple.Create(desc, val));
                 }
+            }
+        }
+
+        private static void ExtractObituaries(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        {
+            uint obituaryEventCount = 0;
+            IntPtr obituaryEvents = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Obituaries, ref obituaryEvents, ref obituaryEventCount) != udtErrorCode.None)
+            {
+                App.GlobalLogError("udtGetDemoDataInfo for Obituaries FAILED");
+                return;
+            }
+
+            for(uint i = 0; i < obituaryEventCount; ++i)
+            {
+                var address = new IntPtr(obituaryEvents.ToInt64() + i * sizeof(udtParseDataObituary));
+                var data = (udtParseDataObituary)Marshal.PtrToStructure(address, typeof(udtParseDataObituary));
+
+                int totalSeconds = data.ServerTimeMs / 1000;
+                int minutes = totalSeconds / 60;
+                int seconds = totalSeconds % 60;
+                var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
+                var attacker = Marshal.PtrToStringAnsi(data.AttackerName) ?? "N/A";
+                var target = Marshal.PtrToStringAnsi(data.TargetName) ?? "N/A";
+                var mod = Marshal.PtrToStringAnsi(data.MeanOfDeathName) ?? "N/A";
+                var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
+                info.FragEvents.Add(item);
             }
         }
     }
