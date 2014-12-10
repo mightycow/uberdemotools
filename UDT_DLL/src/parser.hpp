@@ -33,8 +33,6 @@ public:
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
 	void	FinishParsing();
 
-	u32	    GetAllocatedByteCount() const;
-
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 

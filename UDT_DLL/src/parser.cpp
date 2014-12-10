@@ -307,18 +307,6 @@ void udtBaseParser::FinishParsing()
 	}
 }
 
-u32 udtBaseParser::GetAllocatedByteCount() const
-{
-	const size_t arrayByteCount =
-		_inEntityBaselines.GetReservedByteCount() +
-		_inParseEntities.GetReservedByteCount() +
-		_inSnapshots.GetReservedByteCount() +
-		_inCommands.GetReservedByteCount() +
-		_inConfigStrings.GetReservedByteCount();
-
-	return (u32)arrayByteCount + _inLinearAllocator.GetCommittedByteCount();
-}
-
 void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData)
 {
 	udtCutInfo cut;
