@@ -163,6 +163,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 // @TODO: Move this.
 extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
+extern bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
 extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
 
 struct MultiThreadedProgressContext
@@ -218,6 +219,12 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
+	if(shared->JobType == (u32)udtParsingJobType::CutByFrag && shared->JobTypeSpecificInfo == NULL)
+	{
+		data->Finished = true;
+		return;
+	}
+
 	const u32 startIdx = data->FirstFileIndex;
 	const u32 endIdx = startIdx + data->FileCount;
 
@@ -248,25 +255,22 @@ static void ThreadFunction(void* userData)
 		const u64 currentJobByteCount = shared->FileSizes[i];
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(shared->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
+		bool success = false;
+		if(shared->JobType == (u32)udtParsingJobType::CutByChat)
 		{
-			errorCodes[errorCodeIdx] = (s32)udtErrorCode::InvalidArgument;
+			const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
+			success = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
 		}
-		else
+		else if(shared->JobType == (u32)udtParsingJobType::CutByFrag)
 		{
-			bool success = false;
-			if(shared->JobType == (u32)udtParsingJobType::CutByChat)
-			{
-				const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
-				success = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
-			}
-			else if(shared->JobType == (u32)udtParsingJobType::General)
-			{
-				success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
-			}
-			errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
+			const udtCutByFragArg* const fragInfo = (const udtCutByFragArg*)shared->JobTypeSpecificInfo;
+			success = CutByFrag(data->Context, &newParseInfo, fragInfo, shared->FilePaths[i]);
 		}
+		else if(shared->JobType == (u32)udtParsingJobType::General)
+		{
+			success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
+		}
+		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
 	}

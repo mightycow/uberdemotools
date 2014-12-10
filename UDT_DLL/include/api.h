@@ -258,6 +258,9 @@ extern "C"
 
 		// Positive offset from the last frag's time, in seconds.
 		u32 EndOffsetSec;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtChatEventData

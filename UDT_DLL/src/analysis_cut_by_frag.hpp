@@ -53,7 +53,7 @@ private:
 struct udtParserPlugInCutByFrag : udtBaseParserPlugIn
 {
 public:
-	udtParserPlugInCutByFrag()
+	udtParserPlugInCutByFrag(const udtCutByFragArg& info) : _info(info)
 	{
 	}
 
@@ -90,4 +90,6 @@ public:
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInCutByFrag);
+
+	const udtCutByFragArg& _info;
 };

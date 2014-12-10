@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 
 using udtParserContextRef = System.IntPtr;
 using udtParserContextGroupRef = System.IntPtr;
-using System.IO;
 
 
 namespace Uber.DemoTools
@@ -64,7 +64,7 @@ namespace Uber.DemoTools
             Count
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseArg
         {
             public IntPtr PlugIns; // u32*
@@ -78,7 +78,7 @@ namespace Uber.DemoTools
             public UInt32 FileOffset;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMultiParseArg
 	    {
 		    public IntPtr FilePaths; // const char**
@@ -86,8 +86,8 @@ namespace Uber.DemoTools
 		    public UInt32 FileCount;
 		    public UInt32 MaxThreadCount;
 	    }
-	
-        [StructLayout(LayoutKind.Sequential)]
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCut
 	    {
 		    public Int32 StartTimeMs;
@@ -96,14 +96,14 @@ namespace Uber.DemoTools
             public Int32 Reserved1;
 	    }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByTimeArg
 	    {
             public IntPtr Cuts; // const udtCut*
 		    public UInt32 CutCount;
 	    }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByChatRule
 	    {
 		    public IntPtr Pattern; // const char*
@@ -112,7 +112,7 @@ namespace Uber.DemoTools
 		    public UInt32 IgnoreColorCodes;
 	    }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByChatArg
 	    {
 		    public IntPtr Rules; // const udtCutByChatRule*
@@ -121,7 +121,18 @@ namespace Uber.DemoTools
 		    public UInt32 EndOffsetSec;
 	    }
 
-	    [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtCutByFragArg
+        {
+            public UInt32 MinFragCount;
+            public UInt32 TimeBetweenFragsSec;
+            public UInt32 TimeMode; // 0=max, 1=avg
+            public UInt32 StartOffsetSec;
+            public UInt32 EndOffsetSec;
+            public Int32 Reserved1;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat
 	    {
             public IntPtr OriginalCommand; // const char*
@@ -138,7 +149,7 @@ namespace Uber.DemoTools
             public Int32 Reserved1;
 	    }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMatchInfo
         {
             public Int32 WarmUpEndTimeMs; 
@@ -146,7 +157,7 @@ namespace Uber.DemoTools
             public Int32 MatchEndTimeMs;
         }
 
-	    [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataGameState
 	    {
 		    public IntPtr Matches; // const udtMatchInfo*
@@ -156,7 +167,7 @@ namespace Uber.DemoTools
 		    public Int32 LastSnapshotTimeMs;
 	    }
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataObituary
 	    {
 		    public IntPtr AttackerName; // const char*
@@ -211,6 +222,9 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByChat(udtParserContextRef context, ref udtParseArg info, ref udtCutByChatArg chatInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtCutDemoFileByFrag(udtParserContextRef context, ref udtParseArg info, ref udtCutByFragArg fragInfo, string demoFilePath);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -239,6 +253,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByChat(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByChatArg chatInfo);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtCutDemoFilesByFrag(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByFragArg fragInfo);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
