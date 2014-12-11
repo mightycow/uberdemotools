@@ -27,6 +27,14 @@
 static const char* VersionString = "0.3.2";
 
 
+#define UDT_ERROR_ITEM(Enum, Desc) Desc,
+static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
+{
+	UDT_ERROR_LIST(UDT_ERROR_ITEM)
+	"invalid error code"
+};
+#undef UDT_ERROR_ITEM
+
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
 static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
 {
@@ -72,6 +80,16 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 UDT_API(const char*) udtGetVersionString()
 {
 	return VersionString;
+}
+
+UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
+{
+	if(errorCode < 0 || errorCode > (s32)udtErrorCode::AfterLastError)
+	{
+		errorCode = (s32)udtErrorCode::AfterLastError;
+	}
+
+	return ErrorCodeStrings[errorCode];
 }
 
 UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)

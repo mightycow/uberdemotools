@@ -29,17 +29,23 @@
 struct udtParserContext;
 struct udtParserContextGroup;
 
+#define UDT_ERROR_LIST(N) \
+	N(None, "no error") \
+	N(InvalidArgument, "invalid argument") \
+	N(OperationFailed, "operation failed") \
+	N(OperationCanceled, "operation canceled") \
+	N(Unprocessed, "unprocessed job")
+
+#define UDT_ERROR_ITEM(Enum, Desc) Enum,
 struct udtErrorCode
 {
 	enum Id
 	{
-		None,
-		InvalidArgument,
-		OperationFailed,
-		OperationCanceled,
-		Unprocessed
+		UDT_ERROR_LIST(UDT_ERROR_ITEM)
+		AfterLastError
 	};
 };
+#undef UDT_ERROR_ITEM
 
 #define UDT_PROTOCOL_LIST(N) \
 	N(Invalid, NULL) \
@@ -388,7 +394,12 @@ extern "C"
 	//
 
 	// Returns a null-terminated string describing the library's version.
+	// Never returns NULL.
 	UDT_API(const char*) udtGetVersionString();
+
+	// Returns a null-terminated string describing the error.
+	// Never returns NULL.
+	UDT_API(const char*) udtGetErrorCodeString(s32 errorCode);
 
 	// Returns zero if not a valid protocol.
 	UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol);
