@@ -109,7 +109,7 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		}
 	}
 
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? EV_OBITUARY : EV_OBITUARY_73;
+	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		const idEntityStateBase* const ent = arg.Entities[i];
