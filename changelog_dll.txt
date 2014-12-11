@@ -1,3 +1,10 @@
+0.3.2 (11.12.2014)
+ADD: Obituaries analyzer and plug-in
+ADD: Cut by Frag API functions: udtCutDemoFileByFrag and udtCutDemoFilesByFrag
+FIX: udtContext::LogErrorAndCrash now invokes FatalError instead of the local (and uninitialized) crash handler
+FIX: Removed redundant calls to udtGetProtocolByFilePath
+FIX: Always closing open output file handles when done with cutting jobs
+
 0.3.1 (09.12.2014)
 FIX: If the VM linear allocator's reserve size isn't a multiple of the commit granularity (which itself is a page size multiple), it's made to become one
 FIX: Reserving enough address space for config string descriptors
