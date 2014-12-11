@@ -452,10 +452,11 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 	// Player connected?
 	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
 	{
-		char* name = "N/A";
+		// @NOTE: The cast is necessary because GCC fears the app will overwrite constant data.
+		char* name = (char*)"N/A";
 		if(!ParseConfigStringValueString(name, _stringAllocator, "n", configString.String))
 		{
-			name = "N/A";
+			name = (char*)"N/A";
 		}
 		else
 		{
