@@ -211,8 +211,8 @@ namespace Uber.DemoTools
             {
                 var config = _app.Config;
                 var rules = new UDT_DLL.udtCutByFragArg();
-                rules.MinFragCount = 3; // @TODO:
-                rules.TimeBetweenFragsSec = 10; // @TODO:
+                rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
+                rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
                 rules.TimeMode = 0; // @TODO:
                 rules.StartOffsetSec = (UInt32)config.ChatCutStartOffset;
                 rules.EndOffsetSec = (UInt32)config.ChatCutEndOffset;
