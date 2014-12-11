@@ -1,16 +1,13 @@
 #include "analysis_cut_by_frag.hpp"
 
 
-// @TODO:
-static const s32 playerIndex = 0;
-
-
 void udtCutByFragAnalyzer::FindCutSections()
 {
 	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
-		if(data.AttackerIdx != playerIndex || data.TargetIdx == playerIndex)
+		if(data.AttackerIdx != _analyzer.RecordingPlayerIndex || 
+		   data.TargetIdx == _analyzer.RecordingPlayerIndex)
 		{
 			continue;
 		}

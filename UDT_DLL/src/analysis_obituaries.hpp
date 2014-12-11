@@ -15,6 +15,7 @@ public:
 public:
 	udtObituariesAnalyzer()
 	{
+		RecordingPlayerIndex = -1;
 		_lastProcessedServerCommandNumber = -1;
 		_gameStateIndex = -1;
 		_playerNamesAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
@@ -28,6 +29,7 @@ public:
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
 	ObituaryArray Obituaries;
+	s32 RecordingPlayerIndex;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtObituariesAnalyzer);

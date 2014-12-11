@@ -100,6 +100,15 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		return;
 	}
 
+	if(RecordingPlayerIndex == -1)
+	{
+		idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._protocol);
+		if(ps != NULL && ps->clientNum >= 0 && ps->clientNum < 64)
+		{
+			RecordingPlayerIndex = ps->clientNum;
+		}
+	}
+
 	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? EV_OBITUARY : EV_OBITUARY_73;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
