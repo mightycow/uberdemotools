@@ -6,6 +6,8 @@
 #include "analysis_cut_by_mid_air.hpp"
 #include "analysis_cut_by_multi_rail.hpp"
 
+#include <stdlib.h>
+
 
 struct CutSection : public udtCutSection
 {

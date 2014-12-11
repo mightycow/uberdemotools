@@ -15,7 +15,6 @@ static const u32 parseOptions[] =
 { 
 	udtParserPlugIn::Chat, 
 	udtParserPlugIn::GameState 
-	, udtParserPlugIn::MidAirs
 };
 
 

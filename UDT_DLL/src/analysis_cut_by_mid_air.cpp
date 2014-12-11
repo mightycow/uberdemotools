@@ -418,7 +418,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 
 		const udtCutByMidAirArg& extraInfo = GetExtraInfo<udtCutByMidAirArg>();
 		const s32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, _protocol);
-		if(udtWeapon != (u32)-1 && !IsAllowedWeapon(udtWeapon, extraInfo.AllowedWeapons))
+		if(udtWeapon != -1 && !IsAllowedWeapon(udtWeapon, extraInfo.AllowedWeapons))
 		{
 			continue;
 		}

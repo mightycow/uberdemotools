@@ -511,9 +511,6 @@ UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseAr
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	CallbackCutDemoFileStreamCreationInfo streamInfo;
-	streamInfo.OutputFolderPath = info->OutputFolderPath;
-
 	context->Parser.SetFilePath(demoFilePath);
 
 	context->Context.LogInfo("Processing for cut by pattern: %s", demoFilePath);
