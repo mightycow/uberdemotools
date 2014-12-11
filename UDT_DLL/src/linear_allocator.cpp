@@ -3,12 +3,18 @@
 #include "assert_or_fatal.hpp"
 #include "allocator_tracking.hpp"
 
+#include <stddef.h> // For ptrdiff_t.
+
+#if !defined(offsetof)
+#	define offsetof(s, m) ((size_t)((ptrdiff_t)&reinterpret_cast<const volatile char&>((((s*)NULL)->m))))
+#endif
+
 
 static udtAllocatorTracker AllocatorTracker;
 
 void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 {
-	stats = {};
+	stats = Stats();
 
 	udtIntrusiveList* allocators = NULL;
 	AllocatorTracker.GetAllocatorList(allocators);
@@ -20,9 +26,7 @@ void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 	udtIntrusiveListNode* node = allocators->Root.Next;
 	while(node != &allocators->Root)
 	{
-#define offsetof(s, m) ((size_t)((ptrdiff_t)&reinterpret_cast<const volatile char&>((((s*)NULL)->m))))
 		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
-#undef offsetof
 		
 		++stats.AllocatorCount;
 		stats.CommittedByteCount += allocator->_committedByteCount;

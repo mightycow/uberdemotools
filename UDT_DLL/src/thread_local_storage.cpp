@@ -50,7 +50,8 @@ bool udtThreadLocalStorage::SetData(void* data)
 
 
 udtThreadLocalStorage::udtThreadLocalStorage() 
-	: _slot(PTHREAD_KEYS_MAX)
+	: _slot(0)
+	, _isValid(false)
 {
 }
 
@@ -64,14 +65,15 @@ udtThreadLocalStorage::~udtThreadLocalStorage()
 
 bool udtThreadLocalStorage::AllocateSlot()
 {
-	pthread_key_create(&_slot, NULL);
+	const bool result = pthread_key_create(&_slot, NULL) == 0;
+	_isValid = result;
 
-	return IsValid();
+	return result;
 }
 
 bool udtThreadLocalStorage::IsValid() const
 {
-	return _slot != PTHREAD_KEYS_MAX;
+	return _isValid;
 }
 
 void* udtThreadLocalStorage::GetData()

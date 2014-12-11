@@ -156,7 +156,7 @@ public:
 	explicit udtVMArrayWithAlloc(uptr reservedByteCount)
 	{
 		_allocator.Init(reservedByteCount);
-		SetAllocator(_allocator);
+		udtVMArray<T>::SetAllocator(_allocator);
 	}
 
 	udtVMArrayWithAlloc()
@@ -166,7 +166,7 @@ public:
 	void Init(uptr reservedByteCount)
 	{
 		_allocator.Init(reservedByteCount);
-		SetAllocator(_allocator);
+		udtVMArray<T>::SetAllocator(_allocator);
 	}
 
 private:

@@ -90,7 +90,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)
 	{
-		Threads[i].AllocStats = {};
+		Threads[i].AllocStats = udtVMLinearAllocator::Stats();
 		Threads[i].Finished = false;
 		Threads[i].Stop = false;
 		Threads[i].Result = false;
@@ -385,7 +385,7 @@ thread_clean_up:
 
 	if(success && (parseInfo->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
 	{
-		udtVMLinearAllocator::Stats allocStats = {};
+		udtVMLinearAllocator::Stats allocStats = udtVMLinearAllocator::Stats();
 		for(u32 i = 0; i < threadCount; ++i)
 		{
 			const udtVMLinearAllocator::Stats& threadStats = threadInfo.Threads[i].AllocStats;

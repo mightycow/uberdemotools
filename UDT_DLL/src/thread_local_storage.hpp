@@ -26,5 +26,6 @@ private:
 	u32 _slot; // DWORD
 #elif defined(UDT_LINUX)
 	pthread_key_t _slot;
+	bool _isValid;
 #endif
 };
