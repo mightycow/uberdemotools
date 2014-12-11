@@ -183,7 +183,7 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 	{
 		for(u32 i = 0; i < folders.GetSize(); ++i)
 		{
-			udtString subFolderPath = NULL;
+			udtString subFolderPath;
 			if(!udtPath::Combine(subFolderPath, *query.TempAllocator, folderPath, folders[i]))
 			{
 				return false;
