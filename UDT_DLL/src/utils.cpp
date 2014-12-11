@@ -370,7 +370,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		elementsRead = file.Read(&inServerMessageSequence, 4, 1);
 		if(elementsRead != 1)
 		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName);
+			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
 			break;
 		}
 
@@ -379,7 +379,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		elementsRead = file.Read(&inMsg.Buffer.cursize, 4, 1);
 		if(elementsRead != 1)
 		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName);
+			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
 			break;
 		}
 
@@ -390,7 +390,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 
 		if(inMsg.Buffer.cursize > inMsg.Buffer.maxsize)
 		{
-			context->LogError("Demo file %s has a message length greater than MAX_SIZE", parser._inFileName);
+			context->LogError("Demo file %s has a message length greater than MAX_SIZE", parser._inFileName.String);
 			parser.FinishParsing(false);
 			return false;
 		}
@@ -398,7 +398,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		elementsRead = file.Read(inMsg.Buffer.data, inMsg.Buffer.cursize, 1);
 		if(elementsRead != 1)
 		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName);
+			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
 			break;
 		}
 
