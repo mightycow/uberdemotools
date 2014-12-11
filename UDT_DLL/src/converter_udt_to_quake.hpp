@@ -69,8 +69,8 @@ public:
 	void MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld);
 
 private:
-	idEntityStateBase& GetEntity(s32 idx) { return *(idEntityStateBase*)&_inReadEntities[idx * _protocolSizeOfEntityState]; }
-	idEntityStateBase& GetBaseline(s32 idx) { return *(idEntityStateBase*)&_inBaselineEntities[idx * _protocolSizeOfPlayerState]; }
+	idEntityStateBase* GetEntity(s32 idx) { return (idEntityStateBase*)&_inReadEntities[idx * _protocolSizeOfEntityState]; }
+	idEntityStateBase* GetBaseline(s32 idx) { return (idEntityStateBase*)&_inBaselineEntities[idx * _protocolSizeOfPlayerState]; }
 
 	// @TODO: Re-order the fields.
 
