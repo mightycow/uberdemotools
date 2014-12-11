@@ -17,7 +17,7 @@ public:
 	typedef udtVMArray<CutSection> CutSectionVector;
 
 public:
-	udtCutByFragAnalyzer()
+	udtCutByFragAnalyzer(const udtCutByFragArg& info) : _info(info)
 	{
 	}
 
@@ -46,6 +46,7 @@ private:
 		s32 ServerTimeMs;
 	};
 
+	const udtCutByFragArg& _info;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
 };
@@ -53,7 +54,7 @@ private:
 struct udtParserPlugInCutByFrag : udtBaseParserPlugIn
 {
 public:
-	udtParserPlugInCutByFrag(const udtCutByFragArg& info) : _info(info)
+	udtParserPlugInCutByFrag(const udtCutByFragArg& info) : Analyzer(info)
 	{
 	}
 
@@ -90,6 +91,4 @@ public:
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInCutByFrag);
-
-	const udtCutByFragArg& _info;
 };

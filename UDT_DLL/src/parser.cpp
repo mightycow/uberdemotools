@@ -260,7 +260,8 @@ bool udtBaseParser::ParseServerMessage()
 			_outWriteMessage = true;
 			_outWriteFirstMessage = _outWriteMessage && !wroteMessage;
 		}
-		else if(_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs)
+		else if((_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs) ||
+				(_inGameStateIndex > cut.GameStateIndex && _outWriteMessage))
 		{
 			WriteLastMessage();
 			_outWriteMessage = false;
@@ -299,8 +300,25 @@ bool udtBaseParser::ParseServerMessage()
 	return true;
 }
 
-void udtBaseParser::FinishParsing()
+void udtBaseParser::FinishParsing(bool success)
 {
+	// Close any output file stream that is still open, if any.
+	if(!_cuts.IsEmpty() && _outWriteMessage)
+	{
+		WriteLastMessage();
+		_outWriteMessage = false;
+		_outWriteFirstMessage = false;
+		_outServerCommandSequence = 0;
+		_outSnapshotsWritten = 0;
+		_cuts[0].Stream->~udtStream();
+		_cuts.Clear();
+	}
+
+	if(!success)
+	{
+		return;
+	}
+
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 	{
 		PlugIns[i]->FinishAnalysis();

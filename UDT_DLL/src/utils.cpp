@@ -712,6 +712,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	{
 		if(cancelOperation != NULL && *cancelOperation != 0)
 		{
+			parser.FinishParsing(false);
 			return false;
 		}
 
@@ -741,7 +742,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		if(inMsg.Buffer.cursize > inMsg.Buffer.maxsize)
 		{
 			context->LogError("Demo file %s has a message length greater than MAX_SIZE", parser._inFileName);
-			parser.FinishParsing();
+			parser.FinishParsing(false);
 			return false;
 		}
 
@@ -767,7 +768,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		}
 	}
 
-	parser.FinishParsing();
+	parser.FinishParsing(true);
 
 	return true;
 }

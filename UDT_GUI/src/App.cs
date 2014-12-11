@@ -37,6 +37,8 @@ namespace Uber.DemoTools
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
+        public int FragCutStartOffset = 10;
+        public int FragCutEndOffset = 10;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -218,6 +220,12 @@ namespace Uber.DemoTools
             cutChatTab.Header = "Cut by Chat";
             cutChatTab.Content = cutByChat.RootControl;
 
+            var cutByFrag = new CutByFragComponent(this);
+            _appComponents.Add(cutByFrag);
+            var cutFragTab = new TabItem();
+            cutFragTab.Header = "Cut by Frag";
+            cutFragTab.Content = cutByFrag.RootControl;
+
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
             var demoFragsTab = new TabItem();
@@ -241,6 +249,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demoFragsTab);
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
+            tabControl.Items.Add(cutFragTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 

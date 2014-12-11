@@ -122,7 +122,7 @@ namespace Uber.DemoTools
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct udtCutByFragArg
+        public struct udtCutByFragArg
         {
             public UInt32 MinFragCount;
             public UInt32 TimeBetweenFragsSec;
@@ -447,6 +447,40 @@ namespace Uber.DemoTools
             for(var i = 0; i < rulesArray.Length; ++i)
             {
                 Marshal.FreeHGlobal(rulesArray[i].Pattern);
+            }
+
+            return result == udtErrorCode.None;
+        }
+
+        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, int maxThreadCount)
+        {
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+            }
+
+            parseArg.PlugInCount = 0;
+            parseArg.PlugIns = IntPtr.Zero;
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var result = udtCutDemoFilesByFrag(ref parseArg, ref multiParseArg, ref rules);
+
+            App.GlobalLogInfo("udtCutDemoFilesByFrag: " + result.ToString());
+
+            pinnedFilePaths.Free();
+            pinnedErrorCodes.Free();
+            for(var i = 0; i < filePathArray.Length; ++i)
+            {
+                Marshal.FreeHGlobal(filePathArray[i]);
             }
 
             return result == udtErrorCode.None;

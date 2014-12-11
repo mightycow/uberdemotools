@@ -159,7 +159,7 @@ namespace Uber.DemoTools
             _endTimeOffsetEditBox = endTimeOffsetEditBox;
             endTimeOffsetEditBox.Width = 40;
             endTimeOffsetEditBox.Text = _app.Config.ChatCutEndOffset.ToString();
-            endTimeOffsetEditBox.ToolTip = "How many seconds after the chat event do we start the cut?";
+            endTimeOffsetEditBox.ToolTip = "How many seconds after the chat event do we end the cut?";
 
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));

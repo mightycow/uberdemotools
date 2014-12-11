@@ -1,9 +1,8 @@
 #include "analysis_cut_by_frag.hpp"
 
 
+// @TODO:
 static const s32 playerIndex = 0;
-static const s32 maxTimeBetweenFragsMs = 5000;
-static const u32 minFragCount = 3;
 
 
 void udtCutByFragAnalyzer::FindCutSections()
@@ -24,7 +23,7 @@ void udtCutByFragAnalyzer::FindCutSections()
 		{
 			const Frag previousMatch = _frags[_frags.GetSize() - 1];
 			if(data.GameStateIndex != previousMatch.GameStateIndex ||
-			   data.ServerTimeMs > previousMatch.ServerTimeMs + maxTimeBetweenFragsMs)
+			   data.ServerTimeMs > previousMatch.ServerTimeMs + (s32)(_info.TimeBetweenFragsSec * 1000))
 			{
 				AddCurrentSectionIfValid();
 			}
@@ -39,7 +38,7 @@ void udtCutByFragAnalyzer::FindCutSections()
 void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 {
 	const u32 fragCount = _frags.GetSize();
-	if(fragCount < 2 || fragCount < minFragCount)
+	if(fragCount < 2 || fragCount < _info.MinFragCount)
 	{
 		_frags.Clear();
 		return;
@@ -47,8 +46,8 @@ void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 
 	CutSection cut;
 	cut.GameStateIndex = _frags[0].GameStateIndex;
-	cut.StartTimeMs = _frags[0].ServerTimeMs;
-	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs;
+	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
+	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);
 	CutSections.Add(cut);
 
 	_frags.Clear();

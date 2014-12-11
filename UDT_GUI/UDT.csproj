@@ -106,6 +106,7 @@
 	<Compile Include="src\AppTimeCut.cs" />
 	<Compile Include="src\AppChatCut.cs" />
 	<Compile Include="src\AppFragEvents.cs" />
+	<Compile Include="src\AppFragCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
