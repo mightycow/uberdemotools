@@ -49,6 +49,7 @@ struct CutByChatConfig
 		RecursiveSearch = false;
 		UseCustomOutputFolder = false;
 		CustomOutputFolder = NULL;
+		ChatRules.Init(1 << 16);
 	}
 
 	int MaxThreadCount;
@@ -57,7 +58,7 @@ struct CutByChatConfig
 	bool RecursiveSearch;
 	bool UseCustomOutputFolder;
 	const char* CustomOutputFolder;
-	udtVMArray<udtCutByChatRule> ChatRules;
+	udtVMArrayWithAlloc<udtCutByChatRule> ChatRules;
 };
 
 
@@ -127,7 +128,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
 
-	udtVMArray<const char*> lines;
+	udtVMArrayWithAlloc<const char*> lines(1 << 16);
 	if(!StringSplitLines(lines, (char*)fileData))
 	{
 		return false;
@@ -289,8 +290,8 @@ static bool CutByChat(udtParserContext* context, const char* filePath, const Cut
 
 static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByChatConfig& config)
 {
-	udtVMArray<const char*> filePaths;
-	udtVMArray<s32> errorCodes;
+	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
+	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
 	const u32 fileCount = files.GetSize();
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
@@ -437,7 +438,7 @@ int main(int argc, char** argv)
 			return CutByChat(context, argv[1], config) ? 0 : 666;
 		}
 
-		udtVMArray<udtFileInfo> files;
+		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
 		udtVMLinearAllocator persistAlloc;
 		udtVMLinearAllocator tempAlloc;
 		persistAlloc.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
