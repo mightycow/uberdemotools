@@ -46,7 +46,7 @@ udtString udtString::NewCloneFromRef(udtVMLinearAllocator& allocator, const udtS
 udtString udtString::NewEmptyConstant()
 {
 	udtString string;
-	string.String = "";
+	string.String = (char*)""; // We're being naughty.
 	string.Length = 0;
 	string.ReservedBytes = 0;
 
