@@ -11,6 +11,7 @@ struct udtParsingJobType
 	{
 		General,
 		CutByChat,
+		CutByFrag,
 		Count
 	};
 };

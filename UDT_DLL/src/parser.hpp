@@ -31,9 +31,7 @@ public:
 	void	Destroy();
 
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
-	void	FinishParsing();
-
-	u32	    GetAllocatedByteCount() const;
+	void	FinishParsing(bool success);
 
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
@@ -101,6 +99,7 @@ public:
 	typedef udtVMArray<u8> SnapshotVector;
 	typedef udtVMArray<udtBaseParserPlugIn*> PlugInVector;
 	typedef udtVMArray<u32> FileOffsetVector;
+	typedef udtVMArray<idEntityStateBase*> EntityPointerVector;
 
 public:
 	// General.
@@ -134,6 +133,7 @@ public:
 	udtVMLinearAllocator _inLinearAllocator;
 	SnapshotVector _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
 	idLargestClientSnapshot _inSnapshot;
+	EntityPointerVector _inParsedEntities; // The entities that were read in the last call to ParsePacketEntities.
 
 	// Output.
 	CutVector _cuts;

@@ -37,6 +37,16 @@ namespace Uber.DemoTools
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
+        public int FragCutStartOffset = 10;
+        public int FragCutEndOffset = 10;
+        public int FragCutMinFragCount = 3;
+        public int FragCutTimeBetweenFrags = 5;
+    }
+
+    public class CuttabbleByTimeDisplayInfo
+    {
+        public int GameStateIndex { get; set; }
+        public string Time { get; set; }
     }
 
     public class DemoInfo
@@ -45,13 +55,14 @@ namespace Uber.DemoTools
         public string FilePath = "?";
         public string Protocol = "?";
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
+        public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
     }
 
     public class App
     {
-        private const string GuiVersion = "0.3.2";
+        private const string GuiVersion = "0.3.3";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -211,6 +222,18 @@ namespace Uber.DemoTools
             cutChatTab.Header = "Cut by Chat";
             cutChatTab.Content = cutByChat.RootControl;
 
+            var cutByFrag = new CutByFragComponent(this);
+            _appComponents.Add(cutByFrag);
+            var cutFragTab = new TabItem();
+            cutFragTab.Header = "Cut by Frag";
+            cutFragTab.Content = cutByFrag.RootControl;
+
+            var fragEvents = new FragEventsComponent(this);
+            _appComponents.Add(fragEvents);
+            var demoFragsTab = new TabItem();
+            demoFragsTab.Header = "Frags";
+            demoFragsTab.Content = fragEvents.RootControl;
+
             var settings = new AppSettingsComponent(this);
             _appComponents.Add(settings);
             var settingsTab = new TabItem();
@@ -225,8 +248,10 @@ namespace Uber.DemoTools
             tabControl.Items.Add(manageDemosTab);
             tabControl.Items.Add(demosTab);
             tabControl.Items.Add(demoChatTab);
+            tabControl.Items.Add(demoFragsTab);
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
+            tabControl.Items.Add(cutFragTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -1414,7 +1439,7 @@ namespace Uber.DemoTools
                     continue;
                 }
 
-                var info = listViewItem.Content as ChatEventDisplayInfo;
+                var info = listViewItem.Content as CuttabbleByTimeDisplayInfo;
                 if(info == null)
                 {
                     continue;
@@ -1440,8 +1465,24 @@ namespace Uber.DemoTools
             endTime += endOffset;
 
             cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
-            
-            _tabControl.SelectedIndex = 3;
+
+            var tabIdx = 0;
+            foreach(var item in _tabControl.Items)
+            {
+                var tabItem = item as TabItem;
+                if(tabItem == null)
+                {
+                    continue;
+                }
+
+                if(tabItem.Content == cutByTimeComponent.RootControl)
+                {
+                    _tabControl.SelectedIndex = tabIdx;
+                    break;
+                }
+
+                ++tabIdx;                
+            }
         }
 
         public static void CopyListViewRowsToClipboard(ListView listView)
@@ -1661,6 +1702,20 @@ namespace Uber.DemoTools
             }
 
             return _mainThreadContext;
+        }
+
+        public static void AddKeyBinding(UIElement element, Key key, RoutedCommand command, ExecutedRoutedEventHandler callback)
+        {
+            var inputGesture = new KeyGesture(key, ModifierKeys.Control);
+            var inputBinding = new KeyBinding(command, inputGesture);
+
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = command;
+            commandBinding.Executed += callback;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
+
+            element.InputBindings.Add(inputBinding);
+            element.CommandBindings.Add(commandBinding);
         }
     }
 }

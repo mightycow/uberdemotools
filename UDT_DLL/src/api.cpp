@@ -9,6 +9,7 @@
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
 #include "analysis_cut_by_chat.hpp"
+#include "analysis_cut_by_frag.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -23,8 +24,16 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.3.1";
+static const char* VersionString = "0.3.2";
 
+
+#define UDT_ERROR_ITEM(Enum, Desc) Desc,
+static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
+{
+	UDT_ERROR_LIST(UDT_ERROR_ITEM)
+	"invalid error code"
+};
+#undef UDT_ERROR_ITEM
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
 static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
@@ -71,6 +80,16 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 UDT_API(const char*) udtGetVersionString()
 {
 	return VersionString;
+}
+
+UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
+{
+	if(errorCode < 0 || errorCode > (s32)udtErrorCode::AfterLastError)
+	{
+		errorCode = (s32)udtErrorCode::AfterLastError;
+	}
+
+	return ErrorCodeStrings[errorCode];
 }
 
 UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)
@@ -514,6 +533,128 @@ UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
+static bool GetCutByFragSections(udtParserContext* context, udtParserPlugInCutByFrag& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath)
+{
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(filePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(filePath);
+	context->Parser.AddPlugIn(&plugIn);
+
+	context->Context.LogInfo("Processing for frag analysis: %s", filePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+// @TODO: Move this.
+bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath)
+{
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	udtParserPlugInCutByFrag plugIn(*fragInfo);
+	if(!GetCutByFragSections(context, plugIn, protocol, info, demoFilePath))
+	{
+		return false;
+	}
+
+	if(plugIn.Analyzer.CutSections.IsEmpty())
+	{
+		return true;
+	}
+
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	const s32 gsIndex = plugIn.Analyzer.CutSections[0].GameStateIndex;
+	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
+	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, gsIndex))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(demoFilePath);
+
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
+
+	const udtCutByFragAnalyzer::CutSectionVector& sections = plugIn.Analyzer.CutSections;
+	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
+	{
+		const udtCutByFragAnalyzer::CutSection& section = sections[i];
+		context->Parser.AddCut(section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
+	}
+
+	context->Context.LogInfo("Processing for frag cut(s): %s", demoFilePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	context->Context.SetCallbacks(info->MessageCb, NULL, NULL);
+	const bool result = RunParser(context->Parser, file, info->CancelOperation);
+	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
+
+	return result;
+}
+
+UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath)
+{
+	if(context == NULL || info == NULL || demoFilePath == NULL ||
+	   fragInfo == NULL || fragInfo->MinFragCount < 2 || fragInfo->TimeBetweenFragsSec == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(!CutByFrag(context, info, fragInfo, demoFilePath))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::OperationFailed;
+}
+
 UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -595,12 +736,6 @@ UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info
 	   info->PlugInCount == 0 || info->PlugIns == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return udtErrorCode::InvalidArgument;
 	}
 
 	if(!ParseDemoFile(context, info, demoFilePath, true))
@@ -735,16 +870,8 @@ static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtPa
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
-		}
-		else
-		{
-			const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
-			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-		}
+		const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
@@ -830,16 +957,8 @@ static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udt
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::InvalidArgument;
-		}
-		else
-		{
-			const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
-			extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-		}
+		const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
@@ -863,15 +982,6 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const udtProtocol::Id protocol = udtGetProtocolByFilePath(extraInfo->FilePaths[i]);
-		if(protocol == udtProtocol::Invalid)
-		{
-			return udtErrorCode::InvalidArgument;
-		}
-	}
-
 	udtDemoThreadAllocator threadAllocator;
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
@@ -887,6 +997,103 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 
 	udtMultiThreadedParsing parser;
 	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByChat, chatInfo);
+
+	DestroyContextGroup(contextGroup);
+
+	return GetErrorCode(success, info->CancelOperation);
+}
+
+static s32 udtCutDemoFilesByFrag_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
+{
+	udtParserContext* context = udtCreateContext();
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	udtTimer timer;
+	timer.Start();
+
+	udtVMArray<u64> fileSizes;
+	fileSizes.Resize(extraInfo->FileCount);
+
+	u64 totalByteCount = 0;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
+		fileSizes[i] = byteCount;
+		totalByteCount += byteCount;
+	}
+
+	SingleThreadProgressContext progressContext;
+	progressContext.Timer = &timer;
+	progressContext.UserCallback = info->ProgressCb;
+	progressContext.UserData = info->ProgressContext;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.TotalByteCount = totalByteCount;
+
+	udtParseArg newInfo = *info;
+	newInfo.ProgressCb = &SingleThreadProgressCallback;
+	newInfo.ProgressContext = &progressContext;
+
+	context->InputIndices.Resize(extraInfo->FileCount);
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		context->InputIndices[i] = i;
+		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
+	}
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
+		{
+			break;
+		}
+
+		const u64 jobByteCount = fileSizes[i];
+		progressContext.CurrentJobByteCount = jobByteCount;
+
+		const bool success = CutByFrag(context, &newInfo, fragInfo, extraInfo->FilePaths[i]);
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
+
+		progressContext.ProcessedByteCount += jobByteCount;
+	}
+
+	udtDestroyContext(context);
+
+	return GetErrorCode(true, info->CancelOperation);
+}
+
+UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
+{
+	if(info == NULL || extraInfo == NULL || fragInfo == NULL ||
+	   fragInfo->MinFragCount < 2 || fragInfo->TimeBetweenFragsSec == 0 ||
+	   extraInfo->FileCount == 0 || extraInfo->FilePaths == NULL || extraInfo->OutputErrorCodes == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(info->OutputFolderPath != NULL && !IsValidDirectory(info->OutputFolderPath))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
+	{
+		return udtCutDemoFilesByFrag_SingleThread(info, extraInfo, fragInfo);
+	}
+
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtCutDemoFilesByFrag_SingleThread(info, extraInfo, fragInfo);
+	}
+
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByFrag, fragInfo);
 
 	DestroyContextGroup(contextGroup);
 

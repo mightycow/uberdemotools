@@ -43,7 +43,6 @@ public:
 private:
 	udtMessageCallback      _messageCallback;  // Can be NULL.
 	udtProgressCallback     _progressCallback; // Can be NULL.
-	udtCrashCallback        _crashCallback;    // Can *NOT* be NULL.
 	void*                   _progressContext;  // Can be NULL.
 	bool					_huffmanInitialized;
 };

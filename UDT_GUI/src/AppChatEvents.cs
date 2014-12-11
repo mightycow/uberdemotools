@@ -10,8 +10,8 @@ using System.Windows.Media;
 
 
 namespace Uber.DemoTools
-{    
-    public class ChatEventDisplayInfo
+{
+    public class ChatEventDisplayInfo : CuttabbleByTimeDisplayInfo
     {
         public ChatEventDisplayInfo(int gsIndex, string time, string player, string message)
         {
@@ -26,8 +26,6 @@ namespace Uber.DemoTools
             return string.Format("[{0}] <{1}> {2}", Time, Player, Message);
         }
 
-        public int GameStateIndex { get; set; }
-        public string Time { get; set; }
         public string Player { get; set; }
         public string Message { get; set; }
     }
@@ -222,7 +220,7 @@ namespace Uber.DemoTools
             InitChatEventsListViewCutBinding();
 
             var infoPanelGroupBox = new GroupBox();
-            infoPanelGroupBox.Header = "Demo Chat Events";
+            infoPanelGroupBox.Header = "Chat Events";
             infoPanelGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             infoPanelGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
             infoPanelGroupBox.Margin = new Thickness(5);
@@ -231,24 +229,10 @@ namespace Uber.DemoTools
             return infoPanelGroupBox;
         }
 
-        private static void AddKeyBinding(UIElement element, Key key, RoutedCommand command, ExecutedRoutedEventHandler callback)
-        {
-            var inputGesture = new KeyGesture(key, ModifierKeys.Control);
-            var inputBinding = new KeyBinding(command, inputGesture);
-
-            var commandBinding = new CommandBinding();
-            commandBinding.Command = command;
-            commandBinding.Executed += callback;
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
-
-            element.InputBindings.Add(inputBinding);
-            element.CommandBindings.Add(commandBinding);
-        }
-
         private void InitChatEventsListViewCutBinding()
         {
-            AddKeyBinding(_chatEventsListView, Key.T, _cutByTimeCommand, (obj, args) => OnCutByTimeFromChatContextClicked());
-            AddKeyBinding(_chatEventsListView, Key.C, _copyChatCommand, (obj, args) => OnCopyFromChatContextClicked());
+            App.AddKeyBinding(_chatEventsListView, Key.T, _cutByTimeCommand, (obj, args) => OnCutByTimeFromChatContextClicked());
+            App.AddKeyBinding(_chatEventsListView, Key.C, _copyChatCommand, (obj, args) => OnCopyFromChatContextClicked());
         }
 
         private void OnCutByTimeFromChatContextClicked()

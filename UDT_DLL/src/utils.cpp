@@ -30,9 +30,8 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 	fprintf(file, "\n");
 }
 
-void CallbackConsoleProgress(f32 progress, void*)
+void CallbackConsoleProgress(f32, void*)
 {
-	printf("Progress: %f\n", progress);
 }
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
@@ -712,6 +711,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	{
 		if(cancelOperation != NULL && *cancelOperation != 0)
 		{
+			parser.FinishParsing(false);
 			return false;
 		}
 
@@ -741,7 +741,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		if(inMsg.Buffer.cursize > inMsg.Buffer.maxsize)
 		{
 			context->LogError("Demo file %s has a message length greater than MAX_SIZE", parser._inFileName);
-			parser.FinishParsing();
+			parser.FinishParsing(false);
 			return false;
 		}
 
@@ -767,7 +767,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 		}
 	}
 
-	parser.FinishParsing();
+	parser.FinishParsing(true);
 
 	return true;
 }

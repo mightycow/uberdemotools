@@ -240,10 +240,16 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 		return false;
 	}
 
-	const bool result = udtCutDemoFileByTime(context, &info, &cutInfo, filePath) == udtErrorCode::None;
+	const s32 result = udtCutDemoFileByTime(context, &info, &cutInfo, filePath);
 	udtDestroyContext(context);
+	if(result == udtErrorCode::None)
+	{
+		return true;
+	}
 
-	return result;
+	fprintf(stderr, "udtCutDemoFileByTime failed with error: %s\n", udtGetErrorCodeString(result));
+
+	return false;
 }
 
 static bool CutByChat(udtParserContext* context, const char* filePath, const CutByChatConfig& config)
@@ -260,14 +266,24 @@ static bool CutByChat(udtParserContext* context, const char* filePath, const Cut
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
-	return udtCutDemoFileByChat(context, &info, &chatInfo, filePath) == udtErrorCode::None;
+	const s32 result = udtCutDemoFileByChat(context, &info, &chatInfo, filePath);
+	if(result == udtErrorCode::None)
+	{
+		return true;
+	}
+
+	fprintf(stderr, "udtCutDemoFileByChat failed with error: %s\n", udtGetErrorCodeString(result));
+
+	return false;
 }
 
 static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByChatConfig& config)
 {
 	udtVMArray<const char*> filePaths;
+	udtVMArray<s32> errorCodes;
 	const u32 fileCount = files.GetSize();
 	filePaths.Resize(fileCount);
+	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		filePaths[i] = files[i].Path;
@@ -282,6 +298,7 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	udtMultiParseArg threadInfo;
 	memset(&threadInfo, 0, sizeof(threadInfo));
 	threadInfo.FilePaths = filePaths.GetStartAddress();
+	threadInfo.OutputErrorCodes = errorCodes.GetStartAddress();
 	threadInfo.FileCount = fileCount;
 	threadInfo.MaxThreadCount = (u32)config.MaxThreadCount;
 
@@ -291,7 +308,29 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
-	return udtCutDemoFilesByChat(&info, &threadInfo, &chatInfo) == udtErrorCode::None;
+	const s32 result = udtCutDemoFilesByChat(&info, &threadInfo, &chatInfo);
+
+	udtVMLinearAllocator tempAllocator;
+	for(u32 i = 0; i < fileCount; ++i)
+	{
+		if(errorCodes[i] != (s32)udtErrorCode::None)
+		{
+			char* fileName = NULL;
+			tempAllocator.Clear();
+			GetFileName(fileName, tempAllocator, filePaths[i]);
+
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName != NULL ? fileName : "?", udtGetErrorCodeString(errorCodes[i]));
+		}
+	}
+
+	if(result == udtErrorCode::None)
+	{
+		return true;
+	}
+
+	fprintf(stderr, "udtCutDemoFilesByChat failed with error: %s\n", udtGetErrorCodeString(result));
+
+	return false;
 }
 
 static void PrintHelp()
@@ -394,7 +433,11 @@ int main(int argc, char** argv)
 
 		udtTimer timer;
 		timer.Start();
-		const bool success = CutByChatMultiple(files, config);
+		if(!CutByChatMultiple(files, config))
+		{
+			return 999;
+		}
+
 		timer.Stop();
 		u64 totalByteCount = 0;
 		for(u32 i = 0, count = files.GetSize(); i < count; ++i)
@@ -406,7 +449,7 @@ int main(int argc, char** argv)
 		const f64 megs = (f64)totalByteCount / (f64)(1 << 20);
 		printf("Throughput: %.1f MB/s\n", (float)(megs / elapsedSec));
 
-		return success ? 0 : 999;
+		return 0;
 	}
 
 	printf("Four arguments, enabling cut by time.\n");

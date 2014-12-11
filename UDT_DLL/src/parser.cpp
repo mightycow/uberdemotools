@@ -260,7 +260,8 @@ bool udtBaseParser::ParseServerMessage()
 			_outWriteMessage = true;
 			_outWriteFirstMessage = _outWriteMessage && !wroteMessage;
 		}
-		else if(_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs)
+		else if((_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs) ||
+				(_inGameStateIndex > cut.GameStateIndex && _outWriteMessage))
 		{
 			WriteLastMessage();
 			_outWriteMessage = false;
@@ -299,24 +300,29 @@ bool udtBaseParser::ParseServerMessage()
 	return true;
 }
 
-void udtBaseParser::FinishParsing()
+void udtBaseParser::FinishParsing(bool success)
 {
+	// Close any output file stream that is still open, if any.
+	if(!_cuts.IsEmpty() && _outWriteMessage)
+	{
+		WriteLastMessage();
+		_outWriteMessage = false;
+		_outWriteFirstMessage = false;
+		_outServerCommandSequence = 0;
+		_outSnapshotsWritten = 0;
+		_cuts[0].Stream->~udtStream();
+		_cuts.Clear();
+	}
+
+	if(!success)
+	{
+		return;
+	}
+
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 	{
 		PlugIns[i]->FinishAnalysis();
 	}
-}
-
-u32 udtBaseParser::GetAllocatedByteCount() const
-{
-	const size_t arrayByteCount =
-		_inEntityBaselines.GetReservedByteCount() +
-		_inParseEntities.GetReservedByteCount() +
-		_inSnapshots.GetReservedByteCount() +
-		_inCommands.GetReservedByteCount() +
-		_inConfigStrings.GetReservedByteCount();
-
-	return (u32)arrayByteCount + _inLinearAllocator.GetCommittedByteCount();
 }
 
 void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData)
@@ -681,6 +687,8 @@ void udtBaseParser::ParseSnapshot()
 		info.ServerTime = _inServerTime;
 		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
 		info.Snapshot = &newSnap;
+		info.Entities = _inParsedEntities.GetStartAddress();
+		info.EntityCount = _inParsedEntities.GetSize();
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{
@@ -737,6 +745,8 @@ void udtBaseParser::WriteGameState()
 
 void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
+	_inParsedEntities.Clear();
+
 	newframe->parseEntitiesNum = _inParseEntitiesNum;
 	newframe->numEntities = 0;
 
@@ -933,7 +943,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 //
 void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged)
 {
-	// Save the parsed entity state s32o the big circular buffer so
+	// Save the parsed entity state into the big circular buffer so
 	// it can be used as the source for a later delta.
 	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (MAX_PARSE_ENTITIES-1));
 
@@ -943,7 +953,10 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	} 
 	else 
 	{
-		msg.ReadDeltaEntity(old, state, newnum);
+		if(msg.ReadDeltaEntity(old, state, newnum))
+		{
+			_inParsedEntities.Add(state);
+		}
 	}
 
 	// The entity was delta removed?

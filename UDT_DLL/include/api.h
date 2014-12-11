@@ -29,17 +29,23 @@
 struct udtParserContext;
 struct udtParserContextGroup;
 
+#define UDT_ERROR_LIST(N) \
+	N(None, "no error") \
+	N(InvalidArgument, "invalid argument") \
+	N(OperationFailed, "operation failed") \
+	N(OperationCanceled, "operation canceled") \
+	N(Unprocessed, "unprocessed job")
+
+#define UDT_ERROR_ITEM(Enum, Desc) Enum,
 struct udtErrorCode
 {
 	enum Id
 	{
-		None,
-		InvalidArgument,
-		OperationFailed,
-		OperationCanceled,
-		Unprocessed
+		UDT_ERROR_LIST(UDT_ERROR_ITEM)
+		AfterLastError
 	};
 };
+#undef UDT_ERROR_ITEM
 
 #define UDT_PROTOCOL_LIST(N) \
 	N(Invalid, NULL) \
@@ -87,8 +93,9 @@ struct udtCrashType
 // 2. plug-in type (internal)
 // 3. plug-in data type (for the user)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,      udtParserPlugInChat,      udtParseDataChat) \
-	N(GameState, udtParserPlugInGameState, udtParseDataGameState)
+	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
+	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
+	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
 struct udtParserPlugIn
@@ -235,6 +242,33 @@ extern "C"
 		u32 EndOffsetSec;
 	};
 
+	struct udtCutByFragArg
+	{
+		// @TODO: Filters for weapons, power-ups, death types?
+		
+		// The minimum amount of frags in a sequence.
+		u32 MinFragCount;
+
+		// Time interval between 2 consecutive frags, in seconds.
+		// See TimeMode for the interpretation of this value.
+		u32 TimeBetweenFragsSec;
+
+		// If 0, TimeBetweenFragsSec is the maximum time interval between 
+		// 2 consecutive frags, in seconds.
+		// If 1, TimeBetweenFragsSec is the maximum average time between frags
+		// for the entire frag run, in seconds.
+		u32 TimeMode;
+
+		// Negative offset from the first frag's time, in seconds.
+		u32 StartOffsetSec;
+
+		// Positive offset from the last frag's time, in seconds.
+		u32 EndOffsetSec;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 	struct udtChatEventData
 	{
 		// All C string pointers can be NULL if extraction failed.
@@ -313,6 +347,46 @@ extern "C"
 		s32 LastSnapshotTimeMs;
 	};
 
+	struct udtParseDataObituary
+	{
+		// The name of the attacker or another string.
+		// Never NULL.
+		const char* AttackerName;
+
+		// The name of the attacker or another string.
+		// Never NULL.
+		const char* TargetName;
+
+		// The name of the attacker or another string.
+		// Never NULL.
+		const char* MeanOfDeathName;
+
+		// Ignore this.
+		const char* Reserved1;
+
+		// The index of the last gamestate message after which this death event occurred.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
+
+		// The time at which the death happened.
+		s32 ServerTimeMs;
+
+		// The index of the attacking player.
+		// If available, in range [0;63].
+		s32 AttackerIdx;
+
+		// The index of the player who died.
+		// If available, in range [0;63].
+		s32 TargetIdx;
+
+		// The way the target died.
+		// See meansOfDeath_t.
+		s32 MeanOfDeath;
+		
+		// Ignore this.
+		s32 Reserved2;
+	};
+
 #pragma pack(pop)
 
 	//
@@ -320,7 +394,12 @@ extern "C"
 	//
 
 	// Returns a null-terminated string describing the library's version.
+	// Never returns NULL.
 	UDT_API(const char*) udtGetVersionString();
+
+	// Returns a null-terminated string describing the error.
+	// Never returns NULL.
+	UDT_API(const char*) udtGetErrorCodeString(s32 errorCode);
 
 	// Returns zero if not a valid protocol.
 	UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol);
@@ -364,6 +443,9 @@ extern "C"
 	// Creates sub-demos around every occurrence of a matching chat command server message.
 	UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
 
+	// Creates a new demo cut for every matching frag sequence.
+	UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
+
 	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
 	UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
@@ -402,6 +484,9 @@ extern "C"
 
 	// Creates sub-demos around every occurrence of a matching chat command server message.
 	UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
+
+	// Creates a new demo cut for every matching frag sequence for each demo.
+	UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo);
 
 #ifdef __cplusplus
 }

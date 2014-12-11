@@ -1,5 +1,6 @@
 #include "context.hpp"
 #include "common.hpp"
+#include "crash.hpp"
 
 #if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
 #	include <Windows.h> // IsDebuggerPresent, __debugbreak
@@ -141,7 +142,7 @@ void udtContext::LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...)
 	if(IsDebuggerPresent()) __debugbreak();
 #endif
 
-	(*_crashCallback)(msg);
+	FatalError(__FILE__, __LINE__, __FUNCTION__, msg);
 }
 
 void udtContext::NotifyProgress(f32 progress) const

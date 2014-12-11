@@ -74,7 +74,7 @@ public:
 	void	ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to);
 
 	void	WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force);
-	void	ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number);
+	bool	ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number);
 
 private:
 	void	WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits);
