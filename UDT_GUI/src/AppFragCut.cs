@@ -32,29 +32,60 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtConfig config)
         {
-            int time = 0;
-            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
+            int intValue = 0;
+
+            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out intValue))
             {
-                _app.Config.FragCutStartOffset = time;
+                _app.Config.FragCutStartOffset = intValue;
             }
-            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
+
+            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out intValue))
             {
-                _app.Config.FragCutEndOffset = time;
+                _app.Config.FragCutEndOffset = intValue;
+            }
+
+            if(int.TryParse(_minFragCountEditBox.Text, out intValue) && intValue > 2)
+            {
+                _app.Config.FragCutMinFragCount = intValue;
+            }
+
+            if(int.TryParse(_timeBetweenFragsEditBox.Text, out intValue) && intValue > 0)
+            {
+                _app.Config.FragCutTimeBetweenFrags = intValue;
             }
         }
 
         private App _app;
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
+        private TextBox _minFragCountEditBox = null;
+        private TextBox _timeBetweenFragsEditBox = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
+            var minFragCountEditBox = new TextBox();
+            _minFragCountEditBox = minFragCountEditBox;
+            minFragCountEditBox.Width = 40;
+            minFragCountEditBox.Text = _app.Config.FragCutMinFragCount.ToString();
+
+            var timeBetweenFragsEditBox = new TextBox();
+            _timeBetweenFragsEditBox = timeBetweenFragsEditBox;
+            timeBetweenFragsEditBox.Width = 40;
+            timeBetweenFragsEditBox.Text = _app.Config.FragCutTimeBetweenFrags.ToString();
+
+            var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
+            rulesPanelList.Add(App.CreateTuple("Min. Frag Count", minFragCountEditBox));
+            rulesPanelList.Add(App.CreateTuple("Time Between Frags", timeBetweenFragsEditBox));
+            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
+            rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            rulesPanel.VerticalAlignment = VerticalAlignment.Center;
+
             var rulesGroupBox = new GroupBox();
             rulesGroupBox.Header = "Chat Rules";
             rulesGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             rulesGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
             rulesGroupBox.Margin = new Thickness(5);
-            rulesGroupBox.Content = "Hello";
+            rulesGroupBox.Content = rulesPanel;
 
             var cutButton = new Button();
             cutButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -84,30 +115,30 @@ namespace Uber.DemoTools
             endTimeOffsetEditBox.Text = _app.Config.FragCutEndOffset.ToString();
             endTimeOffsetEditBox.ToolTip = "How many seconds after the last frag in the sequence do we end the cut?";
 
-            var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
-            var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
-            optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            optionsPanel.VerticalAlignment = VerticalAlignment.Center;
+            var timeOffsetPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
+            timeOffsetPanelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
+            timeOffsetPanelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
+            var timeOffsetPanel = WpfHelper.CreateDualColumnPanel(timeOffsetPanelList, 100, 5);
+            timeOffsetPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            timeOffsetPanel.VerticalAlignment = VerticalAlignment.Center;
             
             var timeOffsetsGroupBox = new GroupBox();
             timeOffsetsGroupBox.Header = "Time Offsets";
             timeOffsetsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
             timeOffsetsGroupBox.VerticalAlignment = VerticalAlignment.Top;
             timeOffsetsGroupBox.Margin = new Thickness(5);
-            timeOffsetsGroupBox.Content = optionsPanel;
-
+            timeOffsetsGroupBox.Content = timeOffsetPanel;
+            /*
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
-            helpTextBlock.Text = "@TODO:";
-
+            helpTextBlock.Text = "..."; // @TODO:
+            
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;
-
+            */
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
@@ -116,7 +147,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(rulesGroupBox);
             rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
-            rootPanel.Children.Add(helpGroupBox);
+            //rootPanel.Children.Add(helpGroupBox);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;

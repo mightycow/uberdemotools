@@ -39,6 +39,8 @@ namespace Uber.DemoTools
         public bool OpenDemosFromInputFolderOnStartUp = false;
         public int FragCutStartOffset = 10;
         public int FragCutEndOffset = 10;
+        public int FragCutMinFragCount = 3;
+        public int FragCutTimeBetweenFrags = 5;
     }
 
     public class CuttabbleByTimeDisplayInfo

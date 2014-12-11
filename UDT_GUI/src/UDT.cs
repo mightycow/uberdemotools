@@ -474,8 +474,6 @@ namespace Uber.DemoTools
 
             var result = udtCutDemoFilesByFrag(ref parseArg, ref multiParseArg, ref rules);
 
-            App.GlobalLogInfo("udtCutDemoFilesByFrag: " + result.ToString());
-
             pinnedFilePaths.Free();
             pinnedErrorCodes.Free();
             for(var i = 0; i < filePathArray.Length; ++i)
