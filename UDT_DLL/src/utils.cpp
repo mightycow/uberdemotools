@@ -30,33 +30,8 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 	fprintf(file, "\n");
 }
 
-static void PrintProgress(const char* label, int step, int total)
+void CallbackConsoleProgress(f32, void*)
 {
-	const int pwidth = 72;
-	const int width = pwidth - (int)strlen(label);
-	const int pos = (step * width) / total;
-	const int percent = (step * 100) / total;
-
-	printf("%s[", label);
-
-	for(int i = 0; i < pos; ++i)
-	{
-		printf("=");
-	}
-
-	for(int i = 0, end = width - pos + 1; i < end; ++i)
-	{
-		printf(" ");
-	}
-
-	printf("] %3d%%\r", percent);
-
-	fflush(stdout);
-}
-
-void CallbackConsoleProgress(f32 progress, void*)
-{
-	PrintProgress("Progress: ", (int)(100.0f * progress), 100);
 }
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
