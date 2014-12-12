@@ -81,7 +81,7 @@ namespace Uber.DemoTools
             rulesPanel.VerticalAlignment = VerticalAlignment.Center;
 
             var rulesGroupBox = new GroupBox();
-            rulesGroupBox.Header = "Chat Rules";
+            rulesGroupBox.Header = "Frag Rules";
             rulesGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             rulesGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
             rulesGroupBox.Margin = new Thickness(5);
