@@ -2,12 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 
 namespace Uber
 {
     public static class WpfHelper
     {
+        public class WrapPanelNewLine : FrameworkElement
+        {
+            public WrapPanelNewLine()
+            {
+                Height = 0;
+                var binding = new Binding
+                {
+                    RelativeSource = new RelativeSource(RelativeSourceMode.FindAncestor, typeof(WrapPanel), 1),
+                    Path = new PropertyPath("ActualWidth")
+                };
+
+                BindingOperations.SetBinding(this, WidthProperty, binding);
+            }
+        }
+
         public static FrameworkElement CreateDualColumnPanel(IEnumerable<Tuple<FrameworkElement, FrameworkElement>> elementPairs, int width, int dy = 2)
         {
             var rootPanel = new StackPanel();

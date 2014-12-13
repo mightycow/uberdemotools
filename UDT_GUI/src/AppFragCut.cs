@@ -19,7 +19,7 @@ namespace Uber.DemoTools
 
         private List<CheckBox> _checkBoxes = new List<CheckBox>();
 
-        public FilterGroupBox(string header, UDT_DLL.udtStringArray arrayId)
+        public FilterGroupBox(string header, UDT_DLL.udtStringArray arrayId, int columnCount = 2)
         {
             var enableAllButton = new Button();
             enableAllButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -27,44 +27,73 @@ namespace Uber.DemoTools
             enableAllButton.Content = "Check All";
             enableAllButton.Width = 75;
             enableAllButton.Height = 25;
-            enableAllButton.Margin = new Thickness(0, 0, 5, 0);
+            enableAllButton.Margin = new Thickness(5);
             enableAllButton.Click += (obj, args) => SetAllChecked(true);
 
             var disableAllButton = new Button();
-            disableAllButton.HorizontalAlignment = HorizontalAlignment.Right;
+            disableAllButton.HorizontalAlignment = HorizontalAlignment.Left;
             disableAllButton.VerticalAlignment = VerticalAlignment.Top;
             disableAllButton.Content = "Uncheck All";
             disableAllButton.Width = 75;
             disableAllButton.Height = 25;
+            disableAllButton.Margin = new Thickness(5);
             disableAllButton.Click += (obj, args) => SetAllChecked(false);
-
-            var buttonPanel = new DockPanel();
-            buttonPanel.Margin = new Thickness(5);
-            buttonPanel.Children.Add(enableAllButton);
-            buttonPanel.Children.Add(disableAllButton);
-            DockPanel.SetDock(enableAllButton, Dock.Left);
-            DockPanel.SetDock(disableAllButton, Dock.Right);
 
             var rootPanel = new StackPanel();
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Vertical;
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            rootPanel.Children.Add(buttonPanel);
 
+            var panel = new Grid();
+            panel.Margin = new Thickness(5);
+            panel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            panel.VerticalAlignment = VerticalAlignment.Stretch;
+
+            const int rowOffset = 1; // One additional row for the EnableAll/DisableAll buttons.
             var itemNames = UDT_DLL.GetStringArray(arrayId);
-            foreach(var name in itemNames)
+            var rowCount = (itemNames.Count + columnCount - 1) / columnCount;
+            var maxCheckBoxesPerColumn = rowCount;
+            rowCount += rowOffset;
+
+            for(var i = 0; i < rowCount; ++i)
             {
+                panel.RowDefinitions.Add(new RowDefinition());
+            }
+
+            for(var i = 0; i < columnCount; ++i)
+            {
+                panel.ColumnDefinitions.Add(new ColumnDefinition());
+            }
+
+            panel.Children.Add(enableAllButton);
+            panel.Children.Add(disableAllButton);
+            Grid.SetRow(enableAllButton, 0);
+            Grid.SetColumn(enableAllButton, 0);
+            Grid.SetRow(disableAllButton, 0);
+            Grid.SetColumn(disableAllButton, 1);
+
+            for(var i = 0; i < itemNames.Count; ++i)
+            {
+                var name = itemNames[i];
+                var rowIdx = i % maxCheckBoxesPerColumn;
+                var columnIdx = i / maxCheckBoxesPerColumn;
+                rowIdx += rowOffset;
+
                 var checkBox = new CheckBox();
                 checkBox.Margin = new Thickness(5, 0, 5, 5);
                 checkBox.HorizontalAlignment = HorizontalAlignment.Left;
                 checkBox.VerticalAlignment = VerticalAlignment.Center;
                 checkBox.IsChecked = true;
                 checkBox.Content = name.Substring(0, 1).ToUpper() + name.Substring(1);
+                Grid.SetRow(checkBox, rowIdx);
+                Grid.SetColumn(checkBox, columnIdx);
                 _checkBoxes.Add(checkBox);
 
-                rootPanel.Children.Add(checkBox);
+                panel.Children.Add(checkBox);
             }
+
+            rootPanel.Children.Add(panel);
 
             var groupBox = new GroupBox();
             groupBox.Header = header;
@@ -157,15 +186,15 @@ namespace Uber.DemoTools
         private RadioButton _autoPlayerSelectionRadioButton = null;
         private RadioButton _manualPlayerSelectionRadioButton = null;
         private TextBox _playerIndexTextBox = null;
-        private FilterGroupBox _weaponFilters = null;
         private FilterGroupBox _modFilters = null;
-        private FilterGroupBox _powerUpFilters = null;
+        //private FilterGroupBox _powerUpFilters = null;
+        //private FilterGroupBox _weaponFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
-            _weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
-            _modFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.MeansOfDeath);
-            _powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
+            _modFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.MeansOfDeath, 3);
+            //_powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
+            //_weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
 
             var minFragCountEditBox = new TextBox();
             _minFragCountEditBox = minFragCountEditBox;
@@ -317,14 +346,15 @@ namespace Uber.DemoTools
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
-            rootPanel.Children.Add(_weaponFilters.RootElement);
-            rootPanel.Children.Add(_modFilters.RootElement);
-            rootPanel.Children.Add(_powerUpFilters.RootElement);
             rootPanel.Children.Add(rulesGroupBox);
             rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(playerSelectionGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
+            rootPanel.Children.Add(new WpfHelper.WrapPanelNewLine());
+            rootPanel.Children.Add(_modFilters.RootElement);
+            //rootPanel.Children.Add(_powerUpFilters.RootElement);
+            //rootPanel.Children.Add(_weaponFilters.RootElement);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
