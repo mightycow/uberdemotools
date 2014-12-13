@@ -305,10 +305,7 @@ namespace Uber.DemoTools
             {
                 var address = Marshal.ReadIntPtr(elements, (int)i * elementSize);
                 var element = Marshal.PtrToStringAnsi(address);
-                if(element != null)
-                {
-                    list.Add(element);
-                }
+                list.Add(element ?? "N/A");
             }
 
             return list;

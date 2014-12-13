@@ -13,6 +13,93 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
+    public class FilterGroupBox
+    {
+        public FrameworkElement RootElement { get; private set; }
+
+        private List<CheckBox> _checkBoxes = new List<CheckBox>();
+
+        public FilterGroupBox(string header, UDT_DLL.udtStringArray arrayId)
+        {
+            var enableAllButton = new Button();
+            enableAllButton.HorizontalAlignment = HorizontalAlignment.Left;
+            enableAllButton.VerticalAlignment = VerticalAlignment.Top;
+            enableAllButton.Content = "Check All";
+            enableAllButton.Width = 75;
+            enableAllButton.Height = 25;
+            enableAllButton.Margin = new Thickness(0, 0, 5, 0);
+            enableAllButton.Click += (obj, args) => SetAllChecked(true);
+
+            var disableAllButton = new Button();
+            disableAllButton.HorizontalAlignment = HorizontalAlignment.Right;
+            disableAllButton.VerticalAlignment = VerticalAlignment.Top;
+            disableAllButton.Content = "Uncheck All";
+            disableAllButton.Width = 75;
+            disableAllButton.Height = 25;
+            disableAllButton.Click += (obj, args) => SetAllChecked(false);
+
+            var buttonPanel = new DockPanel();
+            buttonPanel.Margin = new Thickness(5);
+            buttonPanel.Children.Add(enableAllButton);
+            buttonPanel.Children.Add(disableAllButton);
+            DockPanel.SetDock(enableAllButton, Dock.Left);
+            DockPanel.SetDock(disableAllButton, Dock.Right);
+
+            var rootPanel = new StackPanel();
+            rootPanel.Margin = new Thickness(5);
+            rootPanel.Orientation = Orientation.Vertical;
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            rootPanel.Children.Add(buttonPanel);
+
+            var itemNames = UDT_DLL.GetStringArray(arrayId);
+            foreach(var name in itemNames)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 0, 5, 5);
+                checkBox.HorizontalAlignment = HorizontalAlignment.Left;
+                checkBox.VerticalAlignment = VerticalAlignment.Center;
+                checkBox.IsChecked = true;
+                checkBox.Content = name.Substring(0, 1).ToUpper() + name.Substring(1);
+                _checkBoxes.Add(checkBox);
+
+                rootPanel.Children.Add(checkBox);
+            }
+
+            var groupBox = new GroupBox();
+            groupBox.Header = header;
+            groupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            groupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            groupBox.Margin = new Thickness(5);
+            groupBox.Content = rootPanel;
+
+            RootElement = groupBox;
+        }
+
+        public UInt32 GetBitMask()
+        {
+            UInt32 result = 0;
+            for(var i = 0; i < _checkBoxes.Count; ++i)
+            {
+                var isChecked = _checkBoxes[i].IsChecked ?? false;
+                if(isChecked)
+                {
+                    result |= (UInt32)(1 << i);
+                }
+            }
+
+            return result;
+        }
+
+        private void SetAllChecked(bool isChecked)
+        {
+            foreach(var checkBox in _checkBoxes)
+            {
+                checkBox.IsChecked = isChecked;
+            }
+        }
+    }
+
     public class CutByFragComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
@@ -70,9 +157,16 @@ namespace Uber.DemoTools
         private RadioButton _autoPlayerSelectionRadioButton = null;
         private RadioButton _manualPlayerSelectionRadioButton = null;
         private TextBox _playerIndexTextBox = null;
+        private FilterGroupBox _weaponFilters = null;
+        private FilterGroupBox _modFilters = null;
+        private FilterGroupBox _powerUpFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
+            _weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
+            _modFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.MeansOfDeath);
+            _powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
+
             var minFragCountEditBox = new TextBox();
             _minFragCountEditBox = minFragCountEditBox;
             minFragCountEditBox.Width = 40;
@@ -116,8 +210,8 @@ namespace Uber.DemoTools
 
             var rulesGroupBox = new GroupBox();
             rulesGroupBox.Header = "Frag Rules";
-            rulesGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            rulesGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            rulesGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            rulesGroupBox.VerticalAlignment = VerticalAlignment.Top;
             rulesGroupBox.Margin = new Thickness(5);
             rulesGroupBox.Content = rulesPanel;
 
@@ -214,6 +308,8 @@ namespace Uber.DemoTools
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Content = helpTextBlock;
             
             var rootPanel = new WrapPanel();
@@ -221,6 +317,9 @@ namespace Uber.DemoTools
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
+            rootPanel.Children.Add(_weaponFilters.RootElement);
+            rootPanel.Children.Add(_modFilters.RootElement);
+            rootPanel.Children.Add(_powerUpFilters.RootElement);
             rootPanel.Children.Add(rulesGroupBox);
             rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(playerSelectionGroupBox);
