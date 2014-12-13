@@ -67,6 +67,14 @@ static const char* MeansOfDeathNames[] =
 };
 #undef UDT_MOD_ITEM
 
+#define UDT_TEAM_ITEM(Enum, Desc) Desc,
+static const char* TeamNames[] =
+{
+	UDT_TEAM_LIST(UDT_TEAM_ITEM)
+	"after last team"
+};
+#undef UDT_TEAM_ITEM
+
 
 struct SingleThreadProgressContext
 {
@@ -233,6 +241,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::MeansOfDeath:
 			*elements = MeansOfDeathNames;
 			*elementCount = (u32)(UDT_COUNT_OF(MeansOfDeathNames) - 1);
+			break;
+
+		case udtStringArray::Teams:
+			*elements = TeamNames;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamNames) - 1);
 			break;
 
 		default:

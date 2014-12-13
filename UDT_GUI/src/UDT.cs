@@ -69,6 +69,7 @@ namespace Uber.DemoTools
             Weapons,
             PowerUps,
             MeansOfDeath,
+            Teams,
             Count
         };
 

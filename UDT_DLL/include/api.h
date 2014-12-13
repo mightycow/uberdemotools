@@ -208,6 +208,23 @@ struct udtMeansOfDeathBits
 };
 #undef UDT_MOD_ITEM
 
+#define UDT_TEAM_LIST(N) \
+	N(Free, "free") \
+	N(Red, "red") \
+	N(Blue, "blue") \
+	N(Spectators, "spectators")
+
+#define UDT_TEAM_ITEM(Enum, Desc) Enum,
+struct udtTeam
+{
+	enum Id
+	{
+		UDT_TEAM_LIST(UDT_TEAM_ITEM)
+		Count
+	};
+};
+#undef UDT_TEAM_ITEM
+
 struct udtStringArray
 {
 	enum Id
@@ -215,6 +232,7 @@ struct udtStringArray
 		Weapons,
 		PowerUps,
 		MeansOfDeath,
+		Teams,
 		Count
 	};
 };
@@ -512,10 +530,12 @@ extern "C"
 		s32 MeanOfDeath;
 
 		// The index of the attacker's team.
+		// Of type udtTeam::Id.
 		// Negative if not available.
 		s32 AttackerTeamIdx;
 
 		// The index of the target's team.
+		// Of type udtTeam::Id.
 		// Negative if not available.
 		s32 TargetTeamIdx;
 		
