@@ -41,6 +41,9 @@ namespace Uber.DemoTools
         public int FragCutEndOffset = 10;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
+        public bool FragCutAllowSelfKills = false;
+        public bool FragCutAllowTeamKills = false;
+        public bool FragCutAllowAnyDeath = false;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -787,9 +790,19 @@ namespace Uber.DemoTools
             window.ShowDialog();
         }
 
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, FrameworkElement b)
+        {
+            return new Tuple<FrameworkElement, FrameworkElement>(a, b);
+        }
+
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, FrameworkElement b)
         {
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, b);
+        }
+
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, string b)
+        {
+            return new Tuple<FrameworkElement, FrameworkElement>(a, new Label { Content = b });
         }
 
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, string b)
