@@ -25,6 +25,16 @@ public:
 	{
 	}
 
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+	{
+		_analyzer.ProcessGamestateMessage(arg, parser);
+	}
+
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+	{
+		_analyzer.ProcessCommandMessage(arg, parser);
+	}
+
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 	{
 		_analyzer.ProcessSnapshotMessage(arg, parser);
@@ -39,7 +49,6 @@ private:
 
 	void AddCurrentSectionIfValid();
 	void AddMatch(const udtParseDataObituary& data);
-	void InvalidateCurrentSection();
 
 	struct Frag
 	{
@@ -61,6 +70,16 @@ public:
 
 	~udtParserPlugInCutByFrag()
 	{
+	}
+
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+	{
+		Analyzer.ProcessGamestateMessage(arg, parser);
+	}
+
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+	{
+		Analyzer.ProcessCommandMessage(arg, parser);
 	}
 
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)

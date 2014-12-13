@@ -27,7 +27,7 @@ void udtCutByFragAnalyzer::FindCutSections()
 		{
 			if(!allowAnyDeath || (!allowSelfKills && data.AttackerIdx == data.TargetIdx))
 			{
-				InvalidateCurrentSection();
+				AddCurrentSectionIfValid();
 			}
 			continue;
 		}
@@ -43,7 +43,7 @@ void udtCutByFragAnalyzer::FindCutSections()
 		{
 			if(!allowTeamKills)
 			{
-				InvalidateCurrentSection();
+				AddCurrentSectionIfValid();
 			}
 			continue;
 		}
@@ -96,9 +96,4 @@ void udtCutByFragAnalyzer::AddMatch(const udtParseDataObituary& data)
 	match.ServerTimeMs = data.ServerTimeMs;
 	match.GameStateIndex = data.GameStateIndex;
 	_frags.Add(match);
-}
-
-void udtCutByFragAnalyzer::InvalidateCurrentSection()
-{
-	_frags.Clear();
 }
