@@ -796,49 +796,71 @@ char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
 	return (char*)allocator.Allocate(stringLength + 1);
 }
 
-bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString)
+static const char* FindConfigStringValueAddress(const char* varName, const char* configString)
 {
+	const char* result = strstr(configString, varName);
+	if(result == NULL)
+	{
+		return NULL;
+	}
+
+	if(result == configString)
+	{
+		return configString + strlen(varName) + 1;
+	}
+
+	const size_t varNameLength = strlen(varName);
+	if(result[-1] == '\\' && result[varNameLength] == '\\')
+	{
+		return result + varNameLength + 1;
+	}
+
 	char pattern[64];
-	const size_t patternLength = strlen(varName) + 1;
+	const size_t patternLength = varNameLength + 2;
 	if(patternLength + 1 > sizeof(pattern))
 	{
-		return false;
+		return NULL;
 	}
 
-	strcpy(pattern, varName);
+	strcpy(pattern, "\\");
+	strcat(pattern, varName);
 	strcat(pattern, "\\");
 
-	u32 index = 0;
-	if(!StringContains(configString, pattern, &index))
+	result = strstr(result + varNameLength, pattern);
+	if(result == NULL)
+	{
+		return NULL;
+	}
+
+	return result + patternLength;
+}
+
+bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString)
+{
+	const char* const valueString = FindConfigStringValueAddress(varName, configString);
+	if(valueString == NULL)
 	{
 		return false;
 	}
 
-	return sscanf(configString + index + patternLength, "%d", &varValue) == 1;
+	return sscanf(valueString, "%d", &varValue) == 1;
 }
 
 bool ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	char* pattern = NULL;
-	if(!StringConcatenate(pattern, allocator, varName, "\\"))
-	{
-	}
-
-	u32 index = 0;
-	if(!StringContains(configString, pattern, &index))
+	const char* const valueStart = FindConfigStringValueAddress(varName, configString);
+	if(valueStart == NULL)
 	{
 		return false;
 	}
 
-	const size_t patternLength = strlen(pattern);
-	const char* const valueStart = configString + index + patternLength;
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
 	if(separatorAfterValue == NULL)
 	{
 		return false;
 	}
 
-	varValue = AllocateString(allocator, configString + index + patternLength, (u32)(separatorAfterValue - valueStart));
+	varValue = AllocateString(allocator, valueStart, (u32)(separatorAfterValue - valueStart));
 
 	return true;
 }
