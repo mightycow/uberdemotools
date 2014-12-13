@@ -22,6 +22,8 @@
 #	define UDT_API_DEF(ReturnType)     ReturnType UDT_EXPORT_DLL
 #endif
 
+#define UDT_BIT(x) (1 << x)
+
 
 #define UDT_API UDT_API_DECL
 
@@ -107,6 +109,115 @@ struct udtParserPlugIn
 	};
 };
 #undef UDT_PLUG_IN_ITEM
+
+#define UDT_WEAPON_LIST(N) \
+	N(Gauntlet, "gauntlet", 0) \
+	N(MachineGun, "machine gun", 1) \
+	N(Shotgun, "shotgun", 2) \
+	N(Grenade, "grenade launcher", 3) \
+	N(Rocket, "rocket launcher", 4) \
+	N(Plasma, "plasma gun", 5) \
+	N(Railgun, "railgun", 6) \
+	N(LightningGun, "lightning gun", 7) \
+	N(BFG, "BFG", 8) \
+	N(NailGun, "nailgun", 9) \
+	N(ChainGun, "chaingun", 10) \
+	N(ProximityMineLauncher, "proximity mine launcher", 11) \
+	N(HeavyMachineGun, "heavy machine gun", 12)
+
+#define UDT_WEAPON_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtWeaponBits
+{
+	enum Id
+	{
+		UDT_WEAPON_LIST(UDT_WEAPON_ITEM)
+		AfterLast
+	};
+};
+#undef UDT_WEAPON_ITEM
+
+#define UDT_POWER_UP_LIST(N) \
+	N(QuadDamage, "quad damage", 0) \
+	N(BattleSuit, "battle suit", 1) \
+	N(Haste, "haste", 2) \
+	N(Invisibility, "invisibility", 3) \
+	N(Regeneration, "regeneration", 4) \
+	N(Flight, "flight", 5) \
+	N(RedFlag, "red flag", 6) \
+	N(BlueFlag, "blue flag", 7) \
+	N(NeutralFlag, "neutral flag", 8) \
+	N(Scout, "scout", 9) \
+	N(Guard, "guard", 10) \
+	N(Doubler, "doubler", 11) \
+	N(ArmorRegeneration, "armor regeneration", 12) \
+	N(Invulnerability, "invulnerability", 13)
+
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtPowerUpBits
+{
+	enum Id
+	{
+		UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
+		AfterLast
+	};
+};
+#undef UDT_POWER_UP_ITEM
+
+#define UDT_MOD_LIST(N) \
+	N(Shotgun, "shotgun", 0) \
+	N(Gauntlet, "gauntlet", 1) \
+	N(MachineGun, "machine gun", 2) \
+	N(Grenade, "grenade", 3) \
+	N(GrenadeSplash, "grenade splash", 4) \
+	N(Rocket, "rocket", 5) \
+	N(RocketSplash, "rocket splash", 6) \
+	N(Plasma, "plasma", 7) \
+	N(PlasmaSplash, "plasma splash", 8) \
+	N(Railgun, "railgun", 9) \
+	N(Lightning, "lightning", 10) \
+	N(BFG, "BFG", 11) \
+	N(BFGSplash, "BFG splash", 12) \
+	N(Water, "water", 13) \
+	N(Slime, "slime", 14) \
+	N(Lava, "lava", 15) \
+	N(Crush, "crush", 16) \
+	N(TeleFrag, "telefrag", 17) \
+	N(Fall, "fall", 18) \
+	N(Suicide, "suicide", 19) \
+	N(TargetLaser, "target laser", 20) \
+	N(TriggerHurt, "trigger hurt", 21) \
+	N(NailGun, "nailgun", 22) \
+	N(ChainGun, "chaingun", 23) \
+	N(ProximityMine, "proximity mine", 24) \
+	N(Kamikaze, "kamikaze", 25) \
+	N(Juiced, "juiced", 26) \
+	N(Grapple, "grapple", 27) \
+	N(TeamSwitch, "team switch", 28) \
+	N(Thaw, "thaw", 29) \
+	N(UnknownQlMod1, "unknown QL MOD #1", 30) \
+	N(HeavyMachineGun, "heavy machine gun", 31)
+
+#define UDT_MOD_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtMeansOfDeathBits
+{
+	enum Id
+	{
+		UDT_MOD_LIST(UDT_MOD_ITEM)
+		AfterLast
+	};
+};
+#undef UDT_MOD_ITEM
+
+struct udtStringArray
+{
+	enum Id
+	{
+		Weapons,
+		PowerUps,
+		MeansOfDeath,
+		Count
+	};
+};
 
 
 #ifdef __cplusplus
@@ -242,10 +353,18 @@ extern "C"
 		u32 EndOffsetSec;
 	};
 
+	struct udtCutByFragArgFlags
+	{
+		enum Id
+		{
+			AllowSelfKills = UDT_BIT(0),
+			AllowTeamKills = UDT_BIT(1),
+			AllowDeaths    = UDT_BIT(2)
+		};
+	};
+
 	struct udtCutByFragArg
 	{
-		// @TODO: Filters for weapons, power-ups, death types?
-		
 		// The minimum amount of frags in a sequence.
 		u32 MinFragCount;
 
@@ -265,8 +384,17 @@ extern "C"
 		// Positive offset from the last frag's time, in seconds.
 		u32 EndOffsetSec;
 
-		// Ignore this.
-		s32 Reserved1;
+		// The index of the player whose frags we're looking at.
+		// If valid ([0;63] range), it's used.
+		// If not, will use the index of the player who recorded the demo.
+		s32 PlayerIndex;
+
+		// @TODO:
+		// See udtCutByFragArgFlags.
+		u32 Flags;
+		u32 AllowedWeapons;
+		u32 AllowedPowerUps;
+		u32 AllowedMeansOfDeaths;
 	};
 
 	struct udtChatEventData
@@ -382,6 +510,14 @@ extern "C"
 		// The way the target died.
 		// See meansOfDeath_t.
 		s32 MeanOfDeath;
+
+		// The index of the attacker's team.
+		// Negative if not available.
+		s32 AttackerTeamIdx;
+
+		// The index of the target's team.
+		// Negative if not available.
+		s32 TargetTeamIdx;
 		
 		// Ignore this.
 		s32 Reserved2;
@@ -418,6 +554,9 @@ extern "C"
 
 	// Raises the type of error asked for.
 	UDT_API(s32) udtCrash(udtCrashType::Id crashType);
+
+	// Retrieve the string array for the given array identifier.
+	UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** elements, u32* elementCount);
 
 	//
 	// The configurable API for fine-grained task selection.

@@ -134,6 +134,8 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 			const s32 meanOfDeath = ent->eventParm;
 
 			udtParseDataObituary info;
+			info.TargetTeamIdx = -1; // @TODO:
+			info.AttackerTeamIdx = -1; // @TODO:
 			info.MeanOfDeath = meanOfDeath;
 			info.GameStateIndex = parser._inGameStateIndex;
 			info.ServerTimeMs = arg.Snapshot->serverTime;

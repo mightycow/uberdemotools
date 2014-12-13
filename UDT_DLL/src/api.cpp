@@ -43,6 +43,29 @@ static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
 };
 #undef UDT_PROTOCOL_ITEM
 
+#define UDT_WEAPON_ITEM(Enum, Desc, Bit) Desc,
+static const char* WeaponNames[] =
+{
+	UDT_WEAPON_LIST(UDT_WEAPON_ITEM)
+	"after last weapon"
+};
+#undef UDT_WEAPON_ITEM
+
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Desc,
+static const char* PowerUpNames[] =
+{
+	UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
+	"after last power-up"
+};
+#undef UDT_POWER_UP_ITEM
+
+#define UDT_MOD_ITEM(Enum, Desc, Bit) Desc,
+static const char* MeansOfDeathNames[] =
+{
+	UDT_MOD_LIST(UDT_MOD_ITEM)
+	"after last MoD"
+};
+#undef UDT_MOD_ITEM
 
 
 struct SingleThreadProgressContext
@@ -183,6 +206,37 @@ UDT_API(s32) udtCrash(udtCrashType::Id crashType)
 
 		default:
 			break;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** elements, u32* elementCount)
+{
+	if(elements == NULL || elementCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	switch(arrayId)
+	{
+		case udtStringArray::Weapons:
+			*elements = WeaponNames;
+			*elementCount = (u32)(UDT_COUNT_OF(WeaponNames) - 1);
+			break;
+
+		case udtStringArray::PowerUps:
+			*elements = PowerUpNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PowerUpNames) - 1);
+			break;
+
+		case udtStringArray::MeansOfDeath:
+			*elements = MeansOfDeathNames;
+			*elementCount = (u32)(UDT_COUNT_OF(MeansOfDeathNames) - 1);
+			break;
+
+		default:
+			return (s32)udtErrorCode::InvalidArgument;
 	}
 
 	return (s32)udtErrorCode::None;
