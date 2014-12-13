@@ -1126,6 +1126,8 @@ namespace Uber.DemoTools
             var filePaths = arg as List<string>;
             if(filePaths == null)
             {
+                LogError("Invalid thread argument type");
+                EnableUiThreadSafe();
                 return;
             }
 
@@ -1339,6 +1341,8 @@ namespace Uber.DemoTools
             var filePath = arg as string;
             if(filePath == null)
             {
+                LogError("Invalid thread argument type");
+                EnableUiThreadSafe();
                 return;
             }
 
@@ -1358,7 +1362,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-
             EnableUiThreadSafe();
         }
 

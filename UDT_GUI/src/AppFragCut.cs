@@ -274,11 +274,11 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var arg = new ThreadArg();
-            arg.FilePaths = filePaths;
-            arg.PlayerIndex = playerIndex;
+            var threadArg = new ThreadArg();
+            threadArg.FilePaths = filePaths;
+            threadArg.PlayerIndex = playerIndex;
 
-            _app.StartJobThread(DemoCutByFragThread, filePaths);
+            _app.StartJobThread(DemoCutByFragThread, threadArg);
         }
 
         private void DemoCutByFragThread(object arg)
@@ -298,12 +298,16 @@ namespace Uber.DemoTools
             var threadArg = arg as ThreadArg;
             if(threadArg == null)
             {
+                _app.LogError("Invalid thread argument type");
+                _app.EnableUiThreadSafe();
                 return;
             }
 
             var filePaths = threadArg.FilePaths;
             if(filePaths == null)
             {
+                _app.LogError("Invalid thread argument data");
+                _app.EnableUiThreadSafe();
                 return;
             }
 
