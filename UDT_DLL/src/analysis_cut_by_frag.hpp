@@ -39,6 +39,7 @@ private:
 
 	void AddCurrentSectionIfValid();
 	void AddMatch(const udtParseDataObituary& data);
+	void InvalidateCurrentSection();
 
 	struct Frag
 	{
