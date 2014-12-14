@@ -23,6 +23,7 @@ udtBaseParser::udtBaseParser()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -81,6 +82,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -118,6 +120,7 @@ void udtBaseParser::Reset()
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
 	_inGameStateFileOffsets.Clear();
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -251,11 +254,12 @@ bool udtBaseParser::ParseServerMessage()
 	if(_cuts.GetSize() > 0)
 	{
 		const udtCutInfo cut = _cuts[0];
-		const s32 gameTime = GetVirtualInputTime();
+		const s32 gameTime = _inServerTime;
 
 		if(_inGameStateIndex == cut.GameStateIndex && !_outWriteMessage &&
 		   gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs)
 		{
+			//__debugbreak();
 			const bool wroteMessage = _outWriteMessage;
 			_outWriteMessage = true;
 			_outWriteFirstMessage = _outWriteMessage && !wroteMessage;
@@ -340,11 +344,6 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoS
 bool udtBaseParser::ShouldWriteMessage() const
 {
 	return _outWriteMessage;
-}
-
-s32 udtBaseParser::GetVirtualInputTime() const
-{
-	return _inServerTime;
 }
 
 void udtBaseParser::WriteFirstMessage()

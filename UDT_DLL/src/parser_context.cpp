@@ -50,6 +50,8 @@ void udtParserContext::Reset()
 {
 	DestroyPlugIns();
 
+	DemoCount = 0;
+	PlugInCountPerDemo = 0;
 	InputIndices.Clear();
 	Context.Reset();
 	Parser.Reset();

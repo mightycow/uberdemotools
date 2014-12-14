@@ -42,7 +42,6 @@ public:
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
 	bool                  ShouldWriteMessage() const;
-	s32                   GetVirtualInputTime() const;
 	void                  WriteFirstMessage();
 	void                  WriteNextMessage();
 	void                  WriteLastMessage();
