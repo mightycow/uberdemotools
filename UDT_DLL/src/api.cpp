@@ -67,6 +67,14 @@ static const char* MeansOfDeathNames[] =
 };
 #undef UDT_MOD_ITEM
 
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Desc,
+static const char* PlayerMeansOfDeathNames[] =
+{
+	UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+	"after last player MoD"
+};
+#undef UDT_PLAYER_MOD_ITEM
+
 #define UDT_TEAM_ITEM(Enum, Desc) Desc,
 static const char* TeamNames[] =
 {
@@ -241,6 +249,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::MeansOfDeath:
 			*elements = MeansOfDeathNames;
 			*elementCount = (u32)(UDT_COUNT_OF(MeansOfDeathNames) - 1);
+			break;
+
+		case udtStringArray::PlayerMeansOfDeath:
+			*elements = PlayerMeansOfDeathNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerMeansOfDeathNames) - 1);
 			break;
 
 		case udtStringArray::Teams:

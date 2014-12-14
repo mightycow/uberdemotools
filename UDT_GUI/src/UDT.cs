@@ -69,6 +69,7 @@ namespace Uber.DemoTools
             Weapons,
             PowerUps,
             MeansOfDeath,
+            PlayerMeansOfDeath,
             Teams,
             Count
         };
@@ -148,7 +149,7 @@ namespace Uber.DemoTools
             public UInt32 EndOffsetSec;
             public Int32 PlayerIndex;
             public UInt32 Flags;
-            public Int32 Reserved1;
+            public UInt32 AllowedMeansOfDeaths;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

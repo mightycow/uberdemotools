@@ -186,13 +186,13 @@ namespace Uber.DemoTools
         private RadioButton _autoPlayerSelectionRadioButton = null;
         private RadioButton _manualPlayerSelectionRadioButton = null;
         private TextBox _playerIndexTextBox = null;
-        private FilterGroupBox _modFilters = null;
+        private FilterGroupBox _playerMODFilters = null;
         //private FilterGroupBox _powerUpFilters = null;
         //private FilterGroupBox _weaponFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
-            _modFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.MeansOfDeath, 3);
+            _playerMODFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
             //_powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
             //_weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
 
@@ -352,7 +352,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
             rootPanel.Children.Add(new WpfHelper.WrapPanelNewLine());
-            rootPanel.Children.Add(_modFilters.RootElement);
+            rootPanel.Children.Add(_playerMODFilters.RootElement);
             //rootPanel.Children.Add(_powerUpFilters.RootElement);
             //rootPanel.Children.Add(_weaponFilters.RootElement);
 
@@ -371,6 +371,7 @@ namespace Uber.DemoTools
         {
             public List<string> FilePaths = null;
             public int PlayerIndex = -1;
+            public UInt32 AllowedMeansOfDeaths = 0;
         }
 
         private void OnCutByFragClicked()
@@ -393,6 +394,13 @@ namespace Uber.DemoTools
                 }
             }
 
+            UInt32 allowedPlayerMODs = _playerMODFilters.GetBitMask();
+            if(allowedPlayerMODs == 0)
+            {
+                _app.LogError("You didn't check any Mean of Death. Please check at least one to proceed.");
+                return;
+            }
+
             _app.SaveConfig();
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
@@ -406,6 +414,7 @@ namespace Uber.DemoTools
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;
             threadArg.PlayerIndex = playerIndex;
+            threadArg.AllowedMeansOfDeaths = allowedPlayerMODs;
 
             _app.StartJobThread(DemoCutByFragThread, threadArg);
         }
@@ -470,6 +479,7 @@ namespace Uber.DemoTools
                 rules.EndOffsetSec = (UInt32)config.ChatCutEndOffset;
                 rules.Flags = flags;
                 rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
+                rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;
                 UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.MaxThreadCount);
             }
             catch(Exception exception)

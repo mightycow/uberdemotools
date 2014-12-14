@@ -17,8 +17,10 @@ public:
 	typedef udtVMArray<CutSection> CutSectionVector;
 
 public:
-	udtCutByFragAnalyzer(const udtCutByFragArg& info) : _info(info)
+	udtCutByFragAnalyzer(const udtCutByFragArg& info) 
+		: _info(info)
 	{
+		_protocol = udtProtocol::Invalid;
 	}
 
 	~udtCutByFragAnalyzer()
@@ -27,6 +29,7 @@ public:
 
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 	{
+		_protocol = parser._protocol;
 		_analyzer.ProcessGamestateMessage(arg, parser);
 	}
 
@@ -59,6 +62,7 @@ private:
 	const udtCutByFragArg& _info;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
+	udtProtocol::Id _protocol;
 };
 
 struct udtParserPlugInCutByFrag : udtBaseParserPlugIn

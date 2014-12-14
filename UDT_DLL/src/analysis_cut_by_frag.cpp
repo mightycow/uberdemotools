@@ -1,4 +1,5 @@
 #include "analysis_cut_by_frag.hpp"
+#include "utils.hpp"
 
 
 static bool AreTeammates(s32 team1, s32 team2)
@@ -8,6 +9,18 @@ static bool AreTeammates(s32 team1, s32 team2)
 		(team1 >= 0) &&
 		(team1 < (s32)udtTeam::Count) &&
 		(team1 == (s32)udtTeam::Red || (s32)team1 == udtTeam::Blue);
+}
+
+static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::Id procotol)
+{
+	if(procotol <= (s32)udtProtocol::Invalid || procotol >= (s32)udtProtocol::Count)
+	{
+		return true;
+	}
+
+	const s32 bit = procotol == (s32)udtProtocol::Dm68 ? GetUDTPlayerMODBitFromIdMod68(idMOD) : GetUDTPlayerMODBitFromIdMod73(idMOD);
+
+	return (udtPlayerMODFlags & (u32)bit) != 0;
 }
 
 
@@ -45,6 +58,13 @@ void udtCutByFragAnalyzer::FindCutSections()
 			{
 				AddCurrentSectionIfValid();
 			}
+			continue;
+		}
+
+		// Did we use a weapon that's not allowed?
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, _info.AllowedMeansOfDeaths, _protocol))
+		{
+			AddCurrentSectionIfValid();
 			continue;
 		}
 

@@ -203,10 +203,48 @@ struct udtMeansOfDeathBits
 	enum Id
 	{
 		UDT_MOD_LIST(UDT_MOD_ITEM)
-		AfterLast
+		AfterLast,
+		MissionPackStart = NailGun,
+		MissionPackEnd = Juiced,
+		QLStart = TeamSwitch,
+		QLEnd = HeavyMachineGun,
 	};
 };
 #undef UDT_MOD_ITEM
+
+#define UDT_PLAYER_MOD_LIST(N) \
+	N(Shotgun, "shotgun", 0) \
+	N(Gauntlet, "gauntlet", 1) \
+	N(MachineGun, "machine gun", 2) \
+	N(Grenade, "grenade", 3) \
+	N(GrenadeSplash, "grenade splash", 4) \
+	N(Rocket, "rocket", 5) \
+	N(RocketSplash, "rocket splash", 6) \
+	N(Plasma, "plasma", 7) \
+	N(PlasmaSplash, "plasma splash", 8) \
+	N(Railgun, "railgun", 9) \
+	N(Lightning, "lightning", 10) \
+	N(BFG, "BFG", 11) \
+	N(BFGSplash, "BFG splash", 12) \
+	N(TeleFrag, "telefrag", 13) \
+	N(NailGun, "nailgun", 14) \
+	N(ChainGun, "chaingun", 15) \
+	N(ProximityMine, "proximity mine", 16) \
+	N(Kamikaze, "kamikaze", 17) \
+	N(Grapple, "grapple", 18) \
+	N(Thaw, "thaw", 19) \
+	N(HeavyMachineGun, "heavy machine gun", 20)
+
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtPlayerMeansOfDeathBits
+{
+	enum Id
+	{
+		UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+		AfterLast
+	};
+};
+#undef UDT_PLAYER_MOD_ITEM
 
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
@@ -232,6 +270,7 @@ struct udtStringArray
 		Weapons,
 		PowerUps,
 		MeansOfDeath,
+		PlayerMeansOfDeath,
 		Teams,
 		Count
 	};
@@ -390,6 +429,7 @@ extern "C"
 		// See TimeMode for the interpretation of this value.
 		u32 TimeBetweenFragsSec;
 
+		// @TODO: Not supported for now.
 		// If 0, TimeBetweenFragsSec is the maximum time interval between 
 		// 2 consecutive frags, in seconds.
 		// If 1, TimeBetweenFragsSec is the maximum average time between frags
@@ -407,12 +447,16 @@ extern "C"
 		// If not, will use the index of the player who recorded the demo.
 		s32 PlayerIndex;
 
-		// @TODO:
+		// Boolean options.
 		// See udtCutByFragArgFlags.
 		u32 Flags;
-		u32 AllowedWeapons;
-		u32 AllowedPowerUps;
+		
+		// All the allowed weapons.
+		// See udtPlayerMeansOfDeathBits.
 		u32 AllowedMeansOfDeaths;
+
+		// @TODO:
+		//u32 AllowedPowerUps;
 	};
 
 	struct udtChatEventData

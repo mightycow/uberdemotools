@@ -892,3 +892,88 @@ const char* GetTeamName(s32 team)
 		default: return "unknown";
 	}
 }
+
+s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
+{
+	if(idMod < 0 || idMod >= (s32)idMeansOfDeath68::Count)
+	{
+		return -1;
+	}
+
+	s32 lut[idMeansOfDeath68::Count];
+	memset(lut, -1, sizeof(lut));
+	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
+	lut[idMeansOfDeath68::Unknown] = -1;
+	lut[idMeansOfDeath68::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
+	lut[idMeansOfDeath68::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
+	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
+	lut[idMeansOfDeath68::Grenade] = udtPlayerMeansOfDeathBits::Grenade;
+	lut[idMeansOfDeath68::GrenadeSplash] = udtPlayerMeansOfDeathBits::Grenade;
+	lut[idMeansOfDeath68::Rocket] = udtPlayerMeansOfDeathBits::Rocket;
+	lut[idMeansOfDeath68::RocketSplash] = udtPlayerMeansOfDeathBits::RocketSplash;
+	lut[idMeansOfDeath68::Plasma] = udtPlayerMeansOfDeathBits::Plasma;
+	lut[idMeansOfDeath68::PlasmaSplash] = udtPlayerMeansOfDeathBits::PlasmaSplash;
+	lut[idMeansOfDeath68::RailGun] = udtPlayerMeansOfDeathBits::Railgun;
+	lut[idMeansOfDeath68::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
+	lut[idMeansOfDeath68::BFG] = udtPlayerMeansOfDeathBits::BFG;
+	lut[idMeansOfDeath68::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
+	lut[idMeansOfDeath68::Water] = -1;
+	lut[idMeansOfDeath68::Slime] = -1;
+	lut[idMeansOfDeath68::Lava] = -1;
+	lut[idMeansOfDeath68::Crush] = -1;
+	lut[idMeansOfDeath68::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
+	lut[idMeansOfDeath68::Fall] = -1;
+	lut[idMeansOfDeath68::Suicide] = -1;
+	lut[idMeansOfDeath68::TargetLaser] = -1;
+	lut[idMeansOfDeath68::HurtTrigger] = -1;
+	lut[idMeansOfDeath68::Grapple] = -1;
+
+	return lut[idMod];
+}
+
+s32 GetUDTPlayerMODBitFromIdMod73(s32 idMod)
+{
+	if(idMod < 0 || idMod >= (s32)idMeansOfDeath73::Count)
+	{
+		return -1;
+	}
+
+	s32 lut[idMeansOfDeath73::Count];
+	memset(lut, -1, sizeof(lut));
+	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
+	lut[idMeansOfDeath73::Unknown] = -1;
+	lut[idMeansOfDeath73::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
+	lut[idMeansOfDeath73::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
+	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
+	lut[idMeansOfDeath73::Grenade] = udtPlayerMeansOfDeathBits::Grenade;
+	lut[idMeansOfDeath73::GrenadeSplash] = udtPlayerMeansOfDeathBits::Grenade;
+	lut[idMeansOfDeath73::Rocket] = udtPlayerMeansOfDeathBits::Rocket;
+	lut[idMeansOfDeath73::RocketSplash] = udtPlayerMeansOfDeathBits::RocketSplash;
+	lut[idMeansOfDeath73::Plasma] = udtPlayerMeansOfDeathBits::Plasma;
+	lut[idMeansOfDeath73::PlasmaSplash] = udtPlayerMeansOfDeathBits::PlasmaSplash;
+	lut[idMeansOfDeath73::RailGun] = udtPlayerMeansOfDeathBits::Railgun;
+	lut[idMeansOfDeath73::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
+	lut[idMeansOfDeath73::BFG] = udtPlayerMeansOfDeathBits::BFG;
+	lut[idMeansOfDeath73::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
+	lut[idMeansOfDeath73::Water] = -1;
+	lut[idMeansOfDeath73::Slime] = -1;
+	lut[idMeansOfDeath73::Lava] = -1;
+	lut[idMeansOfDeath73::Crush] = -1;
+	lut[idMeansOfDeath73::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
+	lut[idMeansOfDeath73::Fall] = -1;
+	lut[idMeansOfDeath73::Suicide] = -1;
+	lut[idMeansOfDeath73::TargetLaser] = -1;
+	lut[idMeansOfDeath73::HurtTrigger] = -1;
+	lut[idMeansOfDeath73::NailGun] = udtPlayerMeansOfDeathBits::NailGun;
+	lut[idMeansOfDeath73::ChainGun] = udtPlayerMeansOfDeathBits::ChainGun;
+	lut[idMeansOfDeath73::ProximityMine] = udtPlayerMeansOfDeathBits::ProximityMine;
+	lut[idMeansOfDeath73::Kamikaze] = udtPlayerMeansOfDeathBits::Kamikaze;
+	lut[idMeansOfDeath73::Juiced] = -1;
+	lut[idMeansOfDeath73::Grapple] = -1;
+	lut[idMeansOfDeath73::TeamSwitch] = -1;
+	lut[idMeansOfDeath73::Thaw] = udtPlayerMeansOfDeathBits::Thaw;
+	lut[idMeansOfDeath73::UnknownQlMod1] = -1;
+	lut[idMeansOfDeath73::HeavyMachineGun] = udtPlayerMeansOfDeathBits::HeavyMachineGun;
+
+	return lut[idMod];
+}
