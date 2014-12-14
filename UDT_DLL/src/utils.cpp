@@ -897,13 +897,13 @@ s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
 {
 	if(idMod < 0 || idMod >= (s32)idMeansOfDeath68::Count)
 	{
-		return -1;
+		return 0;
 	}
 
 	s32 lut[idMeansOfDeath68::Count];
-	memset(lut, -1, sizeof(lut));
+	memset(lut, 0, sizeof(lut));
 	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	lut[idMeansOfDeath68::Unknown] = -1;
+	//lut[idMeansOfDeath68::Unknown] = 0;
 	lut[idMeansOfDeath68::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
 	lut[idMeansOfDeath68::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
 	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
@@ -917,16 +917,16 @@ s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
 	lut[idMeansOfDeath68::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
 	lut[idMeansOfDeath68::BFG] = udtPlayerMeansOfDeathBits::BFG;
 	lut[idMeansOfDeath68::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
-	lut[idMeansOfDeath68::Water] = -1;
-	lut[idMeansOfDeath68::Slime] = -1;
-	lut[idMeansOfDeath68::Lava] = -1;
-	lut[idMeansOfDeath68::Crush] = -1;
+	//lut[idMeansOfDeath68::Water] = 0;
+	//lut[idMeansOfDeath68::Slime] = 0;
+	//lut[idMeansOfDeath68::Lava] = 0;
+	//lut[idMeansOfDeath68::Crush] = 0;
 	lut[idMeansOfDeath68::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
-	lut[idMeansOfDeath68::Fall] = -1;
-	lut[idMeansOfDeath68::Suicide] = -1;
-	lut[idMeansOfDeath68::TargetLaser] = -1;
-	lut[idMeansOfDeath68::HurtTrigger] = -1;
-	lut[idMeansOfDeath68::Grapple] = -1;
+	//lut[idMeansOfDeath68::Fall] = 0;
+	//lut[idMeansOfDeath68::Suicide] = 0;
+	//lut[idMeansOfDeath68::TargetLaser] = 0;
+	//lut[idMeansOfDeath68::HurtTrigger] = 0;
+	//lut[idMeansOfDeath68::Grapple] = 0;
 
 	return lut[idMod];
 }
@@ -935,13 +935,13 @@ s32 GetUDTPlayerMODBitFromIdMod73(s32 idMod)
 {
 	if(idMod < 0 || idMod >= (s32)idMeansOfDeath73::Count)
 	{
-		return -1;
+		return 0;
 	}
 
 	s32 lut[idMeansOfDeath73::Count];
-	memset(lut, -1, sizeof(lut));
+	memset(lut, 0, sizeof(lut));
 	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	lut[idMeansOfDeath73::Unknown] = -1;
+	//lut[idMeansOfDeath73::Unknown] = 0;
 	lut[idMeansOfDeath73::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
 	lut[idMeansOfDeath73::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
 	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
@@ -955,24 +955,24 @@ s32 GetUDTPlayerMODBitFromIdMod73(s32 idMod)
 	lut[idMeansOfDeath73::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
 	lut[idMeansOfDeath73::BFG] = udtPlayerMeansOfDeathBits::BFG;
 	lut[idMeansOfDeath73::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
-	lut[idMeansOfDeath73::Water] = -1;
-	lut[idMeansOfDeath73::Slime] = -1;
-	lut[idMeansOfDeath73::Lava] = -1;
-	lut[idMeansOfDeath73::Crush] = -1;
+	//lut[idMeansOfDeath73::Water] = 0;
+	//lut[idMeansOfDeath73::Slime] = 0;
+	//lut[idMeansOfDeath73::Lava] = 0;
+	//lut[idMeansOfDeath73::Crush] = 0;
 	lut[idMeansOfDeath73::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
-	lut[idMeansOfDeath73::Fall] = -1;
-	lut[idMeansOfDeath73::Suicide] = -1;
-	lut[idMeansOfDeath73::TargetLaser] = -1;
-	lut[idMeansOfDeath73::HurtTrigger] = -1;
+	//lut[idMeansOfDeath73::Fall] = 0;
+	//lut[idMeansOfDeath73::Suicide] = 0;
+	//lut[idMeansOfDeath73::TargetLaser] = 0;
+	//lut[idMeansOfDeath73::HurtTrigger] = 0;
 	lut[idMeansOfDeath73::NailGun] = udtPlayerMeansOfDeathBits::NailGun;
 	lut[idMeansOfDeath73::ChainGun] = udtPlayerMeansOfDeathBits::ChainGun;
 	lut[idMeansOfDeath73::ProximityMine] = udtPlayerMeansOfDeathBits::ProximityMine;
 	lut[idMeansOfDeath73::Kamikaze] = udtPlayerMeansOfDeathBits::Kamikaze;
-	lut[idMeansOfDeath73::Juiced] = -1;
-	lut[idMeansOfDeath73::Grapple] = -1;
-	lut[idMeansOfDeath73::TeamSwitch] = -1;
+	//lut[idMeansOfDeath73::Juiced] = 0;
+	//lut[idMeansOfDeath73::Grapple] = 0;
+	//lut[idMeansOfDeath73::TeamSwitch] = 0;
 	lut[idMeansOfDeath73::Thaw] = udtPlayerMeansOfDeathBits::Thaw;
-	lut[idMeansOfDeath73::UnknownQlMod1] = -1;
+	//lut[idMeansOfDeath73::UnknownQlMod1] = 0;
 	lut[idMeansOfDeath73::HeavyMachineGun] = udtPlayerMeansOfDeathBits::HeavyMachineGun;
 
 	return lut[idMod];
