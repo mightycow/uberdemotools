@@ -160,12 +160,12 @@ namespace Uber.DemoTools
                 _app.Config.FragCutEndOffset = intValue;
             }
 
-            if(int.TryParse(_minFragCountEditBox.Text, out intValue) && intValue > 2)
+            if(int.TryParse(_minFragCountEditBox.Text, out intValue))
             {
                 _app.Config.FragCutMinFragCount = intValue;
             }
 
-            if(int.TryParse(_timeBetweenFragsEditBox.Text, out intValue) && intValue > 0)
+            if(int.TryParse(_timeBetweenFragsEditBox.Text, out intValue))
             {
                 _app.Config.FragCutTimeBetweenFrags = intValue;
             }
@@ -402,6 +402,17 @@ namespace Uber.DemoTools
             }
 
             _app.SaveConfig();
+            if(_app.Config.FragCutMinFragCount < 2)
+            {
+                _app.LogError("'Min. Frag Count' must be 2 or higher.");
+                return;
+            }
+            if(_app.Config.FragCutTimeBetweenFrags < 1)
+            {
+                _app.LogError("'Time Between Frags' must be strictly positive.");
+                return;
+            }
+
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
 
