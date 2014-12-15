@@ -256,6 +256,8 @@ namespace Uber.DemoTools
             var filePaths = arg as List<string>;
             if(filePaths == null)
             {
+                _app.LogError("Invalid thread argument type");
+                _app.EnableUiThreadSafe();
                 return;
             }
 

@@ -100,15 +100,6 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		return;
 	}
 
-	if(RecordingPlayerIndex == -1)
-	{
-		idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._protocol);
-		if(ps != NULL && ps->clientNum >= 0 && ps->clientNum < 64)
-		{
-			RecordingPlayerIndex = ps->clientNum;
-		}
-	}
-
 	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
@@ -117,28 +108,32 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		const s32 eventType = ent->eType & (~EV_EVENT_BITS);
 		if(eventType == (s32)(ET_EVENTS + obituaryEvtId))
 		{
-			const s32 target = ent->otherEntityNum;
-			if(target < 0 || target >= MAX_CLIENTS)
+			const s32 targetIdx = ent->otherEntityNum;
+			if(targetIdx < 0 || targetIdx >= MAX_CLIENTS)
 			{
 				continue;
 			}
 
-			s32 attacker = ent->otherEntityNum2;
-			if(attacker < 0 || attacker >= MAX_CLIENTS)
+			s32 attackerIdx = ent->otherEntityNum2;
+			if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
 			{
-				attacker = ENTITYNUM_WORLD;
+				attackerIdx = ENTITYNUM_WORLD;
 			}
 
-			const char* const targetName = AllocatePlayerName(parser, target);
-			const char* const attackerName = AllocatePlayerName(parser, attacker);
+			const s32 targetTeamIdx = _playerTeams[targetIdx];
+			const s32 attackerTeamIdx = (attackerIdx == ENTITYNUM_WORLD) ? -1 : _playerTeams[attackerIdx];
+			const char* const targetName = AllocatePlayerName(parser, targetIdx);
+			const char* const attackerName = AllocatePlayerName(parser, attackerIdx);
 			const s32 meanOfDeath = ent->eventParm;
 
 			udtParseDataObituary info;
+			info.TargetTeamIdx = targetTeamIdx;
+			info.AttackerTeamIdx = attackerTeamIdx;
 			info.MeanOfDeath = meanOfDeath;
 			info.GameStateIndex = parser._inGameStateIndex;
 			info.ServerTimeMs = arg.Snapshot->serverTime;
-			info.TargetIdx = target;
-			info.AttackerIdx = attacker;
+			info.TargetIdx = targetIdx;
+			info.AttackerIdx = attackerIdx;
 			info.TargetName = targetName;
 			info.AttackerName = attackerName;
 			info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath, parser._protocol);
@@ -173,4 +168,50 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	playerName = Q_CleanStr(playerName);
 
 	return AllocateString(_playerNamesAllocator, playerName);
+}
+
+void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+{
+	RecordingPlayerIndex = arg.ClientNum;
+
+	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73;
+	for(s32 i = 0; i < 64; ++i)
+	{
+		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
+		if(cs != NULL)
+		{
+			ParseConfigStringValueInt(_playerTeams[i], "t", cs->String);
+		}
+	}
+}
+
+void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
+{
+	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const int tokenCount = tokenizer.argc();
+	if(strcmp(tokenizer.argv(0), "cs") != 0 || tokenCount != 3)
+	{
+		return;
+	}
+
+	s32 csIndex = -1;
+	if(!StringParseInt(csIndex, tokenizer.argv(1)))
+	{
+		return;
+	}
+
+	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73;
+	const s32 playerIdx = csIndex - csFirstPlayerIdx;
+	if(playerIdx < 0 || playerIdx >= 64)
+	{
+		return;
+	}
+
+	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIndex);
+	if(cs == NULL)
+	{
+		return;
+	}
+
+	ParseConfigStringValueInt(_playerTeams[playerIdx], "t", cs->String);
 }

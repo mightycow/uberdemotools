@@ -748,33 +748,84 @@ typedef enum {
 
 } entity_event_t;
 
-// means of death
-typedef enum {
-	MOD_UNKNOWN,
-	MOD_SHOTGUN,
-	MOD_GAUNTLET,
-	MOD_MACHINEGUN,
-	MOD_GRENADE,
-	MOD_GRENADE_SPLASH,
-	MOD_ROCKET,
-	MOD_ROCKET_SPLASH,
-	MOD_PLASMA,
-	MOD_PLASMA_SPLASH,
-	MOD_RAILGUN,
-	MOD_LIGHTNING,
-	MOD_BFG,
-	MOD_BFG_SPLASH,
-	MOD_WATER,
-	MOD_SLIME,
-	MOD_LAVA,
-	MOD_CRUSH,
-	MOD_TELEFRAG,
-	MOD_FALLING,
-	MOD_SUICIDE,
-	MOD_TARGET_LASER,
-	MOD_TRIGGER_HURT,
-	MOD_GRAPPLE
-} meansOfDeath_t;
+// Means of Death
+struct idMeansOfDeath68
+{
+	enum Id
+	{
+		Unknown,
+		Shotgun,
+		Gauntlet,
+		MachineGun,
+		Grenade,
+		GrenadeSplash,
+		Rocket,
+		RocketSplash,
+		Plasma,
+		PlasmaSplash,
+		RailGun,
+		Lightning,
+		BFG,
+		BFGSplash,
+		Water,
+		Slime,
+		Lava,
+		Crush,
+		TeleFrag,
+		Fall,
+		Suicide,
+		TargetLaser,
+		HurtTrigger,
+		Grapple,
+		Count
+	};
+};
+
+// Means of Death
+struct idMeansOfDeath73
+{
+	enum Id
+	{
+		Unknown,
+		Shotgun,
+		Gauntlet,
+		MachineGun,
+		Grenade,
+		GrenadeSplash,
+		Rocket,
+		RocketSplash,
+		Plasma,
+		PlasmaSplash,
+		RailGun,
+		Lightning,
+		BFG,
+		BFGSplash,
+		Water,
+		Slime,
+		Lava,
+		Crush,
+		TeleFrag,
+		Fall,
+		Suicide,
+		TargetLaser,
+		HurtTrigger,
+		// Mission pack start
+		NailGun,
+		ChainGun,
+		ProximityMine,
+		Kamikaze,
+		Juiced,
+		// Mission pack end
+		Grapple,
+		// QL start
+		TeamSwitch,
+		Thaw,
+		UnknownQlMod1,
+		HeavyMachineGun,
+		// QL end
+		Count
+	};
+};
 
 //
 // entityState_t->eType

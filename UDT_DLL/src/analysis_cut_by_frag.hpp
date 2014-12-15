@@ -17,12 +17,25 @@ public:
 	typedef udtVMArray<CutSection> CutSectionVector;
 
 public:
-	udtCutByFragAnalyzer(const udtCutByFragArg& info) : _info(info)
+	udtCutByFragAnalyzer(const udtCutByFragArg& info) 
+		: _info(info)
 	{
+		_protocol = udtProtocol::Invalid;
 	}
 
 	~udtCutByFragAnalyzer()
 	{
+	}
+
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+	{
+		_protocol = parser._protocol;
+		_analyzer.ProcessGamestateMessage(arg, parser);
+	}
+
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+	{
+		_analyzer.ProcessCommandMessage(arg, parser);
 	}
 
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
@@ -49,6 +62,7 @@ private:
 	const udtCutByFragArg& _info;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
+	udtProtocol::Id _protocol;
 };
 
 struct udtParserPlugInCutByFrag : udtBaseParserPlugIn
@@ -60,6 +74,16 @@ public:
 
 	~udtParserPlugInCutByFrag()
 	{
+	}
+
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+	{
+		Analyzer.ProcessGamestateMessage(arg, parser);
+	}
+
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+	{
+		Analyzer.ProcessCommandMessage(arg, parser);
 	}
 
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)

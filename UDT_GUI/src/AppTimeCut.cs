@@ -322,6 +322,13 @@ namespace Uber.DemoTools
         private void DemoCutByTimeThreadImpl(object arg)
         {
             var info = (CutByTimeInfo)arg;
+            if(info == null)
+            {
+                _app.LogError("Invalid thread argument type");
+                _app.EnableUiThreadSafe();
+                return;
+            }
+
             var protocol = App.GetProtocolFromFilePath(info.FilePath);
             if(protocol == UDT_DLL.udtProtocol.Invalid)
             {

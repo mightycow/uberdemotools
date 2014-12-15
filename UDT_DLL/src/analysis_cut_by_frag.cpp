@@ -1,16 +1,76 @@
 #include "analysis_cut_by_frag.hpp"
+#include "utils.hpp"
+
+
+static bool AreTeammates(s32 team1, s32 team2)
+{
+	return
+		(team1 == team2) &&
+		(team1 >= 0) &&
+		(team1 < (s32)udtTeam::Count) &&
+		(team1 == (s32)udtTeam::Red || (s32)team1 == udtTeam::Blue);
+}
+
+static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::Id procotol)
+{
+	if(procotol <= (s32)udtProtocol::Invalid || procotol >= (s32)udtProtocol::Count)
+	{
+		return true;
+	}
+
+	const s32 bit = procotol == (s32)udtProtocol::Dm68 ? GetUDTPlayerMODBitFromIdMod68(idMOD) : GetUDTPlayerMODBitFromIdMod73(idMOD);
+
+	return (udtPlayerMODFlags & (u32)bit) != 0;
+}
 
 
 void udtCutByFragAnalyzer::FindCutSections()
 {
+	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
+	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
+	const bool allowTeamKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
+	const bool allowAnyDeath = (_info.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
+
 	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
-		if(data.AttackerIdx != _analyzer.RecordingPlayerIndex || 
-		   data.TargetIdx == _analyzer.RecordingPlayerIndex)
+
+		// Got killed?
+		if(data.TargetIdx == playerIndex)
+		{
+			if(!allowAnyDeath || (!allowSelfKills && data.AttackerIdx == data.TargetIdx))
+			{
+				AddCurrentSectionIfValid();
+			}
+			continue;
+		}
+
+		// Someone else did the kill?
+		if(data.AttackerIdx != playerIndex)
 		{
 			continue;
 		}
+
+		// We killed someone we shouldn't have?
+		if(AreTeammates(data.TargetTeamIdx, data.AttackerTeamIdx))
+		{
+			if(!allowTeamKills)
+			{
+				AddCurrentSectionIfValid();
+			}
+			continue;
+		}
+
+		// Did we use a weapon that's not allowed?
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, _info.AllowedMeansOfDeaths, _protocol))
+		{
+			AddCurrentSectionIfValid();
+			continue;
+		}
+
+		//
+		// We passed all the filters, so we got a match.
+		//
 
 		if(_frags.IsEmpty())
 		{

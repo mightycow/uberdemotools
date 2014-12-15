@@ -42,7 +42,6 @@ public:
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
 	bool                  ShouldWriteMessage() const;
-	s32                   GetVirtualInputTime() const;
 	void                  WriteFirstMessage();
 	void                  WriteNextMessage();
 	void                  WriteLastMessage();
@@ -100,6 +99,7 @@ public:
 	typedef udtVMArray<udtBaseParserPlugIn*> PlugInVector;
 	typedef udtVMArray<u32> FileOffsetVector;
 	typedef udtVMArray<idEntityStateBase*> EntityPointerVector;
+	typedef udtVMArray<s32> ServerTimeVector;
 
 public:
 	// General.
@@ -134,6 +134,7 @@ public:
 	SnapshotVector _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
 	idLargestClientSnapshot _inSnapshot;
 	EntityPointerVector _inParsedEntities; // The entities that were read in the last call to ParsePacketEntities.
+	ServerTimeVector _inEntityEventTimesMs; // The server time, in ms, of the last event for a given entity.
 
 	// Output.
 	CutVector _cuts;

@@ -41,6 +41,9 @@ namespace Uber.DemoTools
         public int FragCutEndOffset = 10;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
+        public bool FragCutAllowSelfKills = false;
+        public bool FragCutAllowTeamKills = false;
+        public bool FragCutAllowAnyDeath = false;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -62,7 +65,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.3.3";
+        private const string GuiVersion = "0.3.4";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -787,9 +790,19 @@ namespace Uber.DemoTools
             window.ShowDialog();
         }
 
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, FrameworkElement b)
+        {
+            return new Tuple<FrameworkElement, FrameworkElement>(a, b);
+        }
+
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, FrameworkElement b)
         {
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, b);
+        }
+
+        public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, string b)
+        {
+            return new Tuple<FrameworkElement, FrameworkElement>(a, new Label { Content = b });
         }
 
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(string a, string b)
@@ -1113,6 +1126,8 @@ namespace Uber.DemoTools
             var filePaths = arg as List<string>;
             if(filePaths == null)
             {
+                LogError("Invalid thread argument type");
+                EnableUiThreadSafe();
                 return;
             }
 
@@ -1326,6 +1341,8 @@ namespace Uber.DemoTools
             var filePath = arg as string;
             if(filePath == null)
             {
+                LogError("Invalid thread argument type");
+                EnableUiThreadSafe();
                 return;
             }
 
@@ -1345,7 +1362,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-
             EnableUiThreadSafe();
         }
 

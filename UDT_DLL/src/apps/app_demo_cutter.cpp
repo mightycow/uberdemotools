@@ -363,6 +363,8 @@ static void CrashHandler(const char* message)
 
 int main(int argc, char** argv)
 {
+	printf("UDT library version: %s\n", udtGetVersionString());
+
 	ResetCurrentDirectory(argv[0]);
 	EnsureConfigExists(ConfigFilePath);
 

@@ -64,6 +64,16 @@ namespace Uber.DemoTools
             Count
         }
 
+        public enum udtStringArray : uint
+        {
+            Weapons,
+            PowerUps,
+            MeansOfDeath,
+            PlayerMeansOfDeath,
+            Teams,
+            Count
+        };
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseArg
         {
@@ -121,6 +131,14 @@ namespace Uber.DemoTools
 		    public UInt32 EndOffsetSec;
 	    }
 
+        [Flags]
+        public enum udtCutByFragArgFlags
+        {
+            AllowSelfKills = 1 << 0,
+            AllowTeamKills = 1 << 1,
+            AllowDeaths = 1 << 2
+        };
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByFragArg
         {
@@ -129,7 +147,9 @@ namespace Uber.DemoTools
             public UInt32 TimeMode; // 0=max, 1=avg
             public UInt32 StartOffsetSec;
             public UInt32 EndOffsetSec;
-            public Int32 Reserved1;
+            public Int32 PlayerIndex;
+            public UInt32 Flags;
+            public UInt32 AllowedMeansOfDeaths;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -179,6 +199,8 @@ namespace Uber.DemoTools
             public Int32 AttackerIdx;
             public Int32 TargetIdx;
             public Int32 MeanOfDeath;
+            public Int32 AttackerTeamIdx;
+            public Int32 TargetTeamIdx;
             public Int32 Reserved2;
 	    };
 
@@ -202,6 +224,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCrash(udtCrashType crashType);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtGetStringArray(udtStringArray arrayId, ref IntPtr array, ref UInt32 elementCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtSetCrashHandler(IntPtr crashHandler);
@@ -264,6 +289,28 @@ namespace Uber.DemoTools
             (UInt32)udtParserPlugIn.GameState,
             (UInt32)udtParserPlugIn.Obituaries
         };
+
+        public static List<string> GetStringArray(udtStringArray array)
+        {
+            IntPtr elements = IntPtr.Zero;
+            UInt32 elementCount = 0;
+            if(udtGetStringArray(array, ref elements, ref elementCount) != udtErrorCode.None)
+            {
+                return null;
+            }
+
+            int elementSize = Marshal.SizeOf(typeof(IntPtr));
+
+            var list = new List<string>();
+            for(UInt32 i = 0; i < elementCount; ++i)
+            {
+                var address = Marshal.ReadIntPtr(elements, (int)i * elementSize);
+                var element = Marshal.PtrToStringAnsi(address);
+                list.Add(element ?? "N/A");
+            }
+
+            return list;
+        }
 
         public static string GetVersion()
         {

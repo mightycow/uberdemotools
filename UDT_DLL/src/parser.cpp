@@ -8,6 +8,7 @@ udtBaseParser::udtBaseParser()
 	, _inCommands(1 << 20)
 	, _inConfigStrings((u32)(2 * MAX_CONFIGSTRINGS * sizeof(udtConfigString)))
 	, _inSnapshots((u32)(PACKET_BACKUP * sizeof(idLargestClientSnapshot)))
+	, _inEntityEventTimesMs((u32)(MAX_GENTITIES * sizeof(s32)))
 {
 	_context = NULL;
 	_protocol = udtProtocol::Invalid;
@@ -23,6 +24,7 @@ udtBaseParser::udtBaseParser()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -59,6 +61,12 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_inSnapshots.Resize(PACKET_BACKUP * _protocolSizeOfClientSnapshot);
 	memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
 
+	_inEntityEventTimesMs.Resize(MAX_GENTITIES);
+	for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
+	{
+		_inEntityEventTimesMs[i] = S32_MIN;
+	}
+
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
 	if(gameStateIndex > 0)
@@ -81,6 +89,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -95,6 +104,14 @@ void udtBaseParser::ResetForGamestateMessage()
 	if(_inSnapshots.GetSize() == PACKET_BACKUP)
 	{
 		memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
+	}
+
+	if(_inEntityEventTimesMs.GetSize() == MAX_GENTITIES)
+	{
+		for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
+		{
+			_inEntityEventTimesMs[i] = S32_MIN;
+		}
 	}
 
 	_inCommands.Clear();
@@ -118,6 +135,7 @@ void udtBaseParser::Reset()
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
 	_inGameStateFileOffsets.Clear();
+	_inServerTime = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -136,6 +154,14 @@ void udtBaseParser::Reset()
 	if(_inSnapshots.GetSize() == PACKET_BACKUP)
 	{
 		memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
+	}
+
+	if(_inEntityEventTimesMs.GetSize() == MAX_GENTITIES)
+	{
+		for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
+		{
+			_inEntityEventTimesMs[i] = S32_MIN;
+		}
 	}
 
 	_inCommands.Clear();
@@ -251,7 +277,7 @@ bool udtBaseParser::ParseServerMessage()
 	if(_cuts.GetSize() > 0)
 	{
 		const udtCutInfo cut = _cuts[0];
-		const s32 gameTime = GetVirtualInputTime();
+		const s32 gameTime = _inServerTime;
 
 		if(_inGameStateIndex == cut.GameStateIndex && !_outWriteMessage &&
 		   gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs)
@@ -340,11 +366,6 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoS
 bool udtBaseParser::ShouldWriteMessage() const
 {
 	return _outWriteMessage;
-}
-
-s32 udtBaseParser::GetVirtualInputTime() const
-{
-	return _inServerTime;
 }
 
 void udtBaseParser::WriteFirstMessage()
@@ -955,8 +976,14 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	{
 		if(msg.ReadDeltaEntity(old, state, newnum))
 		{
-			_inParsedEntities.Add(state);
+			// @TODO: Confirm correctness. Is EVENT_VALID_MSEC only for "event entities" or for all entities?
+			// If not, we'll need to bundle the pointer into a struct with a new boolean "NewEvent".
+			if(_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC)
+			{
+				_inParsedEntities.Add(state);
+			}
 		}
+		_inEntityEventTimesMs[newnum] = _inServerTime;
 	}
 
 	// The entity was delta removed?

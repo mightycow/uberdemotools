@@ -1,3 +1,10 @@
+0.3.4 (15.12.2014)
+FIX: Properly set the rules group box heading in the "Cut by Frag" tab
+FIX: Always re-enabling the UI after threaded jobs
+ADD: Cut by Frag: allow self-kills/team-kills/any death options
+ADD: Cut by Frag: automatic or manual player index selection
+ADD: Cut by Frag: Means of Death filters
+
 0.3.3 (11.12.2014)
 ADD: "Frags" tab: displays all obituaries (all deaths, not just those caused by a player)
 ADD: "Cut by Frags" tab: to find and cut frag sequences

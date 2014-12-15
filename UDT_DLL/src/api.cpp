@@ -24,7 +24,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.3.2";
+static const char* VersionString = "0.3.3";
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -43,6 +43,45 @@ static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
 };
 #undef UDT_PROTOCOL_ITEM
 
+#define UDT_WEAPON_ITEM(Enum, Desc, Bit) Desc,
+static const char* WeaponNames[] =
+{
+	UDT_WEAPON_LIST(UDT_WEAPON_ITEM)
+	"after last weapon"
+};
+#undef UDT_WEAPON_ITEM
+
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Desc,
+static const char* PowerUpNames[] =
+{
+	UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
+	"after last power-up"
+};
+#undef UDT_POWER_UP_ITEM
+
+#define UDT_MOD_ITEM(Enum, Desc, Bit) Desc,
+static const char* MeansOfDeathNames[] =
+{
+	UDT_MOD_LIST(UDT_MOD_ITEM)
+	"after last MoD"
+};
+#undef UDT_MOD_ITEM
+
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Desc,
+static const char* PlayerMeansOfDeathNames[] =
+{
+	UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+	"after last player MoD"
+};
+#undef UDT_PLAYER_MOD_ITEM
+
+#define UDT_TEAM_ITEM(Enum, Desc) Desc,
+static const char* TeamNames[] =
+{
+	UDT_TEAM_LIST(UDT_TEAM_ITEM)
+	"after last team"
+};
+#undef UDT_TEAM_ITEM
 
 
 struct SingleThreadProgressContext
@@ -183,6 +222,47 @@ UDT_API(s32) udtCrash(udtCrashType::Id crashType)
 
 		default:
 			break;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** elements, u32* elementCount)
+{
+	if(elements == NULL || elementCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	switch(arrayId)
+	{
+		case udtStringArray::Weapons:
+			*elements = WeaponNames;
+			*elementCount = (u32)(UDT_COUNT_OF(WeaponNames) - 1);
+			break;
+
+		case udtStringArray::PowerUps:
+			*elements = PowerUpNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PowerUpNames) - 1);
+			break;
+
+		case udtStringArray::MeansOfDeath:
+			*elements = MeansOfDeathNames;
+			*elementCount = (u32)(UDT_COUNT_OF(MeansOfDeathNames) - 1);
+			break;
+
+		case udtStringArray::PlayerMeansOfDeath:
+			*elements = PlayerMeansOfDeathNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerMeansOfDeathNames) - 1);
+			break;
+
+		case udtStringArray::Teams:
+			*elements = TeamNames;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamNames) - 1);
+			break;
+
+		default:
+			return (s32)udtErrorCode::InvalidArgument;
 	}
 
 	return (s32)udtErrorCode::None;
