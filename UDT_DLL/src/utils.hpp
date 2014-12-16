@@ -81,5 +81,5 @@ extern bool        ParseConfigStringValueInt(s32& varValue, const char* varName,
 extern bool        ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString); // Gets a config string variable.
 extern s32         ConvertPowerUpFlagsToValue(s32 flags);
 extern const char* GetTeamName(s32 team);
-extern s32         GetUDTPlayerMODBitFromIdMod68(s32 idMod);
-extern s32         GetUDTPlayerMODBitFromIdMod73(s32 idMod); // Same for protocol 90.
+extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
+extern s32         GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol);

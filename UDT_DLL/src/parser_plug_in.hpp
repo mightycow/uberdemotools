@@ -6,6 +6,12 @@
 
 struct udtBaseParser;
 
+struct udtChangedEntity
+{
+	idEntityStateBase* Entity;
+	bool IsNewEvent;
+};
+
 struct udtGamestateCallbackArg
 {
 	s32 ServerCommandSequence;
@@ -16,7 +22,7 @@ struct udtGamestateCallbackArg
 struct udtSnapshotCallbackArg
 {
 	idClientSnapshotBase* Snapshot;
-	idEntityStateBase** Entities;
+	udtChangedEntity* Entities;
 	s32 SnapshotArrayIndex;
 	u32 EntityCount;
 	s32 ServerTime;

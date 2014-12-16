@@ -781,7 +781,7 @@ struct idMeansOfDeath68
 	};
 };
 
-// Means of Death
+// Means of Death, also for protocol 90.
 struct idMeansOfDeath73
 {
 	enum Id

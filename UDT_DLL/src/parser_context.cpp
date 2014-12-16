@@ -3,6 +3,7 @@
 #include "plug_in_chat.hpp"
 #include "plug_in_game_state.hpp"
 #include "analysis_obituaries.hpp"
+#include "analysis_awards.hpp"
 
 // For the placement new operator.
 #include <new>

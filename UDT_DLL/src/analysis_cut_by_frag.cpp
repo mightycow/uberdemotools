@@ -18,7 +18,7 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 		return true;
 	}
 
-	const s32 bit = procotol == (s32)udtProtocol::Dm68 ? GetUDTPlayerMODBitFromIdMod68(idMOD) : GetUDTPlayerMODBitFromIdMod73(idMOD);
+	const s32 bit = GetUDTPlayerMODBitFromIdMod(idMOD, procotol);
 
 	return (udtPlayerMODFlags & (u32)bit) != 0;
 }
