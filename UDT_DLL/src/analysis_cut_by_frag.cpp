@@ -24,7 +24,7 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 }
 
 
-void udtCutByFragAnalyzer::FindCutSections()
+void udtCutByFragAnalyzer::FinishAnalysis()
 {
 	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
 	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
@@ -101,7 +101,7 @@ void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 		return;
 	}
 
-	CutSection cut;
+	udtCutAnalyzerBase::CutSection cut;
 	cut.GameStateIndex = _frags[0].GameStateIndex;
 	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);

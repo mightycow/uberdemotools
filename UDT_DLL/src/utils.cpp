@@ -2,6 +2,7 @@
 #include "common.hpp"
 #include "timer.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "parser_context.hpp"
 
 #include <cstdlib>
 #include <cstdio>
@@ -768,6 +769,40 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	}
 
 	parser.FinishParsing(true);
+
+	return true;
+}
+
+bool RunParserWithPlugIn(udtParserContext* context, udtBaseParserPlugIn& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath, const char* analysisType)
+{
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(filePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(filePath);
+	context->Parser.AddPlugIn(&plugIn);
+
+	context->Context.LogInfo("Processing for %s analysis: %s", analysisType, filePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
 
 	return true;
 }

@@ -61,6 +61,7 @@ namespace Uber.DemoTools
             Chat,
             GameState,
             Obituaries,
+            Awards,
             Count
         }
 
@@ -72,7 +73,7 @@ namespace Uber.DemoTools
             PlayerMeansOfDeath,
             Teams,
             Count
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseArg
@@ -137,7 +138,7 @@ namespace Uber.DemoTools
             AllowSelfKills = 1 << 0,
             AllowTeamKills = 1 << 1,
             AllowDeaths = 1 << 2
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByFragArg
@@ -150,7 +151,16 @@ namespace Uber.DemoTools
             public Int32 PlayerIndex;
             public UInt32 Flags;
             public UInt32 AllowedMeansOfDeaths;
-        };
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtCutByAwardArg
+        {
+            public UInt32 StartOffsetSec;
+            public UInt32 EndOffsetSec;
+            public UInt32 AllowedAwards;
+            public Int32 Reserved1;
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat

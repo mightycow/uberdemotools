@@ -698,6 +698,9 @@ extern "C"
 	// Creates a new demo cut for every matching frag sequence.
 	UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
 
+	// Creates a new demo cut for every matching award sequence.
+	UDT_API(s32) udtCutDemoFileByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath);
+
 	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
 	UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
@@ -739,6 +742,9 @@ extern "C"
 
 	// Creates a new demo cut for every matching frag sequence for each demo.
 	UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo);
+
+	// Creates a new demo cut for every matching award sequence for each demo.
+	UDT_API(s32) udtCutDemoFilesByAward(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByAwardArg* awardInfo);
 
 #ifdef __cplusplus
 }

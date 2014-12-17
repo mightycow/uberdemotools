@@ -10,7 +10,7 @@ static bool IsAwardMatch(u32 udtAwardFlags, s32 idAwardId, udtProtocol::Id proto
 }
 
 
-void udtCutByAwardAnalyzer::FindCutSections()
+void udtCutByAwardAnalyzer::FinishAnalysis()
 {
 	for(u32 i = 0, count = _analyzer.AwardEvents.GetSize(); i < count; ++i)
 	{
@@ -48,7 +48,7 @@ void udtCutByAwardAnalyzer::AddCurrentSectionIfValid()
 		return;
 	}
 
-	CutSection cut;
+	udtCutAnalyzerBase::CutSection cut;
 	cut.GameStateIndex = _awards[0].GameStateIndex;
 	cut.StartTimeMs = _awards[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _awards[matchCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);

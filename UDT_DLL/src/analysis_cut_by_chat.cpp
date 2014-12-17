@@ -32,10 +32,11 @@ static void MergeRanges(udtCutByChatAnalyzer::CutSectionVector& result, const ud
 }
 
 
-void udtCutByChatAnalyzer::ProcessOriginalCommandMessage(udtContext& context, const char* commandMessage, s32 serverTimeMs, s32 gsIndex)
+void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
 {
+	udtContext& context = *parser._context;
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
-	tokenizer.Tokenize(commandMessage);
+	tokenizer.Tokenize(info.String);
 	if(strcmp(tokenizer.argv(0), "chat") != 0 || tokenizer.argc() != 2)
 	{
 		return;
@@ -57,17 +58,18 @@ void udtCutByChatAnalyzer::ProcessOriginalCommandMessage(udtContext& context, co
 		return;
 	}
 
-	const s32 startTimeMs = serverTimeMs - (s32)_info.StartOffsetSec * 1000;
-	const s32 endTimeMs = serverTimeMs + (s32)_info.EndOffsetSec * 1000;
+	const s32 startTimeMs = parser._inServerTime - (s32)_info.StartOffsetSec * 1000;
+	const s32 endTimeMs = parser._inServerTime + (s32)_info.EndOffsetSec * 1000;
 
 	CutSection cutSection;
-	cutSection.GameStateIndex = gsIndex;
+	cutSection.GameStateIndex = parser._inGameStateIndex;
 	cutSection.StartTimeMs = startTimeMs;
 	cutSection.EndTimeMs = endTimeMs;
 	_cutSections.Add(cutSection);
 }
 
-void udtCutByChatAnalyzer::MergeCutSections()
+void udtCutByChatAnalyzer::FinishAnalysis()
 {
-	MergeRanges(MergedCutSections, _cutSections);
+	MergeRanges(CutSections, _cutSections);
+	_cutSections.Clear();
 }
