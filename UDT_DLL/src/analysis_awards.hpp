@@ -17,6 +17,7 @@ public:
 		RecordingPlayerIndex = -1;
 		_lastProcessedServerCommandNumber = -1;
 		_gameStateIndex = -1;
+		_firstSnapshot = true;
 		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
 		{
 			_persistant[i] = 0;
@@ -37,9 +38,10 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtAwardsAnalyzer);
 
+	s32	_persistant[MAX_PERSISTANT];
 	s32 _gameStateIndex;
 	s32 _lastProcessedServerCommandNumber;
-	s32	_persistant[MAX_PERSISTANT];
+	bool _firstSnapshot;
 };
 
 struct udtParserPlugInAwards : udtBaseParserPlugIn
