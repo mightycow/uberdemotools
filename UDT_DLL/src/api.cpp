@@ -84,38 +84,6 @@ static const char* TeamNames[] =
 #undef UDT_TEAM_ITEM
 
 
-struct SingleThreadProgressContext
-{
-	u64 TotalByteCount;
-	u64 ProcessedByteCount;
-	u64 CurrentJobByteCount;
-	udtProgressCallback UserCallback;
-	void* UserData;
-	udtTimer* Timer;
-};
-
-static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
-{
-	SingleThreadProgressContext* const context = (SingleThreadProgressContext*)userData;
-	if(context == NULL || context->Timer == NULL || context->UserCallback == NULL)
-	{
-		return;
-	}
-
-	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
-	{
-		return;
-	}
-
-	context->Timer->Restart();
-
-	const u64 jobProcessed = (u64)((f64)context->CurrentJobByteCount * (f64)jobProgress);
-	const u64 totalProcessed = context->ProcessedByteCount + jobProcessed;
-	const f32 realProgress = udt_clamp((f32)totalProcessed / (f32)context->TotalByteCount, 0.0f, 1.0f);
-
-	(*context->UserCallback)(realProgress, context->UserData);
-}
-
 UDT_API(const char*) udtGetVersionString()
 {
 	return VersionString;
@@ -663,60 +631,6 @@ UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 	return (s32)udtErrorCode::None;
 }
 
-static s32 udtParseDemoFiles_SingleThread(udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo)
-{
-	udtTimer timer;
-	timer.Start();
-
-	udtVMArray<u64> fileSizes;
-	fileSizes.Resize(extraInfo->FileCount);
-
-	u64 totalByteCount = 0;
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
-		fileSizes[i] = byteCount;
-		totalByteCount += byteCount;
-	}
-
-	context->InputIndices.Resize(extraInfo->FileCount);
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		context->InputIndices[i] = i;
-		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
-	}
-
-	SingleThreadProgressContext progressContext;
-	progressContext.Timer = &timer;
-	progressContext.UserCallback = info->ProgressCb;
-	progressContext.UserData = info->ProgressContext;
-	progressContext.CurrentJobByteCount = 0;
-	progressContext.ProcessedByteCount = 0;
-	progressContext.TotalByteCount = totalByteCount;
-
-	udtParseArg newInfo = *info;
-	newInfo.ProgressCb = &SingleThreadProgressCallback;
-	newInfo.ProgressContext = &progressContext;
-
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
-		{
-			break;
-		}
-
-		const u64 jobByteCount = fileSizes[i];
-		progressContext.CurrentJobByteCount = jobByteCount;
-
-		const bool success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
-		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-
-		progressContext.ProcessedByteCount += jobByteCount;
-	}
-
-	return GetErrorCode(true, info->CancelOperation);
-}
-
 UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
 	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
@@ -730,80 +644,19 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	const u32 threadCount = threadJob ? threadAllocator.Threads.GetSize() : 1;
 	if(!CreateContextGroup(contextGroup, threadCount))
 	{
+		// We must stop here because we can't store the data the user will later want to retrieve.
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
 	if(!threadJob)
 	{
-		return udtParseDemoFiles_SingleThread((*contextGroup)->Contexts, info, extraInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::General, (*contextGroup)->Contexts, info, extraInfo, NULL);
 	}
 	
 	udtMultiThreadedParsing parser;
 	const bool success = parser.Process((*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
 
 	return GetErrorCode(success, info->CancelOperation);
-}
-
-static s32 udtCutDemoFilesByChat_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
-{
-	udtParserContext* context = udtCreateContext();
-	if(context == NULL)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	udtTimer timer;
-	timer.Start();
-
-	udtVMArray<u64> fileSizes;
-	fileSizes.Resize(extraInfo->FileCount);
-
-	u64 totalByteCount = 0;
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
-		fileSizes[i] = byteCount;
-		totalByteCount += byteCount;
-	}
-
-	SingleThreadProgressContext progressContext;
-	progressContext.Timer = &timer;
-	progressContext.UserCallback = info->ProgressCb;
-	progressContext.UserData = info->ProgressContext;
-	progressContext.CurrentJobByteCount = 0;
-	progressContext.ProcessedByteCount = 0;
-	progressContext.TotalByteCount = totalByteCount;
-
-	udtParseArg newInfo = *info;
-	newInfo.ProgressCb = &SingleThreadProgressCallback;
-	newInfo.ProgressContext = &progressContext;
-
-	context->InputIndices.Resize(extraInfo->FileCount);
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		context->InputIndices[i] = i;
-		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
-	}
-
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
-		{
-			break;
-		}
-
-		const u64 jobByteCount = fileSizes[i];
-		progressContext.CurrentJobByteCount = jobByteCount;
-
-		const bool success = CutByChat(context, &newInfo, chatInfo, extraInfo->FilePaths[i]);
-		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-
-		progressContext.ProcessedByteCount += jobByteCount;
-	}
-
-	udtDestroyContext(context);
-
-	return GetErrorCode(true, info->CancelOperation);
 }
 
 UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
@@ -818,13 +671,13 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByChat, NULL, info, extraInfo, chatInfo);
 	}
 
 	udtParserContextGroup* contextGroup;
 	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
 	{
-		return udtCutDemoFilesByChat_SingleThread(info, extraInfo, chatInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByChat, NULL, info, extraInfo, chatInfo);
 	}
 
 	udtMultiThreadedParsing parser;
@@ -833,68 +686,6 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	DestroyContextGroup(contextGroup);
 
 	return GetErrorCode(success, info->CancelOperation);
-}
-
-static s32 udtCutDemoFilesByFrag_SingleThread(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
-{
-	udtParserContext* context = udtCreateContext();
-	if(context == NULL)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	udtTimer timer;
-	timer.Start();
-
-	udtVMArray<u64> fileSizes;
-	fileSizes.Resize(extraInfo->FileCount);
-
-	u64 totalByteCount = 0;
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
-		fileSizes[i] = byteCount;
-		totalByteCount += byteCount;
-	}
-
-	SingleThreadProgressContext progressContext;
-	progressContext.Timer = &timer;
-	progressContext.UserCallback = info->ProgressCb;
-	progressContext.UserData = info->ProgressContext;
-	progressContext.CurrentJobByteCount = 0;
-	progressContext.ProcessedByteCount = 0;
-	progressContext.TotalByteCount = totalByteCount;
-
-	udtParseArg newInfo = *info;
-	newInfo.ProgressCb = &SingleThreadProgressCallback;
-	newInfo.ProgressContext = &progressContext;
-
-	context->InputIndices.Resize(extraInfo->FileCount);
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		context->InputIndices[i] = i;
-		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
-	}
-
-	for(u32 i = 0; i < extraInfo->FileCount; ++i)
-	{
-		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
-		{
-			break;
-		}
-
-		const u64 jobByteCount = fileSizes[i];
-		progressContext.CurrentJobByteCount = jobByteCount;
-
-		const bool success = CutByFrag(context, &newInfo, fragInfo, extraInfo->FilePaths[i]);
-		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
-
-		progressContext.ProcessedByteCount += jobByteCount;
-	}
-
-	udtDestroyContext(context);
-
-	return GetErrorCode(true, info->CancelOperation);
 }
 
 UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
@@ -909,17 +700,46 @@ UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseA
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		return udtCutDemoFilesByFrag_SingleThread(info, extraInfo, fragInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByFrag, NULL, info, extraInfo, fragInfo);
 	}
 
 	udtParserContextGroup* contextGroup;
 	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
 	{
-		return udtCutDemoFilesByFrag_SingleThread(info, extraInfo, fragInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByFrag, NULL, info, extraInfo, fragInfo);
 	}
 
 	udtMultiThreadedParsing parser;
 	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByFrag, fragInfo);
+
+	DestroyContextGroup(contextGroup);
+
+	return GetErrorCode(success, info->CancelOperation);
+}
+
+UDT_API(s32) udtCutDemoFilesByAward(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByAwardArg* awardInfo)
+{
+	if(info == NULL || extraInfo == NULL || awardInfo == NULL ||
+	   !IsValid(*extraInfo) || !IsValid(*awardInfo) || !HasValidOutputOption(*info))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
+	{
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByAward, NULL, info, extraInfo, awardInfo);
+	}
+
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByAward, NULL, info, extraInfo, awardInfo);
+	}
+
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByAward, awardInfo);
 
 	DestroyContextGroup(contextGroup);
 

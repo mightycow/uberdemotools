@@ -3,6 +3,7 @@
 #include "linear_allocator.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "utils.hpp"
+#include "timer.hpp"
 #include "analysis_cut_by_chat.hpp"
 #include "analysis_cut_by_frag.hpp"
 #include "analysis_cut_by_awards.hpp"
@@ -140,4 +141,125 @@ bool CutByAward(udtParserContext* context, const udtParseArg* info, const udtCut
 	typedef udtCutPlugInBase<udtCutByAwardAnalyzer, udtCutByAwardArg> T;
 
 	return CutByWhatever<T>(context, info, awardInfo, demoFilePath, "award");
+}
+
+bool CutByWhatever(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const void* jobSpecificInfo, const char* demoFilePath)
+{
+	switch(jobType)
+	{
+		case udtParsingJobType::CutByChat: return CutByChat(context, info, (const udtCutByChatArg*)jobSpecificInfo, demoFilePath);
+		case udtParsingJobType::CutByFrag: return CutByFrag(context, info, (const udtCutByFragArg*)jobSpecificInfo, demoFilePath);
+		case udtParsingJobType::CutByAward: return CutByAward(context, info, (const udtCutByAwardArg*)jobSpecificInfo, demoFilePath);
+		default: return false;
+	}
+}
+
+struct SingleThreadProgressContext
+{
+	u64 TotalByteCount;
+	u64 ProcessedByteCount;
+	u64 CurrentJobByteCount;
+	udtProgressCallback UserCallback;
+	void* UserData;
+	udtTimer* Timer;
+};
+
+static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
+{
+	SingleThreadProgressContext* const context = (SingleThreadProgressContext*)userData;
+	if(context == NULL || context->Timer == NULL || context->UserCallback == NULL)
+	{
+		return;
+	}
+
+	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	{
+		return;
+	}
+
+	context->Timer->Restart();
+
+	const u64 jobProcessed = (u64)((f64)context->CurrentJobByteCount * (f64)jobProgress);
+	const u64 totalProcessed = context->ProcessedByteCount + jobProcessed;
+	const f32 realProgress = udt_clamp((f32)totalProcessed / (f32)context->TotalByteCount, 0.0f, 1.0f);
+
+	(*context->UserCallback)(realProgress, context->UserData);
+}
+
+s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo)
+{
+	bool customContext = false;
+	if(context == NULL)
+	{
+		context = udtCreateContext();
+		if(context == NULL)
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+		customContext = true;
+	}
+
+	udtTimer timer;
+	timer.Start();
+
+	udtVMArray<u64> fileSizes;
+	fileSizes.Resize(extraInfo->FileCount);
+
+	u64 totalByteCount = 0;
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		const u64 byteCount = udtFileStream::GetFileLength(extraInfo->FilePaths[i]);
+		fileSizes[i] = byteCount;
+		totalByteCount += byteCount;
+	}
+
+	context->InputIndices.Resize(extraInfo->FileCount);
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		context->InputIndices[i] = i;
+		extraInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
+	}
+
+	SingleThreadProgressContext progressContext;
+	progressContext.Timer = &timer;
+	progressContext.UserCallback = info->ProgressCb;
+	progressContext.UserData = info->ProgressContext;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.TotalByteCount = totalByteCount;
+
+	udtParseArg newInfo = *info;
+	newInfo.ProgressCb = &SingleThreadProgressCallback;
+	newInfo.ProgressContext = &progressContext;
+
+	for(u32 i = 0; i < extraInfo->FileCount; ++i)
+	{
+		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
+		{
+			break;
+		}
+
+		const u64 jobByteCount = fileSizes[i];
+		progressContext.CurrentJobByteCount = jobByteCount;
+
+		bool success = false;
+		if(jobType == udtParsingJobType::General)
+		{
+			success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
+		}
+		else
+		{
+			success = CutByWhatever(jobType, context, &newInfo, jobSpecificInfo, extraInfo->FilePaths[i]);
+		}
+		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
+
+		progressContext.ProcessedByteCount += jobByteCount;
+	}
+
+	if(customContext)
+	{
+		udtDestroyContext(context);
+	}
+
+	return GetErrorCode(true, info->CancelOperation);
 }

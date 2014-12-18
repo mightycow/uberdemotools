@@ -209,13 +209,7 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
-	if(shared->JobType == (u32)udtParsingJobType::CutByChat && shared->JobTypeSpecificInfo == NULL)
-	{
-		data->Finished = true;
-		return;
-	}
-
-	if(shared->JobType == (u32)udtParsingJobType::CutByFrag && shared->JobTypeSpecificInfo == NULL)
+	if(shared->JobType != (u32)udtParsingJobType::General && shared->JobTypeSpecificInfo == NULL)
 	{
 		data->Finished = true;
 		return;
@@ -252,24 +246,14 @@ static void ThreadFunction(void* userData)
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
 		bool success = false;
-		if(shared->JobType == (u32)udtParsingJobType::CutByChat)
-		{
-			const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
-			success = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::CutByFrag)
-		{
-			const udtCutByFragArg* const fragInfo = (const udtCutByFragArg*)shared->JobTypeSpecificInfo;
-			success = CutByFrag(data->Context, &newParseInfo, fragInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::CutByAward)
-		{
-			const udtCutByAwardArg* const awardInfo = (const udtCutByAwardArg*)shared->JobTypeSpecificInfo;
-			success = CutByAward(data->Context, &newParseInfo, awardInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::General)
+		if(shared->JobType == (u32)udtParsingJobType::General)
 		{
 			success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
+		}
+		else
+		{
+			success = CutByWhatever((udtParsingJobType::Id)shared->JobType, data->Context, &newParseInfo, 
+									shared->JobTypeSpecificInfo, shared->FilePaths[i]);
 		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
