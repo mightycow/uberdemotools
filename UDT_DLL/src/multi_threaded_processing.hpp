@@ -12,6 +12,7 @@ struct udtParsingJobType
 		General,
 		CutByChat,
 		CutByFrag,
+		CutByAward,
 		Count
 	};
 };

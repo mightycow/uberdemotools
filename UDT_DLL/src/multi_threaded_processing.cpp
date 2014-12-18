@@ -5,6 +5,7 @@
 #include "parser_context.hpp"
 #include "system.hpp"
 #include "timer.hpp"
+#include "api_helpers.hpp"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -161,11 +162,6 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	return true;
 }
 
-// @TODO: Move this.
-extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
-extern bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
-extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
-
 struct MultiThreadedProgressContext
 {
 	u64 TotalByteCount;
@@ -265,6 +261,11 @@ static void ThreadFunction(void* userData)
 		{
 			const udtCutByFragArg* const fragInfo = (const udtCutByFragArg*)shared->JobTypeSpecificInfo;
 			success = CutByFrag(data->Context, &newParseInfo, fragInfo, shared->FilePaths[i]);
+		}
+		else if(shared->JobType == (u32)udtParsingJobType::CutByAward)
+		{
+			const udtCutByAwardArg* const awardInfo = (const udtCutByAwardArg*)shared->JobTypeSpecificInfo;
+			success = CutByAward(data->Context, &newParseInfo, awardInfo, shared->FilePaths[i]);
 		}
 		else if(shared->JobType == (u32)udtParsingJobType::General)
 		{
