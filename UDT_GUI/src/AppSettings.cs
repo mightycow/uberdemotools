@@ -12,9 +12,10 @@ namespace Uber.DemoTools
     {
         Settings,
         ChatEvents,
+        FragEvents,
         CutByTime,
         CutByChat,
-        FragEvents,
+        CutByAward,
         Count
     }
 

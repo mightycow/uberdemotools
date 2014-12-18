@@ -44,6 +44,8 @@ namespace Uber.DemoTools
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
+        public int AwardCutStartOffset = 10;
+        public int AwardCutEndOffset = 10;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -200,7 +202,7 @@ namespace Uber.DemoTools
             _altListBoxBg = new AlternatingListBoxBackground(Colors.White, Color.FromRgb(223, 223, 223));
 
             var manageDemosTab = new TabItem();
-            manageDemosTab.Header = "Manage Demos";
+            manageDemosTab.Header = "Manage";
             manageDemosTab.Content = CreateManageDemosTab();
 
             var demosTab = new TabItem();
@@ -231,10 +233,16 @@ namespace Uber.DemoTools
             cutFragTab.Header = "Cut by Frag";
             cutFragTab.Content = cutByFrag.RootControl;
 
+            var cutByAward = new CutByAwardComponent(this);
+            _appComponents.Add(cutByAward);
+            var cutAwardTab = new TabItem();
+            cutAwardTab.Header = "Cut by Awards";
+            cutAwardTab.Content = cutByAward.RootControl;
+
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
             var demoFragsTab = new TabItem();
-            demoFragsTab.Header = "Frags";
+            demoFragsTab.Header = "Deaths";
             demoFragsTab.Content = fragEvents.RootControl;
 
             var settings = new AppSettingsComponent(this);
@@ -255,6 +263,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
             tabControl.Items.Add(cutFragTab);
+            tabControl.Items.Add(cutAwardTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 

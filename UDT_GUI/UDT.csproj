@@ -28,7 +28,7 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-	<BaseIntermediateOutputPath>.build</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>.build</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -65,7 +65,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
-	<DefineConstants>UDT_X64</DefineConstants>
+    <DefineConstants>UDT_X64</DefineConstants>
     <OutputPath>.bin\x64\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
@@ -89,6 +89,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="src\AppAwardCut.cs" />
     <Compile Include="src\AppSettings.cs" />
     <Compile Include="src\EntryPoint.cs" />
     <Compile Include="src\App.cs" />
@@ -103,10 +104,10 @@
     <Compile Include="src\Tuple.cs" />
     <Compile Include="src\PinnedObject.cs" />
     <Compile Include="src\AppChatEvents.cs" />
-	<Compile Include="src\AppTimeCut.cs" />
-	<Compile Include="src\AppChatCut.cs" />
-	<Compile Include="src\AppFragEvents.cs" />
-	<Compile Include="src\AppFragCut.cs" />
+    <Compile Include="src\AppTimeCut.cs" />
+    <Compile Include="src\AppChatCut.cs" />
+    <Compile Include="src\AppFragEvents.cs" />
+    <Compile Include="src\AppFragCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

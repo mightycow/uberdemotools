@@ -85,7 +85,7 @@ namespace Uber.DemoTools
                 checkBox.HorizontalAlignment = HorizontalAlignment.Left;
                 checkBox.VerticalAlignment = VerticalAlignment.Center;
                 checkBox.IsChecked = true;
-                checkBox.Content = name.Substring(0, 1).ToUpper() + name.Substring(1);
+                checkBox.Content = " " + name.Substring(0, 1).ToUpper() + name.Substring(1);
                 Grid.SetRow(checkBox, rowIdx);
                 Grid.SetColumn(checkBox, columnIdx);
                 _checkBoxes.Add(checkBox);
@@ -486,8 +486,8 @@ namespace Uber.DemoTools
                 rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
                 rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
                 rules.TimeMode = 0; // @TODO:
-                rules.StartOffsetSec = (UInt32)config.ChatCutStartOffset;
-                rules.EndOffsetSec = (UInt32)config.ChatCutEndOffset;
+                rules.StartOffsetSec = (UInt32)config.FragCutStartOffset;
+                rules.EndOffsetSec = (UInt32)config.FragCutEndOffset;
                 rules.Flags = flags;
                 rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
                 rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;
