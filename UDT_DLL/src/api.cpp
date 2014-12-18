@@ -83,6 +83,14 @@ static const char* TeamNames[] =
 };
 #undef UDT_TEAM_ITEM
 
+#define UDT_AWARD_ITEM(Enum, Desc, Bit) Desc,
+static const char* AwardNames[] =
+{
+	UDT_AWARDS_LIST(UDT_AWARD_ITEM)
+	"after last award"
+};
+#undef UDT_AWARD_ITEM
+
 
 UDT_API(const char*) udtGetVersionString()
 {
@@ -227,6 +235,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::Teams:
 			*elements = TeamNames;
 			*elementCount = (u32)(UDT_COUNT_OF(TeamNames) - 1);
+			break;
+
+		case udtStringArray::Awards:
+			*elements = AwardNames;
+			*elementCount = (u32)(UDT_COUNT_OF(AwardNames) - 1);
 			break;
 
 		default:

@@ -289,6 +289,7 @@ struct udtStringArray
 		MeansOfDeath,
 		PlayerMeansOfDeath,
 		Teams,
+		Awards,
 		Count
 	};
 };
