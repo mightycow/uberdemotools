@@ -12,6 +12,7 @@ static bool IsAwardMatch(u32 udtAwardFlags, s32 idAwardId, udtProtocol::Id proto
 
 void udtCutByAwardAnalyzer::FinishAnalysis()
 {
+	const s32 cutDurationMs = (s32)(_info.StartOffsetSec + _info.EndOffsetSec) * (s32)1000;
 	for(u32 i = 0, count = _analyzer.AwardEvents.GetSize(); i < count; ++i)
 	{
 		const udtParseDataAward& data = _analyzer.AwardEvents[i];
@@ -28,7 +29,7 @@ void udtCutByAwardAnalyzer::FinishAnalysis()
 		{
 			const Award previousMatch = _awards[_awards.GetSize() - 1];
 			if(data.GameStateIndex != previousMatch.GameStateIndex ||
-			   data.ServerTimeMs > previousMatch.ServerTimeMs + (s32)(_info.EndOffsetSec * 1000))
+			   data.ServerTimeMs > previousMatch.ServerTimeMs + cutDurationMs)
 			{
 				AddCurrentSectionIfValid();
 			}
