@@ -25,7 +25,8 @@ namespace Uber.DemoTools
         void SaveToConfigObject(UdtConfig config);
 
         FrameworkElement RootControl { get; }
-        List<ListView> ListViews { get; }
+        List<DemoInfoListView> AllListViews { get; }
+        List<DemoInfoListView> InfoListViews { get; }
         ComponentType Type { get; }
     }
 
@@ -45,7 +46,8 @@ namespace Uber.DemoTools
         private CheckBox _useInputFolderOnStartUp = null;
 
         public FrameworkElement RootControl { get; private set; }
-        public List<ListView> ListViews { get { return null; } }
+        public List<DemoInfoListView> AllListViews { get { return null; } }
+        public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.Settings; } }
 
         public AppSettingsComponent(App app)

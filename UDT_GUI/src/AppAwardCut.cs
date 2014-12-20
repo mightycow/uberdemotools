@@ -16,7 +16,8 @@ namespace Uber.DemoTools
     public class CutByAwardComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
-        public List<ListView> ListViews { get { return null; } }
+        public List<DemoInfoListView> AllListViews { get { return null; } }
+        public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.CutByAward; } }
 
         public CutByAwardComponent(App app)

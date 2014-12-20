@@ -36,11 +36,12 @@ namespace Uber.DemoTools
     {
         private static RoutedCommand _cutByFragCommand = new RoutedCommand();
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
-        private ListView _fragEventsListView = null;
+        private DemoInfoListView _fragEventsListView = null;
         private App _app = null;
 
         public FrameworkElement RootControl { get; private set; }
-        public List<ListView> ListViews { get { return new List<ListView> { _fragEventsListView }; } }
+        public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _fragEventsListView }; } }
+        public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _fragEventsListView }; } }
         public ComponentType Type { get { return ComponentType.FragEvents; } }
 
         public FragEventsComponent(App app)
@@ -135,7 +136,7 @@ namespace Uber.DemoTools
             demoEventsGridView.Columns.Add(columnTarget);
             demoEventsGridView.Columns.Add(columnMOD);
 
-            var eventsListView = new ListView();
+            var eventsListView = new DemoInfoListView();
             _fragEventsListView = eventsListView;
             eventsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
             eventsListView.VerticalAlignment = VerticalAlignment.Stretch;

@@ -16,7 +16,8 @@ namespace Uber.DemoTools
     public class CutByChatComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
-        public List<ListView> ListViews { get { return new List<ListView> { _chatRulesListView }; } }
+        public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatRulesListView }; } }
+        public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.CutByChat; } }
 
         public CutByChatComponent(App app)
@@ -61,7 +62,7 @@ namespace Uber.DemoTools
             public bool IgnoreColors { get; set; }
         }
 
-        private ListView _chatRulesListView = null;
+        private DemoInfoListView _chatRulesListView = null;
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
 
@@ -74,7 +75,7 @@ namespace Uber.DemoTools
             chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Case Sensitive", Width = 100, DisplayMemberBinding = new Binding("CaseSensitive") });
             chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Ignore Colors", Width = 100, DisplayMemberBinding = new Binding("IgnoreColors") });
 
-            var chatRulesListView = new ListView();
+            var chatRulesListView = new DemoInfoListView();
             _chatRulesListView = chatRulesListView;
             chatRulesListView.HorizontalAlignment = HorizontalAlignment.Stretch;
             chatRulesListView.VerticalAlignment = VerticalAlignment.Stretch;

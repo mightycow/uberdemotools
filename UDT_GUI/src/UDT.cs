@@ -665,6 +665,7 @@ namespace Uber.DemoTools
                     var filePath = filePaths[(int)inputIdx];
                     var protocol = udtGetProtocolByFilePath(filePath);
                     var info = new DemoInfo();
+                    info.Analyzed = true;
                     info.InputIndex = (int)inputIdx;
                     info.FilePath = Path.GetFullPath(filePath);
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
