@@ -919,7 +919,7 @@ namespace Uber.DemoTools
             demoListButtonGroupBox.Content = demoListButtonPanel;
 
             var splitButton = new Button();
-            splitButton.Content = "Split Demo";
+            splitButton.Content = "Split";
             splitButton.Width = 75;
             splitButton.Height = 25;
             splitButton.Margin = new Thickness(5);
@@ -936,8 +936,29 @@ namespace Uber.DemoTools
             demoButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
             demoButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
             demoButtonGroupBox.Margin = new Thickness(5);
-            demoButtonGroupBox.Header = "Demo Actions";
+            demoButtonGroupBox.Header = "Per-demo Actions";
             demoButtonGroupBox.Content = demoButtonPanel;
+
+            var analyzeButton = new Button();
+            analyzeButton.Content = "Analyze";
+            analyzeButton.Width = 75;
+            analyzeButton.Height = 25;
+            analyzeButton.Margin = new Thickness(5);
+            analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
+
+            var multiDemoActionButtonsPanel = new StackPanel();
+            multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
+            multiDemoActionButtonsPanel.Margin = new Thickness(5);
+            multiDemoActionButtonsPanel.Orientation = Orientation.Vertical;
+            multiDemoActionButtonsPanel.Children.Add(analyzeButton);
+
+            var multiDemoActionButtonsGroupBox = new GroupBox();
+            multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            multiDemoActionButtonsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            multiDemoActionButtonsGroupBox.Margin = new Thickness(5);
+            multiDemoActionButtonsGroupBox.Header = "Multi-demo Actions";
+            multiDemoActionButtonsGroupBox.Content = multiDemoActionButtonsPanel;
 
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -961,6 +982,7 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(demoListButtonGroupBox);
             rootPanel.Children.Add(demoButtonGroupBox);
+            rootPanel.Children.Add(multiDemoActionButtonsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
             return rootPanel;
@@ -1009,12 +1031,9 @@ namespace Uber.DemoTools
                 }
             }
 
-            if(demoInfo.Analyzed)
+            foreach(var tab in _appComponents)
             {
-                foreach(var tab in _appComponents)
-                {
-                    tab.PopulateViews(demoInfo);
-                }
+                tab.PopulateViews(demoInfo);
             }
         }
 
@@ -1124,6 +1143,13 @@ namespace Uber.DemoTools
 
         private void AnalyzeDemos(List<DemoInfo> demos)
         {
+            demos = demos.FindAll(d => !d.Analyzed);
+            if(demos.Count == 0)
+            {
+                LogError("All the selected demos were already analyzed.");
+                return;
+            }
+
             DisableUiNonThreadSafe();
 
             JoinJobThread();
@@ -1136,6 +1162,8 @@ namespace Uber.DemoTools
             {
                 DemoAnalyzeThreadImpl(arg);
                 EnableUiThreadSafe();
+                VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
+                _window.Dispatcher.Invoke(infoUpdater);
             }
             catch(Exception exception)
             {
@@ -1477,6 +1505,18 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private void OnAnalyzeDemoClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count == 0)
+            {
+                LogError("No demo selected. Please select at least one to proceed.");
+                return;
+            }
+
+            AnalyzeDemos(demos);
         }
 
         private bool ParseMinutesSeconds(string time, out int totalSeconds)

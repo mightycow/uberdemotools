@@ -43,7 +43,8 @@ namespace Uber.DemoTools
         private TextBox _inputFolderTextBox = null;
         private FrameworkElement _inputFolderRow = null;
         private CheckBox _useInputFolderForBrowsingCheckBox = null;
-        private CheckBox _useInputFolderOnStartUp = null;
+        private CheckBox _useInputFolderOnStartUpCheckBox = null;
+        private CheckBox _analyzeOnLoadCheckBox = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -62,7 +63,8 @@ namespace Uber.DemoTools
             config.OutputFolder = _outputFolderTextBox.Text;
             config.InputFolder = _inputFolderTextBox.Text;
             config.UseInputFolderAsDefaultBrowsingLocation = _useInputFolderForBrowsingCheckBox.IsChecked ?? false;
-            config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUp.IsChecked ?? false;
+            config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
+            config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
         }
 
@@ -130,19 +132,29 @@ namespace Uber.DemoTools
             useInputFolderForBrowsingCheckBox.Checked += (obj, args) => OnInputFolderForBrowsingChecked();
             useInputFolderForBrowsingCheckBox.Unchecked += (obj, args) => OnInputFolderForBrowsingUnchecked();
 
-            var useInputFolderOnStartUp = new CheckBox();
-            _useInputFolderOnStartUp = useInputFolderOnStartUp;
-            useInputFolderOnStartUp.HorizontalAlignment = HorizontalAlignment.Left;
-            useInputFolderOnStartUp.VerticalAlignment = VerticalAlignment.Center;
-            useInputFolderOnStartUp.IsChecked = _app.Config.OpenDemosFromInputFolderOnStartUp;
-            useInputFolderOnStartUp.Content = " Open demos from input folder on application start-up?";
-            useInputFolderOnStartUp.Checked += (obj, args) => OnUseInputFolderOnStartUpChecked();
-            useInputFolderOnStartUp.Unchecked += (obj, args) => OnUseInputFolderOnStartUpUnchecked();
+            var useInputFolderOnStartUpCheckBox = new CheckBox();
+            _useInputFolderOnStartUpCheckBox = useInputFolderOnStartUpCheckBox;
+            useInputFolderOnStartUpCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            useInputFolderOnStartUpCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            useInputFolderOnStartUpCheckBox.IsChecked = _app.Config.OpenDemosFromInputFolderOnStartUp;
+            useInputFolderOnStartUpCheckBox.Content = " Open demos from input folder on application start-up?";
+            useInputFolderOnStartUpCheckBox.Checked += (obj, args) => OnUseInputFolderOnStartUpChecked();
+            useInputFolderOnStartUpCheckBox.Unchecked += (obj, args) => OnUseInputFolderOnStartUpUnchecked();
 
             var inputFolderRow = CreateFolderRow(
                 ref _inputFolderTextBox,
                 _app.Config.InputFolder,
                 "Browse for the folder demos will be read or searched from");
+
+            var analyzeOnLoadCheckBox = new CheckBox();
+            _analyzeOnLoadCheckBox = analyzeOnLoadCheckBox;
+            analyzeOnLoadCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            analyzeOnLoadCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            analyzeOnLoadCheckBox.IsChecked = _app.Config.AnalyzeOnLoad;
+            analyzeOnLoadCheckBox.Content = " Analyze demos when loading them into the list?";
+            analyzeOnLoadCheckBox.Checked += (obj, args) => OnAnalyzeOnLoadChecked();
+            analyzeOnLoadCheckBox.Unchecked += (obj, args) => OnAnalyzeOnLoadUnchecked();
+            analyzeOnLoadCheckBox.ToolTip = " You can always launch the analysis pass from the \"Manage\" tab.";
 
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
@@ -155,8 +167,9 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("=> Recursive", folderScanModeCheckBox));
             panelList.Add(App.CreateTuple("Max Thread Count", maxThreadCountTextBox));
             panelList.Add(App.CreateTuple("Browsing Location", useInputFolderForBrowsingCheckBox));
-            panelList.Add(App.CreateTuple("Open on Start-up", useInputFolderOnStartUp));
+            panelList.Add(App.CreateTuple("Open on Start-up", useInputFolderOnStartUpCheckBox));
             panelList.Add(App.CreateTuple("=> Input Folder", inputFolderRow));
+            panelList.Add(App.CreateTuple("Analyze on Load", analyzeOnLoadCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -328,6 +341,16 @@ namespace Uber.DemoTools
         {
             _app.Config.OpenDemosFromInputFolderOnStartUp = false;
             UpdateInputFolderActive();
+        }
+
+        private void OnAnalyzeOnLoadChecked()
+        {
+            _app.Config.AnalyzeOnLoad = true;
+        }
+
+        private void OnAnalyzeOnLoadUnchecked()
+        {
+            _app.Config.AnalyzeOnLoad = false;
         }
 
         private void GetMaxThreadCount(ref int maxThreadCount)

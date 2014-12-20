@@ -45,6 +45,13 @@ namespace Uber.DemoTools
 
         public void PopulateViews(DemoInfo demoInfo)
         {
+            if(!demoInfo.Analyzed)
+            {
+                _chatEventsListView.ItemsSource = null;
+                _chatEventsListView.SelectedIndex = -1;
+                return;
+            }
+
             var cutByTimeItem = new MenuItem();
             cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
             cutByTimeItem.Command = _cutByTimeCommand;

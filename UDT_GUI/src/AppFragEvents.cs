@@ -52,6 +52,12 @@ namespace Uber.DemoTools
 
         public void PopulateViews(DemoInfo demoInfo)
         {
+            if(!demoInfo.Analyzed)
+            {
+                _fragEventsListView.Items.Clear();
+                return;
+            }
+
             var cutByTimeItem = new MenuItem();
             cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
             cutByTimeItem.Command = _cutByFragCommand;
