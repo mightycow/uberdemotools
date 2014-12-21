@@ -1,3 +1,8 @@
+0.3.5 (21.12.2014)
+ADD: "Cut by Award" tab: to find and cut award sequences 
+ADD: Analyze on Load: new setting to decide if parsing demos should be done when demos are added to the list (default behavior: true)
+FIX: Cut by Frag: the start/end offsets were loaded from the Cut by Chat settings
+
 0.3.4 (15.12.2014)
 FIX: Properly set the rules group box heading in the "Cut by Frag" tab
 FIX: Always re-enabling the UI after threaded jobs

@@ -3,18 +3,8 @@
 
 #include "api.h"
 #include "array.hpp"
+#include "api_helpers.hpp"
 
-
-struct udtParsingJobType
-{
-	enum Id
-	{
-		General,
-		CutByChat,
-		CutByFrag,
-		Count
-	};
-};
 
 struct udtParsingSharedData
 {

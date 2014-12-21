@@ -33,7 +33,8 @@ namespace Uber.DemoTools
     public class ChatEventsComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
-        public List<ListView> ListViews { get { return new List<ListView> { _chatEventsListView }; } }
+        public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatEventsListView }; } }
+        public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _chatEventsListView }; } }
         public ComponentType Type { get { return ComponentType.ChatEvents; } }
 
         public ChatEventsComponent(App app)
@@ -44,6 +45,13 @@ namespace Uber.DemoTools
 
         public void PopulateViews(DemoInfo demoInfo)
         {
+            if(!demoInfo.Analyzed)
+            {
+                _chatEventsListView.ItemsSource = null;
+                _chatEventsListView.SelectedIndex = -1;
+                return;
+            }
+
             var cutByTimeItem = new MenuItem();
             cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
             cutByTimeItem.Command = _cutByTimeCommand;
@@ -82,7 +90,7 @@ namespace Uber.DemoTools
         private App _app;
         private static RoutedCommand _cutByTimeCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
-        private ListView _chatEventsListView = null;
+        private DemoInfoListView _chatEventsListView = null;
         private bool _chatEventsAscending = true;
         private string _chatEventsLastProperty = "";
 
@@ -209,7 +217,7 @@ namespace Uber.DemoTools
             demoEventsGridView.Columns.Add(columnName);
             demoEventsGridView.Columns.Add(columnMessage);
 
-            var eventsListView = new ListView();
+            var eventsListView = new DemoInfoListView();
             _chatEventsListView = eventsListView;
             eventsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
             eventsListView.VerticalAlignment = VerticalAlignment.Stretch;

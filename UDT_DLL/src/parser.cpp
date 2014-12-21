@@ -976,14 +976,16 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	{
 		if(msg.ReadDeltaEntity(old, state, newnum))
 		{
-			// @TODO: Confirm correctness. Is EVENT_VALID_MSEC only for "event entities" or for all entities?
-			// If not, we'll need to bundle the pointer into a struct with a new boolean "NewEvent".
-			if(_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC)
+			const bool isNewEvent = (state->eType >= ET_EVENTS) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
+			udtChangedEntity info;
+			info.Entity = state;
+			info.IsNewEvent = isNewEvent;
+			_inParsedEntities.Add(info);
+			if(isNewEvent)
 			{
-				_inParsedEntities.Add(state);
+				_inEntityEventTimesMs[newnum] = _inServerTime;
 			}
 		}
-		_inEntityEventTimesMs[newnum] = _inServerTime;
 	}
 
 	// The entity was delta removed?

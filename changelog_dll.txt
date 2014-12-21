@@ -1,3 +1,9 @@
+0.3.4 (21.12.2014)
+ADD: Cut by Awards (udtCutDemoFile(s)ByAward API functions)
+CHG: Improved API functions argument checking
+FIX: Cut by Frag was merging cut sections based on a cut "half-duration" instead of the entire duration
+FIX: Some API functions were returning OperationFailed even when successful
+
 0.3.3 (15.12.2014)
 ADD: udtGetStringArray
 FIX: udtObituariesAnalyzer now tracks player teams

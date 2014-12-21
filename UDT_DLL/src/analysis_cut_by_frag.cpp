@@ -18,19 +18,20 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 		return true;
 	}
 
-	const s32 bit = procotol == (s32)udtProtocol::Dm68 ? GetUDTPlayerMODBitFromIdMod68(idMOD) : GetUDTPlayerMODBitFromIdMod73(idMOD);
+	const s32 bit = GetUDTPlayerMODBitFromIdMod(idMOD, procotol);
 
 	return (udtPlayerMODFlags & (u32)bit) != 0;
 }
 
 
-void udtCutByFragAnalyzer::FindCutSections()
+void udtCutByFragAnalyzer::FinishAnalysis()
 {
 	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
 	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
 	const bool allowTeamKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
 	const bool allowAnyDeath = (_info.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
 
+	const s32 cutDurationMs = (s32)(_info.StartOffsetSec + _info.EndOffsetSec) * (s32)1000;
 	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
@@ -80,7 +81,7 @@ void udtCutByFragAnalyzer::FindCutSections()
 		{
 			const Frag previousMatch = _frags[_frags.GetSize() - 1];
 			if(data.GameStateIndex != previousMatch.GameStateIndex ||
-			   data.ServerTimeMs > previousMatch.ServerTimeMs + (s32)(_info.TimeBetweenFragsSec * 1000))
+			   data.ServerTimeMs > previousMatch.ServerTimeMs + cutDurationMs)
 			{
 				AddCurrentSectionIfValid();
 			}
@@ -101,7 +102,7 @@ void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 		return;
 	}
 
-	CutSection cut;
+	udtCutAnalyzerBase::CutSection cut;
 	cut.GameStateIndex = _frags[0].GameStateIndex;
 	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);

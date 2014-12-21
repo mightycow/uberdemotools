@@ -5,6 +5,7 @@
 #include "parser_context.hpp"
 #include "system.hpp"
 #include "timer.hpp"
+#include "api_helpers.hpp"
 
 #include <stdlib.h>
 #include <assert.h>
@@ -161,11 +162,6 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	return true;
 }
 
-// @TODO: Move this.
-extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
-extern bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
-extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
-
 struct MultiThreadedProgressContext
 {
 	u64 TotalByteCount;
@@ -213,13 +209,7 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
-	if(shared->JobType == (u32)udtParsingJobType::CutByChat && shared->JobTypeSpecificInfo == NULL)
-	{
-		data->Finished = true;
-		return;
-	}
-
-	if(shared->JobType == (u32)udtParsingJobType::CutByFrag && shared->JobTypeSpecificInfo == NULL)
+	if(shared->JobType != (u32)udtParsingJobType::General && shared->JobTypeSpecificInfo == NULL)
 	{
 		data->Finished = true;
 		return;
@@ -256,19 +246,14 @@ static void ThreadFunction(void* userData)
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
 		bool success = false;
-		if(shared->JobType == (u32)udtParsingJobType::CutByChat)
-		{
-			const udtCutByChatArg* const chatInfo = (const udtCutByChatArg*)shared->JobTypeSpecificInfo;
-			success = CutByChat(data->Context, &newParseInfo, chatInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::CutByFrag)
-		{
-			const udtCutByFragArg* const fragInfo = (const udtCutByFragArg*)shared->JobTypeSpecificInfo;
-			success = CutByFrag(data->Context, &newParseInfo, fragInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::General)
+		if(shared->JobType == (u32)udtParsingJobType::General)
 		{
 			success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
+		}
+		else
+		{
+			success = CutByWhatever((udtParsingJobType::Id)shared->JobType, data->Context, &newParseInfo, 
+									shared->JobTypeSpecificInfo, shared->FilePaths[i]);
 		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 

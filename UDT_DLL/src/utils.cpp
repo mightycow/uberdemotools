@@ -2,6 +2,7 @@
 #include "common.hpp"
 #include "timer.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "parser_context.hpp"
 
 #include <cstdlib>
 #include <cstdio>
@@ -772,6 +773,40 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	return true;
 }
 
+bool RunParserWithPlugIn(udtParserContext* context, udtBaseParserPlugIn& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath, const char* analysisType)
+{
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(filePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(filePath);
+	context->Parser.AddPlugIn(&plugIn);
+
+	context->Context.LogInfo("Processing for %s analysis: %s", analysisType, filePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)
 {
 	if(string == NULL)
@@ -893,7 +928,7 @@ const char* GetTeamName(s32 team)
 	}
 }
 
-s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
+static s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
 {
 	if(idMod < 0 || idMod >= (s32)idMeansOfDeath68::Count)
 	{
@@ -931,7 +966,7 @@ s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
 	return lut[idMod];
 }
 
-s32 GetUDTPlayerMODBitFromIdMod73(s32 idMod)
+static s32 GetUDTPlayerMODBitFromIdMod73_90(s32 idMod)
 {
 	if(idMod < 0 || idMod >= (s32)idMeansOfDeath73::Count)
 	{
@@ -976,4 +1011,60 @@ s32 GetUDTPlayerMODBitFromIdMod73(s32 idMod)
 	lut[idMeansOfDeath73::HeavyMachineGun] = udtPlayerMeansOfDeathBits::HeavyMachineGun;
 
 	return lut[idMod];
+}
+
+s32 GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return 0;
+	}
+
+	if(protocol == udtProtocol::Dm68)
+	{
+		return GetUDTPlayerMODBitFromIdMod68(idMod);
+	}
+
+	return GetUDTPlayerMODBitFromIdMod73_90(idMod);
+}
+
+s32 GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return 0;
+	}
+
+	if(protocol == udtProtocol::Dm68)
+	{
+		switch(idAward)
+		{
+			case 9: return (s32)udtAwardBits::Impressive;
+			case 10: return (s32)udtAwardBits::Excellent;
+			default: return 0;
+		}
+	}
+
+	if(protocol == udtProtocol::Dm73)
+	{
+		switch(idAward)
+		{
+			case 8: return (s32)udtAwardBits::Impressive;
+			case 9: return (s32)udtAwardBits::Excellent;
+			default: return 0;
+		}
+	}
+
+	if(protocol == udtProtocol::Dm90)
+	{
+		switch(idAward)
+		{
+			case 8: return (s32)udtAwardBits::Impressive;
+			case 9: return (s32)udtAwardBits::Excellent;
+			case 15: return (s32)udtAwardBits::MidAir;
+			default: return 0;
+		}
+	}
+
+	return 0;
 }

@@ -1,20 +1,20 @@
 #pragma once
 
 
-#include "analysis_obituaries.hpp"
+#include "analysis_awards.hpp"
 #include "analysis_cut_base.hpp"
 
 
-struct udtCutByFragAnalyzer : public udtCutAnalyzerBase
+struct udtCutByAwardAnalyzer : public udtCutAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer(const udtCutByFragArg& info) 
+	udtCutByAwardAnalyzer(const udtCutByAwardArg& info)
 		: _info(info)
 	{
 		_protocol = udtProtocol::Invalid;
 	}
 
-	~udtCutByFragAnalyzer()
+	~udtCutByAwardAnalyzer()
 	{
 	}
 
@@ -37,19 +37,19 @@ public:
 	void FinishAnalysis();
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByFragAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtCutByAwardAnalyzer);
 
 	void AddCurrentSectionIfValid();
-	void AddMatch(const udtParseDataObituary& data);
+	void AddMatch(const udtParseDataAward& data);
 
-	struct Frag
+	struct Award
 	{
 		s32 GameStateIndex;
 		s32 ServerTimeMs;
 	};
 
-	const udtCutByFragArg& _info;
-	udtVMArray<Frag> _frags;
-	udtObituariesAnalyzer _analyzer;
+	const udtCutByAwardArg& _info;
+	udtVMArray<Award> _awards;
+	udtAwardsAnalyzer _analyzer;
 	udtProtocol::Id _protocol;
 };

@@ -44,6 +44,9 @@ namespace Uber.DemoTools
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
+        public int AwardCutStartOffset = 10;
+        public int AwardCutEndOffset = 10;
+        public bool AnalyzeOnLoad = true;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -54,18 +57,51 @@ namespace Uber.DemoTools
 
     public class DemoInfo
     {
+        // Always set.
         public int InputIndex = 0;
         public string FilePath = "?";
         public string Protocol = "?";
+
+        // Only set when the demo was parsed.
+        public bool Analyzed = false;
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
     }
 
+    public class DemoInfoListView : ListView
+    {
+        private Brush _originalBackground;
+        private Brush _customBackground;
+
+        public DemoInfoListView()
+        {
+            Initialized += (obj, arg) => { _originalBackground = Background; };
+        }
+
+        public void SetDemoAnalyzed(bool analyzed)
+        {
+            if(analyzed)
+            {
+                Background = _originalBackground;
+                return;
+            }
+
+            if(_customBackground == null)
+            {
+                var label = new Label { Content = "Demo was not analyzed.", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+                var brush = new VisualBrush(label) { Stretch = Stretch.None, Opacity = 0.5 };
+                _customBackground = brush;
+            }
+
+            Background = _customBackground;
+        }
+    }
+
     public class App
     {
-        private const string GuiVersion = "0.3.4";
+        private const string GuiVersion = "0.3.5";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -200,7 +236,7 @@ namespace Uber.DemoTools
             _altListBoxBg = new AlternatingListBoxBackground(Colors.White, Color.FromRgb(223, 223, 223));
 
             var manageDemosTab = new TabItem();
-            manageDemosTab.Header = "Manage Demos";
+            manageDemosTab.Header = "Manage";
             manageDemosTab.Content = CreateManageDemosTab();
 
             var demosTab = new TabItem();
@@ -231,10 +267,16 @@ namespace Uber.DemoTools
             cutFragTab.Header = "Cut by Frag";
             cutFragTab.Content = cutByFrag.RootControl;
 
+            var cutByAward = new CutByAwardComponent(this);
+            _appComponents.Add(cutByAward);
+            var cutAwardTab = new TabItem();
+            cutAwardTab.Header = "Cut by Award";
+            cutAwardTab.Content = cutByAward.RootControl;
+
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
             var demoFragsTab = new TabItem();
-            demoFragsTab.Header = "Frags";
+            demoFragsTab.Header = "Deaths";
             demoFragsTab.Content = fragEvents.RootControl;
 
             var settings = new AppSettingsComponent(this);
@@ -255,6 +297,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
             tabControl.Items.Add(cutFragTab);
+            tabControl.Items.Add(cutAwardTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -445,7 +488,7 @@ namespace Uber.DemoTools
             _altListBoxBg.ApplyTo(_logListBox);
             foreach(var component in _appComponents)
             {
-                var listViews = component.ListViews;
+                var listViews = component.AllListViews;
                 if(listViews == null)
                 {
                     continue;
@@ -876,7 +919,7 @@ namespace Uber.DemoTools
             demoListButtonGroupBox.Content = demoListButtonPanel;
 
             var splitButton = new Button();
-            splitButton.Content = "Split Demo";
+            splitButton.Content = "Split";
             splitButton.Width = 75;
             splitButton.Height = 25;
             splitButton.Margin = new Thickness(5);
@@ -893,8 +936,29 @@ namespace Uber.DemoTools
             demoButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
             demoButtonGroupBox.VerticalAlignment = VerticalAlignment.Top;
             demoButtonGroupBox.Margin = new Thickness(5);
-            demoButtonGroupBox.Header = "Demo Actions";
+            demoButtonGroupBox.Header = "Per-demo Actions";
             demoButtonGroupBox.Content = demoButtonPanel;
+
+            var analyzeButton = new Button();
+            analyzeButton.Content = "Analyze";
+            analyzeButton.Width = 75;
+            analyzeButton.Height = 25;
+            analyzeButton.Margin = new Thickness(5);
+            analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
+
+            var multiDemoActionButtonsPanel = new StackPanel();
+            multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
+            multiDemoActionButtonsPanel.Margin = new Thickness(5);
+            multiDemoActionButtonsPanel.Orientation = Orientation.Vertical;
+            multiDemoActionButtonsPanel.Children.Add(analyzeButton);
+
+            var multiDemoActionButtonsGroupBox = new GroupBox();
+            multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            multiDemoActionButtonsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            multiDemoActionButtonsGroupBox.Margin = new Thickness(5);
+            multiDemoActionButtonsGroupBox.Header = "Multi-demo Actions";
+            multiDemoActionButtonsGroupBox.Content = multiDemoActionButtonsPanel;
 
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -918,6 +982,7 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(demoListButtonGroupBox);
             rootPanel.Children.Add(demoButtonGroupBox);
+            rootPanel.Children.Add(multiDemoActionButtonsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
             return rootPanel;
@@ -929,6 +994,12 @@ namespace Uber.DemoTools
             _infoListView.Items.Add(new ConfigStringDisplayInfo("Folder Path", Path.GetDirectoryName(demoInfo.FilePath) ?? "N/A"));
             _infoListView.Items.Add(new ConfigStringDisplayInfo("File Name", Path.GetFileNameWithoutExtension(demoInfo.FilePath) ?? "N/A"));
             _infoListView.Items.Add(new ConfigStringDisplayInfo("Protocol", demoInfo.Protocol));
+
+            if(!demoInfo.Analyzed)
+            {
+                _infoListView.Items.Add(new ConfigStringDisplayInfo("", "This demo wasn't analyzed."));
+                return;
+            }
 
             foreach(var tuple in demoInfo.Generic)
             {
@@ -947,6 +1018,19 @@ namespace Uber.DemoTools
             var demoInfo = _demos[idx];
 
             PopulateInfoListView(demoInfo);
+
+            foreach(var tab in _appComponents)
+            {
+                var views = tab.InfoListViews;
+                if(views != null)
+                {
+                    foreach(var view in views)
+                    {
+                        view.SetDemoAnalyzed(demoInfo.Analyzed);
+                    }
+                }
+            }
+
             foreach(var tab in _appComponents)
             {
                 tab.PopulateViews(demoInfo);
@@ -1030,18 +1114,56 @@ namespace Uber.DemoTools
                 return;
             }
 
-            DisableUiNonThreadSafe();
             _demoListView.Background = _demoListViewBackground;
 
-            JoinJobThread();
-            StartJobThread(DemoAddThread, filePaths);
+            var newDemos = new List<DemoInfo>();
+            foreach(var filePath in filePaths)
+            {
+                var demoInfo = new DemoInfo();
+                demoInfo.InputIndex = -1;
+                demoInfo.FilePath = filePath;
+                demoInfo.Protocol = Path.GetExtension(filePath);
+
+                var demoDisplayInfo = new DemoDisplayInfo();
+                demoDisplayInfo.Demo = demoInfo;
+                demoDisplayInfo.FileName = Path.GetFileNameWithoutExtension(filePath);
+                _demos.Add(demoInfo);
+                newDemos.Add(demoInfo);
+
+                AddDemo(demoDisplayInfo);
+            }
+
+            if(!_config.AnalyzeOnLoad)
+            {
+                return;
+            }
+
+            AnalyzeDemos(newDemos);
         }
 
-        private void DemoAddThread(object arg)
+        private void AnalyzeDemos(List<DemoInfo> demos)
+        {
+            demos = demos.FindAll(d => !d.Analyzed);
+            if(demos.Count == 0)
+            {
+                LogError("All the selected demos were already analyzed.");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+
+            JoinJobThread();
+            StartJobThread(DemoAnalyzeThread, demos);
+        }
+
+        private void DemoAnalyzeThread(object arg)
         {
             try
             {
-                DemoAddThreadImpl(arg);
+                DemoAnalyzeThreadImpl(arg);
+                EnableUiThreadSafe();
+                VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
+                _window.Dispatcher.Invoke(infoUpdater);
             }
             catch(Exception exception)
             {
@@ -1121,13 +1243,12 @@ namespace Uber.DemoTools
             ParseArg.PlugIns = IntPtr.Zero;
         }
 
-        private void DemoAddThreadImpl(object arg)
+        private void DemoAnalyzeThreadImpl(object arg)
         {
-            var filePaths = arg as List<string>;
-            if(filePaths == null)
+            var demos = arg as List<DemoInfo>;
+            if(demos == null)
             {
                 LogError("Invalid thread argument type");
-                EnableUiThreadSafe();
                 return;
             }
 
@@ -1136,37 +1257,42 @@ namespace Uber.DemoTools
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
-            List<DemoInfo> demoInfos = null;
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
+            {
+                filePaths.Add(demo.FilePath);
+            }
+
+            List<DemoInfo> newDemos = null;
             try
             {
-                demoInfos = UDT_DLL.ParseDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
+                newDemos = UDT_DLL.ParseDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {
                 LogError("Caught an exception while parsing demos: {0}", exception.Message);
-                demoInfos = null;
+                newDemos = null;
             }
 
-            if(demoInfos == null)
+            if(newDemos == null || newDemos.Count != demos.Count)
             {
                 Marshal.FreeHGlobal(outputFolderPtr);
-                EnableUiThreadSafe();
                 return;
             }
 
-            foreach(var demoInfo in demoInfos)
+            for(var i = 0; i < demos.Count; ++i)
             {
-                var demoDisplayInfo = new DemoDisplayInfo();
-                demoDisplayInfo.Demo = demoInfo;
-                demoDisplayInfo.FileName = Path.GetFileNameWithoutExtension(demoInfo.FilePath);
-                _demos.Add(demoInfo);
-
-                VoidDelegate itemAdder = delegate { AddDemo(demoDisplayInfo); };
-                _demoListView.Dispatcher.Invoke(itemAdder);
+                demos[i].Analyzed = true;
+                demos[i].ChatEvents = newDemos[i].ChatEvents;
+                demos[i].FragEvents = newDemos[i].FragEvents;
+                demos[i].GameStateFileOffsets = newDemos[i].GameStateFileOffsets;
+                demos[i].Generic = newDemos[i].Generic;
+                demos[i].InputIndex = newDemos[i].InputIndex;
+                demos[i].Protocol = newDemos[i].Protocol;
+                demos[i].FilePath = newDemos[i].FilePath;
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            EnableUiThreadSafe();
         }
 
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
@@ -1379,6 +1505,18 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private void OnAnalyzeDemoClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count == 0)
+            {
+                LogError("No demo selected. Please select at least one to proceed.");
+                return;
+            }
+
+            AnalyzeDemos(demos);
         }
 
         private bool ParseMinutesSeconds(string time, out int totalSeconds)

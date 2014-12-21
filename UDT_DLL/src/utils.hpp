@@ -75,11 +75,12 @@ extern bool        StringParseSeconds(s32& duration, const char* buffer); // For
 extern bool        CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset);
 extern s32         GetErrorCode(bool success, s32* cancel);
 extern bool        RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation);
+extern bool        RunParserWithPlugIn(udtParserContext* context, udtBaseParserPlugIn& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath, const char* analysisType);
 extern char*       AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0);
 extern char*       AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength);
 extern bool        ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString); // Gets the integer value of a config string variable.
 extern bool        ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString); // Gets a config string variable.
 extern s32         ConvertPowerUpFlagsToValue(s32 flags);
 extern const char* GetTeamName(s32 team);
-extern s32         GetUDTPlayerMODBitFromIdMod68(s32 idMod);
-extern s32         GetUDTPlayerMODBitFromIdMod73(s32 idMod); // Same for protocol 90.
+extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
+extern s32         GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol);

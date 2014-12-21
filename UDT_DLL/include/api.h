@@ -97,7 +97,8 @@ struct udtCrashType
 #define UDT_PLUG_IN_LIST(N) \
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
-	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
+	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
+	N(Awards,     udtParserPlugInAwards,     udtParseDataAward)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
 struct udtParserPlugIn
@@ -246,6 +247,22 @@ struct udtPlayerMeansOfDeathBits
 };
 #undef UDT_PLAYER_MOD_ITEM
 
+#define UDT_AWARDS_LIST(N) \
+	N(Impressive, "impressive", 0) \
+	N(Excellent, "excellent", 1) \
+	N(MidAir, "mid-air", 2)
+
+#define UDT_AWARDS_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtAwardBits
+{
+	enum Id
+	{
+		UDT_AWARDS_LIST(UDT_AWARDS_ITEM)
+		Count
+	};
+};
+#undef UDT_AWARDS_ITEM
+
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
 	N(Red, "red") \
@@ -272,6 +289,7 @@ struct udtStringArray
 		MeansOfDeath,
 		PlayerMeansOfDeath,
 		Teams,
+		Awards,
 		Count
 	};
 };
@@ -459,6 +477,22 @@ extern "C"
 		//u32 AllowedPowerUps;
 	};
 
+	struct udtCutByAwardArg
+	{
+		// Negative offset from the first award's time, in seconds.
+		u32 StartOffsetSec;
+
+		// Positive offset from the last award's time, in seconds.
+		u32 EndOffsetSec;
+
+		// All the allowed awards.
+		// See udtAwardBits.
+		u32 AllowedAwards;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 	struct udtChatEventData
 	{
 		// All C string pointers can be NULL if extraction failed.
@@ -587,6 +621,22 @@ extern "C"
 		s32 Reserved2;
 	};
 
+	struct udtParseDataAward
+	{
+		// The index of the last gamestate message after which this death event occurred.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
+
+		// The time at which the award was given.
+		s32 ServerTimeMs;
+
+		// The original award number (protocol-specific).
+		s32 AwardId;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 #pragma pack(pop)
 
 	//
@@ -649,6 +699,9 @@ extern "C"
 	// Creates a new demo cut for every matching frag sequence.
 	UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
 
+	// Creates a new demo cut for every matching award sequence.
+	UDT_API(s32) udtCutDemoFileByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath);
+
 	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
 	UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
@@ -690,6 +743,9 @@ extern "C"
 
 	// Creates a new demo cut for every matching frag sequence for each demo.
 	UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo);
+
+	// Creates a new demo cut for every matching award sequence for each demo.
+	UDT_API(s32) udtCutDemoFilesByAward(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByAwardArg* awardInfo);
 
 #ifdef __cplusplus
 }
