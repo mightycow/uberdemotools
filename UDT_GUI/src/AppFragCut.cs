@@ -186,7 +186,7 @@ namespace Uber.DemoTools
         private CheckBox _allowAnyDeathCheckBox = null;
         private RadioButton _autoPlayerSelectionRadioButton = null;
         private RadioButton _manualPlayerSelectionRadioButton = null;
-        private TextBox _playerIndexTextBox = null;
+        private ComboBox _playerIndexComboBox = null;
         private FilterGroupBox _playerMODFilters = null;
         //private FilterGroupBox _powerUpFilters = null;
         //private FilterGroupBox _weaponFilters = null;
@@ -246,6 +246,8 @@ namespace Uber.DemoTools
             rulesGroupBox.Content = rulesPanel;
 
             var autoPlayerSelectionRadioButton = new RadioButton();
+            autoPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            autoPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
             _autoPlayerSelectionRadioButton = autoPlayerSelectionRadioButton;
             autoPlayerSelectionRadioButton.GroupName = "PlayerSelection";
             autoPlayerSelectionRadioButton.Content = " Recording Player";
@@ -253,16 +255,24 @@ namespace Uber.DemoTools
             autoPlayerSelectionRadioButton.IsChecked = true;
 
             var manualPlayerSelectionRadioButton = new RadioButton();
+            manualPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            manualPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
             _manualPlayerSelectionRadioButton = manualPlayerSelectionRadioButton;
             manualPlayerSelectionRadioButton.GroupName = "PlayerSelection";
             manualPlayerSelectionRadioButton.Content = " This Player";
             manualPlayerSelectionRadioButton.IsChecked = false;
 
-            var playerIndexTextBox = new TextBox();
-            _playerIndexTextBox = playerIndexTextBox;
-            playerIndexTextBox.Margin = new Thickness(5, 0, 0, 0);
-            playerIndexTextBox.Width = 40;
-            playerIndexTextBox.ToolTip = "Valid range: [0;63]";
+            var playerIndexComboBox = new ComboBox();
+            playerIndexComboBox.HorizontalAlignment = HorizontalAlignment.Left;
+            playerIndexComboBox.VerticalAlignment = VerticalAlignment.Center;
+            _playerIndexComboBox = playerIndexComboBox;
+            playerIndexComboBox.Margin = new Thickness(5, 0, 0, 0);
+            playerIndexComboBox.Width = 40;
+            for(var i = 0; i < 64; ++i)
+            {
+                playerIndexComboBox.Items.Add(i.ToString());
+            }
+            playerIndexComboBox.SelectedIndex = 0;
 
             var manualPlayerSelectionRow = new StackPanel();
             manualPlayerSelectionRow.Margin = new Thickness(0, 5, 0, 0);
@@ -270,7 +280,7 @@ namespace Uber.DemoTools
             manualPlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
             manualPlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
             manualPlayerSelectionRow.Children.Add(manualPlayerSelectionRadioButton);
-            manualPlayerSelectionRow.Children.Add(playerIndexTextBox);
+            manualPlayerSelectionRow.Children.Add(playerIndexComboBox);
 
             var playerSelectionPanel = new StackPanel();
             playerSelectionPanel.Margin = new Thickness(10);
@@ -388,11 +398,7 @@ namespace Uber.DemoTools
             var manualMode = _manualPlayerSelectionRadioButton.IsChecked ?? false;
             if(manualMode)
             {
-                if(!int.TryParse(_playerIndexTextBox.Text, out playerIndex))
-                {
-                    _app.LogError("Invalid player index: {0}. Valid range: [0;63]", _playerIndexTextBox.Text);
-                    return;
-                }
+                playerIndex = _playerIndexComboBox.SelectedIndex;
             }
 
             UInt32 allowedPlayerMODs = _playerMODFilters.GetBitMask();
