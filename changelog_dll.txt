@@ -1,3 +1,8 @@
+0.3.4a (22.12.2014)
+CHG: Bumped up the maximum thread count in batch processing jobs
+FIX: Cut by Frag was ignoring the "Time Between Frags" filter!
+FIX: The award analyzer will only accept the persistent counter going up as an event (as opposed to just changing)
+
 0.3.4 (21.12.2014)
 ADD: Cut by Awards (udtCutDemoFile(s)ByAward API functions)
 CHG: Improved API functions argument checking

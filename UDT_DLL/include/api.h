@@ -98,7 +98,8 @@ struct udtCrashType
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
 	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
-	N(Awards,     udtParserPlugInAwards,     udtParseDataAward)
+	N(Awards,     udtParserPlugInAwards,     udtParseDataAward) \
+	N(MidAirs,    udtParserPlugInMidAir,     udtParseDataMidAir)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
 struct udtParserPlugIn
@@ -133,6 +134,30 @@ struct udtWeaponBits
 	{
 		UDT_WEAPON_LIST(UDT_WEAPON_ITEM)
 		AfterLast
+	};
+};
+#undef UDT_WEAPON_ITEM
+
+#define UDT_WEAPON_ITEM(Enum, Desc, Bit) Enum = Bit,
+struct udtWeapon
+{
+	enum Id
+	{
+		Gauntlet,
+		MachineGun,
+		Shotgun,
+		GrenadeLauncher,
+		RocketLauncher,
+		PlasmaGun,
+		Railgun,
+		LightningGun,
+		BFG,
+		GrapplingHook,
+		NailGun,
+		ChainGun,
+		ProximityMineLauncher,
+		HeavyMachineGun,
+		Count
 	};
 };
 #undef UDT_WEAPON_ITEM
@@ -635,6 +660,29 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
+	};
+
+	struct udtParseDataMidAir
+	{
+		// The index of the last gamestate message after which this death event occurred.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
+
+		// The time at which the mid-air projectile kill happened.
+		s32 ServerTimeMs;
+
+		// The weapon used.
+		// Of type udtWeapon::Id.
+		u32 Weapon;
+
+		// Non-zero if the other Travel* fields are valid.
+		u32 TravelInfoAvailable;
+
+		// The distance between the firing point and impact point.
+		u32 TravelDistance;
+
+		// How long the projectile moved through the air before the impact.
+		u32 TravelDurationMs;
 	};
 
 #pragma pack(pop)

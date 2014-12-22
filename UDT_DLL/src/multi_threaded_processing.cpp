@@ -11,7 +11,8 @@
 #include <assert.h>
 
 
-#define MIN_BYTE_SIZE_PER_THREAD (u64)(6 * (1<<20))
+#define    UDT_MIN_BYTE_SIZE_PER_THREAD    (u64)(6 * (1<<20))
+#define    UDT_MAX_THREAD_COUNT            16
 
 
 struct FileInfo
@@ -75,16 +76,16 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		totalByteCount += byteCount;
 	}
 
-	if(totalByteCount < 2 * MIN_BYTE_SIZE_PER_THREAD)
+	if(totalByteCount < 2 * UDT_MIN_BYTE_SIZE_PER_THREAD)
 	{
 		return false;
 	}
 
 	// Prepare the final thread array.
-	maxThreadCount = udt_min(maxThreadCount, (u32)4);
+	maxThreadCount = udt_min(maxThreadCount, (u32)UDT_MAX_THREAD_COUNT);
 	maxThreadCount = udt_min(maxThreadCount, processorCoreCount);
 	maxThreadCount = udt_min(maxThreadCount, fileCount);
-	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / MIN_BYTE_SIZE_PER_THREAD));
+	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / UDT_MIN_BYTE_SIZE_PER_THREAD));
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)

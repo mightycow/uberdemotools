@@ -708,8 +708,10 @@ void udtBaseParser::ParseSnapshot()
 		info.ServerTime = _inServerTime;
 		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
 		info.Snapshot = &newSnap;
-		info.Entities = _inParsedEntities.GetStartAddress();
-		info.EntityCount = _inParsedEntities.GetSize();
+		info.Entities = _inChangedEntities.GetStartAddress();
+		info.EntityCount = _inChangedEntities.GetSize();
+		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
+		info.RemovedEntityCount = _inRemovedEntities.GetSize();
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{
@@ -766,7 +768,8 @@ void udtBaseParser::WriteGameState()
 
 void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
-	_inParsedEntities.Clear();
+	_inChangedEntities.Clear();
+	_inRemovedEntities.Clear();
 
 	newframe->parseEntitiesNum = _inParseEntitiesNum;
 	newframe->numEntities = 0;
@@ -980,7 +983,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 			udtChangedEntity info;
 			info.Entity = state;
 			info.IsNewEvent = isNewEvent;
-			_inParsedEntities.Add(info);
+			_inChangedEntities.Add(info);
 			if(isNewEvent)
 			{
 				_inEntityEventTimesMs[newnum] = _inServerTime;
@@ -992,6 +995,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	if(state->number == (MAX_GENTITIES-1)) 
 	{
 		// We have to return now.
+		_inRemovedEntities.Add(old); // @TODO: Is this correct? Using old?
 		return;	
 	}
 

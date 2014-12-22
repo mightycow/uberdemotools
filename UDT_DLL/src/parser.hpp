@@ -91,16 +91,6 @@ public:
 		u32 StringLength;
 	};
 
-	typedef udtVMArray<udtCutInfo> CutVector;
-	typedef udtVMArray<udtConfigString> ConfigStringVector;
-	typedef udtVMArray<udtServerCommand> ServerCommandVector;
-	typedef udtVMArray<u8> EntityVector;
-	typedef udtVMArray<u8> SnapshotVector;
-	typedef udtVMArray<udtBaseParserPlugIn*> PlugInVector;
-	typedef udtVMArray<u32> FileOffsetVector;
-	typedef udtVMArray<udtChangedEntity> ChangedEntityVector;
-	typedef udtVMArray<s32> ServerTimeVector;
-
 public:
 	// General.
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
@@ -110,7 +100,7 @@ public:
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
-	PlugInVector PlugIns;
+	udtVMArray<udtBaseParserPlugIn*> PlugIns;
 
 	// Input.
 	const char* _inFilePath;
@@ -125,19 +115,20 @@ public:
 	s32 _inParseEntitiesNum;
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
-	FileOffsetVector _inGameStateFileOffsets;
-	EntityVector _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
-	EntityVector _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
-	ServerCommandVector _inCommands;
-	ConfigStringVector _inConfigStrings;
+	udtVMArray<u32> _inGameStateFileOffsets;
+	udtVMArray<u8> _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
+	udtVMArray<u8> _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
+	udtVMArray<udtServerCommand> _inCommands;
+	udtVMArray<udtConfigString> _inConfigStrings;
 	udtVMLinearAllocator _inLinearAllocator;
-	SnapshotVector _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
+	udtVMArray<u8> _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
 	idLargestClientSnapshot _inSnapshot;
-	ChangedEntityVector _inParsedEntities; // The entities that were read in the last call to ParsePacketEntities.
-	ServerTimeVector _inEntityEventTimesMs; // The server time, in ms, of the last event for a given entity.
+	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
+	udtVMArray<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArray<s32> _inEntityEventTimesMs; // The server time, in ms, of the last event for a given entity.
 
 	// Output.
-	CutVector _cuts;
+	udtVMArray<udtCutInfo> _cuts;
 	u8 _outMsgData[MAX_MSGLEN];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;
