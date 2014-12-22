@@ -26,12 +26,12 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 
 void udtCutByFragAnalyzer::FinishAnalysis()
 {
+	const s32 maxIntervalMs = _info.TimeBetweenFragsSec * 1000;
 	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
 	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
 	const bool allowTeamKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
 	const bool allowAnyDeath = (_info.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
 
-	const s32 cutDurationMs = (s32)(_info.StartOffsetSec + _info.EndOffsetSec) * (s32)1000;
 	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
@@ -81,7 +81,7 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 		{
 			const Frag previousMatch = _frags[_frags.GetSize() - 1];
 			if(data.GameStateIndex != previousMatch.GameStateIndex ||
-			   data.ServerTimeMs > previousMatch.ServerTimeMs + cutDurationMs)
+			   data.ServerTimeMs > previousMatch.ServerTimeMs + maxIntervalMs)
 			{
 				AddCurrentSectionIfValid();
 			}
