@@ -930,87 +930,52 @@ const char* GetTeamName(s32 team)
 
 static s32 GetUDTPlayerMODBitFromIdMod68(s32 idMod)
 {
-	if(idMod < 0 || idMod >= (s32)idMeansOfDeath68::Count)
+	switch((idMeansOfDeath68::Id)idMod)
 	{
-		return 0;
+		case idMeansOfDeath68::MachineGun: return (s32)udtPlayerMeansOfDeathBits::MachineGun;
+		case idMeansOfDeath68::Shotgun: return (s32)udtPlayerMeansOfDeathBits::Shotgun;
+		case idMeansOfDeath68::Gauntlet: return (s32)udtPlayerMeansOfDeathBits::Gauntlet;
+		case idMeansOfDeath68::Grenade: return (s32)udtPlayerMeansOfDeathBits::Grenade;
+		case idMeansOfDeath68::GrenadeSplash: return (s32)udtPlayerMeansOfDeathBits::Grenade;
+		case idMeansOfDeath68::Rocket: return (s32)udtPlayerMeansOfDeathBits::Rocket;
+		case idMeansOfDeath68::RocketSplash: return (s32)udtPlayerMeansOfDeathBits::RocketSplash;
+		case idMeansOfDeath68::Plasma: return (s32)udtPlayerMeansOfDeathBits::Plasma;
+		case idMeansOfDeath68::PlasmaSplash: return (s32)udtPlayerMeansOfDeathBits::PlasmaSplash;
+		case idMeansOfDeath68::RailGun: return (s32)udtPlayerMeansOfDeathBits::Railgun;
+		case idMeansOfDeath68::Lightning: return (s32)udtPlayerMeansOfDeathBits::Lightning;
+		case idMeansOfDeath68::BFG: return (s32)udtPlayerMeansOfDeathBits::BFG;
+		case idMeansOfDeath68::BFGSplash: return (s32)udtPlayerMeansOfDeathBits::BFGSplash;
+		case idMeansOfDeath68::TeleFrag: return (s32)udtPlayerMeansOfDeathBits::TeleFrag;
+		default: return 0;
 	}
-
-	s32 lut[idMeansOfDeath68::Count];
-	memset(lut, 0, sizeof(lut));
-	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	//lut[idMeansOfDeath68::Unknown] = 0;
-	lut[idMeansOfDeath68::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
-	lut[idMeansOfDeath68::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
-	lut[idMeansOfDeath68::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	lut[idMeansOfDeath68::Grenade] = udtPlayerMeansOfDeathBits::Grenade;
-	lut[idMeansOfDeath68::GrenadeSplash] = udtPlayerMeansOfDeathBits::Grenade;
-	lut[idMeansOfDeath68::Rocket] = udtPlayerMeansOfDeathBits::Rocket;
-	lut[idMeansOfDeath68::RocketSplash] = udtPlayerMeansOfDeathBits::RocketSplash;
-	lut[idMeansOfDeath68::Plasma] = udtPlayerMeansOfDeathBits::Plasma;
-	lut[idMeansOfDeath68::PlasmaSplash] = udtPlayerMeansOfDeathBits::PlasmaSplash;
-	lut[idMeansOfDeath68::RailGun] = udtPlayerMeansOfDeathBits::Railgun;
-	lut[idMeansOfDeath68::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
-	lut[idMeansOfDeath68::BFG] = udtPlayerMeansOfDeathBits::BFG;
-	lut[idMeansOfDeath68::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
-	//lut[idMeansOfDeath68::Water] = 0;
-	//lut[idMeansOfDeath68::Slime] = 0;
-	//lut[idMeansOfDeath68::Lava] = 0;
-	//lut[idMeansOfDeath68::Crush] = 0;
-	lut[idMeansOfDeath68::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
-	//lut[idMeansOfDeath68::Fall] = 0;
-	//lut[idMeansOfDeath68::Suicide] = 0;
-	//lut[idMeansOfDeath68::TargetLaser] = 0;
-	//lut[idMeansOfDeath68::HurtTrigger] = 0;
-	//lut[idMeansOfDeath68::Grapple] = 0;
-
-	return lut[idMod];
 }
 
-static s32 GetUDTPlayerMODBitFromIdMod73_90(s32 idMod)
+static s32 GetUDTPlayerMODBitFromIdMod73p(s32 idMod)
 {
-	if(idMod < 0 || idMod >= (s32)idMeansOfDeath73::Count)
+	switch((idMeansOfDeath73p::Id)idMod)
 	{
-		return 0;
+		case idMeansOfDeath73p::MachineGun: return (s32)udtPlayerMeansOfDeathBits::MachineGun;
+		case idMeansOfDeath73p::Shotgun: return (s32)udtPlayerMeansOfDeathBits::Shotgun;
+		case idMeansOfDeath73p::Gauntlet: return (s32)udtPlayerMeansOfDeathBits::Gauntlet;
+		case idMeansOfDeath73p::Grenade: return (s32)udtPlayerMeansOfDeathBits::Grenade;
+		case idMeansOfDeath73p::GrenadeSplash: return (s32)udtPlayerMeansOfDeathBits::Grenade;
+		case idMeansOfDeath73p::Rocket: return (s32)udtPlayerMeansOfDeathBits::Rocket;
+		case idMeansOfDeath73p::RocketSplash: return (s32)udtPlayerMeansOfDeathBits::RocketSplash;
+		case idMeansOfDeath73p::Plasma: return (s32)udtPlayerMeansOfDeathBits::Plasma;
+		case idMeansOfDeath73p::PlasmaSplash: return (s32)udtPlayerMeansOfDeathBits::PlasmaSplash;
+		case idMeansOfDeath73p::RailGun: return (s32)udtPlayerMeansOfDeathBits::Railgun;
+		case idMeansOfDeath73p::Lightning: return (s32)udtPlayerMeansOfDeathBits::Lightning;
+		case idMeansOfDeath73p::BFG: return (s32)udtPlayerMeansOfDeathBits::BFG;
+		case idMeansOfDeath73p::BFGSplash: return (s32)udtPlayerMeansOfDeathBits::BFGSplash;
+		case idMeansOfDeath73p::TeleFrag: return (s32)udtPlayerMeansOfDeathBits::TeleFrag;
+		case idMeansOfDeath73p::NailGun: return (s32)udtPlayerMeansOfDeathBits::NailGun;
+		case idMeansOfDeath73p::ChainGun: return (s32)udtPlayerMeansOfDeathBits::ChainGun;
+		case idMeansOfDeath73p::ProximityMine: return (s32)udtPlayerMeansOfDeathBits::ProximityMine;
+		case idMeansOfDeath73p::Kamikaze: return (s32)udtPlayerMeansOfDeathBits::Kamikaze;
+		case idMeansOfDeath73p::Thaw: return (s32)udtPlayerMeansOfDeathBits::Thaw;
+		case idMeansOfDeath73p::HeavyMachineGun: return (s32)udtPlayerMeansOfDeathBits::HeavyMachineGun;
+		default: return 0;
 	}
-
-	s32 lut[idMeansOfDeath73::Count];
-	memset(lut, 0, sizeof(lut));
-	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	//lut[idMeansOfDeath73::Unknown] = 0;
-	lut[idMeansOfDeath73::Shotgun] = udtPlayerMeansOfDeathBits::Shotgun;
-	lut[idMeansOfDeath73::Gauntlet] = udtPlayerMeansOfDeathBits::Gauntlet;
-	lut[idMeansOfDeath73::MachineGun] = udtPlayerMeansOfDeathBits::MachineGun;
-	lut[idMeansOfDeath73::Grenade] = udtPlayerMeansOfDeathBits::Grenade;
-	lut[idMeansOfDeath73::GrenadeSplash] = udtPlayerMeansOfDeathBits::Grenade;
-	lut[idMeansOfDeath73::Rocket] = udtPlayerMeansOfDeathBits::Rocket;
-	lut[idMeansOfDeath73::RocketSplash] = udtPlayerMeansOfDeathBits::RocketSplash;
-	lut[idMeansOfDeath73::Plasma] = udtPlayerMeansOfDeathBits::Plasma;
-	lut[idMeansOfDeath73::PlasmaSplash] = udtPlayerMeansOfDeathBits::PlasmaSplash;
-	lut[idMeansOfDeath73::RailGun] = udtPlayerMeansOfDeathBits::Railgun;
-	lut[idMeansOfDeath73::Lightning] = udtPlayerMeansOfDeathBits::Lightning;
-	lut[idMeansOfDeath73::BFG] = udtPlayerMeansOfDeathBits::BFG;
-	lut[idMeansOfDeath73::BFGSplash] = udtPlayerMeansOfDeathBits::BFGSplash;
-	//lut[idMeansOfDeath73::Water] = 0;
-	//lut[idMeansOfDeath73::Slime] = 0;
-	//lut[idMeansOfDeath73::Lava] = 0;
-	//lut[idMeansOfDeath73::Crush] = 0;
-	lut[idMeansOfDeath73::TeleFrag] = udtPlayerMeansOfDeathBits::TeleFrag;
-	//lut[idMeansOfDeath73::Fall] = 0;
-	//lut[idMeansOfDeath73::Suicide] = 0;
-	//lut[idMeansOfDeath73::TargetLaser] = 0;
-	//lut[idMeansOfDeath73::HurtTrigger] = 0;
-	lut[idMeansOfDeath73::NailGun] = udtPlayerMeansOfDeathBits::NailGun;
-	lut[idMeansOfDeath73::ChainGun] = udtPlayerMeansOfDeathBits::ChainGun;
-	lut[idMeansOfDeath73::ProximityMine] = udtPlayerMeansOfDeathBits::ProximityMine;
-	lut[idMeansOfDeath73::Kamikaze] = udtPlayerMeansOfDeathBits::Kamikaze;
-	//lut[idMeansOfDeath73::Juiced] = 0;
-	//lut[idMeansOfDeath73::Grapple] = 0;
-	//lut[idMeansOfDeath73::TeamSwitch] = 0;
-	lut[idMeansOfDeath73::Thaw] = udtPlayerMeansOfDeathBits::Thaw;
-	//lut[idMeansOfDeath73::UnknownQlMod1] = 0;
-	lut[idMeansOfDeath73::HeavyMachineGun] = udtPlayerMeansOfDeathBits::HeavyMachineGun;
-
-	return lut[idMod];
 }
 
 s32 GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol)
@@ -1025,7 +990,7 @@ s32 GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol)
 		return GetUDTPlayerMODBitFromIdMod68(idMod);
 	}
 
-	return GetUDTPlayerMODBitFromIdMod73_90(idMod);
+	return GetUDTPlayerMODBitFromIdMod73p(idMod);
 }
 
 s32 GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol)
@@ -1067,4 +1032,52 @@ s32 GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol)
 	}
 
 	return 0;
+}
+
+s32 GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	if(protocol == udtProtocol::Dm68)
+	{
+		
+		switch((idWeapon68::Id)idWeapon)
+		{
+			case idWeapon68::Gauntlet: return (s32)udtWeapon::Gauntlet;
+			case idWeapon68::MachineGun: return (s32)udtWeapon::MachineGun;
+			case idWeapon68::Shotgun: return (s32)udtWeapon::Shotgun;
+			case idWeapon68::GrenadeLauncher: return (s32)udtWeapon::GrenadeLauncher;
+			case idWeapon68::RocketLauncher: return (s32)udtWeapon::RocketLauncher;
+			case idWeapon68::LightningGun: return (s32)udtWeapon::LightningGun;
+			case idWeapon68::Railgun: return (s32)udtWeapon::Railgun;
+			case idWeapon68::PlasmaGun: return (s32)udtWeapon::PlasmaGun;
+			case idWeapon68::BFG: return (s32)udtWeapon::BFG;
+			case idWeapon68::GrapplingHook: return (s32)udtWeapon::GrapplingHook;
+			default: return -1;
+		}
+	}
+	else
+	{
+		switch((idWeapon73p::Id)idWeapon)
+		{
+			case idWeapon73p::Gauntlet: return (s32)udtWeapon::Gauntlet;
+			case idWeapon73p::MachineGun: return (s32)udtWeapon::MachineGun;
+			case idWeapon73p::Shotgun: return (s32)udtWeapon::Shotgun;
+			case idWeapon73p::GrenadeLauncher: return (s32)udtWeapon::GrenadeLauncher;
+			case idWeapon73p::RocketLauncher: return (s32)udtWeapon::RocketLauncher;
+			case idWeapon73p::LightningGun: return (s32)udtWeapon::LightningGun;
+			case idWeapon73p::Railgun: return (s32)udtWeapon::Railgun;
+			case idWeapon73p::PlasmaGun: return (s32)udtWeapon::PlasmaGun;
+			case idWeapon73p::BFG: return (s32)udtWeapon::BFG;
+			case idWeapon73p::GrapplingHook: return (s32)udtWeapon::GrapplingHook;
+			case idWeapon73p::NailGun: return (s32)udtWeapon::NailGun;
+			case idWeapon73p::ChainGun: return (s32)udtWeapon::ChainGun;
+			case idWeapon73p::ProximityMineLauncher: return (s32)udtWeapon::ProximityMineLauncher;
+			case idWeapon73p::HeavyMachineGun: return (s32)udtWeapon::HeavyMachineGun;
+			default: return -1;
+		}
+	}
 }

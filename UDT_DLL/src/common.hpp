@@ -133,8 +133,6 @@ typedef enum {
 	TR_GRAVITY
 } trType_t;
 
-// 68: this
-// 73: this + s32 gravity
 struct idTrajectoryBase
 {
 	trType_t	trType;
@@ -171,7 +169,7 @@ struct idEntityStateBase
 	s32		otherEntityNum;	// shotgun sources, etc
 	s32		otherEntityNum2;
 
-	s32		groundEntityNum;	// -1 = in air
+	s32		groundEntityNum;// ENTITYNUM_NONE = in air
 
 	s32		constantLight;	// r + (g<<8) + (b<<16) + (s32ensity<<24)
 	s32		loopSound;		// constantly loop this sound
@@ -781,8 +779,7 @@ struct idMeansOfDeath68
 	};
 };
 
-// Means of Death, also for protocol 90.
-struct idMeansOfDeath73
+struct idMeansOfDeath73p
 {
 	enum Id
 	{
@@ -1019,17 +1016,46 @@ typedef enum
 	WEAPON_CHAINGUN
 } itemList_t;
 
-typedef enum {
-	WP_NONE,
-	WP_GAUNTLET,
-	WP_MACHINEGUN,
-	WP_SHOTGUN,
-	WP_GRENADE_LAUNCHER,
-	WP_ROCKET_LAUNCHER,
-	WP_LIGHTNING,
-	WP_RAILGUN,
-	WP_PLASMAGUN,
-	WP_BFG,
-	WP_GRAPPLING_HOOK,
-	WP_NUM_WEAPONS
-} weapon_t;
+struct idWeapon68
+{
+	enum Id
+	{
+		None,
+		Gauntlet,
+		MachineGun,
+		Shotgun,
+		GrenadeLauncher,
+		RocketLauncher,
+		LightningGun,
+		Railgun,
+		PlasmaGun,
+		BFG,
+		GrapplingHook,
+		AfterLast
+	};
+};
+
+struct idWeapon73p
+{
+	enum Id
+	{
+		None,
+		Gauntlet,
+		MachineGun,
+		Shotgun,
+		GrenadeLauncher,
+		RocketLauncher,
+		LightningGun,
+		Railgun,
+		PlasmaGun,
+		BFG,
+		GrapplingHook,
+		// Mission Pack start
+		NailGun,
+		ProximityMineLauncher,
+		ChainGun,
+		// Mission Pack end
+		HeavyMachineGun, // @TODO: Correct value?
+		AfterLast
+	};
+};
