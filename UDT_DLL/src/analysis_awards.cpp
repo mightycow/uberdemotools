@@ -21,7 +21,8 @@ void udtAwardsAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 	{
 		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
 		{
-			if(ps->persistant[i] != _persistant[i])
+			// @NOTE: Might be reset to 0, so we test only if bigger.
+			if(ps->persistant[i] > _persistant[i])
 			{
 				udtParseDataAward info;
 				info.AwardId = i;
