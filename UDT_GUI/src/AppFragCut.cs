@@ -151,16 +151,6 @@ namespace Uber.DemoTools
         {
             int intValue = 0;
 
-            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out intValue))
-            {
-                _app.Config.FragCutStartOffset = intValue;
-            }
-
-            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out intValue))
-            {
-                _app.Config.FragCutEndOffset = intValue;
-            }
-
             if(int.TryParse(_minFragCountEditBox.Text, out intValue))
             {
                 _app.Config.FragCutMinFragCount = intValue;
@@ -177,8 +167,6 @@ namespace Uber.DemoTools
         }
 
         private App _app;
-        private TextBox _startTimeOffsetEditBox = null;
-        private TextBox _endTimeOffsetEditBox = null;
         private TextBox _minFragCountEditBox = null;
         private TextBox _timeBetweenFragsEditBox = null;
         private CheckBox _allowSelfKillsCheckBox = null;
@@ -188,14 +176,12 @@ namespace Uber.DemoTools
         private RadioButton _manualPlayerSelectionRadioButton = null;
         private ComboBox _playerIndexComboBox = null;
         private FilterGroupBox _playerMODFilters = null;
-        //private FilterGroupBox _powerUpFilters = null;
-        //private FilterGroupBox _weaponFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
             _playerMODFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
+            // @TODO:
             //_powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
-            //_weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
 
             var minFragCountEditBox = new TextBox();
             _minFragCountEditBox = minFragCountEditBox;
@@ -311,32 +297,6 @@ namespace Uber.DemoTools
             actionsGroupBox.Margin = new Thickness(5);
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
-
-            var startTimeOffsetEditBox = new TextBox();
-            _startTimeOffsetEditBox = startTimeOffsetEditBox;
-            startTimeOffsetEditBox.Width = 40;
-            startTimeOffsetEditBox.Text = _app.Config.FragCutStartOffset.ToString();
-            startTimeOffsetEditBox.ToolTip = "How many seconds before the first frag in the sequence do we start the cut?";
-
-            var endTimeOffsetEditBox = new TextBox();
-            _endTimeOffsetEditBox = endTimeOffsetEditBox;
-            endTimeOffsetEditBox.Width = 40;
-            endTimeOffsetEditBox.Text = _app.Config.FragCutEndOffset.ToString();
-            endTimeOffsetEditBox.ToolTip = "How many seconds after the last frag in the sequence do we end the cut?";
-
-            var timeOffsetPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            timeOffsetPanelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            timeOffsetPanelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
-            var timeOffsetPanel = WpfHelper.CreateDualColumnPanel(timeOffsetPanelList, 100, 5);
-            timeOffsetPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            timeOffsetPanel.VerticalAlignment = VerticalAlignment.Center;
-            
-            var timeOffsetsGroupBox = new GroupBox();
-            timeOffsetsGroupBox.Header = "Time Offsets";
-            timeOffsetsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            timeOffsetsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            timeOffsetsGroupBox.Margin = new Thickness(5);
-            timeOffsetsGroupBox.Content = timeOffsetPanel;
             
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -358,14 +318,11 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(rulesGroupBox);
-            rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(playerSelectionGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
             rootPanel.Children.Add(new WpfHelper.WrapPanelNewLine());
             rootPanel.Children.Add(_playerMODFilters.RootElement);
-            //rootPanel.Children.Add(_powerUpFilters.RootElement);
-            //rootPanel.Children.Add(_weaponFilters.RootElement);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -493,8 +450,8 @@ namespace Uber.DemoTools
                 rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
                 rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
                 rules.TimeMode = 0; // @TODO:
-                rules.StartOffsetSec = (UInt32)config.FragCutStartOffset;
-                rules.EndOffsetSec = (UInt32)config.FragCutEndOffset;
+                rules.StartOffsetSec = (UInt32)config.CutStartOffset;
+                rules.EndOffsetSec = (UInt32)config.CutEndOffset;
                 rules.Flags = flags;
                 rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
                 rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;

@@ -33,15 +33,7 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtConfig config)
         {
-            int time = 0;
-            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
-            {
-                _app.Config.ChatCutStartOffset = time;
-            }
-            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
-            {
-                _app.Config.ChatCutEndOffset = time;
-            }
+            // Nothing to do.
         }
 
         private App _app;
@@ -63,8 +55,6 @@ namespace Uber.DemoTools
         }
 
         private DemoInfoListView _chatRulesListView = null;
-        private TextBox _startTimeOffsetEditBox = null;
-        private TextBox _endTimeOffsetEditBox = null;
 
         private FrameworkElement CreateCutByChatTab()
         {
@@ -150,32 +140,6 @@ namespace Uber.DemoTools
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
 
-            var startTimeOffsetEditBox = new TextBox();
-            _startTimeOffsetEditBox = startTimeOffsetEditBox;
-            startTimeOffsetEditBox.Width = 40;
-            startTimeOffsetEditBox.Text = _app.Config.ChatCutStartOffset.ToString();
-            startTimeOffsetEditBox.ToolTip = "How many seconds before the chat event do we start the cut?";
-
-            var endTimeOffsetEditBox = new TextBox();
-            _endTimeOffsetEditBox = endTimeOffsetEditBox;
-            endTimeOffsetEditBox.Width = 40;
-            endTimeOffsetEditBox.Text = _app.Config.ChatCutEndOffset.ToString();
-            endTimeOffsetEditBox.ToolTip = "How many seconds after the chat event do we end the cut?";
-
-            var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
-            var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
-            optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            optionsPanel.VerticalAlignment = VerticalAlignment.Center;
-            
-            var timeOffsetsGroupBox = new GroupBox();
-            timeOffsetsGroupBox.Header = "Time Offsets";
-            timeOffsetsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            timeOffsetsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            timeOffsetsGroupBox.Margin = new Thickness(5);
-            timeOffsetsGroupBox.Content = optionsPanel;
-
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
@@ -198,7 +162,6 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(chatRulesGroupBox);
-            rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
@@ -270,7 +233,7 @@ namespace Uber.DemoTools
             try
             {
                 var config = _app.Config;
-                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, config.ChatCutStartOffset, config.ChatCutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
             }
             catch(Exception exception)
             {

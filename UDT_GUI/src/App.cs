@@ -25,27 +25,23 @@ namespace Uber.DemoTools
 
     public class UdtConfig
     {
+        public int CutStartOffset = 10;
+        public int CutEndOffset = 10;
         public List<ChatRule> ChatRules = new List<ChatRule>();
-        public int ChatCutStartOffset = 10;
-        public int ChatCutEndOffset = 10;
         public bool OutputToInputFolder = true;
         public string OutputFolder = "";
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 4;
+        public int MaxThreadCount = 8;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
-        public int FragCutStartOffset = 10;
-        public int FragCutEndOffset = 10;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
-        public int AwardCutStartOffset = 10;
-        public int AwardCutEndOffset = 10;
         public bool AnalyzeOnLoad = true;
     }
 
@@ -258,13 +254,13 @@ namespace Uber.DemoTools
             var cutByChat = new CutByChatComponent(this);
             _appComponents.Add(cutByChat);
             var cutChatTab = new TabItem();
-            cutChatTab.Header = "Cut by Chat";
+            cutChatTab.Header = "Chat Filters";
             cutChatTab.Content = cutByChat.RootControl;
 
             var cutByFrag = new CutByFragComponent(this);
             _appComponents.Add(cutByFrag);
             var cutFragTab = new TabItem();
-            cutFragTab.Header = "Cut by Frag";
+            cutFragTab.Header = "Frag Run Filters";
             cutFragTab.Content = cutByFrag.RootControl;
 
             var fragEvents = new FragEventsComponent(this);
@@ -1561,11 +1557,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.ChatCutStartOffset;
-            int endOffset = _config.ChatCutEndOffset;
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
             if(!_config.SkipChatOffsetsDialog)
             {
-                var dialog = new TimeOffsetsDialog(_window, _config.ChatCutStartOffset, _config.ChatCutEndOffset);
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
                 if(!dialog.Valid)
                 {
                     return;
