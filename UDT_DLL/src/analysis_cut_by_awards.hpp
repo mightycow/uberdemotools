@@ -2,10 +2,10 @@
 
 
 #include "analysis_awards.hpp"
-#include "analysis_cut_base.hpp"
+#include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByAwardAnalyzer : public udtCutAnalyzerBase
+struct udtCutByAwardAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
 	udtCutByAwardAnalyzer(const udtCutByAwardArg& info)

@@ -8,17 +8,12 @@ struct udtParsingJobType
 {
 	enum Id
 	{
-		General,
-		CutByChat,
-		CutByFrag,
-		CutByAward,
+		General,      // Parse the demo to extract information the user can later access.
+		CutByPattern, // Parse the demo to create a cut list, then apply the cuts and discard all the data.
 		Count
 	};
 };
 
-extern bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
-extern bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
-extern bool CutByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath);
-extern bool CutByWhatever(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const void* jobSpecificInfo, const char* demoFilePath);
+extern bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath);
 extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
-extern s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo);
+extern s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);

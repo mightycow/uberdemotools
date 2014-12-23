@@ -5,9 +5,14 @@
 #include "file_system.hpp"
 
 
+static bool IsValid(const udtCutByTimeArg& arg)
+{
+	return arg.CutCount > 0 && arg.Cuts != NULL;
+}
+
 static bool IsValid(const udtCutByChatArg& arg)
 {
-	if(arg.Rules == NULL || arg.RuleCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)
+	if(arg.Rules == NULL || arg.RuleCount == 0)
 	{
 		return false;
 	}
@@ -25,20 +30,47 @@ static bool IsValid(const udtCutByChatArg& arg)
 
 static bool IsValid(const udtCutByFragArg& arg)
 {
-	if(arg.TimeBetweenFragsSec == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0 || 
-	   arg.MinFragCount < 2 || arg.AllowedMeansOfDeaths == 0)
-	{
-		return false;
-	}
-
-	return true;
+	return arg.TimeBetweenFragsSec > 0 && arg.MinFragCount >= 2 && arg.AllowedMeansOfDeaths > 0;
 }
 
 static bool IsValid(const udtCutByAwardArg& arg)
 {
-	if(arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0 || arg.AllowedAwards == 0)
+	return arg.AllowedAwards > 0;
+}
+// @TODO:
+/*
+static bool IsValid(const udtCutByMidAirArg& arg)
+{
+	return arg.AllowedWeapons > 0;
+}
+
+static bool IsValid(const udtCutByMultiRailArg& arg)
+{
+	return arg.MinKillCount >= 2;
+}
+*/
+static bool IsValid(const udtCutByPatternArg& arg)
+{
+	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)
 	{
 		return false;
+	}
+
+	for(u32 i = 0, count = arg.PatternCount; i < count; ++i)
+	{
+		const udtPatternInfo info = arg.Patterns[i];
+		if(info.TypeSpecificInfo == NULL || info.Type >= (u32)udtPatternType::Count)
+		{
+			return false;
+		}
+
+#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false;
+		switch((udtPatternType::Id)info.Type)
+		{
+			UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
+			default: return false;
+		}
+#undef UDT_PATTERN_ITEM
 	}
 
 	return true;
@@ -46,22 +78,12 @@ static bool IsValid(const udtCutByAwardArg& arg)
 
 static bool IsValid(const udtMultiParseArg& arg)
 {
-	if(arg.FileCount == 0 || arg.FilePaths == NULL || arg.OutputErrorCodes == NULL)
-	{
-		return false;
-	}
-
-	return true;
+	return arg.FileCount > 0 && arg.FilePaths != NULL && arg.OutputErrorCodes != NULL;
 }
 
 static bool HasValidOutputOption(const udtParseArg& arg)
 {
-	if(arg.OutputFolderPath != NULL && !IsValidDirectory(arg.OutputFolderPath))
-	{
-		return false;
-	}
-
-	return true;
+	return arg.OutputFolderPath == NULL || IsValidDirectory(arg.OutputFolderPath);
 }
 
 static bool HasValidPlugInOptions(const udtParseArg& arg)

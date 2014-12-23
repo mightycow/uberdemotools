@@ -26,11 +26,11 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 
 void udtCutByFragAnalyzer::FinishAnalysis()
 {
-	const s32 maxIntervalMs = _info.TimeBetweenFragsSec * 1000;
-	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
-	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
-	const bool allowTeamKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
-	const bool allowAnyDeath = (_info.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
+	const s32 maxIntervalMs = _extraInfo.TimeBetweenFragsSec * 1000;
+	const s32 playerIndex = (_extraInfo.PlayerIndex >= 0 && _extraInfo.PlayerIndex < 64) ? _extraInfo.PlayerIndex : _analyzer.RecordingPlayerIndex;
+	const bool allowSelfKills = (_extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
+	const bool allowTeamKills = (_extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
+	const bool allowAnyDeath = (_extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
 
 	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
 	{
@@ -63,7 +63,7 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 		}
 
 		// Did we use a weapon that's not allowed?
-		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, _info.AllowedMeansOfDeaths, _protocol))
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, _extraInfo.AllowedMeansOfDeaths, _protocol))
 		{
 			AddCurrentSectionIfValid();
 			continue;
@@ -96,13 +96,13 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 {
 	const u32 fragCount = _frags.GetSize();
-	if(fragCount < 2 || fragCount < _info.MinFragCount)
+	if(fragCount < 2 || fragCount < _extraInfo.MinFragCount)
 	{
 		_frags.Clear();
 		return;
 	}
 
-	udtCutAnalyzerBase::CutSection cut;
+	udtCutSection cut;
 	cut.GameStateIndex = _frags[0].GameStateIndex;
 	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);

@@ -416,7 +416,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath)
 {
 	if(context == NULL || info == NULL || demoFilePath == NULL || cutInfo == NULL || 
-	   cutInfo->Cuts == NULL || cutInfo->CutCount == 0)
+	   !IsValid(*cutInfo))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -473,47 +473,52 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
+UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath)
 {
-	if(context == NULL || info == NULL || demoFilePath == NULL || chatInfo == NULL || 
-	   !IsValid(*chatInfo) || !HasValidOutputOption(*info))
+	if(context == NULL || info == NULL || demoFilePath == NULL || patternInfo == NULL ||
+	   !IsValid(*patternInfo))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!CutByChat(context, info, chatInfo, demoFilePath))
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	return (s32)udtErrorCode::None;
-}
-
-UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL || fragInfo == NULL || 
-	   !IsValid(*fragInfo) || !HasValidOutputOption(*info))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	if(!CutByFrag(context, info, fragInfo, demoFilePath))
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	return (s32)udtErrorCode::None;
-}
-
-UDT_API(s32) udtCutDemoFileByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL || awardInfo == NULL || 
-	   !IsValid(*awardInfo) || !HasValidOutputOption(*info))
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
 	{
-		return (s32)udtErrorCode::InvalidArgument;
+		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(!CutByAward(context, info, awardInfo, demoFilePath))
+	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	CallbackCutDemoFileStreamCreationInfo streamInfo;
+	streamInfo.OutputFolderPath = info->OutputFolderPath;
+
+	context->Parser.SetFilePath(demoFilePath);
+
+	context->Context.LogInfo("Processing for cut by pattern: %s", demoFilePath);
+
+	CutByPattern(context, info, patternInfo, demoFilePath);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -672,10 +677,10 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	return GetErrorCode(success, info->CancelOperation);
 }
 
-UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo)
+UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo)
 {
-	if(info == NULL || extraInfo == NULL || chatInfo == NULL || 
-	   !IsValid(*extraInfo) || !IsValid(*chatInfo) || !HasValidOutputOption(*info))
+	if(info == NULL || extraInfo == NULL || patternInfo == NULL ||
+	   !IsValid(*extraInfo) || !IsValid(*patternInfo) || !HasValidOutputOption(*info))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -684,75 +689,17 @@ UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseA
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByChat, NULL, info, extraInfo, chatInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByPattern, NULL, info, extraInfo, patternInfo);
 	}
 
 	udtParserContextGroup* contextGroup;
 	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByChat, NULL, info, extraInfo, chatInfo);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByPattern, NULL, info, extraInfo, patternInfo);
 	}
 
 	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByChat, chatInfo);
-
-	DestroyContextGroup(contextGroup);
-
-	return GetErrorCode(success, info->CancelOperation);
-}
-
-UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo)
-{
-	if(info == NULL || extraInfo == NULL || fragInfo == NULL ||
-	   !IsValid(*extraInfo) || !IsValid(*fragInfo) || !HasValidOutputOption(*info))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	udtDemoThreadAllocator threadAllocator;
-	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
-	if(!threadJob)
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByFrag, NULL, info, extraInfo, fragInfo);
-	}
-
-	udtParserContextGroup* contextGroup;
-	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByFrag, NULL, info, extraInfo, fragInfo);
-	}
-
-	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByFrag, fragInfo);
-
-	DestroyContextGroup(contextGroup);
-
-	return GetErrorCode(success, info->CancelOperation);
-}
-
-UDT_API(s32) udtCutDemoFilesByAward(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByAwardArg* awardInfo)
-{
-	if(info == NULL || extraInfo == NULL || awardInfo == NULL ||
-	   !IsValid(*extraInfo) || !IsValid(*awardInfo) || !HasValidOutputOption(*info))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	udtDemoThreadAllocator threadAllocator;
-	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
-	if(!threadJob)
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByAward, NULL, info, extraInfo, awardInfo);
-	}
-
-	udtParserContextGroup* contextGroup;
-	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByAward, NULL, info, extraInfo, awardInfo);
-	}
-
-	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByAward, awardInfo);
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByPattern, patternInfo);
 
 	DestroyContextGroup(contextGroup);
 

@@ -2,14 +2,15 @@
 
 
 #include "analysis_obituaries.hpp"
-#include "analysis_cut_base.hpp"
+#include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByFragAnalyzer : public udtCutAnalyzerBase
+struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer(const udtCutByFragArg& info) 
+	udtCutByFragAnalyzer(const udtCutByPatternArg& info, const udtCutByFragArg& extraInfo) 
 		: _info(info)
+		, _extraInfo(extraInfo)
 	{
 		_protocol = udtProtocol::Invalid;
 	}
@@ -48,7 +49,8 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	const udtCutByFragArg& _info;
+	const udtCutByPatternArg& _info;
+	const udtCutByFragArg& _extraInfo;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
 	udtProtocol::Id _protocol;

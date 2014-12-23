@@ -773,40 +773,6 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	return true;
 }
 
-bool RunParserWithPlugIn(udtParserContext* context, udtBaseParserPlugIn& plugIn, udtProtocol::Id protocol, const udtParseArg* info, const char* filePath, const char* analysisType)
-{
-	context->Reset();
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
-	{
-		return false;
-	}
-
-	udtFileStream file;
-	if(!file.Open(filePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol))
-	{
-		return false;
-	}
-
-	context->Parser.SetFilePath(filePath);
-	context->Parser.AddPlugIn(&plugIn);
-
-	context->Context.LogInfo("Processing for %s analysis: %s", analysisType, filePath);
-
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
-
-	if(!RunParser(context->Parser, file, info->CancelOperation))
-	{
-		return false;
-	}
-
-	return true;
-}
-
 char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)
 {
 	if(string == NULL)

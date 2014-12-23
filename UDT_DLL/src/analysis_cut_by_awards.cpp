@@ -49,7 +49,7 @@ void udtCutByAwardAnalyzer::AddCurrentSectionIfValid()
 		return;
 	}
 
-	udtCutAnalyzerBase::CutSection cut;
+	udtCutByPatternAnalyzerBase::udtCutSection cut;
 	cut.GameStateIndex = _awards[0].GameStateIndex;
 	cut.StartTimeMs = _awards[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _awards[matchCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);

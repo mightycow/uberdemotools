@@ -55,8 +55,53 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 	return true;
 }
 
-template<class udtParserPlugInCutByWhatever, class udtCutByWhateverArg>
-static bool CutByWhatever(udtParserContext* context, const udtParseArg* info, const udtCutByWhateverArg* whateverInfo, const char* demoFilePath, const char* analysisType)
+static bool RunParserWithCutByPattern(
+	udtParserContext* context, 
+	udtProtocol::Id protocol, 
+	const udtParseArg* info, 
+	const char* filePath, 
+	const udtCutByPatternArg* patternInfo,
+	udtCutByPatternPlugIn& plugIn)
+{
+	context->Reset();
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(filePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(filePath);
+
+	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
+	{
+		const udtPatternInfo info = patternInfo->Patterns[i];
+		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)info.Type, patternInfo, info.TypeSpecificInfo);
+	}
+	context->Parser.AddPlugIn(&plugIn);
+
+	context->Context.LogInfo("Processing demo for pattern analysis: %s", filePath);
+
+	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath)
 {
 	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
@@ -64,13 +109,13 @@ static bool CutByWhatever(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	udtParserPlugInCutByWhatever plugIn(*whateverInfo);
-	if(!RunParserWithPlugIn(context, plugIn, protocol, info, demoFilePath, analysisType))
+	udtCutByPatternPlugIn plugIn;
+	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath, patternInfo, plugIn))
 	{
 		return false;
 	}
 
-	if(plugIn.Analyzer.CutSections.IsEmpty())
+	if(plugIn.CutSections.IsEmpty())
 	{
 		return true;
 	}
@@ -87,7 +132,7 @@ static bool CutByWhatever(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	const s32 gsIndex = plugIn.Analyzer.CutSections[0].GameStateIndex;
+	const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
 	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
 	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
 	{
@@ -104,14 +149,14 @@ static bool CutByWhatever(udtParserContext* context, const udtParseArg* info, co
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
 
-	const udtCutAnalyzerBase::CutSectionVector& sections = plugIn.Analyzer.CutSections;
+	const udtVMArray<udtCutSection>& sections = plugIn.CutSections;
 	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
 	{
-		const udtCutAnalyzerBase::CutSection& section = sections[i];
+		const udtCutSection& section = sections[i];
 		context->Parser.AddCut(section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
 	}
 
-	context->Context.LogInfo("Processing for %s cut(s): %s", analysisType, demoFilePath);
+	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
@@ -120,38 +165,6 @@ static bool CutByWhatever(udtParserContext* context, const udtParseArg* info, co
 	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
 
 	return result;
-}
-
-bool CutByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath)
-{
-	typedef udtCutPlugInBase<udtCutByChatAnalyzer, udtCutByChatArg> T;
-
-	return CutByWhatever<T>(context, info, chatInfo, demoFilePath, "chat");
-}
-
-bool CutByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath)
-{
-	typedef udtCutPlugInBase<udtCutByFragAnalyzer, udtCutByFragArg> T;
-
-	return CutByWhatever<T>(context, info, fragInfo, demoFilePath, "frag");
-}
-
-bool CutByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath)
-{
-	typedef udtCutPlugInBase<udtCutByAwardAnalyzer, udtCutByAwardArg> T;
-
-	return CutByWhatever<T>(context, info, awardInfo, demoFilePath, "award");
-}
-
-bool CutByWhatever(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const void* jobSpecificInfo, const char* demoFilePath)
-{
-	switch(jobType)
-	{
-		case udtParsingJobType::CutByChat: return CutByChat(context, info, (const udtCutByChatArg*)jobSpecificInfo, demoFilePath);
-		case udtParsingJobType::CutByFrag: return CutByFrag(context, info, (const udtCutByFragArg*)jobSpecificInfo, demoFilePath);
-		case udtParsingJobType::CutByAward: return CutByAward(context, info, (const udtCutByAwardArg*)jobSpecificInfo, demoFilePath);
-		default: return false;
-	}
 }
 
 struct SingleThreadProgressContext
@@ -186,7 +199,7 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 	(*context->UserCallback)(realProgress, context->UserData);
 }
 
-s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo)
+s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo)
 {
 	bool customContext = false;
 	if(context == NULL)
@@ -247,9 +260,9 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		{
 			success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
 		}
-		else
+		else if(jobType == udtParsingJobType::CutByPattern)
 		{
-			success = CutByWhatever(jobType, context, &newInfo, jobSpecificInfo, extraInfo->FilePaths[i]);
+			success = CutByPattern(context, &newInfo, patternInfo, extraInfo->FilePaths[i]);
 		}
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
