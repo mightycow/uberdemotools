@@ -8,9 +8,7 @@
 struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer(const udtCutByPatternArg& info, const udtCutByFragArg& extraInfo) 
-		: _info(info)
-		, _extraInfo(extraInfo)
+	udtCutByFragAnalyzer() 
 	{
 		_protocol = udtProtocol::Invalid;
 	}
@@ -49,8 +47,6 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	const udtCutByPatternArg& _info;
-	const udtCutByFragArg& _extraInfo;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
 	udtProtocol::Id _protocol;

@@ -3,7 +3,16 @@
 #include "cut_section.hpp"
 #include "analysis_cut_by_chat.hpp"
 #include "analysis_cut_by_frag.hpp"
-#include "analysis_cut_by_awards.hpp"
+
+// @TODO:
+//#include "analysis_cut_by_mid_air.hpp"
+//#include "analysis_cut_by_multi_rail.hpp"
+struct udtCutByMidAirAnalyzer : public udtCutByPatternAnalyzerBase
+{
+};
+struct udtCutByMultiRailAnalyzer : public udtCutByPatternAnalyzerBase
+{
+};
 
 
 struct CutSection : public udtCutSection
@@ -55,8 +64,8 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatt
 
 	if(analyzer != NULL)
 	{
-		analyzer->SetPatternInfo(info);
-		analyzer->SetExtraInfo(extraInfo);
+		analyzer->_info = info;
+		analyzer->_extraInfo = extraInfo;
 		_analyzers.Add(analyzer);
 		_analyzerTypes.Add(patternType);
 	}

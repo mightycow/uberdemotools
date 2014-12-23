@@ -15,7 +15,6 @@ namespace Uber.DemoTools
         FragEvents,
         CutByTime,
         CutByChat,
-        CutByAward,
         Count
     }
 

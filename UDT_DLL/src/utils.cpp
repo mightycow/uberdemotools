@@ -959,47 +959,6 @@ s32 GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	return GetUDTPlayerMODBitFromIdMod73p(idMod);
 }
 
-s32 GetUDTAwardBitFromIdAward(s32 idAward, udtProtocol::Id protocol)
-{
-	if(udtIsValidProtocol(protocol) == 0)
-	{
-		return 0;
-	}
-
-	if(protocol == udtProtocol::Dm68)
-	{
-		switch(idAward)
-		{
-			case 9: return (s32)udtAwardBits::Impressive;
-			case 10: return (s32)udtAwardBits::Excellent;
-			default: return 0;
-		}
-	}
-
-	if(protocol == udtProtocol::Dm73)
-	{
-		switch(idAward)
-		{
-			case 8: return (s32)udtAwardBits::Impressive;
-			case 9: return (s32)udtAwardBits::Excellent;
-			default: return 0;
-		}
-	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		switch(idAward)
-		{
-			case 8: return (s32)udtAwardBits::Impressive;
-			case 9: return (s32)udtAwardBits::Excellent;
-			case 15: return (s32)udtAwardBits::MidAir;
-			default: return 0;
-		}
-	}
-
-	return 0;
-}
-
 s32 GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol)
 {
 	if(udtIsValidProtocol(protocol) == 0)

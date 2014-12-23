@@ -11,8 +11,7 @@
 struct udtCutByChatAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByChatAnalyzer(const udtCutByChatArg& info) 
-		: _info(info)
+	udtCutByChatAnalyzer()
 	{
 	}
 
@@ -26,6 +25,5 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);
 
-	const udtCutByChatArg& _info;
 	udtVMArray<udtCutSection> _cutSections;
 };

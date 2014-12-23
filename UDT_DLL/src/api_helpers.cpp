@@ -6,7 +6,6 @@
 #include "timer.hpp"
 #include "analysis_cut_by_chat.hpp"
 #include "analysis_cut_by_frag.hpp"
-#include "analysis_cut_by_awards.hpp"
 
 
 bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)

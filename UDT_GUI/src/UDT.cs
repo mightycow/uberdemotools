@@ -155,15 +155,6 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByAwardArg
-        {
-            public UInt32 StartOffsetSec;
-            public UInt32 EndOffsetSec;
-            public UInt32 AllowedAwards;
-            public Int32 Reserved1;
-        }
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat
 	    {
             public IntPtr OriginalCommand; // const char*
@@ -261,9 +252,6 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByFrag(udtParserContextRef context, ref udtParseArg info, ref udtCutByFragArg fragInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByAward(udtParserContextRef context, ref udtParseArg info, ref udtCutByAwardArg awardInfo, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -295,9 +283,6 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByFrag(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByFragArg fragInfo);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFilesByAward(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByAwardArg awardInfo);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -537,38 +522,6 @@ namespace Uber.DemoTools
             multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
 
             var result = udtCutDemoFilesByFrag(ref parseArg, ref multiParseArg, ref rules);
-
-            pinnedFilePaths.Free();
-            pinnedErrorCodes.Free();
-            for(var i = 0; i < filePathArray.Length; ++i)
-            {
-                Marshal.FreeHGlobal(filePathArray[i]);
-            }
-
-            return result == udtErrorCode.None;
-        }
-
-        public static bool CutDemosByAward(ref udtParseArg parseArg, List<string> filePaths, udtCutByAwardArg rules, int maxThreadCount)
-        {
-            var errorCodeArray = new Int32[filePaths.Count];
-            var filePathArray = new IntPtr[filePaths.Count];
-            for(var i = 0; i < filePaths.Count; ++i)
-            {
-                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
-            }
-
-            parseArg.PlugInCount = 0;
-            parseArg.PlugIns = IntPtr.Zero;
-
-            var pinnedFilePaths = new PinnedObject(filePathArray);
-            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
-            var multiParseArg = new udtMultiParseArg();
-            multiParseArg.FileCount = (UInt32)filePathArray.Length;
-            multiParseArg.FilePaths = pinnedFilePaths.Address;
-            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
-            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
-
-            var result = udtCutDemoFilesByAward(ref parseArg, ref multiParseArg, ref rules);
 
             pinnedFilePaths.Free();
             pinnedErrorCodes.Free();

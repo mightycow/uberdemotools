@@ -267,12 +267,6 @@ namespace Uber.DemoTools
             cutFragTab.Header = "Cut by Frag";
             cutFragTab.Content = cutByFrag.RootControl;
 
-            var cutByAward = new CutByAwardComponent(this);
-            _appComponents.Add(cutByAward);
-            var cutAwardTab = new TabItem();
-            cutAwardTab.Header = "Cut by Award";
-            cutAwardTab.Content = cutByAward.RootControl;
-
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
             var demoFragsTab = new TabItem();
@@ -297,7 +291,6 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutTimeTab);
             tabControl.Items.Add(cutChatTab);
             tabControl.Items.Add(cutFragTab);
-            tabControl.Items.Add(cutAwardTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 

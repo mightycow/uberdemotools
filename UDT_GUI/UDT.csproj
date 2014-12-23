@@ -89,7 +89,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="src\AppAwardCut.cs" />
     <Compile Include="src\AppSettings.cs" />
     <Compile Include="src\EntryPoint.cs" />
     <Compile Include="src\App.cs" />

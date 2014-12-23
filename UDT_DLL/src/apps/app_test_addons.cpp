@@ -1,9 +1,9 @@
+#include "api.h"
 #include "shared.hpp"
 #include "utils.hpp"
 #include "file_system.hpp"
 #include "timer.hpp"
 #include "stack_trace.hpp"
-#include "api.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,6 +15,7 @@ static const u32 parseOptions[] =
 { 
 	udtParserPlugIn::Chat, 
 	udtParserPlugIn::GameState 
+	, udtParserPlugIn::MidAirs
 };
 
 

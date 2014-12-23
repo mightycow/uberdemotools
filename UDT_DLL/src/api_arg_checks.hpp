@@ -33,12 +33,6 @@ static bool IsValid(const udtCutByFragArg& arg)
 	return arg.TimeBetweenFragsSec > 0 && arg.MinFragCount >= 2 && arg.AllowedMeansOfDeaths > 0;
 }
 
-static bool IsValid(const udtCutByAwardArg& arg)
-{
-	return arg.AllowedAwards > 0;
-}
-// @TODO:
-/*
 static bool IsValid(const udtCutByMidAirArg& arg)
 {
 	return arg.AllowedWeapons > 0;
@@ -48,7 +42,7 @@ static bool IsValid(const udtCutByMultiRailArg& arg)
 {
 	return arg.MinKillCount >= 2;
 }
-*/
+
 static bool IsValid(const udtCutByPatternArg& arg)
 {
 	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)
@@ -64,7 +58,7 @@ static bool IsValid(const udtCutByPatternArg& arg)
 			return false;
 		}
 
-#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false;
+#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false; break;
 		switch((udtPatternType::Id)info.Type)
 		{
 			UDT_PATTERN_LIST(UDT_PATTERN_ITEM)

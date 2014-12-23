@@ -98,7 +98,6 @@ struct udtCrashType
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
 	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
-	N(Awards,     udtParserPlugInAwards,     udtParseDataAward) \
 	N(MidAirs,    udtParserPlugInMidAir,     udtParseDataMidAir)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
@@ -272,22 +271,6 @@ struct udtPlayerMeansOfDeathBits
 };
 #undef UDT_PLAYER_MOD_ITEM
 
-#define UDT_AWARDS_LIST(N) \
-	N(Impressive, "impressive", 0) \
-	N(Excellent, "excellent", 1) \
-	N(MidAir, "mid-air", 2)
-
-#define UDT_AWARDS_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtAwardBits
-{
-	enum Id
-	{
-		UDT_AWARDS_LIST(UDT_AWARDS_ITEM)
-		Count
-	};
-};
-#undef UDT_AWARDS_ITEM
-
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
 	N(Red, "red") \
@@ -314,18 +297,15 @@ struct udtStringArray
 		MeansOfDeath,
 		PlayerMeansOfDeath,
 		Teams,
-		Awards,
 		Count
 	};
 };
 
-// @TODO:
-// MidAirFrags
-// MultiRailFrags
 #define UDT_PATTERN_LIST(N) \
 	N(GlobalChat, udtCutByChatArg, udtCutByChatAnalyzer) \
 	N(FragSequences, udtCutByFragArg, udtCutByFragAnalyzer) \
-	N(Awards, udtCutByAwardArg, udtCutByAwardAnalyzer)
+	N(MidAirFrags, udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
+	N(MultiRailFrags, udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
 
 #define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -546,23 +526,11 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::Awards.
-	struct udtCutByAwardArg
-	{
-		// All the allowed awards.
-		// See udtAwardBits::Id.
-		u32 AllowedAwards;
-
-		// Ignore this.
-		s32 Reserved1;
-	};
-
-	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is PatternType::MidAirFrags.
 	struct udtCutByMidAirArg
 	{
 		// All the allowed weapons.
-		// See udtAwardBits::Id.
+		// See udtWeapon::Id.
 		u32 AllowedWeapons;
 
 		// The minimum distance between the projectile's 
@@ -708,22 +676,6 @@ extern "C"
 		
 		// Ignore this.
 		s32 Reserved2;
-	};
-
-	struct udtParseDataAward
-	{
-		// The index of the last gamestate message after which this death event occurred.
-		// Negative if invalid or not available.
-		s32 GameStateIndex;
-
-		// The time at which the award was given.
-		s32 ServerTimeMs;
-
-		// The original award number (protocol-specific).
-		s32 AwardId;
-
-		// Ignore this.
-		s32 Reserved1;
 	};
 
 	struct udtParseDataMidAir

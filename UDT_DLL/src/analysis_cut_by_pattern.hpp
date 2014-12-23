@@ -10,6 +10,8 @@
 struct udtCutByPatternAnalyzerBase
 {
 public:
+	friend struct udtCutByPatternPlugIn;
+
 	udtCutByPatternAnalyzerBase() {}
 	virtual ~udtCutByPatternAnalyzerBase() {}
 
@@ -20,7 +22,10 @@ public:
 
 	udtVMArray<udtCutSection> CutSections;
 
-private:
+protected:
+	const udtCutByPatternArg* _info;
+	const void* _extraInfo;
+
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternAnalyzerBase);
 };
 
