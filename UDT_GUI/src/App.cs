@@ -259,21 +259,9 @@ namespace Uber.DemoTools
 
             _cutByTimeComponent = new CutByTimeComponent(this);
             _appComponents.Add(_cutByTimeComponent);
-            var cutTimeTab = new TabItem();
-            cutTimeTab.Header = "Cut by Time";
-            cutTimeTab.Content = _cutByTimeComponent.RootControl;
-
-            var cutByChat = new ChatFiltersComponent(this);
-            _appComponents.Add(cutByChat);
-            var cutChatTab = new TabItem();
-            cutChatTab.Header = "Chat Filters";
-            cutChatTab.Content = cutByChat.RootControl;
-
-            var cutByFrag = new FragSequenceFiltersComponent(this);
-            _appComponents.Add(cutByFrag);
-            var cutFragTab = new TabItem();
-            cutFragTab.Header = "Frag Run Filters";
-            cutFragTab.Content = cutByFrag.RootControl;
+            var cutByTimeTab = new TabItem();
+            cutByTimeTab.Header = "Cut by Time";
+            cutByTimeTab.Content = _cutByTimeComponent.RootControl;
 
             var cutByPattern = new CutByPatternComponent(this);
             _appComponents.Add(cutByPattern);
@@ -292,6 +280,12 @@ namespace Uber.DemoTools
             var settingsTab = new TabItem();
             settingsTab.Header = "Settings";
             settingsTab.Content = settings.RootControl;
+
+            var patterns = new PatternsComponent(this);
+            _appComponents.Add(patterns);
+            var patternsTab = new TabItem();
+            patternsTab.Header = "Patterns";
+            patternsTab.Content = patterns.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -302,10 +296,9 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demosTab);
             tabControl.Items.Add(demoChatTab);
             tabControl.Items.Add(demoFragsTab);
-            tabControl.Items.Add(cutTimeTab);
+            tabControl.Items.Add(cutByTimeTab);
             tabControl.Items.Add(cutByPatternTab);
-            tabControl.Items.Add(cutChatTab);
-            tabControl.Items.Add(cutFragTab);
+            tabControl.Items.Add(patternsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 

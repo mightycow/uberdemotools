@@ -108,6 +108,7 @@
     <Compile Include="src\AppFragEvents.cs" />
     <Compile Include="src\AppFragCut.cs" />
 	<Compile Include="src\AppPatternCut.cs" />
+	<Compile Include="src\AppPatterns.cs" />
 	<Compile Include="src\AppMidAirCut.cs" />
 	<Compile Include="src\AppMultiRailCut.cs" />
   </ItemGroup>
