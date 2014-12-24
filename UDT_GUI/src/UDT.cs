@@ -65,6 +65,24 @@ namespace Uber.DemoTools
             Count
         }
 
+        public enum udtWeaponBits : uint
+        {
+            Gauntlet = 1 << 0,
+            MachineGun = 1 << 1,
+            Shotgun = 1 << 2,
+            Grenade = 1 << 3,
+            Rocket = 1 << 4,
+            Plasma = 1 << 5,
+            Railgun = 1 << 6,
+            LightningGun = 1 << 7,
+            BFG = 1 << 8,
+            NailGun = 1 << 9,
+            ChainGun = 1 << 10,
+            ProximityMineLauncher = 1 << 11,
+            HeavyMachineGun = 1 << 12,
+            AfterLast
+        }
+
         public enum udtStringArray : uint
         {
             Weapons,
@@ -180,6 +198,20 @@ namespace Uber.DemoTools
             public UInt32 Flags;
             public UInt32 AllowedMeansOfDeaths;
         }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByMidAirArg
+        {
+            public UInt32 AllowedWeapons;
+            public UInt32 MinDistance;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByMultiRailArg
+        {
+            public UInt32 MinKillCount;
+            public Int32 Reserved1;
+        };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat
@@ -389,13 +421,36 @@ namespace Uber.DemoTools
                 flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowTeamKills;
             }
 
-            var rules = new UDT_DLL.udtCutByFragArg();
+            var rules = new udtCutByFragArg();
             rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
             rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
             rules.TimeMode = 0; // @TODO:
             rules.Flags = flags;
             rules.PlayerIndex = privateConfig.FragCutPlayerIndex;
             rules.AllowedMeansOfDeaths = privateConfig.FragCutAllowedMeansOfDeaths;
+
+            return rules;
+        }
+
+        public static udtCutByMidAirArg CreateCutByMidAirArg(UdtConfig config)
+        {
+            UInt32 weaponFlags = 0;
+            if(config.MidAirCutAllowRocket)
+            {
+                weaponFlags |= (UInt32)udtWeaponBits.Rocket;
+            }
+            if(config.MidAirCutAllowGrenade)
+            {
+                weaponFlags |= (UInt32)udtWeaponBits.Grenade;
+            }
+            if(config.MidAirCutAllowBFG)
+            {
+                weaponFlags |= (UInt32)udtWeaponBits.BFG;
+            }
+
+            var rules = new udtCutByMidAirArg();
+            rules.MinDistance = (UInt32)Math.Max(0, config.MidAirCutMinDistance);
+            rules.AllowedWeapons = weaponFlags;
 
             return rules;
         }
@@ -562,6 +617,17 @@ namespace Uber.DemoTools
             return true;
         }
 
+        public static bool CreateMidAirPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMidAirArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.MidAirFrags;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
         public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
         {
             var resources = new ArgumentResources();
@@ -579,6 +645,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateFragPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+        }
+
+        public static bool CutDemosByMidAir(ref udtParseArg parseArg, List<string> filePaths, udtCutByMidAirArg rules, int startOffset, int endOffset, int maxThreadCount)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateMidAirPatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }

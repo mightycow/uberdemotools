@@ -968,7 +968,6 @@ s32 GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol)
 
 	if(protocol == udtProtocol::Dm68)
 	{
-		
 		switch((idWeapon68::Id)idWeapon)
 		{
 			case idWeapon68::Gauntlet: return (s32)udtWeapon::Gauntlet;
@@ -1005,4 +1004,56 @@ s32 GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol)
 			default: return -1;
 		}
 	}
+}
+
+s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	if(protocol == udtProtocol::Dm68)
+	{
+		switch((idMeansOfDeath68::Id)idMod)
+		{
+			case idMeansOfDeath68::Gauntlet: return (s32)udtWeapon::Gauntlet;
+			case idMeansOfDeath68::MachineGun: return (s32)udtWeapon::MachineGun;
+			case idMeansOfDeath68::Shotgun: return (s32)udtWeapon::Shotgun;
+			case idMeansOfDeath68::Grenade:
+			case idMeansOfDeath68::GrenadeSplash: return (s32)udtWeapon::GrenadeLauncher;
+			case idMeansOfDeath68::Rocket:
+			case idMeansOfDeath68::RocketSplash: return (s32)udtWeapon::RocketLauncher;
+			case idMeansOfDeath68::Lightning: return (s32)udtWeapon::LightningGun;
+			case idMeansOfDeath68::RailGun: return (s32)udtWeapon::Railgun;
+			case idMeansOfDeath68::Plasma:
+			case idMeansOfDeath68::PlasmaSplash: return (s32)udtWeapon::PlasmaGun;
+			case idMeansOfDeath68::BFG: return (s32)udtWeapon::BFG;
+			case idMeansOfDeath68::Grapple: return (s32)udtWeapon::GrapplingHook;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm73)
+	{
+		switch((idMeansOfDeath73p::Id)idMod)
+		{
+			case idMeansOfDeath73p::Gauntlet: return (s32)udtWeapon::Gauntlet;
+			case idMeansOfDeath73p::MachineGun: return (s32)udtWeapon::MachineGun;
+			case idMeansOfDeath73p::Shotgun: return (s32)udtWeapon::Shotgun;
+			case idMeansOfDeath73p::Grenade:
+			case idMeansOfDeath73p::GrenadeSplash: return (s32)udtWeapon::GrenadeLauncher;
+			case idMeansOfDeath73p::Rocket:
+			case idMeansOfDeath73p::RocketSplash: return (s32)udtWeapon::RocketLauncher;
+			case idMeansOfDeath73p::Lightning: return (s32)udtWeapon::LightningGun;
+			case idMeansOfDeath73p::RailGun: return (s32)udtWeapon::Railgun;
+			case idMeansOfDeath73p::Plasma:
+			case idMeansOfDeath73p::PlasmaSplash: return (s32)udtWeapon::PlasmaGun;
+			case idMeansOfDeath73p::BFG: return (s32)udtWeapon::BFG;
+			case idMeansOfDeath73p::Grapple: return (s32)udtWeapon::GrapplingHook;
+			case idMeansOfDeath73p::HeavyMachineGun: return (s32)udtWeapon::HeavyMachineGun;
+			default: return -1;
+		}
+	}
+
+	return -1;
 }

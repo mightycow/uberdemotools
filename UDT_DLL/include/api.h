@@ -543,7 +543,7 @@ extern "C"
 	struct udtCutByMidAirArg
 	{
 		// All the allowed weapons.
-		// See udtWeapon::Id.
+		// See udtWeaponBits::Id.
 		u32 AllowedWeapons;
 
 		// The minimum distance between the projectile's 
@@ -700,6 +700,10 @@ extern "C"
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
 
+		// The index of the player who did the mid-air shot.
+		// Range: [0;63].
+		u32 AttackerIdx;
+
 		// The time at which the mid-air projectile kill happened.
 		s32 ServerTimeMs;
 
@@ -715,6 +719,9 @@ extern "C"
 
 		// How long the projectile moved through the air before the impact.
 		u32 TravelDurationMs;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 #pragma pack(pop)

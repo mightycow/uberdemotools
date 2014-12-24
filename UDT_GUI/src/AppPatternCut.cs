@@ -156,6 +156,14 @@ namespace Uber.DemoTools
                 patterns.Add(pattern);
             }
 
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MidAirFrags))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+                var rules = UDT_DLL.CreateCutByMidAirArg(config);
+                UDT_DLL.CreateMidAirPatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
+            }
+
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();

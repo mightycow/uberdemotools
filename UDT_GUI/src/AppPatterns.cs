@@ -50,14 +50,20 @@ namespace Uber.DemoTools
             var chat = new ChatFiltersComponent(_app);
             _components.Add(chat);
             var chatTab = new TabItem();
-            chatTab.Header = "Chat Filters";
+            chatTab.Header = "Global Chat";
             chatTab.Content = chat.RootControl;
 
             var frag = new FragSequenceFiltersComponent(_app);
             _components.Add(frag);
             var fragTab = new TabItem();
-            fragTab.Header = "Frag Sequence Filters";
+            fragTab.Header = "Frag Sequence";
             fragTab.Content = frag.RootControl;
+
+            var midAir = new MidAirFiltersComponent(_app);
+            _components.Add(midAir);
+            var midAirTab = new TabItem();
+            midAirTab.Header = "Mid-Air Frags";
+            midAirTab.Content = midAir.RootControl;
 
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -65,6 +71,7 @@ namespace Uber.DemoTools
             tabControl.Margin = new Thickness(5);
             tabControl.Items.Add(chatTab);
             tabControl.Items.Add(fragTab);
+            tabControl.Items.Add(midAirTab);
 
             return tabControl;
         }

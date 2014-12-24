@@ -83,3 +83,4 @@ extern s32         ConvertPowerUpFlagsToValue(s32 flags);
 extern const char* GetTeamName(s32 team);
 extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
+extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);

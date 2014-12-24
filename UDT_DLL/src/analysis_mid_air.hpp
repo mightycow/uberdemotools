@@ -37,6 +37,7 @@ private:
 		s32 IdWeapon;
 	};
 	
+	udtProtocol::Id _protocol;
 	ProjectileInfo _projectiles[64];
 	const idEntityStateBase* _playerEntities[64];
 	s32 _gameStateIndex;

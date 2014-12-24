@@ -28,6 +28,7 @@ static bool IsAllowedWeapon(s32 idWeapon, udtProtocol::Id procotol)
 
 udtMidAirAnalyzer::udtMidAirAnalyzer()
 {
+	_protocol = udtProtocol::Invalid;
 	_gameStateIndex = -1;
 	RecordingPlayerIndex = -1;
 	memset(_projectiles, 0, sizeof(_projectiles));
@@ -125,11 +126,13 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		udtParseDataMidAir info = { 0 };
 		info.GameStateIndex = _gameStateIndex;
 		info.ServerTimeMs = arg.ServerTime;
-		info.Weapon = 0;
+		info.AttackerIdx = (u32)attackerIdx;
+		info.Weapon = (u32)GetUDTWeaponFromIdMod(meanOfDeath, _protocol);
 		info.TravelInfoAvailable = 0;
 		if(projectile != NULL)
 		{
 			const s32 duration = arg.ServerTime - projectile->CreationTimeMs;
+			info.TravelInfoAvailable = 1;
 			info.TravelDistance = (u32)Float3::Dist(projectile->CreationPosition, targetEnt->pos.trBase);
 			info.TravelDurationMs = duration > 0 ? (u32)duration : 0;
 		}
@@ -147,8 +150,10 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 	}
 }
 
-void udtMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& /*parser*/)
+void udtMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
+	_protocol = parser._protocol;
+
 	RecordingPlayerIndex = arg.ClientNum;
 
 	++_gameStateIndex;
