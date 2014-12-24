@@ -61,7 +61,7 @@ namespace Uber.DemoTools
             Chat,
             GameState,
             Obituaries,
-            Awards,
+            MidAirs,
             Count
         }
 
@@ -72,7 +72,15 @@ namespace Uber.DemoTools
             MeansOfDeath,
             PlayerMeansOfDeath,
             Teams,
-            Awards,
+            Count
+        }
+
+        public enum udtPatternType : uint
+        {
+            GlobalChat,
+            FragSequences,
+            MidAirFrags,
+            MultiRailFrags,
             Count
         }
 
@@ -88,6 +96,7 @@ namespace Uber.DemoTools
             public UInt32 PlugInCount;
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
+            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -109,11 +118,30 @@ namespace Uber.DemoTools
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-	    public struct udtCutByTimeArg
+        public struct udtPatternInfo
 	    {
-            public IntPtr Cuts; // const udtCut*
-		    public UInt32 CutCount;
+		    public IntPtr TypeSpecificInfo; // const void*
+		    public UInt32 Type;
+		    public Int32 Reserved1;
 	    }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+	    public struct udtCutByPatternArg
+	    {
+		    public IntPtr Patterns; // const udtPatternInfo*
+		    public UInt32 PatternCount;
+		    public UInt32 StartOffsetSec;
+		    public UInt32 EndOffsetSec;
+		    public Int32 Reserved1;
+	    }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByTimeArg
+        {
+            public IntPtr Cuts; // const udtCut*
+            public UInt32 CutCount;
+            public Int32 Reserved1;
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByChatRule
@@ -122,6 +150,7 @@ namespace Uber.DemoTools
 		    public UInt32 ChatOperator;
 		    public UInt32 CaseSensitive;
 		    public UInt32 IgnoreColorCodes;
+            public Int32 Reserved1;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -129,8 +158,7 @@ namespace Uber.DemoTools
 	    {
 		    public IntPtr Rules; // const udtCutByChatRule*
 		    public UInt32 RuleCount;
-		    public UInt32 StartOffsetSec;
-		    public UInt32 EndOffsetSec;
+            public Int32 Reserved1;
 	    }
 
         [Flags]
@@ -147,8 +175,6 @@ namespace Uber.DemoTools
             public UInt32 MinFragCount;
             public UInt32 TimeBetweenFragsSec;
             public UInt32 TimeMode; // 0=max, 1=avg
-            public UInt32 StartOffsetSec;
-            public UInt32 EndOffsetSec;
             public Int32 PlayerIndex;
             public UInt32 Flags;
             public UInt32 AllowedMeansOfDeaths;
@@ -177,6 +203,7 @@ namespace Uber.DemoTools
             public Int32 WarmUpEndTimeMs; 
             public Int32 MatchStartTimeMs;
             public Int32 MatchEndTimeMs;
+            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -246,10 +273,7 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByChat(udtParserContextRef context, ref udtParseArg info, ref udtCutByChatArg chatInfo, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByFrag(udtParserContextRef context, ref udtParseArg info, ref udtCutByFragArg fragInfo, string demoFilePath);
+        extern static private udtErrorCode udtCutDemoFileByPattern(udtParserContextRef context, ref udtParseArg info, ref udtCutByPatternArg patternInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
@@ -279,10 +303,7 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtDestroyContextGroup(udtParserContextGroupRef contextGroup);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFilesByChat(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByChatArg chatInfo);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFilesByFrag(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByFragArg fragInfo);
+        extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByPatternArg patternInfo);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -450,11 +471,9 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
         {
-            var errorCodeArray = new Int32[filePaths.Count];
-            var filePathArray = new IntPtr[filePaths.Count];
-            for(var i = 0; i < filePaths.Count; ++i)
+            if(rules.Count == 0)
             {
-                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                return false;
             }
 
             var rulesArray = new UDT_DLL.udtCutByChatRule[rules.Count];
@@ -465,43 +484,42 @@ namespace Uber.DemoTools
                 rulesArray[i].IgnoreColorCodes = (UInt32)(rules[i].IgnoreColors ? 1 : 0);
                 rulesArray[i].Pattern = Marshal.StringToHGlobalAnsi(rules[i].Value);
             }
+            var pinnedRulesArray = new PinnedObject(rulesArray);
 
-            parseArg.PlugInCount = 0;
-            parseArg.PlugIns = IntPtr.Zero;
-
-            var pinnedFilePaths = new PinnedObject(filePathArray);
-            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
-            var multiParseArg = new udtMultiParseArg();
-            multiParseArg.FileCount = (UInt32)filePathArray.Length;
-            multiParseArg.FilePaths = pinnedFilePaths.Address;
-            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
-            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
-
-            var pinnedRules = new PinnedObject(rulesArray);
             var cutByChatArg = new udtCutByChatArg();
-            cutByChatArg.StartOffsetSec = (UInt32)startOffset;
-            cutByChatArg.EndOffsetSec = (UInt32)endOffset;
+            cutByChatArg.Rules = pinnedRulesArray.Address;
             cutByChatArg.RuleCount = (UInt32)rulesArray.Length;
-            cutByChatArg.Rules = pinnedRules.Address;
+            var pinnedRules = new PinnedObject(cutByChatArg);
 
-            var result = udtCutDemoFilesByChat(ref parseArg, ref multiParseArg, ref cutByChatArg);
-            pinnedFilePaths.Free();
-            pinnedErrorCodes.Free();
-            for(var i = 0; i < filePathArray.Length; ++i)
-            {
-                Marshal.FreeHGlobal(filePathArray[i]);
-            }
+            var patterns = new udtPatternInfo[1];
+            patterns[0].Type = (UInt32)udtPatternType.GlobalChat;
+            patterns[0].TypeSpecificInfo = pinnedRules.Address;
 
+            var result = CutDemosByPattern(ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
             pinnedRules.Free();
+            pinnedRulesArray.Free();
             for(var i = 0; i < rulesArray.Length; ++i)
             {
                 Marshal.FreeHGlobal(rulesArray[i].Pattern);
             }
 
-            return result == udtErrorCode.None;
+            return result;
         }
 
-        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, int maxThreadCount)
+        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, int startOffset, int endOffset, int maxThreadCount)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            var patterns = new udtPatternInfo[1];
+            patterns[0].Type = (UInt32)udtPatternType.FragSequences;
+            patterns[0].TypeSpecificInfo = pinnedRules.Address;
+
+            var result = CutDemosByPattern(ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+            pinnedRules.Free();
+
+            return result;
+        }
+
+        public static bool CutDemosByPattern(ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, int startOffset, int endOffset, int maxThreadCount)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
@@ -521,8 +539,15 @@ namespace Uber.DemoTools
             multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
             multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
 
-            var result = udtCutDemoFilesByFrag(ref parseArg, ref multiParseArg, ref rules);
+            var pinnedPatterns = new PinnedObject(patterns);
+            var cutByPatternArg = new udtCutByPatternArg();
+            cutByPatternArg.StartOffsetSec = (UInt32)startOffset;
+            cutByPatternArg.EndOffsetSec = (UInt32)endOffset;
+            cutByPatternArg.Patterns = pinnedPatterns.Address;
+            cutByPatternArg.PatternCount = (UInt32)patterns.Length;
 
+            var result = udtCutDemoFilesByPattern(ref parseArg, ref multiParseArg, ref cutByPatternArg);
+            pinnedPatterns.Free();
             pinnedFilePaths.Free();
             pinnedErrorCodes.Free();
             for(var i = 0; i < filePathArray.Length; ++i)
@@ -649,6 +674,7 @@ namespace Uber.DemoTools
             IntPtr chatEvents = IntPtr.Zero;
             if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Chat, ref chatEvents, ref chatEventCount) != udtErrorCode.None)
             {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for chat messages failed");
                 return;
             }
 
@@ -684,6 +710,7 @@ namespace Uber.DemoTools
             IntPtr gsEvents = IntPtr.Zero;
             if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.GameState, ref gsEvents, ref gsEventCount) != udtErrorCode.None)
             {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for game states failed");
                 return;
             }
 
@@ -723,7 +750,7 @@ namespace Uber.DemoTools
             IntPtr obituaryEvents = IntPtr.Zero;
             if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Obituaries, ref obituaryEvents, ref obituaryEventCount) != udtErrorCode.None)
             {
-                App.GlobalLogError("udtGetDemoDataInfo for Obituaries FAILED");
+                App.GlobalLogError("Calling udtGetDemoDataInfo for obituaries failed");
                 return;
             }
 

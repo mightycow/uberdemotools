@@ -450,12 +450,10 @@ namespace Uber.DemoTools
                 rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
                 rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
                 rules.TimeMode = 0; // @TODO:
-                rules.StartOffsetSec = (UInt32)config.CutStartOffset;
-                rules.EndOffsetSec = (UInt32)config.CutEndOffset;
                 rules.Flags = flags;
                 rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
                 rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;
-                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.MaxThreadCount);
+                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
             }
             catch(Exception exception)
             {

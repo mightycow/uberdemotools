@@ -377,6 +377,9 @@ extern "C"
 		// The offset, in bytes, at which to start reading from the file.
 		// Unused in batch operations.
 		u32 FileOffset;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtMultiParseArg
@@ -449,6 +452,9 @@ extern "C"
 
 		// Number of elements in the array pointed by Cuts.
 		u32 CutCount;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByChatRule
@@ -464,6 +470,9 @@ extern "C"
 
 		// Non-zero means color codes are ignored.
 		u32 IgnoreColorCodes;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
@@ -478,6 +487,9 @@ extern "C"
 		// Number of elements in the array pointed to by the Rules pointer.
 		// May not be 0.
 		u32 RuleCount;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByFragArgFlags
@@ -608,6 +620,9 @@ extern "C"
 		// The time the match ends, in milli-seconds.
 		// S32_MIN if not available.
 		s32 MatchEndTimeMs;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtParseDataGameState
