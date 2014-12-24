@@ -32,7 +32,7 @@ protected:
 struct udtCutByPatternPlugIn : udtBaseParserPlugIn
 {
 public:
-	udtCutByPatternPlugIn();
+	udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator);
 
 	~udtCutByPatternPlugIn()
 	{
@@ -68,6 +68,5 @@ private:
 
 	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArray<udtPatternType::Id> _analyzerTypes;
-	udtVMLinearAllocator _analyzerAllocator;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 };

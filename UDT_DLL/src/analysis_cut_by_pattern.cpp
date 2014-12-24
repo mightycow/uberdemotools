@@ -41,9 +41,9 @@ static int StableSortByGameStateIndexAscending(const void* aPtr, const void* bPt
 }
 
 
-udtCutByPatternPlugIn::udtCutByPatternPlugIn() : _analyzerAllocatorScope(_analyzerAllocator)
+udtCutByPatternPlugIn::udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator) 
+	: _analyzerAllocatorScope(analyzerAllocator)
 {
-	_analyzerAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatternType::Id patternType, const udtCutByPatternArg* info, const void* extraInfo)

@@ -108,7 +108,10 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtC
 		return false;
 	}
 
-	udtCutByPatternPlugIn plugIn;
+	udtVMLinearAllocator analyzerAllocator;
+	analyzerAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
+
+	udtCutByPatternPlugIn plugIn(analyzerAllocator);
 	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath, patternInfo, plugIn))
 	{
 		return false;
