@@ -45,6 +45,12 @@ namespace Uber.DemoTools
         public bool AnalyzeOnLoad = true;
     }
 
+    public class UdtPrivateConfig
+    {
+        public Int32 FragCutPlayerIndex = -1;
+        public UInt32 FragCutAllowedMeansOfDeaths = 0;
+    }
+
     public class CuttabbleByTimeDisplayInfo
     {
         public int GameStateIndex { get; set; }
@@ -133,6 +139,7 @@ namespace Uber.DemoTools
         }
 
         private UdtConfig _config = new UdtConfig();
+        private UdtPrivateConfig _privateConfig = new UdtPrivateConfig();
         private Application _application = null;
         private Thread _jobThread = null;
         private Window _window = null;
@@ -168,6 +175,11 @@ namespace Uber.DemoTools
         public UdtConfig Config
         {
             get { return _config; }
+        }
+
+        public UdtPrivateConfig PrivateConfig
+        {
+            get { return _privateConfig; }
         }
 
         public Window MainWindow
@@ -1332,6 +1344,20 @@ namespace Uber.DemoTools
             }
 
             Serializer.ToXml("Config.xml", _config);
+        }
+
+        public void SavePrivateConfig()
+        {
+            foreach(var component in _appComponents)
+            {
+                component.SaveToConfigObject(_privateConfig);
+            }
+        }
+
+        public void SaveBothConfigs()
+        {
+            SaveConfig();
+            SavePrivateConfig();
         }
 
         public static int CompareTimeStrings(string a, string b)

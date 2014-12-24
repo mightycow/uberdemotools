@@ -25,6 +25,7 @@ namespace Uber.DemoTools
     {
         void PopulateViews(DemoInfo demoInfo);
         void SaveToConfigObject(UdtConfig config);
+        void SaveToConfigObject(UdtPrivateConfig config);
 
         FrameworkElement RootControl { get; }
         List<DemoInfoListView> AllListViews { get; }
@@ -68,6 +69,11 @@ namespace Uber.DemoTools
             config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
         }
 
         public void PopulateViews(DemoInfo demoInfo)

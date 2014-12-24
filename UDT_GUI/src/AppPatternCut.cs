@@ -30,6 +30,11 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
+        }
+
         private App _app;
         private FilterGroupBox _patternsGroupBox;
 
@@ -146,16 +151,7 @@ namespace Uber.DemoTools
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FragSequences))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
-
-                // @TODO: Unified way of creating and passing this data to threads.
-                var rules = new UDT_DLL.udtCutByFragArg();
-                rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
-                rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
-                rules.TimeMode = 0; // @TODO:
-                rules.Flags = 0;
-                rules.PlayerIndex = -1;
-                rules.AllowedMeansOfDeaths = UInt32.MaxValue;
-                
+                var rules = UDT_DLL.CreateCutByFragArg(config, _app.PrivateConfig);                
                 UDT_DLL.CreateFragPatternInfo(ref pattern, resources, rules);
                 patterns.Add(pattern);
             }

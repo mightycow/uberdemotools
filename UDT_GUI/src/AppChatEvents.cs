@@ -87,6 +87,11 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
+        }
+
         private App _app;
         private static RoutedCommand _cutByTimeCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();

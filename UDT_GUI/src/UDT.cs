@@ -373,6 +373,33 @@ namespace Uber.DemoTools
             return "invalid error code";
         }
 
+        public static udtCutByFragArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
+        {
+            UInt32 flags = 0;
+            if(config.FragCutAllowAnyDeath)
+            {
+                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowDeaths;
+            }
+            if(config.FragCutAllowSelfKills)
+            {
+                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowSelfKills;
+            }
+            if(config.FragCutAllowTeamKills)
+            {
+                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowTeamKills;
+            }
+
+            var rules = new UDT_DLL.udtCutByFragArg();
+            rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
+            rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
+            rules.TimeMode = 0; // @TODO:
+            rules.Flags = flags;
+            rules.PlayerIndex = privateConfig.FragCutPlayerIndex;
+            rules.AllowedMeansOfDeaths = privateConfig.FragCutAllowedMeansOfDeaths;
+
+            return rules;
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();

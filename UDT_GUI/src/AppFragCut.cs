@@ -153,17 +153,30 @@ namespace Uber.DemoTools
 
             if(int.TryParse(_minFragCountEditBox.Text, out intValue))
             {
-                _app.Config.FragCutMinFragCount = intValue;
+                config.FragCutMinFragCount = intValue;
             }
 
             if(int.TryParse(_timeBetweenFragsEditBox.Text, out intValue))
             {
-                _app.Config.FragCutTimeBetweenFrags = intValue;
+                config.FragCutTimeBetweenFrags = intValue;
             }
 
-            _app.Config.FragCutAllowSelfKills = _allowSelfKillsCheckBox.IsChecked.HasValue && _allowSelfKillsCheckBox.IsChecked.Value;
-            _app.Config.FragCutAllowTeamKills = _allowTeamKillsCheckBox.IsChecked.HasValue && _allowTeamKillsCheckBox.IsChecked.Value;
-            _app.Config.FragCutAllowAnyDeath = _allowAnyDeathCheckBox.IsChecked.HasValue && _allowAnyDeathCheckBox.IsChecked.Value;
+            config.FragCutAllowSelfKills = _allowSelfKillsCheckBox.IsChecked.HasValue && _allowSelfKillsCheckBox.IsChecked.Value;
+            config.FragCutAllowTeamKills = _allowTeamKillsCheckBox.IsChecked.HasValue && _allowTeamKillsCheckBox.IsChecked.Value;
+            config.FragCutAllowAnyDeath = _allowAnyDeathCheckBox.IsChecked.HasValue && _allowAnyDeathCheckBox.IsChecked.Value;
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            var playerIndex = -1;
+            var manualMode = _manualPlayerSelectionRadioButton.IsChecked ?? false;
+            if(manualMode)
+            {
+                playerIndex = _playerIndexComboBox.SelectedIndex;
+            }
+
+            config.FragCutPlayerIndex = playerIndex;
+            config.FragCutAllowedMeansOfDeaths = _playerMODFilters.GetBitMask();
         }
 
         private App _app;
@@ -334,13 +347,6 @@ namespace Uber.DemoTools
             return scrollViewer; 
         }
 
-        private class ThreadArg
-        {
-            public List<string> FilePaths = null;
-            public int PlayerIndex = -1;
-            public UInt32 AllowedMeansOfDeaths = 0;
-        }
-
         private void OnCutByFragClicked()
         {
             var demos = _app.SelectedDemos;
@@ -350,21 +356,13 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var playerIndex = -1;
-            var manualMode = _manualPlayerSelectionRadioButton.IsChecked ?? false;
-            if(manualMode)
-            {
-                playerIndex = _playerIndexComboBox.SelectedIndex;
-            }
+            _app.SaveBothConfigs();
 
-            UInt32 allowedPlayerMODs = _playerMODFilters.GetBitMask();
-            if(allowedPlayerMODs == 0)
+            if(_app.PrivateConfig.FragCutAllowedMeansOfDeaths == 0)
             {
                 _app.LogError("You didn't check any Mean of Death. Please check at least one to proceed.");
                 return;
             }
-
-            _app.SaveConfig();
             if(_app.Config.FragCutMinFragCount < 2)
             {
                 _app.LogError("'Min. Frag Count' must be 2 or higher.");
@@ -385,27 +383,15 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var threadArg = new ThreadArg();
-            threadArg.FilePaths = filePaths;
-            threadArg.PlayerIndex = playerIndex;
-            threadArg.AllowedMeansOfDeaths = allowedPlayerMODs;
-
-            _app.StartJobThread(DemoCutByFragThread, threadArg);
+            _app.StartJobThread(DemoCutByFragThread, filePaths);
         }
 
         private void DemoCutByFragThread(object arg)
         {
-            var threadArg = arg as ThreadArg;
-            if(threadArg == null)
-            {
-                _app.LogError("Invalid thread argument type");
-                return;
-            }
-
-            var filePaths = threadArg.FilePaths;
+            var filePaths = arg as List<string>;
             if(filePaths == null)
             {
-                _app.LogError("Invalid thread argument data");
+                _app.LogError("Invalid thread argument");
                 return;
             }
 
@@ -414,31 +400,10 @@ namespace Uber.DemoTools
             _app.InitParseArg();
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
 
-            var config = _app.Config;
-            UInt32 flags = 0;
-            if(config.FragCutAllowAnyDeath)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowDeaths;
-            }
-            if(config.FragCutAllowSelfKills)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowSelfKills;
-            }
-            if(config.FragCutAllowTeamKills)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowTeamKills;
-            }
-
             try
             {
-                // @TODO: Unified way of creating and passing this data to threads.
-                var rules = new UDT_DLL.udtCutByFragArg();
-                rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
-                rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
-                rules.TimeMode = 0; // @TODO:
-                rules.Flags = flags;
-                rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
-                rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;
+                var config = _app.Config;
+                var rules = UDT_DLL.CreateCutByFragArg(config, _app.PrivateConfig);
                 UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
             }
             catch(Exception exception)

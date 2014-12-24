@@ -36,6 +36,11 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
+        }
+
         private App _app;
 
         private class ChatRuleDisplayInfo

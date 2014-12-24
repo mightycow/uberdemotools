@@ -150,6 +150,11 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
+        }
+
         public void SetCutInfo(int gsIndex, int startTime, int endTime)
         {
             _gameStateIndexEditBox.Text = gsIndex.ToString();
