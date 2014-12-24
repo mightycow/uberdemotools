@@ -27,5 +27,5 @@ u8* udtVMScopedStackAllocator::Allocate(u32 byteCount)
 
 u8* udtVMScopedStackAllocator::GetObjectFromFinalizer(Finalizer* finalizer)
 {
-	return (u8*)finalizer - sizeof(Finalizer);
+	return (u8*)(finalizer + 1);
 }
