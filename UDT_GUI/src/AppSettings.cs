@@ -48,6 +48,8 @@ namespace Uber.DemoTools
         private CheckBox _useInputFolderForBrowsingCheckBox = null;
         private CheckBox _useInputFolderOnStartUpCheckBox = null;
         private CheckBox _analyzeOnLoadCheckBox = null;
+        private TextBox _startTimeOffsetEditBox = null;
+        private TextBox _endTimeOffsetEditBox = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -62,6 +64,16 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtConfig config)
         {
+            int time = 0;
+            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
+            {
+                config.CutStartOffset = time;
+            }
+            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
+            {
+                config.CutEndOffset = time;
+            }
+
             config.OutputToInputFolder = _outputModeCheckBox.IsChecked ?? false;
             config.OutputFolder = _outputFolderTextBox.Text;
             config.InputFolder = _inputFolderTextBox.Text;
@@ -83,6 +95,18 @@ namespace Uber.DemoTools
 
         private FrameworkElement CreateSettingsControl()
         {
+            var startTimeOffsetEditBox = new TextBox();
+            _startTimeOffsetEditBox = startTimeOffsetEditBox;
+            startTimeOffsetEditBox.Width = 40;
+            startTimeOffsetEditBox.Text = _app.Config.CutStartOffset.ToString();
+            startTimeOffsetEditBox.ToolTip = "How many seconds before the (first) pattern matching event do we start the cut?";
+
+            var endTimeOffsetEditBox = new TextBox();
+            _endTimeOffsetEditBox = endTimeOffsetEditBox;
+            endTimeOffsetEditBox.Width = 40;
+            endTimeOffsetEditBox.Text = _app.Config.CutEndOffset.ToString();
+            endTimeOffsetEditBox.ToolTip = "How many seconds after the (last) pattern matching event event do we end the cut?";
+
             var outputModeCheckBox = new CheckBox();
             _outputModeCheckBox = outputModeCheckBox;
             outputModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -178,6 +202,8 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Open on Start-up", useInputFolderOnStartUpCheckBox));
             panelList.Add(App.CreateTuple("=> Input Folder", inputFolderRow));
             panelList.Add(App.CreateTuple("Analyze on Load", analyzeOnLoadCheckBox));
+            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
