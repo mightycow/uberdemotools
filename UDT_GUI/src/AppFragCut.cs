@@ -19,7 +19,7 @@ namespace Uber.DemoTools
 
         private List<CheckBox> _checkBoxes = new List<CheckBox>();
 
-        public FilterGroupBox(string header, UDT_DLL.udtStringArray arrayId, int columnCount = 2)
+        public FilterGroupBox(string header, UDT_DLL.udtStringArray stringArrayId, int columnCount = 2)
         {
             var enableAllButton = new Button();
             enableAllButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -51,7 +51,7 @@ namespace Uber.DemoTools
             panel.VerticalAlignment = VerticalAlignment.Stretch;
 
             const int rowOffset = 1; // One additional row for the EnableAll/DisableAll buttons.
-            var itemNames = UDT_DLL.GetStringArray(arrayId);
+            var itemNames = UDT_DLL.GetStringArray(stringArrayId);
             var rowCount = (itemNames.Count + columnCount - 1) / columnCount;
             var maxCheckBoxesPerColumn = rowCount;
             rowCount += rowOffset;
@@ -129,14 +129,14 @@ namespace Uber.DemoTools
         }
     }
 
-    public class CutByFragComponent : AppComponent
+    public class FragSequenceFiltersComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
-        public ComponentType Type { get { return ComponentType.CutByChat; } }
+        public ComponentType Type { get { return ComponentType.ChatFilters; } }
 
-        public CutByFragComponent(App app)
+        public FragSequenceFiltersComponent(App app)
         {
             _app = app;
             RootControl = CreateCutByFragTab();
@@ -180,8 +180,7 @@ namespace Uber.DemoTools
         private FrameworkElement CreateCutByFragTab()
         {
             _playerMODFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
-            // @TODO:
-            //_powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
+            // @TODO: Power-up Filters
 
             var minFragCountEditBox = new TextBox();
             _minFragCountEditBox = minFragCountEditBox;
@@ -396,23 +395,10 @@ namespace Uber.DemoTools
 
         private void DemoCutByFragThread(object arg)
         {
-            try
-            {
-                DemoCutByFragThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByFragThreadImpl(object arg)
-        {
             var threadArg = arg as ThreadArg;
             if(threadArg == null)
             {
                 _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -420,7 +406,6 @@ namespace Uber.DemoTools
             if(filePaths == null)
             {
                 _app.LogError("Invalid thread argument data");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -461,7 +446,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
     }
 }

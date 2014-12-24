@@ -251,17 +251,23 @@ namespace Uber.DemoTools
             cutTimeTab.Header = "Cut by Time";
             cutTimeTab.Content = _cutByTimeComponent.RootControl;
 
-            var cutByChat = new CutByChatComponent(this);
+            var cutByChat = new ChatFiltersComponent(this);
             _appComponents.Add(cutByChat);
             var cutChatTab = new TabItem();
             cutChatTab.Header = "Chat Filters";
             cutChatTab.Content = cutByChat.RootControl;
 
-            var cutByFrag = new CutByFragComponent(this);
+            var cutByFrag = new FragSequenceFiltersComponent(this);
             _appComponents.Add(cutByFrag);
             var cutFragTab = new TabItem();
             cutFragTab.Header = "Frag Run Filters";
             cutFragTab.Content = cutByFrag.RootControl;
+
+            var cutByPattern = new CutByPatternComponent(this);
+            _appComponents.Add(cutByPattern);
+            var cutByPatternTab = new TabItem();
+            cutByPatternTab.Header = "Cut by Patterns";
+            cutByPatternTab.Content = cutByPattern.RootControl;
 
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
@@ -285,6 +291,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demoChatTab);
             tabControl.Items.Add(demoFragsTab);
             tabControl.Items.Add(cutTimeTab);
+            tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(cutChatTab);
             tabControl.Items.Add(cutFragTab);
             tabControl.Items.Add(settingsTab);
@@ -1081,7 +1088,7 @@ namespace Uber.DemoTools
             }
         }
 
-        public void EnableUiThreadSafe()
+        private void EnableUiThreadSafe()
         {
             VoidDelegate guiResetter = delegate
             {
@@ -1143,21 +1150,6 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoAnalyzeThread, demos);
-        }
-
-        private void DemoAnalyzeThread(object arg)
-        {
-            try
-            {
-                DemoAnalyzeThreadImpl(arg);
-                EnableUiThreadSafe();
-                VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
-                _window.Dispatcher.Invoke(infoUpdater);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
         }
 
         public delegate void VoidDelegate();
@@ -1232,7 +1224,7 @@ namespace Uber.DemoTools
             ParseArg.PlugIns = IntPtr.Zero;
         }
 
-        private void DemoAnalyzeThreadImpl(object arg)
+        private void DemoAnalyzeThread(object arg)
         {
             var demos = arg as List<DemoInfo>;
             if(demos == null)
@@ -1282,6 +1274,9 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
+
+            VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
+            _window.Dispatcher.Invoke(infoUpdater);
         }
 
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
@@ -1441,23 +1436,10 @@ namespace Uber.DemoTools
 
         private void DemoSplitThread(object arg)
         {
-            try
-            {
-                DemoSplitThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoSplitThreadImpl(object arg)
-        {
             var filePath = arg as string;
             if(filePath == null)
             {
                 LogError("Invalid thread argument type");
-                EnableUiThreadSafe();
                 return;
             }
 
@@ -1477,7 +1459,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            EnableUiThreadSafe();
         }
 
         private void OnSplitDemoClicked()
@@ -1831,10 +1812,41 @@ namespace Uber.DemoTools
             }
         }
 
+        private class JobThreadData
+        {
+            public ParameterizedThreadStart UserFunction;
+            public object UserData;
+        }
+
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
-            _jobThread = new Thread(entryPoint);
-            _jobThread.Start(userData);
+            var udtData = new JobThreadData();
+            udtData.UserFunction = entryPoint;
+            udtData.UserData = userData;
+            _jobThread = new Thread(RealJobThreadEntryPoint);
+            _jobThread.Start(udtData);
+        }
+
+        private void RealJobThreadEntryPoint(object udtData)
+        {
+            var data = udtData as JobThreadData;
+            if(data == null)
+            {
+                return;
+            }
+
+            try
+            {
+                data.UserFunction(data.UserData);
+            }
+            catch(Exception exception)
+            {
+                EntryPoint.RaiseException(exception);
+            }
+            finally
+            {
+                EnableUiThreadSafe();
+            }
         }
 
         public IntPtr GetMainThreadContext()

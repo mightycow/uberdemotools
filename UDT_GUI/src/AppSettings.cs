@@ -14,7 +14,10 @@ namespace Uber.DemoTools
         ChatEvents,
         FragEvents,
         CutByTime,
-        CutByChat,
+        CutByPattern,
+        ChatFilters,
+        MidAirFilters,
+        MultiRailFilters,
         Count
     }
 

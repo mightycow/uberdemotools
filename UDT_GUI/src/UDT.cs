@@ -72,6 +72,7 @@ namespace Uber.DemoTools
             MeansOfDeath,
             PlayerMeansOfDeath,
             Teams,
+            CutPatterns,
             Count
         }
 

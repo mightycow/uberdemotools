@@ -13,14 +13,14 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public class CutByChatComponent : AppComponent
+    public class ChatFiltersComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatRulesListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
-        public ComponentType Type { get { return ComponentType.CutByChat; } }
+        public ComponentType Type { get { return ComponentType.ChatFilters; } }
 
-        public CutByChatComponent(App app)
+        public ChatFiltersComponent(App app)
         {
             _app = app;
             RootControl = CreateCutByChatTab();
@@ -144,12 +144,8 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "UDT will create a cut section for each global chat command that matches at least one of the rules you defined." +
-                "\nWhen parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
-                "\n\nThe StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." + 
-                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well)." +
-                "\n\nExample: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with start and end time offsets 10 and 8." +
-                "\nUDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
+                "The StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." +
+                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well).";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
@@ -205,23 +201,10 @@ namespace Uber.DemoTools
 
         private void DemoCutByChatThread(object arg)
         {
-            try
-            {
-                DemoCutByChatThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByChatThreadImpl(object arg)
-        {
             var filePaths = arg as List<string>;
             if(filePaths == null)
             {
                 _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -241,7 +224,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
 
         private void OnAddChatRuleClicked()
