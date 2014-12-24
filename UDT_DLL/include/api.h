@@ -297,26 +297,27 @@ struct udtStringArray
 		MeansOfDeath,
 		PlayerMeansOfDeath,
 		Teams,
+		CutPatterns,
 		Count
 	};
 };
 
-#define UDT_PATTERN_LIST(N) \
-	N(GlobalChat, udtCutByChatArg, udtCutByChatAnalyzer) \
-	N(FragSequences, udtCutByFragArg, udtCutByFragAnalyzer) \
-	N(MidAirFrags, udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiRailFrags, udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
+#define UDT_CUT_PATTERN_LIST(N) \
+	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
+	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
+	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
+	N(MultiRailFrags, "multi-rail frags", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
 
-#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) Enum,
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
 {
 	enum Id
 	{
-		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
+		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
 		Count
 	};
 };
-#undef UDT_PATTERN_ITEM
+#undef UDT_CUT_PATTERN_ITEM
 
 
 #ifdef __cplusplus

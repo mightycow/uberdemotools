@@ -53,14 +53,14 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatt
 		return NULL;
 	}
 
-#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = _analyzerAllocatorScope.NewObject<AnalyzerType>(); break;
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = _analyzerAllocatorScope.NewObject<AnalyzerType>(); break;
 	udtCutByPatternAnalyzerBase* analyzer = NULL;
 	switch(patternType)
 	{
-		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
+		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
 		default: return NULL;
 	}
-#undef UDT_PATTERN_ITEM
+#undef UDT_CUT_PATTERN_ITEM
 
 	if(analyzer != NULL)
 	{

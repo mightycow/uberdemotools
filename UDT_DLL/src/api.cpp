@@ -83,6 +83,14 @@ static const char* TeamNames[] =
 };
 #undef UDT_TEAM_ITEM
 
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Desc,
+static const char* CutPatternNames[] =
+{
+	UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+	"after last cut pattern"
+};
+#undef UDT_CUT_PATTERN_ITEM
+
 
 UDT_API(const char*) udtGetVersionString()
 {
@@ -227,6 +235,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::Teams:
 			*elements = TeamNames;
 			*elementCount = (u32)(UDT_COUNT_OF(TeamNames) - 1);
+			break;
+
+		case udtStringArray::CutPatterns:
+			*elements = CutPatternNames;
+			*elementCount = (u32)(UDT_COUNT_OF(CutPatternNames) - 1);
 			break;
 
 		default:

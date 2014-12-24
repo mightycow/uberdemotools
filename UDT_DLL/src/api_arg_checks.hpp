@@ -58,13 +58,13 @@ static bool IsValid(const udtCutByPatternArg& arg)
 			return false;
 		}
 
-#define UDT_PATTERN_ITEM(Enum, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false; break;
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false; break;
 		switch((udtPatternType::Id)info.Type)
 		{
-			UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
+			UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
 			default: return false;
 		}
-#undef UDT_PATTERN_ITEM
+#undef UDT_CUT_PATTERN_ITEM
 	}
 
 	return true;
