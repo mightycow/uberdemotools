@@ -431,6 +431,7 @@ namespace Uber.DemoTools
 
             try
             {
+                // @TODO: Unified way of creating and passing this data to threads.
                 var rules = new UDT_DLL.udtCutByFragArg();
                 rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
                 rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;

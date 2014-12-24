@@ -93,6 +93,17 @@ namespace Uber.DemoTools
         {
             public List<string> FilePaths = null;
             public UDT_DLL.udtPatternInfo[] Patterns = null;
+            public UDT_DLL.ArgumentResources Resources = null;
+        }
+
+        private static UInt32 GetBit(UDT_DLL.udtPatternType type)
+        {
+            return (UInt32)(1 << (int)type);
+        }
+
+        private static bool IsPatternActive(UInt32 patterns, UDT_DLL.udtPatternType type)
+        {
+            return (patterns & GetBit(UDT_DLL.udtPatternType.GlobalChat)) != 0;
         }
 
         private void OnCutClicked()
@@ -123,15 +134,36 @@ namespace Uber.DemoTools
 
             var config = _app.Config;
             var patterns = new List<UDT_DLL.udtPatternInfo>();
-            for(var i = 0; i < (int)UDT_DLL.udtPatternType.Count; ++i)
+            var resources = new UDT_DLL.ArgumentResources();
+
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.GlobalChat))
             {
-                // selectedPatterns
-                // @TODO: if type selected, create and add object
+                var pattern = new UDT_DLL.udtPatternInfo();
+                UDT_DLL.CreateChatPatternInfo(ref pattern, resources, config.ChatRules);
+                patterns.Add(pattern);
+            }
+
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FragSequences))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+
+                // @TODO: Unified way of creating and passing this data to threads.
+                var rules = new UDT_DLL.udtCutByFragArg();
+                rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
+                rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
+                rules.TimeMode = 0; // @TODO:
+                rules.Flags = 0;
+                rules.PlayerIndex = -1;
+                rules.AllowedMeansOfDeaths = UInt32.MaxValue;
+                
+                UDT_DLL.CreateFragPatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
             }
 
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();
+            threadArg.Resources = resources;
 
             _app.StartJobThread(DemoCutThread, threadArg);
         }
@@ -145,7 +177,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            if(threadArg.FilePaths == null || threadArg.Patterns == null)
+            if(threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
             {
                 _app.LogError("Invalid thread argument data");
                 return;
@@ -156,19 +188,20 @@ namespace Uber.DemoTools
             _app.InitParseArg();
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
 
+            var resources = threadArg.Resources;
+            resources.GlobalAllocationHandles.Add(outputFolderPtr);
+
             try
             {
                 var config = _app.Config;
                 UDT_DLL.CutDemosByPattern(
-                    ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, 
+                    resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, 
                     config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
             }
             catch(Exception exception)
             {
                 _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
     }
 }

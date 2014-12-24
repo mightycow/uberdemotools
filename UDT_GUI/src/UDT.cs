@@ -470,7 +470,29 @@ namespace Uber.DemoTools
             return (UInt32)result;
         }
 
-        public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
+        // @TODO: Use in all cases, not just in CutByPattern.
+        public class ArgumentResources
+        {
+            public List<PinnedObject> PinnedObjects = new List<PinnedObject>();
+            public List<IntPtr> GlobalAllocationHandles = new List<IntPtr>();
+
+            public void Free()
+            {
+                foreach(var pinnedObject in PinnedObjects)
+                {
+                    pinnedObject.Free();
+                }
+                PinnedObjects.Clear();
+
+                foreach(var address in GlobalAllocationHandles)
+                {
+                    Marshal.FreeHGlobal(address);
+                }
+                GlobalAllocationHandles.Clear();
+            }
+        }
+
+        public static bool CreateChatPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, List<ChatRule> rules)
         {
             if(rules.Count == 0)
             {
@@ -484,6 +506,7 @@ namespace Uber.DemoTools
                 rulesArray[i].ChatOperator = GetOperatorFromString(rules[i].Operator);
                 rulesArray[i].IgnoreColorCodes = (UInt32)(rules[i].IgnoreColors ? 1 : 0);
                 rulesArray[i].Pattern = Marshal.StringToHGlobalAnsi(rules[i].Value);
+                resources.GlobalAllocationHandles.Add(rulesArray[i].Pattern);
             }
             var pinnedRulesArray = new PinnedObject(rulesArray);
 
@@ -492,41 +515,58 @@ namespace Uber.DemoTools
             cutByChatArg.RuleCount = (UInt32)rulesArray.Length;
             var pinnedRules = new PinnedObject(cutByChatArg);
 
-            var patterns = new udtPatternInfo[1];
-            patterns[0].Type = (UInt32)udtPatternType.GlobalChat;
-            patterns[0].TypeSpecificInfo = pinnedRules.Address;
+            resources.PinnedObjects.Add(pinnedRulesArray);
+            resources.PinnedObjects.Add(pinnedRules);
 
-            var result = CutDemosByPattern(ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
-            pinnedRules.Free();
-            pinnedRulesArray.Free();
-            for(var i = 0; i < rulesArray.Length; ++i)
+            pattern.Type = (UInt32)udtPatternType.GlobalChat;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
+        public static bool CreateFragPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFragArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.FragSequences;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
+        public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateChatPatternInfo(ref patterns[0], resources, rules))
             {
-                Marshal.FreeHGlobal(rulesArray[i].Pattern);
+                return false;
             }
 
-            return result;
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
         }
 
         public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, int startOffset, int endOffset, int maxThreadCount)
         {
-            var pinnedRules = new PinnedObject(rules);
+            var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
-            patterns[0].Type = (UInt32)udtPatternType.FragSequences;
-            patterns[0].TypeSpecificInfo = pinnedRules.Address;
+            if(!CreateFragPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
 
-            var result = CutDemosByPattern(ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
-            pinnedRules.Free();
-
-            return result;
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
         }
 
-        public static bool CutDemosByPattern(ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, int startOffset, int endOffset, int maxThreadCount)
+        public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, int startOffset, int endOffset, int maxThreadCount)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
                 filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                resources.GlobalAllocationHandles.Add(filePathArray[i]);
             }
 
             parseArg.PlugInCount = 0;
@@ -547,14 +587,19 @@ namespace Uber.DemoTools
             cutByPatternArg.Patterns = pinnedPatterns.Address;
             cutByPatternArg.PatternCount = (UInt32)patterns.Length;
 
-            var result = udtCutDemoFilesByPattern(ref parseArg, ref multiParseArg, ref cutByPatternArg);
-            pinnedPatterns.Free();
-            pinnedFilePaths.Free();
-            pinnedErrorCodes.Free();
-            for(var i = 0; i < filePathArray.Length; ++i)
+            resources.PinnedObjects.Add(pinnedPatterns);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+
+            udtErrorCode result = udtErrorCode.OperationFailed;
+            try
             {
-                Marshal.FreeHGlobal(filePathArray[i]);
+                result = udtCutDemoFilesByPattern(ref parseArg, ref multiParseArg, ref cutByPatternArg);
             }
+            finally
+            {
+                resources.Free();
+            }            
 
             return result == udtErrorCode.None;
         }
