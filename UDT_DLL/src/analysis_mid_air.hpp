@@ -24,23 +24,31 @@ public:
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtMidAirAnalyzer);
-	
-	void AddOrUpdateProjectile(const idEntityStateBase* entity, s32 serverTimeMs);
-	void RemoveProjectile(s32 entityNumber);
 
 	struct ProjectileInfo
 	{
 		s32 UsedSlot;
-		s32 IdEntityNumber;
 		f32 CreationPosition[3];
 		s32 CreationTimeMs;
 		s32 IdWeapon;
 	};
 	
+	void            AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs);
+	ProjectileInfo* FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs);
+	
+	struct PlayerInfo
+	{
+		f32 Position[3];
+		s32 LastGroundContactTime;
+		s32 LastZDirChangeTime;
+		s32 ZDir;
+	};
+
 	udtProtocol::Id _protocol;
 	ProjectileInfo _projectiles[64];
-	const idEntityStateBase* _playerEntities[64];
+	PlayerInfo _players[64];
 	s32 _gameStateIndex;
+	s32 _lastEventSequence;
 };
 
 struct udtParserPlugInMidAir : udtBaseParserPlugIn

@@ -204,6 +204,8 @@ namespace Uber.DemoTools
         {
             public UInt32 AllowedWeapons;
             public UInt32 MinDistance;
+            public UInt32 MinAirTimeMs;
+            public Int32 Reserved1;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -449,8 +451,9 @@ namespace Uber.DemoTools
             }
 
             var rules = new udtCutByMidAirArg();
-            rules.MinDistance = (UInt32)Math.Max(0, config.MidAirCutMinDistance);
             rules.AllowedWeapons = weaponFlags;
+            rules.MinDistance = (UInt32)Math.Max(0, config.MidAirCutMinDistance);
+            rules.MinAirTimeMs = (UInt32)Math.Max(0, config.MidAirCutMinAirTimeMs);
 
             return rules;
         }

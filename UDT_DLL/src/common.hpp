@@ -360,7 +360,7 @@ struct idPlayerStateBase
 								// when at rest, the value will remain unchanged
 								// used to twist the legs during strafing
 
-	vec3_t		grapplePos32;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
+	vec3_t		grapplePoint;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
 
 	s32			eFlags;			// copied to entityState_t->eFlags
 

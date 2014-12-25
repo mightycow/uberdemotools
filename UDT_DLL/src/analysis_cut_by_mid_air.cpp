@@ -19,6 +19,7 @@ void udtCutByMidAirAnalyzer::FinishAnalysis()
 	const udtCutByMidAirArg* const extraInfo = (const udtCutByMidAirArg*)_extraInfo;
 	const u32 allowedWeapons = extraInfo->AllowedWeapons;
 	const u32 minDistance = extraInfo->MinDistance;
+	const u32 minAirTimeMs = extraInfo->MinAirTimeMs;
 
 	const udtVMArray<udtParseDataMidAir>& midAirs = _analyzer.MidAirs;
 
@@ -33,13 +34,18 @@ void udtCutByMidAirAnalyzer::FinishAnalysis()
 		{
 			continue;
 		}
-
+		
+		if(minAirTimeMs > 0 && midAir.VictimAirTimeMs < minAirTimeMs)
+		{
+			continue;
+		}
+		
 		if(midAir.Weapon != (u32)-1 && !IsAllowedWeapon(midAir.Weapon, allowedWeapons))
 		{
 			continue;
 		}
 		
-		if(midAir.TravelInfoAvailable && midAir.TravelDistance < minDistance)
+		if(midAir.TravelInfoAvailable == 0 || midAir.TravelDistance < minDistance)
 		{
 			continue;
 		}

@@ -42,7 +42,8 @@ namespace Uber.DemoTools
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
-        public int MidAirCutMinDistance = 0;
+        public int MidAirCutMinDistance = 300;
+        public int MidAirCutMinAirTimeMs = 500;
         public bool MidAirCutAllowRocket = true;
         public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;

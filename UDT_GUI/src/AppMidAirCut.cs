@@ -33,6 +33,11 @@ namespace Uber.DemoTools
                 config.MidAirCutMinDistance = value;
             }
 
+            if(int.TryParse(_minAirTimeEditBox.Text, out value))
+            {
+                config.MidAirCutMinAirTimeMs = value;
+            }
+
             config.MidAirCutAllowRocket = _allowRocketsCheckBox.IsChecked ?? false;
             config.MidAirCutAllowGrenade = _allowGrenadesCheckBox.IsChecked ?? false;
             config.MidAirCutAllowBFG = _allowBFGsCheckBox.IsChecked ?? false;
@@ -45,6 +50,7 @@ namespace Uber.DemoTools
 
         private App _app;
         private TextBox _minDistanceEditBox;
+        private TextBox _minAirTimeEditBox;
         private CheckBox _allowRocketsCheckBox;
         private CheckBox _allowGrenadesCheckBox;
         private CheckBox _allowBFGsCheckBox;
@@ -56,6 +62,12 @@ namespace Uber.DemoTools
             minDistanceEditBox.Width = 60;
             minDistanceEditBox.Text = _app.Config.MidAirCutMinDistance.ToString();
             minDistanceEditBox.ToolTip = "The minimum distance between the position where the projectile was shot from and the impact position. Setting it to 0 will not filter based on distance.";
+
+            var minAirTimeEditBox = new TextBox();
+            _minAirTimeEditBox = minAirTimeEditBox;
+            minAirTimeEditBox.Width = 60;
+            minAirTimeEditBox.Text = _app.Config.MidAirCutMinAirTimeMs.ToString();
+            minAirTimeEditBox.ToolTip = "The minimum amount of time the victim was in the air prior to the hit, in milli-seconds.";
 
             var allowRocketsCheckBox = new CheckBox();
             _allowRocketsCheckBox = allowRocketsCheckBox;
@@ -77,9 +89,10 @@ namespace Uber.DemoTools
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Allow Rockets?", allowRocketsCheckBox));
-            rulesPanelList.Add(App.CreateTuple("Allow Grenades?", allowGrenadesCheckBox));
+            //rulesPanelList.Add(App.CreateTuple("Allow Grenades?", allowGrenadesCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow BFG?", allowBFGsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Min. Distance", minDistanceEditBox));
+            rulesPanelList.Add(App.CreateTuple("Min. Air Time [ms]", minAirTimeEditBox));
 
             var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;

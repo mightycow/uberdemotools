@@ -15,6 +15,13 @@ f32 RadToDeg(f32 angleRad)
 
 namespace Float3
 {
+	void Copy(f32* a, const f32* b)
+	{
+		a[0] = b[0];
+		a[1] = b[1];
+		a[2] = b[2];
+	}
+
 	f32 Dot(const f32* a, const f32* b)
 	{
 		const f32 x = a[0] - b[0];
@@ -27,5 +34,12 @@ namespace Float3
 	f32 Dist(const f32* a, const f32* b)
 	{
 		return sqrtf(Dot(a, b));
+	}
+
+	void Mad(f32* result, const f32* a, const f32* b, f32 s)
+	{
+		result[0] = a[0] + b[0] * s;
+		result[1] = a[1] + b[1] * s;
+		result[2] = a[2] + b[2] * s;
 	}
 }

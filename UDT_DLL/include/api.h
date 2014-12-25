@@ -549,6 +549,12 @@ extern "C"
 		// The minimum distance between the projectile's 
 		// start (where the weapon was fired) and end (position of impact) points.
 		u32 MinDistance;
+
+		// The minimum time the victim was in the air prior to the hit. 
+		u32 MinAirTimeMs;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
@@ -720,8 +726,8 @@ extern "C"
 		// How long the projectile moved through the air before the impact.
 		u32 TravelDurationMs;
 
-		// Ignore this.
-		s32 Reserved1;
+		// How long the victim was airborne.
+		u32 VictimAirTimeMs;
 	};
 
 #pragma pack(pop)
