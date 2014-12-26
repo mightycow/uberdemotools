@@ -37,6 +37,7 @@ namespace Uber.DemoTools
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
+        public int PatternsSelectionBitMask = -1;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
         public bool FragCutAllowSelfKills = false;

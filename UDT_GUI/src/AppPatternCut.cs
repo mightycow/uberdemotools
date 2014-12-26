@@ -27,7 +27,7 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtConfig config)
         {
-            // Nothing to do.
+            config.PatternsSelectionBitMask = (int)_patternsGroupBox.GetBitMask();
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -41,6 +41,7 @@ namespace Uber.DemoTools
         private FrameworkElement CreateTab()
         {
             _patternsGroupBox = new FilterGroupBox("Cut Patterns", UDT_DLL.udtStringArray.CutPatterns, 2);
+            _patternsGroupBox.SetBitMask((uint)_app.Config.PatternsSelectionBitMask);
 
             var cutButton = new Button();
             cutButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -120,14 +121,14 @@ namespace Uber.DemoTools
                 return;
             }
 
-            UInt32 selectedPatterns = _patternsGroupBox.GetBitMask();
-            if(selectedPatterns == 0)
+            _app.SaveConfig();
+            var config = _app.Config;
+            if(config.PatternsSelectionBitMask == 0)
             {
                 _app.LogError("You didn't check any pattern. Please check at least one to proceed.");
                 return;
             }
 
-            _app.SaveConfig();
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
 
@@ -137,7 +138,7 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var config = _app.Config;
+            var selectedPatterns = (UInt32)config.PatternsSelectionBitMask;
             var patterns = new List<UDT_DLL.udtPatternInfo>();
             var resources = new UDT_DLL.ArgumentResources();
 
@@ -163,6 +164,8 @@ namespace Uber.DemoTools
                 UDT_DLL.CreateMidAirPatternInfo(ref pattern, resources, rules);
                 patterns.Add(pattern);
             }
+
+            // @TODO: multi-rail frags!
 
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;

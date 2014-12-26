@@ -120,6 +120,15 @@ namespace Uber.DemoTools
             return result;
         }
 
+        public void SetBitMask(UInt32 bitMask)
+        {
+            for(var i = 0; i < _checkBoxes.Count; ++i)
+            {
+                var isChecked = (bitMask & (1 << i)) != 0;
+                _checkBoxes[i].IsChecked = isChecked;
+            }
+        }
+
         private void SetAllChecked(bool isChecked)
         {
             foreach(var checkBox in _checkBoxes)
