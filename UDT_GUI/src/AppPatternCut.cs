@@ -109,7 +109,7 @@ namespace Uber.DemoTools
 
         private static bool IsPatternActive(UInt32 patterns, UDT_DLL.udtPatternType type)
         {
-            return (patterns & GetBit(UDT_DLL.udtPatternType.GlobalChat)) != 0;
+            return (patterns & GetBit(type)) != 0;
         }
 
         private void OnCutClicked()
