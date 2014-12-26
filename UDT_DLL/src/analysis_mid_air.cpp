@@ -105,8 +105,9 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		s32 eventParm = 0;
 		GetEntityStateEventFromPlayerState(event, eventParm, ps);
 		const s32 eventType = event & (~EV_EVENT_BITS);
+		const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON : (s32)EV_FIRE_WEAPON_73p;
 		if(ps->eventSequence != _lastEventSequence &&
-		   eventType == EV_FIRE_WEAPON &&
+		   eventType == fireWeaponEventId &&
 		   ps->clientNum == TrackedPlayerIndex &&
 		   IsAllowedWeapon(ps->weapon, _protocol))
 		{
@@ -165,7 +166,7 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 	}
 
 	// Find a player getting mid-aired.
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73;
+	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)

@@ -100,7 +100,7 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		return;
 	}
 
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73;
+	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
