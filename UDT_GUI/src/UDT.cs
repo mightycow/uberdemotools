@@ -458,6 +458,14 @@ namespace Uber.DemoTools
             return rules;
         }
 
+        public static udtCutByMultiRailArg CreateCutByMultiRailArg(UdtConfig config)
+        {
+            var rules = new udtCutByMultiRailArg();
+            rules.MinKillCount = (UInt32)config.MultiRailCutMinFragCount;
+
+            return rules;
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();
@@ -631,6 +639,17 @@ namespace Uber.DemoTools
             return true;
         }
 
+        public static bool CreateMultiRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMultiRailArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.MultiRailFrags;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
         public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
         {
             var resources = new ArgumentResources();
@@ -660,6 +679,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateMidAirPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+        }
+
+        public static bool CutDemosByMultiRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByMultiRailArg rules, int startOffset, int endOffset, int maxThreadCount)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateMultiRailPatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }

@@ -166,7 +166,13 @@ namespace Uber.DemoTools
                 patterns.Add(pattern);
             }
 
-            // @TODO: multi-rail frags!
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MultiRailFrags))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+                var rules = UDT_DLL.CreateCutByMultiRailArg(config);
+                UDT_DLL.CreateMultiRailPatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
+            }
 
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;

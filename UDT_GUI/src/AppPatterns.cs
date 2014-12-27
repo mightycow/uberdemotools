@@ -66,6 +66,12 @@ namespace Uber.DemoTools
             midAirTab.Header = "Mid-Air Frags";
             midAirTab.Content = midAir.RootControl;
 
+            var multiRail = new MultiRailFiltersComponent(_app);
+            _components.Add(multiRail);
+            var multiRailTab = new TabItem();
+            multiRailTab.Header = "Multi-Frag Rails";
+            multiRailTab.Content = multiRail.RootControl;
+
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
@@ -73,6 +79,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(chatTab);
             tabControl.Items.Add(fragTab);
             tabControl.Items.Add(midAirTab);
+            tabControl.Items.Add(multiRailTab);
 
             return tabControl;
         }

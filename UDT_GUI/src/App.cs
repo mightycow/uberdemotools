@@ -49,6 +49,7 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
+        public int MultiRailCutMinFragCount = 2;
     }
 
     public class UdtPrivateConfig

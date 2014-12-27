@@ -4,12 +4,7 @@
 #include "analysis_cut_by_chat.hpp"
 #include "analysis_cut_by_frag.hpp"
 #include "analysis_cut_by_mid_air.hpp"
-
-// @TODO:
-//#include "analysis_cut_by_multi_rail.hpp"
-struct udtCutByMultiRailAnalyzer : public udtCutByPatternAnalyzerBase
-{
-};
+#include "analysis_cut_by_multi_rail.hpp"
 
 
 struct CutSection : public udtCutSection
