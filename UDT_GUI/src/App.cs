@@ -446,6 +446,8 @@ namespace Uber.DemoTools
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             demoListView.Foreground = new SolidColorBrush(Colors.Black);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
             
@@ -758,8 +760,34 @@ namespace Uber.DemoTools
 
         private void OnTabSelectionChanged()
         {
-            var singleMode = (_tabControl.SelectedIndex == 1) || (_tabControl.SelectedIndex == 2);
-            _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
+            // Tabs:
+            // 0: manage -> multiple selection
+            // 1: info   -> single   selection
+            var tabIndex = _tabControl.SelectedIndex;
+            var multiMode = tabIndex == 0 || tabIndex > 1;
+            var tabItems = _tabControl.Items;
+            if(tabIndex > 1)
+            {
+                var selectedItem = _tabControl.Items[tabIndex];
+                var tabComponent = _appComponents.Find(c => IsMatchingTab(c, selectedItem));
+                if(tabComponent != null)
+                {
+                    multiMode = tabComponent.MultiDemoMode;
+                }
+            }
+  
+            _demoListView.SelectionMode = multiMode ? SelectionMode.Extended : SelectionMode.Single;
+        }
+
+        private bool IsMatchingTab(AppComponent component, object tabItem)
+        {
+            var tab = tabItem as TabItem;
+            if(tab == null)
+            {
+                return false;
+            }
+
+            return component.RootControl == tab.Content;
         }
 
         private void OnOpenDemo()

@@ -32,6 +32,7 @@ namespace Uber.DemoTools
         List<DemoInfoListView> AllListViews { get; }
         List<DemoInfoListView> InfoListViews { get; }
         ComponentType Type { get; }
+        bool MultiDemoMode { get; }
     }
 
     public class AppSettingsComponent : AppComponent
@@ -56,6 +57,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.Settings; } }
+        public bool MultiDemoMode { get { return true; } }
 
         public AppSettingsComponent(App app)
         {

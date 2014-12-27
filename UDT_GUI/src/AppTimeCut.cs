@@ -133,6 +133,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.CutByTime; } }
+        public bool MultiDemoMode { get { return false; } }
 
         public CutByTimeComponent(App app)
         {

@@ -19,6 +19,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatRulesListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.ChatFilters; } }
+        public bool MultiDemoMode { get { return true; } }
 
         public ChatFiltersComponent(App app)
         {
