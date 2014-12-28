@@ -17,7 +17,6 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtCutByMultiRailAnalyzer);
 
 	s32 _gameStateIndex;
-	s32 _lastProcessedServerCommandNumber;
 	s32 _recordingPlayerIndex;
 	udtProtocol::Id _protocol;
 };

@@ -95,12 +95,13 @@ udtMidAirAnalyzer::udtMidAirAnalyzer()
 
 void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {	   
+	// @TODO:
 	const s32 TrackedPlayerIndex = RecordingPlayerIndex;
 
-	// Store projectiles fired by the tracked player.
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, _protocol);
 	if(ps != NULL)
 	{
+		// Store projectiles fired by the tracked player.
 		s32 event = 0;
 		s32 eventParm = 0;
 		GetEntityStateEventFromPlayerState(event, eventParm, ps);
@@ -113,11 +114,9 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		{
 			AddProjectile(ps->weapon, ps->origin, arg.ServerTime);
 		}
-	}
+		_lastEventSequence = ps->eventSequence;
 
-	// Update the data of the player recording the demo.
-	if(ps != NULL)
-	{
+		// Update the data of the player recording the demo.
 		Float3::Copy(_players[ps->clientNum].Position, ps->origin);
 		if(ps->groundEntityNum != ENTITYNUM_NONE)
 		{
@@ -125,7 +124,7 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		}
 	}
 
-	// Update the data of all the other player.
+	// Update the data of all the other players.
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		const idEntityStateBase* const ent = arg.Entities[i].Entity;
@@ -228,11 +227,6 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		}
 
 		MidAirs.Add(info);
-	}
-
-	if(ps != NULL)
-	{
-		_lastEventSequence = ps->eventSequence;
 	}
 }
 

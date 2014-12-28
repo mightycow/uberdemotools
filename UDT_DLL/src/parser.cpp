@@ -25,6 +25,7 @@ udtBaseParser::udtBaseParser()
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
 	_inServerTime = S32_MIN;
+	_inLastSnapshotMessageNumber = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -67,6 +68,7 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 		_inEntityEventTimesMs[i] = S32_MIN;
 	}
 
+	_inLastSnapshotMessageNumber = S32_MIN;
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
 	if(gameStateIndex > 0)
@@ -90,6 +92,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inServerTime = S32_MIN;
+	_inLastSnapshotMessageNumber = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -136,6 +139,7 @@ void udtBaseParser::Reset()
 	_inGameStateIndex = -1;
 	_inGameStateFileOffsets.Clear();
 	_inServerTime = S32_MIN;
+	_inLastSnapshotMessageNumber = S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -701,6 +705,13 @@ void udtBaseParser::ParseSnapshot()
 
 	// Save the frame off in the backup array for later delta comparisons.
 	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_protocolSizeOfClientSnapshot);
+
+	// Don't give the same stuff to the plug-ins more than once.
+	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
+	{
+		return;
+	}
+	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
 	if(!PlugIns.IsEmpty())
 	{

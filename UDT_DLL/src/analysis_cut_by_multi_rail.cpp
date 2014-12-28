@@ -7,7 +7,6 @@
 udtCutByMultiRailAnalyzer::udtCutByMultiRailAnalyzer()
 {
 	_gameStateIndex = -1;
-	_lastProcessedServerCommandNumber = S32_MIN;
 	_recordingPlayerIndex = -1;
 	_protocol = udtProtocol::Invalid;
 }
@@ -75,6 +74,4 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		info.EndTimeMs = arg.ServerTime + _info->EndOffsetSec * 1000;
 		CutSections.Add(info);
 	}
-
-	_lastProcessedServerCommandNumber = arg.Snapshot->serverCommandNum;
 }
