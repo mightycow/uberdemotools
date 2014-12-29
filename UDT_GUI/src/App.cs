@@ -25,28 +25,37 @@ namespace Uber.DemoTools
 
     public class UdtConfig
     {
+        public int CutStartOffset = 10;
+        public int CutEndOffset = 10;
         public List<ChatRule> ChatRules = new List<ChatRule>();
-        public int ChatCutStartOffset = 10;
-        public int ChatCutEndOffset = 10;
         public bool OutputToInputFolder = true;
         public string OutputFolder = "";
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 4;
+        public int MaxThreadCount = 8;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
-        public int FragCutStartOffset = 10;
-        public int FragCutEndOffset = 10;
+        public int PatternsSelectionBitMask = -1;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
-        public int AwardCutStartOffset = 10;
-        public int AwardCutEndOffset = 10;
+        public int MidAirCutMinDistance = 300;
+        public int MidAirCutMinAirTimeMs = 500;
+        public bool MidAirCutAllowRocket = true;
+        public bool MidAirCutAllowGrenade = true;
+        public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
+        public int MultiRailCutMinFragCount = 2;
+    }
+
+    public class UdtPrivateConfig
+    {
+        public Int32 FragCutPlayerIndex = -1;
+        public UInt32 FragCutAllowedMeansOfDeaths = 0;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -137,6 +146,7 @@ namespace Uber.DemoTools
         }
 
         private UdtConfig _config = new UdtConfig();
+        private UdtPrivateConfig _privateConfig = new UdtPrivateConfig();
         private Application _application = null;
         private Thread _jobThread = null;
         private Window _window = null;
@@ -172,6 +182,11 @@ namespace Uber.DemoTools
         public UdtConfig Config
         {
             get { return _config; }
+        }
+
+        public UdtPrivateConfig PrivateConfig
+        {
+            get { return _privateConfig; }
         }
 
         public Window MainWindow
@@ -251,27 +266,15 @@ namespace Uber.DemoTools
 
             _cutByTimeComponent = new CutByTimeComponent(this);
             _appComponents.Add(_cutByTimeComponent);
-            var cutTimeTab = new TabItem();
-            cutTimeTab.Header = "Cut by Time";
-            cutTimeTab.Content = _cutByTimeComponent.RootControl;
+            var cutByTimeTab = new TabItem();
+            cutByTimeTab.Header = "Cut by Time";
+            cutByTimeTab.Content = _cutByTimeComponent.RootControl;
 
-            var cutByChat = new CutByChatComponent(this);
-            _appComponents.Add(cutByChat);
-            var cutChatTab = new TabItem();
-            cutChatTab.Header = "Cut by Chat";
-            cutChatTab.Content = cutByChat.RootControl;
-
-            var cutByFrag = new CutByFragComponent(this);
-            _appComponents.Add(cutByFrag);
-            var cutFragTab = new TabItem();
-            cutFragTab.Header = "Cut by Frag";
-            cutFragTab.Content = cutByFrag.RootControl;
-
-            var cutByAward = new CutByAwardComponent(this);
-            _appComponents.Add(cutByAward);
-            var cutAwardTab = new TabItem();
-            cutAwardTab.Header = "Cut by Award";
-            cutAwardTab.Content = cutByAward.RootControl;
+            var cutByPattern = new CutByPatternComponent(this);
+            _appComponents.Add(cutByPattern);
+            var cutByPatternTab = new TabItem();
+            cutByPatternTab.Header = "Cut by Patterns";
+            cutByPatternTab.Content = cutByPattern.RootControl;
 
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
@@ -284,6 +287,12 @@ namespace Uber.DemoTools
             var settingsTab = new TabItem();
             settingsTab.Header = "Settings";
             settingsTab.Content = settings.RootControl;
+
+            var patterns = new PatternsComponent(this);
+            _appComponents.Add(patterns);
+            var patternsTab = new TabItem();
+            patternsTab.Header = "Patterns";
+            patternsTab.Content = patterns.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -294,10 +303,9 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demosTab);
             tabControl.Items.Add(demoChatTab);
             tabControl.Items.Add(demoFragsTab);
-            tabControl.Items.Add(cutTimeTab);
-            tabControl.Items.Add(cutChatTab);
-            tabControl.Items.Add(cutFragTab);
-            tabControl.Items.Add(cutAwardTab);
+            tabControl.Items.Add(cutByTimeTab);
+            tabControl.Items.Add(cutByPatternTab);
+            tabControl.Items.Add(patternsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -439,6 +447,8 @@ namespace Uber.DemoTools
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             demoListView.Foreground = new SolidColorBrush(Colors.Black);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
             
@@ -751,8 +761,34 @@ namespace Uber.DemoTools
 
         private void OnTabSelectionChanged()
         {
-            var singleMode = (_tabControl.SelectedIndex == 1) || (_tabControl.SelectedIndex == 2);
-            _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
+            // Tabs:
+            // 0: manage -> multiple selection
+            // 1: info   -> single   selection
+            var tabIndex = _tabControl.SelectedIndex;
+            var multiMode = tabIndex == 0 || tabIndex > 1;
+            var tabItems = _tabControl.Items;
+            if(tabIndex > 1)
+            {
+                var selectedItem = _tabControl.Items[tabIndex];
+                var tabComponent = _appComponents.Find(c => IsMatchingTab(c, selectedItem));
+                if(tabComponent != null)
+                {
+                    multiMode = tabComponent.MultiDemoMode;
+                }
+            }
+  
+            _demoListView.SelectionMode = multiMode ? SelectionMode.Extended : SelectionMode.Single;
+        }
+
+        private bool IsMatchingTab(AppComponent component, object tabItem)
+        {
+            var tab = tabItem as TabItem;
+            if(tab == null)
+            {
+                return false;
+            }
+
+            return component.RootControl == tab.Content;
         }
 
         private void OnOpenDemo()
@@ -1092,7 +1128,7 @@ namespace Uber.DemoTools
             }
         }
 
-        public void EnableUiThreadSafe()
+        private void EnableUiThreadSafe()
         {
             VoidDelegate guiResetter = delegate
             {
@@ -1154,21 +1190,6 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoAnalyzeThread, demos);
-        }
-
-        private void DemoAnalyzeThread(object arg)
-        {
-            try
-            {
-                DemoAnalyzeThreadImpl(arg);
-                EnableUiThreadSafe();
-                VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
-                _window.Dispatcher.Invoke(infoUpdater);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
         }
 
         public delegate void VoidDelegate();
@@ -1243,7 +1264,7 @@ namespace Uber.DemoTools
             ParseArg.PlugIns = IntPtr.Zero;
         }
 
-        private void DemoAnalyzeThreadImpl(object arg)
+        private void DemoAnalyzeThread(object arg)
         {
             var demos = arg as List<DemoInfo>;
             if(demos == null)
@@ -1293,6 +1314,9 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
+
+            VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
+            _window.Dispatcher.Invoke(infoUpdater);
         }
 
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
@@ -1348,6 +1372,20 @@ namespace Uber.DemoTools
             }
 
             Serializer.ToXml("Config.xml", _config);
+        }
+
+        public void SavePrivateConfig()
+        {
+            foreach(var component in _appComponents)
+            {
+                component.SaveToConfigObject(_privateConfig);
+            }
+        }
+
+        public void SaveBothConfigs()
+        {
+            SaveConfig();
+            SavePrivateConfig();
         }
 
         public static int CompareTimeStrings(string a, string b)
@@ -1452,23 +1490,10 @@ namespace Uber.DemoTools
 
         private void DemoSplitThread(object arg)
         {
-            try
-            {
-                DemoSplitThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoSplitThreadImpl(object arg)
-        {
             var filePath = arg as string;
             if(filePath == null)
             {
                 LogError("Invalid thread argument type");
-                EnableUiThreadSafe();
                 return;
             }
 
@@ -1488,7 +1513,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            EnableUiThreadSafe();
         }
 
         private void OnSplitDemoClicked()
@@ -1568,11 +1592,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.ChatCutStartOffset;
-            int endOffset = _config.ChatCutEndOffset;
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
             if(!_config.SkipChatOffsetsDialog)
             {
-                var dialog = new TimeOffsetsDialog(_window, _config.ChatCutStartOffset, _config.ChatCutEndOffset);
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
                 if(!dialog.Valid)
                 {
                     return;
@@ -1842,10 +1866,41 @@ namespace Uber.DemoTools
             }
         }
 
+        private class JobThreadData
+        {
+            public ParameterizedThreadStart UserFunction;
+            public object UserData;
+        }
+
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
-            _jobThread = new Thread(entryPoint);
-            _jobThread.Start(userData);
+            var udtData = new JobThreadData();
+            udtData.UserFunction = entryPoint;
+            udtData.UserData = userData;
+            _jobThread = new Thread(RealJobThreadEntryPoint);
+            _jobThread.Start(udtData);
+        }
+
+        private void RealJobThreadEntryPoint(object udtData)
+        {
+            var data = udtData as JobThreadData;
+            if(data == null)
+            {
+                return;
+            }
+
+            try
+            {
+                data.UserFunction(data.UserData);
+            }
+            catch(Exception exception)
+            {
+                EntryPoint.RaiseException(exception);
+            }
+            finally
+            {
+                EnableUiThreadSafe();
+            }
         }
 
         public IntPtr GetMainThreadContext()

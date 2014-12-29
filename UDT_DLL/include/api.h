@@ -98,7 +98,6 @@ struct udtCrashType
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
 	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
-	N(Awards,     udtParserPlugInAwards,     udtParseDataAward) \
 	N(MidAirs,    udtParserPlugInMidAir,     udtParseDataMidAir)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
@@ -272,22 +271,6 @@ struct udtPlayerMeansOfDeathBits
 };
 #undef UDT_PLAYER_MOD_ITEM
 
-#define UDT_AWARDS_LIST(N) \
-	N(Impressive, "impressive", 0) \
-	N(Excellent, "excellent", 1) \
-	N(MidAir, "mid-air", 2)
-
-#define UDT_AWARDS_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtAwardBits
-{
-	enum Id
-	{
-		UDT_AWARDS_LIST(UDT_AWARDS_ITEM)
-		Count
-	};
-};
-#undef UDT_AWARDS_ITEM
-
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
 	N(Red, "red") \
@@ -314,10 +297,27 @@ struct udtStringArray
 		MeansOfDeath,
 		PlayerMeansOfDeath,
 		Teams,
-		Awards,
+		CutPatterns,
 		Count
 	};
 };
+
+#define UDT_CUT_PATTERN_LIST(N) \
+	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
+	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
+	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
+	N(MultiRailFrags, "multi-rail frags", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
+
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
+struct udtPatternType
+{
+	enum Id
+	{
+		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+		Count
+	};
+};
+#undef UDT_CUT_PATTERN_ITEM
 
 
 #ifdef __cplusplus
@@ -378,6 +378,9 @@ extern "C"
 		// The offset, in bytes, at which to start reading from the file.
 		// Unused in batch operations.
 		u32 FileOffset;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtMultiParseArg
@@ -410,6 +413,38 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtPatternInfo
+	{
+		// Pointer to the data structure describing the patterns/filters.
+		// May not be NULL.
+		const void* TypeSpecificInfo;
+
+		// Of type udtPatternType::Id.
+		u32 Type;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
+	struct udtCutByPatternArg
+	{
+		// Pointer to an array of filters.
+		// May not be NULL.
+		const udtPatternInfo* Patterns;
+
+		// Number of elements in the array pointed by Patterns.
+		u32 PatternCount;
+
+		// Negative offset from the first matching time, in seconds.
+		u32 StartOffsetSec;
+
+		// Positive offset from the last matching time, in seconds.
+		u32 EndOffsetSec;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 	struct udtCutByTimeArg
 	{
 		// Pointer to an array of cut times.
@@ -418,6 +453,9 @@ extern "C"
 
 		// Number of elements in the array pointed by Cuts.
 		u32 CutCount;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByChatRule
@@ -433,8 +471,13 @@ extern "C"
 
 		// Non-zero means color codes are ignored.
 		u32 IgnoreColorCodes;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is PatternType::GlobalChat.
 	struct udtCutByChatArg
 	{
 		// Pointer to an array of chat cutting rules.
@@ -446,11 +489,8 @@ extern "C"
 		// May not be 0.
 		u32 RuleCount;
 
-		// Negative offset from the matching time, in seconds.
-		u32 StartOffsetSec;
-
-		// Positive offset from the matching time, in seconds.
-		u32 EndOffsetSec;
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByFragArgFlags
@@ -463,6 +503,8 @@ extern "C"
 		};
 	};
 
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is PatternType::FragSequences.
 	struct udtCutByFragArg
 	{
 		// The minimum amount of frags in a sequence.
@@ -478,12 +520,6 @@ extern "C"
 		// If 1, TimeBetweenFragsSec is the maximum average time between frags
 		// for the entire frag run, in seconds.
 		u32 TimeMode;
-
-		// Negative offset from the first frag's time, in seconds.
-		u32 StartOffsetSec;
-
-		// Positive offset from the last frag's time, in seconds.
-		u32 EndOffsetSec;
 
 		// The index of the player whose frags we're looking at.
 		// If valid ([0;63] range), it's used.
@@ -502,17 +538,32 @@ extern "C"
 		//u32 AllowedPowerUps;
 	};
 
-	struct udtCutByAwardArg
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is PatternType::MidAirFrags.
+	struct udtCutByMidAirArg
 	{
-		// Negative offset from the first award's time, in seconds.
-		u32 StartOffsetSec;
+		// All the allowed weapons.
+		// See udtWeaponBits::Id.
+		u32 AllowedWeapons;
 
-		// Positive offset from the last award's time, in seconds.
-		u32 EndOffsetSec;
+		// The minimum distance between the projectile's 
+		// start (where the weapon was fired) and end (position of impact) points.
+		u32 MinDistance;
 
-		// All the allowed awards.
-		// See udtAwardBits.
-		u32 AllowedAwards;
+		// The minimum time the victim was in the air prior to the hit. 
+		u32 MinAirTimeMs;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is PatternType::MultiRailFrags.
+	struct udtCutByMultiRailArg
+	{
+		// The minimum amount of kills with a single rail shot.
+		// Must be 2 or greater.
+		u32 MinKillCount;
 
 		// Ignore this.
 		s32 Reserved1;
@@ -576,6 +627,9 @@ extern "C"
 		// The time the match ends, in milli-seconds.
 		// S32_MIN if not available.
 		s32 MatchEndTimeMs;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtParseDataGameState
@@ -646,27 +700,15 @@ extern "C"
 		s32 Reserved2;
 	};
 
-	struct udtParseDataAward
-	{
-		// The index of the last gamestate message after which this death event occurred.
-		// Negative if invalid or not available.
-		s32 GameStateIndex;
-
-		// The time at which the award was given.
-		s32 ServerTimeMs;
-
-		// The original award number (protocol-specific).
-		s32 AwardId;
-
-		// Ignore this.
-		s32 Reserved1;
-	};
-
 	struct udtParseDataMidAir
 	{
 		// The index of the last gamestate message after which this death event occurred.
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
+
+		// The index of the player who did the mid-air shot.
+		// Range: [0;63].
+		u32 AttackerIdx;
 
 		// The time at which the mid-air projectile kill happened.
 		s32 ServerTimeMs;
@@ -683,6 +725,9 @@ extern "C"
 
 		// How long the projectile moved through the air before the impact.
 		u32 TravelDurationMs;
+
+		// How long the victim was airborne.
+		u32 VictimAirTimeMs;
 	};
 
 #pragma pack(pop)
@@ -741,14 +786,8 @@ extern "C"
 	// Creates a sub-demo starting and ending at the specified times.
 	UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath);
 
-	// Creates sub-demos around every occurrence of a matching chat command server message.
-	UDT_API(s32) udtCutDemoFileByChat(udtParserContext* context, const udtParseArg* info, const udtCutByChatArg* chatInfo, const char* demoFilePath);
-
-	// Creates a new demo cut for every matching frag sequence.
-	UDT_API(s32) udtCutDemoFileByFrag(udtParserContext* context, const udtParseArg* info, const udtCutByFragArg* fragInfo, const char* demoFilePath);
-
-	// Creates a new demo cut for every matching award sequence.
-	UDT_API(s32) udtCutDemoFileByAward(udtParserContext* context, const udtParseArg* info, const udtCutByAwardArg* awardInfo, const char* demoFilePath);
+	// Creates a sub-demo around every occurrence of a matching pattern.
+	UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath);
 
 	// Reads through an entire demo file.
 	// Can be configured for various analysis and data extraction tasks.
@@ -786,14 +825,8 @@ extern "C"
 	// Releases all the resources associated to the context group.
 	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);
 
-	// Creates sub-demos around every occurrence of a matching chat command server message.
-	UDT_API(s32) udtCutDemoFilesByChat(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByChatArg* chatInfo);
-
-	// Creates a new demo cut for every matching frag sequence for each demo.
-	UDT_API(s32) udtCutDemoFilesByFrag(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByFragArg* fragInfo);
-
-	// Creates a new demo cut for every matching award sequence for each demo.
-	UDT_API(s32) udtCutDemoFilesByAward(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByAwardArg* awardInfo);
+	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
+	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
 
 #ifdef __cplusplus
 }

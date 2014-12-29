@@ -210,7 +210,7 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
-	if(shared->JobType != (u32)udtParsingJobType::General && shared->JobTypeSpecificInfo == NULL)
+	if(shared->JobType == (u32)udtParsingJobType::CutByPattern && shared->PatternInfo == NULL)
 	{
 		data->Finished = true;
 		return;
@@ -251,10 +251,9 @@ static void ThreadFunction(void* userData)
 		{
 			success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
 		}
-		else
+		else if(shared->JobType == (u32)udtParsingJobType::CutByPattern)
 		{
-			success = CutByWhatever((udtParsingJobType::Id)shared->JobType, data->Context, &newParseInfo, 
-									shared->JobTypeSpecificInfo, shared->FilePaths[i]);
+			success = CutByPattern(data->Context, &newParseInfo, shared->PatternInfo, shared->FilePaths[i]);
 		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
@@ -270,7 +269,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 									  const udtParseArg* parseInfo,
 									  const udtMultiParseArg* multiParseInfo,
 									  udtParsingJobType::Id jobType,
-									  const void* jobTypeSpecificInfo)
+									  const udtCutByPatternArg* patternInfo)
 {
 	assert(contexts != NULL);
 	assert(parseInfo != NULL);
@@ -281,7 +280,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 
 	udtParsingSharedData sharedData;
 	memset(&sharedData, 0, sizeof(sharedData));
-	sharedData.JobTypeSpecificInfo = jobTypeSpecificInfo;
+	sharedData.PatternInfo = patternInfo;
 	sharedData.MultiParseInfo = multiParseInfo;
 	sharedData.ParseInfo = parseInfo;
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();

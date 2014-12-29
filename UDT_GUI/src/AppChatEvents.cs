@@ -36,6 +36,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatEventsListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _chatEventsListView }; } }
         public ComponentType Type { get { return ComponentType.ChatEvents; } }
+        public bool MultiDemoMode { get { return false; } }
 
         public ChatEventsComponent(App app)
         {
@@ -83,6 +84,11 @@ namespace Uber.DemoTools
         }
 
         public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
         {
             // Nothing to do.
         }

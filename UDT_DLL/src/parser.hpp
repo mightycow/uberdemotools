@@ -115,6 +115,7 @@ public:
 	s32 _inParseEntitiesNum;
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
+	s32 _inLastSnapshotMessageNumber;
 	udtVMArray<u32> _inGameStateFileOffsets;
 	udtVMArray<u8> _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
 	udtVMArray<u8> _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.

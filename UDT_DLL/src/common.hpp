@@ -360,7 +360,7 @@ struct idPlayerStateBase
 								// when at rest, the value will remain unchanged
 								// used to twist the legs during strafing
 
-	vec3_t		grapplePos32;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
+	vec3_t		grapplePoint;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
 
 	s32			eFlags;			// copied to entityState_t->eFlags
 
@@ -743,8 +743,30 @@ typedef enum {
 	EV_TAUNT_GETFLAG,
 	EV_TAUNT_GUARDBASE,
 	EV_TAUNT_PATROL
-
 } entity_event_t;
+
+typedef enum {
+	EV_FOOTSTEP_73p = 1,
+	EV_FOOTSTEP_METAL_73p = 2,
+	EV_FOOTSPLASH_73p = 3,
+	EV_FOOTWADE_73p = 4, // guess
+	EV_SWIM_73p = 5,     // guess
+	EV_FALL_SHORT_73p = 6,
+	EV_FALL_MEDIUM_73p = 7,
+	EV_FALL_FAR_73p = 8,
+	EV_JUMP_PAD_73p = 9,
+	EV_JUMP_73p = 10,
+	EV_WATER_TOUCH_73p = 11,
+	EV_WATER_LEAVE_73p = 12,
+	EV_WATER_UNDER_73p = 13,
+	EV_WATER_CLEAR_73p = 14,
+	EV_ITEM_PICKUP_73p = 15,
+	EV_GLOBAL_ITEM_PICKUP_73p = 16,
+	EV_NOAMMO_73p = 17,
+	EV_CHANGE_WEAPON_73p = 18,
+	EV_DROP_WEAPON_73p = 19,
+	EV_FIRE_WEAPON_73p = 20
+} entity_event_73p_t;
 
 // Means of Death
 struct idMeansOfDeath68
@@ -876,11 +898,11 @@ typedef enum {
 } powerup_t;
 
 typedef enum {
-	EV_DEATH1_73 = 54,
-	EV_DEATH2_73 = 55,
-	EV_DEATH3_73 = 56,
-	EV_OBITUARY_73 = 58,
-} entityEvents_73;
+	EV_DEATH1_73p = 54,
+	EV_DEATH2_73p = 55,
+	EV_DEATH3_73p = 56,
+	EV_OBITUARY_73p = 58,
+} entityEvents_73p;
 
 // player_state->stats[] indexes
 // NOTE: may not have more than 16
@@ -895,15 +917,15 @@ typedef enum {
 } statIndex_68_t;
 
 typedef enum {
-	STAT_HEALTH_73,
-	STAT_HOLDABLE_ITEM_73,
-	STAT_PERSISTANT_POWERUP_73,
-	STAT_WEAPONS_73,					// 16 bit fields
-	STAT_ARMOR_73,				
-	STAT_DEAD_YAW_73,					// look this direction when dead (FIXME: get rid of?)
-	STAT_CLIENTS_READY_73,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_73					// health / armor limit, changable by handicap
-} statIndex_73_t;
+	STAT_HEALTH_73p,
+	STAT_HOLDABLE_ITEM_73p,
+	STAT_PERSISTANT_POWERUP_73p,
+	STAT_WEAPONS_73p,					// 16 bit fields
+	STAT_ARMOR_73p,				
+	STAT_DEAD_YAW_73p,					// look this direction when dead (FIXME: get rid of?)
+	STAT_CLIENTS_READY_73p,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
+	STAT_MAX_HEALTH_73p					// health / armor limit, changable by handicap
+} statIndex_73p_t;
 
 // player_state->persistant[] indexes
 // these fields are the only part of player_state that isn't

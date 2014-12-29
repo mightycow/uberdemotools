@@ -95,12 +95,7 @@ const char* GetMeanOfDeathName(s32 mod, udtProtocol::Id protocol)
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	if(arg.Snapshot->serverCommandNum == _lastProcessedServerCommandNumber)
-	{
-		return;
-	}
-
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73;
+	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -148,7 +143,6 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 	}
 
 	_tempAllocator.Clear();
-	_lastProcessedServerCommandNumber = arg.Snapshot->serverCommandNum;
 }
 
 const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 playerIdx)

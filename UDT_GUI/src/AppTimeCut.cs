@@ -133,6 +133,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.CutByTime; } }
+        public bool MultiDemoMode { get { return false; } }
 
         public CutByTimeComponent(App app)
         {
@@ -146,6 +147,11 @@ namespace Uber.DemoTools
         }
 
         public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
         {
             // Nothing to do.
         }
@@ -310,23 +316,10 @@ namespace Uber.DemoTools
 
         private void DemoCutByTimeThread(object arg)
         {
-            try
-            {
-                DemoCutByTimeThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByTimeThreadImpl(object arg)
-        {
             var info = (CutByTimeInfo)arg;
             if(info == null)
             {
                 _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -334,7 +327,6 @@ namespace Uber.DemoTools
             if(protocol == UDT_DLL.udtProtocol.Invalid)
             {
                 _app.LogError("Unrecognized protocol for demo '{0}'", Path.GetFileName(info.FilePath));
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -357,7 +349,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
     }
 }

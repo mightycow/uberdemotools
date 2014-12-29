@@ -43,6 +43,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _fragEventsListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _fragEventsListView }; } }
         public ComponentType Type { get { return ComponentType.FragEvents; } }
+        public bool MultiDemoMode { get { return false; } }
 
         public FragEventsComponent(App app)
         {
@@ -87,6 +88,11 @@ namespace Uber.DemoTools
         }
 
         public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
         {
             // Nothing to do.
         }

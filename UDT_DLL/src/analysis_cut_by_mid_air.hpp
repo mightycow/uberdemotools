@@ -1,25 +1,23 @@
 #pragma once
 
 
-#include "analysis_obituaries.hpp"
 #include "analysis_cut_by_pattern.hpp"
+#include "analysis_mid_air.hpp"
 
 
-struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtCutByMidAirAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer() 
+	udtCutByMidAirAnalyzer()
 	{
-		_protocol = udtProtocol::Invalid;
 	}
 
-	~udtCutByFragAnalyzer()
+	~udtCutByMidAirAnalyzer()
 	{
 	}
 
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 	{
-		_protocol = parser._protocol;
 		_analyzer.ProcessGamestateMessage(arg, parser);
 	}
 
@@ -36,18 +34,7 @@ public:
 	void FinishAnalysis();
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByFragAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtCutByMidAirAnalyzer);
 
-	void AddCurrentSectionIfValid();
-	void AddMatch(const udtParseDataObituary& data);
-
-	struct Frag
-	{
-		s32 GameStateIndex;
-		s32 ServerTimeMs;
-	};
-
-	udtVMArray<Frag> _frags;
-	udtObituariesAnalyzer _analyzer;
-	udtProtocol::Id _protocol;
+	udtMidAirAnalyzer _analyzer;
 };
