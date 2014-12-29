@@ -49,6 +49,8 @@ private:
 	PlayerInfo _players[64];
 	s32 _gameStateIndex;
 	s32 _lastEventSequence;
+	f32 _rocketSpeed;
+	f32 _bfgSpeed;
 };
 
 struct udtParserPlugInMidAir : udtBaseParserPlugIn

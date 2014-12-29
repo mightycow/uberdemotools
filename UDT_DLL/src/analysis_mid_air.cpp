@@ -82,6 +82,11 @@ static void GetEntityStateEventFromPlayerState(s32& event, s32& eventParm, const
 	eventParm = ps->eventParms[seq];
 }
 
+static s32 RoundToNearest(s32 x, s32 n)
+{
+	return ((x + (n / 2)) / n) * n;
+}
+
 
 udtMidAirAnalyzer::udtMidAirAnalyzer()
 {
@@ -89,6 +94,8 @@ udtMidAirAnalyzer::udtMidAirAnalyzer()
 	_lastEventSequence = S32_MIN;
 	_gameStateIndex = -1;
 	RecordingPlayerIndex = -1;
+	_rocketSpeed = -1.0f;
+	_bfgSpeed = -1.0f;
 	memset(_projectiles, 0, sizeof(_projectiles));
 	memset(_players, 0, sizeof(_players));
 }
@@ -124,43 +131,73 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		}
 	}
 
+	// Update the rocket speed if needed.
+	if(_rocketSpeed == -1.0f)
+	{
+		for(u32 i = 0; i < arg.EntityCount; ++i)
+		{
+			const idEntityStateBase* const ent = arg.Entities[i].Entity;
+			if(ent->eType == ET_MISSILE && GetUDTWeaponFromIdWeapon(ent->weapon, _protocol) == udtWeapon::RocketLauncher)
+			{
+				const f32 speed = Float3::Length(ent->pos.trDelta);
+				_rocketSpeed = (f32)RoundToNearest((s32)speed, 25);
+			}
+		}
+	}
+
+	// Update the BFG speed if needed.
+	if(_bfgSpeed == -1.0f)
+	{
+		for(u32 i = 0; i < arg.EntityCount; ++i)
+		{
+			const idEntityStateBase* const ent = arg.Entities[i].Entity;
+			if(ent->eType == ET_MISSILE && GetUDTWeaponFromIdWeapon(ent->weapon, _protocol) == udtWeapon::BFG)
+			{
+				const f32 speed = Float3::Length(ent->pos.trDelta);
+				_bfgSpeed = (f32)RoundToNearest((s32)speed, 25);
+			}
+		}
+	}
+
 	// Update the data of all the other players.
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		if(ent->eType == ET_PLAYER && ent->clientNum >= 0 && ent->clientNum < 64)
+		if(ent->eType != ET_PLAYER || ent->clientNum < 0 || ent->clientNum >= 64)
 		{
-			PlayerInfo& player = _players[ent->clientNum];
+			continue;
+		}
 
-			const f32 ZDirDelta = 1.0f;
-			const s32 oldZDir = player.ZDir;
+		PlayerInfo& player = _players[ent->clientNum];
 
-			f32 newPosition[3];
-			ComputeTrajectoryPosition(newPosition, ent->pos, arg.ServerTime);
-			const f32 ZChange = newPosition[2] - player.Position[2];
-			Float3::Copy(player.Position, newPosition);
+		const f32 ZDirDelta = 1.0f;
+		const s32 oldZDir = player.ZDir;
 
-			s32 ZDir = 0;
-			if(ZChange > ZDirDelta) ZDir = 1;
-			else if(ZChange < -ZDirDelta) ZDir = -1;
+		f32 newPosition[3];
+		ComputeTrajectoryPosition(newPosition, ent->pos, arg.ServerTime);
+		const f32 ZChange = newPosition[2] - player.Position[2];
+		Float3::Copy(player.Position, newPosition);
 
-			// Going up then down should be allowed.
-			const bool anyChange = ZDir != oldZDir;
-			const bool upThenNoChange = oldZDir == 1 && ZDir == 0;
-			const bool upThenDown = oldZDir == 1 && ZDir == -1;
-			const bool noChangeThenDown = oldZDir == 0 && ZDir == -1;
-			const bool forbiddenChange = anyChange && !upThenNoChange && !upThenDown && !noChangeThenDown;
+		s32 ZDir = 0;
+		if(ZChange > ZDirDelta) ZDir = 1;
+		else if(ZChange < -ZDirDelta) ZDir = -1;
 
-			player.ZDir = ZDir;
-			if(ZDir == 0 || forbiddenChange)
-			{
-				player.LastZDirChangeTime = arg.ServerTime;
-			}
+		// Going up then down should be allowed.
+		const bool anyChange = ZDir != oldZDir;
+		const bool upThenNoChange = oldZDir == 1 && ZDir == 0;
+		const bool upThenDown = oldZDir == 1 && ZDir == -1;
+		const bool noChangeThenDown = oldZDir == 0 && ZDir == -1;
+		const bool forbiddenChange = anyChange && !upThenNoChange && !upThenDown && !noChangeThenDown;
 
-			if(ent->groundEntityNum != ENTITYNUM_NONE)
-			{
-				player.LastGroundContactTime = arg.ServerTime;
-			}
+		player.ZDir = ZDir;
+		if(ZDir == 0 || forbiddenChange)
+		{
+			player.LastZDirChangeTime = arg.ServerTime;
+		}
+
+		if(ent->groundEntityNum != ENTITYNUM_NONE)
+		{
+			player.LastGroundContactTime = arg.ServerTime;
 		}
 	}
 
@@ -288,20 +325,18 @@ void udtMidAirAnalyzer::AddProjectile(s32 weapon, const f32* position, s32 serve
 
 udtMidAirAnalyzer::ProjectileInfo* udtMidAirAnalyzer::FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs)
 {
-	// CPMA: plasma/bfg 2000 rockets 1000 ups
-	// VQ3: plasma/bfg 2000 rockets 900 ups
-	// VQL: plasma/bfg ??? rockets ??? ups
-	// PQL: plasma/bfg ??? rockets ??? ups
-
-	// @FIXME: CPMA values.
-	f32 TargetTravelSpeed = 1000.0f;
+	f32 targetTravelSpeed = -1.0f;
 	if(udtWeapon == (s32)udtWeapon::BFG)
 	{
-		TargetTravelSpeed = 2000.0f;
+		targetTravelSpeed = _bfgSpeed == -1.0f ? 2000.0f : _bfgSpeed;
+	}
+	else
+	{
+		targetTravelSpeed = _rocketSpeed == -1.0f ? 1000.0f : _rocketSpeed;
 	}
 
-	f32 smallestDiff = 9999.0f;
-	s32 smallestDiffIndex = -1;
+	f32 smallestScale = 9999.0f;
+	s32 smallestScaleIndex = -1;
 	for(u32 i = 0; i < UDT_COUNT_OF(_projectiles); ++i)
 	{
 		const ProjectileInfo info = _projectiles[i];
@@ -324,17 +359,17 @@ udtMidAirAnalyzer::ProjectileInfo* udtMidAirAnalyzer::FindBestProjectileMatch(s3
 		const f32 computedDist = Float3::Dist(targetPosition, info.CreationPosition);
 		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs) * 0.001f;
 		const f32 computedSpeed = computedDist / computedDuration;
-		const f32 diff = fabsf(computedSpeed - TargetTravelSpeed);
-		if(diff < smallestDiff && computedSpeed > 0.9f * TargetTravelSpeed)
+		const f32 scale = computedSpeed >= targetTravelSpeed ? (computedSpeed / targetTravelSpeed) : (targetTravelSpeed / computedSpeed);
+		if(scale < 1.1f && scale < smallestScale)
 		{
-			smallestDiff = diff;
-			smallestDiffIndex = i;
+			smallestScale = scale;
+			smallestScaleIndex = i;
 		}
 	}
 
-	if(smallestDiffIndex >= 0 && smallestDiffIndex < (s32)UDT_COUNT_OF(_projectiles))
+	if(smallestScaleIndex >= 0 && smallestScaleIndex < (s32)UDT_COUNT_OF(_projectiles))
 	{
-		return &_projectiles[smallestDiffIndex];
+		return &_projectiles[smallestScaleIndex];
 	}
 
 	return NULL;

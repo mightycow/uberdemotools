@@ -28,12 +28,22 @@ namespace Float3
 		const f32 y = a[1] - b[1];
 		const f32 z = a[2] - b[2];
 
-		return  x*x + y*y + z*z;
+		return x*x + y*y + z*z;
 	}
 
 	f32 Dist(const f32* a, const f32* b)
 	{
 		return sqrtf(Dot(a, b));
+	}
+
+	f32 SquaredLength(const f32* a)
+	{
+		return a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
+	}
+
+	f32 Length(const f32* a)
+	{
+		return sqrtf(SquaredLength(a));
 	}
 
 	void Mad(f32* result, const f32* a, const f32* b, f32 s)
