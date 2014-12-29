@@ -29,6 +29,11 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	udtCutByMultiRailArg* extraInfo = (udtCutByMultiRailArg*)_extraInfo;
 	const u32 minKillCount = extraInfo->MinKillCount;
 
+	// @TODO: Pass as an option?
+	const s32 trackedPlayerIndex = _recordingPlayerIndex;
+	// The clientNum of the player state is the index of the player we're currently spectating.
+	//const s32 trackedPlayerIndex = GetPlayerState(arg.Snapshot, _protocol)->clientNum;
+
 	u32 railKillCount = 0;
 	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
@@ -53,7 +58,7 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 			continue;
 		}
 
-		if(attackerIdx != _recordingPlayerIndex || targetIdx == _recordingPlayerIndex)
+		if(attackerIdx != trackedPlayerIndex || targetIdx == trackedPlayerIndex)
 		{
 			continue;
 		}
