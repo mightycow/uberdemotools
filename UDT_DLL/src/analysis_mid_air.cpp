@@ -8,6 +8,9 @@
 
 static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id protocol)
 {
+	// @NOTE: the original Quake 3 id function BG_EvaluateTrajectory
+	// didn't use the local gravity field but used the 800 constant instead.
+
 	if(protocol == udtProtocol::Dm73)
 	{
 		return ((const idEntityState73*)ent)->pos_gravity;
@@ -18,7 +21,7 @@ static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id p
 		return ((const idEntityState90*)ent)->pos_gravity;
 	}
 
-	return 0;
+	return 800;
 }
 
 static s32 GetEntityStateGravitySafe(const idEntityStateBase* ent, udtProtocol::Id protocol)
