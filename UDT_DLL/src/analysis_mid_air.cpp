@@ -6,8 +6,31 @@
 #include <math.h>
 
 
-static void ComputeTrajectoryPosition(f32* result, const idTrajectoryBase& tr, s32 atTime)
+static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id protocol)
 {
+	if(protocol == udtProtocol::Dm73)
+	{
+		return ((const idEntityState73*)ent)->pos_gravity;
+	}
+
+	if(protocol == udtProtocol::Dm90)
+	{
+		return ((const idEntityState90*)ent)->pos_gravity;
+	}
+
+	return 0;
+}
+
+static s32 GetEntityStateGravitySafe(const idEntityStateBase* ent, udtProtocol::Id protocol)
+{
+	const s32 gravity = GetEntityStateGravity(ent, protocol);
+
+	return gravity > 0 ? gravity : 800;
+}
+
+static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent, s32 atTime, udtProtocol::Id protocol)
+{
+	const idTrajectoryBase& tr = ent->pos;
 	switch(tr.trType)
 	{
 		case TR_LINEAR:
@@ -41,9 +64,10 @@ static void ComputeTrajectoryPosition(f32* result, const idTrajectoryBase& tr, s
 
 		case TR_GRAVITY:
 			{
+				const f32 gravity = (f32)GetEntityStateGravitySafe(ent, protocol);
 				const f32 deltaTime = (atTime - tr.trTime) * 0.001f;
 				Float3::Mad(result, tr.trBase, tr.trDelta, deltaTime);
-				result[2] -= 0.5f * 800.0f * deltaTime * deltaTime;
+				result[2] -= 0.5f * gravity * deltaTime * deltaTime;
 			}
 			break;
 
@@ -174,7 +198,7 @@ void udtMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg
 		const s32 oldZDir = player.ZDir;
 
 		f32 newPosition[3];
-		ComputeTrajectoryPosition(newPosition, ent->pos, arg.ServerTime);
+		ComputeTrajectoryPosition(newPosition, ent, arg.ServerTime, _protocol);
 		const f32 ZChange = newPosition[2] - player.Position[2];
 		Float3::Copy(player.Position, newPosition);
 

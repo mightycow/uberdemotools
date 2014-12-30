@@ -126,7 +126,7 @@ typedef struct usercmd_s {
 
 typedef enum {
 	TR_STATIONARY,
-	TR_INTERPOLATE,				// non-parametric, but s32erpolate between snapshots
+	TR_INTERPOLATE,				// non-parametric, but interpolate between snapshots
 	TR_LINEAR,
 	TR_LINEAR_STOP,
 	TR_SINE,					// value = base + sin( time / duration ) * delta
