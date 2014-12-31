@@ -144,14 +144,21 @@ namespace Uber.DemoTools
 		    public Int32 Reserved1;
 	    }
 
+        public enum udtPlayerIndex : int
+        {
+            FirstPersonPlayer = -2,
+            DemoTaker = -1
+        };
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByPatternArg
 	    {
 		    public IntPtr Patterns; // const udtPatternInfo*
+            public IntPtr PlayerName; // const char*
 		    public UInt32 PatternCount;
 		    public UInt32 StartOffsetSec;
 		    public UInt32 EndOffsetSec;
-		    public Int32 Reserved1;
+		    public Int32 PlayerIndex;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -194,9 +201,9 @@ namespace Uber.DemoTools
             public UInt32 MinFragCount;
             public UInt32 TimeBetweenFragsSec;
             public UInt32 TimeMode; // 0=max, 1=avg
-            public Int32 PlayerIndex;
             public UInt32 Flags;
             public UInt32 AllowedMeansOfDeaths;
+            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -428,7 +435,6 @@ namespace Uber.DemoTools
             rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
             rules.TimeMode = 0; // @TODO:
             rules.Flags = flags;
-            rules.PlayerIndex = privateConfig.FragCutPlayerIndex;
             rules.AllowedMeansOfDeaths = privateConfig.FragCutAllowedMeansOfDeaths;
 
             return rules;
@@ -650,7 +656,35 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, int startOffset, int endOffset, int maxThreadCount)
+        public class CutByPatternOptions
+        {
+            public int StartOffset;
+            public int EndOffset;
+            public int MaxThreadCount;
+            public int PlayerIndex;
+            public string PlayerName;
+
+            public CutByPatternOptions(int startOffset, int endOffset, int maxThreadCount, int playerIndex, string playerName)
+            {
+                StartOffset = startOffset;
+                EndOffset = endOffset;
+                MaxThreadCount = maxThreadCount;
+                PlayerIndex = playerIndex;
+                PlayerName = playerName;
+            }
+        }
+
+        public static CutByPatternOptions CreateCutByPatternOptions(UdtConfig config, UdtPrivateConfig privateConfig)
+        {
+            return new CutByPatternOptions(
+                config.CutStartOffset,
+                config.CutEndOffset,
+                config.MaxThreadCount,
+                privateConfig.PatternCutPlayerIndex,
+                privateConfig.PatternCutPlayerName);
+        }
+
+        public static bool CutDemosByChat(ref udtParseArg parseArg, List<string> filePaths, List<ChatRule> rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -659,10 +693,10 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, int startOffset, int endOffset, int maxThreadCount)
+        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -671,10 +705,10 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByMidAir(ref udtParseArg parseArg, List<string> filePaths, udtCutByMidAirArg rules, int startOffset, int endOffset, int maxThreadCount)
+        public static bool CutDemosByMidAir(ref udtParseArg parseArg, List<string> filePaths, udtCutByMidAirArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -683,10 +717,10 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByMultiRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByMultiRailArg rules, int startOffset, int endOffset, int maxThreadCount)
+        public static bool CutDemosByMultiRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByMultiRailArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -695,10 +729,10 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, startOffset, endOffset, maxThreadCount);
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, int startOffset, int endOffset, int maxThreadCount)
+        public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
@@ -717,14 +751,23 @@ namespace Uber.DemoTools
             multiParseArg.FileCount = (UInt32)filePathArray.Length;
             multiParseArg.FilePaths = pinnedFilePaths.Address;
             multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
-            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+            multiParseArg.MaxThreadCount = (UInt32)options.MaxThreadCount;
+
+            var playerNameUnmanaged = IntPtr.Zero;
+            if(!string.IsNullOrEmpty(options.PlayerName))
+            {
+                playerNameUnmanaged = Marshal.StringToHGlobalAnsi(options.PlayerName);
+                resources.GlobalAllocationHandles.Add(playerNameUnmanaged);
+            }
 
             var pinnedPatterns = new PinnedObject(patterns);
             var cutByPatternArg = new udtCutByPatternArg();
-            cutByPatternArg.StartOffsetSec = (UInt32)startOffset;
-            cutByPatternArg.EndOffsetSec = (UInt32)endOffset;
+            cutByPatternArg.StartOffsetSec = (UInt32)options.StartOffset;
+            cutByPatternArg.EndOffsetSec = (UInt32)options.EndOffset;
             cutByPatternArg.Patterns = pinnedPatterns.Address;
             cutByPatternArg.PatternCount = (UInt32)patterns.Length;
+            cutByPatternArg.PlayerIndex = options.PlayerIndex;
+            cutByPatternArg.PlayerName = playerNameUnmanaged;
 
             resources.PinnedObjects.Add(pinnedPatterns);
             resources.PinnedObjects.Add(pinnedFilePaths);

@@ -288,7 +288,7 @@ typedef enum {
 #define CS_CA_ROUND_INFO        661
 #define CS_CA_ROUND_START       662
 #define	CS_PLAYERS_68           544
-#define	CS_PLAYERS_73           529
+#define	CS_PLAYERS_73p          529
 #define CS_RED_CLAN_PLAYERS     663
 #define CS_BLUE_CLAN_PLAYERS    664
 #define CS_FLAG_STATUS_73       658

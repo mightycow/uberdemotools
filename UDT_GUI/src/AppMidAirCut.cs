@@ -204,7 +204,7 @@ namespace Uber.DemoTools
             {
                 var config = _app.Config;
                 var rules = UDT_DLL.CreateCutByMidAirArg(config);
-                UDT_DLL.CutDemosByMidAir(ref _app.ParseArg, filePaths, rules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByMidAir(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {

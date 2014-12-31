@@ -1,7 +1,5 @@
 #include "analysis_cut_by_mid_air.hpp"
 
-#include <assert.h>
-
 
 static bool IsAllowedWeapon(u32 udtWeapon, u32 allowedWeapons)
 {
@@ -13,13 +11,11 @@ static bool IsAllowedWeapon(u32 udtWeapon, u32 allowedWeapons)
 
 void udtCutByMidAirAnalyzer::FinishAnalysis()
 {
-	assert(_info != NULL);
-	assert(_extraInfo != NULL);
-
-	const udtCutByMidAirArg* const extraInfo = (const udtCutByMidAirArg*)_extraInfo;
-	const u32 allowedWeapons = extraInfo->AllowedWeapons;
-	const u32 minDistance = extraInfo->MinDistance;
-	const u32 minAirTimeMs = extraInfo->MinAirTimeMs;
+	const udtCutByPatternArg& info = PlugIn->GetInfo();
+	const udtCutByMidAirArg& extraInfo = GetExtraInfo<udtCutByMidAirArg>();
+	const u32 allowedWeapons = extraInfo.AllowedWeapons;
+	const u32 minDistance = extraInfo.MinDistance;
+	const u32 minAirTimeMs = extraInfo.MinAirTimeMs;
 
 	const udtVMArray<udtParseDataMidAir>& midAirs = _analyzer.MidAirs;
 
@@ -52,8 +48,8 @@ void udtCutByMidAirAnalyzer::FinishAnalysis()
 
 		udtCutSection cut;
 		cut.GameStateIndex = midAir.GameStateIndex;
-		cut.StartTimeMs = midAir.ServerTimeMs - _info->StartOffsetSec * 1000;
-		cut.EndTimeMs = midAir.ServerTimeMs + _info->EndOffsetSec * 1000;
+		cut.StartTimeMs = midAir.ServerTimeMs - info.StartOffsetSec * 1000;
+		cut.EndTimeMs = midAir.ServerTimeMs + info.EndOffsetSec * 1000;
 		CutSections.Add(cut);
 	}
 }

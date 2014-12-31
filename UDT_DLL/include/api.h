@@ -426,11 +426,24 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtPlayerIndex
+	{
+		enum Id
+		{
+			FirstPersonPlayer = -2,
+			DemoTaker = -1
+		};
+	};
+
 	struct udtCutByPatternArg
 	{
 		// Pointer to an array of filters.
 		// May not be NULL.
 		const udtPatternInfo* Patterns;
+
+		// A null-terminated lower-case string containing the player's name.
+		// May be NULL.
+		const char* PlayerName;
 
 		// Number of elements in the array pointed by Patterns.
 		u32 PatternCount;
@@ -441,8 +454,9 @@ extern "C"
 		// Positive offset from the last matching time, in seconds.
 		u32 EndOffsetSec;
 
-		// Ignore this.
-		s32 Reserved1;
+		// The index of the player whose action we're tracking.
+		// If not in the [0;63] range, is of type udtPlayerIndex::Id.
+		s32 PlayerIndex;
 	};
 
 	struct udtCutByTimeArg
@@ -521,11 +535,6 @@ extern "C"
 		// for the entire frag run, in seconds.
 		u32 TimeMode;
 
-		// The index of the player whose frags we're looking at.
-		// If valid ([0;63] range), it's used.
-		// If not, will use the index of the player who recorded the demo.
-		s32 PlayerIndex;
-
 		// Boolean options.
 		// See udtCutByFragArgFlags.
 		u32 Flags;
@@ -533,6 +542,9 @@ extern "C"
 		// All the allowed weapons.
 		// See udtPlayerMeansOfDeathBits.
 		u32 AllowedMeansOfDeaths;
+
+		// Ignore this.
+		s32 Reserved1;
 
 		// @TODO:
 		//u32 AllowedPowerUps;

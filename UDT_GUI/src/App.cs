@@ -54,7 +54,8 @@ namespace Uber.DemoTools
 
     public class UdtPrivateConfig
     {
-        public Int32 FragCutPlayerIndex = -1;
+        public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
+        public string PatternCutPlayerName = "";
         public UInt32 FragCutAllowedMeansOfDeaths = 0;
     }
 

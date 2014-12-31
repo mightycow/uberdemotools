@@ -178,14 +178,6 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtPrivateConfig config)
         {
-            var playerIndex = -1;
-            var manualMode = _manualPlayerSelectionRadioButton.IsChecked ?? false;
-            if(manualMode)
-            {
-                playerIndex = _playerIndexComboBox.SelectedIndex;
-            }
-
-            config.FragCutPlayerIndex = playerIndex;
             config.FragCutAllowedMeansOfDeaths = _playerMODFilters.GetBitMask();
         }
 
@@ -195,9 +187,6 @@ namespace Uber.DemoTools
         private CheckBox _allowSelfKillsCheckBox = null;
         private CheckBox _allowTeamKillsCheckBox = null;
         private CheckBox _allowAnyDeathCheckBox = null;
-        private RadioButton _autoPlayerSelectionRadioButton = null;
-        private RadioButton _manualPlayerSelectionRadioButton = null;
-        private ComboBox _playerIndexComboBox = null;
         private FilterGroupBox _playerMODFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
@@ -253,57 +242,6 @@ namespace Uber.DemoTools
             rulesGroupBox.Margin = new Thickness(5);
             rulesGroupBox.Content = rulesPanel;
 
-            var autoPlayerSelectionRadioButton = new RadioButton();
-            autoPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
-            autoPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
-            _autoPlayerSelectionRadioButton = autoPlayerSelectionRadioButton;
-            autoPlayerSelectionRadioButton.GroupName = "PlayerSelection";
-            autoPlayerSelectionRadioButton.Content = " Recording Player";
-            autoPlayerSelectionRadioButton.ToolTip = "The player who recorded the demo";
-            autoPlayerSelectionRadioButton.IsChecked = true;
-
-            var manualPlayerSelectionRadioButton = new RadioButton();
-            manualPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
-            manualPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
-            _manualPlayerSelectionRadioButton = manualPlayerSelectionRadioButton;
-            manualPlayerSelectionRadioButton.GroupName = "PlayerSelection";
-            manualPlayerSelectionRadioButton.Content = " This Player";
-            manualPlayerSelectionRadioButton.IsChecked = false;
-
-            var playerIndexComboBox = new ComboBox();
-            playerIndexComboBox.HorizontalAlignment = HorizontalAlignment.Left;
-            playerIndexComboBox.VerticalAlignment = VerticalAlignment.Center;
-            _playerIndexComboBox = playerIndexComboBox;
-            playerIndexComboBox.Margin = new Thickness(5, 0, 0, 0);
-            playerIndexComboBox.Width = 40;
-            for(var i = 0; i < 64; ++i)
-            {
-                playerIndexComboBox.Items.Add(i.ToString());
-            }
-            playerIndexComboBox.SelectedIndex = 0;
-
-            var manualPlayerSelectionRow = new StackPanel();
-            manualPlayerSelectionRow.Margin = new Thickness(0, 5, 0, 0);
-            manualPlayerSelectionRow.Orientation = Orientation.Horizontal;
-            manualPlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
-            manualPlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
-            manualPlayerSelectionRow.Children.Add(manualPlayerSelectionRadioButton);
-            manualPlayerSelectionRow.Children.Add(playerIndexComboBox);
-
-            var playerSelectionPanel = new StackPanel();
-            playerSelectionPanel.Margin = new Thickness(10);
-            playerSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            playerSelectionPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            playerSelectionPanel.Children.Add(autoPlayerSelectionRadioButton);
-            playerSelectionPanel.Children.Add(manualPlayerSelectionRow);
-
-            var playerSelectionGroupBox = new GroupBox();
-            playerSelectionGroupBox.Margin = new Thickness(5);
-            playerSelectionGroupBox.Header = "Player Selection";
-            playerSelectionGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            playerSelectionGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            playerSelectionGroupBox.Content = playerSelectionPanel;
-
             var cutButton = new Button();
             cutButton.HorizontalAlignment = HorizontalAlignment.Left;
             cutButton.VerticalAlignment = VerticalAlignment.Top;
@@ -340,7 +278,6 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(rulesGroupBox);
-            rootPanel.Children.Add(playerSelectionGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
             rootPanel.Children.Add(new WpfHelper.WrapPanelNewLine());
@@ -414,7 +351,7 @@ namespace Uber.DemoTools
             {
                 var config = _app.Config;
                 var rules = UDT_DLL.CreateCutByFragArg(config, _app.PrivateConfig);
-                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {

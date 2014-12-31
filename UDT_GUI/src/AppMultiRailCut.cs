@@ -150,7 +150,7 @@ namespace Uber.DemoTools
             {
                 var config = _app.Config;
                 var rules = UDT_DLL.CreateCutByMultiRailArg(config);
-                UDT_DLL.CutDemosByMultiRail(ref _app.ParseArg, filePaths, rules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByMultiRail(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {

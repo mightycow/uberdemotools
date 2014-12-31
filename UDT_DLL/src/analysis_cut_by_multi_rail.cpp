@@ -1,8 +1,6 @@
 #include "analysis_cut_by_multi_rail.hpp"
 #include "utils.hpp"
 
-#include <assert.h>
-
 
 udtCutByMultiRailAnalyzer::udtCutByMultiRailAnalyzer()
 {
@@ -23,16 +21,9 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	// @FIXME: It might happen that the obituary entity events don't all appear 
 	// for the first time during the same snapshot.
 
-	assert(_info != NULL);
-	assert(_extraInfo != NULL);
-
-	udtCutByMultiRailArg* extraInfo = (udtCutByMultiRailArg*)_extraInfo;
-	const u32 minKillCount = extraInfo->MinKillCount;
-
-	// @TODO: Pass as an option?
-	const s32 trackedPlayerIndex = _recordingPlayerIndex;
-	// The clientNum of the player state is the index of the player we're currently spectating.
-	//const s32 trackedPlayerIndex = GetPlayerState(arg.Snapshot, _protocol)->clientNum;
+	const udtCutByMultiRailArg& extraInfo = GetExtraInfo<udtCutByMultiRailArg>();
+	const u32 minKillCount = extraInfo.MinKillCount;
+	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	u32 railKillCount = 0;
 	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
@@ -73,10 +64,12 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 
 	if(railKillCount >= minKillCount)
 	{
-		udtCutSection info;
-		info.GameStateIndex = _gameStateIndex;
-		info.StartTimeMs = arg.ServerTime - _info->StartOffsetSec * 1000;
-		info.EndTimeMs = arg.ServerTime + _info->EndOffsetSec * 1000;
-		CutSections.Add(info);
+		const udtCutByPatternArg& info = PlugIn->GetInfo();
+
+		udtCutSection cut;
+		cut.GameStateIndex = _gameStateIndex;
+		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
+		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
+		CutSections.Add(cut);
 	}
 }

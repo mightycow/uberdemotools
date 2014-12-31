@@ -33,16 +33,123 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtPrivateConfig config)
         {
-            // Nothing to do.
+            var playerIndex = int.MinValue;
+            if(_manualIndexPlayerSelectionRadioButton.IsChecked ?? false)
+            {
+                playerIndex = _playerIndexComboBox.SelectedIndex;
+            }
+            else if(_spectatedPlayerSelectionRadioButton.IsChecked ?? false)
+            {
+                playerIndex = (int)UDT_DLL.udtPlayerIndex.FirstPersonPlayer;
+            }
+            else if(_demoTakerPlayerSelectionRadioButton.IsChecked ?? false)
+            {
+                playerIndex = (int)UDT_DLL.udtPlayerIndex.DemoTaker;
+            }
+
+            config.PatternCutPlayerIndex = playerIndex;
+            config.PatternCutPlayerName = _playerNameTextBox.Text.ToLower();
         }
 
         private App _app;
         private FilterGroupBox _patternsGroupBox;
+        private RadioButton _demoTakerPlayerSelectionRadioButton;
+        private RadioButton _spectatedPlayerSelectionRadioButton;
+        private RadioButton _manualIndexPlayerSelectionRadioButton;
+        private RadioButton _manualNamePlayerSelectionRadioButton;
+        private ComboBox _playerIndexComboBox;
+        private TextBox _playerNameTextBox;
 
         private FrameworkElement CreateTab()
         {
             _patternsGroupBox = new FilterGroupBox("Cut Patterns", UDT_DLL.udtStringArray.CutPatterns, 2);
             _patternsGroupBox.SetBitMask((uint)_app.Config.PatternsSelectionBitMask);
+
+            var spectatedPlayerSelectionRadioButton = new RadioButton();
+            _spectatedPlayerSelectionRadioButton = spectatedPlayerSelectionRadioButton;
+            spectatedPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            spectatedPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
+            spectatedPlayerSelectionRadioButton.GroupName = "PlayerSelection";
+            spectatedPlayerSelectionRadioButton.Content = " First Person Player";
+            spectatedPlayerSelectionRadioButton.ToolTip = "Whoever is being followed in first-person in the demo";
+            spectatedPlayerSelectionRadioButton.IsChecked = true;
+
+            var demoTakerPlayerSelectionRadioButton = new RadioButton();
+            _demoTakerPlayerSelectionRadioButton = demoTakerPlayerSelectionRadioButton;
+            demoTakerPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            demoTakerPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
+            demoTakerPlayerSelectionRadioButton.Margin = new Thickness(0, 0, 0, 5);
+            demoTakerPlayerSelectionRadioButton.GroupName = "PlayerSelection";
+            demoTakerPlayerSelectionRadioButton.Content = " Demo Taker";
+            demoTakerPlayerSelectionRadioButton.ToolTip = "The player who recorded the demo";
+            demoTakerPlayerSelectionRadioButton.IsChecked = true;
+
+            var manualIndexPlayerSelectionRadioButton = new RadioButton();
+            _manualIndexPlayerSelectionRadioButton = manualIndexPlayerSelectionRadioButton;
+            manualIndexPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            manualIndexPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
+            manualIndexPlayerSelectionRadioButton.GroupName = "PlayerSelection";
+            manualIndexPlayerSelectionRadioButton.Content = " This Player Index";
+            manualIndexPlayerSelectionRadioButton.IsChecked = false;
+
+            var manualNamePlayerSelectionRadioButton = new RadioButton();
+            _manualNamePlayerSelectionRadioButton = manualNamePlayerSelectionRadioButton;
+            manualNamePlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
+            manualNamePlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
+            manualNamePlayerSelectionRadioButton.GroupName = "PlayerSelection";
+            manualNamePlayerSelectionRadioButton.Content = " This Player Name";
+            manualNamePlayerSelectionRadioButton.IsChecked = false;
+
+            var playerIndexComboBox = new ComboBox();
+            _playerIndexComboBox = playerIndexComboBox;
+            playerIndexComboBox.HorizontalAlignment = HorizontalAlignment.Left;
+            playerIndexComboBox.VerticalAlignment = VerticalAlignment.Center;
+            playerIndexComboBox.Margin = new Thickness(5, 0, 0, 0);
+            playerIndexComboBox.Width = 40;
+            for(var i = 0; i < 64; ++i)
+            {
+                playerIndexComboBox.Items.Add(i.ToString());
+            }
+            playerIndexComboBox.SelectedIndex = 0;
+
+            var manualIndexPlayerSelectionRow = new StackPanel();
+            manualIndexPlayerSelectionRow.Margin = new Thickness(0, 5, 0, 0);
+            manualIndexPlayerSelectionRow.Orientation = Orientation.Horizontal;
+            manualIndexPlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
+            manualIndexPlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
+            manualIndexPlayerSelectionRow.Children.Add(manualIndexPlayerSelectionRadioButton);
+            manualIndexPlayerSelectionRow.Children.Add(playerIndexComboBox);
+
+            var playerNameTextBox = new TextBox();
+            _playerNameTextBox = playerNameTextBox;
+            playerNameTextBox.HorizontalAlignment = HorizontalAlignment.Left;
+            playerNameTextBox.VerticalAlignment = VerticalAlignment.Center;
+            playerNameTextBox.Margin = new Thickness(5, 0, 0, 0);
+            playerNameTextBox.Width = 100;
+
+            var manualNamePlayerSelectionRow = new StackPanel();
+            manualNamePlayerSelectionRow.Margin = new Thickness(0, 5, 0, 0);
+            manualNamePlayerSelectionRow.Orientation = Orientation.Horizontal;
+            manualNamePlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
+            manualNamePlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
+            manualNamePlayerSelectionRow.Children.Add(manualNamePlayerSelectionRadioButton);
+            manualNamePlayerSelectionRow.Children.Add(playerNameTextBox);
+
+            var playerSelectionPanel = new StackPanel();
+            playerSelectionPanel.Margin = new Thickness(10);
+            playerSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            playerSelectionPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            playerSelectionPanel.Children.Add(demoTakerPlayerSelectionRadioButton);
+            playerSelectionPanel.Children.Add(spectatedPlayerSelectionRadioButton);
+            playerSelectionPanel.Children.Add(manualNamePlayerSelectionRow);
+            playerSelectionPanel.Children.Add(manualIndexPlayerSelectionRow);
+
+            var playerSelectionGroupBox = new GroupBox();
+            playerSelectionGroupBox.Margin = new Thickness(5);
+            playerSelectionGroupBox.Header = "Player Selection";
+            playerSelectionGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            playerSelectionGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            playerSelectionGroupBox.Content = playerSelectionPanel;
 
             var cutButton = new Button();
             cutButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -82,6 +189,7 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(_patternsGroupBox.RootElement);
+            rootPanel.Children.Add(playerSelectionGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
@@ -122,12 +230,18 @@ namespace Uber.DemoTools
                 return;
             }
 
-            _app.SaveConfig();
+            _app.SaveBothConfigs();
             var config = _app.Config;
             if(config.PatternsSelectionBitMask == 0)
             {
                 _app.LogError("You didn't check any pattern. Please check at least one to proceed.");
                 return;
+            }
+
+            var privateConfig = _app.PrivateConfig;
+            if(privateConfig.PatternCutPlayerIndex == int.MinValue && string.IsNullOrEmpty(privateConfig.PatternCutPlayerName))
+            {
+                _app.LogWarning("The selected player name is empty. Please specify a player name or select a different matching method to proceed.");
             }
 
             _app.DisableUiNonThreadSafe();
@@ -207,10 +321,8 @@ namespace Uber.DemoTools
 
             try
             {
-                var config = _app.Config;
-                UDT_DLL.CutDemosByPattern(
-                    resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, 
-                    config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
+                var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
+                UDT_DLL.CutDemosByPattern(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
             }
             catch(Exception exception)
             {

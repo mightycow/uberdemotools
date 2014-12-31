@@ -7,10 +7,12 @@
 #include "cut_section.hpp"
 
 
+struct udtCutByPatternPlugIn;
+
 struct udtCutByPatternAnalyzerBase
 {
 public:
-	friend struct udtCutByPatternPlugIn;
+	friend udtCutByPatternPlugIn;
 
 	udtCutByPatternAnalyzerBase() {}
 	virtual ~udtCutByPatternAnalyzerBase() {}
@@ -23,23 +25,33 @@ public:
 	udtVMArray<udtCutSection> CutSections;
 
 protected:
-	const udtCutByPatternArg* _info;
-	const void* _extraInfo;
+	const udtCutByPatternPlugIn* PlugIn;
+	const void* ExtraInfo;
 
+	template<typename T>
+	const T& GetExtraInfo() const
+	{
+		return *(T*)ExtraInfo;
+	}
+
+private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternAnalyzerBase);
 };
 
 struct udtCutByPatternPlugIn : udtBaseParserPlugIn
 {
 public:
-	udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator);
+	udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator, const udtCutByPatternArg& info);
 
 	~udtCutByPatternPlugIn()
 	{
 	}
 
-	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const udtCutByPatternArg* info, const void* extraInfo);
+	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
+
+	s32 GetTrackedPlayerIndex() const;
+	const udtCutByPatternArg& GetInfo() const { return _info; }
 
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
@@ -66,7 +78,14 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
 
+	void        TrackPlayerFromCommandMessage(udtBaseParser& parser);
+	const char* GetPlayerName(udtBaseParser& parser, s32 csIndex);
+
 	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArray<udtPatternType::Id> _analyzerTypes;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
+	udtVMLinearAllocator _tempAllocator;
+
+	const udtCutByPatternArg& _info;
+	s32 _trackedPlayerIndex;
 };

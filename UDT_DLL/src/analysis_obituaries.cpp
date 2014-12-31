@@ -152,7 +152,7 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 		return AllocateString(_playerNamesAllocator, "world");
 	}
 
-	const s32 firstPlayerCsIdx = parser._protocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73;
+	const s32 firstPlayerCsIdx = parser._protocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(firstPlayerCsIdx + playerIdx);
 	if(cs == NULL)
 	{
@@ -174,7 +174,7 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 {
 	RecordingPlayerIndex = arg.ClientNum;
 
-	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73;
+	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	for(s32 i = 0; i < 64; ++i)
 	{
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
@@ -200,7 +200,7 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73;
+	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	const s32 playerIdx = csIndex - csFirstPlayerIdx;
 	if(playerIdx < 0 || playerIdx >= 64)
 	{

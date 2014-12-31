@@ -222,7 +222,7 @@ namespace Uber.DemoTools
             try
             {
                 var config = _app.Config;
-                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, config.CutStartOffset, config.CutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {

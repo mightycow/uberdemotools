@@ -84,7 +84,7 @@ static bool RunParserWithCutByPattern(
 	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
 	{
 		const udtPatternInfo info = patternInfo->Patterns[i];
-		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)info.Type, patternInfo, info.TypeSpecificInfo);
+		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)info.Type, info.TypeSpecificInfo);
 	}
 	context->Parser.AddPlugIn(&plugIn);
 
@@ -111,7 +111,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtC
 	udtVMLinearAllocator analyzerAllocator;
 	analyzerAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
 
-	udtCutByPatternPlugIn plugIn(analyzerAllocator);
+	udtCutByPatternPlugIn plugIn(analyzerAllocator, *patternInfo);
 	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath, patternInfo, plugIn))
 	{
 		return false;
