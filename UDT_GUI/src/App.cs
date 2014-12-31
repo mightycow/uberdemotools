@@ -561,9 +561,6 @@ namespace Uber.DemoTools
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
 
-            LogWarning("Sab0o detected :-(");
-            LogError("Fuck you Sab0o");
-
             ProcessCommandLine(cmdLineArgs);
 
             var app = new Application();
