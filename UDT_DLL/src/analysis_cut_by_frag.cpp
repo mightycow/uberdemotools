@@ -24,17 +24,44 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 }
 
 
-void udtCutByFragAnalyzer::FinishAnalysis()
+udtCutByFragAnalyzer::udtCutByFragAnalyzer()
 {
-	const udtCutByFragArg& extraInfo = GetExtraInfo<udtCutByFragArg>();
+	_analyzer.SetNameAllocationEnabled(false);
+}
 
+udtCutByFragAnalyzer::~udtCutByFragAnalyzer()
+{
+}
+
+void udtCutByFragAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessGamestateMessage(arg, parser);
+}
+
+void udtCutByFragAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessCommandMessage(arg, parser);
+}
+
+void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+{
+	const u32 start = _analyzer.Obituaries.GetSize();
+	_analyzer.ProcessSnapshotMessage(arg, parser);
+	const u32 end = _analyzer.Obituaries.GetSize();
+	if(end == start)
+	{
+		// Nothing new!
+		return;
+	}
+
+	const udtCutByFragArg& extraInfo = GetExtraInfo<udtCutByFragArg>();
 	const s32 maxIntervalMs = extraInfo.TimeBetweenFragsSec * 1000;
 	const s32 playerIndex = PlugIn->GetTrackedPlayerIndex();
 	const bool allowSelfKills = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
 	const bool allowTeamKills = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
 	const bool allowAnyDeath = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
 
-	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
+	for(u32 i = start; i < end; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
 
@@ -65,7 +92,7 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 		}
 
 		// Did we use a weapon that's not allowed?
-		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, _protocol))
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, parser._protocol))
 		{
 			AddCurrentSectionIfValid();
 			continue;
@@ -91,7 +118,10 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 			AddMatch(data);
 		}
 	}
+}
 
+void udtCutByFragAnalyzer::FinishAnalysis()
+{
 	AddCurrentSectionIfValid();
 }
 

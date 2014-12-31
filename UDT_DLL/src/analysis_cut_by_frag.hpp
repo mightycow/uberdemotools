@@ -8,31 +8,12 @@
 struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer() 
-	{
-		_protocol = udtProtocol::Invalid;
-	}
+	udtCutByFragAnalyzer();
+	~udtCutByFragAnalyzer();
 
-	~udtCutByFragAnalyzer()
-	{
-	}
-
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
-	{
-		_protocol = parser._protocol;
-		_analyzer.ProcessGamestateMessage(arg, parser);
-	}
-
-	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
-	{
-		_analyzer.ProcessCommandMessage(arg, parser);
-	}
-
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
-	{
-		_analyzer.ProcessSnapshotMessage(arg, parser);
-	}
-
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void FinishAnalysis();
 
 private:
@@ -49,5 +30,4 @@ private:
 
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
-	udtProtocol::Id _protocol;
 };

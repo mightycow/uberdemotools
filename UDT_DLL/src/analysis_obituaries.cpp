@@ -147,6 +147,11 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 
 const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 playerIdx)
 {
+	if(!_enableNameAllocation)
+	{
+		return NULL;
+	}
+
 	if(playerIdx == ENTITYNUM_WORLD)
 	{
 		return AllocateString(_playerNamesAllocator, "world");
@@ -170,10 +175,8 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	return AllocateString(_playerNamesAllocator, playerName);
 }
 
-void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	RecordingPlayerIndex = arg.ClientNum;
-
 	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	for(s32 i = 0; i < 64; ++i)
 	{
