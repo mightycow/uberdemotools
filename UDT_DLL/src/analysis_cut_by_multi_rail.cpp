@@ -2,18 +2,18 @@
 #include "utils.hpp"
 
 
-udtCutByMultiRailAnalyzer::udtCutByMultiRailAnalyzer()
+udtCutByMultiRailAnalyzer::udtCutByMultiRailAnalyzer() 
+	: _gameStateIndex(-1)
 {
-	_gameStateIndex = -1;
-	_recordingPlayerIndex = -1;
-	_protocol = udtProtocol::Invalid;
 }
 
-void udtCutByMultiRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+udtCutByMultiRailAnalyzer::~udtCutByMultiRailAnalyzer()
+{
+}
+
+void udtCutByMultiRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
 {
 	++_gameStateIndex;
-	_recordingPlayerIndex = arg.ClientNum;
-	_protocol = parser._protocol;
 }
 
 void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
@@ -55,7 +55,7 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		}
 
 		const s32 meanOfDeath = ent->eventParm;
-		const u32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, _protocol);
+		const u32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, parser._protocol);
 		if(udtWeapon == udtWeapon::Railgun)
 		{
 			++railKillCount;
