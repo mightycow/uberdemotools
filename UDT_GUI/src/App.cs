@@ -166,6 +166,7 @@ namespace Uber.DemoTools
         private List<AppComponent> _appComponents = new List<AppComponent>();
         private AppComponent _cutByTimeComponent = null;
         private IntPtr _mainThreadContext = IntPtr.Zero;
+        private bool _usingDarkTheme = false;
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
@@ -249,7 +250,20 @@ namespace Uber.DemoTools
 
             LoadConfig();
 
-            _altListBoxBg = new AlternatingListBoxBackground(Colors.White, Color.FromRgb(223, 223, 223));
+            var listItemColor1 = SystemColors.WindowColor; // SystemColors.ControlColor
+            var listItemColor2 = listItemColor1;
+            var listFGColor = Colors.Black;
+            _usingDarkTheme = ((int)listItemColor1.R + (int)listItemColor1.G + (int)listItemColor1.B) < 385;
+            if(_usingDarkTheme)
+            {
+                listItemColor2 = Color.Multiply(listItemColor1, 1.5f);
+            }
+            else
+            {
+                listItemColor1 = Colors.White;
+                listItemColor2 = Color.FromRgb(223, 223, 223);
+            }
+            _altListBoxBg = new AlternatingListBoxBackground(listItemColor1, listItemColor2);
 
             var manageDemosTab = new TabItem();
             manageDemosTab.Header = "Manage";
@@ -447,7 +461,6 @@ namespace Uber.DemoTools
             demoListView.Drop += OnDemoListBoxDragDrop;
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
-            demoListView.Foreground = new SolidColorBrush(Colors.Black);
             demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
             demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
@@ -511,7 +524,10 @@ namespace Uber.DemoTools
                 }
             }
 
-            _logListBox.Resources.Add(SystemColors.HighlightBrushKey, new SolidColorBrush(Color.FromRgb(255, 255, 191)));
+            if(!_usingDarkTheme)
+            {
+                _logListBox.Resources.Add(SystemColors.HighlightBrushKey, new SolidColorBrush(Color.FromRgb(255, 255, 191)));
+            }
 
             var label = new Label { Content = "You can drag'n'drop files and folders here.", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             var brush = new VisualBrush(label) { Stretch = Stretch.None, Opacity = 0.5 };
@@ -544,6 +560,9 @@ namespace Uber.DemoTools
             LogInfo("UDT {0} is now operational!", arch);
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
+
+            LogWarning("Sab0o detected :-(");
+            LogError("Fuck you Sab0o");
 
             ProcessCommandLine(cmdLineArgs);
 
@@ -904,7 +923,6 @@ namespace Uber.DemoTools
             infoListView.Margin = new Thickness(5);
             infoListView.View = configStringGridView;
             infoListView.SelectionMode = SelectionMode.Single;
-            infoListView.Foreground = new SolidColorBrush(Colors.Black);
 
             var infoPanelGroupBox = new GroupBox();
             infoPanelGroupBox.Header = "Demo Information";
@@ -1732,32 +1750,44 @@ namespace Uber.DemoTools
 
         public void LogInfo(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
+            LogMessage(string.Format(message, args), SystemColors.ControlTextColor);
         }
 
         public void LogWarning(string message, params object[] args)
         {
+            if(_usingDarkTheme)
+            {
+                LogMessage("WARNING: " + string.Format(message, args), SystemColors.ControlTextColor);
+                return;
+            }
+
             LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
         }
 
         public void LogError(string message, params object[] args)
         {
+            if(_usingDarkTheme)
+            {
+                LogMessage("ERROR: " + string.Format(message, args), SystemColors.ControlTextColor);
+                return;
+            }
+
             LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
         }
 
         static public void GlobalLogInfo(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
+            App.Instance.LogInfo(message, args);
         }
 
         static public void GlobalLogWarning(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            App.Instance.LogWarning(message, args);
         }
 
         static public void GlobalLogError(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            App.Instance.LogError(message, args);
         }
 
         public void DemoLoggingCallback(int logLevel, string message)

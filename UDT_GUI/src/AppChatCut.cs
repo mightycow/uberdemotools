@@ -79,7 +79,6 @@ namespace Uber.DemoTools
             chatRulesListView.View = chatRulesGridView;
             chatRulesListView.SelectionMode = SelectionMode.Single;
             chatRulesListView.Width = 485;
-            chatRulesListView.Foreground = new SolidColorBrush(Colors.Black);
             foreach(var rule in _app.Config.ChatRules)
             {
                 chatRulesListView.Items.Add(new ChatRuleDisplayInfo(rule));
