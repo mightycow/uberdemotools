@@ -69,6 +69,7 @@ namespace Uber.DemoTools
             _spectatedPlayerSelectionRadioButton = spectatedPlayerSelectionRadioButton;
             spectatedPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
             spectatedPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
+            spectatedPlayerSelectionRadioButton.Margin = new Thickness(0, 0, 0, 5);
             spectatedPlayerSelectionRadioButton.GroupName = "PlayerSelection";
             spectatedPlayerSelectionRadioButton.Content = " First Person Player";
             spectatedPlayerSelectionRadioButton.ToolTip = "Whoever is being followed in first-person in the demo";
@@ -78,11 +79,10 @@ namespace Uber.DemoTools
             _demoTakerPlayerSelectionRadioButton = demoTakerPlayerSelectionRadioButton;
             demoTakerPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
             demoTakerPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
-            demoTakerPlayerSelectionRadioButton.Margin = new Thickness(0, 0, 0, 5);
             demoTakerPlayerSelectionRadioButton.GroupName = "PlayerSelection";
             demoTakerPlayerSelectionRadioButton.Content = " Demo Taker";
             demoTakerPlayerSelectionRadioButton.ToolTip = "The player who recorded the demo";
-            demoTakerPlayerSelectionRadioButton.IsChecked = true;
+            demoTakerPlayerSelectionRadioButton.IsChecked = false;
 
             var manualIndexPlayerSelectionRadioButton = new RadioButton();
             _manualIndexPlayerSelectionRadioButton = manualIndexPlayerSelectionRadioButton;
@@ -132,6 +132,7 @@ namespace Uber.DemoTools
             manualNamePlayerSelectionRow.Orientation = Orientation.Horizontal;
             manualNamePlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
             manualNamePlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
+            manualNamePlayerSelectionRow.ToolTip = "Name comparisons are case insensitive";
             manualNamePlayerSelectionRow.Children.Add(manualNamePlayerSelectionRadioButton);
             manualNamePlayerSelectionRow.Children.Add(playerNameTextBox);
 
@@ -139,8 +140,8 @@ namespace Uber.DemoTools
             playerSelectionPanel.Margin = new Thickness(10);
             playerSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             playerSelectionPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            playerSelectionPanel.Children.Add(demoTakerPlayerSelectionRadioButton);
             playerSelectionPanel.Children.Add(spectatedPlayerSelectionRadioButton);
+            playerSelectionPanel.Children.Add(demoTakerPlayerSelectionRadioButton);
             playerSelectionPanel.Children.Add(manualNamePlayerSelectionRow);
             playerSelectionPanel.Children.Add(manualIndexPlayerSelectionRow);
 
