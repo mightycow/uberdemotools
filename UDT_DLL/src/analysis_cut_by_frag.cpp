@@ -45,12 +45,10 @@ void udtCutByFragAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& ar
 
 void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const u32 start = _analyzer.Obituaries.GetSize();
 	_analyzer.ProcessSnapshotMessage(arg, parser);
-	const u32 end = _analyzer.Obituaries.GetSize();
-	if(end == start)
+	const u32 obituaryCount = _analyzer.Obituaries.GetSize();
+	if(obituaryCount == 0)
 	{
-		// Nothing new!
 		return;
 	}
 
@@ -61,7 +59,7 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	const bool allowTeamKills = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
 	const bool allowAnyDeath = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
 
-	for(u32 i = start; i < end; ++i)
+	for(u32 i = 0; i < obituaryCount; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
 
@@ -118,6 +116,8 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 			AddMatch(data);
 		}
 	}
+
+	_analyzer.Obituaries.Clear();
 }
 
 void udtCutByFragAnalyzer::FinishAnalysis()
