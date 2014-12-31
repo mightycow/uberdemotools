@@ -280,7 +280,7 @@ namespace Uber.DemoTools
                 patterns.Add(pattern);
             }
 
-            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MultiRailFrags))
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MultiFragRails))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
                 var rules = UDT_DLL.CreateCutByMultiRailArg(config);

@@ -306,7 +306,7 @@ struct udtStringArray
 	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiRailFrags, "multi-rail frags", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
+	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType

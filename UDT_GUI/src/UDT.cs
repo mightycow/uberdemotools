@@ -99,7 +99,7 @@ namespace Uber.DemoTools
             GlobalChat,
             FragSequences,
             MidAirFrags,
-            MultiRailFrags,
+            MultiFragRails,
             Count
         }
 
@@ -650,7 +650,7 @@ namespace Uber.DemoTools
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
 
-            pattern.Type = (UInt32)udtPatternType.MultiRailFrags;
+            pattern.Type = (UInt32)udtPatternType.MultiFragRails;
             pattern.TypeSpecificInfo = pinnedRules.Address;
 
             return true;
