@@ -399,10 +399,11 @@ udtCutByMidAirAnalyzer::ProjectileInfo* udtCutByMidAirAnalyzer::FindBestProjecti
 		}
 
 		const f32 computedDist = Float3::Dist(targetPosition, info.CreationPosition);
-		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs) * 0.001f;
+		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs + 50) * 0.001f; // @NOTE: 50 is Quake 3's missile pre-step.
 		const f32 computedSpeed = computedDist / computedDuration;
 		const f32 scale = computedSpeed >= targetTravelSpeed ? (computedSpeed / targetTravelSpeed) : (targetTravelSpeed / computedSpeed);
-		if(scale < 1.1f && scale < smallestScale)
+		const bool speedOkay = (computedSpeed > targetTravelSpeed && scale < 2.0f) || (computedSpeed < targetTravelSpeed && scale < 1.2f);
+		if(scale < smallestScale && speedOkay)
 		{
 			smallestScale = scale;
 			smallestScaleIndex = i;
