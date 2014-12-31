@@ -97,8 +97,7 @@ struct udtCrashType
 #define UDT_PLUG_IN_LIST(N) \
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
-	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
-	N(MidAirs,    udtParserPlugInMidAir,     udtParseDataMidAir)
+	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
 struct udtParserPlugIn
@@ -710,36 +709,6 @@ extern "C"
 		
 		// Ignore this.
 		s32 Reserved2;
-	};
-
-	struct udtParseDataMidAir
-	{
-		// The index of the last gamestate message after which this death event occurred.
-		// Negative if invalid or not available.
-		s32 GameStateIndex;
-
-		// The index of the player who did the mid-air shot.
-		// Range: [0;63].
-		u32 AttackerIdx;
-
-		// The time at which the mid-air projectile kill happened.
-		s32 ServerTimeMs;
-
-		// The weapon used.
-		// Of type udtWeapon::Id.
-		u32 Weapon;
-
-		// Non-zero if the other Travel* fields are valid.
-		u32 TravelInfoAvailable;
-
-		// The distance between the firing point and impact point.
-		u32 TravelDistance;
-
-		// How long the projectile moved through the air before the impact.
-		u32 TravelDurationMs;
-
-		// How long the victim was airborne.
-		u32 VictimAirTimeMs;
 	};
 
 #pragma pack(pop)
