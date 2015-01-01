@@ -170,6 +170,8 @@ namespace Uber.DemoTools
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
+        private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
+        private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
@@ -465,6 +467,9 @@ namespace Uber.DemoTools
             demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
+            InitDemoListAnalyzeCommand();
+            InitDemoListSelectAllCommand();
+            InitDemoListContextMenu();
             
             var demoListGroupBox = new GroupBox();
             demoListGroupBox.Header = "Demo List";
@@ -606,6 +611,54 @@ namespace Uber.DemoTools
             AddDemos(filePaths, folderPaths);
         }
 
+        private FrameworkElement CreateContextMenuHeader(string left, string right)
+        {
+            var leftItem = new TextBlock { Text = left, Margin = new Thickness(0, 0, 10, 0) };
+            var rightItem = new TextBlock { Text = right, HorizontalAlignment = HorizontalAlignment.Right };
+
+            var panel = new DockPanel();
+            panel.LastChildFill = true;
+            panel.Children.Add(leftItem);
+            panel.Children.Add(rightItem);
+            DockPanel.SetDock(leftItem, Dock.Left);
+            DockPanel.SetDock(rightItem, Dock.Right);
+
+            return panel;
+        }
+
+        private void InitDemoListContextMenu()
+        {
+            var removeDemoItem = new MenuItem();
+            removeDemoItem.Header = CreateContextMenuHeader("Remove Selected", "(Delete)");
+            removeDemoItem.Command = _deleteDemoCommand;
+            removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
+
+            var splitDemoItem = new MenuItem();
+            splitDemoItem.Header = "Split Selected";
+            splitDemoItem.Command = _splitDemoCommand;
+            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
+
+            var analyzeDemoItem = new MenuItem();
+            analyzeDemoItem.Header = "Analyze Selected";
+            analyzeDemoItem.Command = _analyzeDemoCommand;
+            analyzeDemoItem.Click += (obj, args) => OnAnalyzeDemoClicked();
+
+            var selectAllDemosItem = new MenuItem();
+            selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
+            selectAllDemosItem.Command = _selectAllDemosCommand;
+            selectAllDemosItem.Click += (obj, args) => _demoListView.SelectAll();
+
+            var demosContextMenu = new ContextMenu();
+            demosContextMenu.Items.Add(analyzeDemoItem);
+            demosContextMenu.Items.Add(removeDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(splitDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(selectAllDemosItem);
+
+            _demoListView.ContextMenu = demosContextMenu;
+        }
+
         private void AddDemos(List<string> filePaths, List<string> folderPaths)
         {
             var filteredFilePaths = new List<string>();
@@ -681,33 +734,55 @@ namespace Uber.DemoTools
             var inputBinding = new KeyBinding(_deleteDemoCommand, inputGesture);
             var commandBinding = new CommandBinding();
             commandBinding.Command = _deleteDemoCommand;
-            commandBinding.Executed += (obj, args) => OnRemoveDemoClicked();
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = _demoListView.SelectedItems.Count > 0; };
             _demoListView.InputBindings.Add(inputBinding);
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
-        private bool CanExecuteSplitCommand(ListViewItem item)
+        private bool CanExecuteAnalyzeCommand()
         {
-            if(item == null)
+            var demos = SelectedDemos;
+            if(demos == null)
             {
                 return false;
             }
 
-            var displayInfo = item.Content as DemoDisplayInfo;
-            if(displayInfo == null)
+            return demos.Exists(d => !d.Analyzed);
+        }
+
+        private void InitDemoListAnalyzeCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _analyzeDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteAnalyzeCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private bool CanExecuteSplitCommand()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count > 1)
             {
                 return false;
             }
+            var demo = demos[0];
 
-            return displayInfo.Demo.GameStateFileOffsets.Count > 1;
+            return demo.GameStateFileOffsets.Count > 1 || !demo.Analyzed;
         }
 
         private void InitDemoListSplitCommand()
         {
             var commandBinding = new CommandBinding();
             commandBinding.Command = _splitDemoCommand;
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(args.Source as ListViewItem); };
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListSelectAllCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _selectAllDemosCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = _demos.Count > 0; };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -738,12 +813,12 @@ namespace Uber.DemoTools
         private void InitLogListBoxContextualMenu()
         {
             var clearLogMenuItem = new MenuItem();
-            clearLogMenuItem.Header = "Clear (Ctrl-X)";
+            clearLogMenuItem.Header = CreateContextMenuHeader("Clear", "Ctrl+X");
             clearLogMenuItem.Command = _clearLogCommand;
             clearLogMenuItem.Click += (obj, args) => ClearLog();
 
             var copyLogMenuItem = new MenuItem();
-            copyLogMenuItem.Header = "Copy (Ctrl-C)";
+            copyLogMenuItem.Header = CreateContextMenuHeader("Copy", "Ctrl+C");
             copyLogMenuItem.Command = _copyLogCommand;
             copyLogMenuItem.Click += (obj, args) => CopyLogSelection();
 
@@ -1167,6 +1242,7 @@ namespace Uber.DemoTools
             }
 
             _demoListView.Background = _demoListViewBackground;
+            var oldDemoCount = _demos.Count;
 
             var newDemos = new List<DemoInfo>();
             foreach(var filePath in filePaths)
@@ -1182,7 +1258,12 @@ namespace Uber.DemoTools
                 _demos.Add(demoInfo);
                 newDemos.Add(demoInfo);
 
-                AddDemo(demoDisplayInfo);
+                AddDemoToListView(demoDisplayInfo);
+            }
+
+            if(oldDemoCount == 0)
+            {
+                _demoListView.SelectedIndex = 0;
             }
 
             if(!_config.AnalyzeOnLoad)
@@ -1210,7 +1291,7 @@ namespace Uber.DemoTools
 
         public delegate void VoidDelegate();
 
-        private void AddDemo(DemoDisplayInfo info)
+        private void AddDemoToListView(DemoDisplayInfo info)
         {
             var inputGesture = new MouseGesture(MouseAction.LeftDoubleClick, ModifierKeys.None);
             var inputBinding = new MouseBinding(_showDemoInfoCommand, inputGesture);
@@ -1219,23 +1300,8 @@ namespace Uber.DemoTools
             commandBinding.Executed += (obj, args) => OnShowDemoInfo();
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
 
-            var removeDemoItem = new MenuItem();
-            removeDemoItem.Header = "Remove (del)";
-            removeDemoItem.Command = _deleteDemoCommand;
-            removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
-
-            var splitDemoItem = new MenuItem();
-            splitDemoItem.Header = "Split";
-            splitDemoItem.Command = _splitDemoCommand;
-            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
-
-            var demosContextMenu = new ContextMenu();
-            demosContextMenu.Items.Add(removeDemoItem);
-            demosContextMenu.Items.Add(splitDemoItem);
-
             var item = new ListViewItem();
             item.Content = info;
-            item.ContextMenu = demosContextMenu;
             item.InputBindings.Add(inputBinding);
             item.CommandBindings.Add(commandBinding);
 
