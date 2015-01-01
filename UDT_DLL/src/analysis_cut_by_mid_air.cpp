@@ -9,7 +9,7 @@
 static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id protocol)
 {
 	// @NOTE: the original Quake 3 id function BG_EvaluateTrajectory
-	// didn't use the local gravity field but used the 800 constant instead.
+	// didn't use the local gravity field but used the DEFAULT_GRAVITY constant instead.
 
 	if(protocol == udtProtocol::Dm73)
 	{
@@ -21,14 +21,14 @@ static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id p
 		return ((const idEntityState90*)ent)->pos_gravity;
 	}
 
-	return 800;
+	return DEFAULT_GRAVITY;
 }
 
 static s32 GetEntityStateGravitySafe(const idEntityStateBase* ent, udtProtocol::Id protocol)
 {
 	const s32 gravity = GetEntityStateGravity(ent, protocol);
 
-	return gravity > 0 ? gravity : 800;
+	return gravity > 0 ? gravity : DEFAULT_GRAVITY;
 }
 
 static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent, s32 atTime, udtProtocol::Id protocol)
@@ -102,24 +102,145 @@ static bool IsAllowedWeapon(s32 idWeapon, udtProtocol::Id procotol)
 		weapon == (s32)udtWeapon::BFG;
 }
 
-static void GetEntityStateEventFromPlayerState(s32& event, s32& eventParm, const idPlayerStateBase* ps)
-{
-	const s32 seq = (ps->eventSequence & 1) ^ 1;
-	event = ps->events[seq] | ((ps->entityEventSequence & 3) << 8);
-	eventParm = ps->eventParms[seq];
-}
-
 static s32 RoundToNearest(s32 x, s32 n)
 {
 	return ((x + (n / 2)) / n) * n;
 }
-
 
 static bool IsAllowedWeapon(u32 udtWeapon, u32 allowedWeapons)
 {
 	const u32 result = allowedWeapons & (1 << udtWeapon);
 
 	return result != 0;
+}
+
+static void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
+{
+	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
+	if(ps.pm_type == PM_INTERMISSION || ps.pm_type == PM_SPECTATOR)
+	{
+		es.eType = ET_INVISIBLE;
+	}
+	else if(ps.stats[healthStatIdx] <= GIB_HEALTH)
+	{
+		es.eType = ET_INVISIBLE;
+	}
+	else
+	{
+		es.eType = ET_PLAYER;
+	}
+
+	es.number = ps.clientNum;
+
+	Float3::Copy(es.pos.trBase, ps.origin);
+	Float3::Copy(es.pos.trDelta, ps.velocity); // set the trDelta for flag direction
+	if(extrapolate)
+	{
+		es.pos.trType = TR_LINEAR_STOP;
+		es.pos.trTime = serverTimeMs; // set the time for linear prediction
+		es.pos.trDuration = 50; // set maximum extrapolation time: 1000 / sv_fps (default = 20)
+	}
+	else
+	{
+		es.pos.trType = TR_INTERPOLATE;
+	}
+
+	es.apos.trType = TR_INTERPOLATE;
+	Float3::Copy(es.apos.trBase, ps.viewangles);
+
+	es.angles2[YAW] = (f32)ps.movementDir;
+	es.legsAnim = ps.legsAnim;
+	es.torsoAnim = ps.torsoAnim;
+	es.clientNum = ps.clientNum;
+	// ET_PLAYER looks here instead of at number
+	// so corpses can also reference the proper config
+	es.eFlags = ps.eFlags;
+	if(ps.stats[healthStatIdx] <= 0)
+	{
+		es.eFlags |= EF_DEAD;
+	}
+	else
+	{
+		es.eFlags &= ~EF_DEAD;
+	}
+
+	if(ps.eventSequence != lastEventSequence)
+	{
+		const s32 seq = (ps.eventSequence & 1) ^ 1;
+		es.event = ps.events[seq] | ((ps.entityEventSequence & 3) << 8);
+		es.eventParm = ps.eventParms[seq];
+		lastEventSequence = ps.eventSequence;
+	}
+	else
+	{
+		es.event = 0;
+		es.eventParm = 0;
+	}
+
+#if 0
+	// Original id code for reference.
+	if(ps.externalEvent)
+	{
+		es.event = ps.externalEvent;
+		es.eventParm = ps.externalEventParm;
+	}
+	else if(ps.entityEventSequence < ps.eventSequence)
+	{
+		int		seq;
+
+		if(ps.entityEventSequence < ps.eventSequence - MAX_PS_EVENTS)
+		{
+			ps.entityEventSequence = ps.eventSequence - MAX_PS_EVENTS;
+		}
+		seq = ps.entityEventSequence & (MAX_PS_EVENTS - 1);
+		es.event = ps.events[seq] | ((ps.entityEventSequence & 3) << 8);
+		es.eventParm = ps.eventParms[seq];
+		ps.entityEventSequence++;
+	}
+#endif
+
+	es.weapon = ps.weapon;
+	es.groundEntityNum = ps.groundEntityNum;
+
+	es.powerups = 0;
+	for(s32 i = 0; i < MAX_POWERUPS; i++)
+	{
+		if(ps.powerups[i])
+		{
+			es.powerups |= 1 << i;
+		}
+	}
+
+	es.loopSound = ps.loopSound;
+	es.generic1 = ps.generic1;
+}
+
+
+struct PlayerEntities
+{
+	idLargestEntityState TempEntityState;
+	udtVMArray<idEntityStateBase*> Players;
+};
+
+static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, const udtSnapshotCallbackArg& arg, udtProtocol::Id protocol)
+{
+	info.Players.Clear();
+
+	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, protocol);
+	if(ps != NULL)
+	{
+		PlayerStateToEntityState(info.TempEntityState, lastEventSequence, *ps, false, 0, protocol);
+		info.Players.Add(&info.TempEntityState);
+	}
+
+	for(u32 i = 0; i < arg.EntityCount; ++i)
+	{
+		idEntityStateBase* const es = arg.Entities[i].Entity;
+		if(es->eType == ET_PLAYER && es->clientNum >= 0 && es->clientNum < MAX_CLIENTS)
+		{
+			info.Players.Add(es);
+		}
+	}
 }
 
 
@@ -163,31 +284,6 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 {
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
-	// Store projectiles fired by the player in first-person view if needed.
-	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, _protocol);
-	if(ps != NULL && ps->clientNum == trackedPlayerIndex)
-	{
-		s32 event = 0;
-		s32 eventParm = 0;
-		GetEntityStateEventFromPlayerState(event, eventParm, ps);
-		const s32 eventType = event & (~EV_EVENT_BITS);
-		const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON : (s32)EV_FIRE_WEAPON_73p;
-		if(ps->eventSequence != _lastEventSequence &&
-		   eventType == fireWeaponEventId &&
-		   IsAllowedWeapon(ps->weapon, _protocol))
-		{
-			AddProjectile(ps->weapon, ps->origin, arg.ServerTime);
-		}
-		_lastEventSequence = ps->eventSequence;
-
-		// Update this player's data.
-		Float3::Copy(_players[ps->clientNum].Position, ps->origin);
-		if(ps->groundEntityNum != ENTITYNUM_NONE)
-		{
-			_players[ps->clientNum].LastGroundContactTime = arg.ServerTime;
-		}
-	}
-
 	// Update the rocket speed if needed.
 	if(_rocketSpeed == -1.0f)
 	{
@@ -216,24 +312,32 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		}
 	}
 
-	// Update the data of all the other players.
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	// Update player information: position, Z-axis change, fire projectiles, etc.
+	PlayerEntities playersInfo;
+	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._protocol);
+	for(u32 i = 0, count = playersInfo.Players.GetSize(); i < count; ++i)
 	{
-		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		if(ent->eType != ET_PLAYER || ent->clientNum < 0 || ent->clientNum >= 64)
+		idEntityStateBase* const es = playersInfo.Players[i];
+		f32 currentPosition[3];
+		ComputeTrajectoryPosition(currentPosition, es, arg.ServerTime, _protocol);
+
+		if(es->clientNum == trackedPlayerIndex)
 		{
-			continue;
+			// Store the projectile fired by the tracked player, if any.
+			const s32 eventType = es->event & (~EV_EVENT_BITS);
+			const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON : (s32)EV_FIRE_WEAPON_73p;
+			if(eventType == fireWeaponEventId && IsAllowedWeapon(es->weapon, _protocol))
+			{
+				AddProjectile(es->weapon, currentPosition, arg.ServerTime);
+			}
 		}
 
-		PlayerInfo& player = _players[ent->clientNum];
+		PlayerInfo& player = _players[es->clientNum];
 
 		const f32 ZDirDelta = 1.0f;
 		const s32 oldZDir = player.ZDir;
-
-		f32 newPosition[3];
-		ComputeTrajectoryPosition(newPosition, ent, arg.ServerTime, _protocol);
-		const f32 ZChange = newPosition[2] - player.Position[2];
-		Float3::Copy(player.Position, newPosition);
+		const f32 ZChange = currentPosition[2] - player.Position[2];
+		Float3::Copy(player.Position, currentPosition);
 
 		s32 ZDir = 0;
 		if(ZChange > ZDirDelta) ZDir = 1;
@@ -252,7 +356,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			player.LastZDirChangeTime = arg.ServerTime;
 		}
 
-		if(ent->groundEntityNum != ENTITYNUM_NONE)
+		if(es->groundEntityNum != ENTITYNUM_NONE)
 		{
 			player.LastGroundContactTime = arg.ServerTime;
 		}

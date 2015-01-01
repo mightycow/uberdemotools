@@ -1081,3 +1081,28 @@ struct idWeapon73p
 		AfterLast
 	};
 };
+
+/*
+===================================================================================
+
+PMOVE MODULE
+
+The pmove code takes a player_state_t and a usercmd_t and generates a new player_state_t
+and some other output data.  Used for local prediction on the client game and true
+movement on the server game.
+===================================================================================
+*/
+
+typedef enum
+{
+	PM_NORMAL,		// can accelerate and turn
+	PM_NOCLIP,		// noclip movement
+	PM_SPECTATOR,	// still run into walls
+	PM_DEAD,		// no acceleration or turning, but free falling
+	PM_FREEZE,		// stuck in place with no control
+	PM_INTERMISSION,	// no movement or status bar
+	PM_SPINTERMISSION	// no movement or status bar
+} pmtype_t;
+
+#define	DEFAULT_GRAVITY		800
+#define	GIB_HEALTH			-40
