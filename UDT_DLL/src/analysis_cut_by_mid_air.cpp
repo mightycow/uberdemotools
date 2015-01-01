@@ -502,7 +502,9 @@ udtCutByMidAirAnalyzer::ProjectileInfo* udtCutByMidAirAnalyzer::FindBestProjecti
 			return &_projectiles[i];
 		}
 
-		const f32 computedDist = Float3::Dist(targetPosition, info.CreationPosition);
+		// The player's bounding box is approx. 32 units wide so if we sum up the 2 imprecisions (missile start and end positions),
+		// we'll get something close to 32.
+		const f32 computedDist = udt_max(0.0f, Float3::Dist(targetPosition, info.CreationPosition) - 32.0f);
 		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs + 50) * 0.001f; // @NOTE: 50 is Quake 3's missile pre-step.
 		const f32 computedSpeed = computedDist / computedDuration;
 		const f32 scale = computedSpeed >= targetTravelSpeed ? (computedSpeed / targetTravelSpeed) : (targetTravelSpeed / computedSpeed);
