@@ -137,7 +137,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="todo.txt" />
+    <Content Include="..\todo.txt" />
     <Content Include="UDT.ico" />
   </ItemGroup>
   <ItemGroup>
