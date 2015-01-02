@@ -548,11 +548,6 @@ namespace Uber.DemoTools
                 }
             }
 
-            if(!_usingDarkTheme)
-            {
-                _logListBox.Resources.Add(SystemColors.HighlightBrushKey, new SolidColorBrush(Color.FromRgb(255, 255, 191)));
-            }
-
             var label = new Label { Content = "You can drag'n'drop files and folders here.", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             var brush = new VisualBrush(label) { Stretch = Stretch.None, Opacity = 0.5 };
             _demoListView.Background = brush;
@@ -1816,15 +1811,12 @@ namespace Uber.DemoTools
             return ProtocolFileExtDic[extension];
         }
 
-        private void LogMessage(string message, Color color)
+        private void LogMessage(string message)
         {
             VoidDelegate itemAdder = delegate 
             {
-                var label = new Label();
-                label.Foreground = new SolidColorBrush(color);
-                label.Content = message;
-                _logListBox.Items.Add(label);
-                _logListBox.ScrollIntoView(label); 
+                _logListBox.Items.Add(message);
+                _logListBox.ScrollIntoView(message); 
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
@@ -1832,29 +1824,17 @@ namespace Uber.DemoTools
 
         public void LogInfo(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args), SystemColors.ControlTextColor);
+            LogMessage(string.Format(message, args));
         }
 
         public void LogWarning(string message, params object[] args)
         {
-            if(_usingDarkTheme)
-            {
-                LogMessage("WARNING: " + string.Format(message, args), SystemColors.ControlTextColor);
-                return;
-            }
-
-            LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            LogMessage("WARNING: " + string.Format(message, args));
         }
 
         public void LogError(string message, params object[] args)
         {
-            if(_usingDarkTheme)
-            {
-                LogMessage("ERROR: " + string.Format(message, args), SystemColors.ControlTextColor);
-                return;
-            }
-
-            LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            LogMessage("ERROR: " + string.Format(message, args));
         }
 
         static public void GlobalLogInfo(string message, params object[] args)

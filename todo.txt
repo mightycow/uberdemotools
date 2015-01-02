@@ -1,7 +1,6 @@
 To do:
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
 - Explain in help that the "Player Selection" option is respected by everything except the Chat filter
-- Remove forced a) text coloring and b) highlight color of log messages for better theme integration (use prefixes for warnings and errors)
 - Remove the demo viewer stuff from the repo (in develop then master by merging)
 - DLL: New Huffman codec: id's code is loaded with pointers everywhere... a good replacement would be a simple Huffman codec with pre-built look-up tables and no pointers
 - Improved GameStates analyzer (all players with: time range, player index, team(s))
