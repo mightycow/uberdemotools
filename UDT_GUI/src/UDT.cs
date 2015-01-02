@@ -952,6 +952,7 @@ namespace Uber.DemoTools
 
                 var firstSnapTime = App.FormatMinutesSeconds(data.FirstSnapshotTimeMs / 1000);
                 var lastSnapTime = App.FormatMinutesSeconds(data.LastSnapshotTimeMs / 1000);
+                info.GameStateSnapshotTimesMs.Add(Tuple.Create(data.FirstSnapshotTimeMs, data.LastSnapshotTimeMs));
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
                 info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));

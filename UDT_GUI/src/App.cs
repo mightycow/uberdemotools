@@ -44,7 +44,7 @@ namespace Uber.DemoTools
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
         public int MidAirCutMinDistance = 300;
-        public int MidAirCutMinAirTimeMs = 500;
+        public int MidAirCutMinAirTimeMs = 800;
         public bool MidAirCutAllowRocket = true;
         public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;
@@ -78,6 +78,7 @@ namespace Uber.DemoTools
         public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
+        public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
     }
 
     public class DemoInfoListView : ListView
@@ -1403,6 +1404,7 @@ namespace Uber.DemoTools
                 demos[i].ChatEvents = newDemos[i].ChatEvents;
                 demos[i].FragEvents = newDemos[i].FragEvents;
                 demos[i].GameStateFileOffsets = newDemos[i].GameStateFileOffsets;
+                demos[i].GameStateSnapshotTimesMs = newDemos[i].GameStateSnapshotTimesMs;
                 demos[i].Generic = newDemos[i].Generic;
                 demos[i].InputIndex = newDemos[i].InputIndex;
                 demos[i].Protocol = newDemos[i].Protocol;
