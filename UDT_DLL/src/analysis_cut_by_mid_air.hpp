@@ -32,6 +32,7 @@ private:
 	struct PlayerInfo
 	{
 		f32 Position[3];
+		s32 LastUpdateTime;
 		s32 LastGroundContactTime;
 		s32 LastZDirChangeTime;
 		s32 ZDir;

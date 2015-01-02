@@ -6,6 +6,17 @@
 #include <math.h>
 
 
+// The player's bounding box is approx. 32x32x56 units so if we sum up the 2 imprecisions 
+// 1. missile start position (fired) vs attacker position at shooting time
+// 2. missile end position (hit) vs victim position at hit time
+// We'll get something close to 32, if not bigger when the missile angle is pretty vertical.
+#define    UDT_MAX_PROJ_SPEED_RATIO_WHEN_FASTER    2.0f
+#define    UDT_MAX_PROJ_SPEED_RATIO_WHEN_SLOWER    1.2f
+#define    UDT_MAX_PLAYER_DISAPPEARANCE_TIME_MS    100
+#define    UDT_AVG_PLAYER_TO_PROJECTILE_DELTA      32.0f
+#define    ID_MISSILE_PRESTEP_TIME_MS              50 // From Quake 3's g_missile.c
+
+
 static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id protocol)
 {
 	// @NOTE: the original Quake 3 id function BG_EvaluateTrajectory
@@ -267,6 +278,7 @@ void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackA
 
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_players); ++i)
 	{
+		_players[i].LastUpdateTime = S32_MIN;
 		_players[i].LastGroundContactTime = S32_MIN;
 		_players[i].LastZDirChangeTime = S32_MIN;
 		_players[i].ZDir = 0;
@@ -360,6 +372,8 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		{
 			player.LastGroundContactTime = arg.ServerTime;
 		}
+
+		player.LastUpdateTime = arg.ServerTime;
 	}
 
 	// Find a player getting mid-aired.
@@ -396,7 +410,8 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			continue;
 		}
 
-		if(_players[targetIdx].LastGroundContactTime == arg.ServerTime)
+		if(_players[targetIdx].LastGroundContactTime == arg.ServerTime ||
+		   arg.ServerTime - _players[targetIdx].LastUpdateTime > UDT_MAX_PLAYER_DISAPPEARANCE_TIME_MS)
 		{
 			continue;
 		}
@@ -415,7 +430,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		}
 		projectile->UsedSlot = 0;
 
-		const u32 victimAirTimeMs = (u32)udt_max<s32>(0, arg.ServerTime - _players[targetIdx].LastZDirChangeTime);
+		const u32 victimAirTimeMs = (u32)udt_max<s32>(0, _players[targetIdx].LastUpdateTime - _players[targetIdx].LastZDirChangeTime);
 		if(extraInfo.MinAirTimeMs > 0 && victimAirTimeMs < extraInfo.MinAirTimeMs)
 		{
 			continue;
@@ -503,13 +518,13 @@ udtCutByMidAirAnalyzer::ProjectileInfo* udtCutByMidAirAnalyzer::FindBestProjecti
 			return &_projectiles[i];
 		}
 
-		// The player's bounding box is approx. 32 units wide so if we sum up the 2 imprecisions (missile start and end positions),
-		// we'll get something close to 32.
-		const f32 computedDist = udt_max(0.0f, Float3::Dist(targetPosition, info.CreationPosition) - 32.0f);
-		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs + 50) * 0.001f; // @NOTE: 50 is Quake 3's missile pre-step.
+		const f32 computedDist = udt_max(0.0f, Float3::Dist(targetPosition, info.CreationPosition) - UDT_AVG_PLAYER_TO_PROJECTILE_DELTA);
+		const f32 computedDuration = (serverTimeMs - info.CreationTimeMs + ID_MISSILE_PRESTEP_TIME_MS) * 0.001f;
 		const f32 computedSpeed = computedDist / computedDuration;
 		const f32 scale = computedSpeed >= targetTravelSpeed ? (computedSpeed / targetTravelSpeed) : (targetTravelSpeed / computedSpeed);
-		const bool speedOkay = (computedSpeed > targetTravelSpeed && scale < 2.0f) || (computedSpeed < targetTravelSpeed && scale < 1.2f);
+		const bool speedOkay = 
+			(computedSpeed >  targetTravelSpeed && scale < UDT_MAX_PROJ_SPEED_RATIO_WHEN_FASTER) ||
+			(computedSpeed <= targetTravelSpeed && scale < UDT_MAX_PROJ_SPEED_RATIO_WHEN_SLOWER);
 		if(scale < smallestScale && speedOkay)
 		{
 			smallestScale = scale;
