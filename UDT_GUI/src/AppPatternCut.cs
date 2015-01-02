@@ -172,10 +172,13 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "UDT will create a cut section for each pattern match during parsing." +
-                "\nWhen parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
-                "\n\nExample: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with start and end time offsets 10 and 8." +
-                "\nUDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
+                "UDT will create a cut section for each pattern match during parsing." + 
+                "When parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
+                "\n\nNote: The \"Player Selection\" settings are respected by all filters except the \"Global Chat\" one." + 
+                "That is, it matches chat from anyone." +
+                "\n\nExample of cut section merging: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with " +
+                "start and end time offsets 10 and 8." +
+                "UDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
             
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
