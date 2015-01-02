@@ -2,18 +2,8 @@ Q:
 What is it?
 
 A: 
-UDT_GUI is a Quake 3 (*.dm_68) and Quake Live (*.dm_73, *.dm_90) demo cutting and information display tool for Windows with some nice features for cutting demos.
-For instance, you can cut a large selection of demos at once by selecting a range of demos and cutting "by chat" (matching a string pattern in the global chat), saving you the trouble of watching your demos to find anything of interest.
-
-------------------------------------------------------------------------
-
-Q: 
-What do the numbers in the directory mean?
-
-A: 
-The version numbers describe the DLL and GUI versions. Always fetch the files from the last folder to grab the latest version.
-- 19m_19h/udt_bin_19m_19h.rar --> Binary release, DLL 0.1.9m, GUI 0.1.9h
-- 19m_19h/udt_src_19m_19h.rar --> Source code release, DLL 0.1.9m, GUI 0.1.9h
+UDT_GUI is a Quake 3 (*.dm_68) and Quake Live (*.dm_73, *.dm_90) demo cutting and information display tool for Windows.
+For instance, you can cut a large selection of demos at once by selecting a group of demos and cutting by a set of patterns (text in global chat, fast kill sequences, mid-air shots, etc), saving you the trouble of watching demos to find anything of interest.
 
 ------------------------------------------------------------------------
 
@@ -21,8 +11,8 @@ Q:
 What do I need to run it?
 
 A: 
-The UDT GUI requires .NET Framework 4 Client Profile to be installed.
-The .DLL and command-line executables, on the other hand, have no third-party dependencies.
+The UDT_GUI application requires .NET Framework 4.5 to be installed.
+The .DLL itself and the command-line executables have no third-party dependencies.
 
 ------------------------------------------------------------------------
 
@@ -30,9 +20,9 @@ Q:
 What can I do with it?
 
 A:
- - You can view some information about the selected demo ('Info' tab)
- - You can cut demos by a) manually specifying the start and end times, or b) by letting the program find chat events matching your rules and cutting around the matches
- - You can also view the global chat log
+ - You can view some information about the selected demo ("Info" tab)
+ - You can cut demos by a) manually specifying the start and end times, or b) by letting the program look for certain patterns you defined and cutting around the matches
+ - You can view the global chat log, list of player deaths, etc
  
 ------------------------------------------------------------------------
  

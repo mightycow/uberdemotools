@@ -1,4 +1,0 @@
-#include "icon.h"
-#include <windows.h>
- 
-IDI_APP_ICON ICON DISCARDABLE "icon.ico"
