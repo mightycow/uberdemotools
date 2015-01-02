@@ -36,7 +36,7 @@ struct CallbackCutDemoFileStreamCreationInfo
 	const char* OutputFolderPath;
 };
 
-extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData);
+extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
 extern void	       CallbackConsoleProgress(f32 progress, void* userData);
 extern const char* GetFolderSeparator();

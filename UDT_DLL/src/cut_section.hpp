@@ -6,6 +6,7 @@
 
 struct udtCutSection
 {
+	const char* VeryShortDesc; // Used for output file name formatting. May be NULL.
 	s32 GameStateIndex;
 	s32 StartTimeMs;
 	s32 EndTimeMs;

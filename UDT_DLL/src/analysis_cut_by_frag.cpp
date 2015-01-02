@@ -138,6 +138,7 @@ void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 	}
 
 	udtCutSection cut;
+	cut.VeryShortDesc = "frag";
 	cut.GameStateIndex = _frags[0].GameStateIndex;
 	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(info.StartOffsetSec * 1000);
 	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(info.EndOffsetSec * 1000);

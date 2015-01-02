@@ -429,6 +429,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 
 		const udtCutByPatternArg& info = PlugIn->GetInfo();
 		udtCutSection cut;
+		cut.VeryShortDesc = "midair";
 		cut.GameStateIndex = _gameStateIndex;
 		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
 		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;

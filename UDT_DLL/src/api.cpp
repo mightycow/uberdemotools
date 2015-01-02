@@ -459,7 +459,9 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		const udtCut& cut = cutInfo->Cuts[i];
 		if(cut.StartTimeMs < cut.EndTimeMs)
 		{
-			context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileStreamCreation, &streamInfo);
+			context->Parser.AddCut(
+				info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, 
+				&CallbackCutDemoFileStreamCreation, NULL, &streamInfo);
 		}
 	}
 

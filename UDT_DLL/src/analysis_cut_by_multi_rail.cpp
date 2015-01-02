@@ -67,6 +67,7 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		const udtCutByPatternArg& info = PlugIn->GetInfo();
 
 		udtCutSection cut;
+		cut.VeryShortDesc = "rail";
 		cut.GameStateIndex = _gameStateIndex;
 		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
 		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;

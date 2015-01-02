@@ -311,7 +311,7 @@ bool udtBaseParser::ParseServerMessage()
 	if(_outWriteFirstMessage)
 	{
 		udtCutInfo& cut = _cuts[0];
-		cut.Stream = (*cut.StreamCreator)(cut.StartTimeMs, cut.EndTimeMs, this, cut.UserData);
+		cut.Stream = (*cut.StreamCreator)(cut.StartTimeMs, cut.EndTimeMs, cut.VeryShortDesc, this, cut.UserData);
 		if(cut.Stream != NULL)
 		{
 			WriteFirstMessage();
@@ -355,9 +355,10 @@ void udtBaseParser::FinishParsing(bool success)
 	}
 }
 
-void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData)
+void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData)
 {
 	udtCutInfo cut;
+	cut.VeryShortDesc = veryShortDesc;
 	cut.GameStateIndex = gsIndex;
 	cut.StartTimeMs = startTimeMs;
 	cut.EndTimeMs = endTimeMs;

@@ -38,6 +38,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	const s32 endTimeMs = parser._inServerTime + (s32)patternInfo.EndOffsetSec * 1000;
 
 	udtCutSection cutSection;
+	cutSection.VeryShortDesc = "chat";
 	cutSection.GameStateIndex = parser._inGameStateIndex;
 	cutSection.StartTimeMs = startTimeMs;
 	cutSection.EndTimeMs = endTimeMs;

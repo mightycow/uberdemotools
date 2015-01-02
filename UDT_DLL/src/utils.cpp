@@ -35,7 +35,7 @@ void CallbackConsoleProgress(f32, void*)
 {
 }
 
-udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udtBaseParser* parser, void* userData)
+udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData)
 {
 	udtVMLinearAllocator& tempAllocator = parser->_context->TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
@@ -76,6 +76,12 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udt
 		sprintf(gsIndexStr, "gs%d_", gsIndex);
 	}
 
+	char shortDesc[16];
+	if(veryShortDesc)
+	{
+		sprintf(shortDesc, "_%s", veryShortDesc);
+	}
+
 	const char* outputFilePathParts[] = 
 	{ 
 		outputFilePathStart, 
@@ -84,6 +90,7 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, udt
 		startTime, 
 		"_", 
 		endTime, 
+		veryShortDesc ? shortDesc : "",
 		udtGetFileExtensionByProtocol(parser->_protocol) 
 	};
 	char* outputFilePath = NULL;

@@ -155,7 +155,9 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtC
 	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
 	{
 		const udtCutSection& section = sections[i];
-		context->Parser.AddCut(section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, &CallbackCutDemoFileStreamCreation, &cutCbInfo);
+		context->Parser.AddCut(
+			section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, 
+			&CallbackCutDemoFileStreamCreation, section.VeryShortDesc, &cutCbInfo);
 	}
 
 	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
