@@ -239,6 +239,15 @@ namespace Uber.DemoTools
             }
         }
 
+        private static Color MultiplyRGBSpace(Color color, float value)
+        {
+            var r = (byte)(((color.R / 255.0f) * value) * 255.0f);
+            var g = (byte)(((color.G / 255.0f) * value) * 255.0f);
+            var b = (byte)(((color.B / 255.0f) * value) * 255.0f);
+
+            return Color.FromRgb(r, g, b);
+        }
+
         public App(string[] cmdLineArgs)
         {
             Instance = this;
@@ -252,18 +261,25 @@ namespace Uber.DemoTools
 
             LoadConfig();
 
-            var listItemColor1 = SystemColors.WindowColor; // SystemColors.ControlColor
+            var listItemColor1 = SystemColors.WindowColor;
             var listItemColor2 = listItemColor1;
-            var listFGColor = Colors.Black;
-            _usingDarkTheme = ((int)listItemColor1.R + (int)listItemColor1.G + (int)listItemColor1.B) < 385;
+            var listColorSum = (int)listItemColor1.R + (int)listItemColor1.G + (int)listItemColor1.B;
+            _usingDarkTheme = listColorSum < 385;
             if(_usingDarkTheme)
             {
-                listItemColor2 = Color.Multiply(listItemColor1, 1.5f);
+                if(listColorSum < 96)
+                {
+                    listItemColor2 = Color.Add(listItemColor2, Color.FromRgb(31, 31, 31));
+                    
+                }
+                else
+                {
+                    listItemColor2 = MultiplyRGBSpace(listItemColor1, 1.15f);
+                }
             }
             else
             {
-                listItemColor1 = Colors.White;
-                listItemColor2 = Color.FromRgb(223, 223, 223);
+                listItemColor2 = MultiplyRGBSpace(listItemColor1, 0.87f);
             }
             _altListBoxBg = new AlternatingListBoxBackground(listItemColor1, listItemColor2);
 
