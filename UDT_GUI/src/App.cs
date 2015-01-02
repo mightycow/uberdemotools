@@ -646,7 +646,7 @@ namespace Uber.DemoTools
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
             selectAllDemosItem.Command = _selectAllDemosCommand;
-            selectAllDemosItem.Click += (obj, args) => _demoListView.SelectAll();
+            selectAllDemosItem.Click += (obj, args) => { if(_demoListView.SelectionMode != SelectionMode.Single) _demoListView.SelectAll(); };
 
             var demosContextMenu = new ContextMenu();
             demosContextMenu.Items.Add(analyzeDemoItem);
