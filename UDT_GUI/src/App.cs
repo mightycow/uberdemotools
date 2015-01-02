@@ -241,9 +241,12 @@ namespace Uber.DemoTools
 
         private static Color MultiplyRGBSpace(Color color, float value)
         {
-            var r = (byte)(((color.R / 255.0f) * value) * 255.0f);
-            var g = (byte)(((color.G / 255.0f) * value) * 255.0f);
-            var b = (byte)(((color.B / 255.0f) * value) * 255.0f);
+            var rF = Math.Min((color.R / 255.0f) * value, 1.0f);
+            var gF = Math.Min((color.G / 255.0f) * value, 1.0f);
+            var bF = Math.Min((color.B / 255.0f) * value, 1.0f);
+            var r = (byte)(rF * 255.0f);
+            var g = (byte)(gF * 255.0f);
+            var b = (byte)(bF * 255.0f);
 
             return Color.FromRgb(r, g, b);
         }
