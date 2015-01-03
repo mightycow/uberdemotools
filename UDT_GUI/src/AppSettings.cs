@@ -205,10 +205,10 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Open on Start-up", useInputFolderOnStartUpCheckBox));
             panelList.Add(App.CreateTuple("=> Input Folder", inputFolderRow));
             panelList.Add(App.CreateTuple("Analyze on Load", analyzeOnLoadCheckBox));
-            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("Start Time Offset [s]", startTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
 
-            var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 120, 2);
+            var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
             settingsPanel.VerticalAlignment = VerticalAlignment.Top;
             settingsPanel.Margin = new Thickness(0);

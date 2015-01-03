@@ -226,12 +226,12 @@ namespace Uber.DemoTools
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Min. Frag Count", minFragCountEditBox));
-            rulesPanelList.Add(App.CreateTuple("Time Between Frags", timeBetweenFragsEditBox));
+            rulesPanelList.Add(App.CreateTuple("Max. Time Between Frags [s]", timeBetweenFragsEditBox));
             rulesPanelList.Add(App.CreateTuple("Allow Self Kills?", allowSelfKillsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow Any Death?", allowAnyDeathCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow Team Kills?", allowTeamKillsCheckBox));
             
-            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
+            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 175, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
             rulesPanel.VerticalAlignment = VerticalAlignment.Center;
 

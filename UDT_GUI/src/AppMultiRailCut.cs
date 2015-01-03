@@ -91,6 +91,18 @@ namespace Uber.DemoTools
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
 
+            var helpTextBlock = new TextBlock();
+            helpTextBlock.Margin = new Thickness(5);
+            helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
+            helpTextBlock.Text = "A \"multi-frag rail\" is a railgun shot that kills at least 2 players.";
+
+            var helpGroupBox = new GroupBox();
+            helpGroupBox.Margin = new Thickness(5);
+            helpGroupBox.Header = "Help";
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            helpGroupBox.Content = helpTextBlock;
+
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
@@ -98,7 +110,8 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(rulesGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
-
+            rootPanel.Children.Add(helpGroupBox);
+            
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
             scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;

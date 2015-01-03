@@ -121,13 +121,15 @@ namespace Uber.DemoTools
             actionsGroupBox.Margin = new Thickness(5);
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
-            /*
+            
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "Self-kills are suicides where the player shot himself with a weapon." +
-                "\nDeaths can include 'suicides' where the killer is the world: lava, fall damage, hurt triggers, etc.";
+                "Recommended minimum value for victim air time: 300 ms" +
+                "\nRecommended minimum value for projectile distance: 300 \"Quake units\"" + 
+                "\n\nIf you set a low min. distance like 300, it would be recommended to set the air time to be at least 600." +
+                "\nAlternatively, if you set a low min. air time like 300, it would be recommended to set the min. distance to at least 600.";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
@@ -135,7 +137,7 @@ namespace Uber.DemoTools
             helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
             helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Content = helpTextBlock;
-            */
+            
             var rootPanel = new WrapPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
@@ -143,7 +145,7 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(rulesGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
-            //rootPanel.Children.Add(helpGroupBox);
+            rootPanel.Children.Add(helpGroupBox);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
