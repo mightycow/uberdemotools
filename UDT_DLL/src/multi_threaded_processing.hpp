@@ -12,8 +12,8 @@ struct udtParsingSharedData
 	u64* FileSizes;
 	const udtParseArg* ParseInfo;
 	const udtMultiParseArg* MultiParseInfo;
-	const void* JobTypeSpecificInfo; // udtCutByChatArg etc
-	u32 JobType; // Of type udtParsingJobType.
+	const udtCutByPatternArg* PatternInfo;
+	u32 JobType; // Of type udtParsingJobType::Id.
 };
 
 struct udtParsingThreadData
@@ -49,5 +49,5 @@ struct udtMultiThreadedParsing
 				 const udtParseArg* parseInfo, 
 				 const udtMultiParseArg* multiParseInfo,
 				 udtParsingJobType::Id jobType,
-				 const void* jobTypeSpecificInfo);
+				 const udtCutByPatternArg* patternInfo);
 };

@@ -133,6 +133,7 @@ namespace Uber.DemoTools
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
         public ComponentType Type { get { return ComponentType.CutByTime; } }
+        public bool MultiDemoMode { get { return false; } }
 
         public CutByTimeComponent(App app)
         {
@@ -146,6 +147,11 @@ namespace Uber.DemoTools
         }
 
         public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
         {
             // Nothing to do.
         }
@@ -278,19 +284,58 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int gameStateIndex = -1;
-            if(!int.TryParse(_gameStateIndexEditBox.Text, out gameStateIndex) || gameStateIndex < 0 || gameStateIndex >= demo.GameStateFileOffsets.Count)
+            if(startTime >= endTime)
             {
-                if(demo.GameStateFileOffsets.Count > 1)
+                _app.LogError("Invalid times. Start time must be strictly inferior to end time.");
+                return;
+            }
+
+            var gameStateCount = demo.GameStateFileOffsets.Count;
+            int gameStateIndex = -1;
+            if(!int.TryParse(_gameStateIndexEditBox.Text, out gameStateIndex))
+            {
+                gameStateIndex = -1;
+            }
+
+            uint fileOffset = 0;
+            if(!demo.Analyzed || gameStateCount == 0)
+            {
+                if(gameStateIndex != 0)
+                {
+                    _app.LogError("You selected a non-0 GameState index but UDT doesn't know the file offset of it, if it even exists. Please analyze the demo first to proceed.");
+                    return;
+                }
+            }
+            else if(gameStateCount > 0)
+            {
+                if(gameStateCount > 1 && gameStateIndex >= gameStateCount)
                 {
                     _app.LogError("Invalid GameState index. Valid range for this demo: {0}-{1}", 0, demo.GameStateFileOffsets.Count - 1);
                     return;
                 }
-                else
+
+                if(gameStateCount == 1 && gameStateIndex != 0)
                 {
                     _gameStateIndexEditBox.Text = "0";
                     gameStateIndex = 0;
                     _app.LogWarning("Invalid GameState index. The only valid value for this demo is 0. UDT set it right for you.");
+                }
+
+                fileOffset = demo.GameStateFileOffsets[gameStateIndex];
+            }
+
+            if(demo.Analyzed && gameStateIndex >= 0 && gameStateIndex < demo.GameStateSnapshotTimesMs.Count)
+            {
+                var times = demo.GameStateSnapshotTimesMs[gameStateIndex];
+                if(startTime > times.Item2 / 1000)
+                {
+                    _app.LogError("Invalid start time: it comes after the last snapshot of that GameState.");
+                    return;
+                }
+                if(endTime < times.Item1 / 1000)
+                {
+                    _app.LogError("Invalid end time: it comes before the first snapshot of that GameState.");
+                    return;
                 }
             }
 
@@ -300,7 +345,7 @@ namespace Uber.DemoTools
 
             var info = new CutByTimeInfo();
             info.GameStateIndex = gameStateIndex;
-            info.FileOffset = demo.GameStateFileOffsets[gameStateIndex];
+            info.FileOffset = fileOffset;
             info.FilePath = demo.FilePath;
             info.StartTime = startTime;
             info.EndTime = endTime;
@@ -310,23 +355,10 @@ namespace Uber.DemoTools
 
         private void DemoCutByTimeThread(object arg)
         {
-            try
-            {
-                DemoCutByTimeThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByTimeThreadImpl(object arg)
-        {
             var info = (CutByTimeInfo)arg;
             if(info == null)
             {
                 _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -334,7 +366,6 @@ namespace Uber.DemoTools
             if(protocol == UDT_DLL.udtProtocol.Invalid)
             {
                 _app.LogError("Unrecognized protocol for demo '{0}'", Path.GetFileName(info.FilePath));
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -357,7 +388,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
     }
 }

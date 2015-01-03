@@ -3,15 +3,15 @@
 
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
-#include "analysis_cut_base.hpp"
+#include "analysis_cut_by_pattern.hpp"
 #include "array.hpp"
+#include "cut_section.hpp"
 
 
-struct udtCutByChatAnalyzer : public udtCutAnalyzerBase
+struct udtCutByChatAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByChatAnalyzer(const udtCutByChatArg& info) 
-		: _info(info)
+	udtCutByChatAnalyzer()
 	{
 	}
 
@@ -25,6 +25,5 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);
 
-	const udtCutByChatArg& _info;
-	CutSectionVector _cutSections;
+	udtVMArray<udtCutSection> _cutSections;
 };

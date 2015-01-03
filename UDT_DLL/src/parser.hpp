@@ -14,7 +14,7 @@
 
 
 struct udtBaseParser;
-typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, udtBaseParser* parser, void* userData);
+typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 
 struct udtBaseParser
 {
@@ -33,7 +33,7 @@ public:
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
 	void	FinishParsing(bool success);
 
-	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, void* userData = NULL);
+	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
 	void                  InsertOrUpdateConfigString(const udtConfigString& cs);
@@ -73,6 +73,7 @@ public:
 		udtDemoStreamCreator StreamCreator;
 		udtStream* Stream; // Requires manual destruction.
 		void* UserData;
+		const char* VeryShortDesc;
 		s32 GameStateIndex;
 		s32 StartTimeMs;
 		s32 EndTimeMs;
@@ -115,6 +116,7 @@ public:
 	s32 _inParseEntitiesNum;
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
+	s32 _inLastSnapshotMessageNumber;
 	udtVMArray<u32> _inGameStateFileOffsets;
 	udtVMArray<u8> _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
 	udtVMArray<u8> _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.

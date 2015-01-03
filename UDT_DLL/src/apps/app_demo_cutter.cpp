@@ -261,18 +261,28 @@ static bool CutByChat(udtParserContext* context, const char* filePath, const Cut
 	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
 
 	udtCutByChatArg chatInfo;
-	chatInfo.StartOffsetSec = config.StartOffsetSec;
-	chatInfo.EndOffsetSec = config.EndOffsetSec;
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
-	const s32 result = udtCutDemoFileByChat(context, &info, &chatInfo, filePath);
+	udtPatternInfo patternInfo;
+	patternInfo.Type = (u32)udtPatternType::GlobalChat;
+	patternInfo.TypeSpecificInfo = &chatInfo;
+
+	udtCutByPatternArg patternArg;
+	patternArg.StartOffsetSec = config.StartOffsetSec;
+	patternArg.EndOffsetSec = config.EndOffsetSec;
+	patternArg.PatternCount = 1;
+	patternArg.Patterns = &patternInfo;
+	patternArg.PlayerIndex = -999;
+	patternArg.PlayerName = NULL;
+
+	const s32 result = udtCutDemoFileByPattern(context, &info, &patternArg, filePath);
 	if(result == udtErrorCode::None)
 	{
 		return true;
 	}
 
-	fprintf(stderr, "udtCutDemoFileByChat failed with error: %s\n", udtGetErrorCodeString(result));
+	fprintf(stderr, "udtCutDemoFileByPattern failed with error: %s\n", udtGetErrorCodeString(result));
 
 	return false;
 }
@@ -303,13 +313,23 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	threadInfo.MaxThreadCount = (u32)config.MaxThreadCount;
 
 	udtCutByChatArg chatInfo;
-	chatInfo.StartOffsetSec = config.StartOffsetSec;
-	chatInfo.EndOffsetSec = config.EndOffsetSec;
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
-	const s32 result = udtCutDemoFilesByChat(&info, &threadInfo, &chatInfo);
+	udtPatternInfo patternInfo;
+	patternInfo.Type = (u32)udtPatternType::GlobalChat;
+	patternInfo.TypeSpecificInfo = &chatInfo;
 
+	udtCutByPatternArg patternArg;
+	patternArg.StartOffsetSec = config.StartOffsetSec;
+	patternArg.EndOffsetSec = config.EndOffsetSec;
+	patternArg.PatternCount = 1;
+	patternArg.Patterns = &patternInfo;
+	patternArg.PlayerIndex = -999;
+	patternArg.PlayerName = NULL;
+
+	const s32 result = udtCutDemoFilesByPattern(&info, &threadInfo, &patternArg);
+	
 	udtVMLinearAllocator tempAllocator;
 	for(u32 i = 0; i < fileCount; ++i)
 	{
@@ -328,7 +348,7 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 		return true;
 	}
 
-	fprintf(stderr, "udtCutDemoFilesByChat failed with error: %s\n", udtGetErrorCodeString(result));
+	fprintf(stderr, "udtCutDemoFilesByPattern failed with error: %s\n", udtGetErrorCodeString(result));
 
 	return false;
 }

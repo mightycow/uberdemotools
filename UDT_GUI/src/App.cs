@@ -25,28 +25,38 @@ namespace Uber.DemoTools
 
     public class UdtConfig
     {
+        public int CutStartOffset = 10;
+        public int CutEndOffset = 10;
         public List<ChatRule> ChatRules = new List<ChatRule>();
-        public int ChatCutStartOffset = 10;
-        public int ChatCutEndOffset = 10;
         public bool OutputToInputFolder = true;
         public string OutputFolder = "";
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 4;
+        public int MaxThreadCount = 8;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
-        public int FragCutStartOffset = 10;
-        public int FragCutEndOffset = 10;
+        public int PatternsSelectionBitMask = -1;
         public int FragCutMinFragCount = 3;
         public int FragCutTimeBetweenFrags = 5;
         public bool FragCutAllowSelfKills = false;
         public bool FragCutAllowTeamKills = false;
         public bool FragCutAllowAnyDeath = false;
-        public int AwardCutStartOffset = 10;
-        public int AwardCutEndOffset = 10;
+        public int MidAirCutMinDistance = 300;
+        public int MidAirCutMinAirTimeMs = 800;
+        public bool MidAirCutAllowRocket = true;
+        public bool MidAirCutAllowGrenade = true;
+        public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
+        public int MultiRailCutMinFragCount = 2;
+    }
+
+    public class UdtPrivateConfig
+    {
+        public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
+        public string PatternCutPlayerName = "";
+        public UInt32 FragCutAllowedMeansOfDeaths = 0;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -68,6 +78,7 @@ namespace Uber.DemoTools
         public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
+        public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
     }
 
     public class DemoInfoListView : ListView
@@ -101,7 +112,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.3.5a";
+        private const string GuiVersion = "0.4.0";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -137,6 +148,7 @@ namespace Uber.DemoTools
         }
 
         private UdtConfig _config = new UdtConfig();
+        private UdtPrivateConfig _privateConfig = new UdtPrivateConfig();
         private Application _application = null;
         private Thread _jobThread = null;
         private Window _window = null;
@@ -155,9 +167,12 @@ namespace Uber.DemoTools
         private List<AppComponent> _appComponents = new List<AppComponent>();
         private AppComponent _cutByTimeComponent = null;
         private IntPtr _mainThreadContext = IntPtr.Zero;
+        private bool _usingDarkTheme = false;
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
+        private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
+        private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
@@ -172,6 +187,11 @@ namespace Uber.DemoTools
         public UdtConfig Config
         {
             get { return _config; }
+        }
+
+        public UdtPrivateConfig PrivateConfig
+        {
+            get { return _privateConfig; }
         }
 
         public Window MainWindow
@@ -220,6 +240,18 @@ namespace Uber.DemoTools
             }
         }
 
+        private static Color MultiplyRGBSpace(Color color, float value)
+        {
+            var rF = Math.Min((color.R / 255.0f) * value, 1.0f);
+            var gF = Math.Min((color.G / 255.0f) * value, 1.0f);
+            var bF = Math.Min((color.B / 255.0f) * value, 1.0f);
+            var r = (byte)(rF * 255.0f);
+            var g = (byte)(gF * 255.0f);
+            var b = (byte)(bF * 255.0f);
+
+            return Color.FromRgb(r, g, b);
+        }
+
         public App(string[] cmdLineArgs)
         {
             Instance = this;
@@ -233,7 +265,27 @@ namespace Uber.DemoTools
 
             LoadConfig();
 
-            _altListBoxBg = new AlternatingListBoxBackground(Colors.White, Color.FromRgb(223, 223, 223));
+            var listItemColor1 = SystemColors.WindowColor;
+            var listItemColor2 = listItemColor1;
+            var listColorSum = (int)listItemColor1.R + (int)listItemColor1.G + (int)listItemColor1.B;
+            _usingDarkTheme = listColorSum < 385;
+            if(_usingDarkTheme)
+            {
+                if(listColorSum < 96)
+                {
+                    listItemColor2 = Color.Add(listItemColor2, Color.FromRgb(31, 31, 31));
+                    
+                }
+                else
+                {
+                    listItemColor2 = MultiplyRGBSpace(listItemColor1, 1.15f);
+                }
+            }
+            else
+            {
+                listItemColor2 = MultiplyRGBSpace(listItemColor1, 0.87f);
+            }
+            _altListBoxBg = new AlternatingListBoxBackground(listItemColor1, listItemColor2);
 
             var manageDemosTab = new TabItem();
             manageDemosTab.Header = "Manage";
@@ -251,27 +303,15 @@ namespace Uber.DemoTools
 
             _cutByTimeComponent = new CutByTimeComponent(this);
             _appComponents.Add(_cutByTimeComponent);
-            var cutTimeTab = new TabItem();
-            cutTimeTab.Header = "Cut by Time";
-            cutTimeTab.Content = _cutByTimeComponent.RootControl;
+            var cutByTimeTab = new TabItem();
+            cutByTimeTab.Header = "Cut by Time";
+            cutByTimeTab.Content = _cutByTimeComponent.RootControl;
 
-            var cutByChat = new CutByChatComponent(this);
-            _appComponents.Add(cutByChat);
-            var cutChatTab = new TabItem();
-            cutChatTab.Header = "Cut by Chat";
-            cutChatTab.Content = cutByChat.RootControl;
-
-            var cutByFrag = new CutByFragComponent(this);
-            _appComponents.Add(cutByFrag);
-            var cutFragTab = new TabItem();
-            cutFragTab.Header = "Cut by Frag";
-            cutFragTab.Content = cutByFrag.RootControl;
-
-            var cutByAward = new CutByAwardComponent(this);
-            _appComponents.Add(cutByAward);
-            var cutAwardTab = new TabItem();
-            cutAwardTab.Header = "Cut by Award";
-            cutAwardTab.Content = cutByAward.RootControl;
+            var cutByPattern = new CutByPatternComponent(this);
+            _appComponents.Add(cutByPattern);
+            var cutByPatternTab = new TabItem();
+            cutByPatternTab.Header = "Cut by Patterns";
+            cutByPatternTab.Content = cutByPattern.RootControl;
 
             var fragEvents = new FragEventsComponent(this);
             _appComponents.Add(fragEvents);
@@ -284,6 +324,12 @@ namespace Uber.DemoTools
             var settingsTab = new TabItem();
             settingsTab.Header = "Settings";
             settingsTab.Content = settings.RootControl;
+
+            var patterns = new PatternsComponent(this);
+            _appComponents.Add(patterns);
+            var patternsTab = new TabItem();
+            patternsTab.Header = "Patterns";
+            patternsTab.Content = patterns.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -294,10 +340,9 @@ namespace Uber.DemoTools
             tabControl.Items.Add(demosTab);
             tabControl.Items.Add(demoChatTab);
             tabControl.Items.Add(demoFragsTab);
-            tabControl.Items.Add(cutTimeTab);
-            tabControl.Items.Add(cutChatTab);
-            tabControl.Items.Add(cutFragTab);
-            tabControl.Items.Add(cutAwardTab);
+            tabControl.Items.Add(cutByTimeTab);
+            tabControl.Items.Add(cutByPatternTab);
+            tabControl.Items.Add(patternsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -438,9 +483,13 @@ namespace Uber.DemoTools
             demoListView.Drop += OnDemoListBoxDragDrop;
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
-            demoListView.Foreground = new SolidColorBrush(Colors.Black);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
+            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
+            InitDemoListAnalyzeCommand();
+            InitDemoListSelectAllCommand();
+            InitDemoListContextMenu();
             
             var demoListGroupBox = new GroupBox();
             demoListGroupBox.Header = "Demo List";
@@ -499,8 +548,6 @@ namespace Uber.DemoTools
                     _altListBoxBg.ApplyTo(listView);
                 }
             }
-
-            _logListBox.Resources.Add(SystemColors.HighlightBrushKey, new SolidColorBrush(Color.FromRgb(255, 255, 191)));
 
             var label = new Label { Content = "You can drag'n'drop files and folders here.", HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
             var brush = new VisualBrush(label) { Stretch = Stretch.None, Opacity = 0.5 };
@@ -579,6 +626,54 @@ namespace Uber.DemoTools
             AddDemos(filePaths, folderPaths);
         }
 
+        private FrameworkElement CreateContextMenuHeader(string left, string right)
+        {
+            var leftItem = new TextBlock { Text = left, Margin = new Thickness(0, 0, 10, 0) };
+            var rightItem = new TextBlock { Text = right, HorizontalAlignment = HorizontalAlignment.Right };
+
+            var panel = new DockPanel();
+            panel.LastChildFill = true;
+            panel.Children.Add(leftItem);
+            panel.Children.Add(rightItem);
+            DockPanel.SetDock(leftItem, Dock.Left);
+            DockPanel.SetDock(rightItem, Dock.Right);
+
+            return panel;
+        }
+
+        private void InitDemoListContextMenu()
+        {
+            var removeDemoItem = new MenuItem();
+            removeDemoItem.Header = CreateContextMenuHeader("Remove Selected", "(Delete)");
+            removeDemoItem.Command = _deleteDemoCommand;
+            removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
+
+            var splitDemoItem = new MenuItem();
+            splitDemoItem.Header = "Split Selected";
+            splitDemoItem.Command = _splitDemoCommand;
+            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
+
+            var analyzeDemoItem = new MenuItem();
+            analyzeDemoItem.Header = "Analyze Selected";
+            analyzeDemoItem.Command = _analyzeDemoCommand;
+            analyzeDemoItem.Click += (obj, args) => OnAnalyzeDemoClicked();
+
+            var selectAllDemosItem = new MenuItem();
+            selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
+            selectAllDemosItem.Command = _selectAllDemosCommand;
+            selectAllDemosItem.Click += (obj, args) => { if(_demoListView.SelectionMode != SelectionMode.Single) _demoListView.SelectAll(); };
+
+            var demosContextMenu = new ContextMenu();
+            demosContextMenu.Items.Add(analyzeDemoItem);
+            demosContextMenu.Items.Add(removeDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(splitDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(selectAllDemosItem);
+
+            _demoListView.ContextMenu = demosContextMenu;
+        }
+
         private void AddDemos(List<string> filePaths, List<string> folderPaths)
         {
             var filteredFilePaths = new List<string>();
@@ -654,33 +749,55 @@ namespace Uber.DemoTools
             var inputBinding = new KeyBinding(_deleteDemoCommand, inputGesture);
             var commandBinding = new CommandBinding();
             commandBinding.Command = _deleteDemoCommand;
-            commandBinding.Executed += (obj, args) => OnRemoveDemoClicked();
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = _demoListView.SelectedItems.Count > 0; };
             _demoListView.InputBindings.Add(inputBinding);
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
-        private bool CanExecuteSplitCommand(ListViewItem item)
+        private bool CanExecuteAnalyzeCommand()
         {
-            if(item == null)
+            var demos = SelectedDemos;
+            if(demos == null)
             {
                 return false;
             }
 
-            var displayInfo = item.Content as DemoDisplayInfo;
-            if(displayInfo == null)
+            return demos.Exists(d => !d.Analyzed);
+        }
+
+        private void InitDemoListAnalyzeCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _analyzeDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteAnalyzeCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private bool CanExecuteSplitCommand()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count > 1)
             {
                 return false;
             }
+            var demo = demos[0];
 
-            return displayInfo.Demo.GameStateFileOffsets.Count > 1;
+            return demo.GameStateFileOffsets.Count > 1 || !demo.Analyzed;
         }
 
         private void InitDemoListSplitCommand()
         {
             var commandBinding = new CommandBinding();
             commandBinding.Command = _splitDemoCommand;
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(args.Source as ListViewItem); };
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListSelectAllCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _selectAllDemosCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = _demos.Count > 0; };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -711,12 +828,12 @@ namespace Uber.DemoTools
         private void InitLogListBoxContextualMenu()
         {
             var clearLogMenuItem = new MenuItem();
-            clearLogMenuItem.Header = "Clear (Ctrl-X)";
+            clearLogMenuItem.Header = CreateContextMenuHeader("Clear", "Ctrl+X");
             clearLogMenuItem.Command = _clearLogCommand;
             clearLogMenuItem.Click += (obj, args) => ClearLog();
 
             var copyLogMenuItem = new MenuItem();
-            copyLogMenuItem.Header = "Copy (Ctrl-C)";
+            copyLogMenuItem.Header = CreateContextMenuHeader("Copy", "Ctrl+C");
             copyLogMenuItem.Command = _copyLogCommand;
             copyLogMenuItem.Click += (obj, args) => CopyLogSelection();
 
@@ -751,8 +868,34 @@ namespace Uber.DemoTools
 
         private void OnTabSelectionChanged()
         {
-            var singleMode = (_tabControl.SelectedIndex == 1) || (_tabControl.SelectedIndex == 2);
-            _demoListView.SelectionMode = singleMode ? SelectionMode.Single : SelectionMode.Extended;
+            // Tabs:
+            // 0: manage -> multiple selection
+            // 1: info   -> single   selection
+            var tabIndex = _tabControl.SelectedIndex;
+            var multiMode = tabIndex == 0 || tabIndex > 1;
+            var tabItems = _tabControl.Items;
+            if(tabIndex > 1)
+            {
+                var selectedItem = _tabControl.Items[tabIndex];
+                var tabComponent = _appComponents.Find(c => IsMatchingTab(c, selectedItem));
+                if(tabComponent != null)
+                {
+                    multiMode = tabComponent.MultiDemoMode;
+                }
+            }
+  
+            _demoListView.SelectionMode = multiMode ? SelectionMode.Extended : SelectionMode.Single;
+        }
+
+        private bool IsMatchingTab(AppComponent component, object tabItem)
+        {
+            var tab = tabItem as TabItem;
+            if(tab == null)
+            {
+                return false;
+            }
+
+            return component.RootControl == tab.Content;
         }
 
         private void OnOpenDemo()
@@ -867,7 +1010,6 @@ namespace Uber.DemoTools
             infoListView.Margin = new Thickness(5);
             infoListView.View = configStringGridView;
             infoListView.SelectionMode = SelectionMode.Single;
-            infoListView.Foreground = new SolidColorBrush(Colors.Black);
 
             var infoPanelGroupBox = new GroupBox();
             infoPanelGroupBox.Header = "Demo Information";
@@ -1092,7 +1234,7 @@ namespace Uber.DemoTools
             }
         }
 
-        public void EnableUiThreadSafe()
+        private void EnableUiThreadSafe()
         {
             VoidDelegate guiResetter = delegate
             {
@@ -1115,6 +1257,7 @@ namespace Uber.DemoTools
             }
 
             _demoListView.Background = _demoListViewBackground;
+            var oldDemoCount = _demos.Count;
 
             var newDemos = new List<DemoInfo>();
             foreach(var filePath in filePaths)
@@ -1130,7 +1273,12 @@ namespace Uber.DemoTools
                 _demos.Add(demoInfo);
                 newDemos.Add(demoInfo);
 
-                AddDemo(demoDisplayInfo);
+                AddDemoToListView(demoDisplayInfo);
+            }
+
+            if(oldDemoCount == 0)
+            {
+                _demoListView.SelectedIndex = 0;
             }
 
             if(!_config.AnalyzeOnLoad)
@@ -1156,24 +1304,9 @@ namespace Uber.DemoTools
             StartJobThread(DemoAnalyzeThread, demos);
         }
 
-        private void DemoAnalyzeThread(object arg)
-        {
-            try
-            {
-                DemoAnalyzeThreadImpl(arg);
-                EnableUiThreadSafe();
-                VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
-                _window.Dispatcher.Invoke(infoUpdater);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
         public delegate void VoidDelegate();
 
-        private void AddDemo(DemoDisplayInfo info)
+        private void AddDemoToListView(DemoDisplayInfo info)
         {
             var inputGesture = new MouseGesture(MouseAction.LeftDoubleClick, ModifierKeys.None);
             var inputBinding = new MouseBinding(_showDemoInfoCommand, inputGesture);
@@ -1182,23 +1315,8 @@ namespace Uber.DemoTools
             commandBinding.Executed += (obj, args) => OnShowDemoInfo();
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
 
-            var removeDemoItem = new MenuItem();
-            removeDemoItem.Header = "Remove (del)";
-            removeDemoItem.Command = _deleteDemoCommand;
-            removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
-
-            var splitDemoItem = new MenuItem();
-            splitDemoItem.Header = "Split";
-            splitDemoItem.Command = _splitDemoCommand;
-            splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
-
-            var demosContextMenu = new ContextMenu();
-            demosContextMenu.Items.Add(removeDemoItem);
-            demosContextMenu.Items.Add(splitDemoItem);
-
             var item = new ListViewItem();
             item.Content = info;
-            item.ContextMenu = demosContextMenu;
             item.InputBindings.Add(inputBinding);
             item.CommandBindings.Add(commandBinding);
 
@@ -1243,7 +1361,7 @@ namespace Uber.DemoTools
             ParseArg.PlugIns = IntPtr.Zero;
         }
 
-        private void DemoAnalyzeThreadImpl(object arg)
+        private void DemoAnalyzeThread(object arg)
         {
             var demos = arg as List<DemoInfo>;
             if(demos == null)
@@ -1286,6 +1404,7 @@ namespace Uber.DemoTools
                 demos[i].ChatEvents = newDemos[i].ChatEvents;
                 demos[i].FragEvents = newDemos[i].FragEvents;
                 demos[i].GameStateFileOffsets = newDemos[i].GameStateFileOffsets;
+                demos[i].GameStateSnapshotTimesMs = newDemos[i].GameStateSnapshotTimesMs;
                 demos[i].Generic = newDemos[i].Generic;
                 demos[i].InputIndex = newDemos[i].InputIndex;
                 demos[i].Protocol = newDemos[i].Protocol;
@@ -1293,6 +1412,9 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
+
+            VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
+            _window.Dispatcher.Invoke(infoUpdater);
         }
 
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
@@ -1348,6 +1470,20 @@ namespace Uber.DemoTools
             }
 
             Serializer.ToXml("Config.xml", _config);
+        }
+
+        public void SavePrivateConfig()
+        {
+            foreach(var component in _appComponents)
+            {
+                component.SaveToConfigObject(_privateConfig);
+            }
+        }
+
+        public void SaveBothConfigs()
+        {
+            SaveConfig();
+            SavePrivateConfig();
         }
 
         public static int CompareTimeStrings(string a, string b)
@@ -1452,23 +1588,10 @@ namespace Uber.DemoTools
 
         private void DemoSplitThread(object arg)
         {
-            try
-            {
-                DemoSplitThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoSplitThreadImpl(object arg)
-        {
             var filePath = arg as string;
             if(filePath == null)
             {
                 LogError("Invalid thread argument type");
-                EnableUiThreadSafe();
                 return;
             }
 
@@ -1488,7 +1611,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            EnableUiThreadSafe();
         }
 
         private void OnSplitDemoClicked()
@@ -1568,11 +1690,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.ChatCutStartOffset;
-            int endOffset = _config.ChatCutEndOffset;
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
             if(!_config.SkipChatOffsetsDialog)
             {
-                var dialog = new TimeOffsetsDialog(_window, _config.ChatCutStartOffset, _config.ChatCutEndOffset);
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
                 if(!dialog.Valid)
                 {
                     return;
@@ -1691,15 +1813,12 @@ namespace Uber.DemoTools
             return ProtocolFileExtDic[extension];
         }
 
-        private void LogMessage(string message, Color color)
+        private void LogMessage(string message)
         {
             VoidDelegate itemAdder = delegate 
             {
-                var label = new Label();
-                label.Foreground = new SolidColorBrush(color);
-                label.Content = message;
-                _logListBox.Items.Add(label);
-                _logListBox.ScrollIntoView(label); 
+                _logListBox.Items.Add(message);
+                _logListBox.ScrollIntoView(message); 
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
@@ -1707,32 +1826,32 @@ namespace Uber.DemoTools
 
         public void LogInfo(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
+            LogMessage(string.Format(message, args));
         }
 
         public void LogWarning(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            LogMessage("WARNING: " + string.Format(message, args));
         }
 
         public void LogError(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            LogMessage("ERROR: " + string.Format(message, args));
         }
 
         static public void GlobalLogInfo(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(0, 0, 0));
+            App.Instance.LogInfo(message, args);
         }
 
         static public void GlobalLogWarning(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            App.Instance.LogWarning(message, args);
         }
 
         static public void GlobalLogError(string message, params object[] args)
         {
-            App.Instance.LogMessage(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            App.Instance.LogError(message, args);
         }
 
         public void DemoLoggingCallback(int logLevel, string message)
@@ -1842,10 +1961,41 @@ namespace Uber.DemoTools
             }
         }
 
+        private class JobThreadData
+        {
+            public ParameterizedThreadStart UserFunction;
+            public object UserData;
+        }
+
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
-            _jobThread = new Thread(entryPoint);
-            _jobThread.Start(userData);
+            var udtData = new JobThreadData();
+            udtData.UserFunction = entryPoint;
+            udtData.UserData = userData;
+            _jobThread = new Thread(RealJobThreadEntryPoint);
+            _jobThread.Start(udtData);
+        }
+
+        private void RealJobThreadEntryPoint(object udtData)
+        {
+            var data = udtData as JobThreadData;
+            if(data == null)
+            {
+                return;
+            }
+
+            try
+            {
+                data.UserFunction(data.UserData);
+            }
+            catch(Exception exception)
+            {
+                EntryPoint.RaiseException(exception);
+            }
+            finally
+            {
+                EnableUiThreadSafe();
+            }
         }
 
         public IntPtr GetMainThreadContext()

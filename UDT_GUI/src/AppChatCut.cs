@@ -13,14 +13,15 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public class CutByChatComponent : AppComponent
+    public class ChatFiltersComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _chatRulesListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
-        public ComponentType Type { get { return ComponentType.CutByChat; } }
+        public ComponentType Type { get { return ComponentType.ChatFilters; } }
+        public bool MultiDemoMode { get { return true; } }
 
-        public CutByChatComponent(App app)
+        public ChatFiltersComponent(App app)
         {
             _app = app;
             RootControl = CreateCutByChatTab();
@@ -33,15 +34,12 @@ namespace Uber.DemoTools
 
         public void SaveToConfigObject(UdtConfig config)
         {
-            int time = 0;
-            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out time))
-            {
-                _app.Config.ChatCutStartOffset = time;
-            }
-            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out time))
-            {
-                _app.Config.ChatCutEndOffset = time;
-            }
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
         }
 
         private App _app;
@@ -63,8 +61,6 @@ namespace Uber.DemoTools
         }
 
         private DemoInfoListView _chatRulesListView = null;
-        private TextBox _startTimeOffsetEditBox = null;
-        private TextBox _endTimeOffsetEditBox = null;
 
         private FrameworkElement CreateCutByChatTab()
         {
@@ -83,7 +79,6 @@ namespace Uber.DemoTools
             chatRulesListView.View = chatRulesGridView;
             chatRulesListView.SelectionMode = SelectionMode.Single;
             chatRulesListView.Width = 485;
-            chatRulesListView.Foreground = new SolidColorBrush(Colors.Black);
             foreach(var rule in _app.Config.ChatRules)
             {
                 chatRulesListView.Items.Add(new ChatRuleDisplayInfo(rule));
@@ -150,42 +145,12 @@ namespace Uber.DemoTools
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
 
-            var startTimeOffsetEditBox = new TextBox();
-            _startTimeOffsetEditBox = startTimeOffsetEditBox;
-            startTimeOffsetEditBox.Width = 40;
-            startTimeOffsetEditBox.Text = _app.Config.ChatCutStartOffset.ToString();
-            startTimeOffsetEditBox.ToolTip = "How many seconds before the chat event do we start the cut?";
-
-            var endTimeOffsetEditBox = new TextBox();
-            _endTimeOffsetEditBox = endTimeOffsetEditBox;
-            endTimeOffsetEditBox.Width = 40;
-            endTimeOffsetEditBox.Text = _app.Config.ChatCutEndOffset.ToString();
-            endTimeOffsetEditBox.ToolTip = "How many seconds after the chat event do we end the cut?";
-
-            var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            panelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            panelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
-            var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
-            optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            optionsPanel.VerticalAlignment = VerticalAlignment.Center;
-            
-            var timeOffsetsGroupBox = new GroupBox();
-            timeOffsetsGroupBox.Header = "Time Offsets";
-            timeOffsetsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            timeOffsetsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            timeOffsetsGroupBox.Margin = new Thickness(5);
-            timeOffsetsGroupBox.Content = optionsPanel;
-
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "UDT will create a cut section for each global chat command that matches at least one of the rules you defined." +
-                "\nWhen parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
-                "\n\nThe StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." + 
-                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well)." +
-                "\n\nExample: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with start and end time offsets 10 and 8." +
-                "\nUDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
+                "The StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." +
+                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well).";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
@@ -198,7 +163,6 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(chatRulesGroupBox);
-            rootPanel.Children.Add(timeOffsetsGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
@@ -242,23 +206,10 @@ namespace Uber.DemoTools
 
         private void DemoCutByChatThread(object arg)
         {
-            try
-            {
-                DemoCutByChatThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByChatThreadImpl(object arg)
-        {
             var filePaths = arg as List<string>;
             if(filePaths == null)
             {
                 _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
                 return;
             }
 
@@ -270,7 +221,7 @@ namespace Uber.DemoTools
             try
             {
                 var config = _app.Config;
-                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, config.ChatCutStartOffset, config.ChatCutEndOffset, config.MaxThreadCount);
+                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {
@@ -278,7 +229,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
 
         private void OnAddChatRuleClicked()

@@ -285,9 +285,9 @@ static const idNetField PlayerStateFields68[] =
 	{ PSF(clientNum), 8 },
 	{ PSF(weapon), 5 },
 	{ PSF(viewangles[2]), 0 },
-	{ PSF(grapplePos32[0]), 0 },
-	{ PSF(grapplePos32[1]), 0 },
-	{ PSF(grapplePos32[2]), 0 },
+	{ PSF(grapplePoint[0]), 0 },
+	{ PSF(grapplePoint[1]), 0 },
+	{ PSF(grapplePoint[2]), 0 },
 	{ PSF(jumppad_ent), 10 },
 	{ PSF(loopSound), 16 }
 };
@@ -347,9 +347,9 @@ static const idNetField PlayerStateFields73[] =
 	{ PSF(clientNum), 8 },
 	{ PSF(weapon), 5 },
 	{ PSF(viewangles[2]), 0 },
-	{ PSF(grapplePos32[0]), 0 },
-	{ PSF(grapplePos32[1]), 0 },
-	{ PSF(grapplePos32[2]), 0 },
+	{ PSF(grapplePoint[0]), 0 },
+	{ PSF(grapplePoint[1]), 0 },
+	{ PSF(grapplePoint[2]), 0 },
 	{ PSF(jumppad_ent), 10 },
 	{ PSF(loopSound), 16 }
 };

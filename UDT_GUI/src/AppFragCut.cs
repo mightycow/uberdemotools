@@ -19,7 +19,7 @@ namespace Uber.DemoTools
 
         private List<CheckBox> _checkBoxes = new List<CheckBox>();
 
-        public FilterGroupBox(string header, UDT_DLL.udtStringArray arrayId, int columnCount = 2)
+        public FilterGroupBox(string header, UDT_DLL.udtStringArray stringArrayId, int columnCount = 2)
         {
             var enableAllButton = new Button();
             enableAllButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -51,7 +51,7 @@ namespace Uber.DemoTools
             panel.VerticalAlignment = VerticalAlignment.Stretch;
 
             const int rowOffset = 1; // One additional row for the EnableAll/DisableAll buttons.
-            var itemNames = UDT_DLL.GetStringArray(arrayId);
+            var itemNames = UDT_DLL.GetStringArray(stringArrayId);
             var rowCount = (itemNames.Count + columnCount - 1) / columnCount;
             var maxCheckBoxesPerColumn = rowCount;
             rowCount += rowOffset;
@@ -120,6 +120,15 @@ namespace Uber.DemoTools
             return result;
         }
 
+        public void SetBitMask(UInt32 bitMask)
+        {
+            for(var i = 0; i < _checkBoxes.Count; ++i)
+            {
+                var isChecked = (bitMask & (1 << i)) != 0;
+                _checkBoxes[i].IsChecked = isChecked;
+            }
+        }
+
         private void SetAllChecked(bool isChecked)
         {
             foreach(var checkBox in _checkBoxes)
@@ -129,14 +138,15 @@ namespace Uber.DemoTools
         }
     }
 
-    public class CutByFragComponent : AppComponent
+    public class FragSequenceFiltersComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
         public List<DemoInfoListView> InfoListViews { get { return null; } }
-        public ComponentType Type { get { return ComponentType.CutByChat; } }
+        public ComponentType Type { get { return ComponentType.ChatFilters; } }
+        public bool MultiDemoMode { get { return true; } }
 
-        public CutByFragComponent(App app)
+        public FragSequenceFiltersComponent(App app)
         {
             _app = app;
             RootControl = CreateCutByFragTab();
@@ -151,51 +161,38 @@ namespace Uber.DemoTools
         {
             int intValue = 0;
 
-            if(App.GetOffsetSeconds(_startTimeOffsetEditBox.Text, out intValue))
-            {
-                _app.Config.FragCutStartOffset = intValue;
-            }
-
-            if(App.GetOffsetSeconds(_endTimeOffsetEditBox.Text, out intValue))
-            {
-                _app.Config.FragCutEndOffset = intValue;
-            }
-
             if(int.TryParse(_minFragCountEditBox.Text, out intValue))
             {
-                _app.Config.FragCutMinFragCount = intValue;
+                config.FragCutMinFragCount = intValue;
             }
 
             if(int.TryParse(_timeBetweenFragsEditBox.Text, out intValue))
             {
-                _app.Config.FragCutTimeBetweenFrags = intValue;
+                config.FragCutTimeBetweenFrags = intValue;
             }
 
-            _app.Config.FragCutAllowSelfKills = _allowSelfKillsCheckBox.IsChecked.HasValue && _allowSelfKillsCheckBox.IsChecked.Value;
-            _app.Config.FragCutAllowTeamKills = _allowTeamKillsCheckBox.IsChecked.HasValue && _allowTeamKillsCheckBox.IsChecked.Value;
-            _app.Config.FragCutAllowAnyDeath = _allowAnyDeathCheckBox.IsChecked.HasValue && _allowAnyDeathCheckBox.IsChecked.Value;
+            config.FragCutAllowSelfKills = _allowSelfKillsCheckBox.IsChecked.HasValue && _allowSelfKillsCheckBox.IsChecked.Value;
+            config.FragCutAllowTeamKills = _allowTeamKillsCheckBox.IsChecked.HasValue && _allowTeamKillsCheckBox.IsChecked.Value;
+            config.FragCutAllowAnyDeath = _allowAnyDeathCheckBox.IsChecked.HasValue && _allowAnyDeathCheckBox.IsChecked.Value;
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            config.FragCutAllowedMeansOfDeaths = _playerMODFilters.GetBitMask();
         }
 
         private App _app;
-        private TextBox _startTimeOffsetEditBox = null;
-        private TextBox _endTimeOffsetEditBox = null;
         private TextBox _minFragCountEditBox = null;
         private TextBox _timeBetweenFragsEditBox = null;
         private CheckBox _allowSelfKillsCheckBox = null;
         private CheckBox _allowTeamKillsCheckBox = null;
         private CheckBox _allowAnyDeathCheckBox = null;
-        private RadioButton _autoPlayerSelectionRadioButton = null;
-        private RadioButton _manualPlayerSelectionRadioButton = null;
-        private ComboBox _playerIndexComboBox = null;
         private FilterGroupBox _playerMODFilters = null;
-        //private FilterGroupBox _powerUpFilters = null;
-        //private FilterGroupBox _weaponFilters = null;
 
         private FrameworkElement CreateCutByFragTab()
         {
             _playerMODFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
-            //_powerUpFilters = new FilterGroupBox("Power-up Filters", UDT_DLL.udtStringArray.PowerUps);
-            //_weaponFilters = new FilterGroupBox("Weapon Filters", UDT_DLL.udtStringArray.Weapons);
+            // @TODO: Power-up Filters
 
             var minFragCountEditBox = new TextBox();
             _minFragCountEditBox = minFragCountEditBox;
@@ -229,12 +226,12 @@ namespace Uber.DemoTools
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Min. Frag Count", minFragCountEditBox));
-            rulesPanelList.Add(App.CreateTuple("Time Between Frags", timeBetweenFragsEditBox));
+            rulesPanelList.Add(App.CreateTuple("Max. Time Between Frags [s]", timeBetweenFragsEditBox));
             rulesPanelList.Add(App.CreateTuple("Allow Self Kills?", allowSelfKillsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow Any Death?", allowAnyDeathCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow Team Kills?", allowTeamKillsCheckBox));
             
-            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
+            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 175, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
             rulesPanel.VerticalAlignment = VerticalAlignment.Center;
 
@@ -244,57 +241,6 @@ namespace Uber.DemoTools
             rulesGroupBox.VerticalAlignment = VerticalAlignment.Top;
             rulesGroupBox.Margin = new Thickness(5);
             rulesGroupBox.Content = rulesPanel;
-
-            var autoPlayerSelectionRadioButton = new RadioButton();
-            autoPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
-            autoPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
-            _autoPlayerSelectionRadioButton = autoPlayerSelectionRadioButton;
-            autoPlayerSelectionRadioButton.GroupName = "PlayerSelection";
-            autoPlayerSelectionRadioButton.Content = " Recording Player";
-            autoPlayerSelectionRadioButton.ToolTip = "The player who recorded the demo";
-            autoPlayerSelectionRadioButton.IsChecked = true;
-
-            var manualPlayerSelectionRadioButton = new RadioButton();
-            manualPlayerSelectionRadioButton.HorizontalAlignment = HorizontalAlignment.Left;
-            manualPlayerSelectionRadioButton.VerticalAlignment = VerticalAlignment.Center;
-            _manualPlayerSelectionRadioButton = manualPlayerSelectionRadioButton;
-            manualPlayerSelectionRadioButton.GroupName = "PlayerSelection";
-            manualPlayerSelectionRadioButton.Content = " This Player";
-            manualPlayerSelectionRadioButton.IsChecked = false;
-
-            var playerIndexComboBox = new ComboBox();
-            playerIndexComboBox.HorizontalAlignment = HorizontalAlignment.Left;
-            playerIndexComboBox.VerticalAlignment = VerticalAlignment.Center;
-            _playerIndexComboBox = playerIndexComboBox;
-            playerIndexComboBox.Margin = new Thickness(5, 0, 0, 0);
-            playerIndexComboBox.Width = 40;
-            for(var i = 0; i < 64; ++i)
-            {
-                playerIndexComboBox.Items.Add(i.ToString());
-            }
-            playerIndexComboBox.SelectedIndex = 0;
-
-            var manualPlayerSelectionRow = new StackPanel();
-            manualPlayerSelectionRow.Margin = new Thickness(0, 5, 0, 0);
-            manualPlayerSelectionRow.Orientation = Orientation.Horizontal;
-            manualPlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
-            manualPlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
-            manualPlayerSelectionRow.Children.Add(manualPlayerSelectionRadioButton);
-            manualPlayerSelectionRow.Children.Add(playerIndexComboBox);
-
-            var playerSelectionPanel = new StackPanel();
-            playerSelectionPanel.Margin = new Thickness(10);
-            playerSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            playerSelectionPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            playerSelectionPanel.Children.Add(autoPlayerSelectionRadioButton);
-            playerSelectionPanel.Children.Add(manualPlayerSelectionRow);
-
-            var playerSelectionGroupBox = new GroupBox();
-            playerSelectionGroupBox.Margin = new Thickness(5);
-            playerSelectionGroupBox.Header = "Player Selection";
-            playerSelectionGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            playerSelectionGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            playerSelectionGroupBox.Content = playerSelectionPanel;
 
             var cutButton = new Button();
             cutButton.HorizontalAlignment = HorizontalAlignment.Left;
@@ -311,32 +257,6 @@ namespace Uber.DemoTools
             actionsGroupBox.Margin = new Thickness(5);
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
-
-            var startTimeOffsetEditBox = new TextBox();
-            _startTimeOffsetEditBox = startTimeOffsetEditBox;
-            startTimeOffsetEditBox.Width = 40;
-            startTimeOffsetEditBox.Text = _app.Config.FragCutStartOffset.ToString();
-            startTimeOffsetEditBox.ToolTip = "How many seconds before the first frag in the sequence do we start the cut?";
-
-            var endTimeOffsetEditBox = new TextBox();
-            _endTimeOffsetEditBox = endTimeOffsetEditBox;
-            endTimeOffsetEditBox.Width = 40;
-            endTimeOffsetEditBox.Text = _app.Config.FragCutEndOffset.ToString();
-            endTimeOffsetEditBox.ToolTip = "How many seconds after the last frag in the sequence do we end the cut?";
-
-            var timeOffsetPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            timeOffsetPanelList.Add(App.CreateTuple("Start Time Offset", startTimeOffsetEditBox));
-            timeOffsetPanelList.Add(App.CreateTuple("End Time Offset", endTimeOffsetEditBox));
-            var timeOffsetPanel = WpfHelper.CreateDualColumnPanel(timeOffsetPanelList, 100, 5);
-            timeOffsetPanel.HorizontalAlignment = HorizontalAlignment.Center;
-            timeOffsetPanel.VerticalAlignment = VerticalAlignment.Center;
-            
-            var timeOffsetsGroupBox = new GroupBox();
-            timeOffsetsGroupBox.Header = "Time Offsets";
-            timeOffsetsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            timeOffsetsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            timeOffsetsGroupBox.Margin = new Thickness(5);
-            timeOffsetsGroupBox.Content = timeOffsetPanel;
             
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -358,14 +278,10 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(rulesGroupBox);
-            rootPanel.Children.Add(timeOffsetsGroupBox);
-            rootPanel.Children.Add(playerSelectionGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
             rootPanel.Children.Add(new WpfHelper.WrapPanelNewLine());
             rootPanel.Children.Add(_playerMODFilters.RootElement);
-            //rootPanel.Children.Add(_powerUpFilters.RootElement);
-            //rootPanel.Children.Add(_weaponFilters.RootElement);
 
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -378,13 +294,6 @@ namespace Uber.DemoTools
             return scrollViewer; 
         }
 
-        private class ThreadArg
-        {
-            public List<string> FilePaths = null;
-            public int PlayerIndex = -1;
-            public UInt32 AllowedMeansOfDeaths = 0;
-        }
-
         private void OnCutByFragClicked()
         {
             var demos = _app.SelectedDemos;
@@ -394,21 +303,13 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var playerIndex = -1;
-            var manualMode = _manualPlayerSelectionRadioButton.IsChecked ?? false;
-            if(manualMode)
-            {
-                playerIndex = _playerIndexComboBox.SelectedIndex;
-            }
+            _app.SaveBothConfigs();
 
-            UInt32 allowedPlayerMODs = _playerMODFilters.GetBitMask();
-            if(allowedPlayerMODs == 0)
+            if(_app.PrivateConfig.FragCutAllowedMeansOfDeaths == 0)
             {
                 _app.LogError("You didn't check any Mean of Death. Please check at least one to proceed.");
                 return;
             }
-
-            _app.SaveConfig();
             if(_app.Config.FragCutMinFragCount < 2)
             {
                 _app.LogError("'Min. Frag Count' must be 2 or higher.");
@@ -429,41 +330,15 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var threadArg = new ThreadArg();
-            threadArg.FilePaths = filePaths;
-            threadArg.PlayerIndex = playerIndex;
-            threadArg.AllowedMeansOfDeaths = allowedPlayerMODs;
-
-            _app.StartJobThread(DemoCutByFragThread, threadArg);
+            _app.StartJobThread(DemoCutByFragThread, filePaths);
         }
 
         private void DemoCutByFragThread(object arg)
         {
-            try
-            {
-                DemoCutByFragThreadImpl(arg);
-            }
-            catch(Exception exception)
-            {
-                EntryPoint.RaiseException(exception);
-            }
-        }
-
-        private void DemoCutByFragThreadImpl(object arg)
-        {
-            var threadArg = arg as ThreadArg;
-            if(threadArg == null)
-            {
-                _app.LogError("Invalid thread argument type");
-                _app.EnableUiThreadSafe();
-                return;
-            }
-
-            var filePaths = threadArg.FilePaths;
+            var filePaths = arg as List<string>;
             if(filePaths == null)
             {
-                _app.LogError("Invalid thread argument data");
-                _app.EnableUiThreadSafe();
+                _app.LogError("Invalid thread argument");
                 return;
             }
 
@@ -472,33 +347,11 @@ namespace Uber.DemoTools
             _app.InitParseArg();
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
 
-            var config = _app.Config;
-            UInt32 flags = 0;
-            if(config.FragCutAllowAnyDeath)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowDeaths;
-            }
-            if(config.FragCutAllowSelfKills)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowSelfKills;
-            }
-            if(config.FragCutAllowTeamKills)
-            {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowTeamKills;
-            }
-
             try
             {
-                var rules = new UDT_DLL.udtCutByFragArg();
-                rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
-                rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
-                rules.TimeMode = 0; // @TODO:
-                rules.StartOffsetSec = (UInt32)config.FragCutStartOffset;
-                rules.EndOffsetSec = (UInt32)config.FragCutEndOffset;
-                rules.Flags = flags;
-                rules.PlayerIndex = (Int32)threadArg.PlayerIndex;
-                rules.AllowedMeansOfDeaths = threadArg.AllowedMeansOfDeaths;
-                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, config.MaxThreadCount);
+                var config = _app.Config;
+                var rules = UDT_DLL.CreateCutByFragArg(config, _app.PrivateConfig);
+                UDT_DLL.CutDemosByFrag(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
             }
             catch(Exception exception)
             {
@@ -506,7 +359,6 @@ namespace Uber.DemoTools
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
-            _app.EnableUiThreadSafe();
         }
     }
 }

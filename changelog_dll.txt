@@ -1,5 +1,13 @@
+0.4.0 (03.01.2015)
+ADD: Added a new unified "Cut by Pattern" system with gloabl player selection/tracking settings; see the udtCutDemoFileByPattern and udtCutDemoFilesByPattern API functions
+ADD: Added the "Mid-Air Frags" cut filter
+ADD: Added the "Multi-Frag Rails" cut filter
+ADD: Now adding a very small file name suffix specifying the type of pattern that was matched for the cut (if sections get merged, the first match's description is used)
+FIX: The obituaries analyzer will now find some events that it didn't before; this change affects the frag sequence cut analyzer too
+REM: Removed "Cut by Awards"
+
 0.3.4a (22.12.2014)
-CHG: Bumped up the maximum thread count in batch processing jobs
+CHG: Bumped up the maximum thread count in batch processing jobs to 8
 FIX: Cut by Frag was ignoring the "Time Between Frags" filter!
 FIX: The award analyzer will only accept the persistent counter going up as an event (as opposed to just changing)
 

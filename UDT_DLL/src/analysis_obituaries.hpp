@@ -15,9 +15,8 @@ public:
 public:
 	udtObituariesAnalyzer()
 	{
-		RecordingPlayerIndex = -1;
-		_lastProcessedServerCommandNumber = -1;
 		_gameStateIndex = -1;
+		_enableNameAllocation = true;
 		_playerNamesAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
 		_tempAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
 
@@ -31,12 +30,13 @@ public:
 	{
 	}
 
+	void SetNameAllocationEnabled(bool enabled) { _enableNameAllocation = enabled; }
+ 
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
 	ObituaryArray Obituaries;
-	s32 RecordingPlayerIndex;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtObituariesAnalyzer);
@@ -45,9 +45,9 @@ private:
 
 	udtVMLinearAllocator _playerNamesAllocator;
 	udtVMLinearAllocator _tempAllocator;
-	s32 _gameStateIndex;
-	s32 _lastProcessedServerCommandNumber;
 	s32 _playerTeams[64];
+	s32 _gameStateIndex;
+	bool _enableNameAllocation;
 };
 
 struct udtParserPlugInObituaries : udtBaseParserPlugIn

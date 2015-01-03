@@ -24,15 +24,42 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 }
 
 
-void udtCutByFragAnalyzer::FinishAnalysis()
+udtCutByFragAnalyzer::udtCutByFragAnalyzer()
 {
-	const s32 maxIntervalMs = _info.TimeBetweenFragsSec * 1000;
-	const s32 playerIndex = (_info.PlayerIndex >= 0 && _info.PlayerIndex < 64) ? _info.PlayerIndex : _analyzer.RecordingPlayerIndex;
-	const bool allowSelfKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
-	const bool allowTeamKills = (_info.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
-	const bool allowAnyDeath = (_info.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
+	_analyzer.SetNameAllocationEnabled(false);
+}
 
-	for(u32 i = 0, count = _analyzer.Obituaries.GetSize(); i < count; ++i)
+udtCutByFragAnalyzer::~udtCutByFragAnalyzer()
+{
+}
+
+void udtCutByFragAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessGamestateMessage(arg, parser);
+}
+
+void udtCutByFragAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessCommandMessage(arg, parser);
+}
+
+void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessSnapshotMessage(arg, parser);
+	const u32 obituaryCount = _analyzer.Obituaries.GetSize();
+	if(obituaryCount == 0)
+	{
+		return;
+	}
+
+	const udtCutByFragArg& extraInfo = GetExtraInfo<udtCutByFragArg>();
+	const s32 maxIntervalMs = extraInfo.TimeBetweenFragsSec * 1000;
+	const s32 playerIndex = PlugIn->GetTrackedPlayerIndex();
+	const bool allowSelfKills = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowSelfKills) != 0;
+	const bool allowTeamKills = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowTeamKills) != 0;
+	const bool allowAnyDeath = (extraInfo.Flags & (u32)udtCutByFragArgFlags::AllowDeaths) != 0;
+
+	for(u32 i = 0; i < obituaryCount; ++i)
 	{
 		const udtParseDataObituary& data = _analyzer.Obituaries[i];
 
@@ -63,7 +90,7 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 		}
 
 		// Did we use a weapon that's not allowed?
-		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, _info.AllowedMeansOfDeaths, _protocol))
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, parser._protocol))
 		{
 			AddCurrentSectionIfValid();
 			continue;
@@ -90,22 +117,31 @@ void udtCutByFragAnalyzer::FinishAnalysis()
 		}
 	}
 
+	_analyzer.Obituaries.Clear();
+}
+
+void udtCutByFragAnalyzer::FinishAnalysis()
+{
 	AddCurrentSectionIfValid();
 }
 
 void udtCutByFragAnalyzer::AddCurrentSectionIfValid()
 {
+	const udtCutByPatternArg& info = PlugIn->GetInfo();
+	const udtCutByFragArg& extraInfo = GetExtraInfo<udtCutByFragArg>();
+
 	const u32 fragCount = _frags.GetSize();
-	if(fragCount < 2 || fragCount < _info.MinFragCount)
+	if(fragCount < 2 || fragCount < extraInfo.MinFragCount)
 	{
 		_frags.Clear();
 		return;
 	}
 
-	udtCutAnalyzerBase::CutSection cut;
+	udtCutSection cut;
+	cut.VeryShortDesc = "frag";
 	cut.GameStateIndex = _frags[0].GameStateIndex;
-	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(_info.StartOffsetSec * 1000);
-	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(_info.EndOffsetSec * 1000);
+	cut.StartTimeMs = _frags[0].ServerTimeMs - (s32)(info.StartOffsetSec * 1000);
+	cut.EndTimeMs = _frags[fragCount - 1].ServerTimeMs + (s32)(info.EndOffsetSec * 1000);
 	CutSections.Add(cut);
 
 	_frags.Clear();

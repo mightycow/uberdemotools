@@ -2,38 +2,18 @@
 
 
 #include "analysis_obituaries.hpp"
-#include "analysis_cut_base.hpp"
+#include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByFragAnalyzer : public udtCutAnalyzerBase
+struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer(const udtCutByFragArg& info) 
-		: _info(info)
-	{
-		_protocol = udtProtocol::Invalid;
-	}
+	udtCutByFragAnalyzer();
+	~udtCutByFragAnalyzer();
 
-	~udtCutByFragAnalyzer()
-	{
-	}
-
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
-	{
-		_protocol = parser._protocol;
-		_analyzer.ProcessGamestateMessage(arg, parser);
-	}
-
-	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
-	{
-		_analyzer.ProcessCommandMessage(arg, parser);
-	}
-
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
-	{
-		_analyzer.ProcessSnapshotMessage(arg, parser);
-	}
-
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void FinishAnalysis();
 
 private:
@@ -48,8 +28,6 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	const udtCutByFragArg& _info;
 	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
-	udtProtocol::Id _protocol;
 };

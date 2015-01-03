@@ -1,3 +1,22 @@
+0.4.0 (03.01.2015)
+ADD: Added a new unified "Cut by Pattern" system with gloabl player selection/tracking settings
+ADD: Added the "Mid-Air Frags" cut filter
+ADD: Added the "Multi-Frag Rails" cut filter
+ADD: Now adding a very small file name suffix specifying the type of pattern that was matched for the cut (if sections get merged, the first match's description is used)
+CHG: All cutting filter tabs are now found under the new "Patterns" tab
+CHG: Unified cut start and end offset config values shared by all filters in the "Settings" tab
+CHG: Bumped up the default max. thread count to 8
+CHG: The new minimum required .NET Framework version is now 4.5
+CHG: More detailed "Cut by Time" input checking and error formatting
+CHG: Improved the contextual menu of the "Demo List" list box
+CHG: Improved the list boxes' look for Windows users having a dark desktop theme
+CHG: Improved the help text in several tabs
+CHG: The "Log" list box will no longer color messages depending on severity to better integrate with the user's desktop UI theme
+FIX: Fixed the "Log" list box's highlighted line using the wrong foreground (text) color
+FIX: The "Cut by Time" feature will no longer crash with a non-0 gamestate index on non-analyzed demos
+FIX: The obituaries analyzer will now find some events that it didn't before; in the GUI this affects both the "Deaths" listing and the "Frag Sequence" cut filter
+REM: Removed "Cut by Awards"
+
 0.3.5a (22.12.2014)
 CHG: Player index selection is now handled by a combo box widget
 
