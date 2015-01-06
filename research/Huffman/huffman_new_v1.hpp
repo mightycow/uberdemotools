@@ -145,17 +145,8 @@ static const u8 BigCodeSymbols[456] =
 	223, 19, 227, 19, 153, 161, 250, 37, 153, 161, 250, 37
 };
 
-static const u32 MaskElevenBits = (((u32)1 << 11) - 1);
-
 static void myT_ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
-{
-	if((look & MaskElevenBits) == 256)
-	{
-		bitsRead = 11;
-		symbol = 256;
-		return;
-	}
-
+{	
 	const u32 lookFirstByte = look & 0xFF;
 	const u8 bitCount = SmallCodeBitCounts[lookFirstByte];
 	if(bitCount == 0)
