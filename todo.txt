@@ -7,3 +7,6 @@ To do:
 - Player position smoothing for "laggy" demos
 - DLL: Better mid-air detection heuristics?
 - DLL: Give plug-ins the ability to tell when their job is done so that parsing can be stopped early
+- DLL: Create a global library-wide list of udtVMLinearAllocator instances currently alive so that memory stats (bytes reserved/committed/used) can be accessed easily in debug mode
+- DLL: Reduce memory consumption (and page fault count) by passing allocators (re-using them) to parsers and plug-ins
+- Frag Sequence cut filter: add a "max. time after spawn" option to detect sequences of spawnfrags 
