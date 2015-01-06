@@ -1,0 +1,80 @@
+#1
+LONG 151 (ReliableSequenceAcknowledge)
+Bit 16
+
+#2
+BYTE 2 (Message Command) --> svc_gamestate
+Bit 23
+
+#3
+LONG 0 (ServerCommandSequence)
+Bit 31
+
+#4
+BYTE 3 (GameState Command) --> svc_configstring
+Bit 38
+
+#5
+SHORT 0 (Index)
+Bit 42
+
+--> OK
+
+#6
+BigString (ConfigString)
+Bit 5245
+
+#7
+BYTE 3 (GameState Command) --> svc_configstring
+Bit 5252
+
+#8
+SHORT 1 (Index)
+Bit 5259
+
+#9
+BigString (ConfigString)
+Bit 63617
+
+...
+
+BIT STREAM
+3d a8 48 55 b6 1e cb bb c0 0e 2a cc 3b 76 f9 74 2c ef 02 9b 9b cd cb 32 f0
+3d 00111101  0- 7
+a8 10101000  8-15
+48 01001000 16-23
+55 01010101 24-31
+b6 10110110 32-39
+1e 00011110 40-47
+cb 11001011 48-55
+bb 10111011 56-63
+
+#3 (ServerCommandSequence)
+Byte #0: 0
+Bit 23 -> 25
+Byte #1: 0
+Bit 25 -> 27
+Byte #2: 0
+Bit 27 -> 29
+Byte #3: 0
+Bit 29 -> 31
+
+#6 (First ConfigString) at bit 42
+At bit 42: LSB->MSB: 1110001101001111...
+Byte #0 LSB->MSB 111000110 --> symbol 92
+Byte #0 MSB->LSB 011000111b == 199 (length 9) --> symbol 92
+
+input 32 bits: 110000001011101111001011000111
+input extra 3 bits: 010
+
+#6 (First ConfigString) at bit 42
+Byte  92 --> bit  51
+Byte 115 --> bit  59
+Byte 118 --> bit  67
+Byte  95 --> bit  75
+Byte 102 --> bit  83
+Byte 112 --> bit  91
+Byte 115 --> bit  99
+Byte  92 --> bit 108
+Byte  51 --> bit 117
+Byte  48 --> bit 124

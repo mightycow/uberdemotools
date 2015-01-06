@@ -1,0 +1,4 @@
+udtMessage::ReadBits, time spent in OffsetReceive
+- id's version, verbatim: ???
+- id's version, some tweaks by myT: 68%
+- myT's version, v1: 32%
