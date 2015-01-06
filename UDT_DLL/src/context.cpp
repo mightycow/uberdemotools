@@ -2,7 +2,7 @@
 #include "common.hpp"
 #include "crash.hpp"
 
-#if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
+#if defined(UDT_MSVC) && defined(UDT_WINDOWS)
 #	include <Windows.h> // IsDebuggerPresent, __debugbreak
 #endif
 
@@ -138,8 +138,12 @@ void udtContext::LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...)
 
 	(*_messageCallback)(3, msg);
 
-#if defined(_MSC_VER) && defined(_WIN32) && defined(_DEBUG)
-	if(IsDebuggerPresent()) __debugbreak();
+#if defined(UDT_MSVC) && defined(UDT_WINDOWS)
+#	if defined(UDT_DEBUG)
+		UDT_DEBUG_BREAK();
+#	else
+		if(IsDebuggerPresent()) UDT_DEBUG_BREAK();
+#	endif
 #endif
 
 	FatalError(__FILE__, __LINE__, __FUNCTION__, msg);
