@@ -7,5 +7,6 @@ All tests done on x64 release builds from Visual Studio 2013
 72%, 3855* ms - id's version
 68%, 3469* ms - id's version + 2 small tweaks by myT
 32%, 2138* ms - myT's decoder v1
+N/A, 2326* ms - myT's decoder v2
 
 *This is including id's Huffman tree init code: 105-115 ms

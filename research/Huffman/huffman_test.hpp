@@ -283,12 +283,56 @@ static HuffmanTableEntry GlobalHuffmanLUT[] =
 
 struct udtNewHuffmanDecoder
 {
+	// This is not optimal but it's only used for table generation...
+	void Write12Bits(u8* firstElement, u32 elementIndex, u16 elementValue)
+	{
+		// even index ==> keep last  4 bits
+		// odd  index ==> keep first 4 bits
+		const u32 byteIndex = elementIndex + (elementIndex >> 1);
+		const u16 oldShortValue = *(u16*)(firstElement + byteIndex);
+		const u32 bitsToShift = (elementIndex & 1) << 2;
+		const u32 newValueShifted = (elementValue & 0xFFF) << bitsToShift;
+		const u32 oldValueMask = (elementIndex & 1) ? 0xF : (0xF000);
+		const u32 oldValueMasked = oldShortValue & oldValueMask;
+		const u16 newShortValue = newValueShifted | oldValueMasked;
+		*(u16*)(firstElement + byteIndex) = newShortValue;
+	}
+
+	// @TODO: Should be optimized/inlined for the final implementation.
+	u16 Read12Bits(const u8* firstElement, u32 elementIndex)
+	{
+		// Example: index 3 == bit index 36 ==> read bytes 4+5
+		const u32 byteIndex = elementIndex + (elementIndex >> 1);
+		const u32 bitsToShift = (elementIndex & 1) << 2;
+		const u16 shortValue = *(u16*)(firstElement + byteIndex);
+		return (shortValue >> bitsToShift) & 0xFFF;
+	}
+
+	void WriteFirstTableOffset(u32 index, u16 offset)
+	{
+		const u16 value = (offset << 1);
+		Write12Bits(_firstTable, index, value);
+	}
+
+	void WriteFirstTableResult(u32 index, u8 symbol, u8 codeLength)
+	{
+		const u16 value = 1 | (((u16)(codeLength - 1) & 7) << 1) | ((u16)symbol << 4);
+		Write12Bits(_firstTable, index, value);
+	}
+
+	void WriteSecondTable(u32 index, u8 symbol, u8 codeLength)
+	{
+		const u16 value = ((u16)codeLength & 15) | ((u16)symbol << 4);
+		Write12Bits(_secondTable, index, value);
+	}
+
 	void Init()
 	{
 		memset(this, 0, sizeof(*this));
 
 		SortTable();
 
+		// Generate first table.
 		for(u32 i = 0; i < (u32)UDT_COUNT_OF(GlobalHuffmanLUT); ++i)
 		{
 			const u32 codeLength = GlobalHuffmanLUT[i].CodeLength;
@@ -298,19 +342,69 @@ struct udtNewHuffmanDecoder
 			}
 
 			const u32 combinations = 1 << (8 - codeLength);
-			const u16 code = GlobalHuffmanLUT[i].Code;
+			const u16 codeBase = GlobalHuffmanLUT[i].Code;
 			for(u32 j = 0; j < combinations; ++j)
 			{
-				const u16 idx = code | (j << codeLength);
-				_bitCounts[idx] = codeLength;
-				_symbols[idx] = GlobalHuffmanLUT[i].Symbol;
+				const u32 code = (u32)codeBase | (j << codeLength);
+				WriteFirstTableResult(code, GlobalHuffmanLUT[i].Symbol, (u8)codeLength);
+
+				// Make sure write and read work.
+				const u16 firstResult = Read12Bits(_firstTable, code);
+				const u16 bit0 = firstResult & 1;
+				const u16 bitsRead = 1 + ((firstResult >> 1) & 7);
+				const u16 symbol = (firstResult >> 4) & 0xFF;
+				if(bit0 != 1 ||
+				   bitsRead != (u16)codeLength ||
+				   symbol != (u16)GlobalHuffmanLUT[i].Symbol)
+				{
+					__debugbreak();
+				}
 			}
 		}
 
-		u32 secondTableIndex = 0;
+		// Test the first table.
+		for(u32 i = 0; i < (u32)UDT_COUNT_OF(GlobalHuffmanLUT); ++i)
+		{
+			const u32 codeLength = GlobalHuffmanLUT[i].CodeLength;
+			if(codeLength > 8)
+			{
+				break;
+			}
+
+			const u32 combinations = 1 << (8 - codeLength);
+			const u16 codeBase = GlobalHuffmanLUT[i].Code;
+			for(u32 j = 0; j < combinations; ++j)
+			{
+				const u32 code = (u32)codeBase | (j << codeLength);
+
+				u32 symbol = 0;
+				u32 bitsRead = 0;
+				ReadSymbol(symbol, bitsRead, code);
+				if((u8)symbol != GlobalHuffmanLUT[i].Symbol ||
+				   (u8)(bitsRead) != GlobalHuffmanLUT[i].CodeLength)
+				{
+					__debugbreak(); // Woops!
+				}
+
+				const u16 firstResult = Read12Bits(_firstTable, code);
+				const u16 bit0 = firstResult & 1;
+				const u16 bitsRead2 = 1 + ((firstResult >> 1) & 7);
+				const u16 symbol2 = (firstResult >> 4) & 0xFF;
+				if(bit0 != 1 ||
+				   bitsRead2 != (u16)codeLength ||
+				   symbol2 != (u16)GlobalHuffmanLUT[i].Symbol)
+				{
+					__debugbreak(); // Woops!
+				}
+			}
+		}
+
+		// Generate the second table and update the first table accordingly.
+		u32 secondTableIndexBase = 0;
 		for(u32 i = 0; i < 256; ++i)
 		{
-			if(_bitCounts[i] != 0)
+			const u16 firstTableValue = Read12Bits(_firstTable, i);
+			if((firstTableValue & 1) == 1)
 			{
 				continue;
 			}
@@ -331,7 +425,7 @@ struct udtNewHuffmanDecoder
 				continue;
 			}
 
-			_secondTableOffsets[i] = secondTableIndex;
+			WriteFirstTableOffset(i, (u16)secondTableIndexBase);
 
 			bool isCombinationUsed[8];
 			for(u32 j = 0; j < 8; ++j)
@@ -346,9 +440,8 @@ struct udtNewHuffmanDecoder
 				const HuffmanTableEntry code = codesWithSameBytePrefix[j];
 				const u32 lastThreeBits = code.Code >> 8;
 				isCombinationUsed[lastThreeBits] = true;
-				const u32 idx = secondTableIndex + lastThreeBits;
-				_moreBitCounts[idx] = code.CodeLength;
-				_moreSymbols[idx] = code.Symbol;
+				const u32 idx = secondTableIndexBase + lastThreeBits;
+				WriteSecondTable(idx, code.Symbol, code.CodeLength);
 			}
 
 			// Look for unregistered combinations that are valid.
@@ -368,18 +461,22 @@ struct udtNewHuffmanDecoder
 					if((lastThreeBits & bitMask) == (j & bitMask))
 					{
 						isCombinationUsed[j] = true;
-						const u32 idx = secondTableIndex + j;
-						_moreBitCounts[idx] = code.CodeLength;
-						_moreSymbols[idx] = code.Symbol;
+						const u32 idx = secondTableIndexBase + j;
+						WriteSecondTable(idx, code.Symbol, code.CodeLength);
 						break;
 					}
 				}
 			}
-
-			secondTableIndex += 8;
+			
+			secondTableIndexBase += 8;
 		}
-
-		_secondTableSize = secondTableIndex;
+		
+		const u32 secondTableSize = secondTableIndexBase;
+		printf("Second table size: %u\n", secondTableSize);
+		if(secondTableSize != 456)
+		{ 
+			__debugbreak(); //  // Woops!
+		}
 
 		PrintFinalTables();
 	}
@@ -431,15 +528,11 @@ struct udtNewHuffmanDecoder
 			}
 		}
 	}
-
+	
 	void PrintFinalTables()
 	{
-		PrintTable("SmallCodeBitCounts", _bitCounts, (u32)UDT_COUNT_OF(_bitCounts));
-		PrintTable("SmallCodeSymbols", _symbols, (u32)UDT_COUNT_OF(_symbols));
-		PrintTable("BigCodeTableOffsets", _secondTableOffsets, (u32)UDT_COUNT_OF(_secondTableOffsets));
-		PrintTable("BigCodeBitCounts", _moreBitCounts, _secondTableSize);
-		PrintTable("BigCodeSymbols", _moreSymbols, _secondTableSize);
-		printf("Second table size: %d\n", _secondTableSize);
+		PrintTable("FirstTable", _firstTable, (u32)UDT_COUNT_OF(_firstTable));
+		PrintTable("SecondTable", _secondTable, (u32)UDT_COUNT_OF(_secondTable));
 	}
 
 	template<typename T>
@@ -473,32 +566,30 @@ struct udtNewHuffmanDecoder
 		printf("};\n");
 	}
 
-	static const u32 MaskElevenBits = (((u32)1 << 11) - 1);
-
 	void ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
 	{
-		// @TODO: Is this necessary?
-		if((look & MaskElevenBits) == 256)
+		if((look & 0x7FF) == 256)
 		{
 			bitsRead = 11;
-			symbol = 256;
+			symbol = 0;
 			return;
 		}
 
 		const u32 lookFirstByte = look & 0xFF;
-		const u8 bitCount = _bitCounts[lookFirstByte];
-		if(bitCount == 0)
+		const u16 firstResult = Read12Bits(_firstTable, lookFirstByte);
+		if((firstResult & 1) == 0)
 		{
-			const u32 secondTableIndex = _secondTableOffsets[lookFirstByte];
+			const u32 secondTableBase = (firstResult >> 1) & 0x1FF;
 			const u32 secondTableOffset = (look >> 8) & 7;
-			const u32 idx = secondTableIndex + secondTableOffset;
-			bitsRead = _moreBitCounts[idx];
-			symbol = _moreSymbols[idx];
+			const u32 secondTableIndex = secondTableBase + secondTableOffset;
+			const u16 secondResult = Read12Bits(_secondTable, secondTableIndex);
+			bitsRead = secondResult & 15;
+			symbol = (secondResult >> 4) & 0xFF;
 			return;
 		}
 
-		bitsRead = bitCount;
-		symbol = _symbols[lookFirstByte];
+		bitsRead = 1 + ((firstResult >> 1) & 7);
+		symbol = (firstResult >> 4) & 0xFF;
 	}
 
 	//
@@ -518,10 +609,12 @@ struct udtNewHuffmanDecoder
 		ReadSymbol(*(u32*)ch, *(u32*)offset, *(u32*)fin);
 	}
 
-	u8 _bitCounts[256]; // number of bits for codes with length <= 8 OR zero if a secondary look-up is needed
-	u8 _symbols[256]; // symbols for codes with length <= 8
-	u16 _secondTableOffsets[256]; // what index to use into _moreBitCounts and _moreSymbols
-	u8 _moreBitCounts[512]; // number of bits for codes with length > 8
-	u8 _moreSymbols[512]; // symbols for codes with length > 8
-	s32 _secondTableSize; // the actual size, < 512
+	// v2
+	// Bit 0: second look-up needed?
+	// If bit 0 is 1: 1-3: bits read minus 1 - 4-11: symbol
+	// If bit 0 is 0: 1-9: second table index
+	u8 _firstTable[384 + 1];  // Bytes: (256*12)/8 + 1
+	// 0-3: bits read - 4-11: symbol
+	u8 _secondTable[684 + 1]; // Bytes: (456*12)/8 + 1
+	// We add 1 byte to all tables so that all look-ups can be 2-byte look-ups.
 };

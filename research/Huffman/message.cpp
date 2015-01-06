@@ -360,6 +360,8 @@ udtMessage::udtMessage()
 		   ExpectedDecodeResults[i].BitsRead != (u8)bitsRead)
 		{
 			++decoderErrorCount;
+			printf("Decoder error: got %d,%d instead of %d,%d for code %d\n", 
+				   (int)symbol, (int)bitsRead, (int)ExpectedDecodeResults[i].Symbol, (int)ExpectedDecodeResults[i].BitsRead, (int)i);
 		}
 	}
 	printf("New decoder error count: %u\n", decoderErrorCount);
