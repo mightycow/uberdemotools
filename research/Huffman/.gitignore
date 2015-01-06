@@ -1,5 +1,5 @@
 Debug
 Debug/*
-Huffman.opensdf
-Huffman.sdf
-Huffman.suo
+*.opensdf
+*.sdf
+*.suo
