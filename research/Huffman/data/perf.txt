@@ -1,4 +1,7 @@
-udtMessage::ReadBits, time spent in OffsetReceive
-- id's version, verbatim: ???
-- id's version, some tweaks by myT: 68%
-- myT's version, v1: 32%
+The 2 numbers are:
+1. Inside of udtMessage::ReadBits, time spent in OffsetReceive in percent.
+2. Minimum absolute time for cutting the demo folder "demo_files/demo_pack_1" by chat in single-threaded mode, in ms.
+
+72%, 3855 ms - id's version
+68%, 3469 ms - id's version + 2 small tweaks by myT
+32%, 2138 ms - myT's decoder v1
