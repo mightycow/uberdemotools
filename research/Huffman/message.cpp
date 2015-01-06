@@ -317,25 +317,16 @@ static void PrintHuffmanTree(idHuffmanNode* node, s32 code = 0, s32 codeLength =
 	}
 }
 
-/*
-static bool CompareByCodeLength(const HuffmanTableEntry& a, const HuffmanTableEntry& b)
+struct DecodeResult
 {
-	return a.CodeLength < b.CodeLength;
-}
+	u8 Symbol;
+	u8 BitsRead;
+};
 
-static bool CompareByCodeValue(const HuffmanTableEntry& a, const HuffmanTableEntry& b)
-{
-	return a.Code < b.Code;
-}
-*/
+static DecodeResult ExpectedDecodeResults[1 << 11];
+
 udtMessage::udtMessage()
 {
-	/*
-	HuffmanTableEntry* const start = GlobalHuffmanLUT;
-	HuffmanTableEntry* const end = GlobalHuffmanLUT + UDT_COUNT_OF(GlobalHuffmanLUT);
-	std::stable_sort(start, end, &CompareByCodeValue);
-	std::stable_sort(start, end, &CompareByCodeLength);
-	*/
 	_huffman.Init(&_huffmanData);
 	for(s32 i = 0; i < 256; ++i)
 	{
@@ -346,7 +337,32 @@ udtMessage::udtMessage()
 		}
 	}
 
+	// Generate the expected values using id's decoder.
+	memset(ExpectedDecodeResults, 0, sizeof(ExpectedDecodeResults));
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(ExpectedDecodeResults); ++i)
+	{
+		s32 symbol = 0;
+		s32 offset = 0;
+		_huffman.OffsetReceive(_huffmanData.decompressor.tree, &symbol, (u8*)&i, &offset);
+		ExpectedDecodeResults[i].Symbol = (u8)symbol;
+		ExpectedDecodeResults[i].BitsRead = (u8)offset;
+	}
+
+	// Test the new decoder.
 	_huffmanDecoderNew.Init();
+	u32 decoderErrorCount = 0;
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(ExpectedDecodeResults); ++i)
+	{
+		u32 symbol = 0;
+		u32 bitsRead = 0;
+		_huffmanDecoderNew.ReadSymbol(symbol, bitsRead, i);
+		if(ExpectedDecodeResults[i].Symbol != (u8)symbol ||
+		   ExpectedDecodeResults[i].BitsRead != (u8)bitsRead)
+		{
+			++decoderErrorCount;
+		}
+	}
+	printf("New decoder error count: %u\n", decoderErrorCount);
 }
 
 void udtMessage::PrintDecoderTree()
