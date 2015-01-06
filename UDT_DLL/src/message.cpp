@@ -1,5 +1,5 @@
 #include "message.hpp"
-#include "huffman.hpp"
+#include "huffman_new.hpp"
 
 
 // if(s32)f == f and (s32)f + (1<<(FLOAT_INT_BITS-1)) < (1 << FLOAT_INT_BITS)
@@ -622,8 +622,6 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 
 s32 udtMessage::ReadBits(s32 bits) 
 {
-	s32	nbits;
-
 	qbool sgn;
 	if(bits < 0) 
 	{
@@ -665,12 +663,36 @@ s32 udtMessage::ReadBits(s32 bits)
 	} 
 	else
 	{
-		nbits = 0;
-
-		if(bits & 7) 
+#if 1
+		int nbits = 0;
+		if(bits & 7)
 		{
 			nbits = bits & 7;
-			for(s32 i = 0; i < nbits; ++i) 
+			for(s32 i = 0; i < nbits; ++i)
+			{
+				value |= myT_GetBit(Buffer.bit, Buffer.data) << i;
+				++Buffer.bit;
+			}
+			bits = bits - nbits;
+		}
+
+		if(bits)
+		{
+			for(s32 i = 0; i < bits; i += 8)
+			{
+				s32	get;
+				myT_OffsetReceive(&get, Buffer.data, &Buffer.bit);
+				value |= (get << (i + nbits));
+			}
+		}
+
+		Buffer.readcount = (Buffer.bit >> 3) + 1;
+#else
+		int nbits = 0;
+		if(bits & 7)
+		{
+			nbits = bits & 7;
+			for(s32 i = 0; i < nbits; ++i)
 			{
 				value |= (Context->Huffman.GetBit(Buffer.data, &Buffer.bit) << i);
 			}
@@ -679,15 +701,16 @@ s32 udtMessage::ReadBits(s32 bits)
 
 		if(bits)
 		{
-			for(s32 i = 0; i < bits; i += 8) 
+			for(s32 i = 0; i < bits; i += 8)
 			{
 				s32	get;
 				Context->Huffman.OffsetReceive(Context->HuffmanData.decompressor.tree, &get, Buffer.data, &Buffer.bit);
-				value |= (get << (i+nbits));
+				value |= (get << (i + nbits));
 			}
 		}
-
-		Buffer.readcount = (Buffer.bit>>3)+1;
+		
+		Buffer.readcount = (Buffer.bit >> 3) + 1;
+#endif
 	}
 
 	if(sgn) 
