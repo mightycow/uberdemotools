@@ -1,0 +1,5 @@
+37135133 - Huffman symbols decoded
+27415737 - Huffman symbols with code length <= 8bits
+74%      - Percentage of symbols found with length <= 8 bits
+
+It looks like the performance for "long decodes" does matter more than it should.
