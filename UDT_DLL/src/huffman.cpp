@@ -1,9 +1,6 @@
 #include "huffman.hpp"
 
 
-#pragma once
-
-
 static const u8 SmallCodeBitCounts[256] =
 {
 	0, 8, 2, 0, 7, 0, 2, 0, 7, 7, 2, 7, 8, 0, 2, 8,
