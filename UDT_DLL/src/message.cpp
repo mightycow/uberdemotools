@@ -664,11 +664,9 @@ s32 udtMessage::ReadBits(s32 bits)
 		if(bits & 7)
 		{
 			nbits = bits & 7;
-			for(s32 i = 0; i < nbits; ++i)
-			{
-				value |= udtHuffman::GetBit(Buffer.bit, Buffer.data) << i;
-				++Buffer.bit;
-			}
+			const s16 allBits = *(s16*)(Buffer.data + (Buffer.bit >> 3)) >> (Buffer.bit & 7);
+			value = allBits & ((1 << nbits) - 1);
+			Buffer.bit += (s32)nbits;
 			bits = bits - nbits;
 		}
 
