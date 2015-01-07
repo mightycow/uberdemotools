@@ -646,7 +646,6 @@ namespace Uber.DemoTools
             var removeDemoItem = new MenuItem();
             removeDemoItem.Header = CreateContextMenuHeader("Remove Selected", "(Delete)");
             removeDemoItem.Command = _deleteDemoCommand;
-            removeDemoItem.Click += (obj, args) => OnRemoveDemoClicked();
 
             var splitDemoItem = new MenuItem();
             splitDemoItem.Header = "Split Selected";
@@ -750,6 +749,7 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _deleteDemoCommand;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = _demoListView.SelectedItems.Count > 0; };
+            commandBinding.Executed += (obj, args) => OnRemoveDemoClicked();
             _demoListView.InputBindings.Add(inputBinding);
             _demoListView.CommandBindings.Add(commandBinding);
         }
