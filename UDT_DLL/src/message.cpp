@@ -482,8 +482,6 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 void udtMessage::Init(u8* data, s32 length) 
 {
-	Context->SafeInitHuffman();
-
 	Com_Memset(&Buffer, 0, sizeof(idMessage));
 	Buffer.data = data;
 	Buffer.maxsize = length;
@@ -491,8 +489,6 @@ void udtMessage::Init(u8* data, s32 length)
 
 void udtMessage::InitOOB(u8* data, s32 length) 
 {
-	Context->SafeInitHuffman();
-
 	Com_Memset(&Buffer, 0, sizeof(idMessage));
 	Buffer.data = data;
 	Buffer.maxsize = length;
@@ -601,8 +597,9 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 			s32 nbits = bits&7;
 			for(s32 i = 0; i < nbits; ++i) 
 			{
-				Context->Huffman.PutBit(value & 1, Buffer.data, &Buffer.bit);
+				udtHuffman::PutBit(Buffer.data, Buffer.bit, value & 1);
 				value = value >> 1;
+				++Buffer.bit;
 			}
 			bits = bits - nbits;
 		}
@@ -611,7 +608,7 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 		{
 			for(s32 i = 0; i < bits; i += 8) 
 			{
-				Context->Huffman.OffsetTransmit(&Context->HuffmanData.compressor, (value & 0xff), Buffer.data, &Buffer.bit);
+				udtHuffman::OffsetTransmit(Buffer.data, &Buffer.bit, value & 0xFF);
 				value = value >> 8;
 			}
 		}
@@ -622,8 +619,6 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 
 s32 udtMessage::ReadBits(s32 bits) 
 {
-	s32	nbits;
-
 	qbool sgn;
 	if(bits < 0) 
 	{
@@ -665,29 +660,27 @@ s32 udtMessage::ReadBits(s32 bits)
 	} 
 	else
 	{
-		nbits = 0;
-
-		if(bits & 7) 
+		int nbits = 0;
+		if(bits & 7)
 		{
 			nbits = bits & 7;
-			for(s32 i = 0; i < nbits; ++i) 
-			{
-				value |= (Context->Huffman.GetBit(Buffer.data, &Buffer.bit) << i);
-			}
+			const s16 allBits = *(s16*)(Buffer.data + (Buffer.bit >> 3)) >> (Buffer.bit & 7);
+			value = allBits & ((1 << nbits) - 1);
+			Buffer.bit += (s32)nbits;
 			bits = bits - nbits;
 		}
 
 		if(bits)
 		{
-			for(s32 i = 0; i < bits; i += 8) 
+			for(s32 i = 0; i < bits; i += 8)
 			{
 				s32	get;
-				Context->Huffman.OffsetReceive(Context->HuffmanData.decompressor.tree, &get, Buffer.data, &Buffer.bit);
-				value |= (get << (i+nbits));
+				udtHuffman::OffsetReceive(&get, Buffer.data, &Buffer.bit);
+				value |= (get << (i + nbits));
 			}
 		}
 
-		Buffer.readcount = (Buffer.bit>>3)+1;
+		Buffer.readcount = (Buffer.bit >> 3) + 1;
 	}
 
 	if(sgn) 
@@ -939,7 +932,6 @@ void udtMessage::ReadData(void* data, s32 len)
 
 s32 udtMessage::PeekByte()
 {
-	const s32 bloc = Context->Huffman.GetBloc();
 	const s32 readcount = Buffer.readcount;
 	const s32 bit = Buffer.bit;
 
@@ -950,8 +942,6 @@ s32 udtMessage::PeekByte()
 	}
 
 	const s32 c = ReadByte();
-
-	Context->Huffman.SetBloc(bloc);
 	Buffer.readcount = readcount;
 	Buffer.bit = bit;
 

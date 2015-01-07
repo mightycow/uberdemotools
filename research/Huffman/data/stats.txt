@@ -1,0 +1,6 @@
+These stats were gathered from a real-world demo dataset slightly bigger than 1 GB:
+775254428 - Huffman symbols decoded
+561954279 - Huffman symbols with code length <= 8bits
+72%       - Percentage of symbols found with length <= 8 bits
+
+It looks like the performance of "long decodes" does matter more than it should.
