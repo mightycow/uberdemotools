@@ -1,6 +1,5 @@
 To do:
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
-- DLL: New Huffman codec: id's code is slow as fuck and has pointers everywhere... it doesn't even do the standard trick of looking up the first 8 bits in a LUT
 - Improved GameStates analyzer (all players with: time range, player index, team(s))
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
 - Text format export (XML? JSON?)
