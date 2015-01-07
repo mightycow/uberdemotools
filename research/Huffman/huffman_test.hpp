@@ -475,7 +475,15 @@ struct udtNewHuffmanDecoder
 		printf("Second table size: %u\n", secondTableSize);
 		if(secondTableSize != 456)
 		{ 
-			__debugbreak(); //  // Woops!
+			__debugbreak(); // Woops!
+		}
+
+		for(u32 i = 0; i < (u32)UDT_COUNT_OF(GlobalHuffmanLUT); ++i)
+		{
+			const u16 code = GlobalHuffmanLUT[i].Code;
+			const u8 symbol = GlobalHuffmanLUT[i].Symbol;
+			const u8 codeLength = GlobalHuffmanLUT[i].CodeLength;
+			_encoderTable[symbol] = codeLength | (code << 4);
 		}
 
 		PrintFinalTables();
@@ -531,8 +539,9 @@ struct udtNewHuffmanDecoder
 	
 	void PrintFinalTables()
 	{
-		PrintTable("FirstTable", _firstTable, (u32)UDT_COUNT_OF(_firstTable));
-		PrintTable("SecondTable", _secondTable, (u32)UDT_COUNT_OF(_secondTable));
+		PrintTable("FirstTable", _firstTable, (u32)UDT_COUNT_OF(_firstTable), 16);
+		PrintTable("SecondTable", _secondTable, (u32)UDT_COUNT_OF(_secondTable), 16);
+		PrintTable("EncoderTable", _encoderTable, (u32)UDT_COUNT_OF(_encoderTable), 8);
 	}
 
 	template<typename T>
@@ -548,11 +557,10 @@ struct udtNewHuffmanDecoder
 	}
 
 	template<typename T>
-	void PrintTable(const char* name, const T* data, u32 elementCount)
+	void PrintTable(const char* name, const T* data, u32 elementCount, u32 elementsPerRow)
 	{
 		printf("static const %s %s[%u] =\n", GetTypeName<T>(), name, elementCount);
 		printf("{\n");
-		const u32 elementsPerRow = elementCount > 256 ? 12 : 16;
 		for(u32 i = 0; i < elementCount; i += elementsPerRow)
 		{ 
 			printf("\t");
@@ -596,20 +604,57 @@ struct udtNewHuffmanDecoder
 	// id interface
 	//
 
-	s32 GetBit(u8 *fin, s32 *offset)
+	u32 GetBits(u32 bitIndex, const u8* fin)
 	{
-		const s32 bloc = *offset;
-		const s32 t = (fin[(bloc >> 3)] >> (bloc & 7)) & 0x1;
-		*offset = bloc + 1;
-		return t;
+		return *(u32*)(fin + (bitIndex >> 3)) >> (bitIndex & 7);
+	}
+
+	s32 GetBit(s32 bitIndex, const u8* fin)
+	{
+		return (fin[(bitIndex >> 3)] >> (bitIndex & 7)) & 1;
 	}
 
 	void OffsetReceive(s32 *ch, u8 *fin, s32 *offset)
 	{
-		ReadSymbol(*(u32*)ch, *(u32*)offset, *(u32*)fin);
+		const u32 input = GetBits(*(u32*)offset, fin);
+
+		u32 bitsRead = 0;
+		ReadSymbol(*(u32*)ch, bitsRead, input);
+
+		*offset += (s32)bitsRead;
 	}
 
-	// v2
+	void PutBit(u8* fout, s32 bitIndex, s32 bit)
+	{
+		if((bitIndex & 7) == 0)
+		{
+			fout[(bitIndex >> 3)] = 0;
+		}
+
+		fout[(bitIndex >> 3)] |= bit << (bitIndex & 7);
+	}
+
+	void PutBits(u8* fout, u32 bitIndex, u32 bits, u32 bitCount)
+	{
+		for(u32 i = 0; i < bitCount; ++i)
+		{
+			PutBit(fout, bitIndex + i, (s32)(bits & 1));
+			bits >>= 1;
+		}
+	}
+
+	void OffsetTransmit(u8 *fout, s32 *offset, s32 ch)
+	{
+		const u16 result = _encoderTable[ch];
+		const u16 bitCount = result & 15;
+		const u16 code = (result >> 4) & 0x7FF;
+
+		PutBits(fout, *(u32*)offset, code, bitCount);
+
+		*offset += (s32)bitCount;
+	}
+
+	// v2 decoder
 	// Bit 0: second look-up needed?
 	// If bit 0 is 1: 1-3: bits read minus 1 - 4-11: symbol
 	// If bit 0 is 0: 1-9: second table index
@@ -617,4 +662,9 @@ struct udtNewHuffmanDecoder
 	// 0-3: bits read - 4-11: symbol
 	u8 _secondTable[684 + 1]; // Bytes: (456*12)/8 + 1
 	// We add 1 byte to all tables so that all look-ups can be 2-byte look-ups.
+
+	// v1 encoder
+	// Bits 0- 3: bits written
+	// Bits 4-14: code word
+	u16 _encoderTable[256];
 };
