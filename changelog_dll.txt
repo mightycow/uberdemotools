@@ -1,3 +1,6 @@
+0.4.1 (08.01.2015)
+CHG: Replaced id's Huffman codec by my own to improve performance
+
 0.4.0 (03.01.2015)
 ADD: Added a new unified "Cut by Pattern" system with gloabl player selection/tracking settings; see the udtCutDemoFileByPattern and udtCutDemoFilesByPattern API functions
 ADD: Added the "Mid-Air Frags" cut filter

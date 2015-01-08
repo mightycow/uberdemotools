@@ -40,7 +40,7 @@ Yes, and yes.
  Is there a repository where I can grab the most current sources?
  
  A:
- Yes, the project is hosted on Google Code.
- Here is the project page: https://code.google.com/p/uberdemotools/
- Here is the URL to use for a git clone: https://code.google.com/p/uberdemotools/
+ Yes, the project is hosted on GitHub.
+ Here is the project page: https://github.com/mightycow/uberdemotools
+ Here is the URL to use for a git clone: https://github.com/mightycow/uberdemotools.git
  Note that the "master" branch is for stable code or major releases mostly. Bleeding-edge code will be found in the "develop" branch or a fork of it.
