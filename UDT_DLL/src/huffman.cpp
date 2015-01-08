@@ -1,312 +1,239 @@
 #include "huffman.hpp"
-#include "common.hpp"
 
 
-/* This is based on the Adaptive Huffman algorithm described in Sayood's Data
- * Compression book.  The ranks are not actually stored, but implicitly defined
- * by the location of a node within a doubly-linked list */
-
-#define NYT HUFF_MAX					/* NYT = Not Yet Transmitted */
-#define INTERNAL_NODE (HUFF_MAX+1)
-
-
-void	udtHuffman::PutBit( s32 bit, u8 *fout, s32 *offset) {
-	_bloc = *offset;
-	if ((_bloc&7) == 0) {
-		fout[(_bloc>>3)] = 0;
-	}
-	fout[(_bloc>>3)] |= bit << (_bloc&7);
-	_bloc++;
-	*offset = _bloc;
-}
-
-s32		udtHuffman::GetBit( u8 *fin, s32 *offset) {
-	s32 t;
-	_bloc = *offset;
-	t = (fin[(_bloc>>3)] >> (_bloc&7)) & 0x1;
-	_bloc++;
-	*offset = _bloc;
-	return t;
-}
-
-s32	udtHuffman::GetBloc()
+static const u8 SmallCodeBitCounts[256] =
 {
-	return _bloc;
-}
+	0, 8, 2, 0, 7, 0, 2, 0, 7, 7, 2, 7, 8, 0, 2, 8,
+	7, 8, 2, 7, 0, 5, 2, 8, 8, 8, 2, 5, 6, 0, 2, 6,
+	6, 8, 2, 0, 6, 7, 2, 7, 8, 7, 2, 0, 0, 6, 2, 7,
+	7, 0, 2, 0, 7, 5, 2, 6, 0, 8, 2, 5, 8, 0, 2, 6,
+	7, 8, 2, 8, 0, 0, 2, 8, 7, 7, 2, 8, 7, 0, 2, 0,
+	7, 8, 2, 8, 8, 5, 2, 8, 0, 7, 2, 5, 6, 8, 2, 6,
+	6, 0, 2, 0, 6, 7, 2, 8, 7, 7, 2, 0, 7, 6, 2, 8,
+	0, 0, 2, 8, 8, 5, 2, 6, 8, 8, 2, 5, 7, 7, 2, 6,
+	0, 0, 2, 8, 7, 8, 2, 8, 7, 7, 2, 7, 8, 0, 2, 0,
+	7, 0, 2, 7, 0, 5, 2, 0, 8, 0, 2, 5, 6, 0, 2, 6,
+	6, 8, 2, 8, 6, 7, 2, 7, 0, 7, 2, 0, 0, 6, 2, 7,
+	7, 8, 2, 8, 7, 5, 2, 6, 8, 0, 2, 5, 0, 0, 2, 6,
+	7, 0, 2, 8, 0, 0, 2, 0, 7, 7, 2, 0, 7, 0, 2, 8,
+	7, 0, 2, 0, 8, 5, 2, 0, 8, 7, 2, 5, 6, 0, 2, 6,
+	6, 8, 2, 0, 6, 7, 2, 8, 7, 7, 2, 0, 7, 6, 2, 8,
+	0, 0, 2, 0, 0, 5, 2, 6, 0, 0, 2, 5, 7, 7, 2, 6
+};
 
-void udtHuffman::SetBloc(s32 bloc)
+static const u8 SmallCodeSymbols[256] =
 {
-	_bloc = bloc;
-}
+	0, 134, 0, 0, 67, 0, 0, 0, 126, 196, 0, 11, 110, 0, 0, 132,
+	6, 5, 0, 12, 0, 8, 0, 118, 237, 119, 0, 1, 104, 0, 0, 128,
+	195, 68, 0, 0, 255, 16, 0, 48, 105, 129, 0, 0, 0, 13, 0, 254,
+	101, 0, 0, 0, 9, 8, 0, 32, 0, 14, 0, 1, 97, 0, 0, 7,
+	117, 102, 0, 29, 0, 0, 0, 114, 2, 232, 0, 120, 130, 0, 0, 0,
+	65, 69, 0, 52, 192, 8, 0, 138, 0, 116, 0, 1, 104, 194, 0, 128,
+	195, 0, 0, 0, 255, 127, 0, 136, 125, 10, 0, 0, 3, 13, 0, 124,
+	0, 0, 0, 123, 139, 8, 0, 32, 47, 115, 0, 1, 66, 131, 0, 7,
+	0, 0, 0, 133, 67, 112, 0, 135, 126, 196, 0, 11, 113, 0, 0, 0,
+	6, 0, 0, 12, 0, 8, 0, 0, 108, 0, 0, 1, 104, 0, 0, 128,
+	195, 4, 0, 122, 255, 16, 0, 48, 0, 129, 0, 0, 0, 13, 0, 254,
+	101, 53, 0, 111, 9, 8, 0, 32, 199, 0, 0, 1, 0, 0, 0, 7,
+	117, 0, 0, 49, 0, 0, 0, 0, 2, 232, 0, 0, 130, 0, 0, 64,
+	65, 0, 0, 0, 31, 8, 0, 0, 95, 116, 0, 1, 104, 0, 0, 128,
+	195, 121, 0, 0, 255, 127, 0, 137, 125, 10, 0, 0, 3, 13, 0, 50,
+	0, 0, 0, 0, 0, 8, 0, 32, 0, 0, 0, 1, 66, 131, 0, 7
+};
 
-/* Add a bit to the output file (buffered) */
-static UDT_FORCE_INLINE void add_bit (s32& bloc, s8 bit, u8 *fout) {
-	if ((bloc&7) == 0) {
-		fout[(bloc>>3)] = 0;
-	}
-	fout[(bloc>>3)] |= bit << (bloc&7);
-	bloc++;
-}
-
-/* Receive one bit from the input file (buffered) */
-static UDT_FORCE_INLINE s32 get_bit(s32& bloc, u8 *fin)
+static const u16 BigCodeTableOffsets[256] =
 {
-	s32 t;
-	t = (fin[(bloc>>3)] >> (bloc&7)) & 0x1;
-	bloc++;
-	return t;
-}
+	0, 0, 0, 8, 0, 16, 0, 24, 0, 0, 0, 0, 0, 32, 0, 0,
+	0, 0, 0, 0, 40, 0, 0, 0, 0, 0, 0, 0, 0, 48, 0, 0,
+	0, 0, 0, 56, 0, 0, 0, 0, 0, 0, 0, 64, 72, 0, 0, 0,
+	0, 80, 0, 88, 0, 0, 0, 0, 96, 0, 0, 0, 0, 104, 0, 0,
+	0, 0, 0, 0, 112, 120, 0, 0, 0, 0, 0, 0, 0, 128, 0, 136,
+	0, 0, 0, 0, 0, 0, 0, 0, 144, 0, 0, 0, 0, 0, 0, 0,
+	0, 152, 0, 160, 0, 0, 0, 0, 0, 0, 0, 168, 0, 0, 0, 0,
+	176, 184, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	192, 200, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 208, 0, 216,
+	0, 224, 0, 0, 232, 0, 0, 240, 0, 248, 0, 0, 0, 256, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 264, 0, 0, 272, 280, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 288, 0, 0, 296, 304, 0, 0,
+	0, 312, 0, 0, 320, 328, 0, 336, 0, 0, 0, 344, 0, 352, 0, 0,
+	0, 360, 0, 368, 0, 0, 0, 376, 0, 0, 0, 0, 0, 384, 0, 0,
+	0, 0, 0, 392, 0, 0, 0, 0, 0, 0, 0, 400, 0, 0, 0, 0,
+	408, 416, 0, 424, 432, 0, 0, 0, 440, 448, 0, 0, 0, 0, 0, 0
+};
 
-static idHuffmanNode **get_ppnode(idHuffmanTree* huff) {
-	idHuffmanNode **tppnode;
-	if (!huff->freelist) {
-		return &(huff->nodePtrs[huff->blocPtrs++]);
-	} else {
-		tppnode = huff->freelist;
-		huff->freelist = (idHuffmanNode **)*tppnode;
-		return tppnode;
-	}
-}
+static const u8 BigCodeBitCounts[456] =
+{
+	9, 0, 9, 10, 9, 11, 9, 10, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9,
+	9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10,
+	9, 10, 9, 10, 10, 9, 10, 9, 10, 9, 10, 9,
+	10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+	10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+	9, 9, 9, 9, 9, 9, 9, 9, 10, 9, 10, 9,
+	10, 9, 10, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+	10, 10, 10, 10, 10, 10, 10, 10, 9, 10, 9, 10,
+	9, 10, 9, 10, 9, 9, 9, 9, 9, 9, 9, 9,
+	9, 10, 9, 10, 9, 10, 9, 10, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9,
+	9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+	9, 9, 9, 9, 9, 9, 9, 9, 9, 10, 9, 10,
+	9, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+	9, 9, 9, 9, 9, 9, 9, 9, 9, 10, 9, 10,
+	9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10,
+	9, 9, 9, 9, 9, 9, 9, 9, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9,
+	9, 10, 9, 10, 9, 10, 9, 10, 10, 9, 10, 9,
+	10, 9, 10, 9, 9, 10, 9, 10, 9, 10, 9, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 9, 10, 9, 10,
+	9, 10, 9, 10, 9, 10, 9, 10, 9, 10, 9, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9,
+	9, 9, 9, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+	9, 10, 9, 10, 9, 10, 9, 10, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10,
+	9, 10, 9, 10, 9, 10, 9, 10, 10, 10, 10, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+	10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+	10, 10, 10, 10, 9, 10, 9, 10, 9, 10, 9, 10,
+	10, 9, 10, 9, 10, 9, 10, 9, 9, 9, 9, 9,
+	9, 9, 9, 9, 9, 10, 9, 10, 9, 10, 9, 10,
+	9, 9, 9, 9, 9, 9, 9, 9, 10, 9, 10, 9,
+	10, 9, 10, 9, 10, 10, 10, 10, 10, 10, 10, 10
+};
 
-static void free_ppnode(idHuffmanTree* huff, idHuffmanNode **ppnode) {
-	*ppnode = (idHuffmanNode *)huff->freelist;
-	huff->freelist = ppnode;
-}
+static const u8 BigCodeSymbols[456] =
+{
+	208, 0, 208, 243, 208, 247, 208, 243, 203, 193, 186, 193,
+	203, 193, 186, 193, 248, 93, 238, 93, 248, 93, 238, 93,
+	56, 234, 56, 198, 56, 234, 56, 198, 54, 212, 54, 38,
+	54, 212, 54, 38, 43, 160, 185, 160, 43, 160, 185, 160,
+	207, 204, 246, 166, 207, 204, 246, 166, 228, 60, 236, 23,
+	228, 60, 236, 23, 148, 156, 22, 152, 148, 156, 22, 152,
+	163, 80, 201, 80, 163, 80, 201, 80, 157, 144, 233, 144,
+	157, 144, 233, 144, 42, 162, 87, 79, 42, 162, 87, 79,
+	176, 168, 176, 168, 176, 168, 176, 168, 151, 72, 178, 72,
+	151, 72, 178, 72, 34, 62, 34, 62, 34, 62, 34, 62,
+	202, 149, 155, 171, 202, 149, 155, 171, 143, 175, 143, 206,
+	143, 175, 143, 206, 30, 103, 30, 103, 30, 103, 30, 103,
+	17, 219, 17, 249, 17, 219, 17, 249, 169, 55, 235, 55,
+	169, 55, 235, 55, 73, 145, 190, 27, 73, 145, 190, 27,
+	150, 82, 172, 83, 150, 82, 172, 83, 71, 90, 71, 90,
+	71, 90, 71, 90, 229, 85, 44, 75, 229, 85, 44, 75,
+	70, 146, 70, 146, 70, 146, 70, 146, 142, 211, 142, 189,
+	142, 211, 142, 189, 191, 25, 253, 218, 191, 25, 253, 218,
+	109, 99, 109, 99, 109, 99, 109, 99, 225, 59, 225, 231,
+	225, 59, 225, 231, 40, 217, 40, 215, 40, 217, 40, 215,
+	100, 51, 100, 51, 100, 51, 100, 51, 226, 58, 183, 58,
+	226, 58, 183, 58, 81, 76, 188, 76, 81, 76, 188, 76,
+	91, 251, 91, 245, 91, 251, 91, 245, 26, 98, 77, 98,
+	26, 98, 77, 98, 15, 41, 15, 181, 15, 41, 15, 181,
+	213, 159, 252, 209, 213, 159, 252, 209, 61, 187, 61, 179,
+	61, 187, 61, 179, 106, 216, 106, 220, 106, 216, 106, 220,
+	221, 165, 239, 177, 221, 165, 239, 177, 107, 141, 107, 141,
+	107, 141, 107, 141, 180, 205, 242, 36, 180, 205, 242, 36,
+	92, 78, 92, 197, 92, 78, 92, 197, 174, 140, 89, 140,
+	174, 140, 89, 140, 173, 214, 35, 39, 173, 214, 35, 39,
+	224, 167, 224, 244, 224, 167, 224, 244, 33, 84, 230, 184,
+	33, 84, 230, 184, 88, 240, 74, 147, 88, 240, 74, 147,
+	210, 20, 164, 222, 210, 20, 164, 222, 154, 86, 170, 182,
+	154, 86, 170, 182, 94, 28, 94, 158, 94, 28, 94, 158,
+	241, 18, 45, 18, 241, 18, 45, 18, 57, 200, 57, 200,
+	57, 200, 57, 200, 96, 63, 96, 21, 96, 63, 96, 21,
+	24, 46, 24, 46, 24, 46, 24, 46, 223, 19, 227, 19,
+	223, 19, 227, 19, 153, 161, 250, 37, 153, 161, 250, 37
+};
 
-/* Swap the location of these two nodes in the tree */
-static void swap (idHuffmanTree* huff, idHuffmanNode *node1, idHuffmanNode *node2) { 
-	idHuffmanNode *par1, *par2;
+static const u16 EncoderTable[256] =
+{
+	34, 437, 1159, 1735, 2584, 280, 263, 1014,
+	341, 839, 1687, 183, 311, 726, 920, 2761,
+	599, 1417, 7945, 8073, 7642, 16186, 8890, 12858,
+	3913, 6362, 2746, 13882, 7866, 1080, 1273, 3400,
+	886, 3386, 1097, 11482, 15450, 16282, 12506, 15578,
+	2377, 6858, 826, 330, 10010, 12042, 8009, 1928,
+	631, 3128, 3832, 6521, 1336, 2840, 217, 5657,
+	121, 3865, 6553, 6426, 4666, 3017, 5193, 7994,
+	3320, 1287, 1991, 71, 536, 1304, 2057, 1801,
+	5081, 1594, 11642, 14106, 6617, 10938, 7290, 13114,
+	4809, 2522, 5818, 14010, 7482, 5914, 7738, 9018,
+	3450, 11450, 5897, 2697, 3193, 4185, 3769, 3464,
+	3897, 968, 6841, 6393, 2425, 775, 1048, 5369,
+	454, 648, 3033, 3145, 2440, 2297, 200, 2872,
+	2136, 2248, 1144, 1944, 1431, 1031, 376, 408,
+	1208, 3608, 2616, 1848, 1784, 1671, 135, 1623,
+	502, 663, 1223, 2007, 248, 2104, 24, 2168,
+	1656, 3704, 1400, 1864, 7353, 7241, 2073, 1241,
+	4889, 5690, 6153, 15738, 698, 5210, 1722, 986,
+	12986, 3994, 3642, 9306, 4794, 794, 16058, 7066,
+	4425, 8090, 4922, 714, 11738, 7194, 12762, 7450,
+	5001, 1562, 11834, 13402, 9914, 3290, 3258, 5338,
+	905, 15386, 9178, 15306, 3162, 15050, 15930, 10650,
+	15674, 8522, 8250, 7114, 10714, 14362, 9786, 2266,
+	1352, 4153, 1496, 518, 151, 15482, 12410, 2952,
+	7961, 8906, 1114, 58, 4570, 7258, 13530, 474,
+	9, 15258, 3546, 6170, 4314, 2970, 7386, 14666,
+	7130, 6474, 14554, 5514, 15322, 3098, 15834, 3978,
+	3353, 2329, 2458, 12170, 570, 1818, 11578, 14618,
+	1175, 8986, 4218, 9754, 8762, 392, 8282, 11290,
+	7546, 3850, 11354, 12298, 15642, 14986, 8666, 20491,
+	90, 13706, 12186, 6794, 11162, 10458, 759, 582
+};
 
-	par1 = node1->parent;
-	par2 = node2->parent;
 
-	if (par1) {
-		if (par1->left == node1) {
-			par1->left = node2;
-		} else {
-	      par1->right = node2;
-		}
-	} else {
-		huff->tree = node2;
-	}
-
-	if (par2) {
-		if (par2->left == node2) {
-			par2->left = node1;
-		} else {
-			par2->right = node1;
-		}
-	} else {
-		huff->tree = node1;
-	}
-  
-	node1->parent = par2;
-	node2->parent = par1;
-}
-
-/* Swap these two nodes in the linked list (update ranks) */
-static void swaplist(idHuffmanNode *node1, idHuffmanNode *node2) {
-	idHuffmanNode *par1;
-
-	par1 = node1->next;
-	node1->next = node2->next;
-	node2->next = par1;
-
-	par1 = node1->prev;
-	node1->prev = node2->prev;
-	node2->prev = par1;
-
-	if (node1->next == node1) {
-		node1->next = node2;
-	}
-	if (node2->next == node2) {
-		node2->next = node1;
-	}
-	if (node1->next) {
-		node1->next->prev = node1;
-	}
-	if (node2->next) {
-		node2->next->prev = node2;
-	}
-	if (node1->prev) {
-		node1->prev->next = node1;
-	}
-	if (node2->prev) {
-		node2->prev->next = node2;
-	}
-}
-
-/* Do the increments */
-static void increment(idHuffmanTree* huff, idHuffmanNode *node) {
-	idHuffmanNode *lnode;
-
-	if (!node) {
+static void ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
+{
+	const u32 lookFirstByte = look & 0xFF;
+	const u8 bitCount = SmallCodeBitCounts[lookFirstByte];
+	if(bitCount == 0)
+	{
+		const u32 secondTableIndex = BigCodeTableOffsets[lookFirstByte];
+		const u32 secondTableOffset = (look >> 8) & 7;
+		const u32 idx = secondTableIndex + secondTableOffset;
+		bitsRead = BigCodeBitCounts[idx];
+		symbol = BigCodeSymbols[idx];
 		return;
 	}
 
-	if (node->next != NULL && node->next->weight == node->weight) {
-	    lnode = *node->head;
-		if (lnode != node->parent) {
-			swap(huff, lnode, node);
-		}
-		swaplist(lnode, node);
-	}
-	if (node->prev && node->prev->weight == node->weight) {
-		*node->head = node->prev;
-	} else {
-	    *node->head = NULL;
-		free_ppnode(huff, node->head);
-	}
-	node->weight++;
-	if (node->next && node->next->weight == node->weight) {
-		node->head = node->next->head;
-	} else { 
-		node->head = get_ppnode(huff);
-		*node->head = node;
-	}
-	if (node->parent) {
-		increment(huff, node->parent);
-		if (node->prev == node->parent) {
-			swaplist(node, node->parent);
-			if (*node->head == node) {
-				*node->head = node->parent;
-			}
-		}
-	}
+	bitsRead = bitCount;
+	symbol = SmallCodeSymbols[lookFirstByte];
 }
 
-void udtHuffman::AddRef(idHuffmanTree* huff, u8 ch) {
-	idHuffmanNode *tnode, *tnode2;
-	if (huff->loc[ch] == NULL) { /* if this is the first transmission of this node */
-		tnode = &(huff->nodeList[huff->blocNode++]);
-		tnode2 = &(huff->nodeList[huff->blocNode++]);
-
-		tnode2->symbol = INTERNAL_NODE;
-		tnode2->weight = 1;
-		tnode2->next = huff->lhead->next;
-		if (huff->lhead->next) {
-			huff->lhead->next->prev = tnode2;
-			if (huff->lhead->next->weight == 1) {
-				tnode2->head = huff->lhead->next->head;
-			} else {
-				tnode2->head = get_ppnode(huff);
-				*tnode2->head = tnode2;
-			}
-		} else {
-			tnode2->head = get_ppnode(huff);
-			*tnode2->head = tnode2;
-		}
-		huff->lhead->next = tnode2;
-		tnode2->prev = huff->lhead;
- 
-		tnode->symbol = ch;
-		tnode->weight = 1;
-		tnode->next = huff->lhead->next;
-		if (huff->lhead->next) {
-			huff->lhead->next->prev = tnode;
-			if (huff->lhead->next->weight == 1) {
-				tnode->head = huff->lhead->next->head;
-			} else {
-				/* this should never happen */
-				tnode->head = get_ppnode(huff);
-				*tnode->head = tnode2;
-		    }
-		} else {
-			/* this should never happen */
-			tnode->head = get_ppnode(huff);
-			*tnode->head = tnode;
-		}
-		huff->lhead->next = tnode;
-		tnode->prev = huff->lhead;
-		tnode->left = tnode->right = NULL;
- 
-		if (huff->lhead->parent) {
-			if (huff->lhead->parent->left == huff->lhead) { /* lhead is guaranteed to by the NYT */
-				huff->lhead->parent->left = tnode2;
-			} else {
-				huff->lhead->parent->right = tnode2;
-			}
-		} else {
-			huff->tree = tnode2; 
-		}
- 
-		tnode2->right = tnode;
-		tnode2->left = huff->lhead;
- 
-		tnode2->parent = huff->lhead->parent;
-		huff->lhead->parent = tnode->parent = tnode2;
-     
-		huff->loc[ch] = tnode;
- 
-		increment(huff, tnode2->parent);
-	} else {
-		increment(huff, huff->loc[ch]);
-	}
-}
-
-/* Get a symbol */
-void udtHuffman::OffsetReceive(idHuffmanNode *node, s32 *ch, u8 *fin, s32 *offset)
+// Get the right-aligned bits starting at bitIndex.
+// We only really need the first 11 and don't care what comes after that.
+static UDT_FORCE_INLINE u32 GetBits(u32 bitIndex, const u8* fin)
 {
-	_bloc = *offset;
-	while(node && node->symbol == INTERNAL_NODE)
-	{
-		// myT: The following is equivalent to: node = get_bit(_bloc, fin) ? node->right : node->left
-		// myT: It kills any possibility that the compiler might generate a conditional branch.
-		const sptr bit = (sptr)get_bit(_bloc, fin); 
-		const sptr mask = bit | (-bit);
-		const sptr result = (((sptr)node->right ^ (sptr)node->left) & mask) ^ (sptr)node->left;
-		node = (idHuffmanNode*)result;
-	}
-
-	if(!node)
-	{
-		*ch = 0;
-		return;
-	}
-
-	*ch = node->symbol;
-	*offset = _bloc;
+	return *(u32*)(fin + (bitIndex >> 3)) >> (bitIndex & 7);
 }
 
-/* Send the prefix code for this node */
 
-static void send(s32& bloc, idHuffmanNode *node, idHuffmanNode *child, u8 *fout) 
+namespace udtHuffman
 {
-	if(node->parent) 
+	void OffsetReceive(s32* ch, const u8* fin, s32* offset)
 	{
-		send(bloc, node->parent, node, fout);
+		const u32 input = GetBits(*(u32*)offset, fin);
+
+		u32 bitsRead = 0;
+		ReadSymbol(*(u32*)ch, bitsRead, input);
+
+		*offset += (s32)bitsRead;
 	}
 
-	if(child)
+	void OffsetTransmit(u8 *fout, s32 *offset, s32 ch)
 	{
-		// @myT: The ternary op helps the compiler avoid the conditional branch.
-		add_bit(bloc, node->right == child ? 1 : 0, fout);
+		const u16 result = EncoderTable[ch];
+		const u16 bitCount = result & 15;
+		const u16 code = (result >> 4) & 0x7FF;
+
+		const u32 bitIndex = *(u32*)offset;
+		s32 bits = (s32)code;
+		for(u32 i = 0; i < bitCount; ++i)
+		{
+			PutBit(fout, bitIndex + i, bits & 1);
+			bits >>= 1;
+		}
+
+		*offset += (s32)bitCount;
 	}
-}
-
-void udtHuffman::OffsetTransmit (idHuffmanTree *huff, s32 ch, u8 *fout, s32 *offset) {
-	_bloc = *offset;
-	send(_bloc, huff->loc[ch], NULL, fout);
-	*offset = _bloc;
-}
-
-void udtHuffman::Init(idHuffmanCodec *huff) 
-{
-	Com_Memset(&huff->compressor, 0, sizeof(idHuffmanTree));
-	Com_Memset(&huff->decompressor, 0, sizeof(idHuffmanTree));
-
-	// Initialize the tree & list with the NYT node 
-	huff->decompressor.tree = huff->decompressor.lhead = huff->decompressor.ltail = huff->decompressor.loc[NYT] = &(huff->decompressor.nodeList[huff->decompressor.blocNode++]);
-	huff->decompressor.tree->symbol = NYT;
-	huff->decompressor.tree->weight = 0;
-	huff->decompressor.lhead->next = huff->decompressor.lhead->prev = NULL;
-	huff->decompressor.tree->parent = huff->decompressor.tree->left = huff->decompressor.tree->right = NULL;
-
-	// Add the NYT (not yet transmitted) node s32o the tree/list */
-	huff->compressor.tree = huff->compressor.lhead = huff->compressor.loc[NYT] =  &(huff->compressor.nodeList[huff->compressor.blocNode++]);
-	huff->compressor.tree->symbol = NYT;
-	huff->compressor.tree->weight = 0;
-	huff->compressor.lhead->next = huff->compressor.lhead->prev = NULL;
-	huff->compressor.tree->parent = huff->compressor.tree->left = huff->compressor.tree->right = NULL;
-	huff->compressor.loc[NYT] = huff->compressor.tree;
 }

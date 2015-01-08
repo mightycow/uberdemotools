@@ -1,6 +1,6 @@
 /*
 ===========================================================================
-Copyright (C) 2011-2014 Gian Schellenbaum.
+Copyright (C) 2011-2015 Gian Schellenbaum.
 
 This file is part of Uber Demo Tools (UDT) source code.
 

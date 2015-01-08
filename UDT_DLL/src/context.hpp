@@ -20,7 +20,6 @@ public:
 	~udtContext();
 
 	bool	SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext);
-	void	SafeInitHuffman();
 	void    Reset();
 	void	Destroy();
 
@@ -35,8 +34,6 @@ public:
 	char	ReadBigStringBuffer[BIG_INFO_STRING];
 	char	ReadStringLineBuffer[MAX_STRING_CHARS];
 
-	idHuffmanCodec          HuffmanData;
-	udtHuffman              Huffman;
 	CommandLineTokenizer    Tokenizer;
 	udtVMLinearAllocator    TempAllocator;
 

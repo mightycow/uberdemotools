@@ -1,3 +1,6 @@
+0.4.0a (08.01.2015)
+FIX: The delete key shortcut wasn't working anymore for removing demos from the "Demo List" ListView
+
 0.4.0 (03.01.2015)
 ADD: Added a new unified "Cut by Pattern" system with gloabl player selection/tracking settings
 ADD: Added the "Mid-Air Frags" cut filter

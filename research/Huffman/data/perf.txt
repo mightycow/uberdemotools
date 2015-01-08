@@ -1,0 +1,14 @@
+The 2 numbers are:
+1. Inside of udtMessage::ReadBits, time spent in OffsetReceive in percent.
+2. Minimum absolute time for cutting the demo folder "demo_files/demo_pack_1" by chat in single-threaded mode, in ms.
+
+All tests were done on x64 release builds from Visual Studio 2013 on a Core i7 2600K.
+
+72%, 3855* ms - id's version
+68%, 3469* ms - id's version + 2 small tweaks by myT
+32%, 2138* ms - myT's decoder v1
+N/A, 2326* ms - myT's decoder v2
+N/A, 1964  ms - myT's decoder v1 and encoder v1
+N/A, 1867  ms - myT's decoder v1 and encoder v1 + replaced loop in udtMessage::ReadBits
+
+*This is including id's Huffman tree init code: 105-115 ms

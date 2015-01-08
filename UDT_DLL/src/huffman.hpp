@@ -1,62 +1,27 @@
 #pragma once
 
 
-#include "common.hpp"
+#include "types.hpp"
 
 
-/*
-This is based on the Adaptive Huffman algorithm described in Sayood's Data
-Compression book. The ranks are not actually stored, but implicitly defined
-by the location of a node within a doubly-linked list.
-*/
-
-#define HUFF_MAX 256 // Maximum symbol
-
-struct idHuffmanNode;
-struct idHuffmanNode 
+namespace udtHuffman
 {
-	idHuffmanNode *left, *right, *parent; // tree structure
-	idHuffmanNode *next, *prev; // doubly-linked list
-	idHuffmanNode **head; // highest ranked node in block
-	s32		weight;
-	s32		symbol;
-};
+	UDT_FORCE_INLINE void PutBit(u8* fout, s32 bitIndex, s32 bit)
+	{
+		if((bitIndex & 7) == 0)
+		{
+			fout[(bitIndex >> 3)] = 0;
+		}
 
-struct idHuffmanTree
-{
-	s32			blocNode;
-	s32			blocPtrs;
+		fout[(bitIndex >> 3)] |= bit << (bitIndex & 7);
+	}
 
-	idHuffmanNode*		tree;
-	idHuffmanNode*		lhead;
-	idHuffmanNode*		ltail;
-	idHuffmanNode*		loc[HUFF_MAX+1];
-	idHuffmanNode**		freelist;
+	// Get the bit at bitIndex in the LSB of the result and have all other bits be 0.
+	UDT_FORCE_INLINE s32 GetBit(s32 bitIndex, const u8* fin)
+	{
+		return (fin[(bitIndex >> 3)] >> (bitIndex & 7)) & 1;
+	}
 
-	idHuffmanNode		nodeList[768];
-	idHuffmanNode*		nodePtrs[768];
-};
-
-struct idHuffmanCodec
-{
-	idHuffmanTree		compressor;
-	idHuffmanTree		decompressor;
-};
-
-struct udtHuffman
-{
-public:
-	udtHuffman() { _bloc = 0; }
-
-	void	Init(idHuffmanCodec *huff);
-	void	AddRef(idHuffmanTree* huff, u8 ch);
-	void	OffsetReceive (idHuffmanNode *node, s32 *ch, u8 *fin, s32 *offset);
-	void	OffsetTransmit (idHuffmanTree *huff, s32 ch, u8 *fout, s32 *offset);
-	void	PutBit( s32 bit, u8 *fout, s32 *offset);
-	s32		GetBit( u8 *fout, s32 *offset);
-	s32		GetBloc();
-	void	SetBloc(s32 bloc);
-
-private:
-	s32		_bloc;
-};
+	extern void OffsetReceive(s32* ch, const u8* fin, s32* offset);
+	extern void OffsetTransmit(u8 *fout, s32 *offset, s32 ch);
+}
