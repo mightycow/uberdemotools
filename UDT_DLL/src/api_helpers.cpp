@@ -8,6 +8,27 @@
 #include "analysis_cut_by_frag.hpp"
 
 
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+static void LogLinearAllocatorStats(udtContext& context)
+{
+	udtVMLinearAllocator::Stats stats;
+	udtVMLinearAllocator::GetStats(stats);
+
+	char* bytes;
+	udtVMLinearAllocator tempAlloc;
+	tempAlloc.Init(UDT_MEMORY_PAGE_SIZE, UDT_MEMORY_PAGE_SIZE, true);
+
+	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
+	FormatBytes(bytes, tempAlloc, stats.ReservedByteCount);
+	context.LogInfo("Reserved byte count: %s", bytes);
+	FormatBytes(bytes, tempAlloc, stats.CommittedByteCount);
+	context.LogInfo("Committed byte count: %s", bytes);
+	FormatBytes(bytes, tempAlloc, stats.UsedByteCount);
+	context.LogInfo("Used byte count: %s", bytes);
+}
+#endif
+
+
 bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
 	if(clearPlugInData)
@@ -272,6 +293,10 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
+
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+	LogLinearAllocatorStats(context->Context);
+#endif
 
 	if(customContext)
 	{

@@ -34,7 +34,7 @@ const PlugInConstructionFunc PlugInConstructors[udtParserPlugIn::Count + 1] =
 #undef UDT_PLUG_IN_ITEM
 
 
-udtParserContext::udtParserContext()
+udtParserContext::udtParserContext() : PlugIns(1 << 20)
 {
 	DemoCount = 0;
 	PlugInCountPerDemo = 0;

@@ -7,6 +7,30 @@
 #define UDT_MEMORY_PAGE_SIZE    4096
 
 
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+static udtIntrusiveList LinearAllocators;
+
+#define offsetof(s,m)  ((size_t)((ptrdiff_t)&reinterpret_cast<const volatile char&>((((s *)0)->m))))
+void udtVMLinearAllocator::GetStats(Stats& stats)
+{
+	stats = {};
+
+	udtIntrusiveListNode* node = LinearAllocators.Root.Next;
+	while(node != &LinearAllocators.Root)
+	{
+		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
+		
+		++stats.AllocatorCount;
+		stats.CommittedByteCount += allocator->_committedByteCount;
+		stats.ReservedByteCount += allocator->_reservedByteCount;
+		stats.UsedByteCount += allocator->_firstFreeByteIndex;
+		node = node->Next;
+	}
+}
+#undef offsetof
+#endif
+
+
 udtVMLinearAllocator::udtVMLinearAllocator()
 {
 	_addressSpaceStart = NULL;
@@ -14,10 +38,18 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_reservedByteCount = 0;
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
+
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+	AddNode(&_listNode, &LinearAllocators.Root);
+#endif
 }
 
 udtVMLinearAllocator::~udtVMLinearAllocator()
 {
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+	RemoveNode(&_listNode);
+#endif
+
 	Destroy();
 }
 

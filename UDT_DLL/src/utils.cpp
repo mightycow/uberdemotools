@@ -617,7 +617,7 @@ bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator
 	return true;
 }
 
-bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byteCount)
+bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount)
 {
 	if(byteCount == 0)
 	{
@@ -628,8 +628,8 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byte
 	const char* const units[] = { "bytes", "KB", "MB", "GB", "TB" };
 
 	s32 unitIndex = 0;
-	u32 prev = 0;
-	u32 temp = byteCount;
+	u64 prev = 0;
+	u64 temp = byteCount;
 	while(temp >= 1024)
 	{
 		++unitIndex;
@@ -637,7 +637,7 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byte
 		temp >>= 10;
 	}
 
-	const f32 number = (f32)prev / 1024.0f;
+	const f64 number = (f64)prev / 1024.0f;
 
 	formattedSize = (char*)allocator.Allocate(64);
 	sprintf(formattedSize, "%.3f %s", number, units[unitIndex]);
