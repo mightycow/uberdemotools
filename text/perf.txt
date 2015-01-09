@@ -1,0 +1,10 @@
+After replacing id's Huffman codec
+
+Cut by Chat test #1 (Core i7 2600K)
+max. threads: 4
+input: 1901 Files, 3.22 GB
+output: 482 files, 35.7 MB
+time: 3m 22s
+==> 16 MB/s
+
+To do: test on an SSD drive :)

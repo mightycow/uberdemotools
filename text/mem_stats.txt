@@ -1,0 +1,18 @@
+Parsing with plug-ins:
+- Chat
+- GameState
+- Obituaries
+
+Before doing any changes to the allocation system
+
+Test #1: 576 files, 1.03 GB
+Allocator count: 4053
+Reserved byte count: 9.790 GB
+Committed byte count: 21.793 MB
+Used byte count: 9.279 MB
+
+Test #2: 1901 files, 3.22 GB
+Allocator count: 13328
+Reserved byte count: 32.192 GB
+Committed byte count: 69.844 MB
+Used byte count: 28.840 MB
