@@ -112,7 +112,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.0a";
+        private const string GuiVersion = "0.4.0b";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
