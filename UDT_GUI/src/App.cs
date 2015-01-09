@@ -112,7 +112,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.0a";
+        private const string GuiVersion = "0.4.0b";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -418,6 +418,7 @@ namespace Uber.DemoTools
             logListBox.VerticalAlignment = VerticalAlignment.Stretch;
             logListBox.Margin = new Thickness(5);
             logListBox.Height = 150;
+            logListBox.SelectionMode = SelectionMode.Extended;
             InitLogListBoxClearCommand();
             InitLogListBoxCopyCommand();
             InitLogListBoxContextualMenu();
@@ -803,13 +804,10 @@ namespace Uber.DemoTools
 
         private void InitLogListBoxClearCommand()
         {
-            var inputGesture = new KeyGesture(Key.X, ModifierKeys.Control);
-            var inputBinding = new KeyBinding(_clearLogCommand, inputGesture);
             var commandBinding = new CommandBinding();
             commandBinding.Command = _clearLogCommand;
             commandBinding.Executed += (obj, args) => ClearLog();
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
-            _logListBox.InputBindings.Add(inputBinding);
             _logListBox.CommandBindings.Add(commandBinding);
         }
 
@@ -828,7 +826,7 @@ namespace Uber.DemoTools
         private void InitLogListBoxContextualMenu()
         {
             var clearLogMenuItem = new MenuItem();
-            clearLogMenuItem.Header = CreateContextMenuHeader("Clear", "Ctrl+X");
+            clearLogMenuItem.Header = "Clear";
             clearLogMenuItem.Command = _clearLogCommand;
             clearLogMenuItem.Click += (obj, args) => ClearLog();
 
@@ -1888,13 +1886,7 @@ namespace Uber.DemoTools
 
             foreach(var item in _logListBox.Items)
             {
-                var label = item as Label;
-                if(label == null)
-                {
-                    continue;
-                }
-
-                var line = label.Content as string;
+                var line = item as string;
                 if(line == null)
                 {
                     continue;
@@ -1918,19 +1910,21 @@ namespace Uber.DemoTools
 
         private void CopyLogSelection()
         {
-            var label = _logListBox.SelectedItem as Label;
-            if(label == null)
-            {
-                return;
-            }
+            var stringBuilder = new StringBuilder();
 
-            var line = label.Content as string;
-            if(line == null)
+            var items = _logListBox.SelectedItems;
+            foreach(var item in items)
             {
-                return;
-            }
+                var line = item as string;
+                if(line == null)
+                {
+                    continue;
+                }
 
-            Clipboard.SetDataObject(line, true);
+                stringBuilder.AppendLine(line);
+            }
+          
+            Clipboard.SetDataObject(stringBuilder.ToString(), true);
         }
 
         private void SaveLog()
