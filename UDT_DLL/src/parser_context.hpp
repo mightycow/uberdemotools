@@ -20,9 +20,8 @@ public:
 	udtParserContext();
 	~udtParserContext();
 
-	void Reset();
-	void ResetButKeepPlugInData();
-	void CreateAndAddPlugIns(const u32* plugInIds, u32 plugInCount);
+	void Init(u32 demoCount, const u32* plugInIds = NULL, u32 plugInCount = 0); // Called once for all.
+	void ResetForNextDemo(bool keepPlugInData); // Called once per demo processed.
 	bool GetDataInfo(u32 demoIdx, u32 plugInId, void** buffer, u32* count);
 	u32  GetDemoCount() const { return DemoCount; }
 
@@ -33,8 +32,12 @@ public:
 	udtContext Context;
 	udtBaseParser Parser;
 	udtVMLinearAllocator PlugInAllocator;
-	udtVMArray<AddOnItem> PlugIns; // There are DemoCount * PlugInCountPerDemo elements.
-	udtVMArray<u32> InputIndices;
+	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
+	udtVMArrayWithAlloc<u32> InputIndices;
 	u32 DemoCount;
-	u32 PlugInCountPerDemo;
+
+private:
+	udtVMLinearAllocator _parserAllocators[udtBaseParserAllocator::Count];
+	u8* _fixedSizeArrays[udtBaseParserFixedSizeArray::Count];
+	udtVMLinearAllocator _plugInTempAllocator;
 };

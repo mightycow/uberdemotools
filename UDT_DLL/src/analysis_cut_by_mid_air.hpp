@@ -14,6 +14,9 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
+protected:
+	void OnResetForNextDemo();
+
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByMidAirAnalyzer);
 

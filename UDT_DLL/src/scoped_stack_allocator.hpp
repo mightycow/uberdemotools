@@ -23,13 +23,13 @@ public:
 	explicit udtVMScopedStackAllocator(udtVMLinearAllocator& linearAllocator);
 	~udtVMScopedStackAllocator();
 
-	u8* Allocate(u32 byteCount);
+	u8* Allocate(uptr byteCount);
 
 	template<typename T>
 	T* NewObject()
 	{
 		// Allocate and construct.
-		Finalizer* const finalizer = (Finalizer*)_linearAllocator.Allocate((u32)sizeof(Finalizer));
+		Finalizer* const finalizer = (Finalizer*)_linearAllocator.Allocate((uptr)sizeof(Finalizer));
 		T* const result = new (_linearAllocator.Allocate(sizeof(T))) T;
 
 		// Register the finalizer.
@@ -53,5 +53,5 @@ private:
 
 	udtVMLinearAllocator& _linearAllocator;
 	Finalizer* _finalizerList;
-	u32 _oldUsedByteCount;
+	uptr _oldUsedByteCount;
 };

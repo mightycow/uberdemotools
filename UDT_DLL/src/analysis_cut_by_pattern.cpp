@@ -35,12 +35,28 @@ static int StableSortByGameStateIndexAscending(const void* aPtr, const void* bPt
 }
 
 
+udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase() 
+	: CutSections((uptr)(1 << 16))
+{
+}
+
+void udtCutByPatternAnalyzerBase::ResetForNextDemo()
+{
+	CutSections.Clear();
+	OnResetForNextDemo();
+}
+
 udtCutByPatternPlugIn::udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator, const udtCutByPatternArg& info)
 	: _analyzerAllocatorScope(analyzerAllocator)
 	, _info(info)
 	, _trackedPlayerIndex(S32_MIN)
 {
-	_tempAllocator.Init(BIG_INFO_STRING, UDT_MEMORY_PAGE_SIZE);
+}
+
+void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
+{
+	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	CutSections.SetAllocator(FinalAllocator);
 }
 
 udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo)
@@ -175,7 +191,7 @@ void udtCutByPatternPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& i
 	}
 }
 
-void udtCutByPatternPlugIn::FinishAnalysis()
+void udtCutByPatternPlugIn::FinishDemoAnalysis()
 {
 	if(_analyzers.GetSize() == 0)
 	{
@@ -184,7 +200,7 @@ void udtCutByPatternPlugIn::FinishAnalysis()
 
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
-		_analyzers[i]->FinishAnalysis();
+		_analyzers[i]->FinishDemoAnalysis();
 	}
 
 	// If we only have 1 analyzer, we don't need to do any sorting.
@@ -260,7 +276,8 @@ const char* udtCutByPatternPlugIn::GetPlayerName(udtBaseParser& parser, s32 csId
 	}
 
 	char* playerName = NULL;
-	if(!ParseConfigStringValueString(playerName, _tempAllocator, "n", cs->String))
+	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
+	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs->String))
 	{
 		return NULL;
 	}

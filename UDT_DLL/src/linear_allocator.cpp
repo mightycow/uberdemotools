@@ -40,7 +40,7 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_committedByteCount = 0;
 
 #if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-	AddNode(&_listNode, &LinearAllocators.Root);
+	InsertNodeAfter(&_listNode, &LinearAllocators.Root);
 #endif
 }
 
@@ -53,14 +53,14 @@ udtVMLinearAllocator::~udtVMLinearAllocator()
 	Destroy();
 }
 
-bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranularity, bool commitFirstBlock)
+bool udtVMLinearAllocator::Init(uptr reservedByteCount, uptr commitByteCountGranularity, bool commitFirstBlock)
 {
 	if(_addressSpaceStart != NULL)
 	{
 		return false;
 	}
-
-	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % (u32)UDT_MEMORY_PAGE_SIZE) == 0);
+	
+	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % (uptr)UDT_MEMORY_PAGE_SIZE) == 0);
 
 	// Ensure the reserve size is a multiple of the commit granularity.
 	// If it is, leave it as is. If it's not, bump it up to the next multiple.
@@ -100,7 +100,7 @@ bool udtVMLinearAllocator::Init(u32 reservedByteCount, u32 commitByteCountGranul
 	return true;
 }
 
-u8* udtVMLinearAllocator::Allocate(u32 byteCount)
+u8* udtVMLinearAllocator::Allocate(uptr byteCount)
 {
 	UDT_ASSERT_OR_FATAL(_addressSpaceStart != NULL);
 
@@ -110,9 +110,9 @@ u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 	if(_firstFreeByteIndex + byteCount > _committedByteCount)
 	{
 		// How many more commit chunks do we need?
-		const u32 neededByteCount = _firstFreeByteIndex + byteCount - _committedByteCount;
-		const u32 chunkCount = (neededByteCount + _commitByteCountGranularity - 1) / _commitByteCountGranularity;
-		const u32 newByteCount = chunkCount * _commitByteCountGranularity;
+		const uptr neededByteCount = _firstFreeByteIndex + byteCount - _committedByteCount;
+		const uptr chunkCount = (neededByteCount + _commitByteCountGranularity - 1) / _commitByteCountGranularity;
+		const uptr newByteCount = chunkCount * _commitByteCountGranularity;
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
 			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
@@ -127,7 +127,7 @@ u8* udtVMLinearAllocator::Allocate(u32 byteCount)
 	return data;
 }
 
-void udtVMLinearAllocator::Pop(u32 byteCount)
+void udtVMLinearAllocator::Pop(uptr byteCount)
 {
 	if(byteCount > _firstFreeByteIndex)
 	{
@@ -152,12 +152,12 @@ void udtVMLinearAllocator::Purge()
 	const uptr pageSizeM1 = (uptr)(UDT_MEMORY_PAGE_SIZE - 1);
 	u8* const memoryToDecommit = (u8*)((uptr)(_addressSpaceStart + _firstFreeByteIndex + pageSizeM1) & (~pageSizeM1));
 	u8* const committedEnd = _addressSpaceStart + _committedByteCount;
-	const u32 byteCount = (u32)(committedEnd - memoryToDecommit);
+	const uptr byteCount = (uptr)(committedEnd - memoryToDecommit);
 	VirtualMemoryDecommit(memoryToDecommit, byteCount);
 	_committedByteCount -= byteCount;
 }
 
-void udtVMLinearAllocator::SetCurrentByteCount(u32 byteCount)
+void udtVMLinearAllocator::SetCurrentByteCount(uptr byteCount)
 {
 	if(byteCount > _committedByteCount)
 	{
@@ -167,12 +167,12 @@ void udtVMLinearAllocator::SetCurrentByteCount(u32 byteCount)
 	_firstFreeByteIndex = byteCount;
 }
 
-u32	udtVMLinearAllocator::GetCurrentByteCount() const
+uptr	udtVMLinearAllocator::GetCurrentByteCount() const
 {
 	return _firstFreeByteIndex;
 }
 
-u32 udtVMLinearAllocator::GetCommittedByteCount() const
+uptr udtVMLinearAllocator::GetCommittedByteCount() const
 {
 	return _committedByteCount;
 }

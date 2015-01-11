@@ -24,13 +24,20 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 }
 
 
-udtCutByFragAnalyzer::udtCutByFragAnalyzer()
+udtCutByFragAnalyzer::udtCutByFragAnalyzer() 
+	: _frags(1 << 16)
 {
 	_analyzer.SetNameAllocationEnabled(false);
 }
 
 udtCutByFragAnalyzer::~udtCutByFragAnalyzer()
 {
+}
+
+void udtCutByFragAnalyzer::OnResetForNextDemo()
+{
+	_frags.Clear();
+	_analyzer.ResetForNextDemo();
 }
 
 void udtCutByFragAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)

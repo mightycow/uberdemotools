@@ -371,7 +371,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(false);
 
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
@@ -393,7 +393,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
-	DemoSplitterAnalyzer analyzer;
+	udtParserPlugInSplitter analyzer;
 	context->Parser.AddPlugIn(&analyzer);
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
@@ -427,7 +427,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(false);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -489,7 +489,7 @@ UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseAr
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return (s32)udtErrorCode::OperationFailed;

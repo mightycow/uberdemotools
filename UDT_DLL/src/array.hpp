@@ -4,6 +4,7 @@
 #include "linear_allocator.hpp"
 
 #include <string.h> // For memmove.
+#include <assert.h>
 
 
 //
@@ -15,17 +16,32 @@
 template<typename T>
 struct udtVMArray
 {
-	explicit udtVMArray(u32 reservedByteCount = (1 << 16), u32 commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE)
-		: _objects(NULL)
+	explicit udtVMArray(udtVMLinearAllocator& allocator)
+		: _allocator(&allocator)
+		, _objects((T*)allocator.GetStartAddress())
 		, _size(0)
 	{
-		_allocator.Init(reservedByteCount, commitByteCountGranularity);
-		_objects = (T*)_allocator.GetStartAddress();
-		_size = 0;
 	}
 
-	~udtVMArray()
+	udtVMArray()
+		: _allocator(NULL)
+		, _objects(NULL)
+		, _size(0)
 	{
+	}
+
+	virtual ~udtVMArray()
+	{
+	}
+
+	void SetAllocator(udtVMLinearAllocator& allocator)
+	{
+		assert(_allocator == NULL);
+		assert(_objects == NULL);
+		assert(allocator.GetStartAddress() != NULL); // The allocator is not initialized yet?
+
+		_allocator = &allocator;
+		_objects = (T*)allocator.GetStartAddress();
 	}
 
 	T& operator[](u32 index)
@@ -48,23 +64,33 @@ struct udtVMArray
 		return _objects;
 	}
 
+	T* GetEndAddress()
+	{
+		return _objects + _size;
+	}
+
+	const T* GetEndAddress() const
+	{
+		return _objects + _size;
+	}
+
 	void Add(const T& object)
 	{
-		T* const objectPtr = (T*)_allocator.Allocate((u32)sizeof(T));
+		T* const objectPtr = (T*)_allocator->Allocate((u32)sizeof(T));
 		*objectPtr = object;
 		++_size;
 	}
 
 	void Clear()
 	{
-		_allocator.Clear();
+		_allocator->Clear();
 		_size = 0;
 	}
 
 	void Resize(u32 newObjectCount)
 	{
-		_allocator.Clear();
-		_allocator.Allocate((u32)sizeof(T) * newObjectCount);
+		_allocator->Clear();
+		_allocator->Allocate((u32)sizeof(T) * newObjectCount);
 		_size = newObjectCount;
 	}
 
@@ -77,7 +103,7 @@ struct udtVMArray
 
 		_objects[index] = _objects[_size - 1];
 		--_size;
-		_allocator.Pop((u32)sizeof(T));
+		_allocator->Pop((u32)sizeof(T));
 	}
 
 	void Remove(u32 index)
@@ -90,13 +116,13 @@ struct udtVMArray
 		if(index == _size - 1)
 		{
 			--_size;
-			_allocator.Pop((u32)sizeof(T));
+			_allocator->Pop((u32)sizeof(T));
 			return;
 		}
 
 		memmove(_objects + index, _objects + index + 1, (size_t)(_size - 1 - index) * sizeof(T));
 		--_size;
-		_allocator.Pop((u32)sizeof(T));
+		_allocator->Pop((u32)sizeof(T));
 	}
 
 	// The array's size, i.e. the number of elements.
@@ -107,7 +133,7 @@ struct udtVMArray
 
 	u32 GetReservedByteCount() const
 	{
-		return _allocator.GetCommittedByteCount();
+		return _allocator->GetCommittedByteCount();
 	}
 
 	bool IsEmpty() const
@@ -118,7 +144,33 @@ struct udtVMArray
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMArray);
 
-	udtVMLinearAllocator _allocator;
+	udtVMLinearAllocator* _allocator;
 	T* _objects;
 	u32 _size;
+};
+
+template<typename T>
+struct udtVMArrayWithAlloc : public udtVMArray<T>
+{
+public:
+	explicit udtVMArrayWithAlloc(uptr reservedByteCount)
+	{
+		_allocator.Init(reservedByteCount);
+		SetAllocator(_allocator);
+	}
+
+	udtVMArrayWithAlloc()
+	{
+	}
+
+	void Init(uptr reservedByteCount)
+	{
+		_allocator.Init(reservedByteCount);
+		SetAllocator(_allocator);
+	}
+
+private:
+	UDT_NO_COPY_SEMANTICS(udtVMArrayWithAlloc);
+
+	udtVMLinearAllocator _allocator;
 };

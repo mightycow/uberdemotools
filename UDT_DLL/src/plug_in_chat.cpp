@@ -18,14 +18,20 @@ and clan is optional
 static const char* nullString = "";
 
 
-udtParserPlugInChat::udtParserPlugInChat() : ChatEvents(1 << 20)
+udtParserPlugInChat::udtParserPlugInChat()
 {
-	_chatStringAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 	_gameStateIndex = -1;
 }
 
 udtParserPlugInChat::~udtParserPlugInChat()
 {
+}
+
+void udtParserPlugInChat::InitAllocators(u32 demoCount)
+{
+	_chatStringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	ChatEvents.SetAllocator(FinalAllocator);
 }
 
 void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*info*/, udtBaseParser& parser)
@@ -35,7 +41,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	{
 		return;
 	}
-	
+
 	udtParseDataChat chatEvent;
 	memset(&chatEvent, 0, sizeof(chatEvent));
 	chatEvent.GameStateIndex = _gameStateIndex;

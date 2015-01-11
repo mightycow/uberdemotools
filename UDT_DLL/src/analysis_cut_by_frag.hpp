@@ -16,6 +16,9 @@ public:
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void FinishAnalysis();
 
+protected:
+	void OnResetForNextDemo();
+
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByFragAnalyzer);
 
@@ -28,6 +31,6 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	udtVMArray<Frag> _frags;
+	udtVMArrayWithAlloc<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
 };

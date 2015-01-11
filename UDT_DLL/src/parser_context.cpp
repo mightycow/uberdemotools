@@ -34,46 +34,48 @@ const PlugInConstructionFunc PlugInConstructors[udtParserPlugIn::Count + 1] =
 #undef UDT_PLUG_IN_ITEM
 
 
-udtParserContext::udtParserContext() : PlugIns(1 << 20)
+udtParserContext::udtParserContext()
+	: PlugIns(1 << 24)
+	, InputIndices(1 << 20)
 {
 	DemoCount = 0;
-	PlugInCountPerDemo = 0;
-	PlugInAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
+
+	PlugInAllocator.Init(1 << 16);
+
+#define UDT_BASE_PARSER_ALLOCATOR_ITEM(Enum, Bytes) _parserAllocators[udtBaseParserAllocator::Enum].Init((uptr)(Bytes));
+	UDT_BASE_PARSER_ALLOCATOR_LIST(UDT_BASE_PARSER_ALLOCATOR_ITEM)
+#undef UDT_BASE_PARSER_ALLOCATOR_ITEM
+
+#define UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM(Enum, Bytes) _fixedSizeArrays[udtBaseParserFixedSizeArray::Enum] = (u8*)malloc((size_t)(Bytes));
+	UDT_BASE_PARSER_FIXED_SIZE_ARRAY_LIST(UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM)
+#undef UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM
+
+	Parser.SetAllocators(_parserAllocators, _fixedSizeArrays);
 }
 
 udtParserContext::~udtParserContext()
 {
 	DestroyPlugIns();
+
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_fixedSizeArrays); ++i)
+	{
+		free(_fixedSizeArrays[i]);
+	}
 }
 
-void udtParserContext::Reset()
+void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
 {
-	DestroyPlugIns();
+	DemoCount = demoCount;
 
-	DemoCount = 0;
-	PlugInCountPerDemo = 0;
-	InputIndices.Clear();
-	Context.Reset();
-	Parser.Reset();
-	PlugInAllocator.Clear();
-	PlugIns.Clear();
-}
-
-void udtParserContext::ResetButKeepPlugInData()
-{
-	Context.Reset();
-	Parser.Reset();
-}
-
-void udtParserContext::CreateAndAddPlugIns(const u32* plugInIds, u32 plugInCount)
-{
-	assert(PlugInCountPerDemo == 0 || PlugInCountPerDemo == plugInCount);
+	_plugInTempAllocator.Init(1 << 20);
 
 	for(u32 i = 0; i < plugInCount; ++i)
 	{
 		const u32 plugInId = plugInIds[i];
 		udtBaseParserPlugIn* const plugIn = (udtBaseParserPlugIn*)PlugInAllocator.Allocate(PlugInByteSizes[plugInId]);
 		(*PlugInConstructors[plugInId])(plugIn);
+
+		plugIn->Init(demoCount, _plugInTempAllocator);
 
 		AddOnItem item;
 		item.Id = (udtParserPlugIn::Id)plugInId;
@@ -82,9 +84,24 @@ void udtParserContext::CreateAndAddPlugIns(const u32* plugInIds, u32 plugInCount
 
 		Parser.AddPlugIn(plugIn);
 	}
+}
 
-	++DemoCount;
-	PlugInCountPerDemo = plugInCount;
+void udtParserContext::ResetForNextDemo(bool keepPlugInData)
+{
+	if(keepPlugInData)
+	{
+		Context.Reset();
+		//Parser.ResetForNextDemo();
+	}
+	else
+	{
+		DestroyPlugIns();
+		InputIndices.Clear();
+		Context.Reset();
+		//Parser.ResetForNextDemo();
+		PlugInAllocator.Clear();
+		PlugIns.Clear();
+	}
 }
 
 bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)
@@ -94,14 +111,14 @@ bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer,
 		return false;
 	}
 
-	const u32 startIdx = demoIdx * PlugInCountPerDemo;
-	const u32 endIdx = startIdx + PlugInCountPerDemo;
-	for(u32 i = startIdx; i < endIdx; ++i)
+	// Look for the right plug-in.
+	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 	{
-		if(plugInId == (u32)PlugIns[i].Id)
+		AddOnItem& plugIn = PlugIns[i];
+		if(plugInId == (u32)plugIn.Id)
 		{
-			*itemBuffer = PlugIns[i].PlugIn->GetFirstElementAddress();
-			*itemCount = PlugIns[i].PlugIn->GetElementCount();
+			*itemBuffer = plugIn.PlugIn->GetFirstElementAddress(demoIdx);
+			*itemCount = plugIn.PlugIn->GetElementCount(demoIdx);
 			return true;
 		}
 	}

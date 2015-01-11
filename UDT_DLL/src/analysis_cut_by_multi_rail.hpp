@@ -13,6 +13,9 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
+protected:
+	void OnResetForNextDemo();
+
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByMultiRailAnalyzer);
 

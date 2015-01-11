@@ -13,6 +13,44 @@
 #include <new>
 
 
+#define UDT_BASE_PARSER_ALLOCATOR_LIST(N) \
+	N(TempAllocator, 1 << 20) \
+	N(PersistentAllocator, 1 << 24) \
+	N(PlugInsArray, 1 << 16) \
+	N(GameStateFileOffsetsArray, 1 << 16) \
+	N(ConfigStringsArray, 2 * MAX_CONFIGSTRINGS * sizeof(udtBaseParser::udtConfigString)) \
+	N(ChangedEntitiesArray, 1 << 16) \
+	N(RemovedEntitiesArray, 1 << 16) \
+	N(CutsArray, 1 << 16)
+
+#define UDT_BASE_PARSER_ALLOCATOR_ITEM(Enum, Bytes) Enum,
+struct udtBaseParserAllocator
+{
+	enum Id
+	{
+		UDT_BASE_PARSER_ALLOCATOR_LIST(UDT_BASE_PARSER_ALLOCATOR_ITEM)
+		Count
+	};
+};
+#undef UDT_BASE_PARSER_ALLOCATOR_ITEM
+
+#define UDT_BASE_PARSER_FIXED_SIZE_ARRAY_LIST(N) \
+	N(EntityBaselines, MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)) \
+	N(Entities, MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)) \
+	N(Snapshots, PACKET_BACKUP * sizeof(idLargestClientSnapshot)) \
+	N(EntityEventTimes, MAX_GENTITIES * sizeof(s32))
+
+#define UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM(Enum, Bytes) Enum,
+struct udtBaseParserFixedSizeArray
+{
+	enum Id
+	{
+		UDT_BASE_PARSER_FIXED_SIZE_ARRAY_LIST(UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM)
+		Count
+	};
+};
+#undef UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM
+
 struct udtBaseParser;
 typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 
@@ -25,9 +63,9 @@ public:
 	udtBaseParser();
 	~udtBaseParser();
 
-	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0);
-	void	SetFilePath(const char* filePath); // May return NULL if not reading the input demo from a file.
-	void    Reset();
+	void    SetAllocators(udtVMLinearAllocator* linearAllocators, u8** fixedSizeArrays); // Once for all demos.
+	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0); // Once for each demo.
+	void	SetFilePath(const char* filePath); // Once for each demo.
 	void	Destroy();
 
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
@@ -52,7 +90,7 @@ private:
 	void                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
 	void                  EmitPacketEntities(idClientSnapshotBase* from, idClientSnapshotBase* to);
 	void                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
-	char*                 AllocatePermanentString(const char* string, u32 stringLength = 0, u32* outStringLength = NULL); // If stringLength is zero, will invoke strlen.
+	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
 
 public:
@@ -64,7 +102,17 @@ public:
 	template<class T>
 	T* CreatePersistentObject()
 	{
-		return new (_inLinearAllocator.Allocate((u32)sizeof(T))) T;
+		return new (GetPersistentAllocator().Allocate((u32)sizeof(T))) T;
+	}
+
+	udtVMLinearAllocator& GetPersistentAllocator()
+	{
+		return _linearAllocators[udtBaseParserAllocator::PersistentAllocator];
+	}
+
+	udtVMLinearAllocator& GetTempAllocator()
+	{
+		return _linearAllocators[udtBaseParserAllocator::TempAllocator];
 	}
 	
 public:
@@ -94,6 +142,7 @@ public:
 
 public:
 	// General.
+	udtVMLinearAllocator* _linearAllocators; // Points to udtBaseParserAllocator::Count allocator instances.
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _protocol;
 	s32 _protocolSizeOfEntityState;
@@ -117,17 +166,15 @@ public:
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
 	s32 _inLastSnapshotMessageNumber;
+	u8* _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
+	u8* _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
+	u8* _inSnapshots; // Fixed-size array of size MAX_PARSE_ENTITIES.
+	s32* _inEntityEventTimesMs; // Fixed-size array of size MAX_GENTITIES. The server time, in ms, of the last event for a given entity.
 	udtVMArray<u32> _inGameStateFileOffsets;
-	udtVMArray<u8> _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
-	udtVMArray<u8> _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
-	udtVMArray<udtServerCommand> _inCommands;
 	udtVMArray<udtConfigString> _inConfigStrings;
-	udtVMLinearAllocator _inLinearAllocator;
-	udtVMArray<u8> _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
-	idLargestClientSnapshot _inSnapshot;
 	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
 	udtVMArray<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
-	udtVMArray<s32> _inEntityEventTimesMs; // The server time, in ms, of the last event for a given entity.
+	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
 	udtVMArray<udtCutInfo> _cuts;

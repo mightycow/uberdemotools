@@ -9,21 +9,10 @@
 struct udtObituariesAnalyzer
 {
 public:
-
-	typedef udtVMArray<udtParseDataObituary> ObituaryArray;
-
-public:
 	udtObituariesAnalyzer()
 	{
-		_gameStateIndex = -1;
+		_tempAllocator = NULL;
 		_enableNameAllocation = true;
-		_playerNamesAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
-		_tempAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
-
-		for(u32 i = 0; i < 64; ++i)
-		{
-			_playerTeams[i] = -1;
-		}
 	}
 
 	~udtObituariesAnalyzer()
@@ -31,12 +20,15 @@ public:
 	}
 
 	void SetNameAllocationEnabled(bool enabled) { _enableNameAllocation = enabled; }
+
+	void InitAllocators(u32 demoCount, udtVMLinearAllocator& finalAllocator, udtVMLinearAllocator& tempAllocator);
+	void ResetForNextDemo();
  
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
-	ObituaryArray Obituaries;
+	udtVMArray<udtParseDataObituary> Obituaries;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtObituariesAnalyzer);
@@ -44,7 +36,7 @@ private:
 	const char* AllocatePlayerName(udtBaseParser& parser, s32 playerIdx);
 
 	udtVMLinearAllocator _playerNamesAllocator;
-	udtVMLinearAllocator _tempAllocator;
+	udtVMLinearAllocator* _tempAllocator;
 	s32 _playerTeams[64];
 	s32 _gameStateIndex;
 	bool _enableNameAllocation;
@@ -61,6 +53,16 @@ public:
 	{
 	}
 
+	void InitAllocators(u32 demoCount)
+	{
+		Analyzer.InitAllocators(demoCount, FinalAllocator, *TempAllocator);
+	}
+
+	u32 GetElementSize() const
+	{
+		return (u32)sizeof(udtParseDataObituary);
+	};
+
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 	{
 		Analyzer.ProcessSnapshotMessage(arg, parser);
@@ -74,25 +76,6 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 	{
 		Analyzer.ProcessCommandMessage(arg, parser);
-	}
-
-	void FinishAnalysis()
-	{
-	}
-
-	u32 GetElementCount() const
-	{
-		return Analyzer.Obituaries.GetSize();
-	}
-
-	u32 GetElementSize() const
-	{
-		return (u32)sizeof(udtParseDataObituary);
-	};
-
-	void* GetFirstElementAddress()
-	{
-		return Analyzer.Obituaries.GetStartAddress();
 	}
 
 	udtObituariesAnalyzer Analyzer;

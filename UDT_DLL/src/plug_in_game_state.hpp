@@ -13,13 +13,13 @@ public:
 	udtParserPlugInGameState();
 	~udtParserPlugInGameState();
 
-	void  ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
-	void  ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
-	void  ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void  FinishAnalysis();
-	u32   GetElementCount() const { return _gameStates.GetSize(); }
-	u32   GetElementSize() const { return (u32)sizeof(udtParseDataGameState); }
-	void* GetFirstElementAddress() { return _gameStates.GetStartAddress(); }
+	void InitAllocators(u32 demoCount);
+	u32  GetElementSize() const { return (u32)sizeof(udtParseDataGameState); }
+
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
+	void FinishDemoAnalysis();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInGameState);
@@ -57,8 +57,8 @@ private:
 		};
 	};
 
-	udtVMArray<udtParseDataGameState> _gameStates;
-	udtVMArray<udtMatchInfo> _matches;
+	udtVMArray<udtParseDataGameState> _gameStates; // The final array.
+	udtVMArrayWithAlloc<udtMatchInfo> _matches;
 
 	udtParseDataGameState _currentGameState;
 	udtMatchInfo _currentMatch;

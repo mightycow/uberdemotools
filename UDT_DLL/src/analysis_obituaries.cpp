@@ -1,5 +1,6 @@
 #include "analysis_obituaries.hpp"
 #include "utils.hpp"
+#include "scoped_stack_allocator.hpp"
 
 
 static const char* meansOfDeath_Q3[] =
@@ -93,6 +94,28 @@ const char* GetMeanOfDeathName(s32 mod, udtProtocol::Id protocol)
 }
 
 
+void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& finalAllocator, udtVMLinearAllocator& tempAllocator)
+{
+	if(_enableNameAllocation)
+	{
+		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	}
+
+	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_tempAllocator = &tempAllocator;
+	Obituaries.SetAllocator(finalAllocator);
+}
+
+void udtObituariesAnalyzer::ResetForNextDemo()
+{
+	_gameStateIndex = -1;
+
+	for(u32 i = 0; i < 64; ++i)
+	{
+		_playerTeams[i] = -1;
+	}
+}
+
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
@@ -141,8 +164,6 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath, parser._protocol);
 		Obituaries.Add(info);
 	}
-
-	_tempAllocator.Clear();
 }
 
 const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 playerIdx)
@@ -165,7 +186,8 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	}
 
 	char* playerName = NULL;
-	if(!ParseConfigStringValueString(playerName, _tempAllocator, "n", cs->String))
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", cs->String))
 	{
 		return NULL;
 	}

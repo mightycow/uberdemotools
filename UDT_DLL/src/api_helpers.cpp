@@ -31,16 +31,7 @@ static void LogLinearAllocatorStats(udtContext& context)
 
 bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
-	if(clearPlugInData)
-	{
-		context->Reset();
-	}
-	else
-	{
-		context->ResetButKeepPlugInData();
-	}
-
-	context->CreateAndAddPlugIns(info->PlugIns, info->PlugInCount);
+	context->ResetForNextDemo(!clearPlugInData);
 
 	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
@@ -83,7 +74,7 @@ static bool RunParserWithCutByPattern(
 	const udtCutByPatternArg* patternInfo,
 	udtCutByPatternPlugIn& plugIn)
 {
-	context->Reset();
+	context->ResetForNextDemo(false);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;
@@ -143,7 +134,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtC
 		return true;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(false);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;
@@ -237,10 +228,14 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		customContext = true;
 	}
 
+	const u32* const plugIns = jobType == udtParsingJobType::General ? info->PlugIns : NULL;
+	const u32 plugInCount = jobType == udtParsingJobType::General ? info->PlugInCount : 0;
+	context->Init(extraInfo->FileCount, plugIns, plugInCount);
+
 	udtTimer timer;
 	timer.Start();
 
-	udtVMArray<u64> fileSizes;
+	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount);
 	fileSizes.Resize(extraInfo->FileCount);
 
 	u64 totalByteCount = 0;
@@ -269,6 +264,11 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	udtParseArg newInfo = *info;
 	newInfo.ProgressCb = &SingleThreadProgressCallback;
 	newInfo.ProgressContext = &progressContext;
+
+#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
+	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
+	LogLinearAllocatorStats(context->Context);
+#endif
 
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{

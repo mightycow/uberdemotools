@@ -5,6 +5,15 @@
 #include "cut_section.hpp"
 
 
+udtCutByChatAnalyzer::udtCutByChatAnalyzer() 
+	: _cutSections(1 << 16)
+{
+}
+
+udtCutByChatAnalyzer::~udtCutByChatAnalyzer()
+{
+}
+
 void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& commandInfo, udtBaseParser& parser)
 {
 	udtContext& context = *parser._context;

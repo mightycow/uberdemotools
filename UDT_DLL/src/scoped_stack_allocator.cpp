@@ -20,7 +20,7 @@ udtVMScopedStackAllocator::~udtVMScopedStackAllocator()
 	_linearAllocator.SetCurrentByteCount(_oldUsedByteCount);
 }
 
-u8* udtVMScopedStackAllocator::Allocate(u32 byteCount)
+u8* udtVMScopedStackAllocator::Allocate(uptr byteCount)
 {
 	return _linearAllocator.Allocate(byteCount);
 }

@@ -1390,23 +1390,24 @@ namespace Uber.DemoTools
                 newDemos = null;
             }
 
-            if(newDemos == null || newDemos.Count != demos.Count)
+            if(newDemos == null || newDemos.Count == 0)
             {
                 Marshal.FreeHGlobal(outputFolderPtr);
                 return;
             }
 
-            for(var i = 0; i < demos.Count; ++i)
+            foreach(var newDemo in newDemos)
             {
+                var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
-                demos[i].ChatEvents = newDemos[i].ChatEvents;
-                demos[i].FragEvents = newDemos[i].FragEvents;
-                demos[i].GameStateFileOffsets = newDemos[i].GameStateFileOffsets;
-                demos[i].GameStateSnapshotTimesMs = newDemos[i].GameStateSnapshotTimesMs;
-                demos[i].Generic = newDemos[i].Generic;
-                demos[i].InputIndex = newDemos[i].InputIndex;
-                demos[i].Protocol = newDemos[i].Protocol;
-                demos[i].FilePath = newDemos[i].FilePath;
+                demos[i].ChatEvents = newDemo.ChatEvents;
+                demos[i].FragEvents = newDemo.FragEvents;
+                demos[i].GameStateFileOffsets = newDemo.GameStateFileOffsets;
+                demos[i].GameStateSnapshotTimesMs = newDemo.GameStateSnapshotTimesMs;
+                demos[i].Generic = newDemo.Generic;
+                demos[i].InputIndex = newDemo.InputIndex;
+                demos[i].Protocol = newDemo.Protocol;
+                demos[i].FilePath = newDemo.FilePath;
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);

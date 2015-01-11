@@ -257,6 +257,14 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 
 udtCutByMidAirAnalyzer::udtCutByMidAirAnalyzer()
 {
+}
+
+udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
+{
+}
+
+void udtCutByMidAirAnalyzer::OnResetForNextDemo()
+{
 	_protocol = udtProtocol::Invalid;
 	_lastEventSequence = S32_MIN;
 	_gameStateIndex = -1;
@@ -264,10 +272,6 @@ udtCutByMidAirAnalyzer::udtCutByMidAirAnalyzer()
 	_bfgSpeed = -1.0f;
 	memset(_projectiles, 0, sizeof(_projectiles));
 	memset(_players, 0, sizeof(_players));
-}
-
-udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
-{
 }
 
 void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
