@@ -521,18 +521,6 @@ void udtMessage::BeginReadingOOB()
 	Buffer.oob = qtrue;
 }
 
-void udtMessage::Copy(u8* data, s32 length, const udtMessage* src)
-{
-	if(length < src->Buffer.cursize)
-	{
-		Context->LogErrorAndCrash("idMessage::Copy: can't copy s32o a smaller msg_t buffer");
-	}
-
-	Com_Memcpy(&Buffer, &src->Buffer, sizeof(idMessage));
-	Com_Memcpy(data, src->Buffer.data, src->Buffer.cursize);
-	Buffer.data = data;
-}
-
 /*
 =============================================================================
 
