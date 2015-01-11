@@ -205,7 +205,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
-		_analyzers[i]->FinishDemoAnalysis();
+		_analyzers[i]->FinishAnalysis();
 	}
 
 	// If we only have 1 analyzer, we don't need to do any sorting.

@@ -163,7 +163,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 		return true;
 	}
 
-	context->ResetForNextDemo(false);
+	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;

@@ -67,6 +67,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_inFileName = NULL;
 	_inFilePath = NULL;
 
+	_cuts.Clear();
+
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
 	if(gameStateIndex > 0)

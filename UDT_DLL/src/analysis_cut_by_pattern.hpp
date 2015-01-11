@@ -19,7 +19,7 @@ public:
 
 	void ResetForNextDemo();
 	
-	virtual void FinishDemoAnalysis() {}
+	virtual void FinishAnalysis() {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
