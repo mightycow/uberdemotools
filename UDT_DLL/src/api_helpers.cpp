@@ -182,6 +182,14 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 		return false;
 	}
 
+	// Save the cut sections in a temporary array.
+	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16);
+	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
+	{
+		sections.Add(plugIn.CutSections[i]);
+	}
+	
+	// This will clear the plug-in's section list.
 	if(!context->Parser.Init(&context->Context, protocol, gsIndex))
 	{
 		return false;
@@ -192,7 +200,6 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
 
-	const udtVMArray<udtCutSection>& sections = plugIn.CutSections;
 	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
 	{
 		const udtCutSection& section = sections[i];

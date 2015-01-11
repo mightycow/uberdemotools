@@ -271,7 +271,7 @@ bool udtBaseParser::ParseServerMessage()
 	return true;
 }
 
-void udtBaseParser::FinishParsing(bool success)
+void udtBaseParser::FinishParsing(bool /*success*/)
 {
 	// Close any output file stream that is still open, if any.
 	if(!_cuts.IsEmpty() && _outWriteMessage)
@@ -283,11 +283,6 @@ void udtBaseParser::FinishParsing(bool success)
 		_outSnapshotsWritten = 0;
 		_cuts[0].Stream->~udtStream();
 		_cuts.Clear();
-	}
-
-	if(!success)
-	{
-		return;
 	}
 
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)

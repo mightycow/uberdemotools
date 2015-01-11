@@ -16,9 +16,8 @@ public:
 
 	udtCutByPatternAnalyzerBase();
 	virtual ~udtCutByPatternAnalyzerBase() {}
-
-	void ResetForNextDemo();
 	
+	virtual void StartAnalysis() {}
 	virtual void FinishAnalysis() {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
@@ -27,8 +26,6 @@ public:
 	udtVMArrayWithAlloc<udtCutSection> CutSections;
 
 protected:
-	virtual void OnResetForNextDemo() {}
-
 	const udtCutByPatternPlugIn* PlugIn;
 	const void* ExtraInfo;
 
@@ -48,13 +45,14 @@ public:
 	udtCutByPatternPlugIn();
 	~udtCutByPatternPlugIn() {}
 
-	void InitAllocators(u32 demoCount);
-	u32  GetElementSize() const { return (u32)sizeof(udtCutSection); };
+	void InitAllocators(u32 demoCount) override;
+	u32  GetElementSize() const override { return (u32)sizeof(udtCutSection); };
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void FinishDemoAnalysis();
+	void StartDemoAnalysis() override;
+	void FinishDemoAnalysis() override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);

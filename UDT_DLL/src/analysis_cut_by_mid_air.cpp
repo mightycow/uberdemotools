@@ -263,7 +263,7 @@ udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
 {
 }
 
-void udtCutByMidAirAnalyzer::OnResetForNextDemo()
+void udtCutByMidAirAnalyzer::StartAnalysis()
 {
 	_protocol = udtProtocol::Invalid;
 	_lastEventSequence = S32_MIN;
@@ -290,10 +290,6 @@ void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackA
 		_players[i].Position[1] = 0.0f;
 		_players[i].Position[2] = 0.0f;
 	}
-}
-
-void udtCutByMidAirAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
-{
 }
 
 void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)

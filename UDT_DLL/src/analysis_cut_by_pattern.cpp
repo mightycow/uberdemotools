@@ -40,12 +40,6 @@ udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase()
 {
 }
 
-void udtCutByPatternAnalyzerBase::ResetForNextDemo()
-{
-	CutSections.Clear();
-	OnResetForNextDemo();
-}
-
 udtCutByPatternPlugIn::udtCutByPatternPlugIn()
 	: _info(NULL)
 	, _trackedPlayerIndex(S32_MIN)
@@ -193,6 +187,17 @@ void udtCutByPatternPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& i
 	for(u32 i = 0, count = _analyzers.GetSize(); i < count; ++i)
 	{
 		_analyzers[i]->ProcessCommandMessage(info, parser);
+	}
+}
+
+void udtCutByPatternPlugIn::StartDemoAnalysis()
+{
+	CutSections.Clear();
+
+	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
+	{
+		_analyzers[i]->CutSections.Clear();
+		_analyzers[i]->StartAnalysis();
 	}
 }
 

@@ -34,12 +34,6 @@ udtCutByFragAnalyzer::~udtCutByFragAnalyzer()
 {
 }
 
-void udtCutByFragAnalyzer::OnResetForNextDemo()
-{
-	_frags.Clear();
-	_analyzer.ResetForNextDemo();
-}
-
 void udtCutByFragAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
 	_analyzer.ProcessGamestateMessage(arg, parser);
@@ -125,6 +119,11 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	}
 
 	_analyzer.Obituaries.Clear();
+}
+
+void udtCutByFragAnalyzer::StartAnalysis()
+{
+	_frags.Clear();
 }
 
 void udtCutByFragAnalyzer::FinishAnalysis()

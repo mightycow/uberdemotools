@@ -11,7 +11,7 @@ udtCutByMultiRailAnalyzer::~udtCutByMultiRailAnalyzer()
 {
 }
 
-void udtCutByMultiRailAnalyzer::OnResetForNextDemo()
+void udtCutByMultiRailAnalyzer::StartAnalysis()
 {
 	_gameStateIndex = -1;
 }

@@ -14,8 +14,9 @@ public:
 	udtCutByChatAnalyzer();
 	~udtCutByChatAnalyzer();
 
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void FinishAnalysis();
+	void StartAnalysis() override;
+	void FinishAnalysis() override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);

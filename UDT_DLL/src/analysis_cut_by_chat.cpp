@@ -54,8 +54,12 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	_cutSections.Add(cutSection);
 }
 
+void udtCutByChatAnalyzer::StartAnalysis()
+{
+	_cutSections.Clear();
+}
+
 void udtCutByChatAnalyzer::FinishAnalysis()
 {
 	MergeRanges(CutSections, _cutSections);
-	_cutSections.Clear();
 }
