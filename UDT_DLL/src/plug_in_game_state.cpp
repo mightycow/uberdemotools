@@ -43,6 +43,22 @@ void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 	_gameStates.SetAllocator(FinalAllocator);
 }
 
+void udtParserPlugInGameState::StartDemoAnalysis()
+{
+	_gameType = udtGameType::BaseQ3;
+	_gameStateQL = udtGameStateQL::Invalid;
+	_firstGameState = true;
+	_nextSnapshotIsWarmUpEnd = false;
+
+	ClearGameState();
+	ClearMatch();
+}
+
+void udtParserPlugInGameState::FinishDemoAnalysis()
+{
+	AddCurrentGameState();
+}
+
 void udtParserPlugInGameState::ProcessQlServerInfo(const char* commandString, udtBaseParser& parser)
 {
 	const udtGameStateQL::Id oldState = _gameStateQL;
@@ -237,11 +253,6 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 			}
 		}
 	}
-}
-
-void udtParserPlugInGameState::FinishDemoAnalysis()
-{
-	AddCurrentGameState();
 }
 
 void udtParserPlugInGameState::ClearMatch()

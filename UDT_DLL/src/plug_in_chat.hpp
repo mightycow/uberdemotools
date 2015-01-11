@@ -13,11 +13,12 @@ public:
 	udtParserPlugInChat();
 	~udtParserPlugInChat();
 
-	void InitAllocators(u32 demoCount);
-	u32  GetElementSize() const { return (u32)sizeof(udtParseDataChat); }
+	void InitAllocators(u32 demoCount) override;
+	u32  GetElementSize() const override { return (u32)sizeof(udtParseDataChat); }
 
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void StartDemoAnalysis() override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInChat);

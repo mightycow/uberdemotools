@@ -13,13 +13,14 @@ public:
 	udtParserPlugInGameState();
 	~udtParserPlugInGameState();
 
-	void InitAllocators(u32 demoCount);
-	u32  GetElementSize() const { return (u32)sizeof(udtParseDataGameState); }
+	void InitAllocators(u32 demoCount) override;
+	u32  GetElementSize() const override { return (u32)sizeof(udtParseDataGameState); }
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void FinishDemoAnalysis();
+	void StartDemoAnalysis() override;
+	void FinishDemoAnalysis() override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInGameState);

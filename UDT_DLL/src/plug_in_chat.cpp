@@ -34,6 +34,11 @@ void udtParserPlugInChat::InitAllocators(u32 demoCount)
 	ChatEvents.SetAllocator(FinalAllocator);
 }
 
+void udtParserPlugInChat::StartDemoAnalysis()
+{
+	_gameStateIndex = -1;
+}
+
 void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*info*/, udtBaseParser& parser)
 {
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;

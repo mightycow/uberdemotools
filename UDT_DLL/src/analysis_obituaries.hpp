@@ -53,31 +53,37 @@ public:
 	{
 	}
 
-	void InitAllocators(u32 demoCount)
+	void InitAllocators(u32 demoCount) override
 	{
 		Analyzer.InitAllocators(demoCount, FinalAllocator, *TempAllocator);
 	}
 
-	u32 GetElementSize() const
+	u32 GetElementSize() const override
 	{
 		return (u32)sizeof(udtParseDataObituary);
 	};
 
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+	void StartDemoAnalysis() override
+	{
+		Analyzer.ResetForNextDemo();
+	}
+
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override
 	{
 		Analyzer.ProcessSnapshotMessage(arg, parser);
 	}
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override
 	{
 		Analyzer.ProcessGamestateMessage(arg, parser);
 	}
 
-	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser) override
 	{
 		Analyzer.ProcessCommandMessage(arg, parser);
 	}
 
+	// udtObituariesAnalyzer::Obituaries is the final array.
 	udtObituariesAnalyzer Analyzer;
 
 private:
