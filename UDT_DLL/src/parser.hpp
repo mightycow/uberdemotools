@@ -65,7 +65,7 @@ public:
 
 	void    SetAllocators(udtVMLinearAllocator* linearAllocators, u8** fixedSizeArrays); // Once for all demos.
 	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0); // Once for each demo.
-	void	SetFilePath(const char* filePath); // Once for each demo.
+	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
 
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.

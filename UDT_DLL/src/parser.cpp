@@ -64,6 +64,9 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_outMsg.InitContext(context);
 	_outMsg.InitProtocol(protocol);
 
+	_inFileName = NULL;
+	_inFilePath = NULL;
+
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
 	if(gameStateIndex > 0)
@@ -85,8 +88,6 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 
 void udtBaseParser::ResetForGamestateMessage()
 {
-	_inFileName = NULL;
-	_inFilePath = NULL;
 	_inServerMessageSequence = -1;
 	_inServerCommandSequence = -1;
 	_inReliableSequenceAcknowledge = -1;
