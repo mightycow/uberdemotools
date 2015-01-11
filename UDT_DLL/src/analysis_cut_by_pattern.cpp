@@ -46,11 +46,14 @@ void udtCutByPatternAnalyzerBase::ResetForNextDemo()
 	OnResetForNextDemo();
 }
 
-udtCutByPatternPlugIn::udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator, const udtCutByPatternArg& info)
-	: _analyzerAllocatorScope(analyzerAllocator)
-	, _info(info)
+udtCutByPatternPlugIn::udtCutByPatternPlugIn()
+	: _info(NULL)
 	, _trackedPlayerIndex(S32_MIN)
 {
+	_analyzers.Init(1 << 12);
+	_analyzerTypes.Init(1 << 12);
+	_analyzerAllocator.Init(1 << 16);
+	_analyzerAllocatorScope.SetAllocator(_analyzerAllocator);
 }
 
 void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
@@ -101,22 +104,24 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::GetAnalyzer(udtPatternType::
 
 void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
+	const udtCutByPatternArg& pi = GetInfo();
+
 	_trackedPlayerIndex = S32_MIN;
-	if(_info.PlayerIndex >= 0 && _info.PlayerIndex < 64)
+	if(pi.PlayerIndex >= 0 && pi.PlayerIndex < 64)
 	{
-		_trackedPlayerIndex = _info.PlayerIndex;
+		_trackedPlayerIndex = pi.PlayerIndex;
 	}
-	else if(_info.PlayerIndex == (s32)udtPlayerIndex::DemoTaker)
+	else if(pi.PlayerIndex == (s32)udtPlayerIndex::DemoTaker)
 	{
 		_trackedPlayerIndex = info.ClientNum;
 	}
-	else if(!StringIsNullOrEmpty(_info.PlayerName))
+	else if(!StringIsNullOrEmpty(pi.PlayerName))
 	{
 		const s32 firstPlayerCsIdx = parser._protocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 		for(s32 i = 0; i < MAX_CLIENTS; ++i)
 		{
 			const char* const playerName = GetPlayerName(parser, firstPlayerCsIdx + i);
-			if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, _info.PlayerName))
+			if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, pi.PlayerName))
 			{
 				_trackedPlayerIndex = i;
 				break;
@@ -132,7 +137,7 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 
 void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)
 {
-	if(_info.PlayerIndex == (s32)udtPlayerIndex::FirstPersonPlayer)
+	if(_info->PlayerIndex == (s32)udtPlayerIndex::FirstPersonPlayer)
 	{
 		idPlayerStateBase* const ps = GetPlayerState(info.Snapshot, parser._protocol);
 		if(ps != NULL)
@@ -149,7 +154,7 @@ void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 
 void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 {
-	if(_trackedPlayerIndex != S32_MIN || StringIsNullOrEmpty(_info.PlayerName))
+	if(_trackedPlayerIndex != S32_MIN || StringIsNullOrEmpty(_info->PlayerName))
 	{
 		return;
 	}
@@ -175,7 +180,7 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 	}
 
 	const char* const playerName = GetPlayerName(parser, csIndex);
-	if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, _info.PlayerName))
+	if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, _info->PlayerName))
 	{
 		_trackedPlayerIndex = playerIndex;
 	}

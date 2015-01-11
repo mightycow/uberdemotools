@@ -235,6 +235,13 @@ static void ThreadFunction(void* userData)
 
 	s32* const errorCodes = shared->MultiParseInfo->OutputErrorCodes;
 
+	if(!InitContextWithPlugIns(*data->Context, newParseInfo, data->FileCount, (udtParsingJobType::Id)shared->JobType, shared->PatternInfo))
+	{
+		data->Result = false;
+		data->Finished = true;
+		return;
+	}
+
 	for(u32 i = startIdx; i < endIdx; ++i)
 	{
 		if(shared->ParseInfo->CancelOperation != NULL && *shared->ParseInfo->CancelOperation != 0)
@@ -253,7 +260,7 @@ static void ThreadFunction(void* userData)
 		}
 		else if(shared->JobType == (u32)udtParsingJobType::CutByPattern)
 		{
-			success = CutByPattern(data->Context, &newParseInfo, shared->PatternInfo, shared->FilePaths[i]);
+			success = CutByPattern(data->Context, &newParseInfo, shared->FilePaths[i]);
 		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 

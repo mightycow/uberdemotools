@@ -475,56 +475,6 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL || patternInfo == NULL ||
-	   !IsValid(*patternInfo))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	context->ResetForNextDemo(true);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	context->Parser.SetFilePath(demoFilePath);
-
-	context->Context.LogInfo("Processing for cut by pattern: %s", demoFilePath);
-
-	CutByPattern(context, info, patternInfo, demoFilePath);
-
-	if(!RunParser(context->Parser, file, info->CancelOperation))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	return (s32)udtErrorCode::None;
-}
-
 UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -549,22 +499,6 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
 	context->~udtParserContext();
 	free(context);
-
-	return (s32)udtErrorCode::None;
-}
-
-UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL ||
-	   !HasValidPlugInOptions(*info))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	if(!ParseDemoFile(context, info, demoFilePath, true))
-	{
-		return udtErrorCode::OperationFailed;
-	}
 
 	return (s32)udtErrorCode::None;
 }
@@ -651,7 +585,7 @@ UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
 	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
-	   !IsValid(*extraInfo))
+	   !IsValid(*extraInfo) || !HasValidPlugInOptions(*info))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}

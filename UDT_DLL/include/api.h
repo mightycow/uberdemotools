@@ -767,13 +767,6 @@ extern "C"
 	// Creates a sub-demo starting and ending at the specified times.
 	UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath);
 
-	// Creates a sub-demo around every occurrence of a matching pattern.
-	UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath);
-
-	// Reads through an entire demo file.
-	// Can be configured for various analysis and data extraction tasks.
-	UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
-
 	// Gets the address and element count for the requested parse data type.
 	// The "plugInId" argument is of type udtParserPlugIn::Id.
 	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count);

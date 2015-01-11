@@ -315,12 +315,6 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByPattern(udtParserContextRef context, ref udtParseArg info, ref udtCutByPatternArg patternInfo, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetDemoDataInfo(udtParserContextRef context, UInt32 demoIdx, udtParserPlugIn plugInId, ref IntPtr buffer, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -524,38 +518,6 @@ namespace Uber.DemoTools
             pinnedCut.Free();
 
             return success;
-        }
-
-        public static DemoInfo ParseDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
-        {
-            if(context == IntPtr.Zero)
-            {
-                return null;
-            }
-
-            filePath = Path.GetFullPath(filePath);
-            var protocol = udtGetProtocolByFilePath(filePath);
-            if(protocol == udtProtocol.Invalid)
-            {
-                return null;
-            }
-
-            var pinnedPlugIns = new PinnedObject(PlugInArray);
-            parseArg.PlugInCount = (UInt32)PlugInArray.Length;
-            parseArg.PlugIns = pinnedPlugIns.Address;
-            var result = udtParseDemoFile(context, ref parseArg, filePath);
-            pinnedPlugIns.Free();
-            if(result != udtErrorCode.None)
-            {
-                return null;
-            }
-
-            var info = new DemoInfo();
-            info.FilePath = filePath;
-            info.Protocol = protocol.ToString();
-            ExtractDemoInfo(context, 0, ref info);
-
-            return info;
         }
 
         private static UInt32 GetOperatorFromString(string op)

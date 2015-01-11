@@ -7,6 +7,22 @@
 #include "array.hpp"
 
 
+#define UDT_PRIVATE_PLUG_IN_LIST(N) \
+	UDT_PLUG_IN_LIST(N) \
+	N(CutByPattern, udtCutByPatternPlugIn, udtCutSection)
+
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
+struct udtPrivateParserPlugIn
+{
+	enum Id
+	{
+		UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
+		Count
+	};
+};
+#undef UDT_PRIVATE_PLUG_IN_ITEM
+
+
 struct udtParserContext
 {
 private:
@@ -24,6 +40,7 @@ public:
 	void ResetForNextDemo(bool keepPlugInData); // Called once per demo processed.
 	bool GetDataInfo(u32 demoIdx, u32 plugInId, void** buffer, u32* count);
 	u32  GetDemoCount() const { return DemoCount; }
+	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
 
 private:
 	void DestroyPlugIns();

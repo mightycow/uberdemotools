@@ -45,11 +45,8 @@ private:
 struct udtCutByPatternPlugIn : udtBaseParserPlugIn
 {
 public:
-	udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator, const udtCutByPatternArg& info);
-
-	~udtCutByPatternPlugIn()
-	{
-	}
+	udtCutByPatternPlugIn();
+	~udtCutByPatternPlugIn() {}
 
 	void InitAllocators(u32 demoCount);
 	u32  GetElementSize() const { return (u32)sizeof(udtCutSection); };
@@ -62,8 +59,10 @@ public:
 	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
 
+	void SetPatternInfo(const udtCutByPatternArg& info) { _info = &info; }
+
 	s32 GetTrackedPlayerIndex() const;
-	const udtCutByPatternArg& GetInfo() const { return _info; }
+	const udtCutByPatternArg& GetInfo() const { return *_info; }
 
 	udtVMArray<udtCutSection> CutSections; // Final array.
 
@@ -75,8 +74,9 @@ private:
 
 	udtVMArrayWithAlloc<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArrayWithAlloc<udtPatternType::Id> _analyzerTypes;
+	udtVMLinearAllocator _analyzerAllocator;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 
-	const udtCutByPatternArg& _info;
+	const udtCutByPatternArg* _info;
 	s32 _trackedPlayerIndex;
 };

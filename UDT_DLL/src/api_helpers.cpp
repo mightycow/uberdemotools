@@ -29,6 +29,40 @@ static void LogLinearAllocatorStats(udtContext& context)
 #endif
 
 
+bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const udtCutByPatternArg* patternInfo)
+{
+	if(jobType == udtParsingJobType::General)
+	{
+		context.Init(demoCount, info.PlugIns, info.PlugInCount);
+		return true;
+	}
+
+	if(patternInfo == NULL)
+	{
+		return false;
+	}
+
+	const u32 plugInId = udtPrivateParserPlugIn::CutByPattern;
+	context.Init(demoCount, &plugInId, 1);
+
+	udtBaseParserPlugIn* plugInBase = NULL;
+	context.GetPlugInById(plugInBase, plugInId);
+	if(plugInBase == NULL)
+	{
+		return false;
+	}
+
+	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
+	plugIn.SetPatternInfo(*patternInfo);
+	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
+	{
+		const udtPatternInfo pi = patternInfo->Patterns[i];
+		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
+	}
+
+	return true;
+}
+
 bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
 	context->ResetForNextDemo(!clearPlugInData);
@@ -39,6 +73,7 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 		return false;
 	}
 
+	// @TODO: Move this up the chain! Should be done once per thread.
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;
@@ -66,15 +101,16 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 	return true;
 }
 
+// @TODO: redundant wrt to ParseDemoFile?
 static bool RunParserWithCutByPattern(
 	udtParserContext* context, 
 	udtProtocol::Id protocol, 
 	const udtParseArg* info, 
-	const char* filePath, 
-	const udtCutByPatternArg* patternInfo,
-	udtCutByPatternPlugIn& plugIn)
+	const char* filePath)
 {
-	context->ResetForNextDemo(false);
+	context->ResetForNextDemo(true);
+
+	// @TODO: Move this up the chain! Should be done once per thread.
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;
@@ -93,13 +129,6 @@ static bool RunParserWithCutByPattern(
 
 	context->Parser.SetFilePath(filePath);
 
-	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
-	{
-		const udtPatternInfo info = patternInfo->Patterns[i];
-		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)info.Type, info.TypeSpecificInfo);
-	}
-	context->Parser.AddPlugIn(&plugIn);
-
 	context->Context.LogInfo("Processing demo for pattern analysis: %s", filePath);
 
 	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
@@ -112,7 +141,7 @@ static bool RunParserWithCutByPattern(
 	return true;
 }
 
-bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath)
+bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
 	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
@@ -120,14 +149,14 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const udtC
 		return false;
 	}
 
-	udtVMLinearAllocator analyzerAllocator;
-	analyzerAllocator.Init(1 << 16, UDT_MEMORY_PAGE_SIZE);
-
-	udtCutByPatternPlugIn plugIn(analyzerAllocator, *patternInfo);
-	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath, patternInfo, plugIn))
+	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath))
 	{
 		return false;
 	}
+
+	udtBaseParserPlugIn* plugInBase = NULL;
+	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::CutByPattern);
+	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
 
 	if(plugIn.CutSections.IsEmpty())
 	{
@@ -228,9 +257,10 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		customContext = true;
 	}
 
-	const u32* const plugIns = jobType == udtParsingJobType::General ? info->PlugIns : NULL;
-	const u32 plugInCount = jobType == udtParsingJobType::General ? info->PlugInCount : 0;
-	context->Init(extraInfo->FileCount, plugIns, plugInCount);
+	if(!InitContextWithPlugIns(*context, *info, extraInfo->FileCount, jobType, patternInfo))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
 
 	udtTimer timer;
 	timer.Start();
@@ -287,7 +317,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		}
 		else if(jobType == udtParsingJobType::CutByPattern)
 		{
-			success = CutByPattern(context, &newInfo, patternInfo, extraInfo->FilePaths[i]);
+			success = CutByPattern(context, &newInfo, extraInfo->FilePaths[i]);
 		}
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 

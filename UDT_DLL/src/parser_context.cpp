@@ -3,6 +3,7 @@
 #include "plug_in_chat.hpp"
 #include "plug_in_game_state.hpp"
 #include "analysis_obituaries.hpp"
+#include "analysis_cut_by_pattern.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -17,21 +18,22 @@ void ConstructPlugInT(udtBaseParserPlugIn* address)
 	new (address) T;
 }
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) (u32)sizeof(Type),
-const u32 PlugInByteSizes[udtParserPlugIn::Count + 1] =
+
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) (u32)sizeof(Type),
+const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 {
-	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
 	0
 };
-#undef UDT_PLUG_IN_ITEM
+#undef UDT_PRIVATE_PLUG_IN_ITEM
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) &ConstructPlugInT<Type>,
-const PlugInConstructionFunc PlugInConstructors[udtParserPlugIn::Count + 1] =
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) &ConstructPlugInT<Type>,
+const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 1] =
 {
-	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
 	NULL
 };
-#undef UDT_PLUG_IN_ITEM
+#undef UDT_PRIVATE_PLUG_IN_ITEM
 
 
 udtParserContext::udtParserContext()
@@ -91,14 +93,12 @@ void udtParserContext::ResetForNextDemo(bool keepPlugInData)
 	if(keepPlugInData)
 	{
 		Context.Reset();
-		//Parser.ResetForNextDemo();
 	}
 	else
 	{
 		DestroyPlugIns();
 		InputIndices.Clear();
 		Context.Reset();
-		//Parser.ResetForNextDemo();
 		PlugInAllocator.Clear();
 		PlugIns.Clear();
 	}
@@ -124,6 +124,19 @@ bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer,
 	}
 
 	return false;
+}
+
+void udtParserContext::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId)
+{
+	plugIn = NULL;
+	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+	{
+		if(plugInId == (u32)PlugIns[i].Id)
+		{
+			plugIn = PlugIns[i].PlugIn;
+			break;
+		}
+	}
 }
 
 void udtParserContext::DestroyPlugIns()
