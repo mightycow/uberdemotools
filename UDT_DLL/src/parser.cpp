@@ -10,6 +10,7 @@ udtBaseParser::udtBaseParser()
 
 	UserData = NULL;
 
+	_inFileName = NULL;
 	_inFilePath = NULL;
 	_inFileOffset = 0;
 	_inServerMessageSequence = -1;
@@ -84,6 +85,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 
 void udtBaseParser::ResetForGamestateMessage()
 {
+	_inFileName = NULL;
+	_inFilePath = NULL;
 	_inServerMessageSequence = -1;
 	_inServerCommandSequence = -1;
 	_inReliableSequenceAcknowledge = -1;
@@ -113,7 +116,7 @@ void udtBaseParser::SetFilePath(const char* filePath)
 	_inFilePath = AllocateString(GetPersistentAllocator(), filePath);
 
 	char* fileName = NULL;
-	GetFileName(fileName, GetPersistentAllocator(), filePath);
+	::GetFileName(fileName, GetPersistentAllocator(), filePath);
 	_inFileName = fileName;
 }
 
@@ -144,8 +147,8 @@ bool udtBaseParser::ParseServerMessage()
 	{
 		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize) 
 		{
-			_context->LogErrorAndCrash("ParseServerMessage: read past the end of the server message");
-			break;
+			_context->LogError("ParseServerMessage: read past the end of the server message (in file: %s)", GetFileName());
+			return false;
 		}
 
 		s32 command = _inMsg.ReadByte();
@@ -182,15 +185,15 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		case svc_serverCommand:
-			ParseCommandString();
+			if(!ParseCommandString()) return false;
 			break;
 
 		case svc_gamestate:
-			ParseGamestate();
+			if(!ParseGamestate()) return false;
 			break;
 
 		case svc_snapshot:
-			ParseSnapshot();
+			if(!ParseSnapshot()) return false;
 			break;
 
 		case svc_voip:
@@ -206,8 +209,8 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		default:
-			_context->LogErrorAndCrash("ParseServerMessage: unrecognized server message command byte: %d", command);
-			break;
+			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
+			return false;
 		}
 	}
 
@@ -339,7 +342,7 @@ void udtBaseParser::WriteLastMessage()
 	//_context->LogInfo("Stopped writing the demo.");
 }
 
-void udtBaseParser::ParseCommandString()
+bool udtBaseParser::ParseCommandString()
 {
 	s32 commandStringLength = 0;
 	const s32 commandSequence = _inMsg.ReadLong();
@@ -349,7 +352,7 @@ void udtBaseParser::ParseCommandString()
 	if(_inServerCommandSequence >= commandSequence) 
 	{
 		// Yes, don't bother processing it.
-		return;
+		return true;
 	}
 	
 	// Copy the string to some safe location.
@@ -401,9 +404,11 @@ void udtBaseParser::ParseCommandString()
 		_outMsg.WriteString(commandString, commandStringLength);
 		++_outServerCommandSequence;
 	}
+
+	return true;
 }
 
-void udtBaseParser::ParseGamestate()
+bool udtBaseParser::ParseGamestate()
 {
 	// @TODO: Reset some data, but not for the 1st gamestate message.
 	ResetForGamestateMessage();
@@ -429,7 +434,8 @@ void udtBaseParser::ParseGamestate()
 			const s32 index = _inMsg.ReadShort();
 			if(index < 0 || index >= MAX_CONFIGSTRINGS) 
 			{
-				_context->LogErrorAndCrash("ParseGamestate: Config string index out of range: %i", index);
+				_context->LogError("ParseGamestate: config string index out of range: %d (in file: %s)", index, GetFileName());
+				return false;
 			}
 
 			s32 configStringLength = 0;
@@ -450,7 +456,8 @@ void udtBaseParser::ParseGamestate()
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
-				_context->LogErrorAndCrash("ParseGamestate: Baseline number out of range: %i", newIndex);
+				_context->LogError("ParseGamestate: baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
+				return false;
 			}
 			
 			idLargestEntityState nullState;
@@ -462,7 +469,8 @@ void udtBaseParser::ParseGamestate()
 		} 
 		else 
 		{
-			_context->LogErrorAndCrash("ParseGamestate: Unrecognized command byte");
+			_context->LogError("ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
+			return false;
 		}
 	}
 
@@ -484,9 +492,11 @@ void udtBaseParser::ParseGamestate()
 
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
+
+	return true;
 }
 
-void udtBaseParser::ParseSnapshot()
+bool udtBaseParser::ParseSnapshot()
 {
 	//
 	// Read in the new snapshot to a temporary buffer
@@ -570,8 +580,8 @@ void udtBaseParser::ParseSnapshot()
 	const s32 areaMaskLength = _inMsg.ReadByte();
 	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 	{
-		_context->LogErrorAndCrash("ParseSnapshot: Invalid size %d for areamask.", areaMaskLength);
-		return;
+		_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
 
@@ -579,7 +589,10 @@ void udtBaseParser::ParseSnapshot()
 	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _protocol) : NULL, GetPlayerState(&newSnap, _protocol));
 
 	// Read in all entities.
-	ParsePacketEntities(_inMsg, oldSnap, &newSnap);
+	if(!ParsePacketEntities(_inMsg, oldSnap, &newSnap))
+	{
+		return false;
+	}
 
 	// Did we write enough snapshots already?
 	const bool noDelta = _outSnapshotsWritten < deltaNum;
@@ -610,7 +623,7 @@ void udtBaseParser::ParseSnapshot()
 	// it has been properly read.
 	if(newSnap.valid == qfalse) 
 	{
-		return;
+		return true;
 	}
 
 	//
@@ -640,7 +653,7 @@ void udtBaseParser::ParseSnapshot()
 	// Don't give the same stuff to the plug-ins more than once.
 	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
 	{
-		return;
+		return true;
 	}
 	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
@@ -660,6 +673,8 @@ void udtBaseParser::ParseSnapshot()
 			PlugIns[i]->ProcessSnapshotMessage(info, *this);
 		}
 	}
+
+	return true;
 }
 
 void udtBaseParser::WriteGameState()
@@ -708,7 +723,7 @@ void udtBaseParser::WriteGameState()
 	_outMsg.WriteByte(svc_EOF);
 }
 
-void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
+bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
 	_inChangedEntities.Clear();
 	_inRemovedEntities.Clear();
@@ -749,7 +764,8 @@ void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 
 		if(msg.Buffer.readcount > msg.Buffer.cursize) 
 		{
-			_context->LogErrorAndCrash("ParsePacketEntities: read past the end of the current message");
+			_context->LogError("ParsePacketEntities: read past the end of the current message (in file: %s)", GetFileName());
+			return false;
 		}
 
 		while(oldnum < newnum) 
@@ -824,6 +840,8 @@ void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			oldnum = oldstate->number;
 		}
 	}
+
+	return true;
 }
 
 //
