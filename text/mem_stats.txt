@@ -7,28 +7,28 @@ Before doing any changes to the allocation system
 
 Test #1: 576 files, 1.03 GB
 Allocator count: 4053
-Reserved byte count: 9.790 GB
-Committed byte count: 21.793 MB
-Used byte count: 9.279 MB
+Reserved memory: 9.790 GB
+Committed memory: 21.793 MB
+Used memory: 9.279 MB
 
 Test #2: 1901 files, 3.22 GB
 Allocator count: 13328
-Reserved byte count: 32.192 GB
-Committed byte count: 69.844 MB
-Used byte count: 28.840 MB
+Reserved memory: 32.192 GB
+Committed memory: 69.844 MB
+Used memory: 28.840 MB
 
 With the new allocation system
 
 *** Subject to change ***
 Test #1: 576 files, 1.03 GB
-Allocator count: 27
-Reserved byte count: 270.512 MB
-Committed byte count: 13.801 MB
-Used byte count: 13.722 MB
+Allocator count: 26
+Reserved memory: 239.543 MB
+Committed memory: 8.031 MB
+Used memory: 7.956 MB
 
 *** Subject to change ***
 Test #2: 1901 files, 3.22 GB
-Allocator count: 27
-Reserved byte count: 767.453 MB
-Committed byte count: 26.840 MB
-Used byte count: 26.725 MB
+Allocator count: 26
+Reserved memory: 736.484 MB
+Committed memory: 26.816 MB
+Used memory: 26.739 MB
