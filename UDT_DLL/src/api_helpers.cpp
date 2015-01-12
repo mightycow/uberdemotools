@@ -90,8 +90,6 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 		return false;
 	}
 
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
-
 	context->Parser.SetFilePath(demoFilePath);
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
@@ -130,8 +128,6 @@ static bool RunParserWithCutByPattern(
 	context->Parser.SetFilePath(filePath);
 
 	context->Context.LogInfo("Processing demo for pattern analysis: %s", filePath);
-
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
@@ -209,8 +205,6 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	}
 
 	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
-
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	context->Context.SetCallbacks(info->MessageCb, NULL, NULL);
 	const bool result = RunParser(context->Parser, file, info->CancelOperation);

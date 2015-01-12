@@ -37,7 +37,7 @@ void CallbackConsoleProgress(f32, void*)
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData)
 {
-	udtVMLinearAllocator& tempAllocator = parser->_context->TempAllocator;
+	udtVMLinearAllocator& tempAllocator = parser->_tempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
 
@@ -699,11 +699,10 @@ s32 GetErrorCode(bool success, s32* cancel)
 bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
 {
 	udtContext* const context = parser._context;
-	udtVMScopedStackAllocator tempAllocator(context->TempAllocator);
 
 	size_t elementsRead;
 	udtMessage inMsg;
-	u8* const inMsgData = tempAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
+	u8* const inMsgData = parser._persistentAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
 	s32 inServerMessageSequence;
 
 	inMsg.InitContext(context);

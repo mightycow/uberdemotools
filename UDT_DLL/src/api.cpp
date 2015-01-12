@@ -274,8 +274,11 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 		return false;
 	}
 
-	udtVMLinearAllocator& tempAllocator = context.TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
+	// @TODO:
+	udtVMLinearAllocator tempAllocator;
+	tempAllocator.Init(1 << 20);
+	//udtVMLinearAllocator& tempAllocator = ;
+	//udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 	char* fileName = NULL;
 	if(!GetFileNameWithoutExtension(fileName, tempAllocator, filePath))
@@ -390,8 +393,6 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 	}
 
 	context->Parser.SetFilePath(demoFilePath);
-
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
 
 	udtParserPlugInSplitter analyzer;
 	context->Parser.AddPlugIn(&analyzer);

@@ -29,8 +29,8 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	bool match = false;
 	for(u32 i = 0; i < extraInfo.RuleCount; ++i)
 	{
-		udtVMScopedStackAllocator tempAllocatorScopeGuard(context.TempAllocator);
-		if(StringMatchesCutByChatRule(tokenizer.argv(1), extraInfo.Rules[i], context.TempAllocator))
+		udtVMScopedStackAllocator tempAllocatorScopeGuard(parser._tempAllocator);
+		if(StringMatchesCutByChatRule(tokenizer.argv(1), extraInfo.Rules[i], parser._tempAllocator))
 		{
 			match = true;
 			break;
