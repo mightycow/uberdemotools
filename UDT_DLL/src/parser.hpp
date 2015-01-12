@@ -13,30 +13,6 @@
 #include <new>
 
 
-// @TODO: Get rid of this...
-#define UDT_BASE_PARSER_ALLOCATOR_LIST(N) \
-	N(TempAllocator, 1 << 20) \
-	N(PersistentAllocator, 1 << 24) \
-	N(PlugInsArray, 1 << 16) \
-	N(GameStateFileOffsetsArray, 1 << 16) \
-	N(ConfigStringsArray, 2 * MAX_CONFIGSTRINGS * sizeof(udtBaseParser::udtConfigString)) \
-	N(ChangedEntitiesArray, 1 << 16) \
-	N(RemovedEntitiesArray, 1 << 16) \
-	N(CutsArray, 1 << 16)
-
-// @TODO: Get rid of this...
-#define UDT_BASE_PARSER_ALLOCATOR_ITEM(Enum, Bytes) Enum,
-struct udtBaseParserAllocator
-{
-	enum Id
-	{
-		UDT_BASE_PARSER_ALLOCATOR_LIST(UDT_BASE_PARSER_ALLOCATOR_ITEM)
-		Count
-	};
-};
-#undef UDT_BASE_PARSER_ALLOCATOR_ITEM
-
-
 struct udtBaseParser;
 typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 
@@ -49,7 +25,7 @@ public:
 	udtBaseParser();
 	~udtBaseParser();
 
-	void    SetAllocators(udtVMLinearAllocator* linearAllocators); // Once for all demos.
+	void    InitAllocators(); // Once for all demos.
 	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0); // Once for each demo.
 	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
@@ -60,8 +36,7 @@ public:
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
-	void                  InsertOrUpdateConfigString(const udtConfigString& cs);
-	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not found.
+	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not available.
 
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
@@ -89,17 +64,7 @@ public:
 	template<class T>
 	T* CreatePersistentObject()
 	{
-		return new (GetPersistentAllocator().Allocate((u32)sizeof(T))) T;
-	}
-
-	udtVMLinearAllocator& GetPersistentAllocator()
-	{
-		return _linearAllocators[udtBaseParserAllocator::PersistentAllocator];
-	}
-
-	udtVMLinearAllocator& GetTempAllocator()
-	{
-		return _linearAllocators[udtBaseParserAllocator::TempAllocator];
+		return new (_persistentAllocator.Allocate((u32)sizeof(T))) T;
 	}
 	
 public:
@@ -118,7 +83,6 @@ public:
 	{
 		const char* String;
 		u32 StringLength;
-		s32 Index;
 	};
 
 	struct udtServerCommand
@@ -129,7 +93,9 @@ public:
 
 public:
 	// General.
-	udtVMLinearAllocator* _linearAllocators; // Points to udtBaseParserAllocator::Count allocator instances.
+	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
+	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
+	udtVMLinearAllocator _tempAllocator;
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _protocol;
 	s32 _protocolSizeOfEntityState;
@@ -137,7 +103,7 @@ public:
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
-	udtVMArray<udtBaseParserPlugIn*> PlugIns;
+	udtVMArrayWithAlloc<udtBaseParserPlugIn*> PlugIns;
 
 	// Input.
 	const char* _inFilePath;
@@ -153,18 +119,18 @@ public:
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
 	s32 _inLastSnapshotMessageNumber;
-	u8 _inEntityBaselines[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Must be zeroed initially.
-	u8 _inParseEntities[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)];
-	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)];
+	u8 _inEntityBaselines[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
+	u8 _inParseEntities[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
+	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
-	udtVMArray<u32> _inGameStateFileOffsets;
-	udtVMArray<udtConfigString> _inConfigStrings;
-	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
-	udtVMArray<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtConfigString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
+	udtVMArrayWithAlloc<u32> _inGameStateFileOffsets;
+	udtVMArrayWithAlloc<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
+	udtVMArrayWithAlloc<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
-	udtVMArray<udtCutInfo> _cuts;
+	udtVMArrayWithAlloc<udtCutInfo> _cuts;
 	u8 _outMsgData[MAX_MSGLEN];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;

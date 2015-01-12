@@ -64,7 +64,7 @@ void udtParserPlugInGameState::ProcessQlServerInfo(const char* commandString, ud
 	const udtGameStateQL::Id oldState = _gameStateQL;
 	udtGameStateQL::Id newState = udtGameStateQL::Invalid;
 
-	udtVMLinearAllocator& tempAllocator = parser._context->TempAllocator;
+	udtVMLinearAllocator& tempAllocator = *TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 	char* gameStateString = NULL;
@@ -145,7 +145,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 		}
 		else
 		{
-			udtVMLinearAllocator& tempAllocator = parser._context->TempAllocator;
+			udtVMLinearAllocator& tempAllocator = *TempAllocator;
 			udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 			char* gameName = NULL;

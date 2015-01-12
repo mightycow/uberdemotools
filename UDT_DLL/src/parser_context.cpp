@@ -37,20 +37,15 @@ const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 
 
 
 udtParserContext::udtParserContext()
-	: PlugIns(1 << 24)
-	, InputIndices(1 << 20)
 {
 	DemoCount = 0;
 
+	PlugIns.Init(1 << 16);
+	InputIndices.Init(1 << 20);
 	PlugInAllocator.Init(1 << 16);
+	_plugInTempAllocator.Init(1 << 20);
 
-	// @TODO: Get rid of this...
-#define UDT_BASE_PARSER_ALLOCATOR_ITEM(Enum, Bytes) _parserAllocators[udtBaseParserAllocator::Enum].Init((uptr)(Bytes));
-	UDT_BASE_PARSER_ALLOCATOR_LIST(UDT_BASE_PARSER_ALLOCATOR_ITEM)
-#undef UDT_BASE_PARSER_ALLOCATOR_ITEM
-
-	// @TODO: Change the call
-	Parser.SetAllocators(_parserAllocators);
+	Parser.InitAllocators();
 }
 
 udtParserContext::~udtParserContext()
@@ -61,8 +56,6 @@ udtParserContext::~udtParserContext()
 void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
 {
 	DemoCount = demoCount;
-
-	_plugInTempAllocator.Init(1 << 20);
 
 	for(u32 i = 0; i < plugInCount; ++i)
 	{
@@ -83,18 +76,16 @@ void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount
 
 void udtParserContext::ResetForNextDemo(bool keepPlugInData)
 {
-	if(keepPlugInData)
-	{
-		Context.Reset();
-	}
-	else
+	if(!keepPlugInData)
 	{
 		DestroyPlugIns();
 		InputIndices.Clear();
-		Context.Reset();
 		PlugInAllocator.Clear();
 		PlugIns.Clear();
 	}
+
+	Context.Reset();
+	_plugInTempAllocator.Clear();
 }
 
 bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)

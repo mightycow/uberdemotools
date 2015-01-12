@@ -34,15 +34,16 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-void udtBaseParser::SetAllocators(udtVMLinearAllocator* linearAllocators)
+void udtBaseParser::InitAllocators()
 {
-	_linearAllocators = linearAllocators;
-	PlugIns.SetAllocator(linearAllocators[udtBaseParserAllocator::PlugInsArray]);
-	_inGameStateFileOffsets.SetAllocator(linearAllocators[udtBaseParserAllocator::GameStateFileOffsetsArray]);
-	_inConfigStrings.SetAllocator(linearAllocators[udtBaseParserAllocator::ConfigStringsArray]);
-	_inChangedEntities.SetAllocator(linearAllocators[udtBaseParserAllocator::ChangedEntitiesArray]);
-	_inRemovedEntities.SetAllocator(linearAllocators[udtBaseParserAllocator::RemovedEntitiesArray]);
-	_cuts.SetAllocator(linearAllocators[udtBaseParserAllocator::CutsArray]);
+	_persistentAllocator.Init(1 << 20);
+	_configStringAllocator.Init(1 << 24);
+	_tempAllocator.Init(1 << 20);
+	PlugIns.Init(1 << 16);
+	_inGameStateFileOffsets.Init(1 << 16);
+	_inChangedEntities.Init(1 << 16);
+	_inRemovedEntities.Init(1 << 16);
+	_cuts.Init(1 << 16);
 }
 
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)
@@ -64,8 +65,9 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_inFilePath = NULL;
 
 	_cuts.Clear();
-	GetPersistentAllocator().Clear();
-	GetTempAllocator().Clear();
+	_persistentAllocator.Clear();
+	_configStringAllocator.Clear();
+	_tempAllocator.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
@@ -102,22 +104,24 @@ void udtBaseParser::ResetForGamestateMessage()
 	_outWriteFirstMessage = false;
 	_outWriteMessage = false;
 
-	memset(_inEntityBaselines, 0, MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
-	memset(_inSnapshots, 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
-	for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
+	memset(_inEntityBaselines, 0, sizeof(_inEntityBaselines));
+	memset(_inSnapshots, 0, sizeof(_inSnapshots));
+	memset(_inConfigStrings, 0, sizeof(_inConfigStrings));
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inEntityEventTimesMs); ++i)
 	{
 		_inEntityEventTimesMs[i] = S32_MIN;
 	}
 
-	_inConfigStrings.Clear();
+	_configStringAllocator.Clear();
+	_tempAllocator.Clear();
 }
 
 void udtBaseParser::SetFilePath(const char* filePath)
 {
-	_inFilePath = AllocateString(GetPersistentAllocator(), filePath);
+	_inFilePath = AllocateString(_persistentAllocator, filePath);
 
 	char* fileName = NULL;
-	::GetFileName(fileName, GetPersistentAllocator(), filePath);
+	::GetFileName(fileName, _persistentAllocator, filePath);
 	_inFileName = fileName;
 }
 
@@ -352,8 +356,8 @@ bool udtBaseParser::ParseCommandString()
 	}
 	
 	// Copy the string to some safe location.
-	udtVMScopedStackAllocator scopedTempAllocator(GetTempAllocator());
-	char* const commandString = AllocateString(GetTempAllocator(), commandStringTemp, commandStringLength);
+	udtVMScopedStackAllocator scopedTempAllocator(_tempAllocator);
+	char* const commandString = AllocateString(_tempAllocator, commandStringTemp, commandStringLength);
 	
 	// We haven't, so let's store the last sequence number received.
 	_inServerCommandSequence = commandSequence;
@@ -370,13 +374,10 @@ bool udtBaseParser::ParseCommandString()
 			const u32 csStringLength = (u32)strlen(csStringTemp);
 
 			// Copy the string to some safe location.
-			char* const csString = AllocateString(GetPersistentAllocator(), csStringTemp, csStringLength);
+			char* const csString = AllocateString(_configStringAllocator, csStringTemp, csStringLength);
 
-			udtConfigString cs;
-			cs.Index = csIndex;
-			cs.String = csString;
-			cs.StringLength = csStringLength;
-			InsertOrUpdateConfigString(cs);
+			_inConfigStrings[csIndex].String = csString;
+			_inConfigStrings[csIndex].StringLength = csStringLength;
 		}
 	}
 
@@ -438,14 +439,11 @@ bool udtBaseParser::ParseGamestate()
 			const char* const configStringTemp = _inMsg.ReadBigString(configStringLength);
 			
 			// Copy the string to a safe location.
-			char* const configString = AllocateString(GetPersistentAllocator(), configStringTemp, configStringLength);
+			char* const configString = AllocateString(_configStringAllocator, configStringTemp, configStringLength);
 
 			// Store it.
-			udtConfigString cs;
-			cs.Index = index;
-			cs.String = configString;
-			cs.StringLength = configStringLength;
-			_inConfigStrings.Add(cs);
+			_inConfigStrings[index].String = configString;
+			_inConfigStrings[index].StringLength = configStringLength;
 		} 
 		else if(command == svc_baseline)
 		{
@@ -685,11 +683,16 @@ void udtBaseParser::WriteGameState()
 	++_outServerCommandSequence;
 	
 	// Config strings.
-	for(u32 i = 0, count = _inConfigStrings.GetSize(); i < count; ++i)
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inConfigStrings); ++i)
 	{
 		const udtConfigString& cs = _inConfigStrings[i];
+		if(cs.String == NULL || cs.StringLength == 0)
+		{
+			continue;
+		}
+
 		_outMsg.WriteByte(svc_configstring);
-		_outMsg.WriteShort(cs.Index);
+		_outMsg.WriteShort((s32)i);
 		_outMsg.WriteBigString(cs.String, cs.StringLength);
 	}
 	
@@ -959,31 +962,9 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	frame->numEntities++;
 }
 
-void udtBaseParser::InsertOrUpdateConfigString(const udtConfigString& newCs)
-{
-	udtConfigString* const oldCs = FindConfigStringByIndex(newCs.Index);
-	if(oldCs == NULL)
-	{
-		_inConfigStrings.Add(newCs);
-	}
-	else
-	{
-		*oldCs = newCs;
-	}
-}
-
 udtBaseParser::udtConfigString* udtBaseParser::FindConfigStringByIndex(s32 csIndex)
 {
-	for(u32 i = 0, count = _inConfigStrings.GetSize(); i < count; ++i)
-	{
-		udtConfigString& cs = _inConfigStrings[i];
-		if(cs.Index == csIndex)
-		{
-			return &cs;
-		}
-	}
-
-	return NULL;
+	return (_inConfigStrings[csIndex].String) != NULL ? (&_inConfigStrings[csIndex]) : NULL;
 }
 
 char* udtBaseParser::AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength, u32* outStringLength)
