@@ -1547,9 +1547,18 @@ namespace Uber.DemoTools
 
         private void OnRemoveDemoClicked()
         {
-            if(_demoListView.SelectedItems.Count == 0)
+            var selectedCount = _demoListView.SelectedItems.Count;
+            if(selectedCount == 0)
             {
                 LogWarning("You must select 1 or more demos from the list before you can remove them");
+                return;
+            }
+
+            if(selectedCount == _demos.Count)
+            {
+                // Let the most common case be super duper fast.
+                _demoListView.Items.Clear();
+                _demos.Clear();
                 return;
             }
 
