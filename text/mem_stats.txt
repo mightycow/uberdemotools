@@ -16,3 +16,19 @@ Allocator count: 13328
 Reserved byte count: 32.192 GB
 Committed byte count: 69.844 MB
 Used byte count: 28.840 MB
+
+With the new allocation system
+
+*** Subject to change ***
+Test #1: 576 files, 1.03 GB
+Allocator count: 27
+Reserved byte count: 270.512 MB
+Committed byte count: 13.801 MB
+Used byte count: 13.722 MB
+
+*** Subject to change ***
+Test #2: 1901 files, 3.22 GB
+Allocator count: 27
+Reserved byte count: 767.453 MB
+Committed byte count: 26.840 MB
+Used byte count: 26.725 MB
