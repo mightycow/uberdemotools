@@ -54,7 +54,6 @@ public:
 	u32 DemoCount;
 
 private:
-	udtVMLinearAllocator _parserAllocators[udtBaseParserAllocator::Count];
-	u8* _fixedSizeArrays[udtBaseParserFixedSizeArray::Count];
+	udtVMLinearAllocator _parserAllocators[udtBaseParserAllocator::Count]; // @TODO: Get rid of this...
 	udtVMLinearAllocator _plugInTempAllocator;
 };

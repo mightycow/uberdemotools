@@ -34,7 +34,7 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-void udtBaseParser::SetAllocators(udtVMLinearAllocator* linearAllocators, u8** fixedSizeArrays)
+void udtBaseParser::SetAllocators(udtVMLinearAllocator* linearAllocators)
 {
 	_linearAllocators = linearAllocators;
 	PlugIns.SetAllocator(linearAllocators[udtBaseParserAllocator::PlugInsArray]);
@@ -43,10 +43,6 @@ void udtBaseParser::SetAllocators(udtVMLinearAllocator* linearAllocators, u8** f
 	_inChangedEntities.SetAllocator(linearAllocators[udtBaseParserAllocator::ChangedEntitiesArray]);
 	_inRemovedEntities.SetAllocator(linearAllocators[udtBaseParserAllocator::RemovedEntitiesArray]);
 	_cuts.SetAllocator(linearAllocators[udtBaseParserAllocator::CutsArray]);
-	_inEntityBaselines = fixedSizeArrays[udtBaseParserFixedSizeArray::EntityBaselines];
-	_inParseEntities = fixedSizeArrays[udtBaseParserFixedSizeArray::Entities];
-	_inSnapshots = fixedSizeArrays[udtBaseParserFixedSizeArray::Snapshots];
-	_inEntityEventTimesMs = (s32*)fixedSizeArrays[udtBaseParserFixedSizeArray::EntityEventTimes];
 }
 
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)

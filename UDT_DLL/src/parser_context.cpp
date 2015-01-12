@@ -44,25 +44,18 @@ udtParserContext::udtParserContext()
 
 	PlugInAllocator.Init(1 << 16);
 
+	// @TODO: Get rid of this...
 #define UDT_BASE_PARSER_ALLOCATOR_ITEM(Enum, Bytes) _parserAllocators[udtBaseParserAllocator::Enum].Init((uptr)(Bytes));
 	UDT_BASE_PARSER_ALLOCATOR_LIST(UDT_BASE_PARSER_ALLOCATOR_ITEM)
 #undef UDT_BASE_PARSER_ALLOCATOR_ITEM
 
-#define UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM(Enum, Bytes) _fixedSizeArrays[udtBaseParserFixedSizeArray::Enum] = (u8*)malloc((size_t)(Bytes));
-	UDT_BASE_PARSER_FIXED_SIZE_ARRAY_LIST(UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM)
-#undef UDT_BASE_PARSER_FIXED_SIZE_ARRAY_ITEM
-
-	Parser.SetAllocators(_parserAllocators, _fixedSizeArrays);
+	// @TODO: Change the call
+	Parser.SetAllocators(_parserAllocators);
 }
 
 udtParserContext::~udtParserContext()
 {
 	DestroyPlugIns();
-
-	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_fixedSizeArrays); ++i)
-	{
-		free(_fixedSizeArrays[i]);
-	}
 }
 
 void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
