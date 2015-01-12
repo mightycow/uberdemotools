@@ -20,11 +20,11 @@ static void LogLinearAllocatorStats(udtContext& context)
 
 	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
 	FormatBytes(bytes, tempAlloc, stats.ReservedByteCount);
-	context.LogInfo("Reserved byte count: %s", bytes);
+	context.LogInfo("Reserved memory: %s", bytes);
 	FormatBytes(bytes, tempAlloc, stats.CommittedByteCount);
-	context.LogInfo("Committed byte count: %s", bytes);
+	context.LogInfo("Committed memory: %s", bytes);
 	FormatBytes(bytes, tempAlloc, stats.UsedByteCount);
-	context.LogInfo("Used byte count: %s", bytes);
+	context.LogInfo("Used memory: %s", bytes);
 }
 #endif
 
