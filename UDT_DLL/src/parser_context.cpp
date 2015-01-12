@@ -43,7 +43,7 @@ udtParserContext::udtParserContext()
 	PlugIns.Init(1 << 16);
 	InputIndices.Init(1 << 20);
 	PlugInAllocator.Init(1 << 16);
-	_plugInTempAllocator.Init(1 << 20);
+	PlugInTempAllocator.Init(1 << 20);
 
 	Parser.InitAllocators();
 }
@@ -63,7 +63,7 @@ void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount
 		udtBaseParserPlugIn* const plugIn = (udtBaseParserPlugIn*)PlugInAllocator.Allocate(PlugInByteSizes[plugInId]);
 		(*PlugInConstructors[plugInId])(plugIn);
 
-		plugIn->Init(demoCount, _plugInTempAllocator);
+		plugIn->Init(demoCount, PlugInTempAllocator);
 
 		AddOnItem item;
 		item.Id = (udtParserPlugIn::Id)plugInId;
@@ -85,7 +85,7 @@ void udtParserContext::ResetForNextDemo(bool keepPlugInData)
 	}
 
 	Context.Reset();
-	_plugInTempAllocator.Clear();
+	PlugInTempAllocator.Clear();
 }
 
 bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)

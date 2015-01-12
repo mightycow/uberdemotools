@@ -51,8 +51,6 @@ public:
 	udtVMLinearAllocator PlugInAllocator;
 	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
 	udtVMArrayWithAlloc<u32> InputIndices;
+	udtVMLinearAllocator PlugInTempAllocator;
 	u32 DemoCount;
-
-private:
-	udtVMLinearAllocator _plugInTempAllocator;
 };

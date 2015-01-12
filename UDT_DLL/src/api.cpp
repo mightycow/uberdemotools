@@ -256,7 +256,7 @@ UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
 	return (s32)udtErrorCode::None;
 }
 
-static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
+static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
 {
 	if(endOffset <= startOffset)
 	{
@@ -274,11 +274,7 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 		return false;
 	}
 
-	// @TODO:
-	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 20);
-	//udtVMLinearAllocator& tempAllocator = ;
-	//udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
+	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 	char* fileName = NULL;
 	if(!GetFileNameWithoutExtension(fileName, tempAllocator, filePath))
@@ -319,7 +315,7 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 	return success;
 }
 
-static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, const u32* fileOffsets, const u32 count)
+static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, const u32* fileOffsets, const u32 count)
 {
 	if(fileOffsets == NULL || count == 0)
 	{
@@ -349,13 +345,13 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 			continue;
 		}
 
-		success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, i - indexOffset, start, end);
+		success = success && CreateDemoFileSplit(tempAllocator, context, file, filePath, outputFolderPath, i - indexOffset, start, end);
 
 		start = end;
 	}
 
 	end = fileLength;
-	success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, count - indexOffset, start, end);
+	success = success && CreateDemoFileSplit(tempAllocator, context, file, filePath, outputFolderPath, count - indexOffset, start, end);
 
 	return success;
 }
@@ -394,19 +390,23 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	context->Parser.SetFilePath(demoFilePath);
 
-	udtParserPlugInSplitter analyzer;
-	context->Parser.AddPlugIn(&analyzer);
+	// TODO: Move this to api_helpers.cpp and implement it the same way Cut by Pattern is?
+	udtParserPlugInSplitter plugIn;
+	plugIn.Init(1, context->PlugInTempAllocator);
+	context->Parser.AddPlugIn(&plugIn);
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(analyzer.GamestateFileOffsets.GetSize() <= 1)
+	if(plugIn.GamestateFileOffsets.GetSize() <= 1)
 	{
 		return (s32)udtErrorCode::None;
 	}
 
-	if(!CreateDemoFileSplit(context->Context, file, demoFilePath, info->OutputFolderPath, &analyzer.GamestateFileOffsets[0], analyzer.GamestateFileOffsets.GetSize()))
+	udtVMLinearAllocator& tempAllocator = context->Parser._tempAllocator;
+	tempAllocator.Clear();
+	if(!CreateDemoFileSplit(tempAllocator, context->Context, file, demoFilePath, info->OutputFolderPath, &plugIn.GamestateFileOffsets[0], plugIn.GamestateFileOffsets.GetSize()))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
