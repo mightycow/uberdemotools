@@ -16,7 +16,7 @@ namespace Uber.DemoTools
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
 #else
-        private const int MaxBatchSizeParsing = 512;
+        private const int MaxBatchSizeParsing = 4;
         private const int MaxBatchSizeCutting = 2048;
 #endif
 
@@ -809,7 +809,7 @@ namespace Uber.DemoTools
             var fileCount = filePaths.Count;
             if(fileCount <= MaxBatchSizeParsing)
             {
-                return ParseDemosImpl(ref parseArg, filePaths, maxThreadCount);
+                return ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
             }
 
             var oldProgressCb = parseArg.ProgressCb;
@@ -834,7 +834,7 @@ namespace Uber.DemoTools
                 var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
                 progressRange = (float)currentFileCount / (float)fileCount;
 
-                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount);
+                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount, fileIndex);
                 demos.AddRange(currentResults);
 
                 fileIndex += currentFileCount;
@@ -848,7 +848,7 @@ namespace Uber.DemoTools
             return demos;
         }
 
-        private static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        private static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int inputIndexBase)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
@@ -934,7 +934,7 @@ namespace Uber.DemoTools
                     var protocol = udtGetProtocolByFilePath(filePath);
                     var info = new DemoInfo();
                     info.Analyzed = true;
-                    info.InputIndex = (int)inputIdx;
+                    info.InputIndex = inputIndexBase + (int)inputIdx;
                     info.FilePath = Path.GetFullPath(filePath);
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
                     
