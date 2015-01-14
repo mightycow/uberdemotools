@@ -16,7 +16,7 @@ namespace Uber.DemoTools
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
 #else
-        private const int MaxBatchSizeParsing = 4;
+        private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
 #endif
 
