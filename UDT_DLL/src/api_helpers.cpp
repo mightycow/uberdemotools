@@ -60,6 +60,8 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
 	}
 
+	plugIn.InitAnalyzerAllocators(demoCount);
+
 	return true;
 }
 

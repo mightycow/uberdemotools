@@ -11,6 +11,7 @@ public:
 	udtCutByFragAnalyzer();
 	~udtCutByFragAnalyzer();
 
+	void InitAllocators(u32 demoCount) override;
 	void StartAnalysis() override;
 	void FinishAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
@@ -30,5 +31,6 @@ private:
 	};
 
 	udtVMArrayWithAlloc<Frag> _frags;
+	udtVMLinearAllocator _analyzerFinalAllocator;
 	udtObituariesAnalyzer _analyzer;
 };

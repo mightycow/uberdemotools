@@ -121,6 +121,12 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	_analyzer.Obituaries.Clear();
 }
 
+void udtCutByFragAnalyzer::InitAllocators(u32 demoCount)
+{
+	_analyzerFinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_analyzer.InitAllocators(demoCount, _analyzerFinalAllocator, PlugIn->GetTempAllocator());
+}
+
 void udtCutByFragAnalyzer::StartAnalysis()
 {
 	_frags.Clear();

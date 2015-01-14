@@ -17,6 +17,7 @@ public:
 	udtCutByPatternAnalyzerBase();
 	virtual ~udtCutByPatternAnalyzerBase() {}
 	
+	virtual void InitAllocators(u32 /*demoCount*/) {}
 	virtual void StartAnalysis() {}
 	virtual void FinishAnalysis() {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
@@ -26,7 +27,7 @@ public:
 	udtVMArrayWithAlloc<udtCutSection> CutSections;
 
 protected:
-	const udtCutByPatternPlugIn* PlugIn;
+	udtCutByPatternPlugIn* PlugIn;
 	const void* ExtraInfo;
 
 	template<typename T>
@@ -54,6 +55,7 @@ public:
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser) override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
+	void                         InitAnalyzerAllocators(u32 demoCount);
 	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
 
@@ -61,6 +63,8 @@ public:
 
 	s32 GetTrackedPlayerIndex() const;
 	const udtCutByPatternArg& GetInfo() const { return *_info; }
+
+	udtVMLinearAllocator& GetTempAllocator() { return *TempAllocator; }
 
 	udtVMArray<udtCutSection> CutSections; // Final array.
 

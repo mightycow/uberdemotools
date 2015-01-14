@@ -56,6 +56,14 @@ void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
 	CutSections.SetAllocator(FinalAllocator);
 }
 
+void udtCutByPatternPlugIn::InitAnalyzerAllocators(u32 demoCount)
+{
+	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
+	{
+		_analyzers[i]->InitAllocators(demoCount);
+	}
+}
+
 udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo)
 {
 	if(extraInfo == NULL)
@@ -223,7 +231,9 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
+	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 	udtVMArray<CutSection> tempCutSections;
+	tempCutSections.SetAllocator(*TempAllocator);
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
 		udtCutByPatternAnalyzerBase* const analyzer = _analyzers[i];
@@ -234,6 +244,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 			newCut.GameStateIndex = cut.GameStateIndex;
 			newCut.StartTimeMs = cut.StartTimeMs;
 			newCut.EndTimeMs = cut.EndTimeMs;
+			newCut.VeryShortDesc = cut.VeryShortDesc;
 			tempCutSections.Add(newCut);
 		}
 	}
@@ -259,6 +270,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	// and merge the sections.
 	//
 	udtVMArray<udtCutSection> cutSections;
+	cutSections.SetAllocator(*TempAllocator);
 	for(u32 i = 0; i < cutCount; ++i)
 	{
 		const CutSection cut = tempCutSections[i];
@@ -266,6 +278,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 		newCut.GameStateIndex = cut.GameStateIndex;
 		newCut.StartTimeMs = cut.StartTimeMs;
 		newCut.EndTimeMs = cut.EndTimeMs;
+		newCut.VeryShortDesc = cut.VeryShortDesc;
 		cutSections.Add(newCut);
 	}
 
