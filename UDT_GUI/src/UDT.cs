@@ -14,8 +14,10 @@ namespace Uber.DemoTools
     {
 #if (UDT_X86)
         private const int MaxBatchSizeParsing = 128;
+        private const int MaxBatchSizeCutting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
+        private const int MaxBatchSizeCutting = 2048;
 #endif
 
         private const string _dllPath = "UDT.dll";
@@ -702,6 +704,54 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeCutting)
+            {
+                return CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var demos = new List<DemoInfo>();
+            var batchCount = (fileCount + MaxBatchSizeCutting - 1) / MaxBatchSizeCutting;
+            var filesPerBatch = fileCount / batchCount;
+            var success = true;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+
+                var newResources = new ArgumentResources();
+                CutDemosByPatternImpl(newResources, ref newParseArg, currentFiles, patterns, options);
+
+                fileIndex += currentFileCount;
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    success = false;
+                    break;
+                }
+            }
+
+            resources.Free();
+
+            return success;
+        }
+
+        private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
@@ -798,7 +848,7 @@ namespace Uber.DemoTools
             return demos;
         }
 
-        public static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        private static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
