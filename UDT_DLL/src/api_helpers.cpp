@@ -65,17 +65,9 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 	return true;
 }
 
-bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
+static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData, const char* message)
 {
 	context->ResetForNextDemo(!clearPlugInData);
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return false;
-	}
-
-	// @TODO: Move this up the chain! Should be done once per thread.
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return false;
@@ -93,6 +85,11 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 	}
 
 	context->Parser.SetFilePath(demoFilePath);
+	if(message != NULL)
+	{
+		context->Context.LogInfo("%s: %s", message, demoFilePath);
+	}
+
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return false;
@@ -101,42 +98,15 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 	return true;
 }
 
-// @TODO: redundant wrt to ParseDemoFile?
-static bool RunParserWithCutByPattern(
-	udtParserContext* context, 
-	udtProtocol::Id protocol, 
-	const udtParseArg* info, 
-	const char* filePath)
+bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
-	context->ResetForNextDemo(true);
-
-	// @TODO: Move this up the chain! Should be done once per thread.
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(filePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol))
-	{
-		return false;
-	}
-
-	context->Parser.SetFilePath(filePath);
-
-	context->Context.LogInfo("Processing demo for pattern analysis: %s", filePath);
-
-	if(!RunParser(context->Parser, file, info->CancelOperation))
-	{
-		return false;
-	}
-
-	return true;
+	return ParseDemoFile(protocol, context, info, demoFilePath, clearPlugInData, NULL);
 }
 
 bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
@@ -147,7 +117,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 		return false;
 	}
 
-	if(!RunParserWithCutByPattern(context, protocol, info, demoFilePath))
+	if(!ParseDemoFile(protocol, context, info, demoFilePath, false, "Processing demo for pattern analysis"))
 	{
 		return false;
 	}
