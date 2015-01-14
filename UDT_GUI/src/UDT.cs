@@ -12,6 +12,12 @@ namespace Uber.DemoTools
 {
     public unsafe class UDT_DLL
     {
+#if (UDT_X86)
+        private const int MaxBatchSizeParsing = 128;
+#else
+        private const int MaxBatchSizeParsing = 512;
+#endif
+
         private const string _dllPath = "UDT.dll";
 
         [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
@@ -749,6 +755,50 @@ namespace Uber.DemoTools
         }
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeParsing)
+            {
+                return ParseDemosImpl(ref parseArg, filePaths, maxThreadCount);
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var demos = new List<DemoInfo>();
+            var batchCount = (fileCount + MaxBatchSizeParsing - 1) / MaxBatchSizeParsing;
+            var filesPerBatch = fileCount / batchCount;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+
+                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount);
+                demos.AddRange(currentResults);
+
+                fileIndex += currentFileCount;
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    break;
+                }
+            }
+
+            return demos;
+        }
+
+        public static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
