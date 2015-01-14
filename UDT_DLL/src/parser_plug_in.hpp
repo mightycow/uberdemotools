@@ -88,11 +88,6 @@ struct udtBaseParserPlugIn
 		++DemoIndex;
 	}
 
-	u32 GetProcessedDemoCount() const
-	{
-		return Arrays.GetSize();
-	}
-
 	void* GetFirstElementAddress(u32 demoIndex) const
 	{
 		assert(demoIndex < DemoCount);

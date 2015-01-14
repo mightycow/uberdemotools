@@ -9,6 +9,7 @@ udtBaseParser::udtBaseParser()
 	_protocol = udtProtocol::Invalid;
 
 	UserData = NULL;
+	EnablePlugIns = true;
 
 	_inFileName = NULL;
 	_inFilePath = NULL;
@@ -46,12 +47,14 @@ void udtBaseParser::InitAllocators()
 	_cuts.Init(1 << 16);
 }
 
-bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)
+bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex, bool enablePlugIns)
 {
 	if(context == NULL || !udtIsValidProtocol(protocol) || gameStateIndex < 0)
 	{
 		return false;
 	}
+
+	EnablePlugIns = enablePlugIns;
 
 	_context = context;
 	_protocol = protocol;
@@ -80,9 +83,12 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 		}
 	}
 
-	for(u32 i = 0; i < PlugIns.GetSize(); ++i)
+	if(enablePlugIns)
 	{
-		PlugIns[i]->StartProcessingDemo();
+		for(u32 i = 0; i < PlugIns.GetSize(); ++i)
+		{
+			PlugIns[i]->StartProcessingDemo();
+		}
 	}
 
 	return true;
@@ -287,9 +293,12 @@ void udtBaseParser::FinishParsing(bool /*success*/)
 		_cuts.Clear();
 	}
 
-	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+	if(EnablePlugIns)
 	{
-		PlugIns[i]->FinishProcessingDemo();
+		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+		{
+			PlugIns[i]->FinishProcessingDemo();
+		}
 	}
 }
 
@@ -381,7 +390,7 @@ bool udtBaseParser::ParseCommandString()
 		}
 	}
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtCommandCallbackArg info;
 		info.CommandSequence = commandSequence;
@@ -471,7 +480,7 @@ bool udtBaseParser::ParseGamestate()
 	_inClientNum = _inMsg.ReadLong();
 	_inChecksumFeed = _inMsg.ReadLong();
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtGamestateCallbackArg info;
 		info.ServerCommandSequence = _inServerCommandSequence;
@@ -651,7 +660,7 @@ bool udtBaseParser::ParseSnapshot()
 	}
 	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtSnapshotCallbackArg info;
 		info.ServerTime = _inServerTime;

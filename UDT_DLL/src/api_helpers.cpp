@@ -158,7 +158,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	}
 	
 	// This will clear the plug-in's section list.
-	if(!context->Parser.Init(&context->Context, protocol, gsIndex))
+	if(!context->Parser.Init(&context->Context, protocol, gsIndex, false))
 	{
 		return false;
 	}

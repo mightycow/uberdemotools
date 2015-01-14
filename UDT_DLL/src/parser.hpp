@@ -26,7 +26,7 @@ public:
 	~udtBaseParser();
 
 	void    InitAllocators(); // Once for all demos.
-	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0); // Once for each demo.
+	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0, bool enablePlugIns = true); // Once for each demo.
 	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
 
@@ -104,6 +104,7 @@ public:
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
 	udtVMArrayWithAlloc<udtBaseParserPlugIn*> PlugIns;
+	bool EnablePlugIns;
 
 	// Input.
 	const char* _inFilePath;

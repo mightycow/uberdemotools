@@ -76,7 +76,7 @@ struct udtVMArray
 
 	void Add(const T& object)
 	{
-		T* const objectPtr = (T*)_allocator->Allocate((u32)sizeof(T));
+		T* const objectPtr = (T*)_allocator->Allocate((uptr)sizeof(T));
 		*objectPtr = object;
 		++_size;
 	}
@@ -90,7 +90,7 @@ struct udtVMArray
 	void Resize(u32 newObjectCount)
 	{
 		_allocator->Clear();
-		_allocator->Allocate((u32)sizeof(T) * newObjectCount);
+		_allocator->Allocate((uptr)sizeof(T) * (uptr)newObjectCount);
 		_size = newObjectCount;
 	}
 
@@ -103,7 +103,7 @@ struct udtVMArray
 
 		_objects[index] = _objects[_size - 1];
 		--_size;
-		_allocator->Pop((u32)sizeof(T));
+		_allocator->Pop((uptr)sizeof(T));
 	}
 
 	void Remove(u32 index)
@@ -116,13 +116,13 @@ struct udtVMArray
 		if(index == _size - 1)
 		{
 			--_size;
-			_allocator->Pop((u32)sizeof(T));
+			_allocator->Pop((uptr)sizeof(T));
 			return;
 		}
 
 		memmove(_objects + index, _objects + index + 1, (size_t)(_size - 1 - index) * sizeof(T));
 		--_size;
-		_allocator->Pop((u32)sizeof(T));
+		_allocator->Pop((uptr)sizeof(T));
 	}
 
 	// The array's size, i.e. the number of elements.
@@ -131,7 +131,7 @@ struct udtVMArray
 		return _size;
 	}
 
-	u32 GetReservedByteCount() const
+	uptr GetReservedByteCount() const
 	{
 		return _allocator->GetCommittedByteCount();
 	}
