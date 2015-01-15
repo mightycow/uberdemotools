@@ -65,7 +65,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 	return true;
 }
 
-static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData, const char* message)
+static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
 	context->ResetForNextDemo(!clearPlugInData);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
@@ -85,11 +85,6 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 	}
 
 	context->Parser.SetFilePath(demoFilePath);
-	if(message != NULL)
-	{
-		context->Context.LogInfo("%s: %s", message, demoFilePath);
-	}
-
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return false;
@@ -106,7 +101,7 @@ bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const cha
 		return false;
 	}
 
-	return ParseDemoFile(protocol, context, info, demoFilePath, clearPlugInData, NULL);
+	return ParseDemoFile(protocol, context, info, demoFilePath, clearPlugInData);
 }
 
 bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
@@ -117,7 +112,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 		return false;
 	}
 
-	if(!ParseDemoFile(protocol, context, info, demoFilePath, false, "Processing demo for pattern analysis"))
+	if(!ParseDemoFile(protocol, context, info, demoFilePath, false))
 	{
 		return false;
 	}
