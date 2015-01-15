@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -704,10 +705,16 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
+            var timer = new Stopwatch();
+            timer.Start();
+
             var fileCount = filePaths.Count;
             if(fileCount <= MaxBatchSizeCutting)
             {
-                return CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
+                var result = CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
+                timer.Stop();
+                App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+                return result;
             }
 
             var oldProgressCb = parseArg.ProgressCb;
@@ -746,6 +753,9 @@ namespace Uber.DemoTools
             }
 
             resources.Free();
+
+            timer.Stop();
+            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
 
             return success;
         }
@@ -806,10 +816,16 @@ namespace Uber.DemoTools
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
+            var timer = new Stopwatch();
+            timer.Start();
+
             var fileCount = filePaths.Count;
             if(fileCount <= MaxBatchSizeParsing)
             {
-                return ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
+                var result = ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
+                timer.Stop();
+                App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+                return result;
             }
 
             var oldProgressCb = parseArg.ProgressCb;
@@ -844,6 +860,9 @@ namespace Uber.DemoTools
                     break;
                 }
             }
+
+            timer.Stop();
+            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
 
             return demos;
         }

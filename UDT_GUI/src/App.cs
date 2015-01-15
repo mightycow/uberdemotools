@@ -1416,6 +1416,30 @@ namespace Uber.DemoTools
             _window.Dispatcher.Invoke(infoUpdater);
         }
 
+        public static string FormatPerformanceTime(Stopwatch timer)
+        {
+            var msecTotal = timer.ElapsedMilliseconds;
+            if(msecTotal < 1000)
+            {
+                return msecTotal.ToString() + "ms";
+            }
+
+            var secTotal = msecTotal / 1000;
+            if(secTotal < 10)
+            {
+                var secs = msecTotal / 1000.0;
+                return secs.ToString(".00") + "s";
+            }
+
+            if(secTotal < 100)
+            {
+                var secs = msecTotal / 1000.0;
+                return secs.ToString(".0") + "s";
+            }
+
+            return secTotal.ToString() + "s";
+        }
+
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
         {
             int idx = -1;
