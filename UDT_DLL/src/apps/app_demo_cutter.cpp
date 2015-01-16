@@ -100,7 +100,7 @@ static bool EnsureConfigExists(const char* filePath)
 	return true;
 }
 
-static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinearAllocator& persistAllocator, const char* filePath)
+static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinearAllocator& fileAllocator, udtVMLinearAllocator& persistAllocator, const char* filePath)
 {
 	if(!EnsureConfigExists(filePath))
 	{
@@ -118,7 +118,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 		return false;
 	}
 
-	char* const fileData = file.ReadAllAsString(context.TempAllocator);
+	char* const fileData = file.ReadAllAsString(fileAllocator);
 	if(fileData == NULL)
 	{
 		return false;
@@ -253,46 +253,10 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 	return false;
 }
 
-static bool CutByChat(udtParserContext* context, const char* filePath, const CutByChatConfig& config)
-{
-	udtParseArg info;
-	memset(&info, 0, sizeof(info));
-	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = &CallbackConsoleProgress;
-	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;
-
-	udtCutByChatArg chatInfo;
-	chatInfo.Rules = config.ChatRules.GetStartAddress();
-	chatInfo.RuleCount = config.ChatRules.GetSize();
-
-	udtPatternInfo patternInfo;
-	patternInfo.Type = (u32)udtPatternType::GlobalChat;
-	patternInfo.TypeSpecificInfo = &chatInfo;
-
-	udtCutByPatternArg patternArg;
-	patternArg.StartOffsetSec = config.StartOffsetSec;
-	patternArg.EndOffsetSec = config.EndOffsetSec;
-	patternArg.PatternCount = 1;
-	patternArg.Patterns = &patternInfo;
-	patternArg.PlayerIndex = -999;
-	patternArg.PlayerName = NULL;
-
-	const s32 result = udtCutDemoFileByPattern(context, &info, &patternArg, filePath);
-	if(result == udtErrorCode::None)
-	{
-		return true;
-	}
-
-	fprintf(stderr, "udtCutDemoFileByPattern failed with error: %s\n", udtGetErrorCodeString(result));
-
-	return false;
-}
-
-static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByChatConfig& config)
+static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, const CutByChatConfig& config)
 {
 	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
 	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
-	const u32 fileCount = files.GetSize();
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -354,6 +318,16 @@ static bool CutByChatMultiple(const udtVMArray<udtFileInfo>& files, const CutByC
 	return false;
 }
 
+static bool CutByChat(const char* filePath, const CutByChatConfig& config)
+{
+	udtFileInfo fileInfo;
+	fileInfo.Name = NULL; // Ignored by CutByChatMultiple.
+	fileInfo.Size = 0; // Ignored by CutByChatMultiple.
+	fileInfo.Path = filePath;
+
+	return CutByChatMultiple(&fileInfo, 1, config);
+}
+
 static void PrintHelp()
 {
 	printf("???? help for UDT_cutter ????\n");
@@ -399,8 +373,10 @@ int main(int argc, char** argv)
 
 	CutByChatConfig config;
 	udtVMLinearAllocator configAllocator;
-	configAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
-	if(!ReadConfig(config, context->Context, configAllocator, ConfigFilePath))
+	udtVMLinearAllocator fileAllocator;
+	configAllocator.Init(1 << 24);
+	fileAllocator.Init(1 << 16);
+	if(!ReadConfig(config, context->Context, configAllocator, fileAllocator, ConfigFilePath))
 	{
 		printf("Could not load config file.\n");
 		return __LINE__;
@@ -435,14 +411,14 @@ int main(int argc, char** argv)
 		if(fileMode)
 		{
 			printf("\n");
-			return CutByChat(context, argv[1], config) ? 0 : 666;
+			return CutByChat(argv[1], config) ? 0 : 666;
 		}
 
 		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
 		udtVMLinearAllocator persistAlloc;
 		udtVMLinearAllocator tempAlloc;
-		persistAlloc.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
-		tempAlloc.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
+		persistAlloc.Init(1 << 24);
+		tempAlloc.Init(1 << 24);
 
 		udtFileListQuery query;
 		memset(&query, 0, sizeof(query));
@@ -456,7 +432,7 @@ int main(int argc, char** argv)
 
 		udtTimer timer;
 		timer.Start();
-		if(!CutByChatMultiple(files, config))
+		if(!CutByChatMultiple(files.GetStartAddress(), files.GetSize(), config))
 		{
 			return 999;
 		}
