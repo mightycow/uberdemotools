@@ -11,8 +11,8 @@
 #include <assert.h>
 
 
-#define    UDT_MIN_BYTE_SIZE_PER_THREAD    (u64)(6 * (1<<20))
-#define    UDT_MAX_THREAD_COUNT            16
+#define    UDT_MIN_BYTE_SIZE_PER_THREAD    ((u64)(6 * (1<<20)))
+#define    UDT_MAX_THREAD_COUNT            (16)
 
 
 struct FileInfo
@@ -40,10 +40,6 @@ static int SortByThreadIndexAscending(const void* aPtr, const void* bPtr)
 }
 
 udtDemoThreadAllocator::udtDemoThreadAllocator()
-	: FilePaths(1 << 20)
-	, FileSizes(1 << 20)
-	, InputIndices(1 << 20)
-	, Threads(1 << 16)
 {
 }
 
@@ -86,6 +82,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	maxThreadCount = udt_min(maxThreadCount, processorCoreCount);
 	maxThreadCount = udt_min(maxThreadCount, fileCount);
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / UDT_MIN_BYTE_SIZE_PER_THREAD));
+	Threads.Init((uptr)sizeof(udtParsingThreadData) * (uptr)finalThreadCount);
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)
@@ -124,8 +121,11 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	// Build and finalize the arrays.
 	u32 threadIdx = 0;
 	u32 firstFileIdx = 0;
+	FilePaths.Init((uptr)sizeof(const char*) * (uptr)fileCount);
 	FilePaths.Resize(fileCount);
+	FileSizes.Init((uptr)sizeof(u64) * (uptr)fileCount);
 	FileSizes.Resize(fileCount);
+	InputIndices.Init((uptr)sizeof(u32) * (uptr)fileCount);
 	InputIndices.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
@@ -144,7 +144,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	}
 	Threads[threadIdx].FirstFileIndex = firstFileIdx;
 	Threads[threadIdx].FileCount = fileCount - firstFileIdx;
-
+	
 #if defined(UDT_DEBUG)
 	// The following is to catch errors in the file distribution across threads.
 	for(u32 i = 0; i < finalThreadCount; ++i)
@@ -160,7 +160,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 		assert(Threads[i].TotalByteCount == totalByteCount);
 	}
 #endif
-
+	
 	return true;
 }
 
@@ -386,6 +386,7 @@ thread_clean_up:
 	if(success && (parseInfo->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
 	{
 		udtVMLinearAllocator::Stats allocStats = udtVMLinearAllocator::Stats();
+		udtVMLinearAllocator::GetThreadStats(allocStats);
 		for(u32 i = 0; i < threadCount; ++i)
 		{
 			const udtVMLinearAllocator::Stats& threadStats = threadInfo.Threads[i].AllocStats;
