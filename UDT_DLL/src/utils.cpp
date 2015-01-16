@@ -1064,9 +1064,11 @@ s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	return -1;
 }
 
-void LogLinearAllocatorStats(udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
+void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
 {
 	char* bytes;
+	context.LogInfo("File count: %u", fileCount);
+	context.LogInfo("Thread count: %u", threadCount);
 	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
 	FormatBytes(bytes, allocator, stats.ReservedByteCount);
 	context.LogInfo("Reserved memory: %s", bytes);

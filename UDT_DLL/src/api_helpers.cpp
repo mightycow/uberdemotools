@@ -274,7 +274,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		allocStats.CommittedByteCount += extraByteCount;
 		allocStats.UsedByteCount += extraByteCount;
 		context->Parser._tempAllocator.Clear();
-		LogLinearAllocatorStats(context->Context, context->Parser._tempAllocator, allocStats);
+		LogLinearAllocatorStats(1, extraInfo->FileCount, context->Context, context->Parser._tempAllocator, allocStats);
 	}
 
 	if(customContext)

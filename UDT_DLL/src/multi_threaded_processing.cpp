@@ -399,7 +399,7 @@ thread_clean_up:
 		allocStats.CommittedByteCount += extraByteCount;
 		allocStats.UsedByteCount += extraByteCount;
 		contexts[0].Parser._tempAllocator.Clear();
-		LogLinearAllocatorStats(contexts[0].Context, contexts[0].Parser._tempAllocator, allocStats);
+		LogLinearAllocatorStats(threadCount, multiParseInfo->FileCount, contexts[0].Context, contexts[0].Parser._tempAllocator, allocStats);
 	}
 
 	return success;
