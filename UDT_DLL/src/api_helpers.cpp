@@ -8,27 +8,6 @@
 #include "analysis_cut_by_frag.hpp"
 
 
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-static void LogLinearAllocatorStats(udtContext& context)
-{
-	udtVMLinearAllocator::Stats stats;
-	udtVMLinearAllocator::GetStats(stats);
-
-	char* bytes;
-	udtVMLinearAllocator tempAlloc;
-	tempAlloc.Init(UDT_MEMORY_PAGE_SIZE, UDT_MEMORY_PAGE_SIZE, true);
-
-	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
-	FormatBytes(bytes, tempAlloc, stats.ReservedByteCount);
-	context.LogInfo("Reserved memory: %s", bytes);
-	FormatBytes(bytes, tempAlloc, stats.CommittedByteCount);
-	context.LogInfo("Committed memory: %s", bytes);
-	FormatBytes(bytes, tempAlloc, stats.UsedByteCount);
-	context.LogInfo("Used memory: %s", bytes);
-}
-#endif
-
-
 bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const udtCutByPatternArg* patternInfo)
 {
 	if(jobType == udtParsingJobType::General)
@@ -263,11 +242,6 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	newInfo.ProgressCb = &SingleThreadProgressCallback;
 	newInfo.ProgressContext = &progressContext;
 
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
-	LogLinearAllocatorStats(context->Context);
-#endif
-
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
 		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
@@ -292,9 +266,9 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-	LogLinearAllocatorStats(context->Context);
-#endif
+	udtVMLinearAllocator::Stats allocStats;
+	udtVMLinearAllocator::GetThreadStats(allocStats);
+	LogLinearAllocatorStats(context->Context, context->Parser._tempAllocator, allocStats);
 
 	if(customContext)
 	{

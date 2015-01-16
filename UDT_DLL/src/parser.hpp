@@ -16,6 +16,7 @@
 struct udtBaseParser;
 typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 
+// Don't ever allocate an instance of this on the stack.
 struct udtBaseParser
 {
 public:

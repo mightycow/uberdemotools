@@ -1,24 +1,28 @@
 #include "linear_allocator.hpp"
 #include "virtual_memory.hpp"
 #include "assert_or_fatal.hpp"
+#include "allocator_tracking.hpp"
 
 
-// We don't use large pages (which are 1 MB large instead of 4 KB large).
-#define UDT_MEMORY_PAGE_SIZE    4096
+static udtAllocatorTracker AllocatorTracker;
 
-
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-static udtIntrusiveList LinearAllocators;
-
-#define offsetof(s,m)  ((size_t)((ptrdiff_t)&reinterpret_cast<const volatile char&>((((s *)0)->m))))
-void udtVMLinearAllocator::GetStats(Stats& stats)
+void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 {
 	stats = {};
 
-	udtIntrusiveListNode* node = LinearAllocators.Root.Next;
-	while(node != &LinearAllocators.Root)
+	udtIntrusiveList* allocators = NULL;
+	AllocatorTracker.GetAllocatorList(allocators);
+	if(allocators == NULL)
 	{
+		return;
+	}
+
+	udtIntrusiveListNode* node = allocators->Root.Next;
+	while(node != &allocators->Root)
+	{
+#define offsetof(s, m) ((size_t)((ptrdiff_t)&reinterpret_cast<const volatile char&>((((s*)NULL)->m))))
 		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
+#undef offsetof
 		
 		++stats.AllocatorCount;
 		stats.CommittedByteCount += allocator->_committedByteCount;
@@ -27,8 +31,6 @@ void udtVMLinearAllocator::GetStats(Stats& stats)
 		node = node->Next;
 	}
 }
-#undef offsetof
-#endif
 
 
 udtVMLinearAllocator::udtVMLinearAllocator()
@@ -39,16 +41,12 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
 
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-	InsertNodeAfter(&_listNode, &LinearAllocators.Root);
-#endif
+	AllocatorTracker.RegisterAllocator(_listNode);
 }
 
 udtVMLinearAllocator::~udtVMLinearAllocator()
 {
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-	RemoveNode(&_listNode);
-#endif
+	AllocatorTracker.UnregisterAllocator(_listNode);
 
 	Destroy();
 }

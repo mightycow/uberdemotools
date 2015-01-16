@@ -6,6 +6,12 @@
 
 struct udtIntrusiveListNode
 {
+	udtIntrusiveListNode()
+	{
+		Next = NULL;
+		Previous = NULL;
+	}
+
 	udtIntrusiveListNode* Next;
 	udtIntrusiveListNode* Previous;
 };

@@ -2,14 +2,7 @@
 
 
 #include "allocator.hpp"
-
-#if defined(UDT_DEBUG)
-#	define UDT_TRACK_LINEAR_ALLOCATORS 1
-#endif
-
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
-#	include "intrusive_list.hpp"
-#endif
+#include "intrusive_list.hpp"
 
 
 #define    UDT_MEMORY_PAGE_SIZE    4096
@@ -22,7 +15,6 @@
 //
 struct udtVMLinearAllocator// : udtAllocator
 {
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
 public:
 	struct Stats
 	{
@@ -31,8 +23,8 @@ public:
 		uptr UsedByteCount;
 		u32 AllocatorCount;
 	};
-	static void GetStats(Stats& stats);
-#endif
+	
+	static void GetThreadStats(Stats& stats);
 
 public:
 	udtVMLinearAllocator();
@@ -54,9 +46,7 @@ private:
 
 	void    Destroy();
 
-#if defined(UDT_TRACK_LINEAR_ALLOCATORS)
 	udtIntrusiveListNode _listNode;
-#endif
 	u8* _addressSpaceStart;
 	uptr _firstFreeByteIndex; // In other words: the used byte count.
 	uptr _reservedByteCount;

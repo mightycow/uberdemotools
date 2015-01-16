@@ -1063,3 +1063,17 @@ s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
 
 	return -1;
 }
+
+void LogLinearAllocatorStats(udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
+{
+	char* bytes;
+	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
+	FormatBytes(bytes, allocator, stats.ReservedByteCount);
+	context.LogInfo("Reserved memory: %s", bytes);
+	FormatBytes(bytes, allocator, stats.CommittedByteCount);
+	context.LogInfo("Committed memory: %s", bytes);
+	FormatBytes(bytes, allocator, stats.UsedByteCount);
+	context.LogInfo("Used memory: %s", bytes);
+	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
+	context.LogInfo("Memory usage efficiency: %.1f%%", (f32)efficiency);
+}
