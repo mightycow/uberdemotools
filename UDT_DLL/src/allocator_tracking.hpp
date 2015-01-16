@@ -17,5 +17,5 @@ struct udtAllocatorTracker
 private:
 	UDT_NO_COPY_SEMANTICS(udtAllocatorTracker);
 
-	ThreadLocalStorage _allocatorList;
+	udtThreadLocalStorage _allocatorList;
 };
