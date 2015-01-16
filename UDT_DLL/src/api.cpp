@@ -256,7 +256,7 @@ UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
 	return (s32)udtErrorCode::None;
 }
 
-static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
+static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, u32 index, u32 startOffset, u32 endOffset)
 {
 	if(endOffset <= startOffset)
 	{
@@ -274,7 +274,6 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 		return false;
 	}
 
-	udtVMLinearAllocator& tempAllocator = context.TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 	char* fileName = NULL;
@@ -316,7 +315,7 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 	return success;
 }
 
-static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, const u32* fileOffsets, const u32 count)
+static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext& context, udtStream& file, const char* filePath, const char* outputFolderPath, const u32* fileOffsets, const u32 count)
 {
 	if(fileOffsets == NULL || count == 0)
 	{
@@ -346,13 +345,13 @@ static bool CreateDemoFileSplit(udtContext& context, udtStream& file, const char
 			continue;
 		}
 
-		success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, i - indexOffset, start, end);
+		success = success && CreateDemoFileSplit(tempAllocator, context, file, filePath, outputFolderPath, i - indexOffset, start, end);
 
 		start = end;
 	}
 
 	end = fileLength;
-	success = success && CreateDemoFileSplit(context, file, filePath, outputFolderPath, count - indexOffset, start, end);
+	success = success && CreateDemoFileSplit(tempAllocator, context, file, filePath, outputFolderPath, count - indexOffset, start, end);
 
 	return success;
 }
@@ -371,7 +370,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(false);
 
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
@@ -391,21 +390,23 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	context->Parser.SetFilePath(demoFilePath);
 
-	udtVMScopedStackAllocator tempAllocScope(context->Context.TempAllocator);
-
-	DemoSplitterAnalyzer analyzer;
-	context->Parser.AddPlugIn(&analyzer);
+	// TODO: Move this to api_helpers.cpp and implement it the same way Cut by Pattern is?
+	udtParserPlugInSplitter plugIn;
+	plugIn.Init(1, context->PlugInTempAllocator);
+	context->Parser.AddPlugIn(&plugIn);
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(analyzer.GamestateFileOffsets.GetSize() <= 1)
+	if(plugIn.GamestateFileOffsets.GetSize() <= 1)
 	{
 		return (s32)udtErrorCode::None;
 	}
 
-	if(!CreateDemoFileSplit(context->Context, file, demoFilePath, info->OutputFolderPath, &analyzer.GamestateFileOffsets[0], analyzer.GamestateFileOffsets.GetSize()))
+	udtVMLinearAllocator& tempAllocator = context->Parser._tempAllocator;
+	tempAllocator.Clear();
+	if(!CreateDemoFileSplit(tempAllocator, context->Context, file, demoFilePath, info->OutputFolderPath, &plugIn.GamestateFileOffsets[0], plugIn.GamestateFileOffsets.GetSize()))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -427,7 +428,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	context->Reset();
+	context->ResetForNextDemo(false);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -475,56 +476,6 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtCutDemoFileByPattern(udtParserContext* context, const udtParseArg* info, const udtCutByPatternArg* patternInfo, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL || patternInfo == NULL ||
-	   !IsValid(*patternInfo))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
-	if(protocol == udtProtocol::Invalid)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	context->Reset();
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	context->Parser.SetFilePath(demoFilePath);
-
-	context->Context.LogInfo("Processing for cut by pattern: %s", demoFilePath);
-
-	CutByPattern(context, info, patternInfo, demoFilePath);
-
-	if(!RunParser(context->Parser, file, info->CancelOperation))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	return (s32)udtErrorCode::None;
-}
-
 UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -549,22 +500,6 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
 	context->~udtParserContext();
 	free(context);
-
-	return (s32)udtErrorCode::None;
-}
-
-UDT_API(s32) udtParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
-{
-	if(context == NULL || info == NULL || demoFilePath == NULL ||
-	   !HasValidPlugInOptions(*info))
-	{
-		return (s32)udtErrorCode::InvalidArgument;
-	}
-
-	if(!ParseDemoFile(context, info, demoFilePath, true))
-	{
-		return udtErrorCode::OperationFailed;
-	}
 
 	return (s32)udtErrorCode::None;
 }
@@ -651,7 +586,7 @@ UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtParseArg* info, const udtMultiParseArg* extraInfo)
 {
 	if(contextGroup == NULL || info == NULL || extraInfo == NULL ||
-	   !IsValid(*extraInfo))
+	   !IsValid(*extraInfo) || !HasValidPlugInOptions(*info))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}

@@ -1,0 +1,34 @@
+Parsing with plug-ins:
+- Chat
+- GameState
+- Obituaries
+
+Before doing any changes to the allocation system
+
+Test #1: 576 files, 1.03 GB
+Allocator count: 4053
+Reserved memory: 9.790 GB
+Committed memory: 21.793 MB
+Used memory: 9.279 MB
+
+Test #2: 1901 files, 3.22 GB
+Allocator count: 13328
+Reserved memory: 32.192 GB
+Committed memory: 69.844 MB
+Used memory: 28.840 MB
+
+With the new allocation system
+
+*** Subject to change ***
+Test #1: 576 files, 1.03 GB
+Allocator count: 26
+Reserved memory: 239.543 MB
+Committed memory: 8.031 MB
+Used memory: 7.956 MB
+
+*** Subject to change ***
+Test #2: 1901 files, 3.22 GB
+Allocator count: 26
+Reserved memory: 736.484 MB
+Committed memory: 26.816 MB
+Used memory: 26.739 MB

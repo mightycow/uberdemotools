@@ -3,6 +3,7 @@
 #include "plug_in_chat.hpp"
 #include "plug_in_game_state.hpp"
 #include "analysis_obituaries.hpp"
+#include "analysis_cut_by_pattern.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -17,28 +18,34 @@ void ConstructPlugInT(udtBaseParserPlugIn* address)
 	new (address) T;
 }
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) (u32)sizeof(Type),
-const u32 PlugInByteSizes[udtParserPlugIn::Count + 1] =
+
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) (u32)sizeof(Type),
+const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 {
-	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
 	0
 };
-#undef UDT_PLUG_IN_ITEM
+#undef UDT_PRIVATE_PLUG_IN_ITEM
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) &ConstructPlugInT<Type>,
-const PlugInConstructionFunc PlugInConstructors[udtParserPlugIn::Count + 1] =
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) &ConstructPlugInT<Type>,
+const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 1] =
 {
-	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
 	NULL
 };
-#undef UDT_PLUG_IN_ITEM
+#undef UDT_PRIVATE_PLUG_IN_ITEM
 
 
 udtParserContext::udtParserContext()
 {
 	DemoCount = 0;
-	PlugInCountPerDemo = 0;
-	PlugInAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
+
+	PlugIns.Init(1 << 16);
+	InputIndices.Init(1 << 20);
+	PlugInAllocator.Init(1 << 16);
+	PlugInTempAllocator.Init(1 << 20);
+
+	Parser.InitAllocators();
 }
 
 udtParserContext::~udtParserContext()
@@ -46,34 +53,17 @@ udtParserContext::~udtParserContext()
 	DestroyPlugIns();
 }
 
-void udtParserContext::Reset()
+void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
 {
-	DestroyPlugIns();
-
-	DemoCount = 0;
-	PlugInCountPerDemo = 0;
-	InputIndices.Clear();
-	Context.Reset();
-	Parser.Reset();
-	PlugInAllocator.Clear();
-	PlugIns.Clear();
-}
-
-void udtParserContext::ResetButKeepPlugInData()
-{
-	Context.Reset();
-	Parser.Reset();
-}
-
-void udtParserContext::CreateAndAddPlugIns(const u32* plugInIds, u32 plugInCount)
-{
-	assert(PlugInCountPerDemo == 0 || PlugInCountPerDemo == plugInCount);
+	DemoCount = demoCount;
 
 	for(u32 i = 0; i < plugInCount; ++i)
 	{
 		const u32 plugInId = plugInIds[i];
 		udtBaseParserPlugIn* const plugIn = (udtBaseParserPlugIn*)PlugInAllocator.Allocate(PlugInByteSizes[plugInId]);
 		(*PlugInConstructors[plugInId])(plugIn);
+
+		plugIn->Init(demoCount, PlugInTempAllocator);
 
 		AddOnItem item;
 		item.Id = (udtParserPlugIn::Id)plugInId;
@@ -82,9 +72,20 @@ void udtParserContext::CreateAndAddPlugIns(const u32* plugInIds, u32 plugInCount
 
 		Parser.AddPlugIn(plugIn);
 	}
+}
 
-	++DemoCount;
-	PlugInCountPerDemo = plugInCount;
+void udtParserContext::ResetForNextDemo(bool keepPlugInData)
+{
+	if(!keepPlugInData)
+	{
+		DestroyPlugIns();
+		InputIndices.Clear();
+		PlugInAllocator.Clear();
+		PlugIns.Clear();
+	}
+
+	Context.Reset();
+	PlugInTempAllocator.Clear();
 }
 
 bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)
@@ -94,19 +95,32 @@ bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer,
 		return false;
 	}
 
-	const u32 startIdx = demoIdx * PlugInCountPerDemo;
-	const u32 endIdx = startIdx + PlugInCountPerDemo;
-	for(u32 i = startIdx; i < endIdx; ++i)
+	// Look for the right plug-in.
+	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 	{
-		if(plugInId == (u32)PlugIns[i].Id)
+		AddOnItem& plugIn = PlugIns[i];
+		if(plugInId == (u32)plugIn.Id)
 		{
-			*itemBuffer = PlugIns[i].PlugIn->GetFirstElementAddress();
-			*itemCount = PlugIns[i].PlugIn->GetElementCount();
+			*itemBuffer = plugIn.PlugIn->GetFirstElementAddress(demoIdx);
+			*itemCount = plugIn.PlugIn->GetElementCount(demoIdx);
 			return true;
 		}
 	}
 
 	return false;
+}
+
+void udtParserContext::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId)
+{
+	plugIn = NULL;
+	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+	{
+		if(plugInId == (u32)PlugIns[i].Id)
+		{
+			plugIn = PlugIns[i].PlugIn;
+			break;
+		}
+	}
 }
 
 void udtParserContext::DestroyPlugIns()

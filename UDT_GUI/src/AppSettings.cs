@@ -52,6 +52,8 @@ namespace Uber.DemoTools
         private CheckBox _analyzeOnLoadCheckBox = null;
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
+        private CheckBox _printAllocStatsCheckBox = null;
+        private CheckBox _printExecutionTimeCheckBox = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -83,6 +85,8 @@ namespace Uber.DemoTools
             config.UseInputFolderAsDefaultBrowsingLocation = _useInputFolderForBrowsingCheckBox.IsChecked ?? false;
             config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
+            config.PrintAllocationStats = _printAllocStatsCheckBox.IsChecked ?? false;
+            config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
         }
 
@@ -191,6 +195,24 @@ namespace Uber.DemoTools
             analyzeOnLoadCheckBox.Unchecked += (obj, args) => OnAnalyzeOnLoadUnchecked();
             analyzeOnLoadCheckBox.ToolTip = " You can always launch the analysis pass from the \"Manage\" tab.";
 
+            var printAllocStatsCheckBox = new CheckBox();
+            _printAllocStatsCheckBox = printAllocStatsCheckBox;
+            printAllocStatsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            printAllocStatsCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            printAllocStatsCheckBox.IsChecked = _app.Config.PrintAllocationStats;
+            printAllocStatsCheckBox.Content = " Print memory allocations stats when job processing is finished?";
+            printAllocStatsCheckBox.Checked += (obj, args) => OnPrintAllocStatsChecked();
+            printAllocStatsCheckBox.Unchecked += (obj, args) => OnPrintAllocStatsUnchecked();
+
+            var printExecutionTimeCheckBox = new CheckBox();
+            _printExecutionTimeCheckBox = printExecutionTimeCheckBox;
+            printExecutionTimeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            printExecutionTimeCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            printExecutionTimeCheckBox.IsChecked = _app.Config.PrintExecutionTime;
+            printExecutionTimeCheckBox.Content = " Print execution time when job processing is finished?";
+            printExecutionTimeCheckBox.Checked += (obj, args) => OnPrintExecutionTimeChecked();
+            printExecutionTimeCheckBox.Unchecked += (obj, args) => OnPrintExecutionTimeUnchecked();
+
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             const int InputFolderIndex = 8;
@@ -207,6 +229,8 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Analyze on Load", analyzeOnLoadCheckBox));
             panelList.Add(App.CreateTuple("Start Time Offset [s]", startTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("Print Alloc Stats", printAllocStatsCheckBox));
+            panelList.Add(App.CreateTuple("Print Execution Time", printExecutionTimeCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -388,6 +412,26 @@ namespace Uber.DemoTools
         private void OnAnalyzeOnLoadUnchecked()
         {
             _app.Config.AnalyzeOnLoad = false;
+        }
+
+        private void OnPrintAllocStatsChecked()
+        {
+            _app.Config.PrintAllocationStats = true;
+        }
+
+        private void OnPrintAllocStatsUnchecked()
+        {
+            _app.Config.PrintAllocationStats = false;
+        }
+
+        private void OnPrintExecutionTimeChecked()
+        {
+            _app.Config.PrintExecutionTime = true;
+        }
+
+        private void OnPrintExecutionTimeUnchecked()
+        {
+            _app.Config.PrintExecutionTime = false;
         }
 
         private void GetMaxThreadCount(ref int maxThreadCount)

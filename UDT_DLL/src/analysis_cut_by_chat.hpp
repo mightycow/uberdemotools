@@ -11,19 +11,15 @@
 struct udtCutByChatAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByChatAnalyzer()
-	{
-	}
+	udtCutByChatAnalyzer();
+	~udtCutByChatAnalyzer();
 
-	~udtCutByChatAnalyzer() 
-	{
-	}
-
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void FinishAnalysis();
+	void StartAnalysis() override;
+	void FinishAnalysis() override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);
 
-	udtVMArray<udtCutSection> _cutSections;
+	udtVMArrayWithAlloc<udtCutSection> _cutSections; // Local copy, write back to the final array as merged.
 };

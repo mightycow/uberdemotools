@@ -21,9 +21,8 @@
 udtContext::udtContext()
 	: _messageCallback(NULL)
 	, _progressCallback(NULL)
-	, _huffmanInitialized(false)
+	, _progressContext(NULL)
 {
-	TempAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtContext::~udtContext()
@@ -42,7 +41,6 @@ bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback 
 
 void udtContext::Reset()
 {
-	TempAllocator.Clear();
 }
 
 void udtContext::Destroy()

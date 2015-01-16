@@ -18,6 +18,7 @@ struct udtParsingSharedData
 
 struct udtParsingThreadData
 {
+	udtVMLinearAllocator::Stats AllocStats;
 	u64 TotalByteCount;
 	udtParsingSharedData* Shared;
 	udtParserContext* Context;
@@ -36,10 +37,10 @@ struct udtDemoThreadAllocator
 	// Returns true if more than 1 thread should be launched.
 	bool Process(const char** filePaths, u32 fileCount, u32 maxThreadCount);
 
-	udtVMArray<const char*> FilePaths;
-	udtVMArray<u64> FileSizes;
-	udtVMArray<u32> InputIndices;
-	udtVMArray<udtParsingThreadData> Threads;
+	udtVMArrayWithAlloc<const char*> FilePaths;
+	udtVMArrayWithAlloc<u64> FileSizes;
+	udtVMArrayWithAlloc<u32> InputIndices;
+	udtVMArrayWithAlloc<udtParsingThreadData> Threads;
 };
 
 struct udtMultiThreadedParsing

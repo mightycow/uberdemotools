@@ -1,0 +1,3 @@
+Merging "develop" into "master":
+git checkout master
+git merge --no-ff develop

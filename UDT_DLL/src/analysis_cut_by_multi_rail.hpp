@@ -10,8 +10,12 @@ public:
 	udtCutByMultiRailAnalyzer();
 	~udtCutByMultiRailAnalyzer();
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void StartAnalysis()  override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
+
+protected:
+	void OnResetForNextDemo();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByMultiRailAnalyzer);

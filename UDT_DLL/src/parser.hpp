@@ -16,6 +16,7 @@
 struct udtBaseParser;
 typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 
+// Don't ever allocate an instance of this on the stack.
 struct udtBaseParser
 {
 public:
@@ -25,9 +26,9 @@ public:
 	udtBaseParser();
 	~udtBaseParser();
 
-	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0);
-	void	SetFilePath(const char* filePath); // May return NULL if not reading the input demo from a file.
-	void    Reset();
+	void    InitAllocators(); // Once for all demos.
+	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0, bool enablePlugIns = true); // Once for each demo.
+	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
 
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
@@ -36,8 +37,7 @@ public:
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
-	void                  InsertOrUpdateConfigString(const udtConfigString& cs);
-	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not found.
+	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not available.
 
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
@@ -46,14 +46,15 @@ private:
 	void                  WriteNextMessage();
 	void                  WriteLastMessage();
 	void                  WriteGameState();
-	void                  ParseCommandString();
-	void                  ParseGamestate();
-	void                  ParseSnapshot();
-	void                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
+	bool                  ParseCommandString();
+	bool                  ParseGamestate();
+	bool                  ParseSnapshot();
+	bool                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
 	void                  EmitPacketEntities(idClientSnapshotBase* from, idClientSnapshotBase* to);
 	void                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
-	char*                 AllocatePermanentString(const char* string, u32 stringLength = 0, u32* outStringLength = NULL); // If stringLength is zero, will invoke strlen.
+	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
+	const char*           GetFileName() { return (_inFileName != NULL) ? _inFileName : "N/A"; }
 
 public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _protocolSizeOfEntityState]; }
@@ -64,7 +65,7 @@ public:
 	template<class T>
 	T* CreatePersistentObject()
 	{
-		return new (_inLinearAllocator.Allocate((u32)sizeof(T))) T;
+		return new (_persistentAllocator.Allocate((u32)sizeof(T))) T;
 	}
 	
 public:
@@ -83,7 +84,6 @@ public:
 	{
 		const char* String;
 		u32 StringLength;
-		s32 Index;
 	};
 
 	struct udtServerCommand
@@ -94,6 +94,9 @@ public:
 
 public:
 	// General.
+	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
+	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
+	udtVMLinearAllocator _tempAllocator;
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _protocol;
 	s32 _protocolSizeOfEntityState;
@@ -101,7 +104,8 @@ public:
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
-	udtVMArray<udtBaseParserPlugIn*> PlugIns;
+	udtVMArrayWithAlloc<udtBaseParserPlugIn*> PlugIns;
+	bool EnablePlugIns;
 
 	// Input.
 	const char* _inFilePath;
@@ -117,20 +121,18 @@ public:
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
 	s32 _inLastSnapshotMessageNumber;
-	udtVMArray<u32> _inGameStateFileOffsets;
-	udtVMArray<u8> _inEntityBaselines; // Fixed-size array of size MAX_PARSE_ENTITIES. Must be zeroed initially.
-	udtVMArray<u8> _inParseEntities; // Fixed-size array of size MAX_PARSE_ENTITIES.
-	udtVMArray<udtServerCommand> _inCommands;
-	udtVMArray<udtConfigString> _inConfigStrings;
-	udtVMLinearAllocator _inLinearAllocator;
-	udtVMArray<u8> _inSnapshots; // Fixed-size array of size PACKET_BACKUP.
+	u8 _inEntityBaselines[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
+	u8 _inParseEntities[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
+	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
+	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
+	udtConfigString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
+	udtVMArrayWithAlloc<u32> _inGameStateFileOffsets;
+	udtVMArrayWithAlloc<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
+	udtVMArrayWithAlloc<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
 	idLargestClientSnapshot _inSnapshot;
-	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
-	udtVMArray<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
-	udtVMArray<s32> _inEntityEventTimesMs; // The server time, in ms, of the last event for a given entity.
 
 	// Output.
-	udtVMArray<udtCutInfo> _cuts;
+	udtVMArrayWithAlloc<udtCutInfo> _cuts;
 	u8 _outMsgData[MAX_MSGLEN];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;

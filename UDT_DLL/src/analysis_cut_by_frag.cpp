@@ -24,7 +24,8 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::
 }
 
 
-udtCutByFragAnalyzer::udtCutByFragAnalyzer()
+udtCutByFragAnalyzer::udtCutByFragAnalyzer() 
+	: _frags(1 << 16)
 {
 	_analyzer.SetNameAllocationEnabled(false);
 }
@@ -118,6 +119,17 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	}
 
 	_analyzer.Obituaries.Clear();
+}
+
+void udtCutByFragAnalyzer::InitAllocators(u32 demoCount)
+{
+	_analyzerFinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_analyzer.InitAllocators(demoCount, _analyzerFinalAllocator, PlugIn->GetTempAllocator());
+}
+
+void udtCutByFragAnalyzer::StartAnalysis()
+{
+	_frags.Clear();
 }
 
 void udtCutByFragAnalyzer::FinishAnalysis()
