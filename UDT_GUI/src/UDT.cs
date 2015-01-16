@@ -112,6 +112,12 @@ namespace Uber.DemoTools
             Count
         }
 
+        [Flags]
+        public enum udtParseArgFlags : uint
+        {
+            PrintAllocStats = 1 << 0
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseArg
         {
@@ -124,7 +130,7 @@ namespace Uber.DemoTools
             public UInt32 PlugInCount;
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
-            public Int32 Reserved1;
+            public UInt32 Flags;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -712,8 +718,7 @@ namespace Uber.DemoTools
             if(fileCount <= MaxBatchSizeCutting)
             {
                 var result = CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
-                timer.Stop();
-                App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+                PrintExecutionTime(timer);
                 return result;
             }
 
@@ -754,8 +759,7 @@ namespace Uber.DemoTools
 
             resources.Free();
 
-            timer.Stop();
-            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+            PrintExecutionTime(timer);
 
             return success;
         }
@@ -823,8 +827,7 @@ namespace Uber.DemoTools
             if(fileCount <= MaxBatchSizeParsing)
             {
                 var result = ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
-                timer.Stop();
-                App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+                PrintExecutionTime(timer);
                 return result;
             }
 
@@ -861,8 +864,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            timer.Stop();
-            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+            PrintExecutionTime(timer);
 
             return demos;
         }
@@ -1079,6 +1081,17 @@ namespace Uber.DemoTools
                 var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
                 info.FragEvents.Add(item);
             }
+        }
+
+        private static void PrintExecutionTime(Stopwatch timer)
+        {
+            if(!App.Instance.Config.PrintExecutionTime)
+            {
+                return;
+            }
+
+            timer.Stop();
+            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
         }
     }
 }

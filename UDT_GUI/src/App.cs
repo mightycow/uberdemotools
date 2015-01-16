@@ -50,6 +50,8 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
+        public bool PrintAllocationStats = true;
+        public bool PrintExecutionTime = true;
     }
 
     public class UdtPrivateConfig
@@ -484,8 +486,8 @@ namespace Uber.DemoTools
             demoListView.Drop += OnDemoListBoxDragDrop;
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
-            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
-            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
+            //demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
+            //demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
             InitDemoListAnalyzeCommand();
@@ -1298,6 +1300,8 @@ namespace Uber.DemoTools
 
             DisableUiNonThreadSafe();
 
+            SaveBothConfigs();
+
             JoinJobThread();
             StartJobThread(DemoAnalyzeThread, demos);
         }
@@ -1357,6 +1361,11 @@ namespace Uber.DemoTools
             ParseArg.OutputFolderPath = IntPtr.Zero;
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
+            ParseArg.Flags = 0;
+            if(Config.PrintAllocationStats)
+            {
+                ParseArg.Flags |= (uint)UDT_DLL.udtParseArgFlags.PrintAllocStats;
+            }
         }
 
         private void DemoAnalyzeThread(object arg)
@@ -2023,6 +2032,9 @@ namespace Uber.DemoTools
             finally
             {
                 EnableUiThreadSafe();
+
+                VoidDelegate focusSetter = delegate { _demoListView.Focus(); };
+                _window.Dispatcher.Invoke(focusSetter);
             }
         }
 
