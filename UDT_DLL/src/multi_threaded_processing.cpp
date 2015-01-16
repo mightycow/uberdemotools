@@ -90,6 +90,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)
 	{
+		Threads[i].AllocStats = {};
 		Threads[i].Finished = false;
 		Threads[i].Stop = false;
 		Threads[i].Result = false;
@@ -267,6 +268,8 @@ static void ThreadFunction(void* userData)
 		progressContext.ProcessedByteCount += currentJobByteCount;
 	}
 
+	udtVMLinearAllocator::GetThreadStats(data->AllocStats);
+
 	data->Result = true;
 	data->Finished = true;
 }
@@ -378,6 +381,24 @@ thread_clean_up:
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		threads[i].Release();
+	}
+
+	if(success && (parseInfo->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
+	{
+		udtVMLinearAllocator::Stats allocStats = {};
+		for(u32 i = 0; i < threadCount; ++i)
+		{
+			const udtVMLinearAllocator::Stats& threadStats = threadInfo.Threads[i].AllocStats;
+			allocStats.AllocatorCount += threadStats.AllocatorCount;
+			allocStats.ReservedByteCount += threadStats.ReservedByteCount;
+			allocStats.CommittedByteCount += threadStats.CommittedByteCount;
+			allocStats.UsedByteCount += threadStats.UsedByteCount;
+		}
+		const uptr extraByteCount = (uptr)sizeof(udtParserContext) * (uptr)threadCount;
+		allocStats.CommittedByteCount += extraByteCount;
+		allocStats.UsedByteCount += extraByteCount;
+		contexts[0].Parser._tempAllocator.Clear();
+		LogLinearAllocatorStats(contexts[0].Context, contexts[0].Parser._tempAllocator, allocStats);
 	}
 
 	return success;

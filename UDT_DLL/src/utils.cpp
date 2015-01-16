@@ -1075,5 +1075,5 @@ void LogLinearAllocatorStats(udtContext& context, udtVMLinearAllocator& allocato
 	FormatBytes(bytes, allocator, stats.UsedByteCount);
 	context.LogInfo("Used memory: %s", bytes);
 	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
-	context.LogInfo("Memory usage efficiency: %.1f%%", (f32)efficiency);
+	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
 }

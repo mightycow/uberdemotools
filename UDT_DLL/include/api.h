@@ -336,6 +336,14 @@ extern "C"
 	typedef void (*udtCrashCallback)(const char* message);
 
 #pragma pack(push, 1)
+
+	struct udtParseArgFlags
+	{
+		enum Id
+		{
+			PrintAllocStats = UDT_BIT(0)
+		};
+	};
 	
 	struct udtParseArg
 	{
@@ -378,8 +386,8 @@ extern "C"
 		// Unused in batch operations.
 		u32 FileOffset;
 
-		// Ignore this.
-		s32 Reserved1;
+		// Of type udtParseArgFlags::Id.
+		u32 Flags;
 	};
 
 	struct udtMultiParseArg

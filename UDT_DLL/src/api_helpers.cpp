@@ -266,9 +266,16 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
-	udtVMLinearAllocator::Stats allocStats;
-	udtVMLinearAllocator::GetThreadStats(allocStats);
-	LogLinearAllocatorStats(context->Context, context->Parser._tempAllocator, allocStats);
+	if((info->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
+	{
+		udtVMLinearAllocator::Stats allocStats;
+		udtVMLinearAllocator::GetThreadStats(allocStats);
+		const uptr extraByteCount = (uptr)sizeof(udtParserContext);
+		allocStats.CommittedByteCount += extraByteCount;
+		allocStats.UsedByteCount += extraByteCount;
+		context->Parser._tempAllocator.Clear();
+		LogLinearAllocatorStats(context->Context, context->Parser._tempAllocator, allocStats);
+	}
 
 	if(customContext)
 	{

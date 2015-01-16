@@ -18,6 +18,7 @@ struct udtParsingSharedData
 
 struct udtParsingThreadData
 {
+	udtVMLinearAllocator::Stats AllocStats;
 	u64 TotalByteCount;
 	udtParsingSharedData* Shared;
 	udtParserContext* Context;

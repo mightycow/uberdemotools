@@ -1,6 +1,7 @@
 #include "allocator_tracking.hpp"
 
 #include <stdlib.h>
+#include <new>
 
 
 udtAllocatorTracker::udtAllocatorTracker()
@@ -23,10 +24,17 @@ void udtAllocatorTracker::RegisterAllocator(udtIntrusiveListNode& node)
 	if(allocators == NULL)
 	{
 		allocators = (udtIntrusiveList*)malloc(sizeof(udtIntrusiveList));
-		if(allocators != NULL && !_allocatorList.SetData(allocators))
+		if(allocators != NULL)
 		{
-			free(allocators);
-			allocators = NULL;
+			if(!_allocatorList.SetData(allocators))
+			{
+				free(allocators);
+				allocators = NULL;
+			}
+			else
+			{
+				new (allocators) udtIntrusiveList;
+			}
 		}
 	}
 
