@@ -10,7 +10,7 @@ void DestructorCall(void* ptr)
 	static_cast<T*>(ptr)->~T();
 }
 
-struct udtVMScopedStackAllocator// : udtAllocator
+struct udtVMScopedStackAllocator
 {
 private:
 	struct Finalizer
@@ -21,16 +21,19 @@ private:
 
 public:
 	explicit udtVMScopedStackAllocator(udtVMLinearAllocator& linearAllocator);
+	udtVMScopedStackAllocator();
 	~udtVMScopedStackAllocator();
 
-	u8* Allocate(u32 byteCount);
+	void SetAllocator(udtVMLinearAllocator& linearAllocator);
+
+	u8* Allocate(uptr byteCount);
 
 	template<typename T>
 	T* NewObject()
 	{
 		// Allocate and construct.
-		Finalizer* const finalizer = (Finalizer*)_linearAllocator.Allocate((u32)sizeof(Finalizer));
-		T* const result = new (_linearAllocator.Allocate(sizeof(T))) T;
+		Finalizer* const finalizer = (Finalizer*)_linearAllocator->Allocate((uptr)sizeof(Finalizer));
+		T* const result = new (_linearAllocator->Allocate(sizeof(T))) T;
 
 		// Register the finalizer.
 		finalizer->Destructor = &DestructorCall<T>;
@@ -43,7 +46,7 @@ public:
 	template<typename T>
 	T* NewPOD()
 	{
-		return new (_linearAllocator.Allocate(sizeof(T))) T;
+		return new (_linearAllocator->Allocate(sizeof(T))) T;
 	}
 
 private:
@@ -51,7 +54,7 @@ private:
 
 	u8* GetObjectFromFinalizer(Finalizer* finalizer);
 
-	udtVMLinearAllocator& _linearAllocator;
+	udtVMLinearAllocator* _linearAllocator;
 	Finalizer* _finalizerList;
-	u32 _oldUsedByteCount;
+	uptr _oldUsedByteCount;
 };

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,6 +13,14 @@ namespace Uber.DemoTools
 {
     public unsafe class UDT_DLL
     {
+#if (UDT_X86)
+        private const int MaxBatchSizeParsing = 128;
+        private const int MaxBatchSizeCutting = 512;
+#else
+        private const int MaxBatchSizeParsing = 512;
+        private const int MaxBatchSizeCutting = 2048;
+#endif
+
         private const string _dllPath = "UDT.dll";
 
         [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
@@ -103,6 +112,12 @@ namespace Uber.DemoTools
             Count
         }
 
+        [Flags]
+        public enum udtParseArgFlags : uint
+        {
+            PrintAllocStats = 1 << 0
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseArg
         {
@@ -115,7 +130,7 @@ namespace Uber.DemoTools
             public UInt32 PlugInCount;
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
-            public Int32 Reserved1;
+            public UInt32 Flags;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -313,12 +328,6 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByPattern(udtParserContextRef context, ref udtParseArg info, ref udtCutByPatternArg patternInfo, string demoFilePath);
-
-        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtParseDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetDemoDataInfo(udtParserContextRef context, UInt32 demoIdx, udtParserPlugIn plugInId, ref IntPtr buffer, ref UInt32 count);
@@ -526,38 +535,6 @@ namespace Uber.DemoTools
             return success;
         }
 
-        public static DemoInfo ParseDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
-        {
-            if(context == IntPtr.Zero)
-            {
-                return null;
-            }
-
-            filePath = Path.GetFullPath(filePath);
-            var protocol = udtGetProtocolByFilePath(filePath);
-            if(protocol == udtProtocol.Invalid)
-            {
-                return null;
-            }
-
-            var pinnedPlugIns = new PinnedObject(PlugInArray);
-            parseArg.PlugInCount = (UInt32)PlugInArray.Length;
-            parseArg.PlugIns = pinnedPlugIns.Address;
-            var result = udtParseDemoFile(context, ref parseArg, filePath);
-            pinnedPlugIns.Free();
-            if(result != udtErrorCode.None)
-            {
-                return null;
-            }
-
-            var info = new DemoInfo();
-            info.FilePath = filePath;
-            info.Protocol = protocol.ToString();
-            ExtractDemoInfo(context, 0, ref info);
-
-            return info;
-        }
-
         private static UInt32 GetOperatorFromString(string op)
         {
             udtChatOperator result;
@@ -734,6 +711,61 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
+            var timer = new Stopwatch();
+            timer.Start();
+
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeCutting)
+            {
+                var result = CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
+                PrintExecutionTime(timer);
+                return result;
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var demos = new List<DemoInfo>();
+            var batchCount = (fileCount + MaxBatchSizeCutting - 1) / MaxBatchSizeCutting;
+            var filesPerBatch = fileCount / batchCount;
+            var success = true;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+
+                var newResources = new ArgumentResources();
+                CutDemosByPatternImpl(newResources, ref newParseArg, currentFiles, patterns, options);
+
+                fileIndex += currentFileCount;
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    success = false;
+                    break;
+                }
+            }
+
+            resources.Free();
+
+            PrintExecutionTime(timer);
+
+            return success;
+        }
+
+        private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
@@ -787,6 +819,57 @@ namespace Uber.DemoTools
         }
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var timer = new Stopwatch();
+            timer.Start();
+
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeParsing)
+            {
+                var result = ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
+                PrintExecutionTime(timer);
+                return result;
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var demos = new List<DemoInfo>();
+            var batchCount = (fileCount + MaxBatchSizeParsing - 1) / MaxBatchSizeParsing;
+            var filesPerBatch = fileCount / batchCount;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+
+                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount, fileIndex);
+                demos.AddRange(currentResults);
+
+                fileIndex += currentFileCount;
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    break;
+                }
+            }
+
+            PrintExecutionTime(timer);
+
+            return demos;
+        }
+
+        private static List<DemoInfo> ParseDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int inputIndexBase)
         {
             var errorCodeArray = new Int32[filePaths.Count];
             var filePathArray = new IntPtr[filePaths.Count];
@@ -872,7 +955,7 @@ namespace Uber.DemoTools
                     var protocol = udtGetProtocolByFilePath(filePath);
                     var info = new DemoInfo();
                     info.Analyzed = true;
-                    info.InputIndex = (int)inputIdx;
+                    info.InputIndex = inputIndexBase + (int)inputIdx;
                     info.FilePath = Path.GetFullPath(filePath);
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
                     
@@ -998,6 +1081,17 @@ namespace Uber.DemoTools
                 var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
                 info.FragEvents.Add(item);
             }
+        }
+
+        private static void PrintExecutionTime(Stopwatch timer)
+        {
+            if(!App.Instance.Config.PrintExecutionTime)
+            {
+                return;
+            }
+
+            timer.Stop();
+            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
         }
     }
 }

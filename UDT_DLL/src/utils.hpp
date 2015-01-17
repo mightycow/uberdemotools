@@ -70,7 +70,7 @@ extern bool        GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinear
 extern bool        GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath); // Doesn't leave a trailing separator.
 extern bool        GetFileExtension(char*& fileExtension, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
-extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byteCount); // Will use the most appropriate unit.
+extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.
 extern bool        StringParseSeconds(s32& duration, const char* buffer); // Format is minutes:seconds or seconds.
 extern bool        CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset);
 extern s32         GetErrorCode(bool success, s32* cancel);
@@ -84,3 +84,4 @@ extern const char* GetTeamName(s32 team);
 extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
+extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);

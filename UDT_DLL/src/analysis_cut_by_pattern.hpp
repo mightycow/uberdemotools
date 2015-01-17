@@ -14,18 +14,20 @@ struct udtCutByPatternAnalyzerBase
 public:
 	friend udtCutByPatternPlugIn;
 
-	udtCutByPatternAnalyzerBase() {}
+	udtCutByPatternAnalyzerBase();
 	virtual ~udtCutByPatternAnalyzerBase() {}
-
+	
+	virtual void InitAllocators(u32 /*demoCount*/) {}
+	virtual void StartAnalysis() {}
+	virtual void FinishAnalysis() {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
-	virtual void FinishAnalysis() {}
-
-	udtVMArray<udtCutSection> CutSections;
+	
+	udtVMArrayWithAlloc<udtCutSection> CutSections;
 
 protected:
-	const udtCutByPatternPlugIn* PlugIn;
+	udtCutByPatternPlugIn* PlugIn;
 	const void* ExtraInfo;
 
 	template<typename T>
@@ -41,39 +43,30 @@ private:
 struct udtCutByPatternPlugIn : udtBaseParserPlugIn
 {
 public:
-	udtCutByPatternPlugIn(udtVMLinearAllocator& analyzerAllocator, const udtCutByPatternArg& info);
+	udtCutByPatternPlugIn();
+	~udtCutByPatternPlugIn() {}
 
-	~udtCutByPatternPlugIn()
-	{
-	}
+	void InitAllocators(u32 demoCount) override;
+	u32  GetElementSize() const override { return (u32)sizeof(udtCutSection); };
 
+	void StartDemoAnalysis() override;
+	void FinishDemoAnalysis() override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser) override;
+	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
+
+	void                         InitAnalyzerAllocators(u32 demoCount);
 	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
 
+	void SetPatternInfo(const udtCutByPatternArg& info) { _info = &info; }
+
 	s32 GetTrackedPlayerIndex() const;
-	const udtCutByPatternArg& GetInfo() const { return _info; }
+	const udtCutByPatternArg& GetInfo() const { return *_info; }
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser);
-	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser);
-	void FinishAnalysis();
+	udtVMLinearAllocator& GetTempAllocator() { return *TempAllocator; }
 
-	u32 GetElementCount() const
-	{
-		return CutSections.GetSize();
-	}
-
-	u32 GetElementSize() const
-	{
-		return (u32)sizeof(udtCutSection);
-	};
-
-	void* GetFirstElementAddress()
-	{
-		return GetElementCount() > 0 ? CutSections.GetStartAddress() : NULL;
-	}
-
-	udtVMArray<udtCutSection> CutSections;
+	udtVMArray<udtCutSection> CutSections; // Final array.
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
@@ -81,11 +74,11 @@ private:
 	void        TrackPlayerFromCommandMessage(udtBaseParser& parser);
 	const char* GetPlayerName(udtBaseParser& parser, s32 csIndex);
 
-	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
-	udtVMArray<udtPatternType::Id> _analyzerTypes;
+	udtVMArrayWithAlloc<udtCutByPatternAnalyzerBase*> _analyzers;
+	udtVMArrayWithAlloc<udtPatternType::Id> _analyzerTypes;
+	udtVMLinearAllocator _analyzerAllocator;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
-	udtVMLinearAllocator _tempAllocator;
 
-	const udtCutByPatternArg& _info;
+	const udtCutByPatternArg* _info;
 	s32 _trackedPlayerIndex;
 };

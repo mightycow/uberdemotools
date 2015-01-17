@@ -257,6 +257,14 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 
 udtCutByMidAirAnalyzer::udtCutByMidAirAnalyzer()
 {
+}
+
+udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
+{
+}
+
+void udtCutByMidAirAnalyzer::StartAnalysis()
+{
 	_protocol = udtProtocol::Invalid;
 	_lastEventSequence = S32_MIN;
 	_gameStateIndex = -1;
@@ -264,10 +272,6 @@ udtCutByMidAirAnalyzer::udtCutByMidAirAnalyzer()
 	_bfgSpeed = -1.0f;
 	memset(_projectiles, 0, sizeof(_projectiles));
 	memset(_players, 0, sizeof(_players));
-}
-
-udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
-{
 }
 
 void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
@@ -286,10 +290,6 @@ void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackA
 		_players[i].Position[1] = 0.0f;
 		_players[i].Position[2] = 0.0f;
 	}
-}
-
-void udtCutByMidAirAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
-{
 }
 
 void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
@@ -325,7 +325,10 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	}
 
 	// Update player information: position, Z-axis change, fire projectiles, etc.
+	udtVMLinearAllocator& tempAllocator = PlugIn->GetTempAllocator();
+	udtVMScopedStackAllocator tempAllocScope(tempAllocator);
 	PlayerEntities playersInfo;
+	playersInfo.Players.SetAllocator(tempAllocator);
 	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._protocol);
 	for(u32 i = 0, count = playersInfo.Players.GetSize(); i < count; ++i)
 	{

@@ -6,19 +6,19 @@
 #include "array.hpp"
 
 
-struct DemoSplitterAnalyzer : udtBaseParserPlugIn
+struct udtParserPlugInSplitter : udtBaseParserPlugIn
 {
 public:
-	DemoSplitterAnalyzer() {}
-	~DemoSplitterAnalyzer() {}
+	udtParserPlugInSplitter() {}
+	~udtParserPlugInSplitter() {}
 
-	void  ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
-	u32   GetElementCount() const { return GamestateFileOffsets.GetSize(); }
-	u32   GetElementSize() const { return (u32)sizeof(u32); };
-	void* GetFirstElementAddress() { return GetElementCount() > 0 ? GamestateFileOffsets.GetStartAddress() : NULL; }
+	void InitAllocators(u32 demoCount);
+	u32  GetElementSize() const { return (u32)sizeof(u32); };
 
-	udtVMArray<u32> GamestateFileOffsets;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
+
+	udtVMArray<u32> GamestateFileOffsets; // Final array.
 
 private:
-	UDT_NO_COPY_SEMANTICS(DemoSplitterAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtParserPlugInSplitter);
 };

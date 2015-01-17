@@ -11,6 +11,11 @@ udtCutByMultiRailAnalyzer::~udtCutByMultiRailAnalyzer()
 {
 }
 
+void udtCutByMultiRailAnalyzer::StartAnalysis()
+{
+	_gameStateIndex = -1;
+}
+
 void udtCutByMultiRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
 {
 	++_gameStateIndex;

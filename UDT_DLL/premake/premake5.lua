@@ -81,7 +81,7 @@ local function ApplyProjectSettings()
 	-- GCC
 	--
 	filter "action:gmake"
-		buildoptions { "-Wno-c++11-compat -Wno-invalid-offsetof" } -- Directly passed to the compiler.
+		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" } -- Directly passed to the compiler.
 		linkoptions { "-rdynamic" } -- Directly passed to the linker.
 	
 	filter { "action:gmake", "configurations:Debug" }
@@ -126,13 +126,13 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
 		
-	project "UDT_test_addons"
+--	project "UDT_test_addons"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_test_addons.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+--		kind "ConsoleApp"
+--		defines { "UDT_CREATE_DLL" }
+--		files { path_src_apps.."/app_test_addons.cpp" }
+--		files { path_src_apps.."/shared.cpp" }
+--		ApplyProjectSettings()
 
 		
 			

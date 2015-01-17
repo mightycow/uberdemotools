@@ -10,9 +10,9 @@ public:
 	udtCutByMidAirAnalyzer();
 	~udtCutByMidAirAnalyzer();
 
-	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void StartAnalysis() override;
+	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByMidAirAnalyzer);

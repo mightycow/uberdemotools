@@ -50,6 +50,8 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
+        public bool PrintAllocationStats = true;
+        public bool PrintExecutionTime = true;
     }
 
     public class UdtPrivateConfig
@@ -112,7 +114,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.0b";
+        private const string GuiVersion = "0.4.1";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -484,8 +486,8 @@ namespace Uber.DemoTools
             demoListView.Drop += OnDemoListBoxDragDrop;
             demoListView.SelectionChanged += (obj, args) => OnDemoListSelectionChanged();
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
-            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
-            demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
+            //demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightBrushKey, SystemColors.HighlightBrush);
+            //demoListView.Resources.Add(SystemColors.InactiveSelectionHighlightTextBrushKey, SystemColors.HighlightTextBrush);
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
             InitDemoListAnalyzeCommand();
@@ -1298,6 +1300,8 @@ namespace Uber.DemoTools
 
             DisableUiNonThreadSafe();
 
+            SaveBothConfigs();
+
             JoinJobThread();
             StartJobThread(DemoAnalyzeThread, demos);
         }
@@ -1357,6 +1361,11 @@ namespace Uber.DemoTools
             ParseArg.OutputFolderPath = IntPtr.Zero;
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
+            ParseArg.Flags = 0;
+            if(Config.PrintAllocationStats)
+            {
+                ParseArg.Flags |= (uint)UDT_DLL.udtParseArgFlags.PrintAllocStats;
+            }
         }
 
         private void DemoAnalyzeThread(object arg)
@@ -1390,29 +1399,54 @@ namespace Uber.DemoTools
                 newDemos = null;
             }
 
-            if(newDemos == null || newDemos.Count != demos.Count)
+            if(newDemos == null || newDemos.Count == 0)
             {
                 Marshal.FreeHGlobal(outputFolderPtr);
                 return;
             }
 
-            for(var i = 0; i < demos.Count; ++i)
+            foreach(var newDemo in newDemos)
             {
+                var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
-                demos[i].ChatEvents = newDemos[i].ChatEvents;
-                demos[i].FragEvents = newDemos[i].FragEvents;
-                demos[i].GameStateFileOffsets = newDemos[i].GameStateFileOffsets;
-                demos[i].GameStateSnapshotTimesMs = newDemos[i].GameStateSnapshotTimesMs;
-                demos[i].Generic = newDemos[i].Generic;
-                demos[i].InputIndex = newDemos[i].InputIndex;
-                demos[i].Protocol = newDemos[i].Protocol;
-                demos[i].FilePath = newDemos[i].FilePath;
+                demos[i].ChatEvents = newDemo.ChatEvents;
+                demos[i].FragEvents = newDemo.FragEvents;
+                demos[i].GameStateFileOffsets = newDemo.GameStateFileOffsets;
+                demos[i].GameStateSnapshotTimesMs = newDemo.GameStateSnapshotTimesMs;
+                demos[i].Generic = newDemo.Generic;
+                demos[i].InputIndex = newDemo.InputIndex;
+                demos[i].Protocol = newDemo.Protocol;
+                demos[i].FilePath = newDemo.FilePath;
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
             _window.Dispatcher.Invoke(infoUpdater);
+        }
+
+        public static string FormatPerformanceTime(Stopwatch timer)
+        {
+            var msecTotal = timer.ElapsedMilliseconds;
+            if(msecTotal < 1000)
+            {
+                return msecTotal.ToString() + "ms";
+            }
+
+            var secTotal = msecTotal / 1000;
+            if(secTotal < 10)
+            {
+                var secs = msecTotal / 1000.0;
+                return secs.ToString(".00") + "s";
+            }
+
+            if(secTotal < 100)
+            {
+                var secs = msecTotal / 1000.0;
+                return secs.ToString(".0") + "s";
+            }
+
+            return secTotal.ToString() + "s";
         }
 
         private static void RemoveListViewItem<T>(T info, ListView listView) where T : class
@@ -1546,9 +1580,18 @@ namespace Uber.DemoTools
 
         private void OnRemoveDemoClicked()
         {
-            if(_demoListView.SelectedItems.Count == 0)
+            var selectedCount = _demoListView.SelectedItems.Count;
+            if(selectedCount == 0)
             {
                 LogWarning("You must select 1 or more demos from the list before you can remove them");
+                return;
+            }
+
+            if(selectedCount == _demos.Count)
+            {
+                // Let the most common case be super duper fast.
+                _demoListView.Items.Clear();
+                _demos.Clear();
                 return;
             }
 
@@ -1989,6 +2032,9 @@ namespace Uber.DemoTools
             finally
             {
                 EnableUiThreadSafe();
+
+                VoidDelegate focusSetter = delegate { _demoListView.Focus(); };
+                _window.Dispatcher.Invoke(focusSetter);
             }
         }
 

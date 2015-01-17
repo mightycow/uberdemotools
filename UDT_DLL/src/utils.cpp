@@ -37,7 +37,7 @@ void CallbackConsoleProgress(f32, void*)
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData)
 {
-	udtVMLinearAllocator& tempAllocator = parser->_context->TempAllocator;
+	udtVMLinearAllocator& tempAllocator = parser->_tempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
 
@@ -617,7 +617,7 @@ bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator
 	return true;
 }
 
-bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byteCount)
+bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount)
 {
 	if(byteCount == 0)
 	{
@@ -628,8 +628,8 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byte
 	const char* const units[] = { "bytes", "KB", "MB", "GB", "TB" };
 
 	s32 unitIndex = 0;
-	u32 prev = 0;
-	u32 temp = byteCount;
+	u64 prev = 0;
+	u64 temp = byteCount;
 	while(temp >= 1024)
 	{
 		++unitIndex;
@@ -637,7 +637,7 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u32 byte
 		temp >>= 10;
 	}
 
-	const f32 number = (f32)prev / 1024.0f;
+	const f64 number = (f64)prev / 1024.0f;
 
 	formattedSize = (char*)allocator.Allocate(64);
 	sprintf(formattedSize, "%.3f %s", number, units[unitIndex]);
@@ -699,11 +699,10 @@ s32 GetErrorCode(bool success, s32* cancel)
 bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
 {
 	udtContext* const context = parser._context;
-	udtVMScopedStackAllocator tempAllocator(context->TempAllocator);
 
 	size_t elementsRead;
 	udtMessage inMsg;
-	u8* const inMsgData = tempAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
+	u8* const inMsgData = parser._persistentAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
 	s32 inServerMessageSequence;
 
 	inMsg.InitContext(context);
@@ -1063,4 +1062,20 @@ s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	}
 
 	return -1;
+}
+
+void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
+{
+	char* bytes;
+	context.LogInfo("File count: %u", fileCount);
+	context.LogInfo("Thread count: %u", threadCount);
+	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
+	FormatBytes(bytes, allocator, stats.ReservedByteCount);
+	context.LogInfo("Reserved memory: %s", bytes);
+	FormatBytes(bytes, allocator, stats.CommittedByteCount);
+	context.LogInfo("Committed memory: %s", bytes);
+	FormatBytes(bytes, allocator, stats.UsedByteCount);
+	context.LogInfo("Used memory: %s", bytes);
+	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
+	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
 }

@@ -1,3 +1,11 @@
+0.4.1 (17.01.2015)
+CHG: Removing all demos at once in the GUI happens fast
+ADD: Splitting up parsing operations by file count to reserve less memory address space (and commit less pages)
+ADD: An option ("Print Execution Time") for printing the time it took for the batch operation to complete
+ADD: An option ("Print Alloc Stats") for printing the memory allocation statistics of the batch operation
+CHG: The minimum required .NET version is now back to 4.0 Client Profile
+CHG: The "Demo List" ListView doesn't override the inactive selection highlight colors anymore as it created more confusion than it helped
+
 0.4.0b (09.01.2015)
 CHG: The log window now supports selecting multiple lines
 FIX: Log commands "Copy Selection" and "Copy Everything" now work again

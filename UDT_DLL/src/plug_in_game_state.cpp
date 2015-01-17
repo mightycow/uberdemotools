@@ -36,12 +36,35 @@ udtParserPlugInGameState::~udtParserPlugInGameState()
 {
 }
 
+void udtParserPlugInGameState::InitAllocators(u32 demoCount)
+{
+	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_matches.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_gameStates.SetAllocator(FinalAllocator);
+}
+
+void udtParserPlugInGameState::StartDemoAnalysis()
+{
+	_gameType = udtGameType::BaseQ3;
+	_gameStateQL = udtGameStateQL::Invalid;
+	_firstGameState = true;
+	_nextSnapshotIsWarmUpEnd = false;
+
+	ClearGameState();
+	ClearMatch();
+}
+
+void udtParserPlugInGameState::FinishDemoAnalysis()
+{
+	AddCurrentGameState();
+}
+
 void udtParserPlugInGameState::ProcessQlServerInfo(const char* commandString, udtBaseParser& parser)
 {
 	const udtGameStateQL::Id oldState = _gameStateQL;
 	udtGameStateQL::Id newState = udtGameStateQL::Invalid;
 
-	udtVMLinearAllocator& tempAllocator = parser._context->TempAllocator;
+	udtVMLinearAllocator& tempAllocator = *TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 	char* gameStateString = NULL;
@@ -122,7 +145,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 		}
 		else
 		{
-			udtVMLinearAllocator& tempAllocator = parser._context->TempAllocator;
+			udtVMLinearAllocator& tempAllocator = *TempAllocator;
 			udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
 			char* gameName = NULL;
@@ -142,7 +165,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	_firstGameState = false;
 
 	_currentGameState.FileOffset = parser._inFileOffset;
-	_currentGameState.Matches = _matches.GetStartAddress() + _matches.GetSize();
+	_currentGameState.Matches = _matches.GetEndAddress();
 
 	if(_gameType == udtGameType::CPMA)
 	{
@@ -230,11 +253,6 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 			}
 		}
 	}
-}
-
-void udtParserPlugInGameState::FinishAnalysis()
-{
-	AddCurrentGameState();
 }
 
 void udtParserPlugInGameState::ClearMatch()

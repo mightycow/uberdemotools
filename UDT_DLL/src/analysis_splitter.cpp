@@ -1,7 +1,13 @@
 #include "analysis_splitter.hpp"
 
 
-void DemoSplitterAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*info*/, udtBaseParser& parser)
+void udtParserPlugInSplitter::InitAllocators(u32 demoCount)
+{
+	FinalAllocator.Init((uptr)(64 * sizeof(u32)) * (uptr)demoCount);
+	GamestateFileOffsets.SetAllocator(FinalAllocator);
+}
+
+void udtParserPlugInSplitter::ProcessGamestateMessage(const udtGamestateCallbackArg& /*info*/, udtBaseParser& parser)
 {
 	GamestateFileOffsets.Add(parser._inFileOffset);
 }

@@ -5,6 +5,15 @@
 #include "cut_section.hpp"
 
 
+udtCutByChatAnalyzer::udtCutByChatAnalyzer() 
+	: _cutSections(1 << 16)
+{
+}
+
+udtCutByChatAnalyzer::~udtCutByChatAnalyzer()
+{
+}
+
 void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& commandInfo, udtBaseParser& parser)
 {
 	udtContext& context = *parser._context;
@@ -20,8 +29,8 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	bool match = false;
 	for(u32 i = 0; i < extraInfo.RuleCount; ++i)
 	{
-		udtVMScopedStackAllocator tempAllocatorScopeGuard(context.TempAllocator);
-		if(StringMatchesCutByChatRule(tokenizer.argv(1), extraInfo.Rules[i], context.TempAllocator))
+		udtVMScopedStackAllocator tempAllocatorScopeGuard(parser._tempAllocator);
+		if(StringMatchesCutByChatRule(tokenizer.argv(1), extraInfo.Rules[i], parser._tempAllocator))
 		{
 			match = true;
 			break;
@@ -45,8 +54,12 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	_cutSections.Add(cutSection);
 }
 
+void udtCutByChatAnalyzer::StartAnalysis()
+{
+	_cutSections.Clear();
+}
+
 void udtCutByChatAnalyzer::FinishAnalysis()
 {
 	MergeRanges(CutSections, _cutSections);
-	_cutSections.Clear();
 }

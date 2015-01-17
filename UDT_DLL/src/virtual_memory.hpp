@@ -4,7 +4,7 @@
 #include "types.hpp"
 
 
-extern void* VirtualMemoryReserve(u32 byteCount);
-extern bool  VirtualMemoryCommit(void* address, u32 byteCount);
-extern bool  VirtualMemoryDecommit(void* address, u32 byteCount);
-extern bool  VirtualMemoryDecommitAndRelease(void* address, u32 byteCount);
+extern void* VirtualMemoryReserve(uptr byteCount);
+extern bool  VirtualMemoryCommit(void* address, uptr byteCount);
+extern bool  VirtualMemoryDecommit(void* address, uptr byteCount);
+extern bool  VirtualMemoryDecommitAndRelease(void* address, uptr byteCount);

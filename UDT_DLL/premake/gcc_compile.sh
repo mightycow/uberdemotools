@@ -34,5 +34,4 @@ echo Selected config: $UDT_CONFIG
 make UDT config=$UDT_CONFIG
 make UDT_cutter config=$UDT_CONFIG
 make UDT_splitter config=$UDT_CONFIG
-make UDT_test_addons config=$UDT_CONFIG
 

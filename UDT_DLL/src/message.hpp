@@ -37,12 +37,6 @@ public:
 	void	WriteData (const void* data, s32 length);
 	void	Bitstream();
 
-	// TTimo
-	// copy a msg_t in case we need to store it as is for a bit
-	// (as I needed this to keep an msg_t from a static var for later use)
-	// sets data buffer as Init does prior to do the copy
-	void	Copy(u8* data, s32 length, const udtMessage* src);
-
 	void	WriteBits(s32 value, s32 bits);
 	void	WriteByte(s32 c);
 	void	WriteShort(s32 c);
@@ -74,7 +68,7 @@ public:
 	void	ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to);
 
 	void	WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force);
-	bool	ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number);
+	bool	ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number); // True if entity was added or changed.
 
 private:
 	void	WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits);

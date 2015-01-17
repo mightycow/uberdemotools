@@ -1,20 +1,17 @@
 #include "parser.hpp"
 #include "utils.hpp"
+#include "scoped_stack_allocator.hpp"
 
 
 udtBaseParser::udtBaseParser() 
-	: _inEntityBaselines((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
-	, _inParseEntities((u32)(MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)))
-	, _inCommands(1 << 20)
-	, _inConfigStrings((u32)(2 * MAX_CONFIGSTRINGS * sizeof(udtConfigString)))
-	, _inSnapshots((u32)(PACKET_BACKUP * sizeof(idLargestClientSnapshot)))
-	, _inEntityEventTimesMs((u32)(MAX_GENTITIES * sizeof(s32)))
 {
 	_context = NULL;
 	_protocol = udtProtocol::Invalid;
 
 	UserData = NULL;
+	EnablePlugIns = true;
 
+	_inFileName = NULL;
 	_inFilePath = NULL;
 	_inFileOffset = 0;
 	_inServerMessageSequence = -1;
@@ -31,9 +28,6 @@ udtBaseParser::udtBaseParser()
 	_outSnapshotsWritten = 0;
 	_outWriteFirstMessage = false;
 	_outWriteMessage = false;
-
-	// Reserve lots of address space up front.
-	_inLinearAllocator.Init(1 << 24, UDT_MEMORY_PAGE_SIZE);
 }
 
 udtBaseParser::~udtBaseParser()
@@ -41,12 +35,26 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex)
+void udtBaseParser::InitAllocators()
+{
+	_persistentAllocator.Init(1 << 20);
+	_configStringAllocator.Init(1 << 24);
+	_tempAllocator.Init(1 << 20);
+	PlugIns.Init(1 << 16);
+	_inGameStateFileOffsets.Init(1 << 16);
+	_inChangedEntities.Init(1 << 16);
+	_inRemovedEntities.Init(1 << 16);
+	_cuts.Init(1 << 16);
+}
+
+bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex, bool enablePlugIns)
 {
 	if(context == NULL || !udtIsValidProtocol(protocol) || gameStateIndex < 0)
 	{
 		return false;
 	}
+
+	EnablePlugIns = enablePlugIns;
 
 	_context = context;
 	_protocol = protocol;
@@ -56,19 +64,14 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	_outMsg.InitContext(context);
 	_outMsg.InitProtocol(protocol);
 
-	_inParseEntities.Resize(MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
-	_inEntityBaselines.Resize(MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
-	memset(&_inEntityBaselines[0], 0, MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
-	_inSnapshots.Resize(PACKET_BACKUP * _protocolSizeOfClientSnapshot);
-	memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
+	_inFileName = NULL;
+	_inFilePath = NULL;
 
-	_inEntityEventTimesMs.Resize(MAX_GENTITIES);
-	for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
-	{
-		_inEntityEventTimesMs[i] = S32_MIN;
-	}
+	_cuts.Clear();
+	_persistentAllocator.Clear();
+	_configStringAllocator.Clear();
+	_tempAllocator.Clear();
 
-	_inLastSnapshotMessageNumber = S32_MIN;
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
 	if(gameStateIndex > 0)
@@ -77,6 +80,14 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 		for(s32 i = 0; i < gameStateIndex; ++i)
 		{
 			_inGameStateFileOffsets[0] = 0;
+		}
+	}
+
+	if(enablePlugIns)
+	{
+		for(u32 i = 0; i < PlugIns.GetSize(); ++i)
+		{
+			PlugIns[i]->StartProcessingDemo();
 		}
 	}
 
@@ -99,86 +110,24 @@ void udtBaseParser::ResetForGamestateMessage()
 	_outWriteFirstMessage = false;
 	_outWriteMessage = false;
 
-	if(_inEntityBaselines.GetSize() == MAX_PARSE_ENTITIES)
+	memset(_inEntityBaselines, 0, sizeof(_inEntityBaselines));
+	memset(_inSnapshots, 0, sizeof(_inSnapshots));
+	memset(_inConfigStrings, 0, sizeof(_inConfigStrings));
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inEntityEventTimesMs); ++i)
 	{
-		memset(&_inEntityBaselines[0], 0, MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
+		_inEntityEventTimesMs[i] = S32_MIN;
 	}
 
-	if(_inSnapshots.GetSize() == PACKET_BACKUP)
-	{
-		memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
-	}
-
-	if(_inEntityEventTimesMs.GetSize() == MAX_GENTITIES)
-	{
-		for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
-		{
-			_inEntityEventTimesMs[i] = S32_MIN;
-		}
-	}
-
-	_inCommands.Clear();
-	_inConfigStrings.Clear();
-}
-
-void udtBaseParser::Reset()
-{
-	_context = NULL;
-	_protocol = udtProtocol::Invalid;
-
-	UserData = NULL;
-
-	_inFilePath = NULL;
-	_inFileOffset = 0;
-	_inServerMessageSequence = -1;
-	_inServerCommandSequence = -1;
-	_inReliableSequenceAcknowledge = -1;
-	_inClientNum = -1;
-	_inChecksumFeed = -1;
-	_inParseEntitiesNum = 0;
-	_inGameStateIndex = -1;
-	_inGameStateFileOffsets.Clear();
-	_inServerTime = S32_MIN;
-	_inLastSnapshotMessageNumber = S32_MIN;
-
-	_outServerCommandSequence = 0;
-	_outSnapshotsWritten = 0;
-	_outWriteFirstMessage = false;
-	_outWriteMessage = false;
-
-	_inLinearAllocator.Clear();
-
-	PlugIns.Clear();
-
-	if(_inEntityBaselines.GetSize() == MAX_PARSE_ENTITIES)
-	{
-		memset(&_inEntityBaselines[0], 0, MAX_PARSE_ENTITIES * _protocolSizeOfEntityState);
-	}
-
-	if(_inSnapshots.GetSize() == PACKET_BACKUP)
-	{
-		memset(&_inSnapshots[0], 0, PACKET_BACKUP * _protocolSizeOfClientSnapshot);
-	}
-
-	if(_inEntityEventTimesMs.GetSize() == MAX_GENTITIES)
-	{
-		for(u32 i = 0; i < (u32)MAX_GENTITIES; ++i)
-		{
-			_inEntityEventTimesMs[i] = S32_MIN;
-		}
-	}
-
-	_inCommands.Clear();
-	_inConfigStrings.Clear();
-	_cuts.Clear();
+	_configStringAllocator.Clear();
+	_tempAllocator.Clear();
 }
 
 void udtBaseParser::SetFilePath(const char* filePath)
 {
-	_inFilePath = AllocatePermanentString(filePath);
+	_inFilePath = AllocateString(_persistentAllocator, filePath);
 
 	char* fileName = NULL;
-	GetFileName(fileName, _inLinearAllocator, filePath);
+	::GetFileName(fileName, _persistentAllocator, filePath);
 	_inFileName = fileName;
 }
 
@@ -209,8 +158,8 @@ bool udtBaseParser::ParseServerMessage()
 	{
 		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize) 
 		{
-			_context->LogErrorAndCrash("ParseServerMessage: read past the end of the server message");
-			break;
+			_context->LogError("ParseServerMessage: read past the end of the server message (in file: %s)", GetFileName());
+			return false;
 		}
 
 		s32 command = _inMsg.ReadByte();
@@ -247,15 +196,15 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		case svc_serverCommand:
-			ParseCommandString();
+			if(!ParseCommandString()) return false;
 			break;
 
 		case svc_gamestate:
-			ParseGamestate();
+			if(!ParseGamestate()) return false;
 			break;
 
 		case svc_snapshot:
-			ParseSnapshot();
+			if(!ParseSnapshot()) return false;
 			break;
 
 		case svc_voip:
@@ -271,8 +220,8 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		default:
-			_context->LogErrorAndCrash("ParseServerMessage: unrecognized server message command byte: %d", command);
-			break;
+			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
+			return false;
 		}
 	}
 
@@ -330,7 +279,7 @@ bool udtBaseParser::ParseServerMessage()
 	return true;
 }
 
-void udtBaseParser::FinishParsing(bool success)
+void udtBaseParser::FinishParsing(bool /*success*/)
 {
 	// Close any output file stream that is still open, if any.
 	if(!_cuts.IsEmpty() && _outWriteMessage)
@@ -344,14 +293,12 @@ void udtBaseParser::FinishParsing(bool success)
 		_cuts.Clear();
 	}
 
-	if(!success)
+	if(EnablePlugIns)
 	{
-		return;
-	}
-
-	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
-	{
-		PlugIns[i]->FinishAnalysis();
+		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+		{
+			PlugIns[i]->FinishProcessingDemo();
+		}
 	}
 }
 
@@ -404,7 +351,7 @@ void udtBaseParser::WriteLastMessage()
 	//_context->LogInfo("Stopped writing the demo.");
 }
 
-void udtBaseParser::ParseCommandString()
+bool udtBaseParser::ParseCommandString()
 {
 	s32 commandStringLength = 0;
 	const s32 commandSequence = _inMsg.ReadLong();
@@ -414,20 +361,15 @@ void udtBaseParser::ParseCommandString()
 	if(_inServerCommandSequence >= commandSequence) 
 	{
 		// Yes, don't bother processing it.
-		return;
+		return true;
 	}
 	
 	// Copy the string to some safe location.
-	char* const commandString = AllocatePermanentString(commandStringTemp, commandStringLength);
+	udtVMScopedStackAllocator scopedTempAllocator(_tempAllocator);
+	char* const commandString = AllocateString(_tempAllocator, commandStringTemp, commandStringLength);
 	
-	// We haven't, so let's store the last sequence number received...
+	// We haven't, so let's store the last sequence number received.
 	_inServerCommandSequence = commandSequence;
-	
-	// ...and the command as well.
-	udtServerCommand sc;
-	sc.String = commandString;
-	sc.StringLength = commandStringLength;
-	_inCommands.Add(sc);
 	
 	CommandLineTokenizer& tokenizer = _context->Tokenizer;
 	tokenizer.Tokenize(commandString);
@@ -441,17 +383,14 @@ void udtBaseParser::ParseCommandString()
 			const u32 csStringLength = (u32)strlen(csStringTemp);
 
 			// Copy the string to some safe location.
-			char* const csString = AllocatePermanentString(csStringTemp, csStringLength);
+			char* const csString = AllocateString(_configStringAllocator, csStringTemp, csStringLength);
 
-			udtConfigString cs;
-			cs.Index = csIndex;
-			cs.String = csString;
-			cs.StringLength = csStringLength;
-			InsertOrUpdateConfigString(cs);
+			_inConfigStrings[csIndex].String = csString;
+			_inConfigStrings[csIndex].StringLength = csStringLength;
 		}
 	}
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtCommandCallbackArg info;
 		info.CommandSequence = commandSequence;
@@ -471,9 +410,11 @@ void udtBaseParser::ParseCommandString()
 		_outMsg.WriteString(commandString, commandStringLength);
 		++_outServerCommandSequence;
 	}
+
+	return true;
 }
 
-void udtBaseParser::ParseGamestate()
+bool udtBaseParser::ParseGamestate()
 {
 	// @TODO: Reset some data, but not for the 1st gamestate message.
 	ResetForGamestateMessage();
@@ -499,28 +440,27 @@ void udtBaseParser::ParseGamestate()
 			const s32 index = _inMsg.ReadShort();
 			if(index < 0 || index >= MAX_CONFIGSTRINGS) 
 			{
-				_context->LogErrorAndCrash("ParseGamestate: Config string index out of range: %i", index);
+				_context->LogError("ParseGamestate: config string index out of range: %d (in file: %s)", index, GetFileName());
+				return false;
 			}
 
 			s32 configStringLength = 0;
 			const char* const configStringTemp = _inMsg.ReadBigString(configStringLength);
 			
 			// Copy the string to a safe location.
-			char* const configString = AllocatePermanentString(configStringTemp, configStringLength);
+			char* const configString = AllocateString(_configStringAllocator, configStringTemp, configStringLength);
 
 			// Store it.
-			udtConfigString cs;
-			cs.Index = index;
-			cs.String = configString;
-			cs.StringLength = configStringLength;
-			_inConfigStrings.Add(cs);
+			_inConfigStrings[index].String = configString;
+			_inConfigStrings[index].StringLength = configStringLength;
 		} 
 		else if(command == svc_baseline)
 		{
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
-				_context->LogErrorAndCrash("ParseGamestate: Baseline number out of range: %i", newIndex);
+				_context->LogError("ParseGamestate: baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
+				return false;
 			}
 			
 			idLargestEntityState nullState;
@@ -532,14 +472,15 @@ void udtBaseParser::ParseGamestate()
 		} 
 		else 
 		{
-			_context->LogErrorAndCrash("ParseGamestate: Unrecognized command byte");
+			_context->LogError("ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
+			return false;
 		}
 	}
 
 	_inClientNum = _inMsg.ReadLong();
 	_inChecksumFeed = _inMsg.ReadLong();
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtGamestateCallbackArg info;
 		info.ServerCommandSequence = _inServerCommandSequence;
@@ -554,9 +495,11 @@ void udtBaseParser::ParseGamestate()
 
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
+
+	return true;
 }
 
-void udtBaseParser::ParseSnapshot()
+bool udtBaseParser::ParseSnapshot()
 {
 	//
 	// Read in the new snapshot to a temporary buffer
@@ -640,8 +583,8 @@ void udtBaseParser::ParseSnapshot()
 	const s32 areaMaskLength = _inMsg.ReadByte();
 	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 	{
-		_context->LogErrorAndCrash("ParseSnapshot: Invalid size %d for areamask.", areaMaskLength);
-		return;
+		_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
 
@@ -649,7 +592,10 @@ void udtBaseParser::ParseSnapshot()
 	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _protocol) : NULL, GetPlayerState(&newSnap, _protocol));
 
 	// Read in all entities.
-	ParsePacketEntities(_inMsg, oldSnap, &newSnap);
+	if(!ParsePacketEntities(_inMsg, oldSnap, &newSnap))
+	{
+		return false;
+	}
 
 	// Did we write enough snapshots already?
 	const bool noDelta = _outSnapshotsWritten < deltaNum;
@@ -680,7 +626,7 @@ void udtBaseParser::ParseSnapshot()
 	// it has been properly read.
 	if(newSnap.valid == qfalse) 
 	{
-		return;
+		return true;
 	}
 
 	//
@@ -710,11 +656,11 @@ void udtBaseParser::ParseSnapshot()
 	// Don't give the same stuff to the plug-ins more than once.
 	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
 	{
-		return;
+		return true;
 	}
 	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
-	if(!PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtSnapshotCallbackArg info;
 		info.ServerTime = _inServerTime;
@@ -730,6 +676,8 @@ void udtBaseParser::ParseSnapshot()
 			PlugIns[i]->ProcessSnapshotMessage(info, *this);
 		}
 	}
+
+	return true;
 }
 
 void udtBaseParser::WriteGameState()
@@ -744,11 +692,16 @@ void udtBaseParser::WriteGameState()
 	++_outServerCommandSequence;
 	
 	// Config strings.
-	for(u32 i = 0, count = _inConfigStrings.GetSize(); i < count; ++i)
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inConfigStrings); ++i)
 	{
 		const udtConfigString& cs = _inConfigStrings[i];
+		if(cs.String == NULL || cs.StringLength == 0)
+		{
+			continue;
+		}
+
 		_outMsg.WriteByte(svc_configstring);
-		_outMsg.WriteShort(cs.Index);
+		_outMsg.WriteShort((s32)i);
 		_outMsg.WriteBigString(cs.String, cs.StringLength);
 	}
 	
@@ -778,7 +731,7 @@ void udtBaseParser::WriteGameState()
 	_outMsg.WriteByte(svc_EOF);
 }
 
-void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
+bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
 	_inChangedEntities.Clear();
 	_inRemovedEntities.Clear();
@@ -819,7 +772,8 @@ void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 
 		if(msg.Buffer.readcount > msg.Buffer.cursize) 
 		{
-			_context->LogErrorAndCrash("ParsePacketEntities: read past the end of the current message");
+			_context->LogError("ParsePacketEntities: read past the end of the current message (in file: %s)", GetFileName());
+			return false;
 		}
 
 		while(oldnum < newnum) 
@@ -894,6 +848,8 @@ void udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			oldnum = oldstate->number;
 		}
 	}
+
+	return true;
 }
 
 //
@@ -1015,34 +971,12 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	frame->numEntities++;
 }
 
-void udtBaseParser::InsertOrUpdateConfigString(const udtConfigString& newCs)
-{
-	udtConfigString* const oldCs = FindConfigStringByIndex(newCs.Index);
-	if(oldCs == NULL)
-	{
-		_inConfigStrings.Add(newCs);
-	}
-	else
-	{
-		*oldCs = newCs;
-	}
-}
-
 udtBaseParser::udtConfigString* udtBaseParser::FindConfigStringByIndex(s32 csIndex)
 {
-	for(u32 i = 0, count = _inConfigStrings.GetSize(); i < count; ++i)
-	{
-		udtConfigString& cs = _inConfigStrings[i];
-		if(cs.Index == csIndex)
-		{
-			return &cs;
-		}
-	}
-
-	return NULL;
+	return (_inConfigStrings[csIndex].String) != NULL ? (&_inConfigStrings[csIndex]) : NULL;
 }
 
-char* udtBaseParser::AllocatePermanentString(const char* string, u32 stringLength, u32* outStringLength)
+char* udtBaseParser::AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength, u32* outStringLength)
 {
 	if(stringLength == 0)
 	{
@@ -1054,7 +988,7 @@ char* udtBaseParser::AllocatePermanentString(const char* string, u32 stringLengt
 		*outStringLength = stringLength;
 	}
 
-	char* const stringCopy = (char*)_inLinearAllocator.Allocate(stringLength + 1);
+	char* const stringCopy = (char*)allocator.Allocate(stringLength + 1);
 	memcpy(stringCopy, string, stringLength);
 	stringCopy[stringLength] = '\0';
 

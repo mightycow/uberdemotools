@@ -35,11 +35,9 @@ public:
 	char	ReadStringLineBuffer[MAX_STRING_CHARS];
 
 	CommandLineTokenizer    Tokenizer;
-	udtVMLinearAllocator    TempAllocator;
 
 private:
 	udtMessageCallback      _messageCallback;  // Can be NULL.
 	udtProgressCallback     _progressCallback; // Can be NULL.
 	void*                   _progressContext;  // Can be NULL.
-	bool					_huffmanInitialized;
 };
