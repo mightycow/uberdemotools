@@ -1,3 +1,11 @@
+0.5.0 (17.01.2015)
+CHG: New memory allocation strategy
+ADD: Memory allocators tracking
+CHG: The most frequent parsing errors cancel the operation for the current file instead of calling the crash handler
+CHG: Most parsing errors will now print the file name
+FIX: Cut merging in the Cut by Pattern plug-in wasn't setting the udtCutSection::VeryShortDesc member, resulting in a crash
+REM: Removed the "Processing demo for pattern analysis" message as it cluttered the log with useless data
+
 0.4.1 (08.01.2015)
 CHG: Replaced id's Huffman codec by my own to improve performance
 
