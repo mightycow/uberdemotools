@@ -651,13 +651,35 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtGameStateKeyValuePair
+	{
+		// The name of the config string variable.
+		const char* Name;
+
+		// The value of the config string variable.
+		const char* Value;
+	};
+
 	struct udtParseDataGameState
 	{
 		// Pointer to an array of match informations.
 		const udtMatchInfo* Matches;
 
+		// Pointer to an array of string key/value pairs.
+		const udtGameStateKeyValuePair* KeyValuePairs;
+
+		// Name of the player who recorded the demo.
+		const char* DemoTakerName;
+
 		// Number of elements in the array pointed to by the Matches pointer.
 		u32 MatchCount;
+
+		// Number of elements in the array pointed to by the KeyValuePairs pointer.
+		u32 KeyValuePairCount;
+
+		// Index the player who recorded the demo.
+		// Range: [0;63].
+		s32 DemoTakerPlayerIndex;
 
 		// File offset, in bytes, where the "gamestate" message is.
 		u32 FileOffset;

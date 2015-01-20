@@ -264,10 +264,22 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtGameStateKeyValuePair
+	    {
+		    public IntPtr Name; // const char*
+            public IntPtr Value; // const char*
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataGameState
 	    {
+
 		    public IntPtr Matches; // const udtMatchInfo*
+            public IntPtr KeyValuePairs; // const udtGameStateInfo*
+            public IntPtr DemoTakerName; // const char*
 		    public UInt32 MatchCount;
+            public UInt32 KeyValuePairCount;
+            public Int32 DemoTakerPlayerIndex;
 		    public UInt32 FileOffset;
 		    public Int32 FirstSnapshotTimeMs;
 		    public Int32 LastSnapshotTimeMs;
@@ -1015,6 +1027,36 @@ namespace Uber.DemoTools
             return bytes.ToString() + (bytes == 0 ? " byte" : " bytes");
         }
 
+        private static string SafeGetString(IntPtr address, string onError)
+        {
+            return Marshal.PtrToStringAnsi(address) ?? onError;
+        }
+
+        private static string SafeGetString(IntPtr address)
+        {
+            return Marshal.PtrToStringAnsi(address) ?? "";
+        }
+
+        private static string FormatDemoTaker(udtParseDataGameState info)
+        {
+            var name = SafeGetString(info.DemoTakerName, "N/A");
+
+            return string.Format("{0} (player index {1})", name, info.DemoTakerPlayerIndex);
+        }
+
+        private static void AddKeyValuePairs(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            for(uint i = 0; i < data.KeyValuePairCount; ++i)
+            {
+                var address = new IntPtr(data.KeyValuePairs.ToInt64() + i * sizeof(udtGameStateKeyValuePair));
+                var kvPair = (udtGameStateKeyValuePair)Marshal.PtrToStructure(address, typeof(udtGameStateKeyValuePair));
+
+                var key = SafeGetString(kvPair.Name, "N/A");
+                var value = SafeGetString(kvPair.Value, "N/A");
+                info.Generic.Add(Tuple.Create(space + key, value));
+            }
+        }
+
         private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
         {
             uint gsEventCount = 0;
@@ -1040,7 +1082,8 @@ namespace Uber.DemoTools
                 info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
                 info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
-  
+                info.Generic.Add(Tuple.Create(space + "Demo Taker", FormatDemoTaker(data)));
+
                 var matchCount = data.MatchCount;
                 for(uint j = 0; j < matchCount; ++j)
                 {
@@ -1053,6 +1096,8 @@ namespace Uber.DemoTools
                     var val = start + " - " + end;
                     info.Generic.Add(Tuple.Create(desc, val));
                 }
+
+                AddKeyValuePairs(info, data, space);
             }
         }
 

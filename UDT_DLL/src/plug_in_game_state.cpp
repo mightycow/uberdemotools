@@ -22,6 +22,28 @@ Quake Live 73 (and 90?):
 */
 
 
+static const char* FilteredKeys[] =
+{
+	"sv_referencedPakNames",
+	"sv_referencedPaks",
+	"sv_pakNames",
+	"sv_paks" // QL only.
+};
+
+static bool IsInterestingKey(const char* keyName)
+{
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(FilteredKeys); ++i)
+	{
+		if(StringEquals_NoCase(keyName, FilteredKeys[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 udtParserPlugInGameState::udtParserPlugInGameState() 
 	: _gameType(udtGameType::BaseQ3)
 	, _gameStateQL(udtGameStateQL::Invalid)
@@ -38,8 +60,12 @@ udtParserPlugInGameState::~udtParserPlugInGameState()
 
 void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 {
+	// We allocate 2 config strings + some small overhead for the demo taker's name,
+	// so BIG_INFO_STRING * 3 will always be enough.
 	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_matches.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_keyValuePairs.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_stringAllocator.Init((uptr)(BIG_INFO_STRING * 3) * (uptr)demoCount);
 	_gameStates.SetAllocator(FinalAllocator);
 }
 
@@ -134,7 +160,7 @@ void udtParserPlugInGameState::ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs)
 	}
 }
 
-void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& /*info*/, udtBaseParser& parser)
+void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
 	if(_firstGameState)
 	{
@@ -166,6 +192,10 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 
 	_currentGameState.FileOffset = parser._inFileOffset;
 	_currentGameState.Matches = _matches.GetEndAddress();
+	_currentGameState.KeyValuePairs = _keyValuePairs.GetEndAddress();
+	
+	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings);
+	ProcessSystemAndServerInfo(parser._inConfigStrings[CS_SYSTEMINFO], parser._inConfigStrings[CS_SERVERINFO]);
 
 	if(_gameType == udtGameType::CPMA)
 	{
@@ -269,6 +299,8 @@ void udtParserPlugInGameState::ClearGameState()
 	_currentGameState.LastSnapshotTimeMs = S32_MIN;
 	_currentGameState.MatchCount = 0;
 	_currentGameState.Matches = NULL;
+	_currentGameState.KeyValuePairCount = 0;
+	_currentGameState.KeyValuePairs = NULL;
 }
 
 void udtParserPlugInGameState::AddCurrentMatchIfValid()
@@ -290,4 +322,70 @@ void udtParserPlugInGameState::AddCurrentGameState()
 
 	ClearGameState();
 	ClearMatch();
+}
+
+void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings)
+{
+	_currentGameState.DemoTakerPlayerIndex = playerIndex;
+	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
+
+	const s32 firstPlayerCsIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
+	const udtBaseParser::udtConfigString cs = configStrings[firstPlayerCsIndex + playerIndex];
+	if(cs.String == NULL || cs.StringLength == 0)
+	{
+		return;
+	}
+
+	char* name = NULL;
+	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
+	{
+		_currentGameState.DemoTakerName = name;
+	}
+}
+
+void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtBaseParser::udtConfigString& systemCs, const udtBaseParser::udtConfigString& serverCs)
+{
+	const u32 newStringLength = systemCs.StringLength + serverCs.StringLength + 1;
+	char* const newString = (char*)_stringAllocator.Allocate((uptr)(newStringLength + 1));
+
+	memcpy(newString, systemCs.String, (size_t)systemCs.StringLength);
+	memcpy(newString + systemCs.StringLength, serverCs.String, (size_t)serverCs.StringLength);
+	newString[newStringLength - 1] = '\\';
+	newString[newStringLength] = '\0';
+
+	const u32 previousCount = _keyValuePairs.GetSize();
+
+	u32 keyStart = 1;
+	for(;;)
+	{
+		u32 keyEnd = 0;
+		if(!StringFindFirstCharacterInList(keyEnd, newString + keyStart, "\\"))
+		{
+			break;
+		}
+		keyEnd += keyStart;
+		const u32 valueStart = keyEnd + 1;
+
+		u32 valueEnd = 0;
+		if(!StringFindFirstCharacterInList(valueEnd, newString + valueStart, "\\"))
+		{
+			break;
+		}
+		valueEnd += valueStart;
+
+		newString[keyEnd] = '\0';
+		newString[valueEnd] = '\0';
+
+		if(IsInterestingKey(newString + keyStart))
+		{
+			udtGameStateKeyValuePair info;
+			info.Name = newString + keyStart;
+			info.Value = newString + valueStart;
+			_keyValuePairs.Add(info);
+		}
+
+		keyStart = valueEnd + 1;
+	}
+
+	_currentGameState.KeyValuePairCount = _keyValuePairs.GetSize() - previousCount;
 }
