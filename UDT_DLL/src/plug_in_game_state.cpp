@@ -339,7 +339,7 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	char* name = NULL;
 	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
 	{
-		_currentGameState.DemoTakerName = name;
+		_currentGameState.DemoTakerName = Q_CleanStr(name);
 	}
 }
 
