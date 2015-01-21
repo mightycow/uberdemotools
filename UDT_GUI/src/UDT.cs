@@ -1081,20 +1081,23 @@ namespace Uber.DemoTools
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
                 info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
-                info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
                 info.Generic.Add(Tuple.Create(space + "Demo Taker", FormatDemoTaker(data)));
-
+                
                 var matchCount = data.MatchCount;
-                for(uint j = 0; j < matchCount; ++j)
+                if(matchCount > 0)
                 {
-                    var matchAddress = new IntPtr(data.Matches.ToInt64() + j * sizeof(udtMatchInfo));
-                    var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
+                    info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
+                    for(uint j = 0; j < matchCount; ++j)
+                    {
+                        var matchAddress = new IntPtr(data.Matches.ToInt64() + j * sizeof(udtMatchInfo));
+                        var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
 
-                    var desc = space + "Match #" + (j + 1).ToString();
-                    var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
-                    var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
-                    var val = start + " - " + end;
-                    info.Generic.Add(Tuple.Create(desc, val));
+                        var desc = space + "Match #" + (j + 1).ToString();
+                        var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
+                        var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
+                        var val = start + " - " + end;
+                        info.Generic.Add(Tuple.Create(desc, val));
+                    }
                 }
 
                 AddKeyValuePairs(info, data, space);
