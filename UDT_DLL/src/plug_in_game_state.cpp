@@ -170,7 +170,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	if(_firstGameState)
 	{
 		_gameType = udtGameType::BaseQ3;
-		if(parser._protocol >= udtProtocol::Dm73)
+		if(parser._inProtocol >= udtProtocol::Dm73)
 		{
 			_gameType = udtGameType::QL;
 		}

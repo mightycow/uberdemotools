@@ -27,7 +27,7 @@ public:
 	~udtBaseParser();
 
 	void    InitAllocators(); // Once for all demos.
-	bool	Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex = 0, bool enablePlugIns = true); // Once for each demo.
+	bool	Init(udtContext* context, udtProtocol::Id protocol, udtProtocol::Id outProtocol, s32 gameStateIndex = 0, bool enablePlugIns = true); // Once for each demo.
 	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
 
@@ -57,9 +57,9 @@ private:
 	const char*           GetFileName() { return (_inFileName != NULL) ? _inFileName : "N/A"; }
 
 public:
-	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _protocolSizeOfEntityState]; }
-	idEntityStateBase*    GetBaseline(s32 idx) const { return (idEntityStateBase*)&_inEntityBaselines[idx * _protocolSizeOfEntityState]; }
-	idClientSnapshotBase* GetClientSnapshot(s32 idx) const { return (idClientSnapshotBase*)&_inSnapshots[idx * _protocolSizeOfClientSnapshot]; }
+	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
+	idEntityStateBase*    GetBaseline(s32 idx) const { return (idEntityStateBase*)&_inEntityBaselines[idx * _inProtocolSizeOfEntityState]; }
+	idClientSnapshotBase* GetClientSnapshot(s32 idx) const { return (idClientSnapshotBase*)&_inSnapshots[idx * _inProtocolSizeOfClientSnapshot]; }
 	
 	// You don't have to deallocate the object, but you will have to call the destructor manually yourself.
 	template<class T>
@@ -98,9 +98,10 @@ public:
 	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
 	udtVMLinearAllocator _tempAllocator;
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
-	udtProtocol::Id _protocol;
-	s32 _protocolSizeOfEntityState;
-	s32 _protocolSizeOfClientSnapshot;
+	udtProtocol::Id _inProtocol;
+	s32 _inProtocolSizeOfEntityState;
+	s32 _inProtocolSizeOfClientSnapshot;
+	udtProtocol::Id _outProtocol;
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.

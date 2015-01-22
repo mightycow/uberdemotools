@@ -6,7 +6,8 @@
 udtBaseParser::udtBaseParser() 
 {
 	_context = NULL;
-	_protocol = udtProtocol::Invalid;
+	_inProtocol = udtProtocol::Invalid;
+	_outProtocol = udtProtocol::Invalid;
 
 	UserData = NULL;
 	EnablePlugIns = true;
@@ -47,9 +48,9 @@ void udtBaseParser::InitAllocators()
 	_cuts.Init(1 << 16);
 }
 
-bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 gameStateIndex, bool enablePlugIns)
+bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtProtocol::Id outProtocol, s32 gameStateIndex, bool enablePlugIns)
 {
-	if(context == NULL || !udtIsValidProtocol(protocol) || gameStateIndex < 0)
+	if(context == NULL || !udtIsValidProtocol(inProtocol) || gameStateIndex < 0)
 	{
 		return false;
 	}
@@ -57,12 +58,13 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id protocol, s32 game
 	EnablePlugIns = enablePlugIns;
 
 	_context = context;
-	_protocol = protocol;
-	_protocolSizeOfEntityState = (s32)udtGetSizeOfIdEntityState(protocol);
-	_protocolSizeOfClientSnapshot = (s32)udtGetSizeOfidClientSnapshot(protocol);
+	_inProtocol = inProtocol;
+	_outProtocol = outProtocol;
+	_inProtocolSizeOfEntityState = (s32)udtGetSizeOfIdEntityState(inProtocol);
+	_inProtocolSizeOfClientSnapshot = (s32)udtGetSizeOfidClientSnapshot(inProtocol);
 
 	_outMsg.InitContext(context);
-	_outMsg.InitProtocol(protocol);
+	_outMsg.InitProtocol(outProtocol);
 
 	_inFileName = NULL;
 	_inFilePath = NULL;
@@ -164,7 +166,7 @@ bool udtBaseParser::ParseServerMessage()
 
 		s32 command = _inMsg.ReadByte();
 		
-		if(_protocol >= udtProtocol::Dm90)
+		if(_inProtocol >= udtProtocol::Dm90)
 		{
 			// See if this is an extension command after the EOF,
 			// which means we got data that a legacy client should ignore.
@@ -589,7 +591,7 @@ bool udtBaseParser::ParseSnapshot()
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
 
 	// Read the player info.
-	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _protocol) : NULL, GetPlayerState(&newSnap, _protocol));
+	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _inProtocol) : NULL, GetPlayerState(&newSnap, _inProtocol));
 
 	// Read in all entities.
 	if(!ParsePacketEntities(_inMsg, oldSnap, &newSnap))
@@ -617,8 +619,23 @@ bool udtBaseParser::ParseSnapshot()
 		_outMsg.WriteByte(newSnap.snapFlags);
 		_outMsg.WriteByte(areaMaskLength);
 		_outMsg.WriteData(&newSnap.areamask, areaMaskLength);
-		_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _protocol) : NULL, GetPlayerState(&newSnap, _protocol));
-		EmitPacketEntities(deltaNum ? oldSnap : NULL, &newSnap);
+		if(_outProtocol == _inProtocol)
+		{
+			_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _outProtocol) : NULL, GetPlayerState(&newSnap, _outProtocol));
+			EmitPacketEntities(deltaNum ? oldSnap : NULL, &newSnap);
+		}
+		else
+		{
+			idLargestClientSnapshot oldSnapOutProto;
+			idLargestClientSnapshot newSnapOutProto;
+			if(oldSnap)
+			{
+				ConvertSnapshot(oldSnapOutProto, _outProtocol, *oldSnap, _inProtocol);
+			}
+			ConvertSnapshot(newSnapOutProto, _outProtocol, newSnap, _inProtocol);
+			_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(&oldSnapOutProto, _outProtocol) : NULL, GetPlayerState(&newSnapOutProto, _outProtocol));
+			EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
+		}
 		++_outSnapshotsWritten;
 	}
 
@@ -651,7 +668,7 @@ bool udtBaseParser::ParseSnapshot()
 	_inSnapshot = newSnap;
 
 	// Save the frame off in the backup array for later delta comparisons.
-	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_protocolSizeOfClientSnapshot);
+	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
 
 	// Don't give the same stuff to the plug-ins more than once.
 	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
@@ -704,22 +721,25 @@ void udtBaseParser::WriteGameState()
 		_outMsg.WriteShort((s32)i);
 		_outMsg.WriteBigString(cs.String, cs.StringLength);
 	}
+
+	idLargestEntityState nullState;
+	Com_Memset(&nullState, 0, sizeof(nullState));
 	
 	// Baseline entities.
 	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
 	{
 		// We delta from the null state because we write a full entity.
 		const idEntityStateBase* const newState = GetBaseline(i);
-		idLargestEntityState nullState;
-		Com_Memset(&nullState, 0, sizeof(nullState));
 
 		// Write the baseline entity if it's not filled with 0 integers.
-		if(memcmp(&nullState, newState, _protocolSizeOfEntityState))
+		if(memcmp(&nullState, newState, _inProtocolSizeOfEntityState))
 		{
 			_outMsg.WriteByte(svc_baseline);
 
 			// @NOTE: MSG_WriteBits is called in there with newState.number as an argument.
-			_outMsg.WriteDeltaEntity(&nullState, newState, qtrue);
+			idLargestEntityState newStateOutProto;
+			ConvertEntityState(newStateOutProto, _outProtocol, *newState, _inProtocol);
+			_outMsg.WriteDeltaEntity(&nullState, &newStateOutProto, qtrue);
 		}
 	}
 	
@@ -902,8 +922,13 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		{
 			// Delta update from old position
 			// because the force parameter is qfalse, this will not result
-			// in any u8s being emitted if the entity has not changed at all.
-			_outMsg.WriteDeltaEntity(oldent, newent, qfalse);
+			// in any bytes being emitted if the entity has not changed at all.
+			idLargestEntityState oldEntOutProto;
+			idLargestEntityState newEntOutProto;
+			//if(oldent == NULL || newent == NULL) __debugbreak();
+			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
+			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
+			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, qfalse);
 			oldindex++;
 			newindex++;
 			continue;
@@ -912,16 +937,26 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		if(newnum < oldnum) 
 		{
 			// This is a new entity, send it from the baseline.
+			idLargestEntityState baselineOutProto;
+			idLargestEntityState newEntOutProto;
 			idEntityStateBase* baseline = GetBaseline(newnum);
-			_outMsg.WriteDeltaEntity(baseline, newent, qtrue);
+			//if(GetBaseline(newnum) == NULL || newent == NULL) __debugbreak();
+			ConvertEntityState(baselineOutProto, _outProtocol, *baseline, _inProtocol);
+			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
+			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, qtrue);
 			newindex++;
 			continue;
 		}
 
 		if(newnum > oldnum) 
 		{
+			if(oldent == NULL || newent == NULL) __debugbreak();
+
 			// The old entity isn't present in the new message.
-			_outMsg.WriteDeltaEntity(oldent, 0, qtrue);
+			idLargestEntityState oldEntOutProto;
+			//if(oldent == NULL) __debugbreak();
+			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
+			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, qtrue);
 			oldindex++;
 			continue;
 		}
@@ -941,7 +976,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 
 	if(unchanged) 
 	{
-		Com_Memcpy(state, old, _protocolSizeOfEntityState);
+		Com_Memcpy(state, old, _inProtocolSizeOfEntityState);
 	} 
 	else 
 	{

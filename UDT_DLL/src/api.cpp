@@ -383,7 +383,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol))
+	if(!context->Parser.Init(&context->Context, protocol, protocol))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -445,7 +445,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol, info->GameStateIndex))
+	if(!context->Parser.Init(&context->Context, protocol, protocol, info->GameStateIndex))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -634,6 +634,35 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 
 	udtMultiThreadedParsing parser;
 	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByPattern, patternInfo);
+
+	DestroyContextGroup(contextGroup);
+
+	return GetErrorCode(success, info->CancelOperation);
+}
+
+UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo)
+{
+	if(info == NULL || extraInfo == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
+	{
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+	}
+
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+	}
+
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, NULL);
 
 	DestroyContextGroup(contextGroup);
 

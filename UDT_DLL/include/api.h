@@ -63,7 +63,8 @@ struct udtProtocol
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 		AfterLastProtocol,
 		FirstProtocol = Dm68,
-		Count = AfterLastProtocol - 1
+		Count = AfterLastProtocol - 1,
+		LatestProtocol = Count
 	};
 };
 #undef UDT_PROTOCOL_ITEM
@@ -859,6 +860,9 @@ extern "C"
 
 	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
 	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
+
+	// Creates, for each demo, a new demo file with a different protocol.
+	UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo);
 
 #ifdef __cplusplus
 }

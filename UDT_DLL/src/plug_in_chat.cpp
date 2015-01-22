@@ -56,7 +56,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	chatEvent.Strings[0].OriginalCommand = AllocateString(_chatStringAllocator, tokenizer.argv(1));
 	chatEvent.Strings[1].OriginalCommand = Q_CleanStr(AllocateString(_chatStringAllocator, tokenizer.argv(1)));
 
-	const bool qlFormat = parser._protocol >= udtProtocol::Dm73;
+	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
 	{
 		for(u32 i = 0; i < 2; ++i)
