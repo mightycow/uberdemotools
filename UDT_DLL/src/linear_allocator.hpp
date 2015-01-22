@@ -52,4 +52,5 @@ private:
 	uptr _reservedByteCount;
 	uptr _commitByteCountGranularity;
 	uptr _committedByteCount;
+	uptr _peakUsedByteCount;
 };

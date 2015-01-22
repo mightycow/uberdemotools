@@ -2,6 +2,7 @@
 #include "virtual_memory.hpp"
 #include "assert_or_fatal.hpp"
 #include "allocator_tracking.hpp"
+#include "utils.hpp"
 
 #include <stddef.h> // For ptrdiff_t.
 
@@ -31,7 +32,7 @@ void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 		++stats.AllocatorCount;
 		stats.CommittedByteCount += allocator->_committedByteCount;
 		stats.ReservedByteCount += allocator->_reservedByteCount;
-		stats.UsedByteCount += allocator->_firstFreeByteIndex;
+		stats.UsedByteCount += allocator->_peakUsedByteCount;
 		node = node->Next;
 	}
 }
@@ -44,6 +45,7 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_reservedByteCount = 0;
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
+	_peakUsedByteCount = 0;
 
 	AllocatorTracker.RegisterAllocator(_listNode);
 }
@@ -125,6 +127,7 @@ u8* udtVMLinearAllocator::Allocate(uptr byteCount)
 
 	u8* const data = _addressSpaceStart + _firstFreeByteIndex;
 	_firstFreeByteIndex += byteCount;
+	_peakUsedByteCount = udt_max(_peakUsedByteCount, _firstFreeByteIndex);
 
 	return data;
 }
@@ -169,7 +172,7 @@ void udtVMLinearAllocator::SetCurrentByteCount(uptr byteCount)
 	_firstFreeByteIndex = byteCount;
 }
 
-uptr	udtVMLinearAllocator::GetCurrentByteCount() const
+uptr udtVMLinearAllocator::GetCurrentByteCount() const
 {
 	return _firstFreeByteIndex;
 }
