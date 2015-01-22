@@ -1,3 +1,9 @@
+0.5.1 (22.01.2015)
+ADD: New in the analyzer plug-in: generic info extraction, player tracking, demo taker name and index
+ADD: An API function to batch convert QL *.dm_73 demos to QL *.dm_90 demos
+CHG: Slightly bumped up the amount of memory reserved for string data in the chat plug-in
+FIX: Now using the peak used byte count instead of the currently used byte count in memory allocatotion stats
+
 0.5.0 (17.01.2015)
 CHG: New memory allocation strategy
 ADD: Memory allocators tracking

@@ -1,3 +1,9 @@
+0.4.2 (22.01.2015)
+ADD: New data when analyzing a demo: generic information, player list, demo taker name and index
+ADD: The ability to batch convert dm_73 demos to the dm_90 format
+CHG: Slightly bumped up the amount of memory reserved for string data in the chat plug-in
+FIX: Now using the peak used byte count instead of the currently used byte count in memory allocatotion stats
+
 0.4.1 (17.01.2015)
 CHG: Removing all demos at once in the GUI happens fast
 ADD: Splitting up parsing operations by file count to reserve less memory address space (and commit less pages)
