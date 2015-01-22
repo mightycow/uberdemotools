@@ -660,15 +660,40 @@ extern "C"
 		const char* Value;
 	};
 
+	struct udtGameStatePlayerInfo
+	{
+		// The player's name without color codes.
+		// If QL, the only name.
+		// If Q3, may have renamed later.
+		const char* FirstName;
+
+		// The client number.
+		// Range: [0;63].
+		s32 Index;
+
+		// Time of the first snapshot, in milli-seconds.
+		s32 FirstSnapshotTimeMs;
+
+		// Time of the last snapshot, in milli-seconds.
+		s32 LastSnapshotTimeMs;
+
+		// Index of the team the player started with.
+		// Of type udtTeam::Id.
+		u32 FirstTeam;
+	};
+
 	struct udtParseDataGameState
 	{
-		// Pointer to an array of match informations.
+		// Pointer to an array of match information.
 		const udtMatchInfo* Matches;
 
 		// Pointer to an array of string key/value pairs.
 		const udtGameStateKeyValuePair* KeyValuePairs;
 
-		// Name of the player who recorded the demo.
+		// Pointer to an array of player information.
+		const udtGameStatePlayerInfo* Players;
+
+		// Name of the player who recorded the demo without color codes.
 		const char* DemoTakerName;
 
 		// Number of elements in the array pointed to by the Matches pointer.
@@ -676,6 +701,9 @@ extern "C"
 
 		// Number of elements in the array pointed to by the KeyValuePairs pointer.
 		u32 KeyValuePairCount;
+
+		// Number of elements in the array pointed to by the Players pointer.
+		u32 PlayerCount;
 
 		// Index the player who recorded the demo.
 		// Range: [0;63].

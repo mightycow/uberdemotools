@@ -271,14 +271,26 @@ namespace Uber.DemoTools
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtGameStatePlayerInfo
+	    {
+            public IntPtr FirstName; // const char*
+            public Int32 Index;
+            public Int32 FirstSnapshotTimeMs;
+            public Int32 LastSnapshotTimeMs;
+            public UInt32 FirstTeam;
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataGameState
 	    {
 
 		    public IntPtr Matches; // const udtMatchInfo*
             public IntPtr KeyValuePairs; // const udtGameStateInfo*
+            public IntPtr Players; // const udtGameStatePlayerInfo*
             public IntPtr DemoTakerName; // const char*
 		    public UInt32 MatchCount;
             public UInt32 KeyValuePairCount;
+            public UInt32 PlayerCount;
             public Int32 DemoTakerPlayerIndex;
 		    public UInt32 FileOffset;
 		    public Int32 FirstSnapshotTimeMs;
@@ -1057,6 +1069,63 @@ namespace Uber.DemoTools
             }
         }
 
+        private static List<string> _teamNames = new List<string>();
+
+        private static string GetTeamName(uint teamIndex)
+        {
+            if(_teamNames.Count == 0)
+            {
+                _teamNames.AddRange(GetStringArray(udtStringArray.Teams));
+            }
+
+            if(teamIndex >= _teamNames.Count)
+            {
+                return "N/A";
+            }
+
+            return _teamNames[(int)teamIndex];
+        }
+
+        private static void AddPlayers(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            for(uint i = 0; i < data.PlayerCount; ++i)
+            {
+                var address = new IntPtr(data.Players.ToInt64() + i * sizeof(udtGameStatePlayerInfo));
+                var player = (udtGameStatePlayerInfo)Marshal.PtrToStructure(address, typeof(udtGameStatePlayerInfo));
+
+                var desc = space + "Client Number " + player.Index.ToString();
+                var startTime = FormatMinutesSecondsFromMs(player.FirstSnapshotTimeMs);
+                var endTime = FormatMinutesSecondsFromMs(player.LastSnapshotTimeMs);
+                var time = startTime + " - " + endTime;
+                var name = SafeGetString(player.FirstName, "N/A");
+                var value = string.Format("{0}, {1}, team {2}", name, time, GetTeamName(player.FirstTeam));
+
+                info.Generic.Add(Tuple.Create(desc, value));
+            }
+        }
+
+        private static void AddMatches(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            var matchCount = data.MatchCount;
+            if(matchCount == 0)
+            {
+                return;
+            }
+
+            info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
+            for(uint i = 0; i < matchCount; ++i)
+            {
+                var matchAddress = new IntPtr(data.Matches.ToInt64() + i * sizeof(udtMatchInfo));
+                var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
+
+                var desc = space + "Match #" + (i + 1).ToString();
+                var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
+                var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
+                var val = start + " - " + end;
+                info.Generic.Add(Tuple.Create(desc, val));
+            }
+        }
+
         private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
         {
             uint gsEventCount = 0;
@@ -1082,24 +1151,8 @@ namespace Uber.DemoTools
                 info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
                 info.Generic.Add(Tuple.Create(space + "Demo Taker", FormatDemoTaker(data)));
-                
-                var matchCount = data.MatchCount;
-                if(matchCount > 0)
-                {
-                    info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
-                    for(uint j = 0; j < matchCount; ++j)
-                    {
-                        var matchAddress = new IntPtr(data.Matches.ToInt64() + j * sizeof(udtMatchInfo));
-                        var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
-
-                        var desc = space + "Match #" + (j + 1).ToString();
-                        var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
-                        var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
-                        var val = start + " - " + end;
-                        info.Generic.Add(Tuple.Create(desc, val));
-                    }
-                }
-
+                AddMatches(info, data, space);
+                AddPlayers(info, data, space);
                 AddKeyValuePairs(info, data, space);
             }
         }
