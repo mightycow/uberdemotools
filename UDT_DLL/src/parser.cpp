@@ -925,7 +925,6 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			// in any bytes being emitted if the entity has not changed at all.
 			idLargestEntityState oldEntOutProto;
 			idLargestEntityState newEntOutProto;
-			//if(oldent == NULL || newent == NULL) __debugbreak();
 			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
 			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, qfalse);
@@ -940,7 +939,6 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			idLargestEntityState baselineOutProto;
 			idLargestEntityState newEntOutProto;
 			idEntityStateBase* baseline = GetBaseline(newnum);
-			//if(GetBaseline(newnum) == NULL || newent == NULL) __debugbreak();
 			ConvertEntityState(baselineOutProto, _outProtocol, *baseline, _inProtocol);
 			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
 			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, qtrue);
@@ -950,11 +948,8 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 
 		if(newnum > oldnum) 
 		{
-			if(oldent == NULL || newent == NULL) __debugbreak();
-
 			// The old entity isn't present in the new message.
 			idLargestEntityState oldEntOutProto;
-			//if(oldent == NULL) __debugbreak();
 			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, qtrue);
 			oldindex++;
