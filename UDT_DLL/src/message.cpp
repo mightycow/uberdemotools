@@ -1058,7 +1058,7 @@ void udtMessage::ReadDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* 
 void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
 	s32				i;
-	idPlayerStateBase	dummy;
+	idLargestPlayerState dummy;
 	s32				c;
 	s32				*fromF, *toF;
 	s32				lc;
@@ -1246,7 +1246,7 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	s32			bits;
 	s32			*fromF, *toF;
 	s32			trunc;
-	idPlayerStateBase	dummy;
+	idLargestPlayerState dummy;
 
 	if(!from) 
 	{
@@ -1364,14 +1364,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	}
 }
 
-// @FIXME: Move, rename and make a better version :o
-#if defined(UDT_GCC)
-//#	define STATIC_ASSERT(x) _Static_assert(x, #x) // Requires C++ 1x support.
-#	define STATIC_ASSERT(x)
-#else
-#	define STATIC_ASSERT(x) extern s32 dummy##__LINE__[(s32)x != 0]
-#endif
-
 /*
 ==================
 idMessage::WriteDeltaEntity
@@ -1400,9 +1392,11 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 	// the "number" field is not part of the field list
 	// if this assert fails, someone added a field to the entityState_t
 	// struct without updating the message fields
+#define STATIC_ASSERT(x) static_assert(x, #x)
 	STATIC_ASSERT(EntityStateFieldCount68 + 1 == sizeof(idEntityState68) / 4);
 	STATIC_ASSERT(EntityStateFieldCount73 + 1 == sizeof(idEntityState73) / 4);
 	STATIC_ASSERT(EntityStateFieldCount90 + 1 == sizeof(idEntityState90) / 4);
+#undef STATIC_ASSERT
 
 	// a NULL to is a delta remove message
 	if(to == NULL) 
@@ -1423,7 +1417,7 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 
 	lc = 0;
 	const idNetField* field;
-	// build the change vector as u8s so it is endien independent
+	// build the change vector as bytes so it is endian independent
 	for(i = 0, field = _entityStateFields ; i < _entityStateFieldCount ; i++, field++) 
 	{
 		fromF = (s32 *)((u8 *)from + field->offset);
@@ -1482,13 +1476,13 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 				if(trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
 					trunc + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS)) 
 				{
-					// send as small s32eger
+					// send as small integer
 					WriteBits(0, 1);
 					WriteBits(trunc + FLOAT_INT_BIAS, FLOAT_INT_BITS);
 				} 
 				else 
 				{
-					// send as full f32ing pos32 value
+					// send as full floating point value
 					WriteBits(1, 1);
 					WriteBits(*toF, 32);
 				}
@@ -1503,7 +1497,7 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 			else 
 			{
 				WriteBits(1, 1);
-				// s32eger
+				// integer
 				WriteBits(*toF, field->bits);
 			}
 		}

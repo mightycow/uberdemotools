@@ -91,7 +91,7 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 		}
 
 		// Did we use a weapon that's not allowed?
-		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, parser._protocol))
+		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, parser._inProtocol))
 		{
 			AddCurrentSectionIfValid();
 			continue;

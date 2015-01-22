@@ -63,7 +63,8 @@ struct udtProtocol
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 		AfterLastProtocol,
 		FirstProtocol = Dm68,
-		Count = AfterLastProtocol - 1
+		Count = AfterLastProtocol - 1,
+		LatestProtocol = Count
 	};
 };
 #undef UDT_PROTOCOL_ITEM
@@ -651,13 +652,63 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtGameStateKeyValuePair
+	{
+		// The name of the config string variable.
+		const char* Name;
+
+		// The value of the config string variable.
+		const char* Value;
+	};
+
+	struct udtGameStatePlayerInfo
+	{
+		// The player's name without color codes.
+		// If QL, the only name.
+		// If Q3, may have renamed later.
+		const char* FirstName;
+
+		// The client number.
+		// Range: [0;63].
+		s32 Index;
+
+		// Time of the first snapshot, in milli-seconds.
+		s32 FirstSnapshotTimeMs;
+
+		// Time of the last snapshot, in milli-seconds.
+		s32 LastSnapshotTimeMs;
+
+		// Index of the team the player started with.
+		// Of type udtTeam::Id.
+		u32 FirstTeam;
+	};
+
 	struct udtParseDataGameState
 	{
-		// Pointer to an array of match informations.
+		// Pointer to an array of match information.
 		const udtMatchInfo* Matches;
+
+		// Pointer to an array of string key/value pairs.
+		const udtGameStateKeyValuePair* KeyValuePairs;
+
+		// Pointer to an array of player information.
+		const udtGameStatePlayerInfo* Players;
+
+		// Name of the player who recorded the demo without color codes.
+		const char* DemoTakerName;
 
 		// Number of elements in the array pointed to by the Matches pointer.
 		u32 MatchCount;
+
+		// Number of elements in the array pointed to by the KeyValuePairs pointer.
+		u32 KeyValuePairCount;
+
+		// Number of elements in the array pointed to by the Players pointer.
+		u32 PlayerCount;
+
+		// Index the player who recorded the demo.
+		// Range: [0;63].
+		s32 DemoTakerPlayerIndex;
 
 		// File offset, in bytes, where the "gamestate" message is.
 		u32 FileOffset;
@@ -809,6 +860,9 @@ extern "C"
 
 	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
 	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
+
+	// Creates, for each demo that doesn't have the latest protocol, a new demo file with the latest protocol.
+	UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo);
 
 #ifdef __cplusplus
 }

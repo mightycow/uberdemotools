@@ -16,9 +16,11 @@ namespace Uber.DemoTools
 #if (UDT_X86)
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
+        private const int MaxBatchSizeConverting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
+        private const int MaxBatchSizeConverting = 2048;
 #endif
 
         private const string _dllPath = "UDT.dll";
@@ -264,10 +266,34 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtGameStateKeyValuePair
+	    {
+		    public IntPtr Name; // const char*
+            public IntPtr Value; // const char*
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtGameStatePlayerInfo
+	    {
+            public IntPtr FirstName; // const char*
+            public Int32 Index;
+            public Int32 FirstSnapshotTimeMs;
+            public Int32 LastSnapshotTimeMs;
+            public UInt32 FirstTeam;
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataGameState
 	    {
+
 		    public IntPtr Matches; // const udtMatchInfo*
+            public IntPtr KeyValuePairs; // const udtGameStateInfo*
+            public IntPtr Players; // const udtGameStatePlayerInfo*
+            public IntPtr DemoTakerName; // const char*
 		    public UInt32 MatchCount;
+            public UInt32 KeyValuePairCount;
+            public UInt32 PlayerCount;
+            public Int32 DemoTakerPlayerIndex;
 		    public UInt32 FileOffset;
 		    public Int32 FirstSnapshotTimeMs;
 		    public Int32 LastSnapshotTimeMs;
@@ -356,6 +382,9 @@ namespace Uber.DemoTools
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByPatternArg patternInfo);
 
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtConvertDemoFilesToLatestProtocol(ref udtParseArg info, ref udtMultiParseArg extraInfo);
+
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
         { 
@@ -421,6 +450,11 @@ namespace Uber.DemoTools
             }
 
             return "invalid error code";
+        }
+
+        public static udtProtocol GetProtocolFromFilePath(string filePath)
+        {
+            return udtGetProtocolByFilePath(filePath);
         }
 
         public static udtCutByFragArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
@@ -818,6 +852,89 @@ namespace Uber.DemoTools
             return result == udtErrorCode.None;
         }
 
+        public static bool ConvertDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var timer = new Stopwatch();
+            timer.Start();
+
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeConverting)
+            {
+                var result = ConvertDemosImpl(ref parseArg, filePaths, maxThreadCount);
+                PrintExecutionTime(timer);
+                return result;
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var batchCount = (fileCount + MaxBatchSizeConverting - 1) / MaxBatchSizeConverting;
+            var filesPerBatch = fileCount / batchCount;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+                fileIndex += currentFileCount;
+
+                ConvertDemosImpl(ref newParseArg, currentFiles, maxThreadCount);
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    break;
+                }
+            }
+
+            PrintExecutionTime(timer);
+
+            return true;
+        }
+
+        private static bool ConvertDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var resources = new ArgumentResources();
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = filePath;
+                resources.GlobalAllocationHandles.Add(filePath);
+            }
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtConvertDemoFilesToLatestProtocol(ref parseArg, ref multiParseArg);
+            }
+            finally
+            {
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
+        }
+
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
             var timer = new Stopwatch();
@@ -1015,6 +1132,93 @@ namespace Uber.DemoTools
             return bytes.ToString() + (bytes == 0 ? " byte" : " bytes");
         }
 
+        private static string SafeGetString(IntPtr address, string onError)
+        {
+            return Marshal.PtrToStringAnsi(address) ?? onError;
+        }
+
+        private static string SafeGetString(IntPtr address)
+        {
+            return Marshal.PtrToStringAnsi(address) ?? "";
+        }
+
+        private static string FormatDemoTaker(udtParseDataGameState info)
+        {
+            var name = SafeGetString(info.DemoTakerName, "N/A");
+
+            return string.Format("{0} (player index {1})", name, info.DemoTakerPlayerIndex);
+        }
+
+        private static void AddKeyValuePairs(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            for(uint i = 0; i < data.KeyValuePairCount; ++i)
+            {
+                var address = new IntPtr(data.KeyValuePairs.ToInt64() + i * sizeof(udtGameStateKeyValuePair));
+                var kvPair = (udtGameStateKeyValuePair)Marshal.PtrToStructure(address, typeof(udtGameStateKeyValuePair));
+
+                var key = SafeGetString(kvPair.Name, "N/A");
+                var value = SafeGetString(kvPair.Value, "N/A");
+                info.Generic.Add(Tuple.Create(space + key, value));
+            }
+        }
+
+        private static List<string> _teamNames = new List<string>();
+
+        private static string GetTeamName(uint teamIndex)
+        {
+            if(_teamNames.Count == 0)
+            {
+                _teamNames.AddRange(GetStringArray(udtStringArray.Teams));
+            }
+
+            if(teamIndex >= _teamNames.Count)
+            {
+                return "N/A";
+            }
+
+            return _teamNames[(int)teamIndex];
+        }
+
+        private static void AddPlayers(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            for(uint i = 0; i < data.PlayerCount; ++i)
+            {
+                var address = new IntPtr(data.Players.ToInt64() + i * sizeof(udtGameStatePlayerInfo));
+                var player = (udtGameStatePlayerInfo)Marshal.PtrToStructure(address, typeof(udtGameStatePlayerInfo));
+
+                var desc = space + "Client Number " + player.Index.ToString();
+                var startTime = FormatMinutesSecondsFromMs(player.FirstSnapshotTimeMs);
+                var endTime = FormatMinutesSecondsFromMs(player.LastSnapshotTimeMs);
+                var time = startTime + " - " + endTime;
+                var name = SafeGetString(player.FirstName, "N/A");
+                var value = string.Format("{0}, {1}, team {2}", name, time, GetTeamName(player.FirstTeam));
+
+                info.Generic.Add(Tuple.Create(desc, value));
+            }
+        }
+
+        private static void AddMatches(DemoInfo info, udtParseDataGameState data, string space)
+        {
+            var matchCount = data.MatchCount;
+            if(matchCount == 0)
+            {
+                return;
+            }
+
+            info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
+            for(uint i = 0; i < matchCount; ++i)
+            {
+                var matchAddress = new IntPtr(data.Matches.ToInt64() + i * sizeof(udtMatchInfo));
+                var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
+
+                var desc = space + "Match #" + (i + 1).ToString();
+                var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
+                var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
+                var val = start + " - " + end;
+                info.Generic.Add(Tuple.Create(desc, val));
+            }
+        }
+
         private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
         {
             uint gsEventCount = 0;
@@ -1039,20 +1243,10 @@ namespace Uber.DemoTools
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
                 info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
-                info.Generic.Add(Tuple.Create(space + "Matches", data.MatchCount.ToString()));
-  
-                var matchCount = data.MatchCount;
-                for(uint j = 0; j < matchCount; ++j)
-                {
-                    var matchAddress = new IntPtr(data.Matches.ToInt64() + j * sizeof(udtMatchInfo));
-                    var matchData = (udtMatchInfo)Marshal.PtrToStructure(matchAddress, typeof(udtMatchInfo));
-
-                    var desc = space + "Match #" + (j + 1).ToString();
-                    var start = FormatMinutesSecondsFromMs(matchData.MatchStartTimeMs);
-                    var end = FormatMinutesSecondsFromMs(matchData.MatchEndTimeMs);
-                    var val = start + " - " + end;
-                    info.Generic.Add(Tuple.Create(desc, val));
-                }
+                info.Generic.Add(Tuple.Create(space + "Demo Taker", FormatDemoTaker(data)));
+                AddMatches(info, data, space);
+                AddPlayers(info, data, space);
+                AddKeyValuePairs(info, data, space);
             }
         }
 

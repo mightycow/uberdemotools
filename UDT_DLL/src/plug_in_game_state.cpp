@@ -22,6 +22,28 @@ Quake Live 73 (and 90?):
 */
 
 
+static const char* FilteredKeys[] =
+{
+	"sv_referencedPakNames",
+	"sv_referencedPaks",
+	"sv_pakNames",
+	"sv_paks" // QL only.
+};
+
+static bool IsInterestingKey(const char* keyName)
+{
+	for(u32 i = 0; i < (u32)UDT_COUNT_OF(FilteredKeys); ++i)
+	{
+		if(StringEquals_NoCase(keyName, FilteredKeys[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 udtParserPlugInGameState::udtParserPlugInGameState() 
 	: _gameType(udtGameType::BaseQ3)
 	, _gameStateQL(udtGameStateQL::Invalid)
@@ -29,6 +51,7 @@ udtParserPlugInGameState::udtParserPlugInGameState()
 	, _nextSnapshotIsWarmUpEnd(false)
 {
 	ClearGameState();
+	ClearPlayerInfos();
 	ClearMatch();
 }
 
@@ -38,8 +61,15 @@ udtParserPlugInGameState::~udtParserPlugInGameState()
 
 void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 {
+	// With the string allocator, we allocate:
+	// - 2 config strings
+	// - the demo taker's name
+	// - player names for everyone who connects during the game
 	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_matches.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_keyValuePairs.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_players.Init((uptr)(1 << 16) * (uptr)demoCount);
+	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_gameStates.SetAllocator(FinalAllocator);
 }
 
@@ -52,6 +82,7 @@ void udtParserPlugInGameState::StartDemoAnalysis()
 
 	ClearGameState();
 	ClearMatch();
+	ClearPlayerInfos();
 }
 
 void udtParserPlugInGameState::FinishDemoAnalysis()
@@ -134,12 +165,12 @@ void udtParserPlugInGameState::ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs)
 	}
 }
 
-void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& /*info*/, udtBaseParser& parser)
+void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
 	if(_firstGameState)
 	{
 		_gameType = udtGameType::BaseQ3;
-		if(parser._protocol >= udtProtocol::Dm73)
+		if(parser._inProtocol >= udtProtocol::Dm73)
 		{
 			_gameType = udtGameType::QL;
 		}
@@ -166,6 +197,17 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 
 	_currentGameState.FileOffset = parser._inFileOffset;
 	_currentGameState.Matches = _matches.GetEndAddress();
+	_currentGameState.KeyValuePairs = _keyValuePairs.GetEndAddress();
+	_currentGameState.Players = _players.GetEndAddress();
+	
+	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings);
+	ProcessSystemAndServerInfo(parser._inConfigStrings[CS_SYSTEMINFO], parser._inConfigStrings[CS_SERVERINFO]);
+
+	const s32 playerCSBaseIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
+	for(s32 i = 0; i < 64; ++i)
+	{
+		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
+	}
 
 	if(_gameType == udtGameType::CPMA)
 	{
@@ -203,6 +245,12 @@ void udtParserPlugInGameState::ProcessSnapshotMessage(const udtSnapshotCallbackA
 			_currentMatch.WarmUpEndTimeMs = parser._inServerTime;
 		}
 	}
+
+	for(s32 i = 0; i < 64; ++i)
+	{
+		_playerInfos[i].FirstSnapshotTimeMs = udt_min(_playerInfos[i].FirstSnapshotTimeMs, parser._inServerTime);
+		_playerInfos[i].LastSnapshotTimeMs = udt_max(_playerInfos[i].LastSnapshotTimeMs, parser._inServerTime);
+	}
 }
 
 void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
@@ -216,6 +264,15 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	}
 
 	const char* const configString = tokenizer.argv(2);
+	if(_gameType == udtGameType::QL && csIndex >= CS_PLAYERS_73p && csIndex < CS_PLAYERS_73p + 64)
+	{
+		ProcessPlayerInfo(csIndex - CS_PLAYERS_73p, parser._inConfigStrings[csIndex]);
+	}
+	else if(_gameType != udtGameType::QL && csIndex >= CS_PLAYERS_68 && csIndex < CS_PLAYERS_68 + 64)
+	{
+		ProcessPlayerInfo(csIndex - CS_PLAYERS_68, parser._inConfigStrings[csIndex]);
+	}
+
 	if(_gameType == udtGameType::CPMA)
 	{
 		if(csIndex == CS_CPMA_GAME_INFO)
@@ -262,6 +319,18 @@ void udtParserPlugInGameState::ClearMatch()
 	_currentMatch.MatchEndTimeMs = S32_MIN;
 }
 
+void udtParserPlugInGameState::ClearPlayerInfos()
+{
+	for(s32 i = 0; i < 64; ++i)
+	{
+		_playerInfos[i].FirstName = NULL;
+		_playerInfos[i].FirstSnapshotTimeMs = S32_MAX;
+		_playerInfos[i].LastSnapshotTimeMs = S32_MIN;
+		_playerInfos[i].Index = -1;
+		_playerInfos[i].FirstTeam = (u32)-1;
+	}
+}
+
 void udtParserPlugInGameState::ClearGameState()
 {
 	_currentGameState.FileOffset = 0;
@@ -269,6 +338,10 @@ void udtParserPlugInGameState::ClearGameState()
 	_currentGameState.LastSnapshotTimeMs = S32_MIN;
 	_currentGameState.MatchCount = 0;
 	_currentGameState.Matches = NULL;
+	_currentGameState.KeyValuePairCount = 0;
+	_currentGameState.KeyValuePairs = NULL;
+	_currentGameState.PlayerCount = 0;
+	_currentGameState.Players = NULL;
 }
 
 void udtParserPlugInGameState::AddCurrentMatchIfValid()
@@ -283,11 +356,142 @@ void udtParserPlugInGameState::AddCurrentMatchIfValid()
 	ClearMatch();
 }
 
+void udtParserPlugInGameState::AddCurrentPlayersIfValid()
+{
+	for(s32 i = 0; i < 64; ++i)
+	{
+		if(_playerInfos[i].Index == i)
+		{
+			_players.Add(_playerInfos[i]);
+			++_currentGameState.PlayerCount;
+		}
+	}
+
+	ClearPlayerInfos();
+}
+
 void udtParserPlugInGameState::AddCurrentGameState()
 {
 	AddCurrentMatchIfValid();
+	AddCurrentPlayersIfValid();
 	_gameStates.Add(_currentGameState);
 
 	ClearGameState();
 	ClearMatch();
+	ClearPlayerInfos();
+}
+
+void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings)
+{
+	_currentGameState.DemoTakerPlayerIndex = playerIndex;
+	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
+
+	const s32 firstPlayerCsIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
+	const udtBaseParser::udtConfigString cs = configStrings[firstPlayerCsIndex + playerIndex];
+	if(cs.String == NULL || cs.StringLength == 0)
+	{
+		return;
+	}
+
+	char* name = NULL;
+	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
+	{
+		_currentGameState.DemoTakerName = Q_CleanStr(name);
+	}
+}
+
+void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtBaseParser::udtConfigString& systemCs, const udtBaseParser::udtConfigString& serverCs)
+{
+	const u32 newStringLength = systemCs.StringLength + serverCs.StringLength + 1;
+	char* const newString = (char*)_stringAllocator.Allocate((uptr)(newStringLength + 1));
+
+	memcpy(newString, systemCs.String, (size_t)systemCs.StringLength);
+	memcpy(newString + systemCs.StringLength, serverCs.String, (size_t)serverCs.StringLength);
+	newString[newStringLength - 1] = '\\';
+	newString[newStringLength] = '\0';
+
+	const u32 previousCount = _keyValuePairs.GetSize();
+
+	u32 keyStart = 1;
+	for(;;)
+	{
+		u32 keyEnd = 0;
+		if(!StringFindFirstCharacterInList(keyEnd, newString + keyStart, "\\"))
+		{
+			break;
+		}
+		keyEnd += keyStart;
+		const u32 valueStart = keyEnd + 1;
+
+		u32 valueEnd = 0;
+		if(!StringFindFirstCharacterInList(valueEnd, newString + valueStart, "\\"))
+		{
+			break;
+		}
+		valueEnd += valueStart;
+
+		newString[keyEnd] = '\0';
+		newString[valueEnd] = '\0';
+
+		if(IsInterestingKey(newString + keyStart))
+		{
+			udtGameStateKeyValuePair info;
+			info.Name = newString + keyStart;
+			info.Value = newString + valueStart;
+			_keyValuePairs.Add(info);
+		}
+
+		keyStart = valueEnd + 1;
+	}
+
+	_currentGameState.KeyValuePairCount = _keyValuePairs.GetSize() - previousCount;
+}
+
+void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString)
+{
+	// Player connected?
+	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
+	{
+		// @NOTE: The cast is necessary because GCC fears the app will overwrite constant data.
+		char* name = (char*)"N/A";
+		if(!ParseConfigStringValueString(name, _stringAllocator, "n", configString.String))
+		{
+			name = (char*)"N/A";
+		}
+		else
+		{
+			name = Q_CleanStr(name);
+		}
+
+		s32 team = -1;
+		if(!ParseConfigStringValueInt(team, "t", configString.String))
+		{
+			team = -1;
+		}
+
+		_playerInfos[playerIndex].Index = playerIndex;
+		_playerInfos[playerIndex].FirstName = name;
+		_playerInfos[playerIndex].FirstTeam = team;
+	}
+	// Player info changed?
+	else if(_playerInfos[playerIndex].Index == playerIndex && configString.String != NULL && configString.StringLength > 0)
+	{
+		//_playerInfos[playerIndex].LastSnapshotTimeMs = udt_max(_playerInfos[playerIndex].LastSnapshotTimeMs, serverTimeMs);
+		//_playerInfos[playerIndex].FirstSnapshotTimeMs = udt_min(_playerInfos[playerIndex].FirstSnapshotTimeMs, serverTimeMs);
+	}
+	// Player disconnected?
+	else if(_playerInfos[playerIndex].Index == playerIndex && (configString.String == NULL || configString.StringLength == 0))
+	{
+		//_playerInfos[playerIndex].LastSnapshotTimeMs = udt_max(_playerInfos[playerIndex].LastSnapshotTimeMs, serverTimeMs);
+		//_playerInfos[playerIndex].FirstSnapshotTimeMs = udt_min(_playerInfos[playerIndex].FirstSnapshotTimeMs, serverTimeMs);
+
+		_players.Add(_playerInfos[playerIndex]);
+		++_currentGameState.PlayerCount;
+
+		_playerInfos[playerIndex].Index = -1;
+		_playerInfos[playerIndex].FirstName = NULL;
+		_playerInfos[playerIndex].FirstSnapshotTimeMs = S32_MAX;
+		_playerInfos[playerIndex].LastSnapshotTimeMs = S32_MIN;
+		_playerInfos[playerIndex].FirstTeam = (u32)-1;
+	}
 }

@@ -263,6 +263,10 @@ static void ThreadFunction(void* userData)
 		{
 			success = CutByPattern(data->Context, &newParseInfo, shared->FilePaths[i]);
 		}
+		else if(shared->JobType == (u32)udtParsingJobType::Conversion)
+		{
+			success = ConvertDemoFile(data->Context, &newParseInfo, shared->FilePaths[i]);
+		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;

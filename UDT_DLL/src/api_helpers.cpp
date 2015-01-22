@@ -16,6 +16,14 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		return true;
 	}
 
+	if(jobType == udtParsingJobType::Conversion)
+	{
+		context.Init(demoCount, NULL, 0);
+		return true;
+	}
+	
+	// Remaining case: udtParsingJobType::CutByPattern
+
 	if(patternInfo == NULL)
 	{
 		return false;
@@ -58,7 +66,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 		return false;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol))
+	if(!context->Parser.Init(&context->Context, protocol, protocol))
 	{
 		return false;
 	}
@@ -132,7 +140,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	}
 	
 	// This will clear the plug-in's section list.
-	if(!context->Parser.Init(&context->Context, protocol, gsIndex, false))
+	if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
 	{
 		return false;
 	}
@@ -157,6 +165,50 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
 
 	return result;
+}
+
+bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
+{
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	if(protocol == udtProtocol::LatestProtocol)
+	{
+		return true;
+	}
+
+	context->ResetForNextDemo(false);
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, udtProtocol::LatestProtocol))
+	{
+		return false;
+	}
+
+	context->Parser.SetFilePath(demoFilePath);
+
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
+	context->Parser.AddCut(0, S32_MIN, S32_MAX, &CallbackConvertedDemoFileStreamCreation, "", &cutCbInfo);
+
+	if(!RunParser(context->Parser, file, info->CancelOperation))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 struct SingleThreadProgressContext
@@ -256,10 +308,15 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		if(jobType == udtParsingJobType::General)
 		{
 			success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
+			ConvertDemoFile(context, &newInfo, extraInfo->FilePaths[i]);
 		}
 		else if(jobType == udtParsingJobType::CutByPattern)
 		{
 			success = CutByPattern(context, &newInfo, extraInfo->FilePaths[i]);
+		}
+		else if(jobType == udtParsingJobType::Conversion)
+		{
+			success = ConvertDemoFile(context, &newInfo, extraInfo->FilePaths[i]);
 		}
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 

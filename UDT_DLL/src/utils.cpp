@@ -91,7 +91,7 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 		"_", 
 		endTime, 
 		veryShortDesc ? shortDesc : "",
-		udtGetFileExtensionByProtocol(parser->_protocol) 
+		udtGetFileExtensionByProtocol(parser->_inProtocol) 
 	};
 	char* outputFilePath = NULL;
 	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
@@ -103,6 +103,53 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 	}
 
 	parser->_context->LogInfo("Writing cut demo: %s", outputFilePath);
+
+	return stream;
+}
+
+udtStream* CallbackConvertedDemoFileStreamCreation(s32 /*startTimeMs*/, s32 /*endTimeMs*/, const char* /*veryShortDesc*/, udtBaseParser* parser, void* userData)
+{
+	udtVMLinearAllocator& tempAllocator = parser->_tempAllocator;
+	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
+	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
+
+	char* inputFileName = NULL;
+	if(parser->_inFilePath != NULL)
+	{
+		GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath);
+	}
+	else
+	{
+		inputFileName = AllocateString(tempAllocator, "NEW_UDT_DEMO");
+	}
+
+	char* outputFilePathStart = NULL;
+	if(info != NULL && info->OutputFolderPath != NULL)
+	{
+		StringPathCombine(outputFilePathStart, tempAllocator, info->OutputFolderPath, inputFileName);
+	}
+	else
+	{
+		char* inputFolderPath = NULL;
+		GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
+		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
+	}
+
+	const char* outputFilePathParts[] =
+	{
+		outputFilePathStart,
+		udtGetFileExtensionByProtocol(parser->_outProtocol)
+	};
+	char* outputFilePath = NULL;
+	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
+
+	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
+	if(stream == NULL || !stream->Open(outputFilePath, udtFileOpenMode::Write))
+	{
+		return NULL;
+	}
+
+	parser->_context->LogInfo("Writing converted demo: %s", outputFilePath);
 
 	return stream;
 }
@@ -706,7 +753,7 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	s32 inServerMessageSequence;
 
 	inMsg.InitContext(context);
-	inMsg.InitProtocol(parser._protocol);
+	inMsg.InitProtocol(parser._inProtocol);
 
 	udtTimer timer;
 	timer.Start();
@@ -1078,4 +1125,50 @@ void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context
 	context.LogInfo("Used memory: %s", bytes);
 	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
 	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
+}
+
+void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, udtProtocol::Id outProtocol, const idClientSnapshotBase& inSnapshot, udtProtocol::Id inProtocol)
+{
+	if(outProtocol == inProtocol)
+	{
+		memcpy(&outSnapshot, &inSnapshot, (size_t)udtGetSizeOfidClientSnapshot(inProtocol));
+		return;
+	}
+
+	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
+	{
+		(idClientSnapshotBase&)outSnapshot = inSnapshot;
+		*GetPlayerState(&outSnapshot, outProtocol) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, inProtocol);
+		idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, outProtocol);
+		//idPlayerState73& in = *(idPlayerState73*)GetPlayerState((idClientSnapshotBase*)&inSnapshot, inProtocol);
+		out.doubleJumped = 0;
+		out.jumpTime = 0;
+		out.unknown1 = 0;
+		out.unknown2 = 0;
+		out.unknown3 = 0;
+		out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
+		// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
+		return;
+	}
+}
+
+void ConvertEntityState(idLargestEntityState& outEntityState, udtProtocol::Id outProtocol, const idEntityStateBase& inEntityState, udtProtocol::Id inProtocol)
+{
+	if(outProtocol == inProtocol)
+	{
+		memcpy(&outEntityState, &inEntityState, (size_t)udtGetSizeOfIdEntityState(inProtocol));
+		return;
+	}
+
+	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
+	{
+		idEntityState90& out = (idEntityState90&)outEntityState;
+		idEntityState73& in = (idEntityState73&)inEntityState;
+		(idEntityStateBase&)outEntityState = inEntityState;
+		out.pos_gravity = in.pos_gravity;
+		out.apos_gravity = in.apos_gravity;
+		out.jumpTime = 0;
+		out.doubleJumped = 0;
+		return;
+	}
 }

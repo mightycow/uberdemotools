@@ -3,32 +3,117 @@ Parsing with plug-ins:
 - GameState
 - Obituaries
 
-Before doing any changes to the allocation system
+Cutting with analyzers:
+- Chat
+- Mid-air
+- Multi-rail
+- Sequences
 
-Test #1: 576 files, 1.03 GB
-Allocator count: 4053
-Reserved memory: 9.790 GB
-Committed memory: 21.793 MB
-Used memory: 9.279 MB
+++++++++++++++++++++++++++++++++++
++ WITH THE OLD ALLOCATION SYSTEM +
+++++++++++++++++++++++++++++++++++
 
-Test #2: 1901 files, 3.22 GB
+Test folder #1: 1901 files, 3.22 GB
+Analyze
+Split: none
+==========================================================
+File count: 1901
+Thread count: 1
 Allocator count: 13328
 Reserved memory: 32.192 GB
 Committed memory: 69.844 MB
 Used memory: 28.840 MB
+Physical memory pages usage: 41.3%
 
-With the new allocation system
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
++ WITH THE NEW ALLOCATION SYSTEM (DLL 0.5.0 - GUI 0.4.1) +
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-*** Subject to change ***
-Test #1: 576 files, 1.03 GB
+Test folder #1: 1901 files, 3.22 GB
+Analyze
+Split: 512
+==========================================================
+File count: 475
+Thread count: 1
 Allocator count: 26
-Reserved memory: 239.543 MB
-Committed memory: 8.031 MB
-Used memory: 7.956 MB
-
-*** Subject to change ***
-Test #2: 1901 files, 3.22 GB
+Reserved memory: 198.594 MB
+Committed memory: 7.424 MB
+Used memory: 7.357 MB
+Physical memory pages usage: 99.1%
+----------------------------------------------------------
+File count: 475
+Thread count: 1
 Allocator count: 26
-Reserved memory: 736.484 MB
-Committed memory: 26.816 MB
-Used memory: 26.739 MB
+Reserved memory: 198.594 MB
+Committed memory: 8.725 MB
+Used memory: 8.668 MB
+Physical memory pages usage: 99.3%
+----------------------------------------------------------
+File count: 475
+Thread count: 1
+Allocator count: 26
+Reserved memory: 198.594 MB
+Committed memory: 8.162 MB
+Used memory: 8.093 MB
+Physical memory pages usage: 99.1%
+----------------------------------------------------------
+File count: 476
+Thread count: 1
+Allocator count: 26
+Reserved memory: 198.969 MB
+Committed memory: 6.693 MB
+Used memory: 6.629 MB
+Physical memory pages usage: 99.0%
+==========================================================
+File count: 475
+Thread count: 4
+Allocator count: 89
+Reserved memory: 260.008 MB
+Committed memory: 10.646 MB
+Used memory: 10.378 MB
+Physical memory pages usage: 97.5%
+----------------------------------------------------------
+File count: 475
+Thread count: 4
+Allocator count: 89
+Reserved memory: 260.008 MB
+Committed memory: 11.967 MB
+Used memory: 11.689 MB
+Physical memory pages usage: 97.7%
+----------------------------------------------------------
+File count: 475
+Thread count: 4
+Allocator count: 89
+Reserved memory: 260.008 MB
+Committed memory: 11.404 MB
+Used memory: 11.115 MB
+Physical memory pages usage: 97.5%
+----------------------------------------------------------
+File count: 476
+Thread count: 4
+Allocator count: 89
+Reserved memory: 260.383 MB
+Committed memory: 9.943 MB
+Used memory: 9.662 MB
+Physical memory pages usage: 97.2%
+
+
+Test folder #1: 1901 files, 3.22 GB
+Cut by Pattern
+Split: 2048
+==========================================================
+File count: 1901
+Thread count: 1
+Allocator count: 24
+Reserved memory: 139.500 MB
+Committed memory: 1.143 MB
+Used memory: 1.061 MB
+Physical memory pages usage: 92.8%
+==========================================================
+File count: 1901
+Thread count: 4
+Allocator count: 105
+Reserved memory: 321.273 MB
+Committed memory: 4.529 MB
+Used memory: 4.098 MB
+Physical memory pages usage: 90.5%

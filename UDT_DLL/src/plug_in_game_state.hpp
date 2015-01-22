@@ -27,12 +27,17 @@ private:
 
 private:
 	void ClearMatch();
+	void ClearPlayerInfos();
 	void ClearGameState();
 	void AddCurrentMatchIfValid();
+	void AddCurrentPlayersIfValid();
 	void AddCurrentGameState();
 	void ProcessCpmaGameInfo(const char* commandString, udtBaseParser& parser);
 	void ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs);
 	void ProcessQlServerInfo(const char* commandString, udtBaseParser& parser);
+	void ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings);
+	void ProcessSystemAndServerInfo(const udtBaseParser::udtConfigString& systemCs, const udtBaseParser::udtConfigString& serverCs);
+	void ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString);
 
 private:
 	// "gamename" in cs 0.
@@ -58,8 +63,12 @@ private:
 		};
 	};
 
+	udtGameStatePlayerInfo _playerInfos[64];
 	udtVMArray<udtParseDataGameState> _gameStates; // The final array.
 	udtVMArrayWithAlloc<udtMatchInfo> _matches;
+	udtVMArrayWithAlloc<udtGameStateKeyValuePair> _keyValuePairs; // Key/value pairs from config strings 0 and 1.
+	udtVMArrayWithAlloc<udtGameStatePlayerInfo> _players;
+	udtVMLinearAllocator _stringAllocator; // For the key/value pairs and the demo taker's name.
 
 	udtParseDataGameState _currentGameState;
 	udtMatchInfo _currentMatch;

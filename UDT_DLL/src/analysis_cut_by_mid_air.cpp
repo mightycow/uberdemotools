@@ -276,7 +276,7 @@ void udtCutByMidAirAnalyzer::StartAnalysis()
 
 void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	_protocol = parser._protocol;
+	_protocol = parser._inProtocol;
 
 	++_gameStateIndex;
 
@@ -329,7 +329,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	udtVMScopedStackAllocator tempAllocScope(tempAllocator);
 	PlayerEntities playersInfo;
 	playersInfo.Players.SetAllocator(tempAllocator);
-	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._protocol);
+	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._inProtocol);
 	for(u32 i = 0, count = playersInfo.Players.GetSize(); i < count; ++i)
 	{
 		idEntityStateBase* const es = playersInfo.Players[i];
@@ -380,7 +380,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	}
 
 	// Find a player getting mid-aired.
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -408,7 +408,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		}
 
 		const s32 meanOfDeath = ent->eventParm;
-		if(!IsAllowedMeanOfDeath(meanOfDeath, parser._protocol))
+		if(!IsAllowedMeanOfDeath(meanOfDeath, parser._inProtocol))
 		{
 			continue;
 		}

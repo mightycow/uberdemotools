@@ -416,7 +416,6 @@ struct idPlayerState90 : idPlayerStateBase
 	int unknown1;
 	int unknown2;
 	int unknown3;
-	vec3_t grapplePoint; // location of grapple to pull towards if PMF_GRAPPLE_PULL
 };
 
 typedef idPlayerState90 idLargestPlayerState;

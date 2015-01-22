@@ -37,6 +37,7 @@ struct CallbackCutDemoFileStreamCreationInfo
 };
 
 extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
+extern udtStream*  CallbackConvertedDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
 extern void	       CallbackConsoleProgress(f32 progress, void* userData);
 extern const char* GetFolderSeparator();
@@ -85,3 +86,5 @@ extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protoc
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
+extern void        ConvertSnapshot(idLargestClientSnapshot& outSnapshot, udtProtocol::Id outProtocol, const idClientSnapshotBase& inSnapshot, udtProtocol::Id inProtocol);
+extern void        ConvertEntityState(idLargestEntityState& outEntityState, udtProtocol::Id outProtocol, const idEntityStateBase& inEntityState, udtProtocol::Id inProtocol);

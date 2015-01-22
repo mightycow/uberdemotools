@@ -118,7 +118,7 @@ void udtObituariesAnalyzer::ResetForNextDemo()
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const s32 obituaryEvtId = parser._protocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -161,7 +161,7 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		info.AttackerIdx = attackerIdx;
 		info.TargetName = targetName;
 		info.AttackerName = attackerName;
-		info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath, parser._protocol);
+		info.MeanOfDeathName = GetMeanOfDeathName(meanOfDeath, parser._inProtocol);
 		Obituaries.Add(info);
 	}
 }
@@ -178,7 +178,7 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 		return AllocateString(_playerNamesAllocator, "world");
 	}
 
-	const s32 firstPlayerCsIdx = parser._protocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
+	const s32 firstPlayerCsIdx = parser._inProtocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(firstPlayerCsIdx + playerIdx);
 	if(cs == NULL)
 	{
@@ -199,7 +199,7 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
+	const s32 csFirstPlayerIdx = parser._inProtocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	for(s32 i = 0; i < 64; ++i)
 	{
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
@@ -225,7 +225,7 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	const s32 csFirstPlayerIdx = parser._protocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
+	const s32 csFirstPlayerIdx = parser._inProtocol == udtProtocol::Dm68 ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	const s32 playerIdx = csIndex - csFirstPlayerIdx;
 	if(playerIdx < 0 || playerIdx >= 64)
 	{
