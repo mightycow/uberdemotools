@@ -861,7 +861,7 @@ extern "C"
 	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
 	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
 
-	// Creates, for each demo, a new demo file with a different protocol.
+	// Creates, for each demo that doesn't have the latest protocol, a new demo file with the latest protocol.
 	UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo);
 
 #ifdef __cplusplus

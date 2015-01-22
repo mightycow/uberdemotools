@@ -16,9 +16,11 @@ namespace Uber.DemoTools
 #if (UDT_X86)
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
+        private const int MaxBatchSizeConverting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
+        private const int MaxBatchSizeConverting = 2048;
 #endif
 
         private const string _dllPath = "UDT.dll";
@@ -380,6 +382,9 @@ namespace Uber.DemoTools
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByPatternArg patternInfo);
 
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtConvertDemoFilesToLatestProtocol(ref udtParseArg info, ref udtMultiParseArg extraInfo);
+
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
         { 
@@ -445,6 +450,11 @@ namespace Uber.DemoTools
             }
 
             return "invalid error code";
+        }
+
+        public static udtProtocol GetProtocolFromFilePath(string filePath)
+        {
+            return udtGetProtocolByFilePath(filePath);
         }
 
         public static udtCutByFragArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
@@ -840,6 +850,89 @@ namespace Uber.DemoTools
             }            
 
             return result == udtErrorCode.None;
+        }
+
+        public static bool ConvertDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var timer = new Stopwatch();
+            timer.Start();
+
+            var fileCount = filePaths.Count;
+            if(fileCount <= MaxBatchSizeConverting)
+            {
+                var result = ConvertDemosImpl(ref parseArg, filePaths, maxThreadCount);
+                PrintExecutionTime(timer);
+                return result;
+            }
+
+            var oldProgressCb = parseArg.ProgressCb;
+            var progressBase = 0.0f;
+            var progressRange = 0.0f;
+            var fileIndex = 0;
+
+            var newParseArg = parseArg;
+            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+            {
+                var realProgress = progressBase + progressRange * progress;
+                oldProgressCb(realProgress, userData);
+            };
+
+            var batchCount = (fileCount + MaxBatchSizeConverting - 1) / MaxBatchSizeConverting;
+            var filesPerBatch = fileCount / batchCount;
+            for(int i = 0; i < batchCount; ++i)
+            {
+                progressBase = (float)fileIndex / (float)fileCount;
+                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
+                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
+                progressRange = (float)currentFileCount / (float)fileCount;
+                fileIndex += currentFileCount;
+
+                ConvertDemosImpl(ref newParseArg, currentFiles, maxThreadCount);
+
+                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                {
+                    break;
+                }
+            }
+
+            PrintExecutionTime(timer);
+
+            return true;
+        }
+
+        private static bool ConvertDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var resources = new ArgumentResources();
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = filePath;
+                resources.GlobalAllocationHandles.Add(filePath);
+            }
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtConvertDemoFilesToLatestProtocol(ref parseArg, ref multiParseArg);
+            }
+            finally
+            {
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
         }
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
