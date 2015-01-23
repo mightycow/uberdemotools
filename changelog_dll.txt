@@ -1,3 +1,6 @@
+0.5.1a (23.01.2015)
+FIX: Demo analysis will no longer crash trying to convert the demo(s) (debug/testing code that was supposed to be removed)
+
 0.5.1 (22.01.2015)
 ADD: New in the analyzer plug-in: generic info extraction, player tracking, demo taker name and index
 ADD: An API function to batch convert QL *.dm_73 demos to QL *.dm_90 demos
