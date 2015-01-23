@@ -1,6 +1,5 @@
 To do:
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
-- Improved GameStates analyzer (all players with: time range, player index, team(s))
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
 - Text format export (XML? JSON?)
 - Player position smoothing for "laggy" demos

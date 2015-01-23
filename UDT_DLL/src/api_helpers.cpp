@@ -308,7 +308,6 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		if(jobType == udtParsingJobType::General)
 		{
 			success = ParseDemoFile(context, &newInfo, extraInfo->FilePaths[i], false);
-			ConvertDemoFile(context, &newInfo, extraInfo->FilePaths[i]);
 		}
 		else if(jobType == udtParsingJobType::CutByPattern)
 		{

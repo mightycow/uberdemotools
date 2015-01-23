@@ -24,7 +24,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.5.1";
+static const char* VersionString = "0.5.1a";
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
