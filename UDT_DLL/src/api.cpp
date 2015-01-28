@@ -640,10 +640,10 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 	return GetErrorCode(success, info->CancelOperation);
 }
 
-UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo)
+UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg)
 {
-	if(info == NULL || extraInfo == NULL ||
-	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
+	if(info == NULL || extraInfo == NULL || conversionArg == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info) || !IsValid(*conversionArg))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -652,17 +652,17 @@ UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const 
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
 	}
 
 	udtParserContextGroup* contextGroup;
 	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
 	}
 
 	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, NULL);
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, conversionArg);
 
 	DestroyContextGroup(contextGroup);
 

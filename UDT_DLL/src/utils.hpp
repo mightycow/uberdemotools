@@ -86,5 +86,3 @@ extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protoc
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
-extern void        ConvertSnapshot(idLargestClientSnapshot& outSnapshot, udtProtocol::Id outProtocol, const idClientSnapshotBase& inSnapshot, udtProtocol::Id inProtocol);
-extern void        ConvertEntityState(idLargestEntityState& outEntityState, udtProtocol::Id outProtocol, const idEntityStateBase& inEntityState, udtProtocol::Id inProtocol);

@@ -8,6 +8,7 @@
 #include "linear_allocator.hpp"
 #include "parser_plug_in.hpp"
 #include "array.hpp"
+#include "protocol_conversion.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -97,11 +98,13 @@ public:
 	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
 	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
 	udtVMLinearAllocator _tempAllocator;
+	udtVMLinearAllocator _privateTempAllocator;
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _inProtocol;
 	s32 _inProtocolSizeOfEntityState;
 	s32 _inProtocolSizeOfClientSnapshot;
 	udtProtocol::Id _outProtocol;
+	udtProtocolConverter _protocolConverter;
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.

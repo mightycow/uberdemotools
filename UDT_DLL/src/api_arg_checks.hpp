@@ -75,6 +75,11 @@ static bool IsValid(const udtMultiParseArg& arg)
 	return arg.FileCount > 0 && arg.FilePaths != NULL && arg.OutputErrorCodes != NULL;
 }
 
+static bool IsValid(const udtProtocolConversionArg& arg)
+{
+	return udtIsValidProtocol((udtProtocol::Id)arg.OutputProtocol) != 0;
+}
+
 static bool HasValidOutputOption(const udtParseArg& arg)
 {
 	return arg.OutputFolderPath == NULL || IsValidDirectory(arg.OutputFolderPath);

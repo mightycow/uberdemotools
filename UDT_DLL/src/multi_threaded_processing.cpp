@@ -211,7 +211,13 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
-	if(shared->JobType == (u32)udtParsingJobType::CutByPattern && shared->PatternInfo == NULL)
+	if(shared->JobType == (u32)udtParsingJobType::CutByPattern && shared->JobSpecificInfo == NULL)
+	{
+		data->Finished = true;
+		return;
+	}
+
+	if(shared->JobType == (u32)udtParsingJobType::Conversion && shared->JobSpecificInfo == NULL)
 	{
 		data->Finished = true;
 		return;
@@ -236,7 +242,7 @@ static void ThreadFunction(void* userData)
 
 	s32* const errorCodes = shared->MultiParseInfo->OutputErrorCodes;
 
-	if(!InitContextWithPlugIns(*data->Context, newParseInfo, data->FileCount, (udtParsingJobType::Id)shared->JobType, shared->PatternInfo))
+	if(!InitContextWithPlugIns(*data->Context, newParseInfo, data->FileCount, (udtParsingJobType::Id)shared->JobType, shared->JobSpecificInfo))
 	{
 		data->Result = false;
 		data->Finished = true;
@@ -265,7 +271,7 @@ static void ThreadFunction(void* userData)
 		}
 		else if(shared->JobType == (u32)udtParsingJobType::Conversion)
 		{
-			success = ConvertDemoFile(data->Context, &newParseInfo, shared->FilePaths[i]);
+			success = ConvertDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], (const udtProtocolConversionArg*)shared->JobSpecificInfo);
 		}
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
@@ -283,7 +289,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 									  const udtParseArg* parseInfo,
 									  const udtMultiParseArg* multiParseInfo,
 									  udtParsingJobType::Id jobType,
-									  const udtCutByPatternArg* patternInfo)
+									  const void* jobSpecificInfo)
 {
 	assert(contexts != NULL);
 	assert(parseInfo != NULL);
@@ -294,7 +300,7 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 
 	udtParsingSharedData sharedData;
 	memset(&sharedData, 0, sizeof(sharedData));
-	sharedData.PatternInfo = patternInfo;
+	sharedData.JobSpecificInfo = jobSpecificInfo;
 	sharedData.MultiParseInfo = multiParseInfo;
 	sharedData.ParseInfo = parseInfo;
 	sharedData.FilePaths = threadInfo.FilePaths.GetStartAddress();

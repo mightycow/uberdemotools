@@ -12,7 +12,7 @@ struct udtParsingSharedData
 	u64* FileSizes;
 	const udtParseArg* ParseInfo;
 	const udtMultiParseArg* MultiParseInfo;
-	const udtCutByPatternArg* PatternInfo;
+	const void* JobSpecificInfo;
 	u32 JobType; // Of type udtParsingJobType::Id.
 };
 
@@ -50,5 +50,5 @@ struct udtMultiThreadedParsing
 				 const udtParseArg* parseInfo, 
 				 const udtMultiParseArg* multiParseInfo,
 				 udtParsingJobType::Id jobType,
-				 const udtCutByPatternArg* patternInfo);
+				 const void* jobSpecificInfo);
 };

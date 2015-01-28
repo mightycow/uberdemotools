@@ -229,6 +229,7 @@ typedef idEntityState90 idLargestEntityState;
 // per-level limits
 //
 #define	MAX_CLIENTS			64		// absolute limit
+#define MAX_LOCATIONS		64
 
 #define	GENTITYNUM_BITS		10		// don't need to send any more
 #define	MAX_GENTITIES		(1<<GENTITYNUM_BITS)
@@ -269,18 +270,18 @@ typedef enum {
 #define CS_VOTE_STRING			9
 #define	CS_VOTE_YES				10
 #define	CS_VOTE_NO				11
-#define CS_TEAMVOTE_TIME		12
-#define CS_TEAMVOTE_STRING		14
-#define	CS_TEAMVOTE_YES			16
-#define	CS_TEAMVOTE_NO			18
-#define	CS_GAME_VERSION			20
-#define	CS_LEVEL_START_TIME		21		// so the timer only shows the current level
-#define	CS_INTERMISSION			22		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
-#define CS_FLAGSTATUS			23		// string indicating flag status in CTF
-#define CS_SHADERSTATE			24
-#define CS_BOTINFO				25
-#define	CS_ITEMS				27		// string of 0's and 1's that tell which items are present
-#define	CS_MODELS				32
+#define CS_TEAMVOTE_TIME_68		12		// q3 only
+#define CS_TEAMVOTE_STRING_68	14		// q3 only
+#define	CS_TEAMVOTE_YES_68		16		// q3 only
+#define	CS_TEAMVOTE_NO_68		18		// q3 only
+#define	CS_GAME_VERSION_68		20
+#define	CS_LEVEL_START_TIME_68	21		// so the timer only shows the current level
+#define	CS_INTERMISSION_68		22		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
+#define CS_FLAGSTATUS_68		23		// string indicating flag status in CTF
+#define CS_SHADERSTATE_68		24
+#define CS_BOTINFO_68			25		// q3 only
+#define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
+#define	CS_MODELS_68			32
 #define CS_WARMUP_END           13
 #define CS_INTERMISSION_73      14
 #define CS_PAUSE_START          669
@@ -288,13 +289,28 @@ typedef enum {
 #define CS_CA_ROUND_INFO        661
 #define CS_CA_ROUND_START       662
 #define	CS_PLAYERS_68           544
-#define	CS_PLAYERS_73p          529
 #define CS_RED_CLAN_PLAYERS     663
 #define CS_BLUE_CLAN_PLAYERS    664
 #define CS_FLAG_STATUS_73       658
 #define CS_FIRST_PLACE          659
 #define CS_SECOND_PLACE         660
 #define CS_AD_WAIT              681
+#define	CS_SOUNDS_68			(CS_MODELS_68 + MAX_MODELS)
+#define CS_LOCATIONS_68			(CS_PLAYERS_68 + MAX_CLIENTS)
+#define CS_PARTICLES_68			(CS_LOCATIONS_68 + MAX_LOCATIONS)
+#define CS_PAST_LAST_INDEX_68	(CS_PARTICLES_68 + MAX_LOCATIONS)
+
+#define	CS_GAME_VERSION_73p		12
+#define CS_LEVEL_START_TIME_73p 13
+#define	CS_INTERMISSION_73p		14
+#define CS_ITEMS_73p			15
+#define	CS_MODELS_73p			17
+#define CS_SOUNDS_73p           274
+#define	CS_PLAYERS_73p          529
+#define CS_LOCATIONS_73p		593
+#define CS_FLAGSTATUS_73p		658
+#define CS_SHADERSTATE_73p		665
+#define CS_PARTICLES_73p		(CS_LOCATIONS_73p + MAX_LOCATIONS)
 // Quake Live 688 689 ???
 // CPMA
 #define CS_CPMA_GAME_INFO       672
@@ -921,9 +937,12 @@ typedef enum {
 	STAT_PERSISTANT_POWERUP_73p,
 	STAT_WEAPONS_73p,					// 16 bit fields
 	STAT_ARMOR_73p,				
-	STAT_DEAD_YAW_73p,					// look this direction when dead (FIXME: get rid of?)
+	STAT_BATTLE_SUIT_KILL_COUNT_73p,
 	STAT_CLIENTS_READY_73p,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_73p					// health / armor limit, changable by handicap
+	STAT_MAX_HEALTH_73p,				// health / armor limit, changable by handicap
+	STAT_POWERUP_REMAINING_73p = 11,
+	STAT_QUAD_KILL_COUNT_73p = 13,
+	STAT_ARMOR_TIER_73p = 14
 } statIndex_73p_t;
 
 // player_state->persistant[] indexes
@@ -931,23 +950,42 @@ typedef enum {
 // cleared on respawn
 // NOTE: may not have more than 16
 typedef enum {
-	PERS_SCORE,						// !!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!
-	PERS_HITS,						// total pos32s damage inflicted so damage beeps can sound on change
-	PERS_RANK,						// player rank or team rank
-	PERS_TEAM,						// player team
-	PERS_SPAWN_COUNT,				// incremented every respawn
-	PERS_PLAYEREVENTS,				// 16 bits that can be flipped for events
-	PERS_ATTACKER,					// clientnum of last damage inflicter
-	PERS_ATTACKEE_ARMOR,			// health/armor of last person we attacked
-	PERS_KILLED,					// count of the number of times you died
+	PERS_SCORE_68,					// !!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!
+	PERS_HITS_68,					// total pos32s damage inflicted so damage beeps can sound on change
+	PERS_RANK_68,					// player rank or team rank
+	PERS_TEAM_68,					// player team
+	PERS_SPAWN_COUNT_68,			// incremented every respawn
+	PERS_PLAYEREVENTS_68,			// 16 bits that can be flipped for events
+	PERS_ATTACKER_68,				// clientnum of last damage inflicter
+	PERS_ATTACKEE_ARMOR_68,			// health/armor of last person we attacked
+	PERS_KILLED_68,					// count of the number of times you died
 	// player awards tracking
-	PERS_IMPRESSIVE_COUNT,			// two railgun hits in a row
-	PERS_EXCELLENT_COUNT,			// two successive kills in a short amount of time
-	PERS_DEFEND_COUNT,				// defend awards
-	PERS_ASSIST_COUNT,				// assist awards
-	PERS_GAUNTLET_FRAG_COUNT,		// kills with the guantlet
-	PERS_CAPTURES					// captures
-} persEnum_t;
+	PERS_IMPRESSIVE_COUNT_68,		// two railgun hits in a row
+	PERS_EXCELLENT_COUNT_68,		// two successive kills in a short amount of time
+	PERS_DEFEND_COUNT_68,			// defend awards
+	PERS_ASSIST_COUNT_68,			// assist awards
+	PERS_GAUNTLET_FRAG_COUNT_68,	// kills with the guantlet
+	PERS_CAPTURES_68				// captures
+} persEnum_68_t;
+
+typedef enum
+{
+	PERS_SCORE_73p = 0,
+	PERS_HITS_73p = 1,
+	PERS_RANK_73p = 2,
+	PERS_TEAM_73p = 3,
+	PERS_SPAWN_COUNT_73p = 4,
+	PERS_PLAYEREVENTS_73p = 5,
+	PERS_ATTACKER_73p = 6,
+	PERS_KILLED_73p = 7,
+	PERS_IMPRESSIVE_COUNT_73p = 8,
+	PERS_EXCELLENT_COUNT_73p = 9,
+	PERS_DEFEND_COUNT_73p = 10,
+	PERS_ASSIST_COUNT_73p = 11,
+	PERS_GAUNTLET_FRAG_COUNT_73p = 12,
+	PERS_CAPTURES_73p = 13,
+	PERS_ATTACKEE_ARMOR_73p = 14
+} persEnum_73_t;
 
 // entityState_t->eFlags
 #define	EF_DEAD				0x00000001		// don't draw a foe marker over players with EF_DEAD

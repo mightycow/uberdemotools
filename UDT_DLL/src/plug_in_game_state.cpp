@@ -282,7 +282,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	}
 	else if(_gameType == udtGameType::BaseQ3)
 	{
-		if(csIndex == CS_LEVEL_START_TIME)
+		if(csIndex == CS_LEVEL_START_TIME_68)
 		{
 			int matchStartTimeMs = S32_MIN;
 			if(sscanf(configString, "%d", &matchStartTimeMs) == 1)

@@ -15,8 +15,8 @@ struct udtParsingJobType
 	};
 };
 
-extern bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const udtCutByPatternArg* patternInfo = NULL);
+extern bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo = NULL);
 extern bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
 extern bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData);
-extern bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath);
-extern s32  udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
+extern bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo);
+extern s32  udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo);

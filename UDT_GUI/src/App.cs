@@ -1344,13 +1344,15 @@ namespace Uber.DemoTools
 
         private void ConvertDemos(List<DemoInfo> demos)
         {
-            demos = demos.FindAll(d => d.ProtocolNumber == UDT_DLL.udtProtocol.Dm73);
+            /*
+            // @TODO:
+            demos = demos.FindAll(d => d.ProtocolNumber != UDT_DLL.udtProtocol.Dm68);
             if(demos.Count == 0)
             {
-                LogError("None of the selected demos are in the *.dm_73 format.");
+                LogError("All of the selected demos are in the target format.");
                 return;
             }
-
+            */
             DisableUiNonThreadSafe();
 
             SaveBothConfigs();
@@ -1500,7 +1502,8 @@ namespace Uber.DemoTools
 
             try
             {
-                UDT_DLL.ConvertDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
+                // @TODO:
+                UDT_DLL.ConvertDemos(ref ParseArg, UDT_DLL.udtProtocol.Dm68, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {
