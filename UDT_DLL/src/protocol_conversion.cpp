@@ -52,49 +52,7 @@ static int ConvertWeapon90to68(int weapon)
 	return weapon <= 10 ? weapon : 0;
 }
 
-static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
-{
-	//(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	//*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
-	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
-	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
-	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
-
-	out.ps.weapon = ConvertWeapon90to68(in.ps.weapon);
-
-	for(int i = 0; i < MAX_STATS; ++i)
-	{
-		out.ps.stats[i] = 0;
-	}
-	out.ps.stats[STAT_HEALTH_68] = in.ps.stats[STAT_HEALTH_73p];
-	out.ps.stats[STAT_HOLDABLE_ITEM_68] = in.ps.stats[STAT_HOLDABLE_ITEM_73p];
-	out.ps.stats[STAT_WEAPONS_68] = in.ps.stats[STAT_WEAPONS_73p];
-	out.ps.stats[STAT_ARMOR_68] = in.ps.stats[STAT_ARMOR_73p];
-	out.ps.stats[STAT_CLIENTS_READY_68] = in.ps.stats[STAT_CLIENTS_READY_73p];
-	out.ps.stats[STAT_MAX_HEALTH_68] = in.ps.stats[STAT_MAX_HEALTH_73p];
-
-	for(int i = 0; i < MAX_PERSISTANT; ++i)
-	{
-		out.ps.persistant[i] = 0;
-	}
-	out.ps.persistant[PERS_SCORE_68] = in.ps.persistant[PERS_SCORE_73p];
-	out.ps.persistant[PERS_HITS_68] = in.ps.persistant[PERS_HITS_73p];
-	out.ps.persistant[PERS_RANK_68] = in.ps.persistant[PERS_RANK_73p];
-	out.ps.persistant[PERS_TEAM_68] = in.ps.persistant[PERS_TEAM_73p];
-	out.ps.persistant[PERS_SPAWN_COUNT_68] = in.ps.persistant[PERS_SPAWN_COUNT_73p];
-	out.ps.persistant[PERS_PLAYEREVENTS_68] = in.ps.persistant[PERS_PLAYEREVENTS_73p];
-	out.ps.persistant[PERS_ATTACKER_68] = in.ps.persistant[PERS_ATTACKER_73p];
-	out.ps.persistant[PERS_KILLED_68] = in.ps.persistant[PERS_KILLED_73p];
-	out.ps.persistant[PERS_IMPRESSIVE_COUNT_68] = in.ps.persistant[PERS_IMPRESSIVE_COUNT_73p];
-	out.ps.persistant[PERS_EXCELLENT_COUNT_68] = in.ps.persistant[PERS_EXCELLENT_COUNT_73p];
-	out.ps.persistant[PERS_DEFEND_COUNT_68] = in.ps.persistant[PERS_DEFEND_COUNT_73p];
-	out.ps.persistant[PERS_ASSIST_COUNT_68] = in.ps.persistant[PERS_ASSIST_COUNT_73p];
-	out.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_68] = in.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_73p];
-	out.ps.persistant[PERS_CAPTURES_68] = in.ps.persistant[PERS_CAPTURES_73p];
-	out.ps.persistant[PERS_ATTACKEE_ARMOR_68] = in.ps.persistant[PERS_ATTACKEE_ARMOR_73p];
-}
-
-static s32 ConvertEntityEventNumber90to68(s32 eventId)
+static s32 ConvertEntityEventNumber90to68_impl(s32 eventId)
 {
 	if(eventId >= 0 && eventId <= 5)
 	{
@@ -151,6 +109,60 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 	}
 }
 
+static s32 ConvertEntityEventNumber90to68(s32 eventId)
+{
+	const s32 eventSequenceBits = eventId & EV_EVENT_BITS;
+	const s32 newEventId = ConvertEntityEventNumber90to68_impl(eventId & (~EV_EVENT_BITS));
+	
+	return newEventId | eventSequenceBits;
+}
+
+static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	//(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	//*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
+	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
+	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
+	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
+
+	out.ps.weapon = ConvertWeapon90to68(in.ps.weapon);
+
+	for(int i = 0; i < MAX_STATS; ++i)
+	{
+		out.ps.stats[i] = 0;
+	}
+	out.ps.stats[STAT_HEALTH_68] = in.ps.stats[STAT_HEALTH_73p];
+	out.ps.stats[STAT_HOLDABLE_ITEM_68] = in.ps.stats[STAT_HOLDABLE_ITEM_73p];
+	out.ps.stats[STAT_WEAPONS_68] = in.ps.stats[STAT_WEAPONS_73p];
+	out.ps.stats[STAT_ARMOR_68] = in.ps.stats[STAT_ARMOR_73p];
+	out.ps.stats[STAT_CLIENTS_READY_68] = in.ps.stats[STAT_CLIENTS_READY_73p];
+	out.ps.stats[STAT_MAX_HEALTH_68] = in.ps.stats[STAT_MAX_HEALTH_73p];
+
+	for(int i = 0; i < MAX_PERSISTANT; ++i)
+	{
+		out.ps.persistant[i] = 0;
+	}
+	out.ps.persistant[PERS_SCORE_68] = in.ps.persistant[PERS_SCORE_73p];
+	out.ps.persistant[PERS_HITS_68] = in.ps.persistant[PERS_HITS_73p];
+	out.ps.persistant[PERS_RANK_68] = in.ps.persistant[PERS_RANK_73p];
+	out.ps.persistant[PERS_TEAM_68] = in.ps.persistant[PERS_TEAM_73p];
+	out.ps.persistant[PERS_SPAWN_COUNT_68] = in.ps.persistant[PERS_SPAWN_COUNT_73p];
+	out.ps.persistant[PERS_PLAYEREVENTS_68] = in.ps.persistant[PERS_PLAYEREVENTS_73p];
+	out.ps.persistant[PERS_ATTACKER_68] = in.ps.persistant[PERS_ATTACKER_73p];
+	out.ps.persistant[PERS_KILLED_68] = in.ps.persistant[PERS_KILLED_73p];
+	out.ps.persistant[PERS_IMPRESSIVE_COUNT_68] = in.ps.persistant[PERS_IMPRESSIVE_COUNT_73p];
+	out.ps.persistant[PERS_EXCELLENT_COUNT_68] = in.ps.persistant[PERS_EXCELLENT_COUNT_73p];
+	out.ps.persistant[PERS_DEFEND_COUNT_68] = in.ps.persistant[PERS_DEFEND_COUNT_73p];
+	out.ps.persistant[PERS_ASSIST_COUNT_68] = in.ps.persistant[PERS_ASSIST_COUNT_73p];
+	out.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_68] = in.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_73p];
+	out.ps.persistant[PERS_CAPTURES_68] = in.ps.persistant[PERS_CAPTURES_73p];
+	out.ps.persistant[PERS_ATTACKEE_ARMOR_68] = in.ps.persistant[PERS_ATTACKEE_ARMOR_73p];
+
+	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
+	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
+	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
+}
+
 static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
 	//(idEntityStateBase&)outEntityState = inEntityState;
@@ -158,19 +170,7 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 	//for(int i = 0; i < 3; ++i) outEntityState.origin[i] = inEntityState.origin[i];
 	//for(int i = 0; i < 3; ++i) outEntityState.origin2[i] = inEntityState.origin2[i];
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
-
-	//outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
-	const s32 extraBits = inEntityState.event & EV_EVENT_BITS;
-	const s32 eventId = ConvertEntityEventNumber90to68(inEntityState.event & (~EV_EVENT_BITS));
-	/*
-	if(eventId == EV_WATER_TOUCH_68 ||
-	   eventId == EV_WATER_LEAVE_68 ||
-	   eventId == EV_WATER_UNDER_68 ||
-	   eventId == EV_WATER_CLEAR_68)
-	{
-		__debugbreak();
-	}*/
-	outEntityState.event = eventId | extraBits;
+	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
 }
 
 static s32 ConvertConfigStringIndex90to68(s32 index)
