@@ -668,26 +668,26 @@ typedef enum {
 	EV_STEP_12,
 	EV_STEP_16,
 
-	EV_FALL_SHORT,
-	EV_FALL_MEDIUM,
-	EV_FALL_FAR,
+	EV_FALL_SHORT_68,
+	EV_FALL_MEDIUM_68,
+	EV_FALL_FAR_68,
 
-	EV_JUMP_PAD,			// boing sound at origin, jump sound on player
+	EV_JUMP_PAD_68,			// boing sound at origin, jump sound on player
 
-	EV_JUMP,
-	EV_WATER_TOUCH,	// foot touches
-	EV_WATER_LEAVE,	// foot leaves
-	EV_WATER_UNDER,	// head touches
-	EV_WATER_CLEAR,	// head leaves
+	EV_JUMP_68,
+	EV_WATER_TOUCH_68,	// foot touches
+	EV_WATER_LEAVE_68,	// foot leaves
+	EV_WATER_UNDER_68,	// head touches
+	EV_WATER_CLEAR_68,	// head leaves
 
-	EV_ITEM_PICKUP,			// normal item pickups are predictable
-	EV_GLOBAL_ITEM_PICKUP,	// powerup / team sounds are broadcast to everyone
+	EV_ITEM_PICKUP_68,			// normal item pickups are predictable
+	EV_GLOBAL_ITEM_PICKUP_68,	// powerup / team sounds are broadcast to everyone
 
-	EV_NOAMMO,
-	EV_CHANGE_WEAPON,
-	EV_FIRE_WEAPON,
+	EV_NOAMMO_68,
+	EV_CHANGE_WEAPON_68,
+	EV_FIRE_WEAPON_68,
 
-	EV_USE_ITEM0,
+	EV_USE_ITEM0_68,
 	EV_USE_ITEM1,
 	EV_USE_ITEM2,
 	EV_USE_ITEM3,
@@ -729,7 +729,7 @@ typedef enum {
 	EV_DEATH1,
 	EV_DEATH2,
 	EV_DEATH3,
-	EV_OBITUARY,
+	EV_OBITUARY_68,
 
 	EV_POWERUP_QUAD,
 	EV_POWERUP_BATTLESUIT,
@@ -780,7 +780,59 @@ typedef enum {
 	EV_NOAMMO_73p = 17,
 	EV_CHANGE_WEAPON_73p = 18,
 	EV_DROP_WEAPON_73p = 19,
-	EV_FIRE_WEAPON_73p = 20
+	EV_FIRE_WEAPON_73p = 20,
+	EV_USE_ITEM0_73p = 21,
+
+	EV_BULLET_HIT_FLESH_73p = 45,
+
+	EV_DEATH1_73p = 54,
+	EV_DEATH2_73p = 55,
+	EV_DEATH3_73p = 56,
+	EV_DROWN_73p = 57,
+	EV_OBITUARY_73p = 58,
+
+	EV_POWERUP_QUAD_73p,  // guess
+	EV_POWERUP_BATTLESUIT_73p = 60,
+	EV_POWERUP_REGEN_73p = 61,  // 62 in older demo zero4 vs cl0ck
+	EV_POWERUP_ARMOR_REGEN_73p = 62,  // ctf silentnight (2010-12-26)  armor regen?
+	EV_GIB_PLAYER_73p = 63,
+	EV_SCOREPLUM_73p = 64,
+
+	EV_PROXIMITY_MINE_STICK_73p = 65,
+	EV_PROXIMITY_MINE_TRIGGER_73p = 66,
+
+	EV_KAMIKAZE_73p = 67,			// kamikaze explodes
+	EV_OBELISKEXPLODE_73p = 68,
+	EV_OBELISKPAIN_73p = 69,
+	EV_INVUL_IMPACT_73p = 70,		// invulnerability sphere impact
+
+	EV_DEBUG_LINE_73p = 72,  // guess
+	EV_STOPLOOPINGSOUND_73p = 73, // guess
+	EV_TAUNT_73p = 74,
+	EV_TAUNT_YES_73p,  // guess
+	EV_TAUNT_NO_73p,  // guess
+	EV_TAUNT_FOLLOWME_73p,  // guess
+	EV_TAUNT_GETFLAG_73p,  // guess
+	EV_TAUNT_GUARDBASE_73p,  // guess
+	EV_TAUNT_PATROL_73p,  // guess
+
+	EV_FOOTSTEP_SNOW_73p = 81,
+	EV_FOOTSTEP_WOOD_73p = 82,
+	EV_ITEM_PICKUP_SPEC_73p = 83,
+	EV_OVERTIME_73p = 84,
+	EV_GAMEOVER_73p = 85,
+
+	EV_THAW_PLAYER_73p = 87,
+	EV_THAW_TICK_73p = 88,
+	EV_HEADSHOT_73p = 89,
+	EV_POI_73p = 90,
+
+	EV_RACE_START_73p = 93,
+	EV_RACE_CHECKPOINT_73p = 94,
+	EV_RACE_END_73p = 95,
+
+	EV_DAMAGEPLUM_73p = 96,
+	EV_AWARD_73p = 97,
 } entity_event_73p_t;
 
 // Means of Death
@@ -912,12 +964,6 @@ typedef enum {
 
 } powerup_t;
 
-typedef enum {
-	EV_DEATH1_73p = 54,
-	EV_DEATH2_73p = 55,
-	EV_DEATH3_73p = 56,
-	EV_OBITUARY_73p = 58,
-} entityEvents_73p;
 
 // player_state->stats[] indexes
 // NOTE: may not have more than 16
