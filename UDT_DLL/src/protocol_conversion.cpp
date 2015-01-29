@@ -170,6 +170,9 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 	//for(int i = 0; i < 3; ++i) outEntityState.origin2[i] = inEntityState.origin2[i];
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+
+	// @TODO:
+	outEntityState.modelindex = ;
 }
 
 static s32 ConvertConfigStringIndex90to68(s32 index)
