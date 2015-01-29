@@ -119,8 +119,7 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 
 static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {
-	//(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	//*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
 	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
 	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
 	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
