@@ -645,7 +645,6 @@ bool udtBaseParser::ParseSnapshot()
 			idLargestClientSnapshot newSnapOutProto;
 			if(oldSnap)
 			{
-				
 				(*_protocolConverter.ConvertSnapshot)(oldSnapOutProto, *oldSnap);
 			}
 			(*_protocolConverter.ConvertSnapshot)(newSnapOutProto, newSnap);
