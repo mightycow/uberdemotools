@@ -1190,7 +1190,7 @@ typedef enum
 #define	DEFAULT_GRAVITY		800
 #define	GIB_HEALTH			-40
 
-static_assert(false, "double check the item index values...");
+// @TODO: idItemCPMA
 
 struct idItem68
 {
@@ -1346,6 +1346,7 @@ struct idItem90
 		AmmoRockets,
 		AmmoSlugs,
 		AmmoBFG,
+		HoldableTeleporter,
 		HoldableMedkit,
 		ItemQuad,
 		ItemEnviro,

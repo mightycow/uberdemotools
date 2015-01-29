@@ -38,6 +38,7 @@ static void ConvertSnapshot73to90(idLargestClientSnapshot& outSnapshot, const id
 
 static void ConvertEntityState73to90(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
+	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
 	idEntityState90& out = (idEntityState90&)outEntityState;
 	idEntityState73& in = (idEntityState73&)inEntityState;
 	(idEntityStateBase&)outEntityState = inEntityState;
@@ -52,69 +53,140 @@ static int ConvertWeapon90to68(int weapon)
 	return weapon <= 10 ? weapon : 0;
 }
 
-static s32 ConvertEntityEventNumber90to68_impl(s32 eventId)
+namespace udt_private
 {
-	if(eventId >= 0 && eventId <= 5)
+	static s32 ConvertEntityEventNumber90to68_helper(s32 eventId)
 	{
-		return eventId;
-	}
+		if(eventId >= 0 && eventId <= 5)
+		{
+			return eventId;
+		}
 
-	if(eventId >= 6 && eventId <= 18)
-	{
-		return eventId + 4;
-	}
+		if(eventId >= 6 && eventId <= 18)
+		{
+			return eventId + 4;
+		}
 
-	if(eventId >= EV_USE_ITEM0_73p && eventId < EV_USE_ITEM0_73p + 16)
-	{
-		return eventId - EV_USE_ITEM0_73p + EV_USE_ITEM0_68;
-	}
+		if(eventId >= EV_USE_ITEM0_73p && eventId < EV_USE_ITEM0_73p + 16)
+		{
+			return eventId - EV_USE_ITEM0_73p + EV_USE_ITEM0_68;
+		}
 
-	if(eventId >= 37 && eventId <= 51 && eventId != EV_BULLET_HIT_FLESH_73p)
-	{
-		return eventId + 3;
-	}
+		if(eventId >= 37 && eventId <= 51 && eventId != EV_BULLET_HIT_FLESH_73p)
+		{
+			return eventId + 3;
+		}
 
-	if(eventId >= 53 && eventId <= 56)
-	{
-		return eventId + 3;
-	}
+		if(eventId >= 53 && eventId <= 56)
+		{
+			return eventId + 3;
+		}
 
-	if(eventId >= 58 && eventId <= 61)
-	{
-		return eventId + 2;
-	}
+		if(eventId >= 58 && eventId <= 61)
+		{
+			return eventId + 2;
+		}
 
-	if(eventId >= 63 && eventId <= 70)
-	{
-		return eventId + 1;
-	}
+		if(eventId >= 63 && eventId <= 70)
+		{
+			return eventId + 1;
+		}
 
-	if(eventId >= 72 && eventId <= 80)
-	{
-		return eventId + 2;
-	}
+		if(eventId >= 72 && eventId <= 80)
+		{
+			return eventId + 2;
+		}
 
-	switch(eventId)
-	{
-		case EV_DROP_WEAPON_73p: return EV_NONE;
-		case EV_FIRE_WEAPON_73p: return EV_FIRE_WEAPON_68;
-		case EV_BULLET_HIT_FLESH_73p: return EV_BULLET;
-		case 52: // ???
-		case 57: // drown
-		case 62: // armor regen?
-		case 71: // ???
-			return EV_NONE;
+		switch(eventId)
+		{
+			case EV_DROP_WEAPON_73p: return EV_NONE;
+			case EV_FIRE_WEAPON_73p: return EV_FIRE_WEAPON_68;
+			case EV_BULLET_HIT_FLESH_73p: return EV_BULLET;
+			case 52: // ???
+			case 57: // drown
+			case 62: // armor regen?
+			case 71: // ???
+				return EV_NONE;
 
-		default: return eventId;
+			default: return eventId;
+		}
 	}
 }
 
 static s32 ConvertEntityEventNumber90to68(s32 eventId)
 {
 	const s32 eventSequenceBits = eventId & EV_EVENT_BITS;
-	const s32 newEventId = ConvertEntityEventNumber90to68_impl(eventId & (~EV_EVENT_BITS));
+	const s32 newEventId = udt_private::ConvertEntityEventNumber90to68_helper(eventId & (~EV_EVENT_BITS));
 	
 	return newEventId | eventSequenceBits;
+}
+
+s32 ConvertEntityModelIndex90to68(s32 modelIndex)
+{
+	switch((idItem90::Id)modelIndex)
+	{
+		case idItem90::Null: return (s32)idItem68::Null;
+		case idItem90::ItemArmorShard: return (s32)idItem68::ItemArmorShard;
+		case idItem90::ItemArmorCombat: return (s32)idItem68::ItemArmorCombat;
+		case idItem90::ItemArmorBody: return (s32)idItem68::ItemArmorBody;
+		case idItem90::ItemHealthSmall: return (s32)idItem68::ItemHealthSmall;
+		case idItem90::ItemHealth: return (s32)idItem68::ItemHealth;
+		case idItem90::ItemHealthLarge: return (s32)idItem68::ItemHealthLarge;
+		case idItem90::ItemHealthMega: return (s32)idItem68::ItemHealthMega;
+		case idItem90::WeaponGauntlet: return (s32)idItem68::WeaponGauntlet;
+		case idItem90::WeaponShotgun: return (s32)idItem68::WeaponShotgun;
+		case idItem90::WeaponMachinegun: return (s32)idItem68::WeaponMachinegun;
+		case idItem90::WeaponGrenadelauncher: return (s32)idItem68::WeaponGrenadelauncher;
+		case idItem90::WeaponRocketlauncher: return (s32)idItem68::WeaponRocketlauncher;
+		case idItem90::WeaponLightning: return (s32)idItem68::WeaponLightning;
+		case idItem90::WeaponRailgun: return (s32)idItem68::WeaponRailgun;
+		case idItem90::WeaponPlasmagun: return (s32)idItem68::WeaponPlasmagun;
+		case idItem90::WeaponBFG: return (s32)idItem68::WeaponBFG;
+		case idItem90::WeaponGrapplinghook: return (s32)idItem68::WeaponGrapplinghook;
+		case idItem90::AmmoShells: return (s32)idItem68::AmmoShells;
+		case idItem90::AmmoBullets: return (s32)idItem68::AmmoBullets;
+		case idItem90::AmmoGrenades: return (s32)idItem68::AmmoGrenades;
+		case idItem90::AmmoCells: return (s32)idItem68::AmmoCells;
+		case idItem90::AmmoLightning: return (s32)idItem68::AmmoLightning;
+		case idItem90::AmmoRockets: return (s32)idItem68::AmmoRockets;
+		case idItem90::AmmoSlugs: return (s32)idItem68::AmmoSlugs;
+		case idItem90::AmmoBFG: return (s32)idItem68::AmmoBFG;
+		case idItem90::HoldableTeleporter: return (s32)idItem68::HoldableTeleporter;
+		case idItem90::HoldableMedkit: return (s32)idItem68::HoldableMedkit;
+		case idItem90::ItemQuad: return (s32)idItem68::ItemQuad;
+		case idItem90::ItemEnviro: return (s32)idItem68::ItemEnviro;
+		case idItem90::ItemHaste: return (s32)idItem68::ItemHaste;
+		case idItem90::ItemInvis: return (s32)idItem68::ItemInvis;
+		case idItem90::ItemRegen: return (s32)idItem68::ItemRegen;
+		case idItem90::ItemFlight: return (s32)idItem68::ItemFlight;
+		case idItem90::TeamCTFRedflag: return (s32)idItem68::TeamCTFRedflag;
+		case idItem90::TeamCTFBlueflag: return (s32)idItem68::TeamCTFBlueflag;
+		// Unsupported items:
+		case idItem90::ItemArmorJacket:
+			return (s32)idItem68::ItemArmorShard;
+		case idItem90::HoldableKamikaze:
+		case idItem90::HoldablePortal:
+		case idItem90::HoldableInvulnerability:
+		case idItem90::AmmoNails:
+		case idItem90::AmmoMines:
+		case idItem90::AmmoBelt:
+		case idItem90::ItemScout:
+		case idItem90::ItemGuard:
+		case idItem90::ItemDoubler:
+		case idItem90::ItemAmmoregen:
+		case idItem90::TeamCTFNeutralflag:
+		case idItem90::ItemRedcube:
+		case idItem90::ItemBluecube:
+		case idItem90::WeaponNailgun:
+		case idItem90::WeaponProxLauncher:
+		case idItem90::WeaponChaingun:
+		case idItem90::ItemSpawnarmor:
+		case idItem90::WeaponHMG:
+		case idItem90::AmmoHMG:
+		case idItem90::AmmoPack:
+		default: 
+			return (s32)idItem68::Null;
+	}
 }
 
 static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
@@ -164,15 +236,31 @@ static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const id
 
 static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
-	//(idEntityStateBase&)outEntityState = inEntityState;
 	CopyEntityState<idEntityState68>(outEntityState, inEntityState);
-	//for(int i = 0; i < 3; ++i) outEntityState.origin[i] = inEntityState.origin[i];
-	//for(int i = 0; i < 3; ++i) outEntityState.origin2[i] = inEntityState.origin2[i];
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+	
+	if(inEntityState.eType == ET_ITEM)
+	{
+		outEntityState.modelindex = ConvertEntityModelIndex90to68(inEntityState.modelindex);
+	}
+	else
+	{
+		// @TODO: investigate
+		outEntityState.modelindex = 0;
+	}
 
-	// @TODO:
-	outEntityState.modelindex = ;
+	// Silence those annoying sounds...
+	if(inEntityState.eType == ET_SPEAKER)
+	{
+		outEntityState.eType = -1;
+	}
+
+	// The type can encode an event, so make sure we convert that too.
+	if(inEntityState.eType >= ET_EVENTS)
+	{
+		outEntityState.eType = ET_EVENTS + ConvertEntityEventNumber90to68(inEntityState.eType - ET_EVENTS);
+	}
 }
 
 static s32 ConvertConfigStringIndex90to68(s32 index)
@@ -265,8 +353,7 @@ void GetProtocolConverter(udtProtocolConverter& converter, udtProtocol::Id outPr
 	const u32 converterIdx = ((u32)(inProtocol - 1) * (u32)udtProtocol::Count) + (u32)(outProtocol - 1);
 	if(converterIdx >= (u32)UDT_COUNT_OF(ProtocolConverters))
 	{
-		converter.ConvertSnapshot = NULL;
-		converter.ConvertEntityState = NULL;
+		converter = udtProtocolConverter();
 		return;
 	}
 
