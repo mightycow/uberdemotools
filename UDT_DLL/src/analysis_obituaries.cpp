@@ -213,14 +213,14 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
 {
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	const int tokenCount = tokenizer.argc();
-	if(strcmp(tokenizer.argv(0), "cs") != 0 || tokenCount != 3)
+	const int tokenCount = tokenizer.GetArgCount();
+	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || tokenCount != 3)
 	{
 		return;
 	}
 
 	s32 csIndex = -1;
-	if(!StringParseInt(csIndex, tokenizer.argv(1)))
+	if(!StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}

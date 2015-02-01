@@ -415,38 +415,39 @@ bool StringFindLastCharacterInList(u32& index, const char* string, const char* c
 	return false;
 }
 
-bool StringMatchesCutByChatRule(const char* string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
+bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
 {
-	if(string == NULL || rule.Pattern == NULL)
+	if(string.String == NULL || rule.Pattern == NULL)
 	{
 		return false;
 	}
 
-	char* const input = AllocateString(allocator, string);
-	char* const pattern = AllocateString(allocator, rule.Pattern);
+	udtString input = udtString::NewCloneFromRef(allocator, string);
+	udtString pattern = udtString::NewClone(allocator, rule.Pattern);
 
 	if(rule.IgnoreColorCodes)
 	{
-		Q_CleanStr(input);
+		udtString::CleanUp(input);
 	}
 
 	if(!rule.CaseSensitive)
 	{
-		StringMakeLowerCase(input);
-		StringMakeLowerCase(pattern);
+		udtString::MakeLowerCase(input);
+		udtString::MakeLowerCase(pattern);
 	}
 
 	if(rule.ChatOperator == (u32)udtChatOperator::Contains)
 	{
-		return StringContains(input, pattern);
+		u32 charIndex = 0;
+		return udtString::Contains(charIndex, input, pattern);
 	}
 	else if(rule.ChatOperator == (u32)udtChatOperator::StartsWith)
 	{
-		return StringStartsWith(input, pattern);
+		return udtString::StartsWith(input, pattern);
 	}
 	else if(rule.ChatOperator == (u32)udtChatOperator::EndsWith)
 	{
-		return StringEndsWith(input, pattern);
+		return udtString::EndsWith(input, pattern);
 	}
 
 	return false;

@@ -19,7 +19,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	udtContext& context = *parser._context;
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
 	tokenizer.Tokenize(commandInfo.String);
-	if(strcmp(tokenizer.argv(0), "chat") != 0 || tokenizer.argc() != 2)
+	if(tokenizer.GetArgCount() != 2 || !udtString::Equals(tokenizer.GetArg(0), udtString::NewConstRef("chat")))
 	{
 		return;
 	}
@@ -30,7 +30,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	for(u32 i = 0; i < extraInfo.RuleCount; ++i)
 	{
 		udtVMScopedStackAllocator tempAllocatorScopeGuard(parser._tempAllocator);
-		if(StringMatchesCutByChatRule(tokenizer.argv(1), extraInfo.Rules[i], parser._tempAllocator))
+		if(StringMatchesCutByChatRule(tokenizer.GetArg(1), extraInfo.Rules[i], parser._tempAllocator))
 		{
 			match = true;
 			break;

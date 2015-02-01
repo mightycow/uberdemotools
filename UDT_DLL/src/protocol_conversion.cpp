@@ -1,4 +1,6 @@
 #include "protocol_conversion.hpp"
+#include "scoped_stack_allocator.hpp"
+#include "string.hpp"
 
 
 template<typename T>
@@ -307,7 +309,48 @@ static s32 ConvertConfigStringIndex90to68(s32 index)
 static const char* ConfigStringServerInfo68 = R"(\g_teamSizeMin\1\g_compmode\1\sv_hostname\ mejtisson\sv_advertising\0\g_voteFlags\2762\sv_owner\mejtisson\ruleset\1\g_gametype\1\sv_ranked\1\sv_maxclients\16\fraglimit\0\g_overtime\120\gt_realm\quakelive\sv_location\DE\sv_premium\1\timelimit\10\sv_allowDownload\1\version\Quake Live  0.1.0.947 linux-i386 Sep 12 2014 11:46:11\dmflags\0\protocol\90\mapname\ztn3dm1\sv_privateClients\0\sv_gtid\597071\sv_adXmitDelay\300000\sv_skillRating\22\g_levelStartTime\1411688816\gamename\baseq3\g_adCaptureScoreBonus\3\g_adElimScoreBonus\2\g_adTouchScoreBonus\1\g_aspectEnable\0\capturelimit\8\g_customSettings\0\g_freezeRoundDelay\4000\g_gameState\PRE_GAME\g_gravity\800\g_holiday\0\g_instaGib\0\g_loadout\0\g_maxGameClients\0\g_maxSkillTier\0\g_maxStandardClients\0\mercylimit\0\g_needpass\0\g_quadDamageFactor\3\g_raceAllowStandard\0\g_roundWarmupDelay\10000\roundlimit\5\roundtimelimit\180\scorelimit\150\g_startingHealth\100\g_teamForceBalance\1\teamsize\0\g_timeoutCount\3\g_weaponrespawn\5)";
 static const char* ConfigStringSystemInfo68 = R"(\sv_cheats\0\sv_pure\1\timescale\1\sv_serverid\2858499\g_skipTrainingEnable\0\g_training\0)";
 static const char* ConfigStringGameVersion68 = "baseq3-1";
+/*
+typedef void(*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value);
 
+static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocator, const udtString& input, ProcessConfigStringCallback callback)
+{
+	const udtString separator = udtString::NewConstRef("\\");
+	udtString newConfigString = udtString::NewEmpty(allocator, BIG_INFO_STRING);
+	const char* key = input.String + 1;
+	const char* value = NULL;
+	for(;;)
+	{
+		value = strchr(key, '\\');
+		if(value == NULL)
+		{
+			break;
+		}
+
+		value += 1;
+		if(*value == '\0')
+		{
+			break;
+		}
+
+		const char* nextKey = strchr(key, '\\');
+		if(nextKey == NULL)
+		{
+			nextKey = input.String + input.Length;
+		}
+
+		udtVMScopedStackAllocator allocatorScope(allocator);
+		const udtString keyString = udtString::NewClone(allocator, key, (u32)(value - 1 - key));
+		const udtString valueString = udtString::NewClone(allocator, value, (u32)(nextKey - 1 - value));
+
+		udtString newValue;
+		(*callback)(newValue, allocator, keyString, valueString);
+		const udtString* toAppend[4] = { &keyString, &separator, &valueString, &separator };
+		udtString::AppendMultiple(newConfigString, toAppend, (u32)UDT_COUNT_OF(toAppend));
+	}
+
+	result = newConfigString;
+}
+*/
 static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* string, u32 stringLength)
 {
 	result.NewString = false;
@@ -333,6 +376,13 @@ static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLi
 		result.String = ConfigStringSystemInfo68;
 		result.StringLength = (u32)strlen(ConfigStringSystemInfo68);
 	}
+	/*
+	if(inIndex == CS_SERVERINFO)
+	{
+		// Fix the following:
+		// mapname
+		// protocol
+	}*/
 }
 
 static const udtProtocolConverter ProtocolConverters[udtProtocol::Count * udtProtocol::Count] =

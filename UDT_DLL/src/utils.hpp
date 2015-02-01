@@ -4,6 +4,7 @@
 #include "parser.hpp"
 #include "linear_allocator.hpp"
 #include "array.hpp"
+#include "string.hpp"
 
 
 // On Windows, MAX_PATH is 260.
@@ -57,7 +58,6 @@ extern bool        StringEndsWith(const char* string, const char* pattern);
 extern bool        StringEquals(const char* a, const char* b);
 extern bool        StringFindFirstCharacterInList(u32& index, const char* string, const char* charList);
 extern bool        StringFindLastCharacterInList(u32& index, const char* string, const char* charList);
-extern bool        StringMatchesCutByChatRule(const char* string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);
 extern bool        StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra);
 extern bool        StringHasTrailingFolderSeparator(const char* folderPath);
 extern bool        StringHasValidDemoFileExtension(const char* filePath);
@@ -86,3 +86,4 @@ extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protoc
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
+extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);

@@ -379,13 +379,13 @@ bool udtBaseParser::ParseCommandString()
 	
 	CommandLineTokenizer& tokenizer = _context->Tokenizer;
 	tokenizer.Tokenize(commandString);
-	const int tokenCount = tokenizer.argc();
-	if(strcmp(tokenizer.argv(0), "cs") == 0 && tokenCount == 3)
+	const int tokenCount = tokenizer.GetArgCount();
+	if(strcmp(tokenizer.GetArgString(0), "cs") == 0 && tokenCount == 3)
 	{
 		s32 csIndex = -1;
-		if(StringParseInt(csIndex, tokenizer.argv(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
+		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
 		{
-			const char* const csStringTemp = tokenizer.argv(2);
+			const char* const csStringTemp = tokenizer.GetArgString(2);
 			u32 csStringLength = (u32)strlen(csStringTemp);
 
 			udtConfigStringConversion outCs;

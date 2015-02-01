@@ -258,12 +258,12 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(info.String);
 	s32 csIndex = 0;
-	if(tokenizer.argc() != 3 || !StringEquals(tokenizer.argv(0), "cs") || !StringParseInt(csIndex, tokenizer.argv(1)))
+	if(tokenizer.GetArgCount() != 3 || !StringEquals(tokenizer.GetArgString(0), "cs") || !StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}
 
-	const char* const configString = tokenizer.argv(2);
+	const char* const configString = tokenizer.GetArgString(2);
 	if(_gameType == udtGameType::QL && csIndex >= CS_PLAYERS_73p && csIndex < CS_PLAYERS_73p + 64)
 	{
 		ProcessPlayerInfo(csIndex - CS_PLAYERS_73p, parser._inConfigStrings[csIndex]);
