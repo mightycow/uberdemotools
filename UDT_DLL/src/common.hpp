@@ -447,18 +447,11 @@ s32 Q_isalpha( s32 c );
 s32			Q_stricmp( const char *s1, const char *s2 );
 s32			Q_strncmp( const char *s1, const char *s2, s32 n );
 s32			Q_stricmpn( const char *s1, const char *s2, s32 n );
-char		*Q_strlwr( char *s1 );
-char		*Q_strupr( char *s1 );
 const char	*Q_strrchr( const char* string, s32 c );
 
 // buffer size safe library replacements
 void	Q_strncpyz( char *dest, const char *src, s32 destsize );
 void	Q_strcat( char *dest, s32 size, const char *src );
-
-// strlen that discounts Quake color sequences
-s32 Q_PrintStrlen( const char *string );
-// removes color sequences from string
-char *Q_CleanStr( char *string );
 
 /*
 ==============================================================

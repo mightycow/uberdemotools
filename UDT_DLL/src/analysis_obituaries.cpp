@@ -185,16 +185,16 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 		return NULL;
 	}
 
-	char* playerName = NULL;
+	udtString playerName;
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", cs->String))
 	{
 		return NULL;
 	}
 
-	playerName = Q_CleanStr(playerName);
+	udtString::CleanUp(playerName);
 
-	return AllocateString(_playerNamesAllocator, playerName);
+	return AllocateString(_playerNamesAllocator, playerName.String);
 }
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)

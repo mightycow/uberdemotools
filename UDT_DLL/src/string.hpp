@@ -31,6 +31,16 @@ struct udtString
 	static bool EndsWith(const udtString& input, const udtString& pattern);
 	static bool Equals(const udtString& a, const udtString& b);
 
+	static bool ContainsNoCase(u32& charIndex, const udtString& input, const char* pattern);
+	static bool StartsWithNoCase(const udtString& input, const char* pattern);
+	static bool EndsWithNoCase(const udtString& input, const char* pattern);
+	static bool EqualsNoCase(const udtString& a, const char* b);
+
+	static bool Contains(u32& charIndex, const udtString& input, const char* pattern);
+	static bool StartsWith(const udtString& input, const char* pattern);
+	static bool EndsWith(const udtString& input, const char* pattern);
+	static bool Equals(const udtString& a, const char* b);
+
 	static bool FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
 	static bool FindLastCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
 

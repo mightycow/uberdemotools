@@ -19,7 +19,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& co
 	udtContext& context = *parser._context;
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
 	tokenizer.Tokenize(commandInfo.String);
-	if(tokenizer.GetArgCount() != 2 || !udtString::Equals(tokenizer.GetArg(0), udtString::NewConstRef("chat")))
+	if(tokenizer.GetArgCount() != 2 || !udtString::Equals(tokenizer.GetArg(0), "chat"))
 	{
 		return;
 	}

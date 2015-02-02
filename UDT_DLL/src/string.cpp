@@ -57,7 +57,7 @@ udtString udtString::NewConstRef(const char* readOnlyString)
 {
 	udtString string;
 	string.String = (char*)readOnlyString; // We're being naughty.
-	string.Length = (u32)strlen(readOnlyString);
+	string.Length = (readOnlyString != NULL) ? (u32)strlen(readOnlyString) : 0;
 	string.ReservedBytes = 0;
 
 	return string;
@@ -356,6 +356,46 @@ bool udtString::Equals(const udtString& a, const udtString& b)
 	}
 
 	return true;
+}
+
+bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const char* pattern)
+{ 
+	return ContainsNoCase(charIndex, input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::StartsWithNoCase(const udtString& input, const char* pattern)
+{ 
+	return StartsWithNoCase(input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::EndsWithNoCase(const udtString& input, const char* pattern)
+{ 
+	return EndsWithNoCase(input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::EqualsNoCase(const udtString& a, const char* b)
+{ 
+	return EqualsNoCase(a, udtString::NewConstRef(b));
+}
+
+bool udtString::Contains(u32& charIndex, const udtString& input, const char* pattern)
+{ 
+	return Contains(charIndex, input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::StartsWith(const udtString& input, const char* pattern)
+{ 
+	return StartsWith(input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::EndsWith(const udtString& input, const char* pattern)
+{ 
+	return EndsWith(input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::Equals(const udtString& a, const char* b)
+{ 
+	return Equals(a, udtString::NewConstRef(b));
 }
 
 bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList)

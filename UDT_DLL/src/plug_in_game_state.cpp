@@ -98,21 +98,21 @@ void udtParserPlugInGameState::ProcessQlServerInfo(const char* commandString, ud
 	udtVMLinearAllocator& tempAllocator = *TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
-	char* gameStateString = NULL;
+	udtString gameStateString;
 	if(!ParseConfigStringValueString(gameStateString, tempAllocator, "g_gameState", commandString))
 	{
 		return;
 	}
 
-	if(StringEquals(gameStateString, "PRE_GAME"))
+	if(udtString::Equals(gameStateString, "PRE_GAME"))
 	{
 		newState = udtGameStateQL::PreGame;
 	}
-	else if(StringEquals(gameStateString, "COUNT_DOWN"))
+	else if(udtString::Equals(gameStateString, "COUNT_DOWN"))
 	{
 		newState = udtGameStateQL::CountDown;
 	}
-	else if(StringEquals(gameStateString, "IN_PROGRESS"))
+	else if(udtString::Equals(gameStateString, "IN_PROGRESS"))
 	{
 		newState = udtGameStateQL::InProgress;
 	}
@@ -179,11 +179,11 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 			udtVMLinearAllocator& tempAllocator = *TempAllocator;
 			udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
-			char* gameName = NULL;
+			udtString gameName;
 			udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
 			if(cs != NULL && 
 			   ParseConfigStringValueString(gameName, tempAllocator, "gamename", cs->String) &&
-			   StringEquals(gameName, "cpma"))
+			   udtString::Equals(gameName, "cpma"))
 			{
 				_gameType = udtGameType::CPMA;
 			}
@@ -393,10 +393,11 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 		return;
 	}
 
-	char* name = NULL;
+	udtString name;
 	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
 	{
-		_currentGameState.DemoTakerName = Q_CleanStr(name);
+		udtString::CleanUp(name);
+		_currentGameState.DemoTakerName = name.String;
 	}
 }
 
@@ -452,15 +453,14 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 	// Player connected?
 	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
 	{
-		// @NOTE: The cast is necessary because GCC fears the app will overwrite constant data.
-		char* name = (char*)"N/A";
+		udtString name;
 		if(!ParseConfigStringValueString(name, _stringAllocator, "n", configString.String))
 		{
-			name = (char*)"N/A";
+			name = udtString::NewConstRef("N/A");
 		}
 		else
 		{
-			name = Q_CleanStr(name);
+			udtString::CleanUp(name);
 		}
 
 		s32 team = -1;
@@ -470,21 +470,12 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		}
 
 		_playerInfos[playerIndex].Index = playerIndex;
-		_playerInfos[playerIndex].FirstName = name;
+		_playerInfos[playerIndex].FirstName = name.String;
 		_playerInfos[playerIndex].FirstTeam = team;
-	}
-	// Player info changed?
-	else if(_playerInfos[playerIndex].Index == playerIndex && configString.String != NULL && configString.StringLength > 0)
-	{
-		//_playerInfos[playerIndex].LastSnapshotTimeMs = udt_max(_playerInfos[playerIndex].LastSnapshotTimeMs, serverTimeMs);
-		//_playerInfos[playerIndex].FirstSnapshotTimeMs = udt_min(_playerInfos[playerIndex].FirstSnapshotTimeMs, serverTimeMs);
 	}
 	// Player disconnected?
 	else if(_playerInfos[playerIndex].Index == playerIndex && (configString.String == NULL || configString.StringLength == 0))
 	{
-		//_playerInfos[playerIndex].LastSnapshotTimeMs = udt_max(_playerInfos[playerIndex].LastSnapshotTimeMs, serverTimeMs);
-		//_playerInfos[playerIndex].FirstSnapshotTimeMs = udt_min(_playerInfos[playerIndex].FirstSnapshotTimeMs, serverTimeMs);
-
 		_players.Add(_playerInfos[playerIndex]);
 		++_currentGameState.PlayerCount;
 

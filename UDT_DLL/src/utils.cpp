@@ -168,46 +168,6 @@ u32 GetFolderSeparatorLength()
 	return 1;
 }
 
-bool StringMakeLowerCase(char* string)
-{
-	Q_strlwr(string);
-
-	return true;
-}
-
-bool StringMakeUpperCase(char* string)
-{
-	Q_strupr(string);
-
-	return true;
-}
-
-bool StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input)
-{
-	lowerCase = AllocateString(allocator, input);
-	if(lowerCase == NULL)
-	{
-		return false;
-	}
-
-	StringMakeLowerCase(lowerCase);
-
-	return true;
-}
-
-bool StringCloneUpperCase(char*& upperCase, udtVMLinearAllocator& allocator, const char* input)
-{
-	upperCase = AllocateString(allocator, input);
-	if(upperCase == NULL)
-	{
-		return false;
-	}
-
-	StringMakeUpperCase(upperCase);
-
-	return true;
-}
-
 bool StringParseInt(s32& output, const char* string)
 {
 	return sscanf(string, "%d", &output) == 1;
@@ -853,6 +813,7 @@ char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
 
 static const char* FindConfigStringValueAddress(const char* varName, const char* configString)
 {
+	// @FIXME: there is no backslash after the last value...
 	const char* result = strstr(configString, varName);
 	if(result == NULL)
 	{
@@ -901,7 +862,7 @@ bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* c
 	return sscanf(valueString, "%d", &varValue) == 1;
 }
 
-bool ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
+bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
 	const char* const valueStart = FindConfigStringValueAddress(varName, configString);
 	if(valueStart == NULL)
@@ -909,13 +870,14 @@ bool ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocat
 		return false;
 	}
 
+	// @FIXME: won't work with the last key/value pair?
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
 	if(separatorAfterValue == NULL)
 	{
 		return false;
 	}
 
-	varValue = AllocateString(allocator, valueStart, (u32)(separatorAfterValue - valueStart));
+	varValue = udtString::NewClone(allocator, valueStart, (u32)(separatorAfterValue - valueStart));
 
 	return true;
 }

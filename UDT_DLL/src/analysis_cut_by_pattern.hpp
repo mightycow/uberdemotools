@@ -5,6 +5,7 @@
 #include "array.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "cut_section.hpp"
+#include "string.hpp"
 
 
 struct udtCutByPatternPlugIn;
@@ -71,8 +72,8 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
 
-	void        TrackPlayerFromCommandMessage(udtBaseParser& parser);
-	const char* GetPlayerName(udtBaseParser& parser, s32 csIndex);
+	void TrackPlayerFromCommandMessage(udtBaseParser& parser);
+	bool GetPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx);
 
 	udtVMArrayWithAlloc<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArrayWithAlloc<udtPatternType::Id> _analyzerTypes;

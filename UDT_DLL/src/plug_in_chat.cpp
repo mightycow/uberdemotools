@@ -42,7 +42,7 @@ void udtParserPlugInChat::StartDemoAnalysis()
 void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*info*/, udtBaseParser& parser)
 {
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	if(strcmp(tokenizer.GetArgString(0), "chat") != 0 || tokenizer.GetArgCount() != 2)
+	if(tokenizer.GetArgCount() != 2 || !udtString::Equals(tokenizer.GetArg(0), "chat"))
 	{
 		return;
 	}
@@ -53,8 +53,12 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	chatEvent.ServerTimeMs = parser._inServerTime;
 	chatEvent.PlayerIndex = S32_MIN;
 
-	chatEvent.Strings[0].OriginalCommand = AllocateString(_chatStringAllocator, tokenizer.GetArgString(1));
-	chatEvent.Strings[1].OriginalCommand = Q_CleanStr(AllocateString(_chatStringAllocator, tokenizer.GetArgString(1)));
+	const udtString arg1 = tokenizer.GetArg(1);
+	const udtString originalCommand = udtString::NewCloneFromRef(_chatStringAllocator, arg1);
+	udtString cleanedUpCommand = udtString::NewCloneFromRef(_chatStringAllocator, arg1);
+	udtString::CleanUp(cleanedUpCommand);
+	chatEvent.Strings[0].OriginalCommand = originalCommand.String;
+	chatEvent.Strings[1].OriginalCommand = cleanedUpCommand.String;
 
 	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
