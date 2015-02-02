@@ -813,7 +813,6 @@ char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
 
 static const char* FindConfigStringValueAddress(const char* varName, const char* configString)
 {
-	// @FIXME: there is no backslash after the last value...
 	const char* result = strstr(configString, varName);
 	if(result == NULL)
 	{
@@ -870,14 +869,9 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 		return false;
 	}
 
-	// @FIXME: won't work with the last key/value pair?
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
-	if(separatorAfterValue == NULL)
-	{
-		return false;
-	}
-
-	varValue = udtString::NewClone(allocator, valueStart, (u32)(separatorAfterValue - valueStart));
+	const u32 length = (separatorAfterValue == NULL) ? 0 : (u32)(separatorAfterValue - valueStart);
+	varValue = udtString::NewClone(allocator, valueStart, length);
 
 	return true;
 }
