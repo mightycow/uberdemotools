@@ -164,9 +164,10 @@ UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
 
 UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
 {
+	const udtString filePathString = udtString::NewConstRef(filePath);
 	for(s32 i = (s32)udtProtocol::Invalid + 1; i < (s32)udtProtocol::AfterLastProtocol; ++i)
 	{
-		if(StringEndsWith_NoCase(filePath, DemoFileExtensions[i]))
+		if(udtString::EndsWithNoCase(filePathString, DemoFileExtensions[i]))
 		{
 			return (udtProtocol::Id)i;
 		}

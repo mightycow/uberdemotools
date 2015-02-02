@@ -173,168 +173,6 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringContains_NoCase(const char* string, const char* pattern, u32* charIndex)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	const u32 iend = stringLength - patternLength;
-	for(u32 i = 0; i <= iend; ++i)
-	{
-		u32 j = 0;
-		for(; pattern[j]; ++j)
-		{
-			if(::tolower(string[i + j]) != ::tolower(pattern[j]))
-			{
-				break;
-			}
-		}
-	
-		if(!pattern[j])
-		{
-			if(charIndex != NULL)
-			{
-				*charIndex = i;
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool StringStartsWith_NoCase(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(::tolower(string[j]) != ::tolower(pattern[j]))
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEndsWith_NoCase(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 i = stringLength - patternLength;
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(::tolower(string[i + j]) != ::tolower(pattern[j]))
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEquals_NoCase(const char* a, const char* b)
-{
-	return Q_stricmp(a, b) == 0;
-}
-
-bool StringContains(const char* string, const char* pattern, u32* charIndex)
-{
-	const char* const patternAddress = strstr(string, pattern);
-	if(patternAddress != NULL && charIndex != NULL)
-	{
-		*charIndex = (u32)(patternAddress - string);
-	}
-
-	return patternAddress != NULL;
-}
-
-bool StringStartsWith(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(string[j] != pattern[j])
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEndsWith(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 i = stringLength - patternLength;
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(string[i + j] != pattern[j])
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEquals(const char* a, const char* b)
-{
-	return strcmp(a, b) == 0;
-}
-
 bool StringFindFirstCharacterInList(u32& index, const char* string, const char* charList)
 {
 	const u32 stringLength = (u32)strlen(string);
@@ -428,10 +266,11 @@ bool StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, con
 
 bool StringHasTrailingFolderSeparator(const char* folderPath)
 {
+	const udtString folderPathString = udtString::NewConstRef(folderPath);
 #if defined(_WIN32)
-	return StringEndsWith(folderPath, "\\") || StringEndsWith(folderPath, "/");
+	return udtString::EndsWith(folderPathString, "\\") || udtString::EndsWith(folderPathString, "/");
 #else
-	return StringEndsWith(folderPath, "/");
+	return udtString::EndsWith(folderPathString, "/");
 #endif
 }
 
@@ -451,10 +290,11 @@ bool GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* f
 
 bool StringHasValidDemoFileExtension(const char* filePath)
 {
+	const udtString filePathString = udtString::NewConstRef(filePath);
 	for(u32 i = (u32)udtProtocol::FirstProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
 	{
 		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
-		if(StringEndsWith_NoCase(filePath, extension))
+		if(udtString::EndsWithNoCase(filePathString, extension))
 		{
 			return true;
 		}

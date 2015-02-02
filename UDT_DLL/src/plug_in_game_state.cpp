@@ -32,9 +32,10 @@ static const char* FilteredKeys[] =
 
 static bool IsInterestingKey(const char* keyName)
 {
+	const udtString keyNameString = udtString::NewConstRef(keyName);
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(FilteredKeys); ++i)
 	{
-		if(StringEquals_NoCase(keyName, FilteredKeys[i]))
+		if(udtString::EqualsNoCase(keyNameString, FilteredKeys[i]))
 		{
 			return false;
 		}
@@ -258,7 +259,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(info.String);
 	s32 csIndex = 0;
-	if(tokenizer.GetArgCount() != 3 || !StringEquals(tokenizer.GetArgString(0), "cs") || !StringParseInt(csIndex, tokenizer.GetArgString(1)))
+	if(tokenizer.GetArgCount() != 3 || !udtString::Equals(tokenizer.GetArg(0), "cs") || !StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}
