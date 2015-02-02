@@ -152,6 +152,7 @@ void udtString::AppendMultiple(udtString& result, const udtString** strings, u32
 		memcpy(newStringIter, strings[i]->String, (size_t)length);
 		newStringIter += length;
 	}
+	*newStringIter = '\0';
 
 	result.Length += extraLength;
 }

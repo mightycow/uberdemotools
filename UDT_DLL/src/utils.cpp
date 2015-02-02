@@ -651,48 +651,35 @@ char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
 	return (char*)allocator.Allocate(stringLength + 1);
 }
 
-static const char* FindConfigStringValueAddress(const char* varName, const char* configString)
+static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* result = strstr(configString, varName);
-	if(result == NULL)
+	// The format is the following: "key1\value1\key2\value2"
+	// We work with no guarantee of a leading or trailing backslash.
+	// @NOTE: Config strings 0 and 1 have a leading backslash, but player config strings don't.
+
+	const udtString inputString = udtString::NewConstRef(configString);
+	const udtString varNameString = udtString::NewConstRef(varName);
+	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.Length] == '\\')
 	{
-		return NULL;
+		return configString + varNameString.Length + 1;
 	}
 
-	if(result == configString)
+	const udtString separator = udtString::NewConstRef("\\");
+	const udtString* strings[3] = { &separator, &varNameString, &separator };
+	const udtString pattern = udtString::NewFromConcatenatingMultiple(allocator, strings, (u32)UDT_COUNT_OF(strings));
+
+	u32 charIndex = 0;
+	if(udtString::Contains(charIndex, inputString, pattern))
 	{
-		return configString + strlen(varName) + 1;
+		return configString + charIndex + pattern.Length;
 	}
 
-	const size_t varNameLength = strlen(varName);
-	if(result[-1] == '\\' && result[varNameLength] == '\\')
-	{
-		return result + varNameLength + 1;
-	}
-
-	char pattern[64];
-	const size_t patternLength = varNameLength + 2;
-	if(patternLength + 1 > sizeof(pattern))
-	{
-		return NULL;
-	}
-
-	strcpy(pattern, "\\");
-	strcat(pattern, varName);
-	strcat(pattern, "\\");
-
-	result = strstr(result + varNameLength, pattern);
-	if(result == NULL)
-	{
-		return NULL;
-	}
-
-	return result + patternLength;
+	return NULL;
 }
 
-bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString)
+bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* const valueString = FindConfigStringValueAddress(varName, configString);
+	const char* const valueString = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueString == NULL)
 	{
 		return false;
@@ -703,7 +690,7 @@ bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* c
 
 bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* const valueStart = FindConfigStringValueAddress(varName, configString);
+	const char* const valueStart = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueStart == NULL)
 	{
 		return false;

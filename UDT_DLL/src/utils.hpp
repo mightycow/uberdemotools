@@ -72,7 +72,12 @@ extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protoc
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
-
-extern bool        ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString); // Gets the integer value of a config string variable.
-extern bool        ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString); // Gets a config string variable.
 extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);
+
+// Gets the integer value of a config string variable.
+// The variable name matching is case sensitive.
+extern bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString);
+
+// Gets the string value of a config string variable.
+// The variable name matching is case sensitive.
+extern bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString);

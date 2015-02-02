@@ -134,7 +134,8 @@ void udtParserPlugInGameState::ProcessCpmaGameInfo(const char* commandString, ud
 {
 	s32 tw = -1;
 	s32 ts = -1;
-	if(ParseConfigStringValueInt(tw, "tw", commandString) && ParseConfigStringValueInt(ts, "ts", commandString))
+	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
+	if(ParseConfigStringValueInt(tw, *TempAllocator, "tw", commandString) && ParseConfigStringValueInt(ts, *TempAllocator, "ts", commandString))
 	{
 		ProcessCpmaTwTs(tw, ts, parser._inServerTime);
 	}
@@ -451,6 +452,8 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtBaseParser::u
 
 void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString)
 {
+	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
+
 	// Player connected?
 	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
 	{
@@ -465,7 +468,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		}
 
 		s32 team = -1;
-		if(!ParseConfigStringValueInt(team, "t", configString.String))
+		if(!ParseConfigStringValueInt(team, *TempAllocator, "t", configString.String))
 		{
 			team = -1;
 		}

@@ -205,7 +205,8 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
 		if(cs != NULL)
 		{
-			ParseConfigStringValueInt(_playerTeams[i], "t", cs->String);
+			udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
+			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs->String);
 		}
 	}
 }
@@ -238,5 +239,6 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	ParseConfigStringValueInt(_playerTeams[playerIdx], "t", cs->String);
+	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
+	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs->String);
 }
