@@ -489,6 +489,11 @@ bool udtString::IsNullOrEmpty(const udtString& string)
 	return string.String == NULL || *string.String == '\0';
 }
 
+bool udtString::IsNullOrEmpty(const char* string)
+{
+	return string == NULL || *string == '\0';
+}
+
 static UDT_FORCE_INLINE bool IsColorString(const char* s)
 {
 	return (s != NULL) && (s[0] == '^') && (s[1] != '\0') && (s[1] != '^');

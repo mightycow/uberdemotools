@@ -51,7 +51,6 @@ extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& alloca
 extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b);
 extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c);
 extern bool        StringSplitLines(udtVMArray<const char*>& lines, char* inOutText);
-extern bool        StringIsNullOrEmpty(const char* string);
 extern bool        GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath); // Doesn't leave a trailing separator.

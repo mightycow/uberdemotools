@@ -47,6 +47,7 @@ struct udtString
 	static bool FindLastCharacterMatch(u32& index, const udtString& input, char pattern);
 
 	static bool IsNullOrEmpty(const udtString& string);
+	static bool IsNullOrEmpty(const char* string);
 
 	static void CleanUp(udtString& result); // Strips Quake color codes and keeps printable codes only.
 

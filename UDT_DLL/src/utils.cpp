@@ -333,11 +333,6 @@ bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
 	return true;
 }
 
-bool StringIsNullOrEmpty(const char* string)
-{
-	return string == NULL || *string == '\0';
-}
-
 bool GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath)
 {
 	u32 lastFolderSeparatorIndex = (u32)-1;

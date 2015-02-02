@@ -117,7 +117,7 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 	{
 		_trackedPlayerIndex = info.ClientNum;
 	}
-	else if(!StringIsNullOrEmpty(pi.PlayerName))
+	else if(!udtString::IsNullOrEmpty(pi.PlayerName))
 	{
 		const s32 firstPlayerCsIdx = parser._inProtocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 		for(s32 i = 0; i < MAX_CLIENTS; ++i)
