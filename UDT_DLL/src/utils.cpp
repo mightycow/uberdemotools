@@ -307,19 +307,24 @@ bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const cha
 	return StringConcatenate(output, allocator, strings, UDT_COUNT_OF(strings));
 }
 
-bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
+bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText)
 {
-	const s32 length = (s32)strlen(inOutText);
+	const u32 length = (s32)inOutText.Length;
 
-	s32 lastStart = 0;
-	for(s32 i = 0; i < length; ++i)
+	udtString tempString;
+	tempString.ReservedBytes = 0;
+	tempString.Length = 0;
+
+	u32 lastStart = 0;
+	for(u32 i = 0; i < length; ++i)
 	{
-		if(inOutText[i] == '\r' || inOutText[i] == '\n')
+		if(inOutText.String[i] == '\r' || inOutText.String[i] == '\n')
 		{
-			inOutText[i] = '\0';
+			inOutText.String[i] = '\0';
 			if(i - lastStart > 0)
 			{
-				lines.Add(inOutText + lastStart);
+				tempString.String = inOutText.String + lastStart;
+				lines.Add(tempString);
 			}
 			lastStart = i + 1;
 		}
@@ -327,8 +332,17 @@ bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
 
 	if(lastStart < length)
 	{
-		lines.Add(inOutText + lastStart);
+		tempString.String = inOutText.String + lastStart;
+		lines.Add(tempString);
 	}
+
+	// Fix line lengths.
+	for(u32 i = 0, end = lines.GetSize(); i < end; ++i)
+	{
+		lines[i] = udtString::NewConstRef(lines[i].String);
+	}
+
+	inOutText = udtString::NewEmptyConstant();
 
 	return true;
 }

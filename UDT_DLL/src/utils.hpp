@@ -50,7 +50,7 @@ extern bool        StringHasValidDemoFileExtension(const char* filePath);
 extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char** strings, u32 stringCount);
 extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b);
 extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c);
-extern bool        StringSplitLines(udtVMArray<const char*>& lines, char* inOutText);
+extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
 extern bool        GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath); // Doesn't leave a trailing separator.

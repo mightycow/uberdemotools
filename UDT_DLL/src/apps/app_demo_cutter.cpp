@@ -124,94 +124,96 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 		return false;
 	}
 
+	const u32 fileLength = (u32)file.Length();
 	file.Close();
 
 	CommandLineTokenizer& tokenizer = context.Tokenizer;
 
-	udtVMArrayWithAlloc<const char*> lines(1 << 16);
-	if(!StringSplitLines(lines, (char*)fileData))
+	udtVMArrayWithAlloc<udtString> lines(1 << 16);
+	udtString fileString = udtString::NewRef(fileData, fileLength, fileLength + 1);
+	if(!StringSplitLines(lines, fileString))
 	{
 		return false;
 	}
 
 	for(u32 i = 0, count = lines.GetSize(); i < count; ++i)
 	{
-		const char* const line = lines[i];
-		if(StringIsNullOrEmpty(line) || StringStartsWith(line, "//"))
+		const udtString line = lines[i];
+		if(udtString::IsNullOrEmpty(line) || udtString::StartsWith(line, "//"))
 		{
 			continue;
 		}
 
-		if(StringEquals(line, "[ChatRule]"))
+		if(udtString::Equals(line, "[ChatRule]"))
 		{
 			definingRule = true;
 			InitRule(rule);
 			continue;
 		}
 
-		if(StringEquals(line, "[/ChatRule]"))
+		if(udtString::Equals(line, "[/ChatRule]"))
 		{
 			definingRule = false;
 			config.ChatRules.Add(rule);
 			continue;
 		}
 
-		tokenizer.Tokenize(line);
-		if(tokenizer.argc() != 2)
+		tokenizer.Tokenize(line.String);
+		if(tokenizer.GetArgCount() != 2)
 		{
 			continue;
 		}
 
 		if(definingRule)
 		{
-			if(StringEquals(tokenizer.argv(0), "ChatOperator"))
+			if(udtString::Equals(tokenizer.GetArg(0), "ChatOperator"))
 			{
-				if(StringEquals(tokenizer.argv(1), "Contains")) rule.ChatOperator = (u32)udtChatOperator::Contains;
-				else if(StringEquals(tokenizer.argv(1), "StartsWith")) rule.ChatOperator = (u32)udtChatOperator::StartsWith;
-				else if(StringEquals(tokenizer.argv(1), "EndsWith")) rule.ChatOperator = (u32)udtChatOperator::EndsWith;
+				if(udtString::Equals(tokenizer.GetArg(1), "Contains")) rule.ChatOperator = (u32)udtChatOperator::Contains;
+				else if(udtString::Equals(tokenizer.GetArg(1), "StartsWith")) rule.ChatOperator = (u32)udtChatOperator::StartsWith;
+				else if(udtString::Equals(tokenizer.GetArg(1), "EndsWith")) rule.ChatOperator = (u32)udtChatOperator::EndsWith;
 			}
-			else if(StringEquals(tokenizer.argv(0), "Pattern"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "Pattern"))
 			{
-				rule.Pattern = AllocateString(persistAllocator, tokenizer.argv(1));
+				rule.Pattern = AllocateString(persistAllocator, tokenizer.GetArgString(1));
 			}
-			else if(StringEquals(tokenizer.argv(0), "CaseSensitive"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "CaseSensitive"))
 			{
-				if(StringEquals(tokenizer.argv(1), "1")) rule.CaseSensitive = true;
-				else if(StringEquals(tokenizer.argv(1), "0")) rule.CaseSensitive = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.CaseSensitive = true;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.CaseSensitive = false;
 			}
-			else if(StringEquals(tokenizer.argv(0), "IgnoreColorCodes"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "IgnoreColorCodes"))
 			{
-				if(StringEquals(tokenizer.argv(1), "1")) rule.IgnoreColorCodes = true;
-				else if(StringEquals(tokenizer.argv(1), "0")) rule.IgnoreColorCodes = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.IgnoreColorCodes = true;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.IgnoreColorCodes = false;
 			}
 		}
 		else
 		{
-			if(StringEquals(tokenizer.argv(0), "MaxThreadCount"))
+			if(udtString::Equals(tokenizer.GetArg(0), "MaxThreadCount"))
 			{
-				if(StringParseInt(tempInt, tokenizer.argv(1)) && tempInt > 0) config.MaxThreadCount = tempInt;
+				if(StringParseInt(tempInt, tokenizer.GetArgString(1)) && tempInt > 0) config.MaxThreadCount = tempInt;
 			}
-			else if(StringEquals(tokenizer.argv(0), "StartOffset"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "StartOffset"))
 			{
-				if(StringParseInt(tempInt, tokenizer.argv(1))) config.StartOffsetSec = tempInt;
+				if(StringParseInt(tempInt, tokenizer.GetArgString(1))) config.StartOffsetSec = tempInt;
 			}
-			else if(StringEquals(tokenizer.argv(0), "EndOffset"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "EndOffset"))
 			{
-				if(StringParseInt(tempInt, tokenizer.argv(1))) config.EndOffsetSec = tempInt;
+				if(StringParseInt(tempInt, tokenizer.GetArgString(1))) config.EndOffsetSec = tempInt;
 			}
-			else if(StringEquals(tokenizer.argv(0), "RecursiveSearch"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "RecursiveSearch"))
 			{
-				if(StringEquals(tokenizer.argv(1), "1")) config.RecursiveSearch = true;
-				else if(StringEquals(tokenizer.argv(1), "0")) config.RecursiveSearch = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) config.RecursiveSearch = true;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) config.RecursiveSearch = false;
 			}
-			else if(StringEquals(tokenizer.argv(0), "UseCustomOutputFolder"))
+			else if(udtString::Equals(tokenizer.GetArg(0), "UseCustomOutputFolder"))
 			{
-				if(StringEquals(tokenizer.argv(1), "1")) config.UseCustomOutputFolder = true;
-				else if(StringEquals(tokenizer.argv(1), "0")) config.UseCustomOutputFolder = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) config.UseCustomOutputFolder = true;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) config.UseCustomOutputFolder = false;
 			}
-			else if(StringEquals(tokenizer.argv(0), "CustomOutputFolder") && IsValidDirectory(tokenizer.argv(1)))
+			else if(udtString::Equals(tokenizer.GetArg(0), "CustomOutputFolder") && IsValidDirectory(tokenizer.GetArgString(1)))
 			{
-				config.CustomOutputFolder = AllocateString(persistAllocator, tokenizer.argv(1));
+				config.CustomOutputFolder = AllocateString(persistAllocator, tokenizer.GetArgString(1));
 			}
 		}
 	}
@@ -266,6 +268,8 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 
 	udtParseArg info;
 	memset(&info, 0, sizeof(info));
+	s32 cancelOperation = 0;
+	info.CancelOperation = &cancelOperation;
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = config.UseCustomOutputFolder ? config.CustomOutputFolder : NULL;

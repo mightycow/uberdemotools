@@ -10,6 +10,7 @@ struct udtString
 	static udtString NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input);
 	static udtString NewEmptyConstant();
 	static udtString NewConstRef(const char* readOnlyString, u32 length = 0);
+	static udtString NewRef(const char* readOnlyString, u32 length, u32 reservedBytes);
 	static udtString NewEmpty(udtVMLinearAllocator& allocator, u32 reservedBytes);
 	static udtString NewFromConcatenating(udtVMLinearAllocator& allocator, const udtString& a, const udtString& b);
 	static udtString NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const udtString** strings, u32 stringCount);

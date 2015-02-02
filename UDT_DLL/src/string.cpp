@@ -63,6 +63,16 @@ udtString udtString::NewConstRef(const char* readOnlyString, u32 length)
 	return string;
 }
 
+udtString udtString::NewRef(const char* readOnlyString, u32 length, u32 reservedBytes)
+{
+	udtString string;
+	string.String = (char*)readOnlyString; // We're being naughty.
+	string.Length = length;
+	string.ReservedBytes = reservedBytes;
+
+	return string;
+}
+
 udtString udtString::NewEmpty(udtVMLinearAllocator& allocator, u32 reservedBytes)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(reservedBytes > 0, NewEmptyConstant());
@@ -268,16 +278,11 @@ bool udtString::EndsWithNoCase(const udtString& input, const udtString& pattern)
 	{
 		if(::tolower(input.String[i + j]) != ::tolower(pattern.String[j]))
 		{
-			break;
+			return false;
 		}
 	}
 
-	if(pattern.String[j] == '\0')
-	{
-		return true;
-	}
-
-	return false;
+	return true;
 }
 
 bool udtString::EqualsNoCase(const udtString& a, const udtString& b)
@@ -343,9 +348,11 @@ bool udtString::EndsWith(const udtString& input, const udtString& pattern)
 		return false;
 	}
 
-	for(u32 i = input.Length - pattern.Length, end = pattern.Length; i < end; ++i)
+	u32 i = input.Length - pattern.Length;
+	u32 j = 0;
+	for(; pattern.String[j]; ++j)
 	{
-		if(input.String[i] != pattern.String[i])
+		if(input.String[i + j] != pattern.String[j])
 		{
 			return false;
 		}
