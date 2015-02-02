@@ -53,21 +53,11 @@ udtString udtString::NewEmptyConstant()
 	return string;
 }
 
-udtString udtString::NewConstRef(const char* readOnlyString)
+udtString udtString::NewConstRef(const char* readOnlyString, u32 length)
 {
 	udtString string;
 	string.String = (char*)readOnlyString; // We're being naughty.
-	string.Length = (readOnlyString != NULL) ? (u32)strlen(readOnlyString) : 0;
-	string.ReservedBytes = 0;
-
-	return string;
-}
-
-udtString udtString::NewConstRefWithLength(const char* readOnlyString, u32 length)
-{
-	udtString string;
-	string.String = (char*)readOnlyString; // We're being naughty.
-	string.Length = length;
+	string.Length = (readOnlyString != NULL) ? (length == 0 ? (u32)strlen(readOnlyString) : length) : 0;
 	string.ReservedBytes = 0;
 
 	return string;
@@ -112,6 +102,31 @@ udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocato
 	AppendMultiple(result, strings, stringCount);
 
 	return result;
+}
+
+udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 length)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, NewEmptyConstant());
+	if(offset >= input.Length)
+	{
+		return NewEmptyConstant();
+	}
+
+	if(length == 0)
+	{
+		length = input.Length - offset;
+	}
+	else if(offset + length > input.Length)
+	{
+		return NewEmptyConstant();
+	}
+
+	udtString string;
+	string.String = input.String + offset;
+	string.Length = length;
+	string.ReservedBytes = input.ReservedBytes - offset;
+
+	return string;
 }
 
 void udtString::Append(udtString& result, const udtString& input)
@@ -431,6 +446,38 @@ bool udtString::FindLastCharacterListMatch(u32& index, const udtString& input, c
 				index = (u32)i;
 				return true;
 			}
+		}
+	}
+
+	return false;
+}
+
+bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
+
+	for(u32 i = 0; i < input.Length; ++i)
+	{
+		if(input.String[i] == pattern)
+		{
+			index = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool udtString::FindLastCharacterMatch(u32& index, const udtString& input, char pattern)
+{ 
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
+
+	for(s32 i = (s32)input.Length - 1; i >= 0; --i)
+	{
+		if(input.String[i] == pattern)
+		{
+			index = (u32)i;
+			return true;
 		}
 	}
 

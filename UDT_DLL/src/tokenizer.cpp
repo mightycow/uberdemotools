@@ -40,7 +40,7 @@ udtString CommandLineTokenizer::GetArg(u32 arg) const
 		return udtString::NewEmptyConstant();
 	}
 
-	return udtString::NewConstRefWithLength(_argStrings[arg], _argLengths[arg]);
+	return udtString::NewConstRef(_argStrings[arg], _argLengths[arg]);
 }
 
 void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)

@@ -44,8 +44,6 @@ extern void	       CallbackConsoleProgress(f32 progress, void* userData);
 extern const char* GetFolderSeparator();
 extern u32         GetFolderSeparatorLength();
 extern bool        StringParseInt(s32& output, const char* string);
-extern bool        StringFindFirstCharacterInList(u32& index, const char* string, const char* charList);
-extern bool        StringFindLastCharacterInList(u32& index, const char* string, const char* charList);
 extern bool        StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra);
 extern bool        StringHasTrailingFolderSeparator(const char* folderPath);
 extern bool        StringHasValidDemoFileExtension(const char* filePath);

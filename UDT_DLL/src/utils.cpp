@@ -173,46 +173,6 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringFindFirstCharacterInList(u32& index, const char* string, const char* charList)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 charListLength = (u32)strlen(charList);
-
-	for(u32 i = 0; i < stringLength; ++i)
-	{
-		for(u32 j = 0; j < charListLength; ++j)
-		{
-			if(string[i] == charList[j])
-			{
-				index = i;
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-bool StringFindLastCharacterInList(u32& index, const char* string, const char* charList)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 charListLength = (u32)strlen(charList);
-
-	for(s32 i = (s32)stringLength - 1; i >= 0; --i)
-	{
-		for(u32 j = 0; j < charListLength; ++j)
-		{
-			if(string[i] == charList[j])
-			{
-				index = (u32)i;
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
 {
 	if(string.String == NULL || rule.Pattern == NULL)
@@ -278,7 +238,8 @@ bool GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* f
 {
 	u32 lastFolderSeparatorIndex = (u32)-1;
 	const char* fileNameStart = filePath;
-	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	const udtString filePathString = udtString::NewConstRef(filePath);
+	if(udtString::FindLastCharacterListMatch(lastFolderSeparatorIndex, filePathString, udtString::NewConstRef("/\\")))
 	{
 		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
 	}
@@ -381,7 +342,8 @@ bool GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& all
 {
 	u32 lastFolderSeparatorIndex = (u32)-1;
 	const char* fileNameStart = filePath;
-	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	const udtString filePathString = udtString::NewConstRef(filePath);
+	if(udtString::FindLastCharacterListMatch(lastFolderSeparatorIndex, filePathString, udtString::NewConstRef("/\\")))
 	{
 		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
 	}
@@ -401,7 +363,8 @@ bool GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& all
 bool GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath)
 {
 	u32 lastFolderSeparatorIndex = (u32)-1;
-	if(!StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	const udtString filePathString = udtString::NewConstRef(filePath);
+	if(!udtString::FindLastCharacterListMatch(lastFolderSeparatorIndex, filePathString, udtString::NewConstRef("/\\")))
 	{
 		folderPath = AllocateString(allocator, "");
 

@@ -201,9 +201,16 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	_currentGameState.Matches = _matches.GetEndAddress();
 	_currentGameState.KeyValuePairs = _keyValuePairs.GetEndAddress();
 	_currentGameState.Players = _players.GetEndAddress();
-	
+
+	const udtBaseParser::udtConfigString& systemInfoCs = parser._inConfigStrings[CS_SYSTEMINFO];
+	const udtBaseParser::udtConfigString& serverInfoCs = parser._inConfigStrings[CS_SERVERINFO];
+	const udtString systemInfoString = udtString::NewConstRef(systemInfoCs.String, systemInfoCs.StringLength);
+	const udtString serverInfoString = udtString::NewConstRef(serverInfoCs.String, serverInfoCs.StringLength);
+	const udtString backslashString = udtString::NewConstRef("\\");
+	const udtString* systemAndServerStringParts[3] = { &systemInfoString, &serverInfoString, &backslashString };
+	const udtString systemAndServerString = udtString::NewFromConcatenatingMultiple(_stringAllocator, systemAndServerStringParts, (u32)UDT_COUNT_OF(systemAndServerStringParts));
 	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings);
-	ProcessSystemAndServerInfo(parser._inConfigStrings[CS_SYSTEMINFO], parser._inConfigStrings[CS_SERVERINFO]);
+	ProcessSystemAndServerInfo(systemAndServerString);
 
 	const s32 playerCSBaseIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
 	for(s32 i = 0; i < 64; ++i)
@@ -403,23 +410,15 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	}
 }
 
-void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtBaseParser::udtConfigString& systemCs, const udtBaseParser::udtConfigString& serverCs)
+void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& configStrings)
 {
-	const u32 newStringLength = systemCs.StringLength + serverCs.StringLength + 1;
-	char* const newString = (char*)_stringAllocator.Allocate((uptr)(newStringLength + 1));
-
-	memcpy(newString, systemCs.String, (size_t)systemCs.StringLength);
-	memcpy(newString + systemCs.StringLength, serverCs.String, (size_t)serverCs.StringLength);
-	newString[newStringLength - 1] = '\\';
-	newString[newStringLength] = '\0';
-
+	char* const searchString = configStrings.String;
 	const u32 previousCount = _keyValuePairs.GetSize();
-
 	u32 keyStart = 1;
 	for(;;)
 	{
 		u32 keyEnd = 0;
-		if(!StringFindFirstCharacterInList(keyEnd, newString + keyStart, "\\"))
+		if(!udtString::FindFirstCharacterMatch(keyEnd, udtString::NewSubstringRef(configStrings, keyStart), '\\'))
 		{
 			break;
 		}
@@ -427,20 +426,20 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtBaseParser::u
 		const u32 valueStart = keyEnd + 1;
 
 		u32 valueEnd = 0;
-		if(!StringFindFirstCharacterInList(valueEnd, newString + valueStart, "\\"))
+		if(!udtString::FindFirstCharacterMatch(valueEnd, udtString::NewSubstringRef(configStrings, valueStart), '\\'))
 		{
 			break;
 		}
 		valueEnd += valueStart;
 
-		newString[keyEnd] = '\0';
-		newString[valueEnd] = '\0';
+		searchString[keyEnd] = '\0';
+		searchString[valueEnd] = '\0';
 
-		if(IsInterestingKey(newString + keyStart))
+		if(IsInterestingKey(searchString + keyStart))
 		{
 			udtGameStateKeyValuePair info;
-			info.Name = newString + keyStart;
-			info.Value = newString + valueStart;
+			info.Name = searchString + keyStart;
+			info.Value = searchString + valueStart;
 			_keyValuePairs.Add(info);
 		}
 

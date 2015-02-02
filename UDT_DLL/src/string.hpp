@@ -9,11 +9,11 @@ struct udtString
 	static udtString NewClone(udtVMLinearAllocator& allocator, const char* input, u32 inputLength = 0);
 	static udtString NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input);
 	static udtString NewEmptyConstant();
-	static udtString NewConstRef(const char* readOnlyString);
-	static udtString NewConstRefWithLength(const char* readOnlyString, u32 length);
+	static udtString NewConstRef(const char* readOnlyString, u32 length = 0);
 	static udtString NewEmpty(udtVMLinearAllocator& allocator, u32 reservedBytes);
 	static udtString NewFromConcatenating(udtVMLinearAllocator& allocator, const udtString& a, const udtString& b);
 	static udtString NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const udtString** strings, u32 stringCount);
+	static udtString NewSubstringRef(const udtString& input, u32 offset, u32 length = 0);
 
 	static void Append(udtString& result, const udtString& input);
 	static void AppendMultiple(udtString& result, const udtString** strings, u32 stringCount);
@@ -43,6 +43,8 @@ struct udtString
 
 	static bool FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
 	static bool FindLastCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
+	static bool FindFirstCharacterMatch(u32& index, const udtString& input, char pattern);
+	static bool FindLastCharacterMatch(u32& index, const udtString& input, char pattern);
 
 	static bool IsNullOrEmpty(const udtString& string);
 
