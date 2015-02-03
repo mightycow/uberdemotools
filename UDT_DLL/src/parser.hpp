@@ -55,7 +55,7 @@ private:
 	void                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
 	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
-	const char*           GetFileName() { return (_inFileName != NULL) ? _inFileName : "N/A"; }
+	const char*           GetFileName() { return (_inFileName.String != NULL) ? _inFileName.String : "N/A"; }
 
 public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
@@ -112,8 +112,8 @@ public:
 	bool EnablePlugIns;
 
 	// Input.
-	const char* _inFilePath;
-	const char* _inFileName;
+	udtString _inFilePath;
+	udtString _inFileName;
 	udtMessage _inMsg; // This instance does *NOT* have ownership of the raw message data.
 	u32 _inFileOffset;
 	s32 _inServerMessageSequence; // Unreliable.

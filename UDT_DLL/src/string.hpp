@@ -6,15 +6,22 @@
 
 struct udtString
 {
-	static udtString NewClone(udtVMLinearAllocator& allocator, const char* input, u32 inputLength = 0);
+	enum Constants
+	{
+		InvalidLength = -1
+	};
+
+	static udtString NewClone(udtVMLinearAllocator& allocator, const char* input, u32 inputLength = (u32)InvalidLength);
 	static udtString NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input);
 	static udtString NewEmptyConstant();
-	static udtString NewConstRef(const char* readOnlyString, u32 length = 0);
+	static udtString NewConstRef(const char* readOnlyString, u32 length = (u32)InvalidLength);
 	static udtString NewRef(const char* readOnlyString, u32 length, u32 reservedBytes);
 	static udtString NewEmpty(udtVMLinearAllocator& allocator, u32 reservedBytes);
 	static udtString NewFromConcatenating(udtVMLinearAllocator& allocator, const udtString& a, const udtString& b);
 	static udtString NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const udtString** strings, u32 stringCount);
-	static udtString NewSubstringRef(const udtString& input, u32 offset, u32 length = 0);
+	static udtString NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const char** strings, u32 stringCount);
+	static udtString NewSubstringRef(const udtString& input, u32 offset, u32 length = (u32)InvalidLength);
+	static udtString NewSubstringClone(udtVMLinearAllocator& allocator, const udtString& input, u32 offset, u32 length = (u32)InvalidLength);
 
 	static void Append(udtString& result, const udtString& input);
 	static void AppendMultiple(udtString& result, const udtString** strings, u32 stringCount);

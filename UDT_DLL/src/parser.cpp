@@ -1,6 +1,7 @@
 #include "parser.hpp"
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "path.hpp"
 
 
 udtBaseParser::udtBaseParser() 
@@ -12,8 +13,8 @@ udtBaseParser::udtBaseParser()
 	UserData = NULL;
 	EnablePlugIns = true;
 
-	_inFileName = NULL;
-	_inFilePath = NULL;
+	_inFileName = udtString::NewEmptyConstant();
+	_inFilePath = udtString::NewEmptyConstant();
 	_inFileOffset = 0;
 	_inServerMessageSequence = -1;
 	_inServerCommandSequence = -1;
@@ -68,8 +69,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_outMsg.InitContext(context);
 	_outMsg.InitProtocol(outProtocol);
 
-	_inFileName = NULL;
-	_inFilePath = NULL;
+	_inFileName = udtString::NewEmptyConstant();
+	_inFilePath = udtString::NewEmptyConstant();
 
 	_cuts.Clear();
 	_persistentAllocator.Clear();
@@ -130,11 +131,8 @@ void udtBaseParser::ResetForGamestateMessage()
 
 void udtBaseParser::SetFilePath(const char* filePath)
 {
-	_inFilePath = AllocateString(_persistentAllocator, filePath);
-
-	char* fileName = NULL;
-	::GetFileName(fileName, _persistentAllocator, filePath);
-	_inFileName = fileName;
+	_inFilePath = udtString::NewClone(_persistentAllocator, filePath);
+	udtPath::GetFileName(_inFileName, _persistentAllocator, _inFilePath);
 }
 
 void udtBaseParser::Destroy()

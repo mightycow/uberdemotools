@@ -21,7 +21,7 @@ udtString udtString::NewClone(udtVMLinearAllocator& allocator, const char* input
 		input = "";
 		inputLength = 0;
 	}
-	else if(inputLength == 0)
+	else if(inputLength == (u32)InvalidLength)
 	{
 		inputLength = (u32)strlen(input);
 	}
@@ -57,7 +57,7 @@ udtString udtString::NewConstRef(const char* readOnlyString, u32 length)
 {
 	udtString string;
 	string.String = (char*)readOnlyString; // We're being naughty.
-	string.Length = (readOnlyString != NULL) ? (length == 0 ? (u32)strlen(readOnlyString) : length) : 0;
+	string.Length = (readOnlyString != NULL) ? (length == (u32)InvalidLength ? (u32)strlen(readOnlyString) : length) : 0;
 	string.ReservedBytes = 0;
 
 	return string;
@@ -97,6 +97,8 @@ udtString udtString::NewFromConcatenating(udtVMLinearAllocator& allocator, const
 
 udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const udtString** strings, u32 stringCount)
 {
+	UDT_ASSERT_OR_RETURN_VALUE(strings != NULL && stringCount > 0, NewEmptyConstant());
+
 	u32 newLength = 0;
 	for(u32 i = 0; i < stringCount; ++i)
 	{
@@ -114,6 +116,46 @@ udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocato
 	return result;
 }
 
+udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const char** strings, u32 stringCount)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(strings != NULL && stringCount > 0, NewEmptyConstant());
+
+	u32 newLength = 0;
+	for(u32 i = 0; i < stringCount; ++i)
+	{
+		if(strings[i] == NULL)
+		{
+			continue;
+		}
+
+		newLength += (u32)strlen(strings[i]);
+	}
+
+	char* const newStringBuffer = (char*)allocator.Allocate((u32)newLength + 1);
+	UDT_ASSERT_OR_RETURN_VALUE(newStringBuffer != NULL, NewEmptyConstant());
+
+	char* newStringIter = newStringBuffer;
+	for(u32 i = 0; i < stringCount; ++i)
+	{
+		if(strings[i] == NULL)
+		{
+			continue;
+		}
+
+		const u32 length = (u32)strlen(strings[i]);
+		memcpy(newStringIter, strings[i], (size_t)length);
+		newStringIter += length;
+	}
+	*newStringIter = '\0';
+
+	udtString result;
+	result.String = newStringBuffer;
+	result.Length = newLength;
+	result.ReservedBytes = newLength + 1;
+
+	return result;
+}
+
 udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 length)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, NewEmptyConstant());
@@ -122,7 +164,7 @@ udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 len
 		return NewEmptyConstant();
 	}
 
-	if(length == 0)
+	if(length == (u32)InvalidLength)
 	{
 		length = input.Length - offset;
 	}
@@ -137,6 +179,26 @@ udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 len
 	string.ReservedBytes = input.ReservedBytes - offset;
 
 	return string;
+}
+
+udtString udtString::NewSubstringClone(udtVMLinearAllocator& allocator, const udtString& input, u32 offset, u32 length)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, NewEmptyConstant());
+	if(offset >= input.Length)
+	{
+		return NewEmptyConstant();
+	}
+
+	if(length == (u32)InvalidLength)
+	{
+		length = input.Length - offset;
+	}
+	else if(offset + length > input.Length)
+	{
+		return NewEmptyConstant();
+	}
+
+	return udtString::NewClone(allocator, input.String + offset, length);
 }
 
 void udtString::Append(udtString& result, const udtString& input)

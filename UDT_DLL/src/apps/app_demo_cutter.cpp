@@ -6,6 +6,7 @@
 #include "parser_context.hpp"
 #include "timer.hpp"
 #include "stack_trace.hpp"
+#include "path.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -304,11 +305,11 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
 		{
-			char* fileName = NULL;
+			udtString fileName;
 			tempAllocator.Clear();
-			GetFileName(fileName, tempAllocator, filePaths[i]);
+			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName != NULL ? fileName : "?", udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
@@ -346,7 +347,7 @@ static void PrintHelp()
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 {
-	return StringHasValidDemoFileExtension(name);
+	return udtPath::HasValidDemoFileExtension(name);
 }
 
 static void CrashHandler(const char* message)
@@ -398,7 +399,7 @@ int main(int argc, char** argv)
 		printf("Two arguments, enabling cut by chat.\n");
 
 		bool fileMode = false;
-		if(udtFileStream::Exists(argv[1]) && StringHasValidDemoFileExtension(argv[1]))
+		if(udtFileStream::Exists(argv[1]) && udtPath::HasValidDemoFileExtension(argv[1]))
 		{
 			fileMode = true;
 		}
@@ -457,7 +458,7 @@ int main(int argc, char** argv)
 
 	printf("Four arguments, enabling cut by time.\n");
 
-	if(!udtFileStream::Exists(argv[1]) || !StringHasValidDemoFileExtension(argv[1]))
+	if(!udtFileStream::Exists(argv[1]) || !udtPath::HasValidDemoFileExtension(argv[1]))
 	{
 		printf("Invalid file path.\n");
 		PrintHelp();

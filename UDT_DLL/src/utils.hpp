@@ -41,20 +41,8 @@ extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTim
 extern udtStream*  CallbackConvertedDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
 extern void	       CallbackConsoleProgress(f32 progress, void* userData);
-extern const char* GetFolderSeparator();
-extern u32         GetFolderSeparatorLength();
 extern bool        StringParseInt(s32& output, const char* string);
-extern bool        StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra);
-extern bool        StringHasTrailingFolderSeparator(const char* folderPath);
-extern bool        StringHasValidDemoFileExtension(const char* filePath);
-extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char** strings, u32 stringCount);
-extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b);
-extern bool        StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c);
 extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
-extern bool        GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath);
-extern bool        GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath);
-extern bool        GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath); // Doesn't leave a trailing separator.
-extern bool        GetFileExtension(char*& fileExtension, udtVMLinearAllocator& allocator, const char* filePath);
 extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
 extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.
 extern bool        StringParseSeconds(s32& duration, const char* buffer); // Format is minutes:seconds or seconds.

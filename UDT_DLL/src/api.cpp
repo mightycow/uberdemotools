@@ -10,6 +10,7 @@
 #include "scoped_stack_allocator.hpp"
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
+#include "path.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -277,22 +278,24 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
-	char* fileName = NULL;
-	if(!GetFileNameWithoutExtension(fileName, tempAllocator, filePath))
+	const udtString filePathString = udtString::NewConstRef(filePath);
+
+	udtString fileName;
+	if(!udtPath::GetFileNameWithoutExtension(fileName, tempAllocator, filePathString))
 	{
-		fileName = AllocateString(tempAllocator, "NEW_UDT_SPLIT_DEMO");
+		fileName = udtString::NewConstRef("NEW_UDT_SPLIT_DEMO");
 	}
 	
-	char* outputFilePathStart = NULL;
+	udtString outputFilePathStart;
 	if(outputFolderPath == NULL)
 	{
-		char* inputFolderPath = NULL;
-		GetFolderPath(inputFolderPath, tempAllocator, filePath);
-		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, fileName);
+		udtString inputFolderPath;
+		udtPath::GetFolderPath(inputFolderPath, tempAllocator, filePathString);
+		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, fileName);
 	}
 	else
 	{
-		StringPathCombine(outputFilePathStart, tempAllocator, outputFolderPath, fileName);
+		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
 	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
