@@ -1183,9 +1183,7 @@ typedef enum
 #define	DEFAULT_GRAVITY		800
 #define	GIB_HEALTH			-40
 
-// @TODO: idItemCPMA
-
-struct idItem68
+struct idItem68_baseq3
 {
 	enum Id
 	{
@@ -1225,24 +1223,53 @@ struct idItem68
 		ItemFlight,
 		TeamCTFRedflag,
 		TeamCTFBlueflag,
-#ifdef MISSIONPACK
-		HoldableKamikaze,
-		HoldablePortal,
-		HoldableInvulnerability,
-		AmmoNails,
-		AmmoMines,
-		AmmoBelt,
-		ItemScout,
-		ItemGuard,
-		ItemDoubler,
-		ItemAmmoregen,
+		Count
+	};
+};
+
+struct idItem68_CPMA
+{
+	enum Id
+	{
+		Null,
+		ItemArmorShard,
+		ItemArmorCombat,
+		ItemArmorBody,
+		ItemHealthSmall,
+		ItemHealth,
+		ItemHealthLarge,
+		ItemHealthMega,
+		WeaponGauntlet,
+		WeaponShotgun,
+		WeaponMachinegun,
+		WeaponGrenadelauncher,
+		WeaponRocketlauncher,
+		WeaponLightning,
+		WeaponRailgun,
+		WeaponPlasmagun,
+		WeaponBFG,
+		WeaponGrapplinghook,
+		AmmoShells,
+		AmmoBullets,
+		AmmoGrenades,
+		AmmoCells,
+		AmmoLightning,
+		AmmoRockets,
+		AmmoSlugs,
+		AmmoBFG,
+		HoldableTeleporter,
+		HoldableMedkit,
+		ItemQuad,
+		ItemEnviro,
+		ItemHaste,
+		ItemInvis,
+		ItemRegen,
+		ItemFlight,
+		TeamCTFRedflag,
+		TeamCTFBlueflag,
+		ItemArmorJacket,
+		ItemBackpack,
 		TeamCTFNeutralflag,
-		ItemRedcube,
-		ItemBluecube,
-		WeaponNailgun,
-		WeaponProxLauncher,
-		WeaponChaingun,
-#endif
 		Count
 	};
 };

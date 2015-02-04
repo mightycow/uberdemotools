@@ -127,45 +127,45 @@ s32 ConvertEntityModelIndex90to68VQ3(s32 modelIndex)
 {
 	switch((idItem90::Id)modelIndex)
 	{
-		case idItem90::Null: return (s32)idItem68::Null;
-		case idItem90::ItemArmorShard: return (s32)idItem68::ItemArmorShard;
-		case idItem90::ItemArmorCombat: return (s32)idItem68::ItemArmorCombat;
-		case idItem90::ItemArmorBody: return (s32)idItem68::ItemArmorBody;
-		case idItem90::ItemHealthSmall: return (s32)idItem68::ItemHealthSmall;
-		case idItem90::ItemHealth: return (s32)idItem68::ItemHealth;
-		case idItem90::ItemHealthLarge: return (s32)idItem68::ItemHealthLarge;
-		case idItem90::ItemHealthMega: return (s32)idItem68::ItemHealthMega;
-		case idItem90::WeaponGauntlet: return (s32)idItem68::WeaponGauntlet;
-		case idItem90::WeaponShotgun: return (s32)idItem68::WeaponShotgun;
-		case idItem90::WeaponMachinegun: return (s32)idItem68::WeaponMachinegun;
-		case idItem90::WeaponGrenadelauncher: return (s32)idItem68::WeaponGrenadelauncher;
-		case idItem90::WeaponRocketlauncher: return (s32)idItem68::WeaponRocketlauncher;
-		case idItem90::WeaponLightning: return (s32)idItem68::WeaponLightning;
-		case idItem90::WeaponRailgun: return (s32)idItem68::WeaponRailgun;
-		case idItem90::WeaponPlasmagun: return (s32)idItem68::WeaponPlasmagun;
-		case idItem90::WeaponBFG: return (s32)idItem68::WeaponBFG;
-		case idItem90::WeaponGrapplinghook: return (s32)idItem68::WeaponGrapplinghook;
-		case idItem90::AmmoShells: return (s32)idItem68::AmmoShells;
-		case idItem90::AmmoBullets: return (s32)idItem68::AmmoBullets;
-		case idItem90::AmmoGrenades: return (s32)idItem68::AmmoGrenades;
-		case idItem90::AmmoCells: return (s32)idItem68::AmmoCells;
-		case idItem90::AmmoLightning: return (s32)idItem68::AmmoLightning;
-		case idItem90::AmmoRockets: return (s32)idItem68::AmmoRockets;
-		case idItem90::AmmoSlugs: return (s32)idItem68::AmmoSlugs;
-		case idItem90::AmmoBFG: return (s32)idItem68::AmmoBFG;
-		case idItem90::HoldableTeleporter: return (s32)idItem68::HoldableTeleporter;
-		case idItem90::HoldableMedkit: return (s32)idItem68::HoldableMedkit;
-		case idItem90::ItemQuad: return (s32)idItem68::ItemQuad;
-		case idItem90::ItemEnviro: return (s32)idItem68::ItemEnviro;
-		case idItem90::ItemHaste: return (s32)idItem68::ItemHaste;
-		case idItem90::ItemInvis: return (s32)idItem68::ItemInvis;
-		case idItem90::ItemRegen: return (s32)idItem68::ItemRegen;
-		case idItem90::ItemFlight: return (s32)idItem68::ItemFlight;
-		case idItem90::TeamCTFRedflag: return (s32)idItem68::TeamCTFRedflag;
-		case idItem90::TeamCTFBlueflag: return (s32)idItem68::TeamCTFBlueflag;
+		case idItem90::Null: return (s32)idItem68_baseq3::Null;
+		case idItem90::ItemArmorShard: return (s32)idItem68_baseq3::ItemArmorShard;
+		case idItem90::ItemArmorCombat: return (s32)idItem68_baseq3::ItemArmorCombat;
+		case idItem90::ItemArmorBody: return (s32)idItem68_baseq3::ItemArmorBody;
+		case idItem90::ItemHealthSmall: return (s32)idItem68_baseq3::ItemHealthSmall;
+		case idItem90::ItemHealth: return (s32)idItem68_baseq3::ItemHealth;
+		case idItem90::ItemHealthLarge: return (s32)idItem68_baseq3::ItemHealthLarge;
+		case idItem90::ItemHealthMega: return (s32)idItem68_baseq3::ItemHealthMega;
+		case idItem90::WeaponGauntlet: return (s32)idItem68_baseq3::WeaponGauntlet;
+		case idItem90::WeaponShotgun: return (s32)idItem68_baseq3::WeaponShotgun;
+		case idItem90::WeaponMachinegun: return (s32)idItem68_baseq3::WeaponMachinegun;
+		case idItem90::WeaponGrenadelauncher: return (s32)idItem68_baseq3::WeaponGrenadelauncher;
+		case idItem90::WeaponRocketlauncher: return (s32)idItem68_baseq3::WeaponRocketlauncher;
+		case idItem90::WeaponLightning: return (s32)idItem68_baseq3::WeaponLightning;
+		case idItem90::WeaponRailgun: return (s32)idItem68_baseq3::WeaponRailgun;
+		case idItem90::WeaponPlasmagun: return (s32)idItem68_baseq3::WeaponPlasmagun;
+		case idItem90::WeaponBFG: return (s32)idItem68_baseq3::WeaponBFG;
+		case idItem90::WeaponGrapplinghook: return (s32)idItem68_baseq3::WeaponGrapplinghook;
+		case idItem90::AmmoShells: return (s32)idItem68_baseq3::AmmoShells;
+		case idItem90::AmmoBullets: return (s32)idItem68_baseq3::AmmoBullets;
+		case idItem90::AmmoGrenades: return (s32)idItem68_baseq3::AmmoGrenades;
+		case idItem90::AmmoCells: return (s32)idItem68_baseq3::AmmoCells;
+		case idItem90::AmmoLightning: return (s32)idItem68_baseq3::AmmoLightning;
+		case idItem90::AmmoRockets: return (s32)idItem68_baseq3::AmmoRockets;
+		case idItem90::AmmoSlugs: return (s32)idItem68_baseq3::AmmoSlugs;
+		case idItem90::AmmoBFG: return (s32)idItem68_baseq3::AmmoBFG;
+		case idItem90::HoldableTeleporter: return (s32)idItem68_baseq3::HoldableTeleporter;
+		case idItem90::HoldableMedkit: return (s32)idItem68_baseq3::HoldableMedkit;
+		case idItem90::ItemQuad: return (s32)idItem68_baseq3::ItemQuad;
+		case idItem90::ItemEnviro: return (s32)idItem68_baseq3::ItemEnviro;
+		case idItem90::ItemHaste: return (s32)idItem68_baseq3::ItemHaste;
+		case idItem90::ItemInvis: return (s32)idItem68_baseq3::ItemInvis;
+		case idItem90::ItemRegen: return (s32)idItem68_baseq3::ItemRegen;
+		case idItem90::ItemFlight: return (s32)idItem68_baseq3::ItemFlight;
+		case idItem90::TeamCTFRedflag: return (s32)idItem68_baseq3::TeamCTFRedflag;
+		case idItem90::TeamCTFBlueflag: return (s32)idItem68_baseq3::TeamCTFBlueflag;
 		// Unsupported items:
 		case idItem90::ItemArmorJacket:
-			return (s32)idItem68::ItemArmorShard;
+			return (s32)idItem68_baseq3::ItemArmorBody; // Make greens look like yellows.
 		case idItem90::HoldableKamikaze:
 		case idItem90::HoldablePortal:
 		case idItem90::HoldableInvulnerability:
@@ -187,7 +187,75 @@ s32 ConvertEntityModelIndex90to68VQ3(s32 modelIndex)
 		case idItem90::AmmoHMG:
 		case idItem90::AmmoPack:
 		default: 
-			return (s32)idItem68::Null;
+			return (s32)idItem68_baseq3::Null;
+	}
+}
+
+s32 ConvertEntityModelIndex90to68CPMA(s32 modelIndex)
+{
+	switch((idItem90::Id)modelIndex)
+	{
+		case idItem90::Null: return (s32)idItem68_CPMA::Null;
+		case idItem90::ItemArmorShard: return (s32)idItem68_CPMA::ItemArmorShard;
+		case idItem90::ItemArmorCombat: return (s32)idItem68_CPMA::ItemArmorCombat;
+		case idItem90::ItemArmorBody: return (s32)idItem68_CPMA::ItemArmorBody;
+		case idItem90::ItemArmorJacket: return (s32)idItem68_CPMA::ItemArmorJacket;
+		case idItem90::ItemHealthSmall: return (s32)idItem68_CPMA::ItemHealthSmall;
+		case idItem90::ItemHealth: return (s32)idItem68_CPMA::ItemHealth;
+		case idItem90::ItemHealthLarge: return (s32)idItem68_CPMA::ItemHealthLarge;
+		case idItem90::ItemHealthMega: return (s32)idItem68_CPMA::ItemHealthMega;
+		case idItem90::WeaponGauntlet: return (s32)idItem68_CPMA::WeaponGauntlet;
+		case idItem90::WeaponShotgun: return (s32)idItem68_CPMA::WeaponShotgun;
+		case idItem90::WeaponMachinegun: return (s32)idItem68_CPMA::WeaponMachinegun;
+		case idItem90::WeaponGrenadelauncher: return (s32)idItem68_CPMA::WeaponGrenadelauncher;
+		case idItem90::WeaponRocketlauncher: return (s32)idItem68_CPMA::WeaponRocketlauncher;
+		case idItem90::WeaponLightning: return (s32)idItem68_CPMA::WeaponLightning;
+		case idItem90::WeaponRailgun: return (s32)idItem68_CPMA::WeaponRailgun;
+		case idItem90::WeaponPlasmagun: return (s32)idItem68_CPMA::WeaponPlasmagun;
+		case idItem90::WeaponBFG: return (s32)idItem68_CPMA::WeaponBFG;
+		case idItem90::WeaponGrapplinghook: return (s32)idItem68_CPMA::WeaponGrapplinghook;
+		case idItem90::AmmoShells: return (s32)idItem68_CPMA::AmmoShells;
+		case idItem90::AmmoBullets: return (s32)idItem68_CPMA::AmmoBullets;
+		case idItem90::AmmoGrenades: return (s32)idItem68_CPMA::AmmoGrenades;
+		case idItem90::AmmoCells: return (s32)idItem68_CPMA::AmmoCells;
+		case idItem90::AmmoLightning: return (s32)idItem68_CPMA::AmmoLightning;
+		case idItem90::AmmoRockets: return (s32)idItem68_CPMA::AmmoRockets;
+		case idItem90::AmmoSlugs: return (s32)idItem68_CPMA::AmmoSlugs;
+		case idItem90::AmmoBFG: return (s32)idItem68_CPMA::AmmoBFG;
+		case idItem90::HoldableTeleporter: return (s32)idItem68_CPMA::HoldableTeleporter;
+		case idItem90::HoldableMedkit: return (s32)idItem68_CPMA::HoldableMedkit;
+		case idItem90::ItemQuad: return (s32)idItem68_CPMA::ItemQuad;
+		case idItem90::ItemEnviro: return (s32)idItem68_CPMA::ItemEnviro;
+		case idItem90::ItemHaste: return (s32)idItem68_CPMA::ItemHaste;
+		case idItem90::ItemInvis: return (s32)idItem68_CPMA::ItemInvis;
+		case idItem90::ItemRegen: return (s32)idItem68_CPMA::ItemRegen;
+		case idItem90::ItemFlight: return (s32)idItem68_CPMA::ItemFlight;
+		case idItem90::TeamCTFRedflag: return (s32)idItem68_CPMA::TeamCTFRedflag;
+		case idItem90::TeamCTFBlueflag: return (s32)idItem68_CPMA::TeamCTFBlueflag;
+		case idItem90::TeamCTFNeutralflag: return (s32)idItem68_CPMA::TeamCTFNeutralflag;
+			// Unsupported items.
+		case idItem90::AmmoPack: 
+			return (s32)idItem68_CPMA::ItemBackpack;
+		case idItem90::HoldableKamikaze:
+		case idItem90::HoldablePortal:
+		case idItem90::HoldableInvulnerability:
+		case idItem90::AmmoNails:
+		case idItem90::AmmoMines:
+		case idItem90::AmmoBelt:
+		case idItem90::ItemScout:
+		case idItem90::ItemGuard:
+		case idItem90::ItemDoubler:
+		case idItem90::ItemAmmoregen:
+		case idItem90::ItemRedcube:
+		case idItem90::ItemBluecube:
+		case idItem90::WeaponNailgun:
+		case idItem90::WeaponProxLauncher:
+		case idItem90::WeaponChaingun:
+		case idItem90::ItemSpawnarmor:
+		case idItem90::WeaponHMG:
+		case idItem90::AmmoHMG:
+		default:
+			return (s32)idItem68_CPMA::Null;
 	}
 }
 
@@ -244,7 +312,7 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 	
 	if(inEntityState.eType == ET_ITEM)
 	{
-		outEntityState.modelindex = ConvertEntityModelIndex90to68VQ3(inEntityState.modelindex);
+		outEntityState.modelindex = ConvertEntityModelIndex90to68CPMA(inEntityState.modelindex);
 	}
 	else
 	{
@@ -366,7 +434,7 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 	u32 index = 0;
 	if(udtString::Equals(key, "gamename"))
 	{
-		newValue = udtString::NewConstRef("baseq3");
+		newValue = udtString::NewConstRef("cpma");
 		return true;
 	}
 
@@ -409,12 +477,11 @@ static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLi
 	result.String = string;
 	result.StringLength = stringLength;
 
-	// Override baseqz with baseq3-1.
 	if(inIndex == CS_GAME_VERSION_73p)
 	{
 		result.NewString = true;
-		result.String = "baseq3-1";
-		result.StringLength = (u32)strlen("baseq3-1");
+		result.String = "cpma-1";
+		result.StringLength = (u32)strlen("cpma-1");
 	}
 
 	if(inIndex == CS_SERVERINFO || inIndex == CS_SYSTEMINFO)
