@@ -123,7 +123,7 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 	return newEventId | eventSequenceBits;
 }
 
-s32 ConvertEntityModelIndex90to68(s32 modelIndex)
+s32 ConvertEntityModelIndex90to68VQ3(s32 modelIndex)
 {
 	switch((idItem90::Id)modelIndex)
 	{
@@ -244,7 +244,7 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 	
 	if(inEntityState.eType == ET_ITEM)
 	{
-		outEntityState.modelindex = ConvertEntityModelIndex90to68(inEntityState.modelindex);
+		outEntityState.modelindex = ConvertEntityModelIndex90to68VQ3(inEntityState.modelindex);
 	}
 	else
 	{
@@ -306,16 +306,13 @@ static s32 ConvertConfigStringIndex90to68(s32 index)
 	}
 }
 
-static const char* ConfigStringServerInfo68 = R"(\g_teamSizeMin\1\g_compmode\1\sv_hostname\ mejtisson\sv_advertising\0\g_voteFlags\2762\sv_owner\mejtisson\ruleset\1\g_gametype\1\sv_ranked\1\sv_maxclients\16\fraglimit\0\g_overtime\120\gt_realm\quakelive\sv_location\DE\sv_premium\1\timelimit\10\sv_allowDownload\1\version\Quake Live  0.1.0.947 linux-i386 Sep 12 2014 11:46:11\dmflags\0\protocol\90\mapname\ztn3dm1\sv_privateClients\0\sv_gtid\597071\sv_adXmitDelay\300000\sv_skillRating\22\g_levelStartTime\1411688816\gamename\baseq3\g_adCaptureScoreBonus\3\g_adElimScoreBonus\2\g_adTouchScoreBonus\1\g_aspectEnable\0\capturelimit\8\g_customSettings\0\g_freezeRoundDelay\4000\g_gameState\PRE_GAME\g_gravity\800\g_holiday\0\g_instaGib\0\g_loadout\0\g_maxGameClients\0\g_maxSkillTier\0\g_maxStandardClients\0\mercylimit\0\g_needpass\0\g_quadDamageFactor\3\g_raceAllowStandard\0\g_roundWarmupDelay\10000\roundlimit\5\roundtimelimit\180\scorelimit\150\g_startingHealth\100\g_teamForceBalance\1\teamsize\0\g_timeoutCount\3\g_weaponrespawn\5)";
-static const char* ConfigStringSystemInfo68 = R"(\sv_cheats\0\sv_pure\1\timescale\1\sv_serverid\2858499\g_skipTrainingEnable\0\g_training\0)";
-static const char* ConfigStringGameVersion68 = "baseq3-1";
-/*
-typedef void(*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value);
+// Return false to drop the key/value pair altogether.
+typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value);
 
 static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocator, const udtString& input, ProcessConfigStringCallback callback)
 {
 	const udtString separator = udtString::NewConstRef("\\");
-	udtString newConfigString = udtString::NewEmpty(allocator, BIG_INFO_STRING);
+	result = udtString::NewEmpty(allocator, BIG_INFO_STRING);
 	const char* key = input.String + 1;
 	const char* value = NULL;
 	for(;;)
@@ -332,26 +329,80 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 			break;
 		}
 
-		const char* nextKey = strchr(key, '\\');
-		if(nextKey == NULL)
+		bool done = false;
+		const char* sepBeforeNextKey = strchr(value, '\\');
+		if(sepBeforeNextKey == NULL)
 		{
-			nextKey = input.String + input.Length;
+			sepBeforeNextKey = input.String + input.Length;
+			done = true;
 		}
 
 		udtVMScopedStackAllocator allocatorScope(allocator);
 		const udtString keyString = udtString::NewClone(allocator, key, (u32)(value - 1 - key));
-		const udtString valueString = udtString::NewClone(allocator, value, (u32)(nextKey - 1 - value));
+		const udtString valueString = udtString::NewClone(allocator, value, (u32)(sepBeforeNextKey - value));
 
-		udtString newValue;
-		(*callback)(newValue, allocator, keyString, valueString);
-		const udtString* toAppend[4] = { &keyString, &separator, &valueString, &separator };
-		udtString::AppendMultiple(newConfigString, toAppend, (u32)UDT_COUNT_OF(toAppend));
+		key = sepBeforeNextKey + 1;
+
+		udtString newValueString;
+		if(!(*callback)(newValueString, allocator, keyString, valueString))
+		{
+			continue;
+		}
+
+		const udtString* toAppend[4] = { &separator, &keyString, &separator, &newValueString };
+		udtString::AppendMultiple(result, toAppend, (u32)UDT_COUNT_OF(toAppend));
+
+		if(done)
+		{
+			break;
+		}
+	}
+}
+
+static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value)
+{
+	newValue = value;
+
+	u32 index = 0;
+	if(udtString::Equals(key, "gamename"))
+	{
+		newValue = udtString::NewConstRef("baseq3");
+		return true;
 	}
 
-	result = newConfigString;
+	if(udtString::ContainsNoCase(index, key, "paks") || udtString::ContainsNoCase(index, key, "pakNames"))
+	{
+		return false;
+	}
+
+	if(udtString::Equals(key, "protocol"))
+	{
+		newValue = udtString::NewConstRef("68");
+		return true;
+	}
+
+	if(udtString::Equals(key, "mapname"))
+	{
+		if(udtString::Equals(value, "bloodrun"))
+		{
+			newValue = udtString::NewConstRef("ztn3dm1");
+		}
+		else if(udtString::Equals(value, "lostworld"))
+		{
+			newValue = udtString::NewConstRef("q3dm13");
+		}
+		else if(udtString::Equals(value, "battleforged"))
+		{
+			newValue = udtString::NewConstRef("phantq3dm1");
+		}
+
+		return true;
+	}
+
+	return true;
 }
-*/
-static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* string, u32 stringLength)
+
+static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* string, u32 stringLength)
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex90to68(inIndex);
@@ -361,28 +412,19 @@ static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLi
 	// Override baseqz with baseq3-1.
 	if(inIndex == CS_GAME_VERSION_73p)
 	{
-		result.String = ConfigStringGameVersion68;
-		result.StringLength = (u32)strlen(ConfigStringGameVersion68);
+		result.NewString = true;
+		result.String = "baseq3-1";
+		result.StringLength = (u32)strlen("baseq3-1");
 	}
-	
-	// For debugging/testing.
-	if(inIndex == CS_SERVERINFO)
+
+	if(inIndex == CS_SERVERINFO || inIndex == CS_SYSTEMINFO)
 	{
-		result.String = ConfigStringServerInfo68;
-		result.StringLength = (u32)strlen(ConfigStringServerInfo68);
+		udtString newString;
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(string, stringLength), &ConvertConfigStringValue90to68);
+		result.NewString = true;
+		result.String = newString.String;
+		result.StringLength = newString.Length;
 	}
-	else if(inIndex == CS_SYSTEMINFO)
-	{
-		result.String = ConfigStringSystemInfo68;
-		result.StringLength = (u32)strlen(ConfigStringSystemInfo68);
-	}
-	/*
-	if(inIndex == CS_SERVERINFO)
-	{
-		// Fix the following:
-		// mapname
-		// protocol
-	}*/
 }
 
 static const udtProtocolConverter ProtocolConverters[udtProtocol::Count * udtProtocol::Count] =

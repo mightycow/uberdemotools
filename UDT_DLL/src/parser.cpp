@@ -390,7 +390,7 @@ bool udtBaseParser::ParseCommandString()
 			(*_protocolConverter.ConvertConfigString)(outCs, _tempAllocator, csIndex, csStringTemp, csStringLength);
 			if(outCs.NewString || outCs.Index != csIndex)
 			{
-				commandString = (char*)_privateTempAllocator.Allocate(BIG_INFO_STRING);
+				commandString = (char*)_privateTempAllocator.Allocate(2 * BIG_INFO_STRING);
 				sprintf(commandString, "cs %d \"%s\"", outCs.Index, outCs.String);
 				commandStringLength = (s32)strlen(commandString);
 				csStringLength = outCs.StringLength;
