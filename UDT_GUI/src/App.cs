@@ -54,12 +54,26 @@ namespace Uber.DemoTools
         public bool PrintExecutionTime = true;
     }
 
+    public class MapConversionRule
+    {
+        public string InputName = "";
+        public string OutputName = "";
+        public float OffsetX = 0.0f;
+        public float OffsetY = 0.0f;
+        public float OffsetZ = 0.0f;
+    }
+
+    public class UdtMapConversionsConfig
+    {
+        public List<MapConversionRule> MapRules = new List<MapConversionRule> { new MapConversionRule() };
+    }
+
     public class UdtPrivateConfig
     {
         public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
         public string PatternCutPlayerName = "";
         public UInt32 FragCutAllowedMeansOfDeaths = 0;
-        public UDT_DLL.udtProtocol ConversionOutputProtocol;
+        public UDT_DLL.udtProtocol ConversionOutputProtocol = UDT_DLL.udtProtocol.Invalid;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -667,7 +681,7 @@ namespace Uber.DemoTools
             var convertDemo68Item = new MenuItem();
             convertDemo68Item.Header = "Convert to *.dm__68";
             convertDemo68Item.Command = _convertDemo68Command;
-            convertDemo68Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
+            convertDemo68Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
 
             var convertDemo90Item = new MenuItem();
             convertDemo90Item.Header = "Convert to *.dm__90";
@@ -1370,6 +1384,17 @@ namespace Uber.DemoTools
             StartJobThread(DemoAnalyzeThread, demos);
         }
 
+        private List<MapConversionRule> LoadMapRules(UDT_DLL.udtProtocol outputFormat)
+        {
+            var config = new UdtMapConversionsConfig();
+            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && Serializer.FromXml<UdtMapConversionsConfig>("ConversionRules90to68.xml", out config))
+            {
+                return config.MapRules;
+            }
+
+            return new List<MapConversionRule>();
+        }
+
         private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
         {
             if(outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73)
@@ -1383,6 +1408,12 @@ namespace Uber.DemoTools
             }
 
             return false;
+        }
+
+        private class DemoConvertThreadArg
+        {
+            public List<DemoInfo> Demos;
+            public List<MapConversionRule> MapRules;
         }
 
         private void OnConvertDemosClicked(UDT_DLL.udtProtocol outputFormat)
@@ -1406,8 +1437,12 @@ namespace Uber.DemoTools
             SaveBothConfigs();
             PrivateConfig.ConversionOutputProtocol = outputFormat;
 
+            var threadData = new DemoConvertThreadArg();
+            threadData.Demos = demos;
+            threadData.MapRules = LoadMapRules(outputFormat);
+
             JoinJobThread();
-            StartJobThread(DemoConvertThread, demos);
+            StartJobThread(DemoConvertThread, threadData);
         }
 
         public delegate void VoidDelegate();
@@ -1531,12 +1566,14 @@ namespace Uber.DemoTools
 
         private void DemoConvertThread(object arg)
         {
-            var demos = arg as List<DemoInfo>;
-            if(demos == null)
+            var threadData = arg as DemoConvertThreadArg;
+            if(threadData == null)
             {
                 LogError("Invalid thread argument type");
                 return;
             }
+
+            var demos = threadData.Demos;
 
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
@@ -1551,7 +1588,7 @@ namespace Uber.DemoTools
 
             try
             {
-                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, filePaths, _config.MaxThreadCount);
+                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, threadData.MapRules, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {

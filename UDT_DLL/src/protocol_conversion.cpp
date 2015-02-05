@@ -186,9 +186,9 @@ static s32 ConvertConfigStringIndex90to68(s32 index)
 }
 
 // Return false to drop the key/value pair altogether.
-typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value);
+typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value, void* userData);
 
-static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocator, const udtString& input, ProcessConfigStringCallback callback)
+static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocator, const udtString& input, ProcessConfigStringCallback callback, void* userData)
 {
 	const udtString separator = udtString::NewConstRef("\\");
 	result = udtString::NewEmpty(allocator, BIG_INFO_STRING);
@@ -223,7 +223,7 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 		key = sepBeforeNextKey + 1;
 
 		udtString newValueString;
-		if(!(*callback)(newValueString, allocator, keyString, valueString))
+		if(!(*callback)(newValueString, allocator, keyString, valueString, userData))
 		{
 			continue;
 		}
@@ -238,14 +238,35 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 	}
 }
 
-static bool ConvertConfigStringValue73to90(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value)
+static bool ConvertConfigStringValue73to90(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value, void*)
 {
 	newValue = udtString::Equals(key, "protocol") ? udtString::NewConstRef("90") : value;
 
 	return true;
 }
 
-static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value)
+static bool FindMap(f32* offsets, udtString& outputName, const udtString& inputName, const udtProtocolConversionArg& info)
+{
+	if(info.MapRuleCount == 0 || info.MapRules == NULL)
+	{
+		return false;
+	}
+
+	for(u32 i = 0; i < info.MapRuleCount; ++i)
+	{
+		const udtMapConversionRule& rule = info.MapRules[i];
+		if(udtString::Equals(inputName, rule.InputName))
+		{
+			outputName = udtString::NewConstRef(rule.OutputName);
+			Float3::Copy(offsets, rule.PositionOffsets);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value, void* userData)
 {
 	newValue = value;
 
@@ -269,6 +290,15 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 
 	if(udtString::Equals(key, "mapname"))
 	{
+		udtProtocolConverter* const converter = (udtProtocolConverter*)userData;
+		f32 offsets[3];
+		udtString newMapName;
+		if(converter != NULL && FindMap(offsets, newMapName, value, *converter->ConversionInfo))
+		{
+			Float3::Copy(converter->Offsets, offsets);
+			newValue = newMapName;
+		}
+		/*
 		if(udtString::Equals(value, "bloodrun"))
 		{
 			newValue = udtString::NewConstRef("ztn3dm1");
@@ -281,7 +311,7 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 		{
 			newValue = udtString::NewConstRef("phantq3dm1");
 		}
-
+		*/
 		return true;
 	}
 
@@ -354,7 +384,7 @@ void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
-		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90);
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90, NULL);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
@@ -367,6 +397,9 @@ void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& o
 	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
 	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
 	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
+
+	Float3::Increment(out.ps.origin, Offsets);
+	Float3::Increment(out.ps.grapplePoint, Offsets);
 
 	out.ps.weapon = ConvertWeapon90to68(in.ps.weapon);
 
@@ -413,6 +446,11 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 	memcpy(&outEntityState, &inEntityState, sizeof(idEntityState68));
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+
+	Float3::Increment(outEntityState.pos.trBase, Offsets);
+	Float3::Increment(outEntityState.apos.trBase, Offsets);
+	Float3::Increment(outEntityState.origin, Offsets);
+	Float3::Increment(outEntityState.origin2, Offsets);
 
 	// The type can encode an event, so make sure we convert that too.
 	if(inEntityState.eType >= ET_EVENTS)
@@ -469,7 +507,7 @@ void udtProtocolConverter90to68_CPMA::ConvertConfigString(udtConfigStringConvers
 	if(inIndex == CS_SERVERINFO || inIndex == CS_SYSTEMINFO)
 	{
 		udtString newString;
-		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue90to68);
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue90to68, this);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;

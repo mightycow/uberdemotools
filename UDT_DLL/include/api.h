@@ -589,13 +589,32 @@ extern "C"
 		s32 Reserved1;
 	};
 
-	struct udtProtocolConversionArg
+	struct udtMapConversionRule
 	{
-		// Of type udtProtocol::Id.
-		u32 OutputProtocol;
+		// If the input name matches this...
+		const char* InputName;
+
+		// ...replace it with this.
+		const char* OutputName;
+
+		// Coordinates by which to shift everything.
+		// Includes players, items, etc. Only necessary for some maps.
+		f32 PositionOffsets[3];
 
 		// Ignore this.
 		s32 Reserved1;
+	};
+
+	struct udtProtocolConversionArg
+	{
+		// Pointer to an array of map rules.
+		const udtMapConversionRule* MapRules;
+
+		// Number of elements in the array pointed to by the MapRules pointer.
+		u32 MapRuleCount;
+
+		// Of type udtProtocol::Id.
+		u32 OutputProtocol;
 	};
 
 	struct udtChatEventData

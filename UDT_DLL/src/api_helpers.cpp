@@ -204,6 +204,8 @@ bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const c
 		return false;
 	}
 
+	context->Parser._protocolConverter->ConversionInfo = conversionInfo;
+
 	context->Parser.SetFilePath(demoFilePath);
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;

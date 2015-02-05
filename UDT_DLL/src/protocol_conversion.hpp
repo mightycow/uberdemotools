@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 #include "linear_allocator.hpp"
+#include "math.hpp"
 
 
 struct udtConfigStringConversion
@@ -15,13 +16,17 @@ struct udtConfigStringConversion
 
 struct udtProtocolConverter
 {
-	udtProtocolConverter() {}
+	udtProtocolConverter() { ConversionInfo = NULL; Float3::Zero(Offsets); }
+	
 	virtual ~udtProtocolConverter() {}
 
 	virtual void ResetForNextDemo() {}
 	virtual void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) = 0;
 	virtual void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) = 0;
 	virtual void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) = 0;
+
+	const udtProtocolConversionArg* ConversionInfo;
+	f32 Offsets[3];
 };
 
 struct udtProtocolConverterIdentity : public udtProtocolConverter
