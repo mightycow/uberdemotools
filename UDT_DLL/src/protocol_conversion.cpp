@@ -75,75 +75,7 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 	
 	return newEventId | eventSequenceBits;
 }
-/*
-static s32 ConvertEntityModelIndex90to68_VQ3(s32 modelIndex)
-{
-	switch((idItem90::Id)modelIndex)
-	{
-		case idItem90::Null: return (s32)idItem68_baseq3::Null;
-		case idItem90::ItemArmorShard: return (s32)idItem68_baseq3::ItemArmorShard;
-		case idItem90::ItemArmorCombat: return (s32)idItem68_baseq3::ItemArmorCombat;
-		case idItem90::ItemArmorBody: return (s32)idItem68_baseq3::ItemArmorBody;
-		case idItem90::ItemHealthSmall: return (s32)idItem68_baseq3::ItemHealthSmall;
-		case idItem90::ItemHealth: return (s32)idItem68_baseq3::ItemHealth;
-		case idItem90::ItemHealthLarge: return (s32)idItem68_baseq3::ItemHealthLarge;
-		case idItem90::ItemHealthMega: return (s32)idItem68_baseq3::ItemHealthMega;
-		case idItem90::WeaponGauntlet: return (s32)idItem68_baseq3::WeaponGauntlet;
-		case idItem90::WeaponShotgun: return (s32)idItem68_baseq3::WeaponShotgun;
-		case idItem90::WeaponMachinegun: return (s32)idItem68_baseq3::WeaponMachinegun;
-		case idItem90::WeaponGrenadelauncher: return (s32)idItem68_baseq3::WeaponGrenadelauncher;
-		case idItem90::WeaponRocketlauncher: return (s32)idItem68_baseq3::WeaponRocketlauncher;
-		case idItem90::WeaponLightning: return (s32)idItem68_baseq3::WeaponLightning;
-		case idItem90::WeaponRailgun: return (s32)idItem68_baseq3::WeaponRailgun;
-		case idItem90::WeaponPlasmagun: return (s32)idItem68_baseq3::WeaponPlasmagun;
-		case idItem90::WeaponBFG: return (s32)idItem68_baseq3::WeaponBFG;
-		case idItem90::WeaponGrapplinghook: return (s32)idItem68_baseq3::WeaponGrapplinghook;
-		case idItem90::AmmoShells: return (s32)idItem68_baseq3::AmmoShells;
-		case idItem90::AmmoBullets: return (s32)idItem68_baseq3::AmmoBullets;
-		case idItem90::AmmoGrenades: return (s32)idItem68_baseq3::AmmoGrenades;
-		case idItem90::AmmoCells: return (s32)idItem68_baseq3::AmmoCells;
-		case idItem90::AmmoLightning: return (s32)idItem68_baseq3::AmmoLightning;
-		case idItem90::AmmoRockets: return (s32)idItem68_baseq3::AmmoRockets;
-		case idItem90::AmmoSlugs: return (s32)idItem68_baseq3::AmmoSlugs;
-		case idItem90::AmmoBFG: return (s32)idItem68_baseq3::AmmoBFG;
-		case idItem90::HoldableTeleporter: return (s32)idItem68_baseq3::HoldableTeleporter;
-		case idItem90::HoldableMedkit: return (s32)idItem68_baseq3::HoldableMedkit;
-		case idItem90::ItemQuad: return (s32)idItem68_baseq3::ItemQuad;
-		case idItem90::ItemEnviro: return (s32)idItem68_baseq3::ItemEnviro;
-		case idItem90::ItemHaste: return (s32)idItem68_baseq3::ItemHaste;
-		case idItem90::ItemInvis: return (s32)idItem68_baseq3::ItemInvis;
-		case idItem90::ItemRegen: return (s32)idItem68_baseq3::ItemRegen;
-		case idItem90::ItemFlight: return (s32)idItem68_baseq3::ItemFlight;
-		case idItem90::TeamCTFRedflag: return (s32)idItem68_baseq3::TeamCTFRedflag;
-		case idItem90::TeamCTFBlueflag: return (s32)idItem68_baseq3::TeamCTFBlueflag;
-		// Unsupported items:
-		case idItem90::ItemArmorJacket:
-			return (s32)idItem68_baseq3::ItemArmorBody; // Make greens look like yellows.
-		case idItem90::HoldableKamikaze:
-		case idItem90::HoldablePortal:
-		case idItem90::HoldableInvulnerability:
-		case idItem90::AmmoNails:
-		case idItem90::AmmoMines:
-		case idItem90::AmmoBelt:
-		case idItem90::ItemScout:
-		case idItem90::ItemGuard:
-		case idItem90::ItemDoubler:
-		case idItem90::ItemAmmoregen:
-		case idItem90::TeamCTFNeutralflag:
-		case idItem90::ItemRedcube:
-		case idItem90::ItemBluecube:
-		case idItem90::WeaponNailgun:
-		case idItem90::WeaponProxLauncher:
-		case idItem90::WeaponChaingun:
-		case idItem90::ItemSpawnarmor:
-		case idItem90::WeaponHMG:
-		case idItem90::AmmoHMG:
-		case idItem90::AmmoPack:
-		default: 
-			return (s32)idItem68_baseq3::Null;
-	}
-}
-*/
+
 static s32 ConvertEntityModelIndex90to68_CPMA(s32 modelIndex)
 {
 	switch((idItem90::Id)modelIndex)
@@ -306,6 +238,13 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 	}
 }
 
+static bool ConvertConfigStringValue73to90(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value)
+{
+	newValue = udtString::Equals(key, "protocol") ? udtString::NewConstRef("90") : value;
+
+	return true;
+}
+
 static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value)
 {
 	newValue = value;
@@ -405,12 +344,21 @@ void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEnt
 	out.doubleJumped = 0;
 }
 
-void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* configString, u32 configStringLength)
+void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
 {
 	result.NewString = false;
 	result.Index = inIndex;
 	result.String = configString;
 	result.StringLength = configStringLength;
+
+	if(inIndex == CS_SERVERINFO)
+	{
+		udtString newString;
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90);
+		result.NewString = true;
+		result.String = newString.String;
+		result.StringLength = newString.Length;
+	}
 }
 
 void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
