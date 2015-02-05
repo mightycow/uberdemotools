@@ -620,6 +620,44 @@ bool udtBaseParser::ParseSnapshot()
 		oldSnap = NULL;
 	}
 
+	// If not valid, dump the entire thing now that 
+	// it has been properly read.
+	if(newSnap.valid == qfalse)
+	{
+		return true;
+	}
+
+	//
+	// Clear the valid flags of any snapshots between the last
+	// received and this one, so if there was a dropped packet
+	// it won't look like something valid to delta from next
+	// time we wrap around in the buffer.
+	//
+
+	s32 oldMessageNum = _inSnapshot.messageNum + 1;
+	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
+	{
+		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
+	}
+
+	for(; oldMessageNum < newSnap.messageNum; ++oldMessageNum)
+	{
+		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = qfalse;
+	}
+
+	// Copy to the current good spot.
+	_inSnapshot = newSnap;
+
+	// Save the frame off in the backup array for later delta comparisons.
+	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
+
+	// Don't give the same stuff to the plug-ins more than once.
+	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
+	{
+		return true;
+	}
+	_inLastSnapshotMessageNumber = newSnap.messageNum;
+
 	//
 	// Write to the output message.
 	//
@@ -651,44 +689,6 @@ bool udtBaseParser::ParseSnapshot()
 		}
 		++_outSnapshotsWritten;
 	}
-
-	// If not valid, dump the entire thing now that 
-	// it has been properly read.
-	if(newSnap.valid == qfalse) 
-	{
-		return true;
-	}
-
-	//
-	// Clear the valid flags of any snapshots between the last
-	// received and this one, so if there was a dropped packet
-	// it won't look like something valid to delta from next
-	// time we wrap around in the buffer.
-	//
-
-	s32 oldMessageNum = _inSnapshot.messageNum + 1;
-	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
-	{
-		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
-	}
-
-	for(; oldMessageNum < newSnap.messageNum; ++oldMessageNum) 
-	{
-		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = qfalse;
-	}
-
-	// Copy to the current good spot.
-	_inSnapshot = newSnap;
-
-	// Save the frame off in the backup array for later delta comparisons.
-	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
-
-	// Don't give the same stuff to the plug-ins more than once.
-	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
-	{
-		return true;
-	}
-	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
