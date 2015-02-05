@@ -9,6 +9,7 @@ udtBaseParser::udtBaseParser()
 	_context = NULL;
 	_inProtocol = udtProtocol::Invalid;
 	_outProtocol = udtProtocol::Invalid;
+	_protocolConverter = NULL;
 
 	UserData = NULL;
 	EnablePlugIns = true;
@@ -64,7 +65,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_outProtocol = outProtocol;
 	_inProtocolSizeOfEntityState = (s32)udtGetSizeOfIdEntityState(inProtocol);
 	_inProtocolSizeOfClientSnapshot = (s32)udtGetSizeOfidClientSnapshot(inProtocol);
-	GetProtocolConverter(_protocolConverter, outProtocol, inProtocol);
+	_protocolConverter = context->GetProtocolConverter(outProtocol, inProtocol);
+	_protocolConverter->ResetForNextDemo();
 
 	_outMsg.InitContext(context);
 	_outMsg.InitProtocol(outProtocol);
@@ -387,7 +389,7 @@ bool udtBaseParser::ParseCommandString()
 			u32 csStringLength = (u32)strlen(csStringTemp);
 
 			udtConfigStringConversion outCs;
-			(*_protocolConverter.ConvertConfigString)(outCs, _tempAllocator, csIndex, csStringTemp, csStringLength);
+			_protocolConverter->ConvertConfigString(outCs, _tempAllocator, csIndex, csStringTemp, csStringLength);
 			if(outCs.NewString || outCs.Index != csIndex)
 			{
 				commandString = (char*)_privateTempAllocator.Allocate(2 * BIG_INFO_STRING);
@@ -681,9 +683,9 @@ bool udtBaseParser::ParseSnapshot()
 			idLargestClientSnapshot newSnapOutProto;
 			if(oldSnap)
 			{
-				(*_protocolConverter.ConvertSnapshot)(oldSnapOutProto, *oldSnap);
+				_protocolConverter->ConvertSnapshot(oldSnapOutProto, *oldSnap);
 			}
-			(*_protocolConverter.ConvertSnapshot)(newSnapOutProto, newSnap);
+			_protocolConverter->ConvertSnapshot(newSnapOutProto, newSnap);
 			_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(&oldSnapOutProto, _outProtocol) : NULL, GetPlayerState(&newSnapOutProto, _outProtocol));
 			EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
 		}
@@ -739,7 +741,7 @@ void udtBaseParser::WriteGameState()
 		}
 		
 		udtConfigStringConversion outCs;
-		(*_protocolConverter.ConvertConfigString)(outCs, _tempAllocator, (s32)i, cs.String, cs.StringLength);
+		_protocolConverter->ConvertConfigString(outCs, _tempAllocator, (s32)i, cs.String, cs.StringLength);
 		if(outCs.Index >= 0)
 		{
 			_outMsg.WriteByte(svc_configstring);
@@ -764,7 +766,7 @@ void udtBaseParser::WriteGameState()
 
 			// @NOTE: MSG_WriteBits is called in there with newState.number as an argument.
 			idLargestEntityState newStateOutProto;
-			(*_protocolConverter.ConvertEntityState)(newStateOutProto, *newState);
+			_protocolConverter->ConvertEntityState(newStateOutProto, *newState);
 			_outMsg.WriteDeltaEntity(&nullState, &newStateOutProto, qtrue);
 		}
 	}
@@ -951,8 +953,8 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			// in any bytes being emitted if the entity has not changed at all.
 			idLargestEntityState oldEntOutProto;
 			idLargestEntityState newEntOutProto;
-			(*_protocolConverter.ConvertEntityState)(oldEntOutProto, *oldent);
-			(*_protocolConverter.ConvertEntityState)(newEntOutProto, *newent);
+			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
+			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, qfalse);
 			oldindex++;
 			newindex++;
@@ -965,8 +967,8 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			idLargestEntityState baselineOutProto;
 			idLargestEntityState newEntOutProto;
 			idEntityStateBase* baseline = GetBaseline(newnum);
-			(*_protocolConverter.ConvertEntityState)(baselineOutProto, *baseline);
-			(*_protocolConverter.ConvertEntityState)(newEntOutProto, *newent);
+			_protocolConverter->ConvertEntityState(baselineOutProto, *baseline);
+			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
 			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, qtrue);
 			newindex++;
 			continue;
@@ -976,7 +978,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		{
 			// The old entity isn't present in the new message.
 			idLargestEntityState oldEntOutProto;
-			(*_protocolConverter.ConvertEntityState)(oldEntOutProto, *oldent);
+			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, qtrue);
 			oldindex++;
 			continue;

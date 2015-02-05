@@ -3,53 +3,6 @@
 #include "string.hpp"
 
 
-template<typename T>
-static void CopySnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
-{
-	memcpy(&outSnapshot, &inSnapshot, sizeof(T));
-}
-
-template<typename T>
-static void CopyEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
-{
-	memcpy(&outEntityState, &inEntityState, sizeof(T));
-}
-
-static void DontChangeConfigStrings(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* string, u32 stringLength)
-{
-	result.NewString = false;
-	result.Index = inIndex;
-	result.String = string;
-	result.StringLength = stringLength;
-}
-
-static void ConvertSnapshot73to90(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
-{
-	(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
-	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
-	//idPlayerState73& in = *(idPlayerState73*)GetPlayerState((idClientSnapshotBase*)&inSnapshot, inProtocol);
-	out.doubleJumped = 0;
-	out.jumpTime = 0;
-	out.unknown1 = 0;
-	out.unknown2 = 0;
-	out.unknown3 = 0;
-	out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
-	// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
-}
-
-static void ConvertEntityState73to90(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
-{
-	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
-	idEntityState90& out = (idEntityState90&)outEntityState;
-	idEntityState73& in = (idEntityState73&)inEntityState;
-	(idEntityStateBase&)outEntityState = inEntityState;
-	out.pos_gravity = in.pos_gravity;
-	out.apos_gravity = in.apos_gravity;
-	out.jumpTime = 0;
-	out.doubleJumped = 0;
-}
-
 static int ConvertWeapon90to68(int weapon)
 {
 	return weapon <= 10 ? weapon : 0;
@@ -122,8 +75,8 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 	
 	return newEventId | eventSequenceBits;
 }
-
-s32 ConvertEntityModelIndex90to68VQ3(s32 modelIndex)
+/*
+static s32 ConvertEntityModelIndex90to68_VQ3(s32 modelIndex)
 {
 	switch((idItem90::Id)modelIndex)
 	{
@@ -190,8 +143,8 @@ s32 ConvertEntityModelIndex90to68VQ3(s32 modelIndex)
 			return (s32)idItem68_baseq3::Null;
 	}
 }
-
-s32 ConvertEntityModelIndex90to68CPMA(s32 modelIndex)
+*/
+static s32 ConvertEntityModelIndex90to68_CPMA(s32 modelIndex)
 {
 	switch((idItem90::Id)modelIndex)
 	{
@@ -256,97 +209,6 @@ s32 ConvertEntityModelIndex90to68CPMA(s32 modelIndex)
 		case idItem90::AmmoHMG:
 		default:
 			return (s32)idItem68_CPMA::Null;
-	}
-}
-
-static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
-{
-	(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
-	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
-	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
-
-	out.ps.weapon = ConvertWeapon90to68(in.ps.weapon);
-
-	for(int i = 0; i < MAX_STATS; ++i)
-	{
-		out.ps.stats[i] = 0;
-	}
-	out.ps.stats[STAT_HEALTH_68] = in.ps.stats[STAT_HEALTH_73p];
-	out.ps.stats[STAT_HOLDABLE_ITEM_68] = in.ps.stats[STAT_HOLDABLE_ITEM_73p];
-	out.ps.stats[STAT_WEAPONS_68] = in.ps.stats[STAT_WEAPONS_73p];
-	out.ps.stats[STAT_ARMOR_68] = in.ps.stats[STAT_ARMOR_73p];
-	out.ps.stats[STAT_CLIENTS_READY_68] = in.ps.stats[STAT_CLIENTS_READY_73p];
-	out.ps.stats[STAT_MAX_HEALTH_68] = in.ps.stats[STAT_MAX_HEALTH_73p];
-
-	for(int i = 0; i < MAX_PERSISTANT; ++i)
-	{
-		out.ps.persistant[i] = 0;
-	}
-	out.ps.persistant[PERS_SCORE_68] = in.ps.persistant[PERS_SCORE_73p];
-	out.ps.persistant[PERS_HITS_68] = in.ps.persistant[PERS_HITS_73p];
-	out.ps.persistant[PERS_RANK_68] = in.ps.persistant[PERS_RANK_73p];
-	out.ps.persistant[PERS_TEAM_68] = in.ps.persistant[PERS_TEAM_73p];
-	out.ps.persistant[PERS_SPAWN_COUNT_68] = in.ps.persistant[PERS_SPAWN_COUNT_73p];
-	out.ps.persistant[PERS_PLAYEREVENTS_68] = in.ps.persistant[PERS_PLAYEREVENTS_73p];
-	out.ps.persistant[PERS_ATTACKER_68] = in.ps.persistant[PERS_ATTACKER_73p];
-	out.ps.persistant[PERS_KILLED_68] = in.ps.persistant[PERS_KILLED_73p];
-	out.ps.persistant[PERS_IMPRESSIVE_COUNT_68] = in.ps.persistant[PERS_IMPRESSIVE_COUNT_73p];
-	out.ps.persistant[PERS_EXCELLENT_COUNT_68] = in.ps.persistant[PERS_EXCELLENT_COUNT_73p];
-	out.ps.persistant[PERS_DEFEND_COUNT_68] = in.ps.persistant[PERS_DEFEND_COUNT_73p];
-	out.ps.persistant[PERS_ASSIST_COUNT_68] = in.ps.persistant[PERS_ASSIST_COUNT_73p];
-	out.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_68] = in.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_73p];
-	out.ps.persistant[PERS_CAPTURES_68] = in.ps.persistant[PERS_CAPTURES_73p];
-	out.ps.persistant[PERS_ATTACKEE_ARMOR_68] = in.ps.persistant[PERS_ATTACKEE_ARMOR_73p];
-
-	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
-	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
-	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
-
-	// @FIXME: LG hit beeps repeating far too often.
-}
-
-static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
-{
-	CopyEntityState<idEntityState68>(outEntityState, inEntityState);
-	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
-	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
-
-	// The type can encode an event, so make sure we convert that too.
-	if(inEntityState.eType >= ET_EVENTS)
-	{
-		outEntityState.eType = ET_EVENTS + ConvertEntityEventNumber90to68(inEntityState.eType - ET_EVENTS);
-	}
-	
-	if(inEntityState.eType == ET_ITEM)
-	{
-		outEntityState.modelindex = ConvertEntityModelIndex90to68CPMA(inEntityState.modelindex);
-	}
-	else
-	{
-		// @TODO: investigate
-		outEntityState.modelindex = 0;
-	}
-
-	// Silence those annoying sounds...
-	if(inEntityState.eType == ET_SPEAKER)
-	{
-		outEntityState.eType = -1;
-	}
-
-	// LG sounds repeating too many times...
-	// Should probably be able to fix the event bits provided
-	// the function can know if this event is a repeat or not.
-	if(inEntityState.eType >= ET_EVENTS)
-	{
-		const s32 eventId = (inEntityState.eType - ET_EVENTS) & (~EV_EVENT_BITS);
-		if(eventId == EV_FIRE_WEAPON_73p &&
-		   inEntityState.weapon == idWeapon73p::LightningGun)
-		{
-			// Not sure why the audio repeats in q3mme and not in QL.
-			outEntityState.eType = ET_EVENTS + EV_NONE;
-			outEntityState.event = EV_NONE;
-		}
 	}
 }
 
@@ -487,12 +349,167 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 	return true;
 }
 
-static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* string, u32 stringLength)
+udtProtocolConverterIdentity::udtProtocolConverterIdentity()
+{
+	_protocolSizeOfClientSnapshot = 0;
+	_protocolSizeOfEntityState = 0;
+}
+
+void udtProtocolConverterIdentity::SetProtocol(udtProtocol::Id protocol)
+{
+	_protocolSizeOfClientSnapshot = udtGetSizeOfidClientSnapshot(protocol);
+	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState(protocol);
+}
+
+void udtProtocolConverterIdentity::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	memcpy(&outSnapshot, &inSnapshot, (size_t)_protocolSizeOfClientSnapshot);
+}
+
+void udtProtocolConverterIdentity::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	memcpy(&outEntityState, &inEntityState, (size_t)_protocolSizeOfEntityState);
+}
+
+void udtProtocolConverterIdentity::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.NewString = false;
+	result.Index = inIndex;
+	result.String = configString;
+	result.StringLength = configStringLength;
+}
+
+void udtProtocolConverter73to90::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
+	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
+	out.doubleJumped = 0;
+	out.jumpTime = 0;
+	out.unknown1 = 0;
+	out.unknown2 = 0;
+	out.unknown3 = 0;
+	out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
+	// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
+}
+
+void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
+	idEntityState90& out = (idEntityState90&)outEntityState;
+	idEntityState73& in = (idEntityState73&)inEntityState;
+	(idEntityStateBase&)outEntityState = inEntityState;
+	out.pos_gravity = in.pos_gravity;
+	out.apos_gravity = in.apos_gravity;
+	out.jumpTime = 0;
+	out.doubleJumped = 0;
+}
+
+void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.NewString = false;
+	result.Index = inIndex;
+	result.String = configString;
+	result.StringLength = configStringLength;
+}
+
+void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	idClientSnapshot68& out = (idClientSnapshot68&)outSnapshot;
+	idClientSnapshot90& in = (idClientSnapshot90&)inSnapshot;
+	(idPlayerStateBase&)out.ps = (idPlayerStateBase&)in.ps;
+
+	out.ps.weapon = ConvertWeapon90to68(in.ps.weapon);
+
+	for(int i = 0; i < MAX_STATS; ++i)
+	{
+		out.ps.stats[i] = 0;
+	}
+	out.ps.stats[STAT_HEALTH_68] = in.ps.stats[STAT_HEALTH_73p];
+	out.ps.stats[STAT_HOLDABLE_ITEM_68] = in.ps.stats[STAT_HOLDABLE_ITEM_73p];
+	out.ps.stats[STAT_WEAPONS_68] = in.ps.stats[STAT_WEAPONS_73p];
+	out.ps.stats[STAT_ARMOR_68] = in.ps.stats[STAT_ARMOR_73p];
+	out.ps.stats[STAT_CLIENTS_READY_68] = in.ps.stats[STAT_CLIENTS_READY_73p];
+	out.ps.stats[STAT_MAX_HEALTH_68] = in.ps.stats[STAT_MAX_HEALTH_73p];
+
+	for(int i = 0; i < MAX_PERSISTANT; ++i)
+	{
+		out.ps.persistant[i] = 0;
+	}
+	out.ps.persistant[PERS_SCORE_68] = in.ps.persistant[PERS_SCORE_73p];
+	out.ps.persistant[PERS_HITS_68] = in.ps.persistant[PERS_HITS_73p];
+	out.ps.persistant[PERS_RANK_68] = in.ps.persistant[PERS_RANK_73p];
+	out.ps.persistant[PERS_TEAM_68] = in.ps.persistant[PERS_TEAM_73p];
+	out.ps.persistant[PERS_SPAWN_COUNT_68] = in.ps.persistant[PERS_SPAWN_COUNT_73p];
+	out.ps.persistant[PERS_PLAYEREVENTS_68] = in.ps.persistant[PERS_PLAYEREVENTS_73p];
+	out.ps.persistant[PERS_ATTACKER_68] = in.ps.persistant[PERS_ATTACKER_73p];
+	out.ps.persistant[PERS_KILLED_68] = in.ps.persistant[PERS_KILLED_73p];
+	out.ps.persistant[PERS_IMPRESSIVE_COUNT_68] = in.ps.persistant[PERS_IMPRESSIVE_COUNT_73p];
+	out.ps.persistant[PERS_EXCELLENT_COUNT_68] = in.ps.persistant[PERS_EXCELLENT_COUNT_73p];
+	out.ps.persistant[PERS_DEFEND_COUNT_68] = in.ps.persistant[PERS_DEFEND_COUNT_73p];
+	out.ps.persistant[PERS_ASSIST_COUNT_68] = in.ps.persistant[PERS_ASSIST_COUNT_73p];
+	out.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_68] = in.ps.persistant[PERS_GAUNTLET_FRAG_COUNT_73p];
+	out.ps.persistant[PERS_CAPTURES_68] = in.ps.persistant[PERS_CAPTURES_73p];
+	out.ps.persistant[PERS_ATTACKEE_ARMOR_68] = in.ps.persistant[PERS_ATTACKEE_ARMOR_73p];
+
+	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
+	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
+	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
+
+	// @FIXME: LG hit beeps repeating far too often.
+}
+
+void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	memcpy(&outEntityState, &inEntityState, sizeof(idEntityState68));
+	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
+	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+
+	// The type can encode an event, so make sure we convert that too.
+	if(inEntityState.eType >= ET_EVENTS)
+	{
+		outEntityState.eType = ET_EVENTS + ConvertEntityEventNumber90to68(inEntityState.eType - ET_EVENTS);
+	}
+
+	if(inEntityState.eType == ET_ITEM)
+	{
+		outEntityState.modelindex = ConvertEntityModelIndex90to68_CPMA(inEntityState.modelindex);
+	}
+	else
+	{
+		// @TODO: investigate
+		outEntityState.modelindex = 0;
+	}
+
+	// Silence those annoying sounds...
+	if(inEntityState.eType == ET_SPEAKER)
+	{
+		outEntityState.eType = -1;
+	}
+
+	// LG sounds repeating too many times...
+	// Should probably be able to fix the event bits provided
+	// the function can know if this event is a repeat or not.
+	if(inEntityState.eType >= ET_EVENTS)
+	{
+		const s32 eventId = (inEntityState.eType - ET_EVENTS) & (~EV_EVENT_BITS);
+		if(eventId == EV_FIRE_WEAPON_73p &&
+		   inEntityState.weapon == idWeapon73p::LightningGun)
+		{
+			// Not sure why the audio repeats in q3mme and not in QL.
+			outEntityState.eType = ET_EVENTS + EV_NONE;
+			outEntityState.event = EV_NONE;
+		}
+	}
+}
+
+void udtProtocolConverter90to68_CPMA::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex90to68(inIndex);
-	result.String = string;
-	result.StringLength = stringLength;
+	result.String = configString;
+	result.StringLength = configStringLength;
 
 	if(inIndex == CS_GAME_VERSION_73p)
 	{
@@ -504,34 +521,9 @@ static void ConvertConfigString90to68(udtConfigStringConversion& result, udtVMLi
 	if(inIndex == CS_SERVERINFO || inIndex == CS_SYSTEMINFO)
 	{
 		udtString newString;
-		ProcessConfigString(newString, allocator, udtString::NewConstRef(string, stringLength), &ConvertConfigStringValue90to68);
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue90to68);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
 	}
-}
-
-static const udtProtocolConverter ProtocolConverters[udtProtocol::Count * udtProtocol::Count] =
-{
-	{ &CopySnapshot<idClientSnapshot68>, &CopyEntityState<idEntityState68>, &DontChangeConfigStrings },
-	{ NULL, NULL, NULL }, // 68 => 73
-	{ NULL, NULL, NULL }, // 68 => 90
-	{ NULL, NULL, NULL }, // 73 => 68
-	{ &CopySnapshot<idClientSnapshot73>, &CopyEntityState<idEntityState73>, &DontChangeConfigStrings },
-	{ &ConvertSnapshot73to90, &ConvertEntityState73to90, &DontChangeConfigStrings },
-	{ &ConvertSnapshot90to68, &ConvertEntityState90to68, &ConvertConfigString90to68 },
-	{ NULL, NULL, NULL }, // 90 => 73
-	{ &CopySnapshot<idClientSnapshot90>, &CopyEntityState<idEntityState90>, &DontChangeConfigStrings }
-};
-
-void GetProtocolConverter(udtProtocolConverter& converter, udtProtocol::Id outProtocol, udtProtocol::Id inProtocol)
-{
-	const u32 converterIdx = ((u32)(inProtocol - 1) * (u32)udtProtocol::Count) + (u32)(outProtocol - 1);
-	if(converterIdx >= (u32)UDT_COUNT_OF(ProtocolConverters))
-	{
-		converter = udtProtocolConverter();
-		return;
-	}
-
-	converter = ProtocolConverters[converterIdx];
 }

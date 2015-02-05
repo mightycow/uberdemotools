@@ -23,6 +23,9 @@ udtContext::udtContext()
 	, _progressCallback(NULL)
 	, _progressContext(NULL)
 {
+	_converter68.SetProtocol(udtProtocol::Dm68);
+	_converter73.SetProtocol(udtProtocol::Dm73);
+	_converter90.SetProtocol(udtProtocol::Dm90);
 }
 
 udtContext::~udtContext()
@@ -131,4 +134,34 @@ void udtContext::NotifyProgress(f32 progress) const
 	{
 		(*_progressCallback)(progress, _progressContext);
 	}
+}
+
+udtProtocolConverter* udtContext::GetProtocolConverter(udtProtocol::Id outProtocol, udtProtocol::Id inProtocol)
+{
+	if(outProtocol == udtProtocol::Dm68 && inProtocol == udtProtocol::Dm68)
+	{
+		return &_converter68;
+	}
+
+	if(outProtocol == udtProtocol::Dm73 && inProtocol == udtProtocol::Dm73)
+	{
+		return &_converter73;
+	}
+
+	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm90)
+	{
+		return &_converter90;
+	}
+
+	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
+	{
+		return &_converter73to90;
+	}
+
+	if(outProtocol == udtProtocol::Dm68 && inProtocol == udtProtocol::Dm90)
+	{
+		return &_converter90to68;
+	}
+
+	return NULL;
 }

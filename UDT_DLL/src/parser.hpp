@@ -104,7 +104,7 @@ public:
 	s32 _inProtocolSizeOfEntityState;
 	s32 _inProtocolSizeOfClientSnapshot;
 	udtProtocol::Id _outProtocol;
-	udtProtocolConverter _protocolConverter;
+	udtProtocolConverter* _protocolConverter;
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
