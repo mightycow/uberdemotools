@@ -302,6 +302,8 @@ static void ConvertSnapshot90to68(idLargestClientSnapshot& outSnapshot, const id
 	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
 	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
 	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
+
+	// @FIXME: LG hit beeps repeating far too often.
 }
 
 static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -309,6 +311,12 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 	CopyEntityState<idEntityState68>(outEntityState, inEntityState);
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+
+	// The type can encode an event, so make sure we convert that too.
+	if(inEntityState.eType >= ET_EVENTS)
+	{
+		outEntityState.eType = ET_EVENTS + ConvertEntityEventNumber90to68(inEntityState.eType - ET_EVENTS);
+	}
 	
 	if(inEntityState.eType == ET_ITEM)
 	{
@@ -326,10 +334,19 @@ static void ConvertEntityState90to68(idLargestEntityState& outEntityState, const
 		outEntityState.eType = -1;
 	}
 
-	// The type can encode an event, so make sure we convert that too.
+	// LG sounds repeating too many times...
+	// Should probably be able to fix the event bits provided
+	// the function can know if this event is a repeat or not.
 	if(inEntityState.eType >= ET_EVENTS)
 	{
-		outEntityState.eType = ET_EVENTS + ConvertEntityEventNumber90to68(inEntityState.eType - ET_EVENTS);
+		const s32 eventId = (inEntityState.eType - ET_EVENTS) & (~EV_EVENT_BITS);
+		if(eventId == EV_FIRE_WEAPON_73p &&
+		   inEntityState.weapon == idWeapon73p::LightningGun)
+		{
+			// Not sure why the audio repeats in q3mme and not in QL.
+			outEntityState.eType = ET_EVENTS + EV_NONE;
+			outEntityState.event = EV_NONE;
+		}
 	}
 }
 
