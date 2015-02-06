@@ -8,6 +8,7 @@
 #include "linear_allocator.hpp"
 #include "parser_plug_in.hpp"
 #include "array.hpp"
+#include "protocol_conversion.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -54,7 +55,7 @@ private:
 	void                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
 	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
-	const char*           GetFileName() { return (_inFileName != NULL) ? _inFileName : "N/A"; }
+	const char*           GetFileName() { return (_inFileName.String != NULL) ? _inFileName.String : "N/A"; }
 
 public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
@@ -97,11 +98,13 @@ public:
 	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
 	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
 	udtVMLinearAllocator _tempAllocator;
+	udtVMLinearAllocator _privateTempAllocator;
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _inProtocol;
 	s32 _inProtocolSizeOfEntityState;
 	s32 _inProtocolSizeOfClientSnapshot;
 	udtProtocol::Id _outProtocol;
+	udtProtocolConverter* _protocolConverter;
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
@@ -109,8 +112,8 @@ public:
 	bool EnablePlugIns;
 
 	// Input.
-	const char* _inFilePath;
-	const char* _inFileName;
+	udtString _inFilePath;
+	udtString _inFileName;
 	udtMessage _inMsg; // This instance does *NOT* have ownership of the raw message data.
 	u32 _inFileOffset;
 	s32 _inServerMessageSequence; // Unreliable.

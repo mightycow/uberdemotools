@@ -3,6 +3,7 @@
 #include "timer.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "parser_context.hpp"
+#include "path.hpp"
 
 #include <cstdlib>
 #include <cstdio>
@@ -41,26 +42,23 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
 
-	char* inputFileName = NULL;
-	if(parser->_inFilePath != NULL)
-	{
-		GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath);
-	}
-	else
-	{
-		inputFileName = AllocateString(tempAllocator, "NEW_UDT_DEMO");
+	udtString inputFileName;
+	if(udtString::IsNullOrEmpty(parser->_inFilePath) ||
+	   !udtPath::GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath))
+	{	
+		inputFileName = udtString::NewConstRef("NEW_UDT_DEMO");
 	}
 
-	char* outputFilePathStart = NULL;
+	udtString outputFilePathStart;
 	if(info != NULL && info->OutputFolderPath != NULL)
 	{
-		StringPathCombine(outputFilePathStart, tempAllocator, info->OutputFolderPath, inputFileName);
+		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(info->OutputFolderPath), inputFileName);
 	}
 	else
 	{
-		char* inputFolderPath = NULL;
-		GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
-		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
+		udtString inputFolderPath;
+		udtPath::GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
+		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
 	char* startTime = NULL;
@@ -84,7 +82,7 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 
 	const char* outputFilePathParts[] = 
 	{ 
-		outputFilePathStart, 
+		outputFilePathStart.String, 
 		"_CUT_", 
 		outputGsIndex ? gsIndexStr : "",
 		startTime, 
@@ -93,16 +91,15 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 		veryShortDesc ? shortDesc : "",
 		udtGetFileExtensionByProtocol(parser->_inProtocol) 
 	};
-	char* outputFilePath = NULL;
-	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
+	const udtString outputFilePath = udtString::NewFromConcatenatingMultiple(tempAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
 	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(outputFilePath, udtFileOpenMode::Write))
+	if(stream == NULL || !stream->Open(outputFilePath.String, udtFileOpenMode::Write))
 	{
 		return NULL;
 	}
 
-	parser->_context->LogInfo("Writing cut demo: %s", outputFilePath);
+	parser->_context->LogInfo("Writing cut demo: %s", outputFilePath.String);
 
 	return stream;
 }
@@ -113,99 +110,41 @@ udtStream* CallbackConvertedDemoFileStreamCreation(s32 /*startTimeMs*/, s32 /*en
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
 
-	char* inputFileName = NULL;
-	if(parser->_inFilePath != NULL)
+	udtString inputFileName;
+	if(udtString::IsNullOrEmpty(parser->_inFilePath) ||
+	   !udtPath::GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath))
 	{
-		GetFileNameWithoutExtension(inputFileName, tempAllocator, parser->_inFilePath);
-	}
-	else
-	{
-		inputFileName = AllocateString(tempAllocator, "NEW_UDT_DEMO");
+		inputFileName = udtString::NewConstRef("NEW_UDT_DEMO");
 	}
 
-	char* outputFilePathStart = NULL;
+	udtString outputFilePathStart;
 	if(info != NULL && info->OutputFolderPath != NULL)
 	{
-		StringPathCombine(outputFilePathStart, tempAllocator, info->OutputFolderPath, inputFileName);
+		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(info->OutputFolderPath), inputFileName);
 	}
 	else
 	{
-		char* inputFolderPath = NULL;
-		GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
-		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
+		udtString inputFolderPath;
+		udtPath::GetFolderPath(inputFolderPath, tempAllocator, parser->_inFilePath);
+		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
 	const char* outputFilePathParts[] =
 	{
-		outputFilePathStart,
+		outputFilePathStart.String,
 		udtGetFileExtensionByProtocol(parser->_outProtocol)
 	};
-	char* outputFilePath = NULL;
-	StringConcatenate(outputFilePath, tempAllocator, outputFilePathParts, UDT_COUNT_OF(outputFilePathParts));
+	const udtString outputFilePath = udtString::NewFromConcatenatingMultiple(tempAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
 	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(outputFilePath, udtFileOpenMode::Write))
+	if(stream == NULL || !stream->Open(outputFilePath.String, udtFileOpenMode::Write))
 	{
 		return NULL;
 	}
 
-	parser->_context->LogInfo("Writing converted demo: %s", outputFilePath);
+	parser->_context->LogInfo("Writing converted demo: %s", outputFilePath.String);
 
 	return stream;
-}
-
-const char* GetFolderSeparator()
-{
-#if defined(_WIN32)
-	return "\\";
-#else
-	return "/";
-#endif
-}
-
-u32 GetFolderSeparatorLength()
-{
-	return 1;
-}
-
-bool StringMakeLowerCase(char* string)
-{
-	Q_strlwr(string);
-
-	return true;
-}
-
-bool StringMakeUpperCase(char* string)
-{
-	Q_strupr(string);
-
-	return true;
-}
-
-bool StringCloneLowerCase(char*& lowerCase, udtVMLinearAllocator& allocator, const char* input)
-{
-	lowerCase = AllocateString(allocator, input);
-	if(lowerCase == NULL)
-	{
-		return false;
-	}
-
-	StringMakeLowerCase(lowerCase);
-
-	return true;
-}
-
-bool StringCloneUpperCase(char*& upperCase, udtVMLinearAllocator& allocator, const char* input)
-{
-	upperCase = AllocateString(allocator, input);
-	if(upperCase == NULL)
-	{
-		return false;
-	}
-
-	StringMakeUpperCase(upperCase);
-
-	return true;
 }
 
 bool StringParseInt(s32& output, const char* string)
@@ -213,351 +152,62 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringContains_NoCase(const char* string, const char* pattern, u32* charIndex)
+bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
 {
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
+	if(string.String == NULL || rule.Pattern == NULL)
 	{
 		return false;
 	}
 
-	const u32 iend = stringLength - patternLength;
-	for(u32 i = 0; i <= iend; ++i)
-	{
-		u32 j = 0;
-		for(; pattern[j]; ++j)
-		{
-			if(::tolower(string[i + j]) != ::tolower(pattern[j]))
-			{
-				break;
-			}
-		}
-	
-		if(!pattern[j])
-		{
-			if(charIndex != NULL)
-			{
-				*charIndex = i;
-			}
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool StringStartsWith_NoCase(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(::tolower(string[j]) != ::tolower(pattern[j]))
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEndsWith_NoCase(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 i = stringLength - patternLength;
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(::tolower(string[i + j]) != ::tolower(pattern[j]))
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEquals_NoCase(const char* a, const char* b)
-{
-	return Q_stricmp(a, b) == 0;
-}
-
-bool StringContains(const char* string, const char* pattern, u32* charIndex)
-{
-	const char* const patternAddress = strstr(string, pattern);
-	if(patternAddress != NULL && charIndex != NULL)
-	{
-		*charIndex = (u32)(patternAddress - string);
-	}
-
-	return patternAddress != NULL;
-}
-
-bool StringStartsWith(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(string[j] != pattern[j])
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEndsWith(const char* string, const char* pattern)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 patternLength = (u32)strlen(pattern);
-	if(patternLength > stringLength)
-	{
-		return false;
-	}
-
-	u32 i = stringLength - patternLength;
-	u32 j = 0;
-	for(; pattern[j]; ++j)
-	{
-		if(string[i + j] != pattern[j])
-		{
-			break;
-		}
-	}
-
-	if(!pattern[j])
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool StringEquals(const char* a, const char* b)
-{
-	return strcmp(a, b) == 0;
-}
-
-bool StringFindFirstCharacterInList(u32& index, const char* string, const char* charList)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 charListLength = (u32)strlen(charList);
-
-	for(u32 i = 0; i < stringLength; ++i)
-	{
-		for(u32 j = 0; j < charListLength; ++j)
-		{
-			if(string[i] == charList[j])
-			{
-				index = i;
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-bool StringFindLastCharacterInList(u32& index, const char* string, const char* charList)
-{
-	const u32 stringLength = (u32)strlen(string);
-	const u32 charListLength = (u32)strlen(charList);
-
-	for(s32 i = (s32)stringLength - 1; i >= 0; --i)
-	{
-		for(u32 j = 0; j < charListLength; ++j)
-		{
-			if(string[i] == charList[j])
-			{
-				index = (u32)i;
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-bool StringMatchesCutByChatRule(const char* string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
-{
-	if(string == NULL || rule.Pattern == NULL)
-	{
-		return false;
-	}
-
-	char* const input = AllocateString(allocator, string);
-	char* const pattern = AllocateString(allocator, rule.Pattern);
+	udtString input = udtString::NewCloneFromRef(allocator, string);
+	udtString pattern = udtString::NewClone(allocator, rule.Pattern);
 
 	if(rule.IgnoreColorCodes)
 	{
-		Q_CleanStr(input);
+		udtString::CleanUp(input);
 	}
 
 	if(!rule.CaseSensitive)
 	{
-		StringMakeLowerCase(input);
-		StringMakeLowerCase(pattern);
+		udtString::MakeLowerCase(input);
+		udtString::MakeLowerCase(pattern);
 	}
 
 	if(rule.ChatOperator == (u32)udtChatOperator::Contains)
 	{
-		return StringContains(input, pattern);
+		u32 charIndex = 0;
+		return udtString::Contains(charIndex, input, pattern);
 	}
 	else if(rule.ChatOperator == (u32)udtChatOperator::StartsWith)
 	{
-		return StringStartsWith(input, pattern);
+		return udtString::StartsWith(input, pattern);
 	}
 	else if(rule.ChatOperator == (u32)udtChatOperator::EndsWith)
 	{
-		return StringEndsWith(input, pattern);
+		return udtString::EndsWith(input, pattern);
 	}
 
 	return false;
 }
 
-bool StringPathCombine(char*& combinedPath, udtVMLinearAllocator& allocator, const char* folderPath, const char* extra)
+bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText)
 {
-	const bool isSeparatorNeeded = !StringHasTrailingFolderSeparator(folderPath);
-	const char* strings[] = 
-	{ 
-		(folderPath == NULL || *folderPath == '\0') ? "." : folderPath, 
-		isSeparatorNeeded ? GetFolderSeparator() : "", 
-		extra 
-	};
-	
-	return StringConcatenate(combinedPath, allocator, strings, UDT_COUNT_OF(strings));
-}
+	const u32 length = (s32)inOutText.Length;
 
-bool StringHasTrailingFolderSeparator(const char* folderPath)
-{
-#if defined(_WIN32)
-	return StringEndsWith(folderPath, "\\") || StringEndsWith(folderPath, "/");
-#else
-	return StringEndsWith(folderPath, "/");
-#endif
-}
+	udtString tempString;
+	tempString.ReservedBytes = 0;
+	tempString.Length = 0;
 
-bool GetFileName(char*& fileName, udtVMLinearAllocator& allocator, const char* filePath)
-{
-	u32 lastFolderSeparatorIndex = (u32)-1;
-	const char* fileNameStart = filePath;
-	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	u32 lastStart = 0;
+	for(u32 i = 0; i < length; ++i)
 	{
-		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
-	}
-
-	fileName = AllocateString(allocator, fileNameStart);
-
-	return true;
-}
-
-bool StringHasValidDemoFileExtension(const char* filePath)
-{
-	for(u32 i = (u32)udtProtocol::FirstProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
-	{
-		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
-		if(StringEndsWith_NoCase(filePath, extension))
+		if(inOutText.String[i] == '\r' || inOutText.String[i] == '\n')
 		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char** strings, u32 stringCount)
-{
-	if(strings == NULL || stringCount == 0)
-	{
-		return false;
-	}
-
-	u32 newLength = 0;
-	for(u32 i = 0; i < stringCount; ++i)
-	{
-		if(strings[i] == NULL)
-		{
-			return false;
-		}
-
-		newLength += (u32)strlen(strings[i]);
-	}
-
-	output = AllocateSpaceForString(allocator, newLength);
-
-	strcpy(output, strings[0]);
-	for(u32 i = 1; i < stringCount; ++i)
-	{
-		strcat(output, strings[i]);
-	}
-
-	return true;
-}
-
-bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b)
-{
-	const char* strings[] = { a, b };
-
-	return StringConcatenate(output, allocator, strings, UDT_COUNT_OF(strings));
-}
-
-bool StringConcatenate(char*& output, udtVMLinearAllocator& allocator, const char* a, const char* b, const char* c)
-{
-	const char* strings[] = { a, b, c };
-
-	return StringConcatenate(output, allocator, strings, UDT_COUNT_OF(strings));
-}
-
-bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
-{
-	const s32 length = (s32)strlen(inOutText);
-
-	s32 lastStart = 0;
-	for(s32 i = 0; i < length; ++i)
-	{
-		if(inOutText[i] == '\r' || inOutText[i] == '\n')
-		{
-			inOutText[i] = '\0';
+			inOutText.String[i] = '\0';
 			if(i - lastStart > 0)
 			{
-				lines.Add(inOutText + lastStart);
+				tempString.String = inOutText.String + lastStart;
+				lines.Add(tempString);
 			}
 			lastStart = i + 1;
 		}
@@ -565,71 +215,17 @@ bool StringSplitLines(udtVMArray<const char*>& lines, char* inOutText)
 
 	if(lastStart < length)
 	{
-		lines.Add(inOutText + lastStart);
+		tempString.String = inOutText.String + lastStart;
+		lines.Add(tempString);
 	}
 
-	return true;
-}
-
-bool StringIsNullOrEmpty(const char* string)
-{
-	return string == NULL || *string == '\0';
-}
-
-bool GetFileNameWithoutExtension(char*& fileNameNoExt, udtVMLinearAllocator& allocator, const char* filePath)
-{
-	u32 lastFolderSeparatorIndex = (u32)-1;
-	const char* fileNameStart = filePath;
-	if(StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
+	// Fix line lengths.
+	for(u32 i = 0, end = lines.GetSize(); i < end; ++i)
 	{
-		fileNameStart = filePath + (lastFolderSeparatorIndex + 1);
+		lines[i] = udtString::NewConstRef(lines[i].String);
 	}
 
-	const char* const extensionDot = strrchr(fileNameStart, '.');
-	if(extensionDot == NULL)
-	{
-		fileNameNoExt = AllocateString(allocator, fileNameStart);
-		return true;
-	}
-
-	fileNameNoExt = AllocateString(allocator, fileNameStart, (u32)(extensionDot - fileNameStart));
-
-	return true;
-}
-
-bool GetFolderPath(char*& folderPath, udtVMLinearAllocator& allocator, const char* filePath)
-{
-	u32 lastFolderSeparatorIndex = (u32)-1;
-	if(!StringFindLastCharacterInList(lastFolderSeparatorIndex, filePath, "/\\"))
-	{
-		folderPath = AllocateString(allocator, "");
-
-		return true;
-	}
-
-	folderPath = AllocateSpaceForString(allocator, (u32)lastFolderSeparatorIndex);
-	strncpy(folderPath, filePath, (size_t)lastFolderSeparatorIndex);
-	folderPath[lastFolderSeparatorIndex] = '\0';
-
-	return true;
-}
-
-bool GetFileExtension(char* buffer, u32 bufferLength, const char* filePath)
-{
-	const char* const extensionDot = strrchr(filePath, '.');
-	if(extensionDot == NULL)
-	{
-		if(bufferLength > 0)
-		{
-			buffer[0] = '\0';
-		}
-
-		return false;
-	}
-
-	const size_t maxByteCount = (size_t)bufferLength - 1;
-	strncpy(buffer, extensionDot + 1, (size_t)bufferLength - 1);
-	buffer[maxByteCount] = '\0';
+	inOutText = udtString::NewEmptyConstant();
 
 	return true;
 }
@@ -850,48 +446,35 @@ char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
 	return (char*)allocator.Allocate(stringLength + 1);
 }
 
-static const char* FindConfigStringValueAddress(const char* varName, const char* configString)
+static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* result = strstr(configString, varName);
-	if(result == NULL)
+	// The format is the following: "key1\value1\key2\value2"
+	// We work with no guarantee of a leading or trailing backslash.
+	// @NOTE: Config strings 0 and 1 have a leading backslash, but player config strings don't.
+
+	const udtString inputString = udtString::NewConstRef(configString);
+	const udtString varNameString = udtString::NewConstRef(varName);
+	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.Length] == '\\')
 	{
-		return NULL;
+		return configString + varNameString.Length + 1;
 	}
 
-	if(result == configString)
+	const udtString separator = udtString::NewConstRef("\\");
+	const udtString* strings[3] = { &separator, &varNameString, &separator };
+	const udtString pattern = udtString::NewFromConcatenatingMultiple(allocator, strings, (u32)UDT_COUNT_OF(strings));
+
+	u32 charIndex = 0;
+	if(udtString::Contains(charIndex, inputString, pattern))
 	{
-		return configString + strlen(varName) + 1;
+		return configString + charIndex + pattern.Length;
 	}
 
-	const size_t varNameLength = strlen(varName);
-	if(result[-1] == '\\' && result[varNameLength] == '\\')
-	{
-		return result + varNameLength + 1;
-	}
-
-	char pattern[64];
-	const size_t patternLength = varNameLength + 2;
-	if(patternLength + 1 > sizeof(pattern))
-	{
-		return NULL;
-	}
-
-	strcpy(pattern, "\\");
-	strcat(pattern, varName);
-	strcat(pattern, "\\");
-
-	result = strstr(result + varNameLength, pattern);
-	if(result == NULL)
-	{
-		return NULL;
-	}
-
-	return result + patternLength;
+	return NULL;
 }
 
-bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* configString)
+bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* const valueString = FindConfigStringValueAddress(varName, configString);
+	const char* const valueString = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueString == NULL)
 	{
 		return false;
@@ -900,21 +483,17 @@ bool ParseConfigStringValueInt(s32& varValue, const char* varName, const char* c
 	return sscanf(valueString, "%d", &varValue) == 1;
 }
 
-bool ParseConfigStringValueString(char*& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
+bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
-	const char* const valueStart = FindConfigStringValueAddress(varName, configString);
+	const char* const valueStart = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueStart == NULL)
 	{
 		return false;
 	}
 
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
-	if(separatorAfterValue == NULL)
-	{
-		return false;
-	}
-
-	varValue = AllocateString(allocator, valueStart, (u32)(separatorAfterValue - valueStart));
+	const u32 length = (separatorAfterValue == NULL) ? 0 : (u32)(separatorAfterValue - valueStart);
+	varValue = udtString::NewClone(allocator, valueStart, length);
 
 	return true;
 }
@@ -1125,50 +704,4 @@ void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context
 	context.LogInfo("Used memory: %s", bytes);
 	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
 	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
-}
-
-void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, udtProtocol::Id outProtocol, const idClientSnapshotBase& inSnapshot, udtProtocol::Id inProtocol)
-{
-	if(outProtocol == inProtocol)
-	{
-		memcpy(&outSnapshot, &inSnapshot, (size_t)udtGetSizeOfidClientSnapshot(inProtocol));
-		return;
-	}
-
-	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
-	{
-		(idClientSnapshotBase&)outSnapshot = inSnapshot;
-		*GetPlayerState(&outSnapshot, outProtocol) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, inProtocol);
-		idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, outProtocol);
-		//idPlayerState73& in = *(idPlayerState73*)GetPlayerState((idClientSnapshotBase*)&inSnapshot, inProtocol);
-		out.doubleJumped = 0;
-		out.jumpTime = 0;
-		out.unknown1 = 0;
-		out.unknown2 = 0;
-		out.unknown3 = 0;
-		out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
-		// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
-		return;
-	}
-}
-
-void ConvertEntityState(idLargestEntityState& outEntityState, udtProtocol::Id outProtocol, const idEntityStateBase& inEntityState, udtProtocol::Id inProtocol)
-{
-	if(outProtocol == inProtocol)
-	{
-		memcpy(&outEntityState, &inEntityState, (size_t)udtGetSizeOfIdEntityState(inProtocol));
-		return;
-	}
-
-	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
-	{
-		idEntityState90& out = (idEntityState90&)outEntityState;
-		idEntityState73& in = (idEntityState73&)inEntityState;
-		(idEntityStateBase&)outEntityState = inEntityState;
-		out.pos_gravity = in.pos_gravity;
-		out.apos_gravity = in.apos_gravity;
-		out.jumpTime = 0;
-		out.doubleJumped = 0;
-		return;
-	}
 }

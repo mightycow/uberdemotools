@@ -5,6 +5,7 @@
 #include "huffman.hpp"
 #include "tokenizer.hpp"
 #include "linear_allocator.hpp"
+#include "protocol_conversion.hpp"
 
 
 // Don't ever allocate an instance of this on the stack.
@@ -29,6 +30,8 @@ public:
 	void	LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
 	void	NotifyProgress(f32 progress) const; // Returns true if execution should stop.
 
+	udtProtocolConverter* GetProtocolConverter(udtProtocol::Id outProtocol, udtProtocol::Id inProtocol);
+
 public:
 	char	ReadStringBuffer[MAX_STRING_CHARS];
 	char	ReadBigStringBuffer[BIG_INFO_STRING];
@@ -40,4 +43,10 @@ private:
 	udtMessageCallback      _messageCallback;  // Can be NULL.
 	udtProgressCallback     _progressCallback; // Can be NULL.
 	void*                   _progressContext;  // Can be NULL.
+
+	udtProtocolConverter90to68_CPMA _converter90to68;
+	udtProtocolConverter73to90      _converter73to90;
+	udtProtocolConverterIdentity    _converter68;
+	udtProtocolConverterIdentity    _converter73;
+	udtProtocolConverterIdentity    _converter90;
 };

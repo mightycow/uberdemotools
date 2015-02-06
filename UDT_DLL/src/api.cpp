@@ -10,6 +10,7 @@
 #include "scoped_stack_allocator.hpp"
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
+#include "path.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -164,9 +165,10 @@ UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
 
 UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
 {
+	const udtString filePathString = udtString::NewConstRef(filePath);
 	for(s32 i = (s32)udtProtocol::Invalid + 1; i < (s32)udtProtocol::AfterLastProtocol; ++i)
 	{
-		if(StringEndsWith_NoCase(filePath, DemoFileExtensions[i]))
+		if(udtString::EndsWithNoCase(filePathString, DemoFileExtensions[i]))
 		{
 			return (udtProtocol::Id)i;
 		}
@@ -276,22 +278,24 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 
-	char* fileName = NULL;
-	if(!GetFileNameWithoutExtension(fileName, tempAllocator, filePath))
+	const udtString filePathString = udtString::NewConstRef(filePath);
+
+	udtString fileName;
+	if(!udtPath::GetFileNameWithoutExtension(fileName, tempAllocator, filePathString))
 	{
-		fileName = AllocateString(tempAllocator, "NEW_UDT_SPLIT_DEMO");
+		fileName = udtString::NewConstRef("NEW_UDT_SPLIT_DEMO");
 	}
 	
-	char* outputFilePathStart = NULL;
+	udtString outputFilePathStart;
 	if(outputFolderPath == NULL)
 	{
-		char* inputFolderPath = NULL;
-		GetFolderPath(inputFolderPath, tempAllocator, filePath);
-		StringPathCombine(outputFilePathStart, tempAllocator, inputFolderPath, fileName);
+		udtString inputFolderPath;
+		udtPath::GetFolderPath(inputFolderPath, tempAllocator, filePathString);
+		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, fileName);
 	}
 	else
 	{
-		StringPathCombine(outputFilePathStart, tempAllocator, outputFolderPath, fileName);
+		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
 	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
@@ -640,10 +644,10 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 	return GetErrorCode(success, info->CancelOperation);
 }
 
-UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo)
+UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg)
 {
-	if(info == NULL || extraInfo == NULL ||
-	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
+	if(info == NULL || extraInfo == NULL || conversionArg == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info) || !IsValid(*conversionArg))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
@@ -652,17 +656,17 @@ UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const 
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
 	}
 
 	udtParserContextGroup* contextGroup;
 	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, NULL);
+		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
 	}
 
 	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, NULL);
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, conversionArg);
 
 	DestroyContextGroup(contextGroup);
 

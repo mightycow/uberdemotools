@@ -1,6 +1,7 @@
 #include "parser.hpp"
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "path.hpp"
 
 
 udtBaseParser::udtBaseParser() 
@@ -8,12 +9,13 @@ udtBaseParser::udtBaseParser()
 	_context = NULL;
 	_inProtocol = udtProtocol::Invalid;
 	_outProtocol = udtProtocol::Invalid;
+	_protocolConverter = NULL;
 
 	UserData = NULL;
 	EnablePlugIns = true;
 
-	_inFileName = NULL;
-	_inFilePath = NULL;
+	_inFileName = udtString::NewEmptyConstant();
+	_inFilePath = udtString::NewEmptyConstant();
 	_inFileOffset = 0;
 	_inServerMessageSequence = -1;
 	_inServerCommandSequence = -1;
@@ -41,6 +43,7 @@ void udtBaseParser::InitAllocators()
 	_persistentAllocator.Init(1 << 20);
 	_configStringAllocator.Init(1 << 24);
 	_tempAllocator.Init(1 << 20);
+	_privateTempAllocator.Init(1 << 16);
 	PlugIns.Init(1 << 16);
 	_inGameStateFileOffsets.Init(1 << 16);
 	_inChangedEntities.Init(1 << 16);
@@ -62,17 +65,20 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_outProtocol = outProtocol;
 	_inProtocolSizeOfEntityState = (s32)udtGetSizeOfIdEntityState(inProtocol);
 	_inProtocolSizeOfClientSnapshot = (s32)udtGetSizeOfidClientSnapshot(inProtocol);
+	_protocolConverter = context->GetProtocolConverter(outProtocol, inProtocol);
+	_protocolConverter->ResetForNextDemo();
 
 	_outMsg.InitContext(context);
 	_outMsg.InitProtocol(outProtocol);
 
-	_inFileName = NULL;
-	_inFilePath = NULL;
+	_inFileName = udtString::NewEmptyConstant();
+	_inFilePath = udtString::NewEmptyConstant();
 
 	_cuts.Clear();
 	_persistentAllocator.Clear();
 	_configStringAllocator.Clear();
 	_tempAllocator.Clear();
+	_privateTempAllocator.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
 	_inGameStateFileOffsets.Clear();
@@ -122,15 +128,13 @@ void udtBaseParser::ResetForGamestateMessage()
 
 	_configStringAllocator.Clear();
 	_tempAllocator.Clear();
+	_privateTempAllocator.Clear();
 }
 
 void udtBaseParser::SetFilePath(const char* filePath)
 {
-	_inFilePath = AllocateString(_persistentAllocator, filePath);
-
-	char* fileName = NULL;
-	::GetFileName(fileName, _persistentAllocator, filePath);
-	_inFileName = fileName;
+	_inFilePath = udtString::NewClone(_persistentAllocator, filePath);
+	udtPath::GetFileName(_inFileName, _persistentAllocator, _inFilePath);
 }
 
 void udtBaseParser::Destroy()
@@ -366,27 +370,36 @@ bool udtBaseParser::ParseCommandString()
 		return true;
 	}
 	
-	// Copy the string to some safe location.
+	// Copy the string to some temporary location.
 	udtVMScopedStackAllocator scopedTempAllocator(_tempAllocator);
-	char* const commandString = AllocateString(_tempAllocator, commandStringTemp, commandStringLength);
+	char* commandString = AllocateString(_tempAllocator, commandStringTemp, (u32)commandStringLength);
 	
 	// We haven't, so let's store the last sequence number received.
 	_inServerCommandSequence = commandSequence;
 	
 	CommandLineTokenizer& tokenizer = _context->Tokenizer;
 	tokenizer.Tokenize(commandString);
-	const int tokenCount = tokenizer.argc();
-	if(strcmp(tokenizer.argv(0), "cs") == 0 && tokenCount == 3)
+	const int tokenCount = tokenizer.GetArgCount();
+	if(strcmp(tokenizer.GetArgString(0), "cs") == 0 && tokenCount == 3)
 	{
-		int csIndex = -1;
-		if(StringParseInt(csIndex, tokenizer.argv(1)))
+		s32 csIndex = -1;
+		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
 		{
-			const char* const csStringTemp = tokenizer.argv(2);
-			const u32 csStringLength = (u32)strlen(csStringTemp);
+			const char* const csStringTemp = tokenizer.GetArgString(2);
+			u32 csStringLength = (u32)strlen(csStringTemp);
 
-			// Copy the string to some safe location.
+			udtConfigStringConversion outCs;
+			_protocolConverter->ConvertConfigString(outCs, _tempAllocator, csIndex, csStringTemp, csStringLength);
+			if(outCs.NewString || outCs.Index != csIndex)
+			{
+				commandString = (char*)_privateTempAllocator.Allocate(2 * BIG_INFO_STRING);
+				sprintf(commandString, "cs %d \"%s\"", outCs.Index, outCs.String);
+				commandStringLength = (s32)strlen(commandString);
+				csStringLength = outCs.StringLength;
+			}
+
+			// Copy the config string to some safe location.
 			char* const csString = AllocateString(_configStringAllocator, csStringTemp, csStringLength);
-
 			_inConfigStrings[csIndex].String = csString;
 			_inConfigStrings[csIndex].StringLength = csStringLength;
 		}
@@ -412,6 +425,8 @@ bool udtBaseParser::ParseCommandString()
 		_outMsg.WriteString(commandString, commandStringLength);
 		++_outServerCommandSequence;
 	}
+
+	_privateTempAllocator.Clear();
 
 	return true;
 }
@@ -607,6 +622,44 @@ bool udtBaseParser::ParseSnapshot()
 		oldSnap = NULL;
 	}
 
+	// If not valid, dump the entire thing now that 
+	// it has been properly read.
+	if(newSnap.valid == qfalse)
+	{
+		return true;
+	}
+
+	//
+	// Clear the valid flags of any snapshots between the last
+	// received and this one, so if there was a dropped packet
+	// it won't look like something valid to delta from next
+	// time we wrap around in the buffer.
+	//
+
+	s32 oldMessageNum = _inSnapshot.messageNum + 1;
+	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
+	{
+		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
+	}
+
+	for(; oldMessageNum < newSnap.messageNum; ++oldMessageNum)
+	{
+		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = qfalse;
+	}
+
+	// Copy to the current good spot.
+	_inSnapshot = newSnap;
+
+	// Save the frame off in the backup array for later delta comparisons.
+	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
+
+	// Don't give the same stuff to the plug-ins more than once.
+	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
+	{
+		return true;
+	}
+	_inLastSnapshotMessageNumber = newSnap.messageNum;
+
 	//
 	// Write to the output message.
 	//
@@ -630,52 +683,14 @@ bool udtBaseParser::ParseSnapshot()
 			idLargestClientSnapshot newSnapOutProto;
 			if(oldSnap)
 			{
-				ConvertSnapshot(oldSnapOutProto, _outProtocol, *oldSnap, _inProtocol);
+				_protocolConverter->ConvertSnapshot(oldSnapOutProto, *oldSnap);
 			}
-			ConvertSnapshot(newSnapOutProto, _outProtocol, newSnap, _inProtocol);
+			_protocolConverter->ConvertSnapshot(newSnapOutProto, newSnap);
 			_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(&oldSnapOutProto, _outProtocol) : NULL, GetPlayerState(&newSnapOutProto, _outProtocol));
 			EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
 		}
 		++_outSnapshotsWritten;
 	}
-
-	// If not valid, dump the entire thing now that 
-	// it has been properly read.
-	if(newSnap.valid == qfalse) 
-	{
-		return true;
-	}
-
-	//
-	// Clear the valid flags of any snapshots between the last
-	// received and this one, so if there was a dropped packet
-	// it won't look like something valid to delta from next
-	// time we wrap around in the buffer.
-	//
-
-	s32 oldMessageNum = _inSnapshot.messageNum + 1;
-	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
-	{
-		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
-	}
-
-	for(; oldMessageNum < newSnap.messageNum; ++oldMessageNum) 
-	{
-		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = qfalse;
-	}
-
-	// Copy to the current good spot.
-	_inSnapshot = newSnap;
-
-	// Save the frame off in the backup array for later delta comparisons.
-	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
-
-	// Don't give the same stuff to the plug-ins more than once.
-	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
-	{
-		return true;
-	}
-	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
@@ -717,9 +732,22 @@ void udtBaseParser::WriteGameState()
 			continue;
 		}
 
-		_outMsg.WriteByte(svc_configstring);
-		_outMsg.WriteShort((s32)i);
-		_outMsg.WriteBigString(cs.String, cs.StringLength);
+		if(_outProtocol == _inProtocol)
+		{
+			_outMsg.WriteByte(svc_configstring);
+			_outMsg.WriteShort((s32)i);
+			_outMsg.WriteBigString(cs.String, cs.StringLength);
+			continue;
+		}
+		
+		udtConfigStringConversion outCs;
+		_protocolConverter->ConvertConfigString(outCs, _tempAllocator, (s32)i, cs.String, cs.StringLength);
+		if(outCs.Index >= 0)
+		{
+			_outMsg.WriteByte(svc_configstring);
+			_outMsg.WriteShort(outCs.Index);
+			_outMsg.WriteBigString(outCs.String, outCs.StringLength);
+		}
 	}
 
 	idLargestEntityState nullState;
@@ -738,7 +766,7 @@ void udtBaseParser::WriteGameState()
 
 			// @NOTE: MSG_WriteBits is called in there with newState.number as an argument.
 			idLargestEntityState newStateOutProto;
-			ConvertEntityState(newStateOutProto, _outProtocol, *newState, _inProtocol);
+			_protocolConverter->ConvertEntityState(newStateOutProto, *newState);
 			_outMsg.WriteDeltaEntity(&nullState, &newStateOutProto, qtrue);
 		}
 	}
@@ -925,8 +953,8 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			// in any bytes being emitted if the entity has not changed at all.
 			idLargestEntityState oldEntOutProto;
 			idLargestEntityState newEntOutProto;
-			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
-			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
+			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
+			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, qfalse);
 			oldindex++;
 			newindex++;
@@ -939,8 +967,8 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			idLargestEntityState baselineOutProto;
 			idLargestEntityState newEntOutProto;
 			idEntityStateBase* baseline = GetBaseline(newnum);
-			ConvertEntityState(baselineOutProto, _outProtocol, *baseline, _inProtocol);
-			ConvertEntityState(newEntOutProto, _outProtocol, *newent, _inProtocol);
+			_protocolConverter->ConvertEntityState(baselineOutProto, *baseline);
+			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
 			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, qtrue);
 			newindex++;
 			continue;
@@ -950,7 +978,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		{
 			// The old entity isn't present in the new message.
 			idLargestEntityState oldEntOutProto;
-			ConvertEntityState(oldEntOutProto, _outProtocol, *oldent, _inProtocol);
+			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
 			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, qtrue);
 			oldindex++;
 			continue;

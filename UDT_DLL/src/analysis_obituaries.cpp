@@ -118,7 +118,7 @@ void udtObituariesAnalyzer::ResetForNextDemo()
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -185,16 +185,16 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 		return NULL;
 	}
 
-	char* playerName = NULL;
+	udtString playerName;
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", cs->String))
 	{
 		return NULL;
 	}
 
-	playerName = Q_CleanStr(playerName);
+	udtString::CleanUp(playerName);
 
-	return AllocateString(_playerNamesAllocator, playerName);
+	return AllocateString(_playerNamesAllocator, playerName.String);
 }
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
@@ -205,7 +205,8 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
 		if(cs != NULL)
 		{
-			ParseConfigStringValueInt(_playerTeams[i], "t", cs->String);
+			udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
+			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs->String);
 		}
 	}
 }
@@ -213,14 +214,14 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
 {
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	const int tokenCount = tokenizer.argc();
-	if(strcmp(tokenizer.argv(0), "cs") != 0 || tokenCount != 3)
+	const int tokenCount = tokenizer.GetArgCount();
+	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || tokenCount != 3)
 	{
 		return;
 	}
 
 	s32 csIndex = -1;
-	if(!StringParseInt(csIndex, tokenizer.argv(1)))
+	if(!StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}
@@ -238,5 +239,6 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	ParseConfigStringValueInt(_playerTeams[playerIdx], "t", cs->String);
+	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
+	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs->String);
 }

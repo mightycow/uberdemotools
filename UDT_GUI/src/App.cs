@@ -54,11 +54,26 @@ namespace Uber.DemoTools
         public bool PrintExecutionTime = true;
     }
 
+    public class MapConversionRule
+    {
+        public string InputName = "";
+        public string OutputName = "";
+        public float OffsetX = 0.0f;
+        public float OffsetY = 0.0f;
+        public float OffsetZ = 0.0f;
+    }
+
+    public class UdtMapConversionsConfig
+    {
+        public List<MapConversionRule> MapRules = new List<MapConversionRule> { new MapConversionRule() };
+    }
+
     public class UdtPrivateConfig
     {
         public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
         public string PatternCutPlayerName = "";
         public UInt32 FragCutAllowedMeansOfDeaths = 0;
+        public UDT_DLL.udtProtocol ConversionOutputProtocol = UDT_DLL.udtProtocol.Invalid;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -175,7 +190,8 @@ namespace Uber.DemoTools
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
         private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
-        private static RoutedCommand _convertDemoCommand = new RoutedCommand();
+        private static RoutedCommand _convertDemo68Command = new RoutedCommand();
+        private static RoutedCommand _convertDemo90Command = new RoutedCommand();
         private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
@@ -491,7 +507,8 @@ namespace Uber.DemoTools
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
             InitDemoListAnalyzeCommand();
-            InitDemoListConvertCommand();
+            InitDemoListConversion68Command();
+            InitDemoListConversion90Command();
             InitDemoListSelectAllCommand();
             InitDemoListContextMenu();
             
@@ -661,10 +678,15 @@ namespace Uber.DemoTools
             analyzeDemoItem.Command = _analyzeDemoCommand;
             analyzeDemoItem.Click += (obj, args) => OnAnalyzeDemoClicked();
 
-            var convertDemoItem = new MenuItem();
-            convertDemoItem.Header = "Convert Selected to *.dm_90";
-            convertDemoItem.Command = _convertDemoCommand;
-            convertDemoItem.Click += (obj, args) => OnConvertDemoClicked();
+            var convertDemo68Item = new MenuItem();
+            convertDemo68Item.Header = "Convert to *.dm__68";
+            convertDemo68Item.Command = _convertDemo68Command;
+            convertDemo68Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
+
+            var convertDemo90Item = new MenuItem();
+            convertDemo90Item.Header = "Convert to *.dm__90";
+            convertDemo90Item.Command = _convertDemo90Command;
+            convertDemo90Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
@@ -673,7 +695,8 @@ namespace Uber.DemoTools
 
             var demosContextMenu = new ContextMenu();
             demosContextMenu.Items.Add(analyzeDemoItem);
-            demosContextMenu.Items.Add(convertDemoItem);
+            demosContextMenu.Items.Add(convertDemo68Item);
+            demosContextMenu.Items.Add(convertDemo90Item);
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
@@ -783,7 +806,9 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
-        private bool CanExecuteConvertCommand()
+
+
+        private bool CanExecuteConvertCommand(UDT_DLL.udtProtocol outputFormat)
         {
             var demos = SelectedDemos;
             if(demos == null)
@@ -791,14 +816,22 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            return demos.Exists(d => d.ProtocolNumber == UDT_DLL.udtProtocol.Dm73);
+            return demos.Exists(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
         }
 
-        private void InitDemoListConvertCommand()
+        private void InitDemoListConversion68Command()
         {
             var commandBinding = new CommandBinding();
-            commandBinding.Command = _convertDemoCommand;
-            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteConvertCommand(); };
+            commandBinding.Command = _convertDemo68Command;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteConvertCommand(UDT_DLL.udtProtocol.Dm68); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListConversion90Command()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _convertDemo90Command;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteConvertCommand(UDT_DLL.udtProtocol.Dm90); };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -1114,13 +1147,21 @@ namespace Uber.DemoTools
             analyzeButton.Margin = new Thickness(5);
             analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
 
-            var convertButton = new Button();
-            convertButton.Content = "Convert";
-            convertButton.Width = 75;
-            convertButton.Height = 25;
-            convertButton.Margin = new Thickness(5);
-            convertButton.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
-            convertButton.Click += (obj, args) => OnConvertDemoClicked();
+            var convert68Button = new Button();
+            convert68Button.Content = "=> *.dm__68";
+            convert68Button.Width = 75;
+            convert68Button.Height = 25;
+            convert68Button.Margin = new Thickness(5);
+            convert68Button.ToolTip = "Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)";
+            convert68Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
+
+            var convert90Button = new Button();
+            convert90Button.Content = "=> *.dm__90";
+            convert90Button.Width = 75;
+            convert90Button.Height = 25;
+            convert90Button.Margin = new Thickness(5);
+            convert90Button.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
+            convert90Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
             var multiDemoActionButtonsPanel = new StackPanel();
             multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1128,7 +1169,8 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Margin = new Thickness(5);
             multiDemoActionButtonsPanel.Orientation = Orientation.Vertical;
             multiDemoActionButtonsPanel.Children.Add(analyzeButton);
-            multiDemoActionButtonsPanel.Children.Add(convertButton);
+            multiDemoActionButtonsPanel.Children.Add(convert68Button);
+            multiDemoActionButtonsPanel.Children.Add(convert90Button);
 
             var multiDemoActionButtonsGroupBox = new GroupBox();
             multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1342,21 +1384,65 @@ namespace Uber.DemoTools
             StartJobThread(DemoAnalyzeThread, demos);
         }
 
-        private void ConvertDemos(List<DemoInfo> demos)
+        private List<MapConversionRule> LoadMapRules(UDT_DLL.udtProtocol outputFormat)
         {
-            demos = demos.FindAll(d => d.ProtocolNumber == UDT_DLL.udtProtocol.Dm73);
-            if(demos.Count == 0)
+            var config = new UdtMapConversionsConfig();
+            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && Serializer.FromXml<UdtMapConversionsConfig>("ConversionRules90to68.xml", out config))
             {
-                LogError("None of the selected demos are in the *.dm_73 format.");
+                return config.MapRules;
+            }
+
+            return new List<MapConversionRule>();
+        }
+
+        private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
+        {
+            if(outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73)
+            {
+                return true;
+            }
+
+            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm90)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private class DemoConvertThreadArg
+        {
+            public List<DemoInfo> Demos;
+            public List<MapConversionRule> MapRules;
+        }
+
+        private void OnConvertDemosClicked(UDT_DLL.udtProtocol outputFormat)
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count == 0)
+            {
+                LogError("No demo selected. Please select at least one to proceed.");
                 return;
             }
 
+            demos = demos.FindAll(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
+            if(demos.Count == 0)
+            {
+                LogError("All of the selected demos are in the target format.");
+                return;
+            }
+            
             DisableUiNonThreadSafe();
 
             SaveBothConfigs();
+            PrivateConfig.ConversionOutputProtocol = outputFormat;
+
+            var threadData = new DemoConvertThreadArg();
+            threadData.Demos = demos;
+            threadData.MapRules = LoadMapRules(outputFormat);
 
             JoinJobThread();
-            StartJobThread(DemoConvertThread, demos);
+            StartJobThread(DemoConvertThread, threadData);
         }
 
         public delegate void VoidDelegate();
@@ -1480,12 +1566,14 @@ namespace Uber.DemoTools
 
         private void DemoConvertThread(object arg)
         {
-            var demos = arg as List<DemoInfo>;
-            if(demos == null)
+            var threadData = arg as DemoConvertThreadArg;
+            if(threadData == null)
             {
                 LogError("Invalid thread argument type");
                 return;
             }
+
+            var demos = threadData.Demos;
 
             var outputFolder = GetOutputFolder();
             var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
@@ -1500,7 +1588,7 @@ namespace Uber.DemoTools
 
             try
             {
-                UDT_DLL.ConvertDemos(ref ParseArg, filePaths, _config.MaxThreadCount);
+                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, threadData.MapRules, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {
@@ -1765,18 +1853,6 @@ namespace Uber.DemoTools
             }
 
             AnalyzeDemos(demos);
-        }
-
-        private void OnConvertDemoClicked()
-        {
-            var demos = SelectedDemos;
-            if(demos == null || demos.Count == 0)
-            {
-                LogError("No demo selected. Please select at least one to proceed.");
-                return;
-            }
-
-            ConvertDemos(demos);
         }
 
         private bool ParseMinutesSeconds(string time, out int totalSeconds)

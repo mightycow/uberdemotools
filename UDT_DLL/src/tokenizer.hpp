@@ -2,18 +2,25 @@
 
 
 #include "common.hpp"
+#include "string.hpp"
 
 
 struct CommandLineTokenizer
 {
 public:
-	s32			argc() const;
-	const char* argv(s32 arg) const;
-	void		Tokenize(const char* text, qbool ignoreQuotes = qfalse);
+	u32         GetArgCount() const;
+	const char* GetArgString(u32 arg) const;
+	u32         GetArgLength(u32 arg) const;
+	udtString   GetArg(u32 arg) const;
+	void        Tokenize(const char* text, bool ignoreQuotes = false);
 
 private:
-	s32			cmd_argc;
-	char*		cmd_argv[MAX_STRING_TOKENS];		// points into cmd_tokenized
-	char		cmd_tokenized[BIG_INFO_STRING+MAX_STRING_TOKENS];	// will have 0 bytes inserted
-	char		cmd_cmd[BIG_INFO_STRING]; // the original command we received (no token processing)
+	void        TokenizeImpl(const char* text, bool ignoreQuotes = false);
+	void        RegisterArgLengths();
+
+	u32   _argCount;
+	char* _argStrings[MAX_STRING_TOKENS]; // Points into _tokenizedCommand.
+	u32   _argLengths[MAX_STRING_TOKENS];
+	char  _tokenizedCommand[BIG_INFO_STRING+MAX_STRING_TOKENS];	// Will have 0 bytes inserted.
+	char  _originalCommand[BIG_INFO_STRING]; // The original command we received (no token processing).
 };

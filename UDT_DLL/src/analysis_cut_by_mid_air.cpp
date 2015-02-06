@@ -340,7 +340,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		{
 			// Store the projectile fired by the tracked player, if any.
 			const s32 eventType = es->event & (~EV_EVENT_BITS);
-			const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON : (s32)EV_FIRE_WEAPON_73p;
+			const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
 			if(eventType == fireWeaponEventId && IsAllowedWeapon(es->weapon, _protocol))
 			{
 				AddProjectile(es->weapon, currentPosition, arg.ServerTime);
@@ -380,7 +380,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	}
 
 	// Find a player getting mid-aired.
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)

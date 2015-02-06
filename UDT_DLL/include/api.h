@@ -589,6 +589,34 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtMapConversionRule
+	{
+		// If the input name matches this...
+		const char* InputName;
+
+		// ...replace it with this.
+		const char* OutputName;
+
+		// Coordinates by which to shift everything.
+		// Includes players, items, etc. Only necessary for some maps.
+		f32 PositionOffsets[3];
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
+	struct udtProtocolConversionArg
+	{
+		// Pointer to an array of map rules.
+		const udtMapConversionRule* MapRules;
+
+		// Number of elements in the array pointed to by the MapRules pointer.
+		u32 MapRuleCount;
+
+		// Of type udtProtocol::Id.
+		u32 OutputProtocol;
+	};
+
 	struct udtChatEventData
 	{
 		// All C string pointers can be NULL if extraction failed.
@@ -861,8 +889,8 @@ extern "C"
 	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
 	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
 
-	// Creates, for each demo that doesn't have the latest protocol, a new demo file with the latest protocol.
-	UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo);
+	// Creates, for each demo that isn't in the target protocol, a new demo file with the specified protocol.
+	UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg);
 
 #ifdef __cplusplus
 }

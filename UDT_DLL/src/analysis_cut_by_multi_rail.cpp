@@ -31,7 +31,7 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	u32 railKillCount = 0;
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)

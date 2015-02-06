@@ -240,6 +240,25 @@ namespace Uber.DemoTools
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtMapConversionRule
+	    {
+            public IntPtr InputName; // const char*
+            public IntPtr OutputName; // const char*
+		    public float PositionOffsetX;
+            public float PositionOffsetY;
+            public float PositionOffsetZ;
+		    public Int32 Reserved1;
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtProtocolConversionArg
+        {
+            public IntPtr MapRules; // const udtMapConversionRule*
+            public UInt32 MapRuleCount;
+            public UInt32 OutputProtocol;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat
 	    {
             public IntPtr OriginalCommand; // const char*
@@ -383,7 +402,7 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByPatternArg patternInfo);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtConvertDemoFilesToLatestProtocol(ref udtParseArg info, ref udtMultiParseArg extraInfo);
+        extern static private udtErrorCode udtConvertDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtProtocolConversionArg conversionInfo);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -852,7 +871,7 @@ namespace Uber.DemoTools
             return result == udtErrorCode.None;
         }
 
-        public static bool ConvertDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        public static bool ConvertDemos(ref udtParseArg parseArg, udtProtocol outProtocol, List<MapConversionRule> mapRules, List<string> filePaths, int maxThreadCount)
         {
             var timer = new Stopwatch();
             timer.Start();
@@ -860,7 +879,7 @@ namespace Uber.DemoTools
             var fileCount = filePaths.Count;
             if(fileCount <= MaxBatchSizeConverting)
             {
-                var result = ConvertDemosImpl(ref parseArg, filePaths, maxThreadCount);
+                var result = ConvertDemosImpl(ref parseArg, outProtocol, mapRules, filePaths, maxThreadCount);
                 PrintExecutionTime(timer);
                 return result;
             }
@@ -887,7 +906,7 @@ namespace Uber.DemoTools
                 progressRange = (float)currentFileCount / (float)fileCount;
                 fileIndex += currentFileCount;
 
-                ConvertDemosImpl(ref newParseArg, currentFiles, maxThreadCount);
+                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, currentFiles, maxThreadCount);
 
                 if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
                 {
@@ -900,7 +919,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        private static bool ConvertDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        private static bool ConvertDemosImpl(ref udtParseArg parseArg, udtProtocol outProtocol, List<MapConversionRule> mapRules, List<string> filePaths, int maxThreadCount)
         {
             var resources = new ArgumentResources();
             var errorCodeArray = new Int32[filePaths.Count];
@@ -922,10 +941,35 @@ namespace Uber.DemoTools
             multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
             multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
 
+            var conversionArg = new udtProtocolConversionArg();
+            conversionArg.OutputProtocol = (UInt32)outProtocol;
+            conversionArg.MapRules = IntPtr.Zero;
+            conversionArg.MapRuleCount = 0;
+            if(mapRules.Count > 0)
+            {
+                var mapRuleArray = new udtMapConversionRule[mapRules.Count];
+                for(var i = 0; i < mapRules.Count; ++i)
+                {
+                    var inputName = Marshal.StringToHGlobalAnsi(mapRules[i].InputName);
+                    var outputName = Marshal.StringToHGlobalAnsi(mapRules[i].OutputName);
+                    mapRuleArray[i].InputName = inputName;
+                    mapRuleArray[i].OutputName = outputName;
+                    mapRuleArray[i].PositionOffsetX = mapRules[i].OffsetX;
+                    mapRuleArray[i].PositionOffsetY = mapRules[i].OffsetY;
+                    mapRuleArray[i].PositionOffsetZ = mapRules[i].OffsetZ;
+                    resources.GlobalAllocationHandles.Add(inputName);
+                    resources.GlobalAllocationHandles.Add(outputName);
+                }
+                var pinnedMapRules = new PinnedObject(mapRuleArray);
+                resources.PinnedObjects.Add(pinnedMapRules);
+                conversionArg.MapRules = pinnedMapRules.Address;
+                conversionArg.MapRuleCount = (UInt32)mapRuleArray.Length;
+            }
+
             var result = udtErrorCode.OperationFailed;
             try
             {
-                result = udtConvertDemoFilesToLatestProtocol(ref parseArg, ref multiParseArg);
+                result = udtConvertDemoFiles(ref parseArg, ref multiParseArg, ref conversionArg);
             }
             finally
             {

@@ -5,80 +5,113 @@
 #include <string.h>
 
 
-static const char* cmd_null_string = "";
+static const char* EmptyString = "";
 
 
-s32	CommandLineTokenizer::argc() const
+u32	CommandLineTokenizer::GetArgCount() const
 {
-	return cmd_argc;
+	return _argCount;
 }
 
-const char* CommandLineTokenizer::argv(s32 arg) const
+const char* CommandLineTokenizer::GetArgString(u32 arg) const
 {
-	if ( (unsigned)arg >= (unsigned)cmd_argc )
-		return cmd_null_string;
+	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
+	{
+		return EmptyString;
+	}
 
-	if ( (unsigned)arg >= MAX_STRING_TOKENS )
-		return cmd_null_string;
-
-	return cmd_argv[arg];	
+	return _argStrings[arg];	
 }
 
-void CommandLineTokenizer::Tokenize(const char* text, qbool ignoreQuotes)
+u32 CommandLineTokenizer::GetArgLength(u32 arg) const
+{
+	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
+	{
+		return 0;
+	}
+
+	return _argLengths[arg];
+}
+
+udtString CommandLineTokenizer::GetArg(u32 arg) const
+{
+	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
+	{
+		return udtString::NewEmptyConstant();
+	}
+
+	return udtString::NewConstRef(_argStrings[arg], _argLengths[arg]);
+}
+
+void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 {
 	// clear previous args
-	cmd_argc = 0;
+	_argCount = 0;
 
-	if ( !text )
+	if(!text)
 		return;
 
-	Q_strncpyz( cmd_cmd, text, sizeof(cmd_cmd) );
+	Q_strncpyz(_originalCommand, text, sizeof(_originalCommand));
 
-	char* out = cmd_tokenized;
+	char* out = _tokenizedCommand;
 
-	for(;;) {
-		if ( cmd_argc == MAX_STRING_TOKENS ) {
+	for(;;)
+	{
+		if(_argCount == MAX_STRING_TOKENS)
+		{
 			return;			// this is usually something malicious
 		}
 
-		for(;;) {
+		for(;;)
+		{
 			// skip whitespace
-			while ( *text && *text <= ' ' ) {
+			while(*text && *text <= ' ')
+			{
 				text++;
 			}
-			if ( !*text ) {
+			if(!*text)
+			{
 				return;			// all tokens parsed
 			}
 
 			// skip // comments
-			if ( text[0] == '/' && text[1] == '/' ) {
+			if(text[0] == '/' && text[1] == '/')
+			{
 				return;			// all tokens parsed
 			}
 
 			// skip /* */ comments
-			if ( text[0] == '/' && text[1] =='*' ) {
-				while ( *text && ( text[0] != '*' || text[1] != '/' ) ) {
+			if(text[0] == '/' && text[1] == '*')
+			{
+				while(*text && (text[0] != '*' || text[1] != '/'))
+				{
 					text++;
 				}
-				if ( !*text ) {
+				if(!*text)
+				{
 					return;		// all tokens parsed
 				}
 				text += 2;
-			} else {
+			}
+			else
+			{
 				break;			// we are ready to parse a token
 			}
 		}
 
 		// handle quoted strings - NOTE: this doesn't handle \" escaping
-		if ( !ignoreQuotes && *text == '"' ) {
-			cmd_argv[cmd_argc] = out;
-			cmd_argc++;
+		if(!ignoreQuotes && *text == '"')
+		{
+			_argStrings[_argCount] = out;
+			_argCount++;
 			text++;
-			while ( *text && *text != '"' ) {
+			while(*text && *text != '"')
+			{
 				*out++ = *text++;
 			}
 			*out++ = 0;
-			if ( !*text ) {
+			if(!*text)
+			{
 				return;		// all tokens parsed
 			}
 			text++;
@@ -86,21 +119,25 @@ void CommandLineTokenizer::Tokenize(const char* text, qbool ignoreQuotes)
 		}
 
 		// regular token
-		cmd_argv[cmd_argc] = out;
-		cmd_argc++;
+		_argStrings[_argCount] = out;
+		_argCount++;
 
 		// skip until whitespace, quote, or command
-		while ( *text > ' ' ) {
-			if ( !ignoreQuotes && text[0] == '"' ) {
+		while(*text > ' ')
+		{
+			if(!ignoreQuotes && text[0] == '"')
+			{
 				break;
 			}
 
-			if ( text[0] == '/' && text[1] == '/' ) {
+			if(text[0] == '/' && text[1] == '/')
+			{
 				break;
 			}
 
 			// skip /* */ comments
-			if ( text[0] == '/' && text[1] =='*' ) {
+			if(text[0] == '/' && text[1] == '*')
+			{
 				break;
 			}
 
@@ -109,8 +146,32 @@ void CommandLineTokenizer::Tokenize(const char* text, qbool ignoreQuotes)
 
 		*out++ = 0;
 
-		if ( !*text ) {
+		if(!*text)
+		{
 			return;		// all tokens parsed
 		}
 	}
+}
+
+void CommandLineTokenizer::RegisterArgLengths()
+{
+	if(_argCount == 0)
+	{
+		return;
+	}
+
+	const u32 lastIndex = _argCount - 1;
+	for(u32 i = 0; i < lastIndex; ++i)
+	{
+		// -1 is not counting the the null terminator separating the arguments.
+		_argLengths[i] = (u32)(_argStrings[i + 1] - _argStrings[i] - 1);
+	}
+
+	_argLengths[lastIndex] = (u32)strlen(_argStrings[lastIndex]);
+}
+
+void CommandLineTokenizer::Tokenize(const char* text, bool ignoreQuotes)
+{
+	TokenizeImpl(text, ignoreQuotes);
+	RegisterArgLengths();
 }
