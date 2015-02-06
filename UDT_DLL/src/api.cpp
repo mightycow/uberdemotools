@@ -299,7 +299,7 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 	}
 
 	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
-	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart, index + 1, udtGetFileExtensionByProtocol(protocol));
+	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart.String, index + 1, udtGetFileExtensionByProtocol(protocol));
 
 	context.LogInfo("Writing demo %s...", newFilePath);
 
