@@ -77,7 +77,26 @@ static bool IsValid(const udtMultiParseArg& arg)
 
 static bool IsValid(const udtProtocolConversionArg& arg)
 {
-	return arg.OutputProtocol == (u32)udtProtocol::Dm68 || arg.OutputProtocol == (u32)udtProtocol::Dm90;
+	if(arg.OutputProtocol != (u32)udtProtocol::Dm68 && arg.OutputProtocol != (u32)udtProtocol::Dm90)
+	{
+		return false;
+	}
+
+	if(arg.MapRuleCount > 0 && arg.MapRules == NULL)
+	{
+		return false;
+	}
+
+	for(u32 i = 0, end = arg.MapRuleCount; i < end; ++i)
+	{
+		const udtMapConversionRule& rule = arg.MapRules[i];
+		if(rule.InputName == NULL || rule.OutputName == NULL)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 static bool HasValidOutputOption(const udtParseArg& arg)
