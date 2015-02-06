@@ -2,3 +2,4 @@ UDT_GUI\.bin\x86\Release\UDT_GUI.exe
 UDT_DLL\.bin\vs2013\x86\release\UDT.dll
 changelog_dll.txt
 changelog_gui.txt
+redist\ConversionRules90to68.xml
