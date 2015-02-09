@@ -178,6 +178,8 @@ namespace Uber.DemoTools
         private ProgressBar _progressBar = null;
         private Button _cancelJobButton = null;
         private GroupBox _progressGroupBox = null;
+        private TextBlock _progressTimeElapsedTextBlock = null;
+        private TextBlock _progressTimeRemainingTextBlock = null;
         private DockPanel _rootPanel = null;
         private TabControl _tabControl = null;
         private List<FrameworkElement> _rootElements = new List<FrameworkElement>();
@@ -187,6 +189,7 @@ namespace Uber.DemoTools
         private AppComponent _cutByTimeComponent = null;
         private IntPtr _mainThreadContext = IntPtr.Zero;
         private bool _usingDarkTheme = false;
+        private Stopwatch _threadedJobTimer = new Stopwatch();
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
@@ -470,13 +473,37 @@ namespace Uber.DemoTools
             cancelJobButton.Content = "Cancel";
             cancelJobButton.Click += (obj, args) => OnCancelJobClicked();
 
+            var progressTimeElapsedTextBlock = new TextBlock();
+            _progressTimeElapsedTextBlock = progressTimeElapsedTextBlock;
+            progressTimeElapsedTextBlock.Margin = new Thickness(5, 0, 0, 0);
+            progressTimeElapsedTextBlock.Text = "Time elapsed: ";
+
+            var progressTimeRemainingTextBlock = new TextBlock();
+            _progressTimeRemainingTextBlock = progressTimeRemainingTextBlock;
+            progressTimeRemainingTextBlock.Text = "Time remaining: ";
+            progressTimeRemainingTextBlock.HorizontalAlignment = HorizontalAlignment.Center;
+
+            var progressTimeRow = new Grid();
+            progressTimeRow.RowDefinitions.Add(new RowDefinition());
+            progressTimeRow.ColumnDefinitions.Add(new ColumnDefinition());
+            progressTimeRow.ColumnDefinitions.Add(new ColumnDefinition());
+            progressTimeRow.ColumnDefinitions.Add(new ColumnDefinition());
+            progressTimeRow.Children.Add(progressTimeElapsedTextBlock);
+            progressTimeRow.Children.Add(progressTimeRemainingTextBlock);
+            Grid.SetRow(progressTimeElapsedTextBlock, 0);
+            Grid.SetColumn(progressTimeElapsedTextBlock, 0);
+            Grid.SetRow(progressTimeRemainingTextBlock, 0);
+            Grid.SetColumn(progressTimeRemainingTextBlock, 1);
+
             var progressPanel = new DockPanel();
             progressPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             progressPanel.VerticalAlignment = VerticalAlignment.Bottom;
             progressPanel.LastChildFill = true;
+            progressPanel.Children.Add(progressTimeRow);
             progressPanel.Children.Add(cancelJobButton);
             progressPanel.Children.Add(progressBar);
             DockPanel.SetDock(cancelJobButton, Dock.Right);
+            DockPanel.SetDock(progressTimeRow, Dock.Top);
 
             var progressGroupBox = new GroupBox();
             _progressGroupBox = progressGroupBox;
@@ -2015,10 +2042,49 @@ namespace Uber.DemoTools
             LogWarning("Job canceled!");
         }
 
+        private static string FormatProgressTimeFromSeconds(long totalSeconds)
+        {
+            var hours = totalSeconds / 3600;
+            var secondsInLastHour = totalSeconds - 3600 * hours;
+            var minutes = secondsInLastHour / 60;
+            var seconds = secondsInLastHour - minutes * 60;
+
+            var result = "";
+            if(hours > 0)
+            {
+                result += hours.ToString() + "h ";
+            }
+            if(minutes > 0)
+            {
+                result += minutes.ToString() + "m ";
+            }
+            result += seconds.ToString() + "s";
+
+            return result;
+        }
+
         private void SetProgressThreadSafe(double value)
         {
-            VoidDelegate valueSetter = delegate { _progressBar.Value = value; _progressBar.InvalidateVisual(); };
-            _progressBar.Dispatcher.Invoke(valueSetter);
+            var elapsedTimeMs = _threadedJobTimer.ElapsedMilliseconds;
+            var elapsed = FormatProgressTimeFromSeconds(elapsedTimeMs / 1000);
+            var remaining = "?";
+            if(elapsedTimeMs >= 200 && value > 0.0)
+            {
+                var totalTimeSeconds = (elapsedTimeMs / 1000.0) * (100.0 / value);
+                var remainingTimeSeconds = totalTimeSeconds - (elapsedTimeMs / 1000);
+                remaining = remainingTimeSeconds < 1.0 ? 
+                    "< 1s" : 
+                    FormatProgressTimeFromSeconds((long)remainingTimeSeconds);
+            }
+
+            VoidDelegate valueSetter = delegate 
+            {
+                _progressTimeElapsedTextBlock.Text = "Time elapsed: " + elapsed;
+                _progressTimeRemainingTextBlock.Text = "Estimated time remaining: " + remaining;
+                _progressBar.Value = value; 
+                _progressBar.InvalidateVisual(); 
+            };
+            _window.Dispatcher.Invoke(valueSetter);
         }
 
         public static UDT_DLL.udtProtocol GetProtocolFromFilePath(string filePath)
@@ -2234,6 +2300,7 @@ namespace Uber.DemoTools
 
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
+            _threadedJobTimer.Restart();
             var udtData = new JobThreadData();
             udtData.UserFunction = entryPoint;
             udtData.UserData = userData;
