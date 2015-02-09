@@ -52,6 +52,7 @@ namespace Uber.DemoTools
         public int MultiRailCutMinFragCount = 2;
         public bool PrintAllocationStats = true;
         public bool PrintExecutionTime = true;
+        public bool ColorLogWarningsAndErrors = false;
     }
 
     public class MapConversionRule
@@ -1836,6 +1837,12 @@ namespace Uber.DemoTools
                 return;
             }
 
+            if(demo.Analyzed && demo.GameStateFileOffsets.Count == 1)
+            {
+                LogError("The selected demo only has 1 game state message. There's nothing to split.");
+                return;
+            }
+
             DisableUiNonThreadSafe();
             _demoListView.Background = _demoListViewBackground;
 
@@ -2027,7 +2034,7 @@ namespace Uber.DemoTools
             return ProtocolFileExtDic[extension];
         }
 
-        private void LogMessage(string message)
+        private void LogMessageNoColor(string message)
         {
             VoidDelegate itemAdder = delegate 
             {
@@ -2038,19 +2045,67 @@ namespace Uber.DemoTools
             _logListBox.Dispatcher.Invoke(itemAdder);
         }
 
+        public void LogWarningNoColor(string message, params object[] args)
+        {
+            LogMessageNoColor("WARNING: " + string.Format(message, args));
+        }
+
+        public void LogErrorNoColor(string message, params object[] args)
+        {
+            LogMessageNoColor("ERROR: " + string.Format(message, args));
+        }
+
+        private void LogMessageWithColor(string message, Color color)
+        {
+            var textBlock = new TextBlock();
+            textBlock.Text = message;
+            textBlock.Foreground = new SolidColorBrush(color);
+            VoidDelegate itemAdder = delegate
+            {
+                _logListBox.Items.Add(textBlock);
+                _logListBox.ScrollIntoView(textBlock);
+            };
+
+            _logListBox.Dispatcher.Invoke(itemAdder);
+        }
+
+        public void LogWarningWithColor(string message, params object[] args)
+        {
+            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 127, 0));
+        }
+
+        public void LogErrorWithColor(string message, params object[] args)
+        {
+            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 0, 0));
+        }
+
         public void LogInfo(string message, params object[] args)
         {
-            LogMessage(string.Format(message, args));
+            LogMessageNoColor(string.Format(message, args));
         }
 
         public void LogWarning(string message, params object[] args)
         {
-            LogMessage("WARNING: " + string.Format(message, args));
+            if(Config.ColorLogWarningsAndErrors)
+            {
+                LogWarningWithColor(message, args);
+            }
+            else
+            {
+                LogWarningNoColor(message, args);
+            }
         }
 
         public void LogError(string message, params object[] args)
         {
-            LogMessage("ERROR: " + string.Format(message, args));
+            if(Config.ColorLogWarningsAndErrors)
+            {
+                LogErrorWithColor(message, args);
+            }
+            else
+            {
+                LogErrorNoColor(message, args);
+            }
         }
 
         static public void GlobalLogInfo(string message, params object[] args)

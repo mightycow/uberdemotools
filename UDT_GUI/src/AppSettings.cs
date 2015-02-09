@@ -54,6 +54,7 @@ namespace Uber.DemoTools
         private TextBox _endTimeOffsetEditBox = null;
         private CheckBox _printAllocStatsCheckBox = null;
         private CheckBox _printExecutionTimeCheckBox = null;
+        private CheckBox _colorLogMessagesCheckBox = null;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -87,6 +88,7 @@ namespace Uber.DemoTools
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
             config.PrintAllocationStats = _printAllocStatsCheckBox.IsChecked ?? false;
             config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
+            config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
         }
 
@@ -191,8 +193,8 @@ namespace Uber.DemoTools
             analyzeOnLoadCheckBox.VerticalAlignment = VerticalAlignment.Center;
             analyzeOnLoadCheckBox.IsChecked = _app.Config.AnalyzeOnLoad;
             analyzeOnLoadCheckBox.Content = " Analyze demos when loading them into the list?";
-            analyzeOnLoadCheckBox.Checked += (obj, args) => OnAnalyzeOnLoadChecked();
-            analyzeOnLoadCheckBox.Unchecked += (obj, args) => OnAnalyzeOnLoadUnchecked();
+            analyzeOnLoadCheckBox.Checked += (obj, args) => _app.Config.AnalyzeOnLoad = true;
+            analyzeOnLoadCheckBox.Unchecked += (obj, args) => _app.Config.AnalyzeOnLoad = false;
             analyzeOnLoadCheckBox.ToolTip = " You can always launch the analysis pass from the \"Manage\" tab.";
 
             var printAllocStatsCheckBox = new CheckBox();
@@ -201,8 +203,8 @@ namespace Uber.DemoTools
             printAllocStatsCheckBox.VerticalAlignment = VerticalAlignment.Center;
             printAllocStatsCheckBox.IsChecked = _app.Config.PrintAllocationStats;
             printAllocStatsCheckBox.Content = " Print memory allocations stats when job processing is finished?";
-            printAllocStatsCheckBox.Checked += (obj, args) => OnPrintAllocStatsChecked();
-            printAllocStatsCheckBox.Unchecked += (obj, args) => OnPrintAllocStatsUnchecked();
+            printAllocStatsCheckBox.Checked += (obj, args) => _app.Config.PrintAllocationStats = true;
+            printAllocStatsCheckBox.Unchecked += (obj, args) => _app.Config.PrintAllocationStats = false;
 
             var printExecutionTimeCheckBox = new CheckBox();
             _printExecutionTimeCheckBox = printExecutionTimeCheckBox;
@@ -210,8 +212,18 @@ namespace Uber.DemoTools
             printExecutionTimeCheckBox.VerticalAlignment = VerticalAlignment.Center;
             printExecutionTimeCheckBox.IsChecked = _app.Config.PrintExecutionTime;
             printExecutionTimeCheckBox.Content = " Print execution time when job processing is finished?";
-            printExecutionTimeCheckBox.Checked += (obj, args) => OnPrintExecutionTimeChecked();
-            printExecutionTimeCheckBox.Unchecked += (obj, args) => OnPrintExecutionTimeUnchecked();
+            printExecutionTimeCheckBox.Checked += (obj, args) => _app.Config.PrintExecutionTime = true;
+            printExecutionTimeCheckBox.Unchecked += (obj, args) => _app.Config.PrintExecutionTime = false;
+
+            var colorLogMessagesCheckBox = new CheckBox();
+            _colorLogMessagesCheckBox = colorLogMessagesCheckBox;
+            colorLogMessagesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            colorLogMessagesCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            colorLogMessagesCheckBox.IsChecked = _app.Config.ColorLogWarningsAndErrors;
+            colorLogMessagesCheckBox.Content = " Color the log window's warning and error messages?";
+            colorLogMessagesCheckBox.Checked += (obj, args) => _app.Config.ColorLogWarningsAndErrors = true;
+            colorLogMessagesCheckBox.Unchecked += (obj, args) => _app.Config.ColorLogWarningsAndErrors = false;
+            colorLogMessagesCheckBox.ToolTip = "The option is disabled by default because it might not integrate well with your current theme.";
 
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
@@ -231,6 +243,7 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("Print Alloc Stats", printAllocStatsCheckBox));
             panelList.Add(App.CreateTuple("Print Execution Time", printExecutionTimeCheckBox));
+            panelList.Add(App.CreateTuple("Color Log Messages", colorLogMessagesCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
@@ -402,36 +415,6 @@ namespace Uber.DemoTools
         {
             _app.Config.OpenDemosFromInputFolderOnStartUp = false;
             UpdateInputFolderActive();
-        }
-
-        private void OnAnalyzeOnLoadChecked()
-        {
-            _app.Config.AnalyzeOnLoad = true;
-        }
-
-        private void OnAnalyzeOnLoadUnchecked()
-        {
-            _app.Config.AnalyzeOnLoad = false;
-        }
-
-        private void OnPrintAllocStatsChecked()
-        {
-            _app.Config.PrintAllocationStats = true;
-        }
-
-        private void OnPrintAllocStatsUnchecked()
-        {
-            _app.Config.PrintAllocationStats = false;
-        }
-
-        private void OnPrintExecutionTimeChecked()
-        {
-            _app.Config.PrintExecutionTime = true;
-        }
-
-        private void OnPrintExecutionTimeUnchecked()
-        {
-            _app.Config.PrintExecutionTime = false;
         }
 
         private void GetMaxThreadCount(ref int maxThreadCount)
