@@ -82,6 +82,7 @@ void udtParserContext::ResetForNextDemo(bool keepPlugInData)
 		InputIndices.Clear();
 		PlugInAllocator.Clear();
 		PlugIns.Clear();
+		Parser.PlugIns.Clear();
 	}
 
 	Context.Reset();
