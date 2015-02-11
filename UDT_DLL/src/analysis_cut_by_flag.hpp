@@ -4,21 +4,20 @@
 #include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByMultiRailAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtCutByFlagCaptureAnalyzer : public udtCutByPatternAnalyzerBase
 {
 public:
-	udtCutByMultiRailAnalyzer();
-	~udtCutByMultiRailAnalyzer();
+	udtCutByFlagCaptureAnalyzer();
+	~udtCutByFlagCaptureAnalyzer();
 
 	void StartAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 
-protected:
-	void OnResetForNextDemo();
-
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByMultiRailAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtCutByFlagCaptureAnalyzer);
 
 	s32 _gameStateIndex;
+	s32 _pickupTimeMs;
+	s32 _previousCaptureCount;
 };

@@ -111,6 +111,7 @@ namespace Uber.DemoTools
             FragSequences,
             MidAirFrags,
             MultiFragRails,
+            FlagCaptures,
             Count
         }
 
@@ -240,7 +241,14 @@ namespace Uber.DemoTools
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct udtMapConversionRule
+        public struct udtCutByFlagCaptureArg
+        {
+            public UInt32 MinCarryTimeMs;
+            public UInt32 MaxCarryTimeMs;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtMapConversionRule
 	    {
             public IntPtr InputName; // const char*
             public IntPtr OutputName; // const char*
@@ -251,7 +259,7 @@ namespace Uber.DemoTools
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        struct udtProtocolConversionArg
+        public struct udtProtocolConversionArg
         {
             public IntPtr MapRules; // const udtMapConversionRule*
             public UInt32 MapRuleCount;
@@ -534,6 +542,15 @@ namespace Uber.DemoTools
             return rules;
         }
 
+        public static udtCutByFlagCaptureArg CreateCutByFlagCaptureArg(UdtConfig config, UdtPrivateConfig privateConfig)
+        {
+            var rules = new udtCutByFlagCaptureArg();
+            rules.MinCarryTimeMs = 0;
+            rules.MaxCarryTimeMs = UInt32.MaxValue;
+
+            return rules;
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();
@@ -681,6 +698,17 @@ namespace Uber.DemoTools
             resources.PinnedObjects.Add(pinnedRules);
 
             pattern.Type = (UInt32)udtPatternType.MultiFragRails;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
+        public static bool CreateFlagCapturePatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFlagCaptureArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.FlagCaptures;
             pattern.TypeSpecificInfo = pinnedRules.Address;
 
             return true;

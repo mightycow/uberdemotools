@@ -292,6 +292,14 @@ namespace Uber.DemoTools
                 patterns.Add(pattern);
             }
 
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FlagCaptures))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+                var rules = UDT_DLL.CreateCutByFlagCaptureArg(config, privateConfig);
+                UDT_DLL.CreateFlagCapturePatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
+            }
+
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();

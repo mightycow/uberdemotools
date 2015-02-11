@@ -306,7 +306,8 @@ struct udtStringArray
 	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
+	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
+	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -499,7 +500,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::GlobalChat.
+	// when udtPatternInfo::Type is udtPatternType::GlobalChat.
 	struct udtCutByChatArg
 	{
 		// Pointer to an array of chat cutting rules.
@@ -526,7 +527,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::FragSequences.
+	// when udtPatternInfo::Type is udtPatternType::FragSequences.
 	struct udtCutByFragArg
 	{
 		// The minimum amount of frags in a sequence.
@@ -559,7 +560,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::MidAirFrags.
+	// when udtPatternInfo::Type is udtPatternType::MidAirFrags.
 	struct udtCutByMidAirArg
 	{
 		// All the allowed weapons.
@@ -578,7 +579,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::MultiRailFrags.
+	// when udtPatternInfo::Type is udtPatternType::MultiRailFrags.
 	struct udtCutByMultiRailArg
 	{
 		// The minimum amount of kills with a single rail shot.
@@ -587,6 +588,17 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
+	};
+
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is udtPatternType::FlagCaptures.
+	struct udtCutByFlagCaptureArg
+	{
+		// Minimum allowed flag carry time, in milli-seconds.
+		u32 MinCarryTimeMs;
+
+		// Maximum allowed flag carry time, in milli-seconds.
+		u32 MaxCarryTimeMs;
 	};
 
 	struct udtMapConversionRule
