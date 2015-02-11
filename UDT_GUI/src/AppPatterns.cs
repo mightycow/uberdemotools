@@ -57,7 +57,7 @@ namespace Uber.DemoTools
             var frag = new FragSequenceFiltersComponent(_app);
             _components.Add(frag);
             var fragTab = new TabItem();
-            fragTab.Header = "Frag Sequence";
+            fragTab.Header = "Frag Sequences";
             fragTab.Content = frag.RootControl;
 
             var midAir = new MidAirFiltersComponent(_app);

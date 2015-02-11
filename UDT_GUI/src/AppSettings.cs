@@ -135,7 +135,7 @@ namespace Uber.DemoTools
             skipChatOffsetsDialogCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             skipChatOffsetsDialogCheckBox.VerticalAlignment = VerticalAlignment.Center;
             skipChatOffsetsDialogCheckBox.IsChecked = _app.Config.SkipChatOffsetsDialog;
-            skipChatOffsetsDialogCheckBox.Content = " Skip the 'Chat Offsets' dialog";
+            skipChatOffsetsDialogCheckBox.Content = " Skip the 'Chat Offsets' dialog?";
             skipChatOffsetsDialogCheckBox.Checked += (obj, args) => OnSkipChatOffsetsChecked();
             skipChatOffsetsDialogCheckBox.Unchecked += (obj, args) => OnSkipChatOffsetsUnchecked();
 
@@ -144,7 +144,7 @@ namespace Uber.DemoTools
             skipFolderScanModeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             skipFolderScanModeCheckBox.VerticalAlignment = VerticalAlignment.Center;
             skipFolderScanModeCheckBox.IsChecked = _app.Config.SkipScanFoldersRecursivelyDialog;
-            skipFolderScanModeCheckBox.Content = " Skip the dialog asking if folder scanning should be recursive";
+            skipFolderScanModeCheckBox.Content = " Skip the dialog asking if folder scanning should be recursive?";
             skipFolderScanModeCheckBox.Checked += (obj, args) => OnSkipFolderScanRecursiveChecked();
             skipFolderScanModeCheckBox.Unchecked += (obj, args) => OnSkipFolderScanRecursiveUnchecked();
 

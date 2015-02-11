@@ -191,7 +191,7 @@ namespace Uber.DemoTools
 
         private FrameworkElement CreateCutByFragTab()
         {
-            _playerMODFilters = new FilterGroupBox("Means of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
+            _playerMODFilters = new FilterGroupBox("Cause of Death Filters", UDT_DLL.udtStringArray.PlayerMeansOfDeath, 3);
             // @TODO: Power-up Filters
 
             var minFragCountEditBox = new TextBox();

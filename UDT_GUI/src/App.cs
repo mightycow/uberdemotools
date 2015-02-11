@@ -1182,7 +1182,7 @@ namespace Uber.DemoTools
             convert68Button.Width = 75;
             convert68Button.Height = 25;
             convert68Button.Margin = new Thickness(5);
-            convert68Button.ToolTip = "Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)";
+            convert68Button.ToolTip = "Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)\nPlease refer to ConversionRules90to68.xml for known issues";
             convert68Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
 
             var convert90Button = new Button();

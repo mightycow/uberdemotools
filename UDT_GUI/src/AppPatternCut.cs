@@ -132,7 +132,7 @@ namespace Uber.DemoTools
             manualNamePlayerSelectionRow.Orientation = Orientation.Horizontal;
             manualNamePlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
             manualNamePlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
-            manualNamePlayerSelectionRow.ToolTip = "Name comparisons are case insensitive\nThe name must not contain color codes";
+            manualNamePlayerSelectionRow.ToolTip = "Name comparisons are case insensitive\nThe name must contain no color codes";
             manualNamePlayerSelectionRow.Children.Add(manualNamePlayerSelectionRadioButton);
             manualNamePlayerSelectionRow.Children.Add(playerNameTextBox);
 

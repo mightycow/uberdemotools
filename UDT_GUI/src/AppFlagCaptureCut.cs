@@ -52,13 +52,13 @@ namespace Uber.DemoTools
         {
             var minCarryTimeTextBox = new TextBox();
             _minCarryTimeTextBox = minCarryTimeTextBox;
-            minCarryTimeTextBox.Width = 70;
+            minCarryTimeTextBox.Width = 50;
             minCarryTimeTextBox.Text = App.FormatMinutesSeconds(_app.Config.FlagCaptureMinCarryTimeMs / 1000);
             minCarryTimeTextBox.ToolTip = "seconds OR minutes:seconds";
 
             var maxCarryTimeTextBox = new TextBox();
             _maxCarryTimeTextBox = maxCarryTimeTextBox;
-            maxCarryTimeTextBox.Width = 70;
+            maxCarryTimeTextBox.Width = 50;
             maxCarryTimeTextBox.Text = App.FormatMinutesSeconds(_app.Config.FlagCaptureMaxCarryTimeMs / 1000);
             maxCarryTimeTextBox.ToolTip = "seconds OR minutes:seconds";
 
