@@ -14,6 +14,21 @@ For captures, we don't have the persistant field in entities. Maybe the EF_AWARD
 */
 
 
+static idEntityStateBase* FindPlayerEntity(const udtSnapshotCallbackArg& arg, s32 trackedPlayerIdx)
+{
+	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	{
+		idEntityStateBase* const entity = arg.Entities[i].Entity;
+		if(entity != NULL && entity->clientNum == trackedPlayerIdx)
+		{
+			return entity;
+		}
+	}
+
+	return NULL;
+}
+
+
 udtCutByFlagCaptureAnalyzer::udtCutByFlagCaptureAnalyzer()
 {
 	StartAnalysis();
@@ -31,78 +46,51 @@ void udtCutByFlagCaptureAnalyzer::ProcessGamestateMessage(const udtGamestateCall
 	_previousCapped = false;
 }
 
-void udtCutByFlagCaptureAnalyzer::ProcessSnapshotPlayerState(const udtSnapshotCallbackArg& arg, udtBaseParser& parser, idPlayerStateBase* ps)
+void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const bool hasFlag =
-		ps->powerups[PW_REDFLAG] == S32_MAX ||
-		ps->powerups[PW_BLUEFLAG] == S32_MAX ||
-		ps->powerups[PW_NEUTRALFLAG] == S32_MAX;
-	if(_pickupTimeMs == S32_MIN && hasFlag)
+	const s32 trackedPlayerIdx = PlugIn->GetTrackedPlayerIndex();
+	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
+
+	bool hasFlag = false;
+	bool capped = _previousCapped;
+	s32 captureCount = _previousCaptureCount;
+	bool justCapped = false;
+
+	if(ps->clientNum == trackedPlayerIdx)
 	{
-		_pickupTimeMs = arg.ServerTime;
+		hasFlag =
+			ps->powerups[PW_REDFLAG] == S32_MAX ||
+			ps->powerups[PW_BLUEFLAG] == S32_MAX ||
+			ps->powerups[PW_NEUTRALFLAG] == S32_MAX;
+		const s32 captureCountPersIdx = (parser._inProtocol) == udtProtocol::Dm68 ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
+		captureCount = ps->persistant[captureCountPersIdx];
+		justCapped = captureCount > _previousCaptureCount;
 	}
-
-	const s32 captureCountPersIdx = (parser._inProtocol) == udtProtocol::Dm68 ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
-	const s32 captureCount = ps->persistant[captureCountPersIdx];
-	const u32 carryTimeMs = (u32)(arg.ServerTime - _pickupTimeMs);
-	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
-	if(_pickupTimeMs != S32_MIN &&
-	   captureCount > _previousCaptureCount &&
-	   carryTimeMs >= extraInfo.MinCarryTimeMs &&
-	   carryTimeMs <= extraInfo.MaxCarryTimeMs)
+	else
 	{
-		const udtCutByPatternArg& info = PlugIn->GetInfo();
-
-		udtCutSection cut;
-		cut.VeryShortDesc = "flag";
-		cut.GameStateIndex = _gameStateIndex;
-		cut.StartTimeMs = _pickupTimeMs - info.StartOffsetSec * 1000;
-		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
-		CutSections.Add(cut);
-
-		_pickupTimeMs = S32_MIN;
-	}
-
-	_previousCaptureCount = captureCount;
-
-	if(!hasFlag)
-	{
-		_pickupTimeMs = S32_MIN;
-	}
-}
-
-void udtCutByFlagCaptureAnalyzer::ProcessSnapshotEntityStates(const udtSnapshotCallbackArg& arg, s32 trackedPlayerIdx)
-{
-	idEntityStateBase* es = NULL;
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
-	{
-		idEntityStateBase* const entity = arg.Entities[i].Entity;
-		if(entity != NULL && entity->clientNum == trackedPlayerIdx)
+		idEntityStateBase* const es = FindPlayerEntity(arg, trackedPlayerIdx);
+		if(es == NULL)
 		{
-			es = entity;
-			break;
+			return;
 		}
-	}
-	if(es == NULL)
-	{
-		return;
+
+		hasFlag =
+			(es->powerups & (1 << PW_REDFLAG)) != 0 ||
+			(es->powerups & (1 << PW_BLUEFLAG)) != 0 ||
+			(es->powerups & (1 << PW_NEUTRALFLAG)) != 0;
+		capped = (es->eFlags & EF_AWARD_CAP) != 0;
+		justCapped = !_previousCapped && capped;
 	}
 
-	const bool hasFlag = 
-		(es->powerups & (1 << PW_REDFLAG)) != 0 ||
-		(es->powerups & (1 << PW_BLUEFLAG)) != 0 ||
-		(es->powerups & (1 << PW_NEUTRALFLAG)) != 0;
 	if(_pickupTimeMs == S32_MIN && hasFlag)
 	{
 		_pickupTimeMs = arg.ServerTime;
 	}
 
-	const bool capped = (es->eFlags & EF_AWARD_CAP) != 0;
 	const u32 carryTimeMs = (u32)(arg.ServerTime - _pickupTimeMs);
 	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
 	if(_pickupTimeMs != S32_MIN &&
-	   !_previousCapped &&
-	   capped &&
+	   justCapped &&
 	   carryTimeMs >= extraInfo.MinCarryTimeMs &&
 	   carryTimeMs <= extraInfo.MaxCarryTimeMs)
 	{
@@ -119,25 +107,11 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotEntityStates(const udtSnapshotC
 	}
 
 	_previousCapped = capped;
+	_previousCaptureCount = captureCount;
 
 	if(!hasFlag)
 	{
 		_pickupTimeMs = S32_MIN;
-	}
-}
-
-void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
-{
-	const s32 trackedPlayerIdx = PlugIn->GetTrackedPlayerIndex();
-	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
-
-	if(ps->clientNum == trackedPlayerIdx)
-	{
-		ProcessSnapshotPlayerState(arg, parser, ps);
-	}
-	else
-	{
-		ProcessSnapshotEntityStates(arg, trackedPlayerIdx);
 	}
 }
 
