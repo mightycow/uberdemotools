@@ -17,7 +17,11 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByFlagCaptureAnalyzer);
 
+	void ProcessSnapshotPlayerState(const udtSnapshotCallbackArg& arg, udtBaseParser& parser, idPlayerStateBase* ps);
+	void ProcessSnapshotEntityStates(const udtSnapshotCallbackArg& arg, s32 trackedPlayerIdx);
+
 	s32 _gameStateIndex;
 	s32 _pickupTimeMs;
 	s32 _previousCaptureCount;
+	bool _previousCapped;
 };
