@@ -72,6 +72,12 @@ namespace Uber.DemoTools
             multiRailTab.Header = "Multi-Frag Rails";
             multiRailTab.Content = multiRail.RootControl;
 
+            var flagCapture = new FlagCaptureFilterComponent(_app);
+            _components.Add(flagCapture);
+            var flagCaptureTab = new TabItem();
+            flagCaptureTab.Header = "Flag Captures";
+            flagCaptureTab.Content = flagCapture.RootControl;
+
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
@@ -80,6 +86,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(fragTab);
             tabControl.Items.Add(midAirTab);
             tabControl.Items.Add(multiRailTab);
+            tabControl.Items.Add(flagCaptureTab);
 
             return tabControl;
         }

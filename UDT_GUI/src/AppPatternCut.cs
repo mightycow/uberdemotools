@@ -295,7 +295,7 @@ namespace Uber.DemoTools
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FlagCaptures))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
-                var rules = UDT_DLL.CreateCutByFlagCaptureArg(config, privateConfig);
+                var rules = UDT_DLL.CreateCutByFlagCaptureArg(config);
                 UDT_DLL.CreateFlagCapturePatternInfo(ref pattern, resources, rules);
                 patterns.Add(pattern);
             }

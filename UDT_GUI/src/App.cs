@@ -53,6 +53,8 @@ namespace Uber.DemoTools
         public bool PrintAllocationStats = true;
         public bool PrintExecutionTime = true;
         public bool ColorLogWarningsAndErrors = false;
+        public int FlagCaptureMinCarryTimeMs = 0;
+        public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
     }
 
     public class MapConversionRule

@@ -542,11 +542,11 @@ namespace Uber.DemoTools
             return rules;
         }
 
-        public static udtCutByFlagCaptureArg CreateCutByFlagCaptureArg(UdtConfig config, UdtPrivateConfig privateConfig)
+        public static udtCutByFlagCaptureArg CreateCutByFlagCaptureArg(UdtConfig config)
         {
             var rules = new udtCutByFlagCaptureArg();
-            rules.MinCarryTimeMs = 0;
-            rules.MaxCarryTimeMs = UInt32.MaxValue;
+            rules.MinCarryTimeMs = (UInt32)config.FlagCaptureMinCarryTimeMs;
+            rules.MaxCarryTimeMs = (UInt32)config.FlagCaptureMaxCarryTimeMs;
 
             return rules;
         }
@@ -783,6 +783,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateMultiRailPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
+        }
+
+        public static bool CutDemosByFlagCapture(ref udtParseArg parseArg, List<string> filePaths, udtCutByFlagCaptureArg rules, CutByPatternOptions options)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateFlagCapturePatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }

@@ -19,6 +19,7 @@ namespace Uber.DemoTools
         ChatFilters,
         MidAirFilters,
         MultiRailFilters,
+        FlagCaptureFilters,
         Count
     }
 
