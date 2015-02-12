@@ -8,9 +8,11 @@ To detect other players taking a flag, we could use the "global item pickup" eve
 - Encoded as: eType = ET_EVENTS + EV_GLOBAL_ITEM_PICKUP
 - The "eventParm" entity field is the model index of the flag
 It seems that there is no robust way of knowing who took the flag with it.
-Therefore, it's better to use the powerups entity field to find pickup times.
+Therefore, it's better to use the "powerups" field to find pickup times.
 
-For captures, we don't have the persistant field in entities. Maybe the EF_AWARD_CAP can help?
+For detecting captures: 
+- player state  => use the PERS_CAPTURES "persistant" field
+- entity states => use the EF_AWARD_CAP "eFlags" bit
 */
 
 
