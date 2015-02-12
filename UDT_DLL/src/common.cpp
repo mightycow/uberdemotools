@@ -175,28 +175,6 @@ s32 Q_stricmp( const char *s1, const char *s2 )
 	return (s1 && s2) ? Q_stricmpn (s1, s2, 99999) : -1;
 }
 
-
-char *Q_strlwr( char *s1 )
-{
-	char* s = s1;
-	while ( *s ) {
-		*s = (char)tolower(*s);
-		s++;
-	}
-	return s1;
-}
-
-char *Q_strupr( char *s1 )
-{
-	char* s = s1;
-	while ( *s ) {
-		*s = (char)toupper(*s);
-		s++;
-	}
-	return s1;
-}
-
-
 // never goes past bounds or leaves without a terminating 0
 void Q_strcat( const udtContext* context, char *dest, s32 size, const char *src )
 {
@@ -207,52 +185,4 @@ void Q_strcat( const udtContext* context, char *dest, s32 size, const char *src 
 		context->LogErrorAndCrash("Q_strcat: already overflowed");
 	}
 	Q_strncpyz( dest + l1, src, size - l1 );
-}
-
-
-s32 Q_PrintStrlen( const char *string )
-{
-	s32 len = 0;
-	const char* p = string;
-
-	if (!p)
-		return 0;
-
-	while ( *p ) {
-		if( Q_IsColorString( p ) ) {
-			p += 2;
-			continue;
-		}
-		p++;
-		len++;
-	}
-
-	return len;
-}
-
-
-char *Q_CleanStr( char *string ) {
-	if(string == NULL)
-	{
-		return NULL;
-	}
-
-	char*	d;
-	char*	s;
-	s32		c;
-
-	s = string;
-	d = string;
-	while ((c = *s) != 0 ) {
-		if ( Q_IsColorString( s ) ) {
-			s++;
-		}		
-		else if ( c >= 0x20 && c <= 0x7E ) {
-			*d++ = (s8)c;
-		}
-		s++;
-	}
-	*d = '\0';
-
-	return string;
 }

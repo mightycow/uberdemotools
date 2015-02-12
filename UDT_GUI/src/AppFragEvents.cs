@@ -134,7 +134,7 @@ namespace Uber.DemoTools
 
             var columnMOD = new GridViewColumn();
             var headerMOD = new GridViewColumnHeader();
-            headerMOD.Content = "Mean of Death";
+            headerMOD.Content = "Cause of Death"; // Mean of death in id terminology.
             headerMOD.Tag = "Mod";
             columnMOD.Header = headerMOD;
             columnMOD.Width = 165;

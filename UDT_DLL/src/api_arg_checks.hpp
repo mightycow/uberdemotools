@@ -43,6 +43,11 @@ static bool IsValid(const udtCutByMultiRailArg& arg)
 	return arg.MinKillCount >= 2;
 }
 
+static bool IsValid(const udtCutByFlagCaptureArg& arg)
+{
+	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs;
+}
+
 static bool IsValid(const udtCutByPatternArg& arg)
 {
 	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)
@@ -73,6 +78,30 @@ static bool IsValid(const udtCutByPatternArg& arg)
 static bool IsValid(const udtMultiParseArg& arg)
 {
 	return arg.FileCount > 0 && arg.FilePaths != NULL && arg.OutputErrorCodes != NULL;
+}
+
+static bool IsValid(const udtProtocolConversionArg& arg)
+{
+	if(arg.OutputProtocol != (u32)udtProtocol::Dm68 && arg.OutputProtocol != (u32)udtProtocol::Dm90)
+	{
+		return false;
+	}
+
+	if(arg.MapRuleCount > 0 && arg.MapRules == NULL)
+	{
+		return false;
+	}
+
+	for(u32 i = 0, end = arg.MapRuleCount; i < end; ++i)
+	{
+		const udtMapConversionRule& rule = arg.MapRules[i];
+		if(rule.InputName == NULL || rule.OutputName == NULL)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 static bool HasValidOutputOption(const udtParseArg& arg)

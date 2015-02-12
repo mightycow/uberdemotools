@@ -8,7 +8,7 @@
 #include "analysis_cut_by_frag.hpp"
 
 
-bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const udtCutByPatternArg* patternInfo)
+bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo)
 {
 	if(jobType == udtParsingJobType::General)
 	{
@@ -18,13 +18,18 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 
 	if(jobType == udtParsingJobType::Conversion)
 	{
+		if(jobSpecificInfo == NULL)
+		{
+			return false;
+		}
+
 		context.Init(demoCount, NULL, 0);
 		return true;
 	}
 	
 	// Remaining case: udtParsingJobType::CutByPattern
 
-	if(patternInfo == NULL)
+	if(jobSpecificInfo == NULL)
 	{
 		return false;
 	}
@@ -39,6 +44,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		return false;
 	}
 
+	const udtCutByPatternArg* const patternInfo = (const udtCutByPatternArg*)jobSpecificInfo;
 	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
 	plugIn.SetPatternInfo(*patternInfo);
 	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
@@ -167,7 +173,7 @@ bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char
 	return result;
 }
 
-bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
+bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
 {
 	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
@@ -175,8 +181,9 @@ bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const c
 		return false;
 	}
 
-	if(protocol == udtProtocol::LatestProtocol)
+	if((u32)protocol == conversionInfo->OutputProtocol)
 	{
+		// Nothing to convert!
 		return true;
 	}
 
@@ -192,10 +199,12 @@ bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const c
 		return false;
 	}
 
-	if(!context->Parser.Init(&context->Context, protocol, udtProtocol::LatestProtocol))
+	if(!context->Parser.Init(&context->Context, protocol, (udtProtocol::Id)conversionInfo->OutputProtocol))
 	{
 		return false;
 	}
+
+	context->Parser._protocolConverter->ConversionInfo = conversionInfo;
 
 	context->Parser.SetFilePath(demoFilePath);
 
@@ -243,7 +252,7 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 	(*context->UserCallback)(realProgress, context->UserData);
 }
 
-s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo)
+s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo)
 {
 	bool customContext = false;
 	if(context == NULL)
@@ -256,7 +265,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		customContext = true;
 	}
 
-	if(!InitContextWithPlugIns(*context, *info, extraInfo->FileCount, jobType, patternInfo))
+	if(!InitContextWithPlugIns(*context, *info, extraInfo->FileCount, jobType, jobSpecificInfo))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -315,7 +324,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		}
 		else if(jobType == udtParsingJobType::Conversion)
 		{
-			success = ConvertDemoFile(context, &newInfo, extraInfo->FilePaths[i]);
+			success = ConvertDemoFile(context, &newInfo, extraInfo->FilePaths[i], (const udtProtocolConversionArg*)jobSpecificInfo);
 		}
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 

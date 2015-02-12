@@ -5,6 +5,7 @@
 #include "analysis_cut_by_frag.hpp"
 #include "analysis_cut_by_mid_air.hpp"
 #include "analysis_cut_by_multi_rail.hpp"
+#include "analysis_cut_by_flag.hpp"
 
 #include <stdlib.h>
 
@@ -117,13 +118,15 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 	{
 		_trackedPlayerIndex = info.ClientNum;
 	}
-	else if(!StringIsNullOrEmpty(pi.PlayerName))
+	else if(!udtString::IsNullOrEmpty(pi.PlayerName))
 	{
 		const s32 firstPlayerCsIdx = parser._inProtocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 		for(s32 i = 0; i < MAX_CLIENTS; ++i)
 		{
-			const char* const playerName = GetPlayerName(parser, firstPlayerCsIdx + i);
-			if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, pi.PlayerName))
+			udtString playerName;
+			if(GetPlayerName(playerName, parser, firstPlayerCsIdx + i) &&
+			   !udtString::IsNullOrEmpty(playerName) && 
+			   udtString::Equals(playerName, pi.PlayerName))
 			{
 				_trackedPlayerIndex = i;
 				break;
@@ -156,20 +159,21 @@ void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 
 void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 {
-	if(_trackedPlayerIndex != S32_MIN || StringIsNullOrEmpty(_info->PlayerName))
+	const udtString playerName = udtString::NewConstRef(_info->PlayerName);
+	if(_trackedPlayerIndex != S32_MIN || udtString::IsNullOrEmpty(playerName))
 	{
 		return;
 	}
 
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	const int tokenCount = tokenizer.argc();
-	if(strcmp(tokenizer.argv(0), "cs") != 0 || tokenCount == 3)
+	const int tokenCount = tokenizer.GetArgCount();
+	if(tokenCount != 3 || !udtString::Equals(tokenizer.GetArg(0), "cs"))
 	{
 		return;
 	}
 
-	int csIndex = -1;
-	if(!StringParseInt(csIndex, tokenizer.argv(1)))
+	s32 csIndex = -1;
+	if(!StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}
@@ -181,8 +185,9 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 		return;
 	}
 
-	const char* const playerName = GetPlayerName(parser, csIndex);
-	if(!StringIsNullOrEmpty(playerName) && StringEquals(playerName, _info->PlayerName))
+	udtString extractedPlayerName;
+	GetPlayerName(extractedPlayerName, parser, csIndex);
+	if(!udtString::IsNullOrEmpty(extractedPlayerName) && udtString::Equals(extractedPlayerName, playerName))
 	{
 		_trackedPlayerIndex = playerIndex;
 	}
@@ -290,23 +295,22 @@ s32 udtCutByPatternPlugIn::GetTrackedPlayerIndex() const
 	return _trackedPlayerIndex;
 }
 
-const char* udtCutByPatternPlugIn::GetPlayerName(udtBaseParser& parser, s32 csIdx)
+bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx)
 {
 	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIdx);
 	if(cs == NULL)
 	{
-		return NULL;
+		return false;
 	}
 
-	char* playerName = NULL;
 	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
 	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs->String))
 	{
-		return NULL;
+		return false;
 	}
 
-	playerName = Q_CleanStr(playerName);
-	StringMakeLowerCase(playerName);
+	udtString::CleanUp(playerName);
+	udtString::MakeLowerCase(playerName);
 
-	return playerName;
+	return true;
 }

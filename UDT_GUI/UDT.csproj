@@ -114,6 +114,7 @@
     <Compile Include="src\AppPatterns.cs" />
     <Compile Include="src\AppMidAirCut.cs" />
     <Compile Include="src\AppMultiRailCut.cs" />
+	<Compile Include="src\AppFlagCaptureCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

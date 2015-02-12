@@ -10,7 +10,7 @@ public:
 	udtCutByMultiRailAnalyzer();
 	~udtCutByMultiRailAnalyzer();
 
-	void StartAnalysis()  override;
+	void StartAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 

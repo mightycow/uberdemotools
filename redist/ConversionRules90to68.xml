@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UdtMapConversionsConfig xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <MapRules>
+<!-- 
+  The 90 to 68 converter's sole purpose (apart the fun of coding something) is q3mme playback.
+  The converter outputs Quake 3 demos with "cpma" as the game name and respects CPMA's item indexing.
+  This means that unlike a baseq3 demo, you will be able to properly see and distinguish green armours from the others in q3mme.
+
+  Note that for map "conversions", only geometry matters.
+  The map's own item layout doesn't matter at all because the items will be read from the demo anyway.
+  
+  If you need to shift coordinates for a map, you can use the fields
+  OffsetX, OffsetY, OffsetZ inside a MapConversionRule.
+  
+  Example:
+  <MapConversionRule>
+    <InputName>quakelivemapname</InputName>
+    <OutputName>quakethreemapname</OutputName>
+	<OffsetX>42</OffsetX>
+    <OffsetY>666</OffsetY>
+    <OffsetZ>1337</OffsetZ>
+  </MapConversionRule>
+  
+  Those are known issues for the 90 to 68 converter:
+  - at the end of warm-up, the camera moves to the spawn position over a short time period instead of "teleporting"
+  - the LG thunder sound for the first fired cell is suppressed (did this because it was repeating)
+  - the hit sounds for LG hits have repeats
+  - got portal rendering errors through certain doors on some maps (q3tourney4)
+-->
+    <MapConversionRule>
+      <InputName>aerowalk</InputName>
+      <OutputName>cpm22</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>almostlost</InputName>
+      <OutputName>pro-q3tourney7</OutputName> <!-- geometry near LG is very different -->
+    </MapConversionRule>
+    <MapConversionRule>
+      <InputName>bloodrun</InputName>
+      <OutputName>ztn3tourney1</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>campgrounds</InputName>
+      <OutputName>pro-q3dm6</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>cure</InputName>
+      <OutputName>oxodm120</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>dismemberment</InputName>
+      <OutputName>hub3tourney1</OutputName> <!-- geometry in YA room is very different -->
+    </MapConversionRule>
+<!--
+	<MapConversionRule>
+      <InputName>furiousheights</InputName>
+      <OutputName>furiousheights</OutputName>
+    </MapConversionRule> 
+-->
+<!--
+	<MapConversionRule>
+      <InputName>fuse</InputName>
+      <OutputName>fuse</OutputName>
+    </MapConversionRule>
+-->
+<!-- hektik_b3 for the blue hektik remake, but it has different geometry (mainly the stairs!)
+	<MapConversionRule>
+      <InputName>hektik</InputName>
+      <OutputName>hektik_b3</OutputName>
+    </MapConversionRule>
+-->
+	<MapConversionRule>
+      <InputName>lostworld</InputName>
+      <OutputName>q3dm13</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>mcsarges</InputName>
+      <OutputName>ct3tourney3</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>retribution</InputName>
+      <OutputName>q3dm7</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>silence</InputName>
+      <OutputName>oxodm76</OutputName>
+    </MapConversionRule>
+<!--
+	<MapConversionRule>
+      <InputName>sinister</InputName>
+      <OutputName>sinister</OutputName>
+    </MapConversionRule>
+-->
+	<MapConversionRule>
+      <InputName>toxicity</InputName>
+      <OutputName>pukka3tourney2</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>useandabuse</InputName>
+      <OutputName>cpm3a</OutputName>
+    </MapConversionRule>
+	<MapConversionRule>
+      <InputName>verticalvengeance</InputName>
+      <OutputName>q3tourney4</OutputName>
+    </MapConversionRule>
+  </MapRules>
+</UdtMapConversionsConfig>

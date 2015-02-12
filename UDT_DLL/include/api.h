@@ -306,7 +306,8 @@ struct udtStringArray
 	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer)
+	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
+	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -499,7 +500,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::GlobalChat.
+	// when udtPatternInfo::Type is udtPatternType::GlobalChat.
 	struct udtCutByChatArg
 	{
 		// Pointer to an array of chat cutting rules.
@@ -526,7 +527,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::FragSequences.
+	// when udtPatternInfo::Type is udtPatternType::FragSequences.
 	struct udtCutByFragArg
 	{
 		// The minimum amount of frags in a sequence.
@@ -559,7 +560,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::MidAirFrags.
+	// when udtPatternInfo::Type is udtPatternType::MidAirFrags.
 	struct udtCutByMidAirArg
 	{
 		// All the allowed weapons.
@@ -578,7 +579,7 @@ extern "C"
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
-	// when udtPatternInfo::Type is PatternType::MultiRailFrags.
+	// when udtPatternInfo::Type is udtPatternType::MultiRailFrags.
 	struct udtCutByMultiRailArg
 	{
 		// The minimum amount of kills with a single rail shot.
@@ -587,6 +588,45 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
+	};
+
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is udtPatternType::FlagCaptures.
+	struct udtCutByFlagCaptureArg
+	{
+		// Minimum allowed flag carry time, in milli-seconds.
+		u32 MinCarryTimeMs;
+
+		// Maximum allowed flag carry time, in milli-seconds.
+		u32 MaxCarryTimeMs;
+	};
+
+	struct udtMapConversionRule
+	{
+		// If the input name matches this...
+		const char* InputName;
+
+		// ...replace it with this.
+		const char* OutputName;
+
+		// Coordinates by which to shift everything.
+		// Includes players, items, etc. Only necessary for some maps.
+		f32 PositionOffsets[3];
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
+	struct udtProtocolConversionArg
+	{
+		// Pointer to an array of map rules.
+		const udtMapConversionRule* MapRules;
+
+		// Number of elements in the array pointed to by the MapRules pointer.
+		u32 MapRuleCount;
+
+		// Of type udtProtocol::Id.
+		u32 OutputProtocol;
 	};
 
 	struct udtChatEventData
@@ -861,8 +901,8 @@ extern "C"
 	// Creates, for each demo, sub-demos around every occurrence of a matching pattern.
 	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
 
-	// Creates, for each demo that doesn't have the latest protocol, a new demo file with the latest protocol.
-	UDT_API(s32) udtConvertDemoFilesToLatestProtocol(const udtParseArg* info, const udtMultiParseArg* extraInfo);
+	// Creates, for each demo that isn't in the target protocol, a new demo file with the specified protocol.
+	UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg);
 
 #ifdef __cplusplus
 }
