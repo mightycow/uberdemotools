@@ -133,7 +133,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.2";
+        private const string GuiVersion = "0.4.3";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -1031,8 +1031,8 @@ namespace Uber.DemoTools
         private void ShowAboutWindow()
         {
             var textPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            textPanelList.Add(CreateTuple("Version", GuiVersion));
-            textPanelList.Add(CreateTuple("Developer", "myT"));
+            textPanelList.Add(CreateTuple("GUI Version", GuiVersion));
+            textPanelList.Add(CreateTuple("DLL Version", DllVersion));
             var textPanel = WpfHelper.CreateDualColumnPanel(textPanelList, 100, 1);
 
             var image = new System.Windows.Controls.Image();

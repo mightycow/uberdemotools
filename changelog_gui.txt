@@ -1,3 +1,10 @@
+0.4.3 (12.02.2015)
+ADD: Protocol 68 to 90 batch conversions with read-only config file ConversionRules90to68.xml
+ADD: Added the "Flag Captures" cut filter
+ADD: Added the "Color Log Messages" option
+ADD: Now displaying the elapsed time and estimated time remaining during threaded job progress
+CHG: Made some minor UI improvements/changes to labels, tab names, tool tips, help text, the "About" dialog, etc
+
 0.4.2 (22.01.2015)
 ADD: New data when analyzing a demo: generic information, player list, demo taker name and index
 ADD: The ability to batch convert dm_73 demos to the dm_90 format

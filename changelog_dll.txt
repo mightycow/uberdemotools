@@ -1,3 +1,10 @@
+0.6.0 (12.02.2015)
+ADD: New protocol conversion system, 68 to 90 conversion support (refer to ConversionRules90to68.xml for known issues)
+CHG: String and path manipulation code overhaul (udtString, udtPath)
+FIX: ParseConfigStringValueString was failing when the variable looked for was the last one in the list
+FIX: udtProtocolConverter73to90::ConvertConfigString: the "protocol" value in config string 0 is now set to "90" instead of keeping "73"
+FIX: Parsing a demo with plug-ins twice with the same context would crash (the plug-in pointer array was not cleared in udtParserContext::ResetForNextDemo)
+
 0.5.1a (23.01.2015)
 FIX: Demo analysis will no longer crash trying to convert the demo(s) (debug/testing code that was supposed to be removed)
 
