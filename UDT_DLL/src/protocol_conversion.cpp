@@ -298,20 +298,7 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 			Float3::Copy(converter->Offsets, offsets);
 			newValue = newMapName;
 		}
-		/*
-		if(udtString::Equals(value, "bloodrun"))
-		{
-			newValue = udtString::NewConstRef("ztn3dm1");
-		}
-		else if(udtString::Equals(value, "lostworld"))
-		{
-			newValue = udtString::NewConstRef("q3dm13");
-		}
-		else if(udtString::Equals(value, "battleforged"))
-		{
-			newValue = udtString::NewConstRef("phantq3dm1");
-		}
-		*/
+
 		return true;
 	}
 
@@ -355,11 +342,6 @@ void udtProtocolConverter73to90::ConvertSnapshot(idLargestClientSnapshot& outSna
 	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
 	out.doubleJumped = 0;
 	out.jumpTime = 0;
-	out.unknown1 = 0;
-	out.unknown2 = 0;
-	out.unknown3 = 0;
-	out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
-	// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
 }
 
 void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -437,8 +419,6 @@ void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& o
 	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
 	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
 	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
-
-	// @FIXME: LG hit beeps repeating far too often.
 }
 
 void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -474,7 +454,7 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 		outEntityState.eType = -1;
 	}
 
-	// LG sounds repeating too many times...
+	// LG start sound (the thunder-like sound) is repeating for enemies.
 	// Should probably be able to fix the event bits provided
 	// the function can know if this event is a repeat or not.
 	if(inEntityState.eType >= ET_EVENTS)

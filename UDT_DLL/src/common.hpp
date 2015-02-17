@@ -429,9 +429,6 @@ struct idPlayerState90 : idPlayerStateBase
 {
 	qboolean doubleJumped;
 	int jumpTime;
-	int unknown1;
-	int unknown2;
-	int unknown3;
 };
 
 typedef idPlayerState90 idLargestPlayerState;
