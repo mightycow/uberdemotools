@@ -2125,11 +2125,11 @@ namespace Uber.DemoTools
 
         private void LogMessageWithColor(string message, Color color)
         {
-            var textBlock = new TextBlock();
-            textBlock.Text = message;
-            textBlock.Foreground = new SolidColorBrush(color);
             VoidDelegate itemAdder = delegate
             {
+                var textBlock = new TextBlock();
+                textBlock.Text = message;
+                textBlock.Foreground = new SolidColorBrush(color);
                 _logListBox.Items.Add(textBlock);
                 _logListBox.ScrollIntoView(textBlock);
             };
