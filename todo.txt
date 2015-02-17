@@ -8,6 +8,3 @@ To do:
 - Frag Sequence cut filter: add a "max. time after spawn" option to detect sequences of spawnfrags
 - Frag Sequence cut filter: add a "all kills vs the same player" option?
 - Auto-rename functionality (read the first game-state message and rename the demo using the info extracted)
-- DLL: 73 to 90 converter: fix the pmove_flags issue
-- DLL: 90 to 68 converter: convert the mean of death index in obituary events
-- DLL: 90 to 68 converter: investigate/fix the stuff marked in the code

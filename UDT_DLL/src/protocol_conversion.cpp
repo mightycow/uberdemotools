@@ -305,6 +305,49 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 	return true;
 }
 
+static s32 ConvertMeanOfDeath90to68(s32 mod)
+{
+	switch((idMeansOfDeath73p::Id)mod)
+	{
+		case idMeansOfDeath73p::Shotgun: return (s32)idMeansOfDeath68::Shotgun;
+		case idMeansOfDeath73p::Gauntlet: return (s32)idMeansOfDeath68::Gauntlet;
+		case idMeansOfDeath73p::MachineGun: return (s32)idMeansOfDeath68::MachineGun;
+		case idMeansOfDeath73p::Grenade: return (s32)idMeansOfDeath68::Grenade;
+		case idMeansOfDeath73p::GrenadeSplash: return (s32)idMeansOfDeath68::GrenadeSplash;
+		case idMeansOfDeath73p::Rocket: return (s32)idMeansOfDeath68::Rocket;
+		case idMeansOfDeath73p::RocketSplash: return (s32)idMeansOfDeath68::RocketSplash;
+		case idMeansOfDeath73p::Plasma: return (s32)idMeansOfDeath68::Plasma;
+		case idMeansOfDeath73p::PlasmaSplash: return (s32)idMeansOfDeath68::PlasmaSplash;
+		case idMeansOfDeath73p::RailGun: return (s32)idMeansOfDeath68::RailGun;
+		case idMeansOfDeath73p::Lightning: return (s32)idMeansOfDeath68::Lightning;
+		case idMeansOfDeath73p::BFG: return (s32)idMeansOfDeath68::BFG;
+		case idMeansOfDeath73p::BFGSplash: return (s32)idMeansOfDeath68::BFGSplash;
+		case idMeansOfDeath73p::Water: return (s32)idMeansOfDeath68::Water;
+		case idMeansOfDeath73p::Slime: return (s32)idMeansOfDeath68::Slime;
+		case idMeansOfDeath73p::Lava: return (s32)idMeansOfDeath68::Lava;
+		case idMeansOfDeath73p::Crush: return (s32)idMeansOfDeath68::Crush;
+		case idMeansOfDeath73p::TeleFrag: return (s32)idMeansOfDeath68::TeleFrag;
+		case idMeansOfDeath73p::Fall: return (s32)idMeansOfDeath68::Fall;
+		case idMeansOfDeath73p::Suicide: return (s32)idMeansOfDeath68::Suicide;
+		case idMeansOfDeath73p::TargetLaser: return (s32)idMeansOfDeath68::TargetLaser;
+		case idMeansOfDeath73p::HurtTrigger: return (s32)idMeansOfDeath68::HurtTrigger;
+		case idMeansOfDeath73p::Grapple: return (s32)idMeansOfDeath68::Grapple;
+		case idMeansOfDeath73p::Unknown:
+		case idMeansOfDeath73p::NailGun:
+		case idMeansOfDeath73p::ChainGun:
+		case idMeansOfDeath73p::ProximityMine:
+		case idMeansOfDeath73p::Kamikaze:
+		case idMeansOfDeath73p::Juiced:
+		case idMeansOfDeath73p::TeamSwitch:
+		case idMeansOfDeath73p::Thaw:
+		case idMeansOfDeath73p::UnknownQlMod1:
+		case idMeansOfDeath73p::HeavyMachineGun:
+		default:
+			return (s32)idMeansOfDeath68::Unknown;
+	}
+}
+
+
 udtProtocolConverterIdentity::udtProtocolConverterIdentity()
 {
 	_protocolSizeOfClientSnapshot = 0;
@@ -523,6 +566,11 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 				outEntityState.eType = ET_EVENTS + EV_NONE;
 				outEntityState.event = EV_NONE;
 			}
+		}
+
+		if(eventId == EV_OBITUARY_73p)
+		{
+			outEntityState.eventParm = ConvertMeanOfDeath90to68(inEntityState.eventParm);
 		}
 	}
 }
