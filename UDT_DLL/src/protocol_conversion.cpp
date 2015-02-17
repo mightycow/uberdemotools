@@ -460,7 +460,6 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
 
 	Float3::Increment(outEntityState.pos.trBase, Offsets);
-	Float3::Increment(outEntityState.apos.trBase, Offsets); // @FIXME: correct? this should be for angles, but is it always?
 	Float3::Increment(outEntityState.origin, Offsets);
 	Float3::Increment(outEntityState.origin2, Offsets);
 
