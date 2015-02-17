@@ -373,6 +373,38 @@ void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& 
 	}
 }
 
+void udtProtocolConverter90to68_CPMA::StartGameState()
+{
+	_snapshotIndex = 0;
+	for(u32 j = 0; j < 2; ++j)
+	{
+		SnapshotInfo& snapshot = _snapshots[j];
+		snapshot.SnapshotTimeMs = S32_MIN;
+		for(u32 i = 0; i < MAX_CLIENTS; ++i)
+		{
+			ShaftingPlayer& player = snapshot.Players[i];
+			player.FirstCellTimeMs = S32_MIN;
+			player.FirstSoundTimeMs = S32_MIN;
+		}
+	}
+}
+
+void udtProtocolConverter90to68_CPMA::StartSnapshot(s32 serverTimeMs)
+{
+	if(serverTimeMs == _snapshots[_snapshotIndex].SnapshotTimeMs)
+	{
+		return;
+	}
+
+	_snapshotIndex ^= 1;
+	SnapshotInfo& snapshot = _snapshots[_snapshotIndex];
+	snapshot.SnapshotTimeMs = serverTimeMs;
+	for(u32 i = 0; i < MAX_CLIENTS; ++i)
+	{
+		snapshot.Players[i].SnapshotSoundCounter = 0;
+	}
+}
+
 void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {
 	(idClientSnapshotBase&)outSnapshot = inSnapshot;
@@ -428,7 +460,7 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
 
 	Float3::Increment(outEntityState.pos.trBase, Offsets);
-	Float3::Increment(outEntityState.apos.trBase, Offsets);
+	Float3::Increment(outEntityState.apos.trBase, Offsets); // @FIXME: correct? this should be for angles, but is it always?
 	Float3::Increment(outEntityState.origin, Offsets);
 	Float3::Increment(outEntityState.origin2, Offsets);
 
@@ -454,18 +486,44 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 		outEntityState.eType = -1;
 	}
 
-	// LG start sound (the thunder-like sound) is repeating for enemies.
-	// Should probably be able to fix the event bits provided
-	// the function can know if this event is a repeat or not.
+	//
+	// The LG fire sound (the thunder-like sound) is repeating in q3mme so we tweak the demo.
+	//
+
+	if(inEntityState.eType == ET_PLAYER && 
+	   inEntityState.clientNum >= 0 && inEntityState.clientNum < MAX_CLIENTS &&
+	   (inEntityState.eFlags & EF_FIRING) != 0)
+	{
+		// Find the time at which we shoot the first LG cell (in a sequence) for the given player.
+		SnapshotInfo& players = _snapshots[_snapshotIndex];
+		const SnapshotInfo& oldPlayers = _snapshots[_snapshotIndex ^ 1];
+		ShaftingPlayer& player = players.Players[inEntityState.clientNum];
+		const ShaftingPlayer& oldPlayer = oldPlayers.Players[inEntityState.clientNum];
+		player.FirstCellTimeMs = (oldPlayer.FirstCellTimeMs == S32_MIN) ? players.SnapshotTimeMs : oldPlayer.FirstCellTimeMs;
+	}
+
 	if(inEntityState.eType >= ET_EVENTS)
 	{
 		const s32 eventId = (inEntityState.eType - ET_EVENTS) & (~EV_EVENT_BITS);
 		if(eventId == EV_FIRE_WEAPON_73p &&
+		   inEntityState.clientNum >= 0 && inEntityState.clientNum < MAX_CLIENTS &&
 		   inEntityState.weapon == idWeapon73p::LightningGun)
 		{
-			// Not sure why the audio repeats in q3mme and not in QL.
-			outEntityState.eType = ET_EVENTS + EV_NONE;
-			outEntityState.event = EV_NONE;
+			// Find out if this LG sequence already had the sound being played.
+			// If true, we suppress this event.
+			SnapshotInfo& players = _snapshots[_snapshotIndex];
+			const SnapshotInfo& oldPlayers = _snapshots[_snapshotIndex ^ 1];
+			ShaftingPlayer& player = players.Players[inEntityState.clientNum];
+			const ShaftingPlayer& oldPlayer = oldPlayers.Players[inEntityState.clientNum];
+			++player.SnapshotSoundCounter;
+			player.FirstSoundTimeMs = (oldPlayer.FirstSoundTimeMs == S32_MIN) ? players.SnapshotTimeMs : oldPlayer.FirstSoundTimeMs;
+			if((player.FirstCellTimeMs != S32_MIN && player.FirstSoundTimeMs < players.SnapshotTimeMs) || 
+			   player.SnapshotSoundCounter >= 2 ||
+			   player.FirstSoundTimeMs > player.FirstCellTimeMs) // Seems that q3mme likes to repeat it even when getting once in this case.
+			{
+				outEntityState.eType = ET_EVENTS + EV_NONE;
+				outEntityState.event = EV_NONE;
+			}
 		}
 	}
 }

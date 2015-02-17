@@ -672,6 +672,7 @@ bool udtBaseParser::ParseSnapshot()
 		_outMsg.WriteByte(newSnap.snapFlags);
 		_outMsg.WriteByte(areaMaskLength);
 		_outMsg.WriteData(&newSnap.areamask, areaMaskLength);
+		_protocolConverter->StartSnapshot(newSnap.serverTime);
 		if(_outProtocol == _inProtocol)
 		{
 			_outMsg.WriteDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _outProtocol) : NULL, GetPlayerState(&newSnap, _outProtocol));
@@ -722,6 +723,8 @@ void udtBaseParser::WriteGameState()
 	_outMsg.WriteByte(svc_gamestate);
 	_outMsg.WriteLong(_outServerCommandSequence);
 	++_outServerCommandSequence;
+
+	_protocolConverter->StartGameState();
 	
 	// Config strings.
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inConfigStrings); ++i)
