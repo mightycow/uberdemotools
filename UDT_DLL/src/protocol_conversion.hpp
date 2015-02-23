@@ -21,6 +21,8 @@ struct udtProtocolConverter
 	virtual ~udtProtocolConverter() {}
 
 	virtual void ResetForNextDemo() {}
+	virtual void StartGameState() {}
+	virtual void StartSnapshot(s32 /*serverTimeMs*/) {}
 	virtual void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) = 0;
 	virtual void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) = 0;
 	virtual void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) = 0;
@@ -62,10 +64,28 @@ struct udtProtocolConverter90to68_CPMA : public udtProtocolConverter
 {
 	udtProtocolConverter90to68_CPMA() {}
 
+	void StartGameState() override;
+	void StartSnapshot(s32 serverTimeMs) override;
 	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
 	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
 	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtProtocolConverter90to68_CPMA);
+
+	struct ShaftingPlayer
+	{
+		s32 FirstCellTimeMs;
+		s32 FirstSoundTimeMs;
+		u32 SnapshotSoundCounter;
+	};
+
+	struct SnapshotInfo
+	{
+		ShaftingPlayer Players[MAX_CLIENTS];
+		s32 SnapshotTimeMs;
+	};
+
+	SnapshotInfo _snapshots[2];
+	u32 _snapshotIndex;
 };

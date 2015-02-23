@@ -22,9 +22,9 @@
   </MapConversionRule>
   
   Those are known issues for the 90 to 68 converter:
-  - at the end of warm-up, the camera moves to the spawn position over a short time period instead of "teleporting"
-  - the LG thunder sound for the first fired cell is suppressed (did this because it was repeating)
-  - the hit sounds for LG hits have repeats
+  - at the end of the warm-up countdown, the camera sometimes moves to the spawn position over a short time period instead of "teleporting"
+  - the LG thunder sound for the first fired cell will sometimes be suppressed (I did this because it was repeating in q3mme)
+  - the hit sounds for LG seems to be played more often than they shoould
   - got portal rendering errors through certain doors on some maps (q3tourney4)
 -->
     <MapConversionRule>

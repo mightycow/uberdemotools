@@ -133,7 +133,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.3";
+        private const string GuiVersion = "0.4.3a";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -2125,11 +2125,11 @@ namespace Uber.DemoTools
 
         private void LogMessageWithColor(string message, Color color)
         {
-            var textBlock = new TextBlock();
-            textBlock.Text = message;
-            textBlock.Foreground = new SolidColorBrush(color);
             VoidDelegate itemAdder = delegate
             {
+                var textBlock = new TextBlock();
+                textBlock.Text = message;
+                textBlock.Foreground = new SolidColorBrush(color);
                 _logListBox.Items.Add(textBlock);
                 _logListBox.ScrollIntoView(textBlock);
             };

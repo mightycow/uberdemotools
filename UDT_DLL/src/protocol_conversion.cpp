@@ -298,25 +298,55 @@ static bool ConvertConfigStringValue90to68(udtString& newValue, udtVMLinearAlloc
 			Float3::Copy(converter->Offsets, offsets);
 			newValue = newMapName;
 		}
-		/*
-		if(udtString::Equals(value, "bloodrun"))
-		{
-			newValue = udtString::NewConstRef("ztn3dm1");
-		}
-		else if(udtString::Equals(value, "lostworld"))
-		{
-			newValue = udtString::NewConstRef("q3dm13");
-		}
-		else if(udtString::Equals(value, "battleforged"))
-		{
-			newValue = udtString::NewConstRef("phantq3dm1");
-		}
-		*/
+
 		return true;
 	}
 
 	return true;
 }
+
+static s32 ConvertMeanOfDeath90to68(s32 mod)
+{
+	switch((idMeansOfDeath73p::Id)mod)
+	{
+		case idMeansOfDeath73p::Shotgun: return (s32)idMeansOfDeath68::Shotgun;
+		case idMeansOfDeath73p::Gauntlet: return (s32)idMeansOfDeath68::Gauntlet;
+		case idMeansOfDeath73p::MachineGun: return (s32)idMeansOfDeath68::MachineGun;
+		case idMeansOfDeath73p::Grenade: return (s32)idMeansOfDeath68::Grenade;
+		case idMeansOfDeath73p::GrenadeSplash: return (s32)idMeansOfDeath68::GrenadeSplash;
+		case idMeansOfDeath73p::Rocket: return (s32)idMeansOfDeath68::Rocket;
+		case idMeansOfDeath73p::RocketSplash: return (s32)idMeansOfDeath68::RocketSplash;
+		case idMeansOfDeath73p::Plasma: return (s32)idMeansOfDeath68::Plasma;
+		case idMeansOfDeath73p::PlasmaSplash: return (s32)idMeansOfDeath68::PlasmaSplash;
+		case idMeansOfDeath73p::RailGun: return (s32)idMeansOfDeath68::RailGun;
+		case idMeansOfDeath73p::Lightning: return (s32)idMeansOfDeath68::Lightning;
+		case idMeansOfDeath73p::BFG: return (s32)idMeansOfDeath68::BFG;
+		case idMeansOfDeath73p::BFGSplash: return (s32)idMeansOfDeath68::BFGSplash;
+		case idMeansOfDeath73p::Water: return (s32)idMeansOfDeath68::Water;
+		case idMeansOfDeath73p::Slime: return (s32)idMeansOfDeath68::Slime;
+		case idMeansOfDeath73p::Lava: return (s32)idMeansOfDeath68::Lava;
+		case idMeansOfDeath73p::Crush: return (s32)idMeansOfDeath68::Crush;
+		case idMeansOfDeath73p::TeleFrag: return (s32)idMeansOfDeath68::TeleFrag;
+		case idMeansOfDeath73p::Fall: return (s32)idMeansOfDeath68::Fall;
+		case idMeansOfDeath73p::Suicide: return (s32)idMeansOfDeath68::Suicide;
+		case idMeansOfDeath73p::TargetLaser: return (s32)idMeansOfDeath68::TargetLaser;
+		case idMeansOfDeath73p::HurtTrigger: return (s32)idMeansOfDeath68::HurtTrigger;
+		case idMeansOfDeath73p::Grapple: return (s32)idMeansOfDeath68::Grapple;
+		case idMeansOfDeath73p::Unknown:
+		case idMeansOfDeath73p::NailGun:
+		case idMeansOfDeath73p::ChainGun:
+		case idMeansOfDeath73p::ProximityMine:
+		case idMeansOfDeath73p::Kamikaze:
+		case idMeansOfDeath73p::Juiced:
+		case idMeansOfDeath73p::TeamSwitch:
+		case idMeansOfDeath73p::Thaw:
+		case idMeansOfDeath73p::UnknownQlMod1:
+		case idMeansOfDeath73p::HeavyMachineGun:
+		default:
+			return (s32)idMeansOfDeath68::Unknown;
+	}
+}
+
 
 udtProtocolConverterIdentity::udtProtocolConverterIdentity()
 {
@@ -355,11 +385,6 @@ void udtProtocolConverter73to90::ConvertSnapshot(idLargestClientSnapshot& outSna
 	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
 	out.doubleJumped = 0;
 	out.jumpTime = 0;
-	out.unknown1 = 0;
-	out.unknown2 = 0;
-	out.unknown3 = 0;
-	out.pm_flags = 0; // @NOTE: This field is 24 bits large in protocol 90, 16 bits large in protocol 73. 
-	// @TODO: Investigate this. Output demo invalid if only copying first 16 bits (in_flags & 0xFFFF).
 }
 
 void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -388,6 +413,38 @@ void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& 
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
+	}
+}
+
+void udtProtocolConverter90to68_CPMA::StartGameState()
+{
+	_snapshotIndex = 0;
+	for(u32 j = 0; j < 2; ++j)
+	{
+		SnapshotInfo& snapshot = _snapshots[j];
+		snapshot.SnapshotTimeMs = S32_MIN;
+		for(u32 i = 0; i < MAX_CLIENTS; ++i)
+		{
+			ShaftingPlayer& player = snapshot.Players[i];
+			player.FirstCellTimeMs = S32_MIN;
+			player.FirstSoundTimeMs = S32_MIN;
+		}
+	}
+}
+
+void udtProtocolConverter90to68_CPMA::StartSnapshot(s32 serverTimeMs)
+{
+	if(serverTimeMs == _snapshots[_snapshotIndex].SnapshotTimeMs)
+	{
+		return;
+	}
+
+	_snapshotIndex ^= 1;
+	SnapshotInfo& snapshot = _snapshots[_snapshotIndex];
+	snapshot.SnapshotTimeMs = serverTimeMs;
+	for(u32 i = 0; i < MAX_CLIENTS; ++i)
+	{
+		snapshot.Players[i].SnapshotSoundCounter = 0;
 	}
 }
 
@@ -437,8 +494,6 @@ void udtProtocolConverter90to68_CPMA::ConvertSnapshot(idLargestClientSnapshot& o
 	out.ps.events[0] = ConvertEntityEventNumber90to68(in.ps.events[0]);
 	out.ps.events[1] = ConvertEntityEventNumber90to68(in.ps.events[1]);
 	out.ps.externalEvent = ConvertEntityEventNumber90to68(in.ps.externalEvent);
-
-	// @FIXME: LG hit beeps repeating far too often.
 }
 
 void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -448,7 +503,6 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
 
 	Float3::Increment(outEntityState.pos.trBase, Offsets);
-	Float3::Increment(outEntityState.apos.trBase, Offsets);
 	Float3::Increment(outEntityState.origin, Offsets);
 	Float3::Increment(outEntityState.origin2, Offsets);
 
@@ -474,18 +528,49 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 		outEntityState.eType = -1;
 	}
 
-	// LG sounds repeating too many times...
-	// Should probably be able to fix the event bits provided
-	// the function can know if this event is a repeat or not.
+	//
+	// The LG fire sound (the thunder-like sound) is repeating in q3mme so we tweak the demo.
+	//
+
+	if(inEntityState.eType == ET_PLAYER && 
+	   inEntityState.clientNum >= 0 && inEntityState.clientNum < MAX_CLIENTS &&
+	   (inEntityState.eFlags & EF_FIRING) != 0)
+	{
+		// Find the time at which we shoot the first LG cell (in a sequence) for the given player.
+		SnapshotInfo& players = _snapshots[_snapshotIndex];
+		const SnapshotInfo& oldPlayers = _snapshots[_snapshotIndex ^ 1];
+		ShaftingPlayer& player = players.Players[inEntityState.clientNum];
+		const ShaftingPlayer& oldPlayer = oldPlayers.Players[inEntityState.clientNum];
+		player.FirstCellTimeMs = (oldPlayer.FirstCellTimeMs == S32_MIN) ? players.SnapshotTimeMs : oldPlayer.FirstCellTimeMs;
+	}
+
 	if(inEntityState.eType >= ET_EVENTS)
 	{
 		const s32 eventId = (inEntityState.eType - ET_EVENTS) & (~EV_EVENT_BITS);
 		if(eventId == EV_FIRE_WEAPON_73p &&
+		   inEntityState.clientNum >= 0 && inEntityState.clientNum < MAX_CLIENTS &&
 		   inEntityState.weapon == idWeapon73p::LightningGun)
 		{
-			// Not sure why the audio repeats in q3mme and not in QL.
-			outEntityState.eType = ET_EVENTS + EV_NONE;
-			outEntityState.event = EV_NONE;
+			// Find out if this LG sequence already had the sound being played.
+			// If true, we suppress this event.
+			SnapshotInfo& players = _snapshots[_snapshotIndex];
+			const SnapshotInfo& oldPlayers = _snapshots[_snapshotIndex ^ 1];
+			ShaftingPlayer& player = players.Players[inEntityState.clientNum];
+			const ShaftingPlayer& oldPlayer = oldPlayers.Players[inEntityState.clientNum];
+			++player.SnapshotSoundCounter;
+			player.FirstSoundTimeMs = (oldPlayer.FirstSoundTimeMs == S32_MIN) ? players.SnapshotTimeMs : oldPlayer.FirstSoundTimeMs;
+			if((player.FirstCellTimeMs != S32_MIN && player.FirstSoundTimeMs < players.SnapshotTimeMs) || 
+			   player.SnapshotSoundCounter >= 2 ||
+			   player.FirstSoundTimeMs > player.FirstCellTimeMs) // Seems that q3mme likes to repeat it even when getting once in this case.
+			{
+				outEntityState.eType = ET_EVENTS + EV_NONE;
+				outEntityState.event = EV_NONE;
+			}
+		}
+
+		if(eventId == EV_OBITUARY_73p)
+		{
+			outEntityState.eventParm = ConvertMeanOfDeath90to68(inEntityState.eventParm);
 		}
 	}
 }
