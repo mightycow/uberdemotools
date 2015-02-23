@@ -1,3 +1,6 @@
+0.4.3a (23.02.2015)
+FIX: Logging color-coded errors and warnings would crash when called from unmanaged threads (this happens when the final decided number of job threads is >1)
+
 0.4.3 (12.02.2015)
 ADD: Protocol 68 to 90 batch conversions with read-only config file ConversionRules90to68.xml
 ADD: Added the "Flag Captures" cut filter

@@ -1,3 +1,9 @@
+0.6.1 (23.02.2015)
+FIX: 73 to 90 converter: the pm_flags player state field is now kept instead of being zeroed
+FIX: 90 to 68 converter: keeping the LG fire events that won't repeat in q3mme
+FIX: 90 to 68 converter: no longer breaking player state angles by shifting them as if they were positions
+FIX: 90 to 68 converter: now converting the mean of death id in obituary events
+
 0.6.0 (12.02.2015)
 ADD: New protocol conversion system, 68 to 90 conversion support (refer to ConversionRules90to68.xml for known issues)
 CHG: String and path manipulation code overhaul (udtString, udtPath)
