@@ -69,13 +69,24 @@ Very brief overview of what's in a *Quake 3* or *Quake Live* demo
 
 Quake demos are sequences of messages that the server sends to the client. It is, in essence, a dump of the client's incoming network stream.
 
-There are 3 main types of messages we care about:
-1. **Game state**: only sent when a map is (re-)loaded and encodes 2 types of data:
-   1. Baseline entities: the initial value certain entities should have
-   2. Config strings: they can describe the match start time, player skins and names, the current map name and many other things  
-2. **Snapshot**: delta-encoded entity states, sent continuously
-3. **Command string**: a command encoded as a string, sent irregularly  
-   For instance, the *cs N "\key1\value1\key2\value2"* command tells the client to replace the config string at index N to be replaced with what follows in the quotes.
+Here are the 3 message types we care about:
+
+| Message type | Frequency                           | Description |
+|:-------------|:------------------------------------|:-------------
+| Game state   | Only sent when a map is (re-)loaded | Baseline entities + config strings |
+| Snapshot     | Sent continuously                   | Delta-encoded entity states |
+| Command      | Sent irregularly                    | A command encoded as a string |
+
+Command string example:  
+```
+cs N "\key1\value1\key2\value2"
+```
+This command tells the client to replace the config string at index N with what follows in the quotes.
+
+| Game state types  | Description |
+|:------------------|:-------------
+| Baseline entities | The initial value entities at given indices should have
+| Config strings    | Generic null-terminated C strings encoding various state (match start time, score, player names, map name, etc)
 
 There are many specifics for things such as message and command sequence numbers, how there are entity events and event entities, the way Huffman compression is used, the per-field delta-encoding of player states and entity states, etc.
 I will not cover those things because this is not a primer nor a guide about Quake demo parsing. I'll just say that if the devil's in the details, then that protocol is definitely from hell.
