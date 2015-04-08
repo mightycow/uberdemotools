@@ -108,8 +108,8 @@ Memory allocation
 
 All memory allocations are done with malloc/free or the OS functions for virtual memory (VirtualAlloc/VirtualFree on Windows, mmap/munmp/mprotect on Linux). Because classes with non-trivial constructors and destructors are used, operator placement new is used. Most manual destructor calls are done through `udtVMScopedStackAllocator`, but there are some other places where they had to be used.
 
-* malloc is only used for creating core library instances (`udtParserContext`, `udtParserContextGroup`) and a few other places
-* virtual memory OS functions are used for pretty much everything else (i.e. the vast majority of all allocations) through `udtVMLinearAllocator`, a virtual-memory backed linear allocator
+* malloc is only used for creating core library instances (`udtParserContext`, `udtParserContextGroup`) and in a few other places.
+* Virtual memory OS functions are used for pretty much everything else (i.e. the vast majority of all allocations) through `udtVMLinearAllocator`, a virtual-memory backed linear allocator.
 
 I really like the memory allocation systems games use where they allocate a big block of memory at start-up and then never ask the OS to allocate more memory. Every memory allocation is a failure point of the application and not having to worry about it because all failure points disappeared is great. Unfortunately, desktop applications can't really aggressively commit huge chunks of memory like that and play nice with the rest of the applications running on the system. One way to use a similar approach without actually committing a large amount of physical memory is to reserve memory address space and commit physical pages when needed. Pretty much everything in UDT is stored into arrays, and they all use the same virtual-memory backed linear allocator.
 
