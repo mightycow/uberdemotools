@@ -11,10 +11,10 @@ The main features are:
 What's in the project?
 ----------------------
 
-The project is currently comprised of 3 parts:  
-1. A shared library, UDT_DLL, with a C interface, written in C++. Supported OSes: Windows, Linux.
-2. A set of command-line tools, UDT_cutter and UDT_splitter, written in C++. Supported OSes: Windows, Linux.
-3. A GUI application, UDT_GUI, written in C#. Supported OSes: Windows only (requires the .NET Framework).
+The project is currently comprised of 3 parts:
+1. A shared library, UDT_DLL, with a C interface, written in C++. Supported OSes: Windows, Linux
+2. A set of command-line tools, UDT_cutter and UDT_splitter, written in C++. Supported OSes: Windows, Linux
+3. A GUI application, UDT_GUI, written in C#. Supported OSes: Windows only (requires the .NET Framework)
 
 Overview of the binaries
 
