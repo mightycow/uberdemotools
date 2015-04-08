@@ -67,6 +67,16 @@ After your gaming session...
 
 With that workflow, you minimize the amount of work needed to find and keep what's worthy after your play sessions. Less work for the players, more cool stuff for the movie-makers.
 
+Time formats
+------------
+
+* All timestamps in UDT are server times, not match or warm-up times. The time you see on the Quake "clock" is not the server time.
+* The syntax `$(x)` means format the variable `x` into a string.
+* The syntax `$02(x)` means format the variable `x` with with maximum 2 digits and add leading zeores if necessary to get 2 digits.
+* The time format used everywhere in the GUI for read-only data is `$(minute):$02(second)`.
+* The time formats accepted for input ate `$(minute):$(second)` and `$(total_seconds)`. Any amount of leading zeroes is acceptable. Example: "107" is the same as "1:47".
+* For file names, the format is `$(minute)$02(second)` because using `:` in file names is not valid. Example: time "1:07" becomes "107".
+
 [Technical Notes](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md)
 -------
 
