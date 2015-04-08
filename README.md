@@ -11,7 +11,7 @@ The main features are:
 What's in the project?
 ----------------------
 
-The project is currently comprised of 3 parts:
+The project is currently comprised of 3 parts:  
 1. A shared library, UDT_DLL, with a C interface, written in C++. Supported OSes: Windows, Linux.
 2. A set of command-line tools, UDT_cutter and UDT_splitter, written in C++. Supported OSes: Windows, Linux.
 3. A GUI application, UDT_GUI, written in C#. Supported OSes: Windows only (requires the .NET Framework).
@@ -50,11 +50,11 @@ Typical UDT GUI usage scenario
 
 The typical usage scenario for **UDT** is the one for which the interface has been optimized: *Cut by Chat*.
 
-It supposes the following: 
+It supposes the following:  
 1. You have a chat bind you use when you make cool frags or something funny/unusual/movie-worthy happens. Example: you have /bind space "say HAHA! YOU ARE DEAD!" and you press space when something cool happens.
 2. You have configured **UDT**'s *Global Chat* rules under the *Patterns* tab and the general stuff under the *Settings* tab
 
-After your gaming session...
+After your gaming session...  
 1. Drag'n'drop the new demos onto **UDT**.
 2. Select *Patterns*, then *Global Chat*.
 3. Select all demos (can click the *Demo List* list box and press Ctrl+A), then click click *Cut!*.
