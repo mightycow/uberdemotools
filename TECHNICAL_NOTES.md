@@ -65,7 +65,7 @@ Indexing: bits 0-7 from the current position in the bit stream
 Indexing: second-level index + bits 8-10 from the current position in the bit stream
 
 ###### Results
-After replacing *id*'s code with the new Huffman decoder and encoder, the **total** run-time performance for demo analysis and cutting has **more than doubled**. It is therefore easy to infer the following 2 statements:
+After replacing *id*'s code with the new Huffman decoder and encoder, the **total run-time** for demo analysis and cutting is **less than half** what it was before the change. It is therefore easy to infer the following 2 statements:
 
 1. Huffman decode was a very important fraction of the total cost of reading a demo.
 2. The new code that does that is much faster.
