@@ -9,6 +9,11 @@ The main features are:
 - Splitting demos: given a demo with multiple map changes, create a new demo file per map change (plus one for the stuff before the first map change)
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
 
+Official UDT binaries
+---------------------
+
+[Grab them here](http://giant.pourri.ch/snif.php?path=UDT/).
+
 What's in the project?
 ----------------------
 
@@ -35,8 +40,6 @@ No installation is required for any of the binaries.
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
-
-Pre-compiled binaries are hosted here for your convenience: [official binaries](http://giant.pourri.ch/snif.php?path=UDT/)
 
 How did UDT come to be?
 -----------------------
