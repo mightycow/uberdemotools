@@ -422,6 +422,11 @@ namespace Uber.DemoTools
             logMenuItem.Items.Add(new Separator());
             logMenuItem.Items.Add(saveLogMenuItem);
 
+            var viewHelpMenuItem = new MenuItem();
+            viewHelpMenuItem.Header = "_View Online Help";
+            viewHelpMenuItem.Click += (obj, arg) => ShowHelpPage();
+            viewHelpMenuItem.ToolTip = new ToolTip { Content = "Open a new tab with the help in your default browser" };
+
             var aboutMenuItem = new MenuItem();
             aboutMenuItem.Header = "_About";
             aboutMenuItem.Click += (obj, arg) => ShowAboutWindow();
@@ -429,6 +434,8 @@ namespace Uber.DemoTools
 
             var helpMenuItem = new MenuItem();
             helpMenuItem.Header = "_Help";
+            helpMenuItem.Items.Add(viewHelpMenuItem);
+            helpMenuItem.Items.Add(new Separator());
             helpMenuItem.Items.Add(aboutMenuItem);
 
             var mainMenu = new Menu();
@@ -1025,6 +1032,18 @@ namespace Uber.DemoTools
                 }
 
                 AddDemos(new List<string>(), new List<string> { openFolderDialog.SelectedPath });
+            }
+        }
+
+        private void ShowHelpPage()
+        {
+            try
+            {
+                Process.Start(@"https://github.com/mightycow/uberdemotools/blob/develop/README.md");
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open the online help: " + exception.Message);
             }
         }
 
