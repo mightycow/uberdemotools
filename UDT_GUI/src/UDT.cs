@@ -251,9 +251,8 @@ namespace Uber.DemoTools
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByFlickRailArg
         {
-            // @TODO:
             public float MinSpeed;
-            public float MinAngle;
+            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -563,7 +562,7 @@ namespace Uber.DemoTools
         public static udtCutByFlickRailArg CreateCutByFlickRailArg(UdtConfig config)
         {
             var rules = new udtCutByFlickRailArg();
-            // @TODO:
+            rules.MinSpeed = (config.FlickRailMinSpeed / 180.0f) * (float)Math.PI;
 
             return rules;
         }
@@ -823,6 +822,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateFlagCapturePatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
+        }
+
+        public static bool CutDemosByFlickRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByFlickRailArg rules, CutByPatternOptions options)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateFlickRailPatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }

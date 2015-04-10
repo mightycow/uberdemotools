@@ -55,6 +55,7 @@ namespace Uber.DemoTools
         public bool ColorLogWarningsAndErrors = false;
         public int FlagCaptureMinCarryTimeMs = 0;
         public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
+        public float FlickRailMinSpeed = 800.0f; // Degrees/second.
     }
 
     public class MapConversionRule

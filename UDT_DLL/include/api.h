@@ -606,9 +606,11 @@ extern "C"
 	// when udtPatternInfo::Type is udtPatternType::FlickRailFrags.
 	struct udtCutByFlickRailArg
 	{
-		// @TODO:
-		f32 MinSpeed; // In radian/second.
-		f32 MinAngle; // In radian.
+		// Minimum angular velocity, in radian/second.
+		f32 MinSpeed;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtMapConversionRule

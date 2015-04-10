@@ -78,6 +78,12 @@ namespace Uber.DemoTools
             flagCaptureTab.Header = "Flag Captures";
             flagCaptureTab.Content = flagCapture.RootControl;
 
+            var flickRail = new FlickRailFiltersComponent(_app);
+            _components.Add(flickRail);
+            var flickRailTab = new TabItem();
+            flickRailTab.Header = "Flick Rails";
+            flickRailTab.Content = flickRail.RootControl;
+
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
@@ -87,6 +93,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(midAirTab);
             tabControl.Items.Add(multiRailTab);
             tabControl.Items.Add(flagCaptureTab);
+            tabControl.Items.Add(flickRailTab);
 
             return tabControl;
         }

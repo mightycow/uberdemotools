@@ -27,7 +27,7 @@ void udtCutByFlickRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallba
 
 void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	//const udtCutByFlickRailArg& extraInfo = GetExtraInfo<udtCutByFlickRailArg>();
+	const udtCutByFlickRailArg& extraInfo = GetExtraInfo<udtCutByFlickRailArg>();
 	const udtCutByPatternArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
@@ -98,8 +98,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		f32 largestAngleDiff = 0.0f;
 		f32 fastestSpeed = 0.0f;
 		f32 lastAngleDiff = 0.0;
-		const u32 SnapshotCount = 2;
-		for(u32 j = 0; j < SnapshotCount; ++j)
+		for(u32 j = 0; j < 2; ++j)
 		{
 			SnapshotInfo& snapOld = player.GetMostRecentSnapshot(1 + j);
 			const s32 timeDiff = snapNew.ServerTimeMs - snapOld.ServerTimeMs;
@@ -123,8 +122,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 			}
 		}
 
-		// @TODO: Implement usage of the udtCutByFlickRailArg parameters.
-		if(RadToDeg(fastestSpeed) < 800.0f)
+		if(fastestSpeed < extraInfo.MinSpeed)
 		{
 			continue;
 		}
