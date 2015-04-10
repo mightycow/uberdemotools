@@ -307,7 +307,8 @@ struct udtStringArray
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
 	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
-	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer)
+	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer) \
+	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -599,6 +600,15 @@ extern "C"
 
 		// Maximum allowed flag carry time, in milli-seconds.
 		u32 MaxCarryTimeMs;
+	};
+	
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is udtPatternType::FlickRailFrags.
+	struct udtCutByFlickRailArg
+	{
+		// @TODO:
+		f32 MinSpeed; // In radian/second.
+		f32 MinAngle; // In radian.
 	};
 
 	struct udtMapConversionRule

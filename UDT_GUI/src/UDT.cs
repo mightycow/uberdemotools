@@ -112,6 +112,7 @@ namespace Uber.DemoTools
             MidAirFrags,
             MultiFragRails,
             FlagCaptures,
+            FlickRails,
             Count
         }
 
@@ -246,6 +247,14 @@ namespace Uber.DemoTools
             public UInt32 MinCarryTimeMs;
             public UInt32 MaxCarryTimeMs;
         };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByFlickRailArg
+        {
+            // @TODO:
+            public float MinSpeed;
+            public float MinAngle;
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMapConversionRule
@@ -551,6 +560,14 @@ namespace Uber.DemoTools
             return rules;
         }
 
+        public static udtCutByFlickRailArg CreateCutByFlickRailArg(UdtConfig config)
+        {
+            var rules = new udtCutByFlickRailArg();
+            // @TODO:
+
+            return rules;
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();
@@ -709,6 +726,17 @@ namespace Uber.DemoTools
             resources.PinnedObjects.Add(pinnedRules);
 
             pattern.Type = (UInt32)udtPatternType.FlagCaptures;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
+        public static bool CreateFlickRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFlickRailArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.FlickRails;
             pattern.TypeSpecificInfo = pinnedRules.Address;
 
             return true;

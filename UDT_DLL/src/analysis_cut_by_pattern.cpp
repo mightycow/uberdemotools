@@ -6,6 +6,7 @@
 #include "analysis_cut_by_mid_air.hpp"
 #include "analysis_cut_by_multi_rail.hpp"
 #include "analysis_cut_by_flag.hpp"
+#include "analysis_cut_by_flick_rail.hpp"
 
 #include <stdlib.h>
 
