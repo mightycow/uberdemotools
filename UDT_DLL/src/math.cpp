@@ -129,23 +129,13 @@ namespace Quat
 		result[3] = a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0];
 	}
 
-	// @TODO: ANGLE
-
-	/*
 	f32 Angle(const f32* a, const f32* b)
 	{
-	f32 aInv[4];
-	f32 result[4];
-	Invert(aInv, a);
-	Multiply(result, b, aInv);
+		f32 aInv[4];
+		f32 result[4];
+		Invert(aInv, a);
+		Multiply(result, b, aInv);
 
-	return acosf(result[0]) * 2.0f;
-	}
-	*/
-	f32 Angle(const f32* a, const f32* b)
-	{
-		//return acosf(2.0f * Dot(a, b) - 1.0f);
-		//return acosf(Dot(a, b));
-		return acosf(udt_clamp(Dot(a, b), -1.0f, 1.0f));
+		return acosf(result[0]) * 2.0f; // Element 0 is w.
 	}
 }
