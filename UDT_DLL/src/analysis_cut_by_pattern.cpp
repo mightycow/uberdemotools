@@ -301,12 +301,14 @@ bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtBaseParser& 
 	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIdx);
 	if(cs == NULL)
 	{
+		playerName = udtString::NewEmptyConstant();
 		return false;
 	}
 
 	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
 	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs->String))
 	{
+		playerName = udtString::NewEmptyConstant();
 		return false;
 	}
 
