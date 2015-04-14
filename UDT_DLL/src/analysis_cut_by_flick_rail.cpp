@@ -31,10 +31,8 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const udtCutByPatternArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
-	// @TODO: Track other players is possible to get their view angles?
-
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
-	if(ps != NULL && ps->clientNum >= 0 && ps->clientNum < 64) // && ps->clientNum == trackedPlayerIndex
+	if(ps != NULL && ps->clientNum == trackedPlayerIndex)
 	{
 		PlayerInfo& player = _players[ps->clientNum];
 		const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
@@ -44,6 +42,32 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 			snapshot.ServerTimeMs = arg.ServerTime;
 			Float3::Copy(snapshot.Angles, ps->viewangles);
 			player.IncrementIndex();
+		}
+	}
+	else
+	{
+		for(u32 i = 0; i < arg.EntityCount; ++i)
+		{
+			idEntityStateBase* const es = arg.Entities[i].Entity;
+			if(es->eType != ET_PLAYER || es->clientNum != trackedPlayerIndex)
+			{
+				continue;
+			}
+
+			PlayerInfo& player = _players[es->clientNum];
+			const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
+			if(arg.ServerTime > prevSnapshot.ServerTimeMs)
+			{
+				// @NOTE: It seems that for players in Quake 3, the interpolation mode of the "apos" field is always set to interpolate.
+				// However, the delta seems to always be 0, so I'm only using apos.trBase.
+				// @TODO: Is using apos.trBase correct in Quake Live?
+				SnapshotInfo& snapshot = player.GetWriteSnapshot();
+				snapshot.ServerTimeMs = arg.ServerTime;
+				Float3::Copy(snapshot.Angles, es->apos.trBase);
+				player.IncrementIndex();
+			}
+
+			break;
 		}
 	}
 
@@ -88,6 +112,11 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		//
 
 		PlayerInfo& player = _players[attackerIdx];
+		if(!player.IsValid())
+		{
+			continue;
+		}
+
 		const SnapshotInfo& snapNew = player.GetMostRecentSnapshot();
 
 		f32 temp[4];
