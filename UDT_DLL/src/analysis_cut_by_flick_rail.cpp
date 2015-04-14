@@ -31,11 +31,13 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const udtCutByPatternArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
+	// @TODO: Track other players is possible to get their view angles?
+
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
-	if(ps != NULL && ps->clientNum >= 0 && ps->clientNum < 64)
+	if(ps != NULL && ps->clientNum >= 0 && ps->clientNum < 64) // && ps->clientNum == trackedPlayerIndex
 	{
 		PlayerInfo& player = _players[ps->clientNum];
-		SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
+		const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
 		if(arg.ServerTime > prevSnapshot.ServerTimeMs)
 		{
 			SnapshotInfo& snapshot = player.GetWriteSnapshot();
@@ -86,7 +88,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		//
 
 		PlayerInfo& player = _players[attackerIdx];
-		SnapshotInfo& snapNew = player.GetMostRecentSnapshot();
+		const SnapshotInfo& snapNew = player.GetMostRecentSnapshot();
 
 		f32 temp[4];
 		f32 quatNew[4];
@@ -94,35 +96,26 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		Quat::FromEulerAnglesDeg(temp, snapNew.Angles);
 		Quat::Normalize(quatNew, temp);
 
-		f32 totalAngleDiff = 0.0f;
-		f32 largestAngleDiff = 0.0f;
 		f32 fastestSpeed = 0.0f;
-		f32 lastAngleDiff = 0.0;
-		for(u32 j = 0; j < 2; ++j)
+		for(u32 j = 0; j < extraInfo.MinSpeedSnapshotCount; ++j)
 		{
-			SnapshotInfo& snapOld = player.GetMostRecentSnapshot(1 + j);
+			const SnapshotInfo& snapOld = player.GetMostRecentSnapshot(1 + j);
 			const s32 timeDiff = snapNew.ServerTimeMs - snapOld.ServerTimeMs;
-			if(timeDiff <= 0 || snapNew.ServerTimeMs == 0 || snapOld.ServerTimeMs == 0)
-			{
-				continue;
-			}
-	
+
 			Quat::FromEulerAnglesDeg(temp, snapOld.Angles);
 			Quat::Normalize(quatOld, temp);
 
-			const f32 angle = Quat::Angle(quatNew, quatOld);
-			const f32 angleDiff = fabsf((angle > UDT_PI) ? (2.0f * UDT_PI - angle) : angle);
+			const f32 angleDiff = Quat::AngleDiff(quatNew, quatOld);
 			const f32 speed = angleDiff / ((f32)timeDiff / 1000.0f);
-			totalAngleDiff += angleDiff;
-			largestAngleDiff = udt_max(largestAngleDiff, angleDiff);
 			fastestSpeed = udt_max(fastestSpeed, speed);
-			if(j == 0)
-			{
-				lastAngleDiff = angleDiff;
-			}
 		}
 
-		if(fastestSpeed < extraInfo.MinSpeed)
+		const SnapshotInfo& snapOld = player.GetMostRecentSnapshot(extraInfo.MinAngleDeltaSnapshotCount);
+		Quat::FromEulerAnglesDeg(temp, snapOld.Angles);
+		Quat::Normalize(quatOld, temp);
+		const f32 totalAngleDiff = Quat::AngleDiff(quatNew, quatOld);
+
+		if(fastestSpeed < extraInfo.MinSpeed || totalAngleDiff < extraInfo.MinAngleDelta)
 		{
 			continue;
 		}

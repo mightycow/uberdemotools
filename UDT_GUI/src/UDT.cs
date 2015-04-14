@@ -252,7 +252,9 @@ namespace Uber.DemoTools
         public struct udtCutByFlickRailArg
         {
             public float MinSpeed;
-            public Int32 Reserved1;
+            public UInt32 MinSpeedSnapshotCount;
+            public float MinAngleDelta;
+            public UInt32 MinAngleDeltaSnapshotCount;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -563,6 +565,9 @@ namespace Uber.DemoTools
         {
             var rules = new udtCutByFlickRailArg();
             rules.MinSpeed = (config.FlickRailMinSpeed / 180.0f) * (float)Math.PI;
+            rules.MinAngleDelta = (config.FlickRailMinAngleDelta / 180.0f) * (float)Math.PI;
+            rules.MinSpeedSnapshotCount = (UInt32)config.FlickRailMinSpeedSnaps;
+            rules.MinAngleDeltaSnapshotCount = (UInt32)config.FlickRailMinAngleDeltaSnaps;
 
             return rules;
         }

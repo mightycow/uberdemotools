@@ -50,7 +50,11 @@ static bool IsValid(const udtCutByFlagCaptureArg& arg)
 
 static bool IsValid(const udtCutByFlickRailArg& arg)
 {
-	return arg.MinSpeed > 0.0f;
+	return 
+		arg.MinSpeed >= 0.0f && 
+		arg.MinAngleDelta >= 0.0f && 
+		(arg.MinSpeedSnapshotCount - 2) <= 2 && 
+		(arg.MinAngleDeltaSnapshotCount - 2) <= 2;
 }
 
 static bool IsValid(const udtCutByPatternArg& arg)

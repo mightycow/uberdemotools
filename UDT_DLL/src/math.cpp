@@ -138,4 +138,12 @@ namespace Quat
 
 		return acosf(result[0]) * 2.0f; // Element 0 is w.
 	}
+
+	f32 AngleDiff(const f32* a, const f32* b)
+	{
+		const f32 angle = Quat::Angle(a, b);
+		const f32 angleDiff = fabsf((angle > UDT_PI) ? (2.0f * UDT_PI - angle) : angle);
+
+		return angleDiff;
+	}
 }

@@ -31,5 +31,6 @@ namespace Quat
 	extern f32  Dot(const f32* a, const f32* b);
 	extern void Invert(f32* result, const f32* in);
 	extern void Multiply(f32* result, const f32* a, const f32* b);
-	extern f32  Angle(const f32* a, const f32* b); // Expects normalized input.
+	extern f32  Angle(const f32* a, const f32* b); // Expects normalized input. Output range: [0;2*pi].
+	extern f32  AngleDiff(const f32* a, const f32* b); // Expects normalized input. Output range: [0;pi].
 }

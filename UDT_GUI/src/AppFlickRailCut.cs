@@ -33,6 +33,13 @@ namespace Uber.DemoTools
             {
                 config.FlickRailMinSpeed = value;
             }
+            if(float.TryParse(_minAngleDeltaEditBox.Text, out value))
+            {
+                config.FlickRailMinAngleDelta = value;
+            }
+
+            config.FlickRailMinSpeedSnaps = _minSpeedSnapsComboBox.SelectedIndex + 2;
+            config.FlickRailMinAngleDeltaSnaps = _minAngleDeltaSnapsComboBox.SelectedIndex + 2;
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -42,17 +49,38 @@ namespace Uber.DemoTools
 
         private App _app;
         private TextBox _minSpeedEditBox;
+        private TextBox _minAngleDeltaEditBox;
+        private ComboBox _minSpeedSnapsComboBox;
+        private ComboBox _minAngleDeltaSnapsComboBox;
 
         private FrameworkElement CreateTab()
         {
+            var config = _app.Config;
+
             var minSpeedEditBox = new TextBox();
             _minSpeedEditBox = minSpeedEditBox;
+            minSpeedEditBox.HorizontalAlignment = HorizontalAlignment.Left;
+            minSpeedEditBox.VerticalAlignment = VerticalAlignment.Top;
             minSpeedEditBox.Width = 60;
-            minSpeedEditBox.Text = _app.Config.FlickRailMinSpeed.ToString();
+            minSpeedEditBox.Text = config.FlickRailMinSpeed.ToString();
             minSpeedEditBox.ToolTip = "Angular velocity threshold, in degrees per second.";
+
+            var minAngleDeltaEditBox = new TextBox();
+            _minAngleDeltaEditBox = minAngleDeltaEditBox;
+            minAngleDeltaEditBox.HorizontalAlignment = HorizontalAlignment.Left;
+            minAngleDeltaEditBox.VerticalAlignment = VerticalAlignment.Top;
+            minAngleDeltaEditBox.Width = 60;
+            minAngleDeltaEditBox.Text = config.FlickRailMinAngleDelta.ToString();
+            minAngleDeltaEditBox.ToolTip = "Absolute angle difference threshold, in degrees.";
+
+            _minSpeedSnapsComboBox = CreateSnapshotCountComboBox(config.FlickRailMinSpeedSnaps);
+            _minAngleDeltaSnapsComboBox = CreateSnapshotCountComboBox(config.FlickRailMinAngleDeltaSnaps);
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Min. Speed", minSpeedEditBox));
+            rulesPanelList.Add(App.CreateTuple("Speed Snapshots", _minSpeedSnapsComboBox));
+            rulesPanelList.Add(App.CreateTuple("Min. Angle Delta", minAngleDeltaEditBox));
+            rulesPanelList.Add(App.CreateTuple("Angle Delta Snapshots", _minAngleDeltaSnapsComboBox));
 
             var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
@@ -114,6 +142,23 @@ namespace Uber.DemoTools
             return scrollViewer;
         }
 
+        private ComboBox CreateSnapshotCountComboBox(int configValue)
+        {
+            configValue = Math.Max(configValue, 2);
+            configValue = Math.Min(configValue, 4);
+
+            var comboBox = new ComboBox();
+            comboBox.HorizontalAlignment = HorizontalAlignment.Left;
+            comboBox.VerticalAlignment = VerticalAlignment.Top;
+            comboBox.Width = 40;
+            comboBox.Items.Add(2);
+            comboBox.Items.Add(3);
+            comboBox.Items.Add(4);
+            comboBox.SelectedIndex = configValue - 2;
+
+            return comboBox;
+        }
+
         private void OnCutClicked()
         {
             var demos = _app.SelectedDemos;
@@ -126,9 +171,9 @@ namespace Uber.DemoTools
             _app.SaveBothConfigs();
 
             var config = _app.Config;
-            if(config.FlickRailMinSpeed <= 0.0f)
+            if(config.FlickRailMinSpeed <= 0.0f && config.FlickRailMinAngleDelta <= 0.0f)
             {
-                _app.LogError("The specified angular velocity threshold is negative or zero, which will match all railgun frags.");
+                _app.LogError("Both thresholds are negative or zero, which will match all railgun frags.");
                 return;
             }
 
