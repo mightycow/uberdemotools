@@ -113,7 +113,21 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "Recommended minimum value for angular velocity: 800 degrees/second for a good flick railgun shot.";
+                "Recommended minimum value for angular velocity:" +
+                "\n- 800 degrees/second for a fast flick shot" +
+                "\n- 500 degrees/second for a reasonably fast flick shot" + 
+                "\n\nReommended minimum angle delta for a good flick shot:" + 
+                "\n- 50 degrees if over the duration of 2 snapshots in Quake 3 (snapshot duration: usually 33 ms)" +
+                "\n- 37 degrees if over the duration of 2 snapshots in Quake Live (snapshot duration: 25 ms)" + 
+                "\n\nNote that:" + 
+                "\n- Min. Angle Delta is linearly dependent to Angle Delta Snapshots" +
+                "\n- Min. Speed is independent of Speed Snapshots" +
+                "\n\nIf you don't care about the minimum angle, set Min. Angle Delta to 0 and just tune the Min. Speed value.";
+
+            rulesPanelList.Add(App.CreateTuple("Min. Speed", minSpeedEditBox));
+            rulesPanelList.Add(App.CreateTuple("Speed Snapshots", _minSpeedSnapsComboBox));
+            rulesPanelList.Add(App.CreateTuple("Min. Angle Delta", minAngleDeltaEditBox));
+            rulesPanelList.Add(App.CreateTuple("Angle Delta Snapshots", _minAngleDeltaSnapsComboBox));
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
