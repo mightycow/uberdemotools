@@ -58,9 +58,8 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 			const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
 			if(arg.ServerTime > prevSnapshot.ServerTimeMs)
 			{
-				// @NOTE: It seems that for players in Quake 3, the interpolation mode of the "apos" field is always set to interpolate.
+				// @NOTE: It seems that for players, the interpolation mode of the "apos" field is always set to interpolate.
 				// However, the delta seems to always be 0, so I'm only using apos.trBase.
-				// @TODO: Is using apos.trBase correct in Quake Live?
 				SnapshotInfo& snapshot = player.GetWriteSnapshot();
 				snapshot.ServerTimeMs = arg.ServerTime;
 				Float3::Copy(snapshot.Angles, es->apos.trBase);
