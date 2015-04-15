@@ -57,7 +57,7 @@ namespace Uber.DemoTools
         public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
         public float FlickRailMinSpeed = 800.0f; // Degrees/second.
         public int FlickRailMinSpeedSnaps = 2;
-        public float FlickRailMinAngleDelta = 50.0f; // Degrees.
+        public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
     }
 
