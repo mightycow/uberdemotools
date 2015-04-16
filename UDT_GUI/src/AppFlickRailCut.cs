@@ -120,7 +120,7 @@ namespace Uber.DemoTools
                 "\n- 50 degrees if over the duration of 2 snapshots in Quake 3 (snapshot duration: usually 33 ms)" +
                 "\n- 37 degrees if over the duration of 2 snapshots in Quake Live (snapshot duration: 25 ms)" + 
                 "\n\nNote that:" + 
-                "\n- Min. Angle Delta is linearly dependent to Angle Delta Snapshots" +
+                "\n- Min. Angle Delta is linearly dependent on Angle Delta Snapshots" +
                 "\n- Min. Speed is independent of Speed Snapshots" +
                 "\n\nIf you don't care about the minimum angle, set Min. Angle Delta to 0 and just tune the Min. Speed value.";
 
