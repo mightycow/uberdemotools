@@ -84,17 +84,16 @@ Cutting by patterns
 -------------------
 
 Here are the patterns you can look for in demos:
-
 | Pattern          | Player<sup>[1]</sup>   | Description |
 |:-----------------|:-----------------------|:------------|
 | Global Chat      | All                    | String patterns in global chat messages |
-| Frag sequences   | Selected<sup>[2]</sup> | Sequences of frags happening within a certain duration |
-| Mid-air frags    | Selected<sup>[2]</sup> | Rocket and BFG frags where the victim was airborne |
-| Multi-frag rails | Selected<sup>[2]</sup> | Railgun frags killing 2 or more players |
-| Flag captures    | Selected<sup>[2]</sup> | Flag runs: the player picks up the flag and captures it |
-| Flick rails      | Selected<sup>[2]</sup> | Railgun frags where the attacker's view angles changed very fast right before the killing shot |
+| Frag sequences   | Selected               | Sequences of frags happening within a certain duration |
+| Mid-air frags    | Selected               | Rocket and BFG frags where the victim was airborne |
+| Multi-frag rails | Selected               | Railgun frags killing 2 or more players |
+| Flag captures    | Selected               | Flag runs: the player picks up the flag and captures it |
+| Flick rails      | Selected               | Railgun frags where the attacker's view angles changed very fast right before the killing shot |
 1. To which player(s) is the pattern matching applied to?
-2. The selected player only &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
+2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
 
 [Technical Notes](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md)
 -------
