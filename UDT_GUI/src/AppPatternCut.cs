@@ -300,6 +300,14 @@ namespace Uber.DemoTools
                 patterns.Add(pattern);
             }
 
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FlickRails))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+                var rules = UDT_DLL.CreateCutByFlickRailArg(config);
+                UDT_DLL.CreateFlickRailPatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
+            }
+
             var threadArg = new ThreadArg();
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();

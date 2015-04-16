@@ -115,6 +115,7 @@
     <Compile Include="src\AppMidAirCut.cs" />
     <Compile Include="src\AppMultiRailCut.cs" />
 	<Compile Include="src\AppFlagCaptureCut.cs" />
+	<Compile Include="src\AppFlickRailCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

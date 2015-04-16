@@ -232,9 +232,11 @@ bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutTex
 
 bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs)
 {
+	bool negative = false;
 	if(timeMs < 0)
 	{
-		return false;
+		timeMs = -timeMs;
+		negative = true;
 	}
 
 	const s32 secondsTotal = timeMs / 1000;
@@ -249,13 +251,13 @@ bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator
 		minutesCopy /= 10;
 	}
 
-	formattedTime = AllocateSpaceForString(allocator, minutesDigits + 2);
+	formattedTime = AllocateSpaceForString(allocator, minutesDigits + 2 + (negative ? 1 : 0));
 	if(formattedTime == NULL)
 	{
 		return false;
 	}
 
-	sprintf(formattedTime, "%d%02d", minutes, seconds);
+	sprintf(formattedTime, "%s%d%02d", negative ? "-" : "", minutes, seconds);
 
 	return true;
 }

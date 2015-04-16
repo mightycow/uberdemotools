@@ -20,6 +20,7 @@ namespace Uber.DemoTools
         MidAirFilters,
         MultiRailFilters,
         FlagCaptureFilters,
+        FlickRailFilters,
         Count
     }
 

@@ -48,6 +48,15 @@ static bool IsValid(const udtCutByFlagCaptureArg& arg)
 	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs;
 }
 
+static bool IsValid(const udtCutByFlickRailArg& arg)
+{
+	return 
+		arg.MinSpeed >= 0.0f && 
+		arg.MinAngleDelta >= 0.0f && 
+		(arg.MinSpeedSnapshotCount - 2) <= 2 && 
+		(arg.MinAngleDeltaSnapshotCount - 2) <= 2;
+}
+
 static bool IsValid(const udtCutByPatternArg& arg)
 {
 	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)

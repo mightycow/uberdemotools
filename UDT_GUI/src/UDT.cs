@@ -112,6 +112,7 @@ namespace Uber.DemoTools
             MidAirFrags,
             MultiFragRails,
             FlagCaptures,
+            FlickRails,
             Count
         }
 
@@ -246,6 +247,15 @@ namespace Uber.DemoTools
             public UInt32 MinCarryTimeMs;
             public UInt32 MaxCarryTimeMs;
         };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByFlickRailArg
+        {
+            public float MinSpeed;
+            public UInt32 MinSpeedSnapshotCount;
+            public float MinAngleDelta;
+            public UInt32 MinAngleDeltaSnapshotCount;
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMapConversionRule
@@ -551,6 +561,17 @@ namespace Uber.DemoTools
             return rules;
         }
 
+        public static udtCutByFlickRailArg CreateCutByFlickRailArg(UdtConfig config)
+        {
+            var rules = new udtCutByFlickRailArg();
+            rules.MinSpeed = (config.FlickRailMinSpeed / 180.0f) * (float)Math.PI;
+            rules.MinAngleDelta = (config.FlickRailMinAngleDelta / 180.0f) * (float)Math.PI;
+            rules.MinSpeedSnapshotCount = (UInt32)config.FlickRailMinSpeedSnaps;
+            rules.MinAngleDeltaSnapshotCount = (UInt32)config.FlickRailMinAngleDeltaSnaps;
+
+            return rules;
+        }
+
         public static IntPtr CreateContext()
         {
             return udtCreateContext();
@@ -714,6 +735,17 @@ namespace Uber.DemoTools
             return true;
         }
 
+        public static bool CreateFlickRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFlickRailArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.FlickRails;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
         public class CutByPatternOptions
         {
             public int StartOffset;
@@ -795,6 +827,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateFlagCapturePatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
+        }
+
+        public static bool CutDemosByFlickRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByFlickRailArg rules, CutByPatternOptions options)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateFlickRailPatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }
