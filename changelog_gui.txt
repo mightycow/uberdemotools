@@ -1,3 +1,8 @@
+0.4.4 (17.04.2015)
+ADD: Added the "Flick Rails" cut filter
+FIX: The player tracker could crash when it couldn't find the specified player name in a config string
+FIX: Formatting of negative times in FormatTimeForFileName
+
 0.4.3a (23.02.2015)
 FIX: Logging color-coded errors and warnings would crash when called from unmanaged threads (this happens when the final decided number of job threads is >1)
 
