@@ -1,42 +1,27 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-<<<<<<< HEAD
-**UDT** is a set of tools for analyzing and cutting *Quake 3* (.dm_68) and *Quake Live* (.dm_73 and .dm_90) demo files.
-
-The main features are:
-=======
 UDT is a set of tools for analyzing and cutting **Quake 3** (.dm_68) and **Quake Live** (.dm_73 and .dm_90) demo files.
 
 The main features are:
 
->>>>>>> develop
 - Extracting and displaying information (examples: map name, player names and teams, game mode, etc)
 - Cutting by time: creating a new demo file that is a time sub-range of the original demo file for easier processing or demo viewing
 - Splitting demos: given a demo with multiple map changes, create a new demo file per map change (plus one for the stuff before the first map change)
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
 
-<<<<<<< HEAD
-=======
 Official UDT binaries
 ---------------------
 
 [Grab them here](http://giant.pourri.ch/snif.php?path=UDT/).
 
->>>>>>> develop
 What's in the project?
 ----------------------
 
 The project is currently comprised of 3 parts:
-<<<<<<< HEAD
-1. A shared library, UDT_DLL, with a C interface, written in C++. Supported OSes: Windows, Linux.
-2. A set of command-line tools, UDT_cutter and UDT_splitter, written in C++. Supported OSes: Windows, Linux.
-3. A GUI application, UDT_GUI, written in C#. Supported OSes: Windows only (requires the .NET Framework).
-=======
 
 1. A shared library, `UDT_DLL`, with a C interface, written in C++. Supported OSes: Windows, Linux
 2. A set of command-line tools, `UDT_cutter` and `UDT_splitter`, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
->>>>>>> develop
 
 Overview of the binaries
 
@@ -51,19 +36,10 @@ Installation
 ------------
 
 No installation is required for any of the binaries.  
-<<<<<<< HEAD
-**UDT_DLL**, **UDT_cutter** and **UDT_splitter** have no third-party dependencies.
-
-**UDT_GUI** requires [*.NET Framework 4.0 Client Profile*](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
-If you have *Windows 8* or later, then you should have it pre-installed with the OS unless you changed system settings.
-
-Pre-compiled binaries are hosted here for your convenience: [official binaries](http://giant.pourri.ch/snif.php?path=UDT/)
-=======
 `UDT_DLL`, `UDT_cutter` and `UDT_splitter` have no third-party dependencies.
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
->>>>>>> develop
 
 How did UDT come to be?
 -----------------------
@@ -72,27 +48,11 @@ When I started work on my first fragmovie, I had a bunch of properly sorted and 
 
 Those others demos were not renamed (time-stamp, type of frags) nor sorted. I was definitely not going to watch them, so I had to find another way.
 
-<<<<<<< HEAD
-Whenever I had made a cool frag, I was using the same exact chat message every time because I had a chat bind for said message, so all I did was press a key. I then realized that the chat message is a marker for cool frags. If I could find when those messages were printed, I could find the cool frags! Thus, the first *Cut by Pattern* feature was born: *Cut by Chat*.
-=======
 Whenever I had made a cool frag, I was using the same exact chat message every time because I had a chat bind for said message, so all I did was press a key. I then realized that the chat message is a marker for cool frags. If I could find when those messages were printed, I could find the cool frags! Thus, the first `Cut by Pattern` feature was born: `Cut by Chat`.
->>>>>>> develop
 
 Typical UDT GUI usage scenario
 ------------------------------
 
-<<<<<<< HEAD
-The typical usage scenario for **UDT** is the one for which the interface has been optimized: *Cut by Chat*.
-
-It supposes the following: 
-1. You have a chat bind you use when you make cool frags or something funny/unusual/movie-worthy happens. Example: you have /bind space "say HAHA! YOU ARE DEAD!" and you press space when something cool happens.
-2. You have configured **UDT**'s *Global Chat* rules under the *Patterns* tab and the general stuff under the *Settings* tab
-
-After your gaming session...
-1. Drag'n'drop the new demos onto **UDT**.
-2. Select *Patterns*, then *Global Chat*.
-3. Select all demos (can click the *Demo List* list box and press Ctrl+A), then click click *Cut!*.
-=======
 The typical day-to-day usage scenario for UDT is the one for which the interface has been optimized: `Cut by Chat`.
 
 It supposes the following:
@@ -105,14 +65,11 @@ After your gaming session...
 1. Drag'n'drop the new demos onto UDT.
 2. Select `Patterns`, then `Global Chat`.
 3. Select all demos (can click the `Demo List` list box and press Ctrl+A), then click click `Cut!`.
->>>>>>> develop
 4. You now have a cut demo for each cool thing that happened in the folder you specified.
 5. Review the cut demos to decide what you keep, rename and move those you wish to keep to the appropriate folder.
 
 With that workflow, you minimize the amount of work needed to find and keep what's worthy after your play sessions. Less work for the players, more cool stuff for the movie-makers.
 
-<<<<<<< HEAD
-=======
 Time formats
 ------------
 
@@ -140,7 +97,6 @@ Here are the patterns you can look for in demos:
 1. To which player(s) is the pattern matching applied to?
 2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
 
->>>>>>> develop
 [Technical Notes](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md)
 -------
 
