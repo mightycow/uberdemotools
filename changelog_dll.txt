@@ -1,3 +1,6 @@
+0.6.2 (17.04.2015)
+ADD: Added the "Flick Rails" cut filter
+
 0.6.1 (23.02.2015)
 FIX: 73 to 90 converter: the pm_flags player state field is now kept instead of being zeroed
 FIX: 90 to 68 converter: keeping the LG fire events that won't repeat in q3mme

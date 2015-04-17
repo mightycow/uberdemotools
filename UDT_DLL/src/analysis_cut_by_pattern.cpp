@@ -6,6 +6,7 @@
 #include "analysis_cut_by_mid_air.hpp"
 #include "analysis_cut_by_multi_rail.hpp"
 #include "analysis_cut_by_flag.hpp"
+#include "analysis_cut_by_flick_rail.hpp"
 
 #include <stdlib.h>
 
@@ -300,12 +301,14 @@ bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtBaseParser& 
 	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIdx);
 	if(cs == NULL)
 	{
+		playerName = udtString::NewEmptyConstant();
 		return false;
 	}
 
 	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
 	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs->String))
 	{
+		playerName = udtString::NewEmptyConstant();
 		return false;
 	}
 

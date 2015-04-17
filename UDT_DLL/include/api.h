@@ -307,7 +307,8 @@ struct udtStringArray
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
 	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
-	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer)
+	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer) \
+	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -599,6 +600,25 @@ extern "C"
 
 		// Maximum allowed flag carry time, in milli-seconds.
 		u32 MaxCarryTimeMs;
+	};
+	
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is udtPatternType::FlickRailFrags.
+	struct udtCutByFlickRailArg
+	{
+		// Minimum angular velocity, in radians/second.
+		f32 MinSpeed;
+
+		// How many snapshots to take into account for computing the top speed.
+		// Range: [2;4].
+		u32 MinSpeedSnapshotCount;
+
+		// Minimum angle change, in radians.
+		f32 MinAngleDelta;
+
+		// How many snapshots to take into account for computing the top speed.
+		// Range: [2;4].
+		u32 MinAngleDeltaSnapshotCount;
 	};
 
 	struct udtMapConversionRule
