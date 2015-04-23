@@ -21,7 +21,7 @@ private:
 	{
 		enum Id
 		{
-			TrackedSnapshots = 4,
+			TrackedSnapshots = 8,
 			SnapshotMask = TrackedSnapshots - 1
 		};
 	};
