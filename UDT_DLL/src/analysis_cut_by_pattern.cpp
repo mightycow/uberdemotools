@@ -237,6 +237,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
+	TempAllocator->Clear();
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 	udtVMArray<CutSection> tempCutSections;
 	tempCutSections.SetAllocator(*TempAllocator);
@@ -275,8 +276,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	// Create a new list with the sorted data using the final data format
 	// and merge the sections.
 	//
-	udtVMArray<udtCutSection> cutSections;
-	cutSections.SetAllocator(*TempAllocator);
+	udtVMArrayWithAlloc<udtCutSection> cutSections(1 << 16);
 	for(u32 i = 0; i < cutCount; ++i)
 	{
 		const CutSection cut = tempCutSections[i];
