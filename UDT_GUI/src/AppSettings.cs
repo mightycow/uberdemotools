@@ -54,6 +54,7 @@ namespace Uber.DemoTools
         private CheckBox _analyzeOnLoadCheckBox = null;
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
+        private CheckBox _mergeCutSectionsCheckBox = null;
         private CheckBox _printAllocStatsCheckBox = null;
         private CheckBox _printExecutionTimeCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
@@ -88,6 +89,7 @@ namespace Uber.DemoTools
             config.UseInputFolderAsDefaultBrowsingLocation = _useInputFolderForBrowsingCheckBox.IsChecked ?? false;
             config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
+            config.MergeCutSectionsFromDifferentPatterns = _mergeCutSectionsCheckBox.IsChecked ?? false;
             config.PrintAllocationStats = _printAllocStatsCheckBox.IsChecked ?? false;
             config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
@@ -199,6 +201,15 @@ namespace Uber.DemoTools
             analyzeOnLoadCheckBox.Unchecked += (obj, args) => _app.Config.AnalyzeOnLoad = false;
             analyzeOnLoadCheckBox.ToolTip = " You can always launch the analysis pass from the \"Manage\" tab.";
 
+            var mergeCutSectionsCheckBox = new CheckBox();
+            _mergeCutSectionsCheckBox = mergeCutSectionsCheckBox;
+            mergeCutSectionsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            mergeCutSectionsCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            mergeCutSectionsCheckBox.IsChecked = _app.Config.MergeCutSectionsFromDifferentPatterns;
+            mergeCutSectionsCheckBox.Content = " Merge overlapping cut sections matched by different pattern types?";
+            mergeCutSectionsCheckBox.Checked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = true;
+            mergeCutSectionsCheckBox.Unchecked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = false;
+
             var printAllocStatsCheckBox = new CheckBox();
             _printAllocStatsCheckBox = printAllocStatsCheckBox;
             printAllocStatsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -243,6 +254,7 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Analyze on Load", analyzeOnLoadCheckBox));
             panelList.Add(App.CreateTuple("Start Time Offset [s]", startTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
+            panelList.Add(App.CreateTuple("Merge Cut Sections", mergeCutSectionsCheckBox));
             panelList.Add(App.CreateTuple("Print Alloc Stats", printAllocStatsCheckBox));
             panelList.Add(App.CreateTuple("Print Execution Time", printExecutionTimeCheckBox));
             panelList.Add(App.CreateTuple("Color Log Messages", colorLogMessagesCheckBox));

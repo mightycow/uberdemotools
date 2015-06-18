@@ -169,6 +169,12 @@ namespace Uber.DemoTools
             DemoTaker = -1
         };
 
+        [Flags]
+        public enum udtCutByPatternArgFlags
+        {
+            MergeCutSections = 1 << 0
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCutByPatternArg
 	    {
@@ -178,6 +184,8 @@ namespace Uber.DemoTools
 		    public UInt32 StartOffsetSec;
 		    public UInt32 EndOffsetSec;
 		    public Int32 PlayerIndex;
+            public UInt32 Flags;
+            public Int32 Reserved1;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -751,14 +759,16 @@ namespace Uber.DemoTools
             public int StartOffset;
             public int EndOffset;
             public int MaxThreadCount;
+            public bool MergeCutSections;
             public int PlayerIndex;
             public string PlayerName;
 
-            public CutByPatternOptions(int startOffset, int endOffset, int maxThreadCount, int playerIndex, string playerName)
+            public CutByPatternOptions(int startOffset, int endOffset, int maxThreadCount, bool mergeCutSections, int playerIndex, string playerName)
             {
                 StartOffset = startOffset;
                 EndOffset = endOffset;
                 MaxThreadCount = maxThreadCount;
+                MergeCutSections = mergeCutSections;
                 PlayerIndex = playerIndex;
                 PlayerName = playerName;
             }
@@ -770,6 +780,7 @@ namespace Uber.DemoTools
                 config.CutStartOffset,
                 config.CutEndOffset,
                 config.MaxThreadCount,
+                config.MergeCutSectionsFromDifferentPatterns,
                 privateConfig.PatternCutPlayerIndex,
                 privateConfig.PatternCutPlayerName);
         }
@@ -937,6 +948,11 @@ namespace Uber.DemoTools
             cutByPatternArg.PatternCount = (UInt32)patterns.Length;
             cutByPatternArg.PlayerIndex = options.PlayerIndex;
             cutByPatternArg.PlayerName = playerNameUnmanaged;
+            cutByPatternArg.Flags = 0;
+            if(options.MergeCutSections)
+            {
+                cutByPatternArg.Flags |= (UInt32)udtCutByPatternArgFlags.MergeCutSections;
+            }
 
             resources.PinnedObjects.Add(pinnedPatterns);
             resources.PinnedObjects.Add(pinnedFilePaths);

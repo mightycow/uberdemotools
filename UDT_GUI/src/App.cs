@@ -34,6 +34,7 @@ namespace Uber.DemoTools
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
         public int MaxThreadCount = 8;
+        public bool MergeCutSectionsFromDifferentPatterns = true;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
