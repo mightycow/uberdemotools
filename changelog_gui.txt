@@ -1,3 +1,6 @@
+0.4.5 (19.06.2015)
+ADD: Added an option to enable or disable the merging of overlapping cut sections matched by different pattern types
+
 0.4.4 (17.04.2015)
 ADD: Added the "Flick Rails" cut filter
 FIX: The player tracker could crash when it couldn't find the specified player name in a config string
