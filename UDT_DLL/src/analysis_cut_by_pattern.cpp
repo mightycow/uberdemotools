@@ -36,6 +36,20 @@ static int StableSortByGameStateIndexAscending(const void* aPtr, const void* bPt
 	return byGameState != 0 ? byGameState : byPreviousOrder;
 }
 
+static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSection>& source)
+{
+	for(u32 i = 0, cutCount = source.GetSize(); i < cutCount; ++i)
+	{
+		const CutSection cut = source[i];
+		udtCutSection newCut;
+		newCut.GameStateIndex = cut.GameStateIndex;
+		newCut.StartTimeMs = cut.StartTimeMs;
+		newCut.EndTimeMs = cut.EndTimeMs;
+		newCut.VeryShortDesc = cut.VeryShortDesc;
+		dest.Add(newCut);
+	}
+}
+
 
 udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase() 
 	: CutSections((uptr)(1 << 16))
@@ -237,6 +251,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
+	TempAllocator->Clear();
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 	udtVMArray<CutSection> tempCutSections;
 	tempCutSections.SetAllocator(*TempAllocator);
@@ -273,22 +288,19 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 
 	//
 	// Create a new list with the sorted data using the final data format
-	// and merge the sections.
+	// and merge the sections if asked for it.
 	//
-	udtVMArray<udtCutSection> cutSections;
-	cutSections.SetAllocator(*TempAllocator);
-	for(u32 i = 0; i < cutCount; ++i)
+	if((GetInfo().Flags & (u32)udtCutByPatternArgFlags::MergeCutSections) != 0)
 	{
-		const CutSection cut = tempCutSections[i];
-		udtCutSection newCut;
-		newCut.GameStateIndex = cut.GameStateIndex;
-		newCut.StartTimeMs = cut.StartTimeMs;
-		newCut.EndTimeMs = cut.EndTimeMs;
-		newCut.VeryShortDesc = cut.VeryShortDesc;
-		cutSections.Add(newCut);
+		udtVMArrayWithAlloc<udtCutSection> cutSections(1 << 16);
+		AppendCutSections(cutSections, tempCutSections);
+		MergeRanges(CutSections, cutSections);
 	}
-
-	MergeRanges(CutSections, cutSections);
+	else
+	{
+		CutSections.Clear();
+		AppendCutSections(CutSections, tempCutSections);
+	}
 }
 
 s32 udtCutByPatternPlugIn::GetTrackedPlayerIndex() const

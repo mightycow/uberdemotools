@@ -445,6 +445,14 @@ extern "C"
 		};
 	};
 
+	struct udtCutByPatternArgFlags
+	{
+		enum Id
+		{
+			MergeCutSections = UDT_BIT(0) // Enable/disable merging cut sections from different patterns.
+		};
+	};
+
 	struct udtCutByPatternArg
 	{
 		// Pointer to an array of filters.
@@ -467,6 +475,12 @@ extern "C"
 		// The index of the player whose action we're tracking.
 		// If not in the [0;63] range, is of type udtPlayerIndex::Id.
 		s32 PlayerIndex;
+
+		// Of type udtCutByPatternArgFlags::Id.
+		u32 Flags;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtCutByTimeArg

@@ -34,6 +34,7 @@ namespace Uber.DemoTools
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
         public int MaxThreadCount = 8;
+        public bool MergeCutSectionsFromDifferentPatterns = true;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
         public bool OpenDemosFromInputFolderOnStartUp = false;
@@ -137,7 +138,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.4";
+        private const string GuiVersion = "0.4.5";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
