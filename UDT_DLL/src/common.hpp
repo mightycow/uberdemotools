@@ -595,22 +595,13 @@ typedef idClientSnapshot90 idLargestClientSnapshot;
 
 inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return &((idClientSnapshot68*)snap)->ps;
+		case udtProtocol::Dm68: return &((idClientSnapshot68*)snap)->ps;
+		case udtProtocol::Dm73: return &((idClientSnapshot73*)snap)->ps;
+		case udtProtocol::Dm90: return &((idClientSnapshot90*)snap)->ps;
+		default: return NULL;
 	}
-
-	if(protocol == udtProtocol::Dm73)
-	{
-		return &((idClientSnapshot73*)snap)->ps;
-	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return &((idClientSnapshot90*)snap)->ps;
-	}
-
-	return NULL;
 }
 
 // allow a lot of command backups for very fast systems

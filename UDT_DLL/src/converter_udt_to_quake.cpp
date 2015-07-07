@@ -6,6 +6,8 @@ udtdConverter::udtdConverter()
 	_input = NULL;
 	_output = NULL;
 	_protocol = udtProtocol::Invalid;
+	_protocolSizeOfEntityState = 0;
+	_protocolSizeOfPlayerState = 0;
 }
 
 void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id protocol)
@@ -13,6 +15,8 @@ void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id pr
 	_input = &input;
 	_output = output;
 	_protocol = protocol;
+	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState(protocol);
+	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState(protocol);
 
 	_outMsg.InitContext(&_context);
 	_outMsg.InitProtocol(protocol);
@@ -187,15 +191,15 @@ bool udtdConverter::ProcessGameState()
 	s32 baselineEntityCount = 0;
 	_input->Read(&baselineEntityCount, 4, 1);
 
-	idEntityStateBase nullState;
-	Com_Memset(&nullState, 0, sizeof(nullState));
+	idLargestEntityState nullState;
+	memset(&nullState, 0, sizeof(nullState));
 	for(s32 i = 0; i < baselineEntityCount; ++i)
 	{
 		s32 index = 0;
-		idEntityStateBase es;
+		idLargestEntityState es;
 		_input->Read(&index, 4, 1);
-		_input->Read(&es, (u32)sizeof(idEntityStateBase), 1);
-		memcpy(&_inBaselineEntities[es.number], &es, sizeof(idEntityStateBase));
+		_input->Read(&es, _protocolSizeOfEntityState, 1);
+		memcpy(&GetBaseline(es.number), &es, (size_t)_protocolSizeOfEntityState);
 
 		_outMsg.WriteByte(svc_baseline);
 		_outMsg.WriteDeltaEntity(&nullState, &es, qtrue);
@@ -253,16 +257,16 @@ void udtdConverter::ProcessSnapshot()
 void udtdConverter::ReadSnapshot(SnapshotInfo& info)
 {
 	s32 messageSequence = 0;
-	idPlayerStateBase playerState;
+	idLargestPlayerState playerState;
 	_input->Read(&messageSequence, 4, 1);
 	_input->Read(&info.ServerTime, 4, 1);
-	_input->Read(&playerState, (u32)sizeof(idPlayerStateBase), 1);
+	_input->Read(&playerState, _protocolSizeOfPlayerState, 1);
 	_input->Read(&info.SnapFlags, 4, 1);
 	_input->Read(_areaMask, 32, 1);
 
 	s32 addedOrChangedEntityCount = 0;
 	_input->Read(&addedOrChangedEntityCount, 4, 1);
-	_input->Read(_inReadEntities, (u32)addedOrChangedEntityCount * (u32)sizeof(idEntityStateBase), 1);
+	_input->Read(_inReadEntities, (u32)addedOrChangedEntityCount * _protocolSizeOfEntityState, 1);
 
 	s32 removedEntityCount = 0;
 	_input->Read(&removedEntityCount, 4, 1);
@@ -272,7 +276,7 @@ void udtdConverter::ReadSnapshot(SnapshotInfo& info)
 	udtdSnapshotData& oldSnap = _snapshots[_snapshotReadIndex ^ 1];
 
 	curSnap.ServerTime = info.ServerTime;
-	memcpy(&curSnap.PlayerState, &playerState, sizeof(idPlayerStateBase));
+	memcpy(&curSnap.PlayerState, &playerState, _protocolSizeOfPlayerState);
 
 	if(_firstSnapshot)
 	{
@@ -288,9 +292,9 @@ void udtdConverter::ReadSnapshot(SnapshotInfo& info)
 
 	for(s32 i = 0; i < addedOrChangedEntityCount; ++i)
 	{
-		const s32 number = _inReadEntities[i].number;
+		const s32 number = GetEntity(i).number;
 		curSnap.Entities[number].Valid = true;
-		memcpy(&curSnap.Entities[number].EntityState, &_inReadEntities[i], sizeof(idEntityStateBase));
+		memcpy(&curSnap.Entities[number].EntityState, &GetEntity(i), (size_t)_protocolSizeOfEntityState);
 	}
 
 	for(s32 i = 0; i < removedEntityCount; ++i)
@@ -324,7 +328,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 		{
 			if(curSnap.Entities[i].Valid)
 			{
-				_outMsg.WriteDeltaEntity(&_inBaselineEntities[i], &curSnap.Entities[i].EntityState, qtrue);
+				_outMsg.WriteDeltaEntity(&GetBaseline(i), &curSnap.Entities[i].EntityState, qtrue);
 			}
 		}
 	}
@@ -336,7 +340,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 			const bool oldValid = oldSnap.Entities[i].Valid;
 			const idEntityStateBase& curEnt = curSnap.Entities[i].EntityState;
 			const idEntityStateBase& oldEnt = oldSnap.Entities[i].EntityState;
-			if(curValid && oldValid && memcmp(&curEnt, &oldEnt, sizeof(idEntityStateBase)))
+			if(curValid && oldValid && memcmp(&curEnt, &oldEnt, (size_t)_protocolSizeOfEntityState))
 			{
 				// Entity changed.
 				_outMsg.WriteDeltaEntity(&oldEnt, &curEnt, qfalse);
@@ -344,7 +348,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 			else if(curValid && !oldValid)
 			{
 				// Entity added from the baseline.
-				_outMsg.WriteDeltaEntity(&_inBaselineEntities[i], &curEnt, qtrue);
+				_outMsg.WriteDeltaEntity(&GetBaseline(i), &curEnt, qtrue);
 			}
 			else if(oldValid && !curValid)
 			{
@@ -498,7 +502,7 @@ void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& dest
 		if(condition1 || condition2)
 		{
 			dest.Entities[i].Valid = true;
-			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, sizeof(idEntityStateBase));
+			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
 		}
 	}
 

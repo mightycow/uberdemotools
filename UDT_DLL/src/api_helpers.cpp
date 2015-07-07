@@ -369,6 +369,11 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	udtdMessageType::Id messageType = udtdMessageType::EndOfFile;
 	udtParserPlugInQuakeToUDT& converterToUDT = *(udtParserPlugInQuakeToUDT*)plugInBase;
 
+	if(!converterToUDT.Init(protocol))
+	{
+		return false;
+	}
+
 	converterToUDT.SetOutputStream(&tempWrite);
 	converterToQuake->SetStreams(tempRead, &output);
 
@@ -638,6 +643,10 @@ struct DemoMerger
 				return false;
 			}
 			demo.ConverterToUDT = (udtParserPlugInQuakeToUDT*)plugInBase;
+			if(!demo.ConverterToUDT->Init(protocol))
+			{
+				return false;
+			}
 
 			if(!demo.Context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, i == 0 ? info->ProgressContext : NULL))
 			{

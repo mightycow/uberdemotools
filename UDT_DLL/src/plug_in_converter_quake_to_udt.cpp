@@ -5,14 +5,34 @@
 
 udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
-	_data = (udtdData*)malloc(sizeof(udtdData));
-	memset(_data, 0, sizeof(udtdData));
+	_outputFile = NULL;
+	_data = NULL;
 	_firstSnapshot = true;
+	_protocol = udtProtocol::Invalid;
+	_protocolSizeOfEntityState = 0;
+	_protocolSizeOfPlayerState = 0;
 }
 
 udtParserPlugInQuakeToUDT::~udtParserPlugInQuakeToUDT()
 {
 	free(_data);
+}
+
+bool udtParserPlugInQuakeToUDT::Init(udtProtocol::Id protocol)
+{
+	_data = (udtdData*)malloc(sizeof(udtdData));
+	if(_data == NULL)
+	{
+		return false;
+	}
+
+	memset(_data, 0, sizeof(udtdData));
+	_firstSnapshot = true;
+	_protocol = protocol;
+	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState(protocol);
+	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState(protocol);
+
+	return true;
 }
 
 void udtParserPlugInQuakeToUDT::SetOutputStream(udtStream* output)
@@ -64,13 +84,13 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 		}
 	}
 
-	idEntityStateBase nullState;
+	idLargestEntityState nullState;
 	memset(&nullState, 0, sizeof(nullState));
 	s32 baselineEntityCount = 0;
 	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
 	{
 		const idEntityStateBase& es = *parser.GetBaseline(i);
-		if(memcmp(&nullState, &es, sizeof(idEntityStateBase)))
+		if(memcmp(&nullState, &es, (size_t)_protocolSizeOfEntityState))
 		{
 			++baselineEntityCount;
 		}
@@ -80,10 +100,10 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
 	{
 		const idEntityStateBase& es = *parser.GetBaseline(i);
-		if(memcmp(&nullState, &es, sizeof(idEntityStateBase)))
+		if(memcmp(&nullState, &es, (size_t)_protocolSizeOfEntityState))
 		{
 			_outputFile->Write(&i, 4, 1);
-			_outputFile->Write(&es, (u32)sizeof(idEntityStateBase), 1);
+			_outputFile->Write(&es, _protocolSizeOfEntityState, 1);
 		}
 	}
 }
@@ -108,7 +128,7 @@ void udtParserPlugInQuakeToUDT::ProcessSnapshotMessage(const udtSnapshotCallback
 	{
 		const idEntityStateBase& entity = *arg.Entities[i].Entity;
 		snapshot.Entities[entity.number].Valid = true;
-		memcpy(&snapshot.Entities[entity.number].EntityState, &entity, sizeof(idEntityStateBase));
+		memcpy(&snapshot.Entities[entity.number].EntityState, &entity, (size_t)_protocolSizeOfEntityState);
 	}
 
 	for(u32 i = 0, count = arg.RemovedEntityCount; i < count; ++i)
@@ -134,7 +154,7 @@ void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
 	_outputFile->Write(&messageType, 4, 1);
 	_outputFile->Write(&parser._inServerMessageSequence, 4, 1);
 	_outputFile->Write(&parser._inServerTime, 4, 1);
-	_outputFile->Write(&parser._inSnapshot.ps, (u32)sizeof(idPlayerStateBase), 1);
+	_outputFile->Write(&parser._inSnapshot.ps, _protocolSizeOfPlayerState, 1);
 	_outputFile->Write(&parser._inSnapshot.snapFlags, 4, 1);
 	_outputFile->Write(parser._inSnapshot.areamask, 32, 1);
 
@@ -161,7 +181,7 @@ void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
 		{
 			if(curSnap[i].Valid)
 			{
-				_outputFile->Write(&curSnap[i].EntityState, sizeof(idEntityStateBase), 1);
+				_outputFile->Write(&curSnap[i].EntityState, _protocolSizeOfEntityState, 1);
 			}
 		}
 
@@ -176,7 +196,7 @@ void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
 			const bool curValid = curSnap[i].Valid;
 			const bool oldValid = oldSnap[i].Valid;
 			const bool added = curValid && !oldValid;
-			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, sizeof(idEntityStateBase));
+			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, (size_t)_protocolSizeOfEntityState);
 			if(added || changed)
 			{
 				++addedOrChangedCount;
@@ -189,10 +209,10 @@ void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
 			const bool curValid = curSnap[i].Valid;
 			const bool oldValid = oldSnap[i].Valid;
 			const bool added = curValid && !oldValid;
-			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, sizeof(idEntityStateBase));
+			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, (size_t)_protocolSizeOfEntityState);
 			if(added || changed)
 			{
-				_outputFile->Write(&curSnap[i].EntityState, sizeof(idEntityStateBase), 1);
+				_outputFile->Write(&curSnap[i].EntityState, _protocolSizeOfEntityState, 1);
 			}
 		}
 

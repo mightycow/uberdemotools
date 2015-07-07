@@ -115,42 +115,35 @@ UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)
 
 UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return sizeof(idEntityState68);
+		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
+		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
+		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
+		default: return 0;
 	}
+}
 
-	if(protocol == udtProtocol::Dm73)
+UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
+{
+	switch(protocol)
 	{
-		return sizeof(idEntityState73);
+		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
+		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
+		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
+		default: return 0;
 	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return sizeof(idEntityState90);
-	}
-
-	return 0;
 }
 
 UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return sizeof(idClientSnapshot68);
+		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
+		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
+		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
+		default: return 0;
 	}
-
-	if(protocol == udtProtocol::Dm73)
-	{
-		return sizeof(idClientSnapshot73);
-	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return sizeof(idClientSnapshot90);
-	}
-
-	return 0;
 }
 
 UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)

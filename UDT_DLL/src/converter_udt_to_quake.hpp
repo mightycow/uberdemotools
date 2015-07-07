@@ -9,14 +9,14 @@
 
 struct udtdClientEntity
 {
-	idEntityStateBase EntityState;
+	idLargestEntityState EntityState;
 	bool Valid;
 };
 
 struct udtdSnapshotData
 {
 	udtdClientEntity Entities[MAX_GENTITIES];
-	idPlayerStateBase PlayerState;
+	idLargestPlayerState PlayerState;
 	s32 ServerTime;
 };
 
@@ -59,9 +59,17 @@ public:
 	void MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipThis, u32 flipSource); // @TODO: rename/change
 	void MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld);
 
+private:
+	idEntityStateBase& GetEntity(s32 idx) { return *(idEntityStateBase*)&_inReadEntities[idx * _protocolSizeOfEntityState]; }
+	idEntityStateBase& GetBaseline(s32 idx) { return *(idEntityStateBase*)&_inBaselineEntities[idx * _protocolSizeOfPlayerState]; }
+
+	// @TODO: Re-order the fields.
+
 	udtStream* _input; // The user owns this.
 	udtStream* _output; // The user owns this. Optional.
 	udtProtocol::Id _protocol;
+	u32 _protocolSizeOfEntityState;
+	u32 _protocolSizeOfPlayerState;
 	u8 _inMessageData[MAX_MSGLEN];
 	char _inStringData[BIG_INFO_STRING];
 	udtMessage _outMsg;
@@ -70,8 +78,8 @@ public:
 	s32 _outCommandSequence;
 	udtdSnapshotData _snapshots[2];
 	s32 _snapshotReadIndex;
-	idEntityStateBase _inBaselineEntities[MAX_GENTITIES];
-	idEntityStateBase _inReadEntities[MAX_GENTITIES];
+	u8 _inBaselineEntities[MAX_GENTITIES * sizeof(idLargestEntityState)];
+	u8 _inReadEntities[MAX_GENTITIES * sizeof(idLargestEntityState)];
 	s32 _inRemovedEntities[MAX_GENTITIES];
 	u8 _areaMask[32];
 	bool _firstSnapshot;

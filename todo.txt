@@ -1,5 +1,4 @@
 To do:
-- Multi-protocol support in udtParserPlugInQuakeToUDT and udtdConverter
 - Add merging and time-shifting support to the GUI
 - TimeShiftDemo: better allocator re-use
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)

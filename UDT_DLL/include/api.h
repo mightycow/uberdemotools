@@ -877,6 +877,9 @@ extern "C"
 	UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol);
 
 	// Returns zero if not a valid protocol.
+	UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol);
+
+	// Returns zero if not a valid protocol.
 	UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol);
 
 	// Returns NULL if invalid.

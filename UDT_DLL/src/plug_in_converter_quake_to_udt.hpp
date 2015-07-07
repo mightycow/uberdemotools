@@ -13,6 +13,7 @@ public:
 	udtParserPlugInQuakeToUDT();
 	~udtParserPlugInQuakeToUDT();
 
+	bool Init(udtProtocol::Id protocol);
 	void SetOutputStream(udtStream* output);
 
 	void InitAllocators(u32 demoCount) override;
@@ -32,7 +33,7 @@ private:
 
 	struct udtdClientEntity
 	{
-		idEntityStateBase EntityState;
+		idLargestEntityState EntityState;
 		bool Valid;
 	};
 
@@ -51,5 +52,8 @@ private:
 
 	udtStream* _outputFile;
 	udtdData* _data;
+	udtProtocol::Id _protocol;
+	u32 _protocolSizeOfEntityState;
+	u32 _protocolSizeOfPlayerState;
 	bool _firstSnapshot;
 };
