@@ -107,8 +107,6 @@ solution "UDT"
 		kind "SharedLib"
 		defines { "UDT_CREATE_DLL" }
 		ApplyProjectSettings()
-		
-	-- @TODO: Link the tools against the library.
 
 	project "UDT_cutter"
 	
@@ -126,13 +124,21 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
 		
---	project "UDT_test_addons"
+	project "UDT_timeshifter"
 	
---		kind "ConsoleApp"
---		defines { "UDT_CREATE_DLL" }
---		files { path_src_apps.."/app_test_addons.cpp" }
---		files { path_src_apps.."/shared.cpp" }
---		ApplyProjectSettings()
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_time_shifter.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
+		
+	project "UDT_merger"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_merger.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
 
 		
 			

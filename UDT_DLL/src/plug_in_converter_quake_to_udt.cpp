@@ -1,0 +1,205 @@
+#include "plug_in_converter_quake_to_udt.hpp"
+#include "udtd_types.hpp"
+#include "utils.hpp"
+
+
+udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
+{
+	_data = (udtdData*)malloc(sizeof(udtdData));
+	memset(_data, 0, sizeof(udtdData));
+	_firstSnapshot = true;
+}
+
+udtParserPlugInQuakeToUDT::~udtParserPlugInQuakeToUDT()
+{
+	free(_data);
+}
+
+void udtParserPlugInQuakeToUDT::SetOutputStream(udtStream* output)
+{
+	_outputFile = output;
+}
+
+void udtParserPlugInQuakeToUDT::InitAllocators(u32 /*demoCount*/)
+{
+}
+
+void udtParserPlugInQuakeToUDT::StartDemoAnalysis()
+{
+}
+
+void udtParserPlugInQuakeToUDT::FinishDemoAnalysis()
+{
+	const u32 messageType = (u32)udtdMessageType::EndOfFile;
+	_outputFile->Write(&messageType, 4, 1);
+}
+
+void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
+{
+	const u32 messageType = (u32)udtdMessageType::GameState;
+	_outputFile->Write(&messageType, 4, 1);
+	_outputFile->Write(&parser._inReliableSequenceAcknowledge, 4, 1);
+	_outputFile->Write(&parser._inServerMessageSequence, 4, 1);
+	_outputFile->Write(&parser._inServerCommandSequence, 4, 1);
+	_outputFile->Write(&parser._inClientNum, 4, 1);
+	_outputFile->Write(&parser._inChecksumFeed, 4, 1);
+
+	s32 configStringCount = 0;
+	for(u32 i = 0; i < 2*MAX_CONFIGSTRINGS; ++i)
+	{
+		if(parser._inConfigStrings[i].StringLength > 0)
+		{
+			++configStringCount;
+		}
+	}
+	_outputFile->Write(&configStringCount, 4, 1);
+	for(u32 i = 0; i < 2 * MAX_CONFIGSTRINGS; ++i)
+	{
+		const udtBaseParser::udtConfigString& cs = parser._inConfigStrings[i];
+		if(cs.StringLength > 0)
+		{
+			_outputFile->Write(&i, 4, 1);
+			_outputFile->Write(&cs.StringLength, 4, 1);
+			_outputFile->Write(cs.String, cs.StringLength, 1);
+		}
+	}
+
+	idEntityStateBase nullState;
+	memset(&nullState, 0, sizeof(nullState));
+	s32 baselineEntityCount = 0;
+	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
+	{
+		const idEntityStateBase& es = *parser.GetBaseline(i);
+		if(memcmp(&nullState, &es, sizeof(idEntityStateBase)))
+		{
+			++baselineEntityCount;
+		}
+	}
+
+	_outputFile->Write(&baselineEntityCount, 4, 1);
+	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
+	{
+		const idEntityStateBase& es = *parser.GetBaseline(i);
+		if(memcmp(&nullState, &es, sizeof(idEntityStateBase)))
+		{
+			_outputFile->Write(&i, 4, 1);
+			_outputFile->Write(&es, (u32)sizeof(idEntityStateBase), 1);
+		}
+	}
+}
+
+void udtParserPlugInQuakeToUDT::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+{
+	if(arg.ServerTime > _data->LastSnapshotTimeMs)
+	{
+		const s32 lastTime = _data->LastSnapshotTimeMs;
+		_data->LastSnapshotTimeMs = arg.ServerTime;
+		if(lastTime != 0)
+		{
+			WriteSnapshot(parser);
+		}
+	}
+
+	const s32 writeIndex = _data->SnapshotReadIndex;
+	udtdSnapshot& snapshot = _data->Snapshots[writeIndex];
+	snapshot.ServerTime = arg.ServerTime;
+
+	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	{
+		const idEntityStateBase& entity = *arg.Entities[i].Entity;
+		snapshot.Entities[entity.number].Valid = true;
+		memcpy(&snapshot.Entities[entity.number].EntityState, &entity, sizeof(idEntityStateBase));
+	}
+
+	for(u32 i = 0, count = arg.RemovedEntityCount; i < count; ++i)
+	{
+		const s32 number = arg.RemovedEntities[i];
+		snapshot.Entities[number].Valid = false;
+	}
+}
+
+void udtParserPlugInQuakeToUDT::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+{
+	const u32 messageType = (u32)udtdMessageType::Command;
+	_outputFile->Write(&messageType, 4, 1);
+	_outputFile->Write(&parser._inServerMessageSequence, 4, 1);
+	_outputFile->Write(&arg.CommandSequence, 4, 1);
+	_outputFile->Write(&arg.StringLength, 4, 1);
+	_outputFile->Write(arg.String, arg.StringLength, 1);
+}
+
+void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
+{
+	const u32 messageType = (u32)udtdMessageType::Snapshot;
+	_outputFile->Write(&messageType, 4, 1);
+	_outputFile->Write(&parser._inServerMessageSequence, 4, 1);
+	_outputFile->Write(&parser._inServerTime, 4, 1);
+	_outputFile->Write(&parser._inSnapshot.ps, (u32)sizeof(idPlayerStateBase), 1);
+	_outputFile->Write(&parser._inSnapshot.snapFlags, 4, 1);
+	_outputFile->Write(parser._inSnapshot.areamask, 32, 1);
+
+	const s32 curSnapIdx = _data->SnapshotReadIndex;
+	const s32 oldSnapIdx = _data->SnapshotReadIndex ^ 1;
+	const udtdClientEntity* const curSnap = _data->Snapshots[curSnapIdx].Entities;
+	const udtdClientEntity* const oldSnap = _data->Snapshots[oldSnapIdx].Entities;
+
+	if(_firstSnapshot)
+	{
+		_firstSnapshot = false;
+
+		u32 addedOrChangedCount = 0;
+		for(u32 i = 0; i < MAX_GENTITIES; ++i)
+		{
+			if(curSnap[i].Valid)
+			{
+				++addedOrChangedCount;
+			}
+		}
+
+		_outputFile->Write(&addedOrChangedCount, 4, 1);
+		for(u32 i = 0; i < MAX_GENTITIES; ++i)
+		{
+			if(curSnap[i].Valid)
+			{
+				_outputFile->Write(&curSnap[i].EntityState, sizeof(idEntityStateBase), 1);
+			}
+		}
+
+		u32 removedCount = 0;
+		_outputFile->Write(&removedCount, 4, 1);
+	}
+	else
+	{
+		u32 addedOrChangedCount = 0;
+		for(u32 i = 0; i < MAX_GENTITIES; ++i)
+		{
+			const bool curValid = curSnap[i].Valid;
+			const bool oldValid = oldSnap[i].Valid;
+			const bool added = curValid && !oldValid;
+			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, sizeof(idEntityStateBase));
+			if(added || changed)
+			{
+				++addedOrChangedCount;
+			}
+		}
+
+		_outputFile->Write(&addedOrChangedCount, 4, 1);
+		for(u32 i = 0; i < MAX_GENTITIES; ++i)
+		{
+			const bool curValid = curSnap[i].Valid;
+			const bool oldValid = oldSnap[i].Valid;
+			const bool added = curValid && !oldValid;
+			const bool changed = curValid && oldValid && memcmp(&curSnap[i].EntityState, &oldSnap[i].EntityState, sizeof(idEntityStateBase));
+			if(added || changed)
+			{
+				_outputFile->Write(&curSnap[i].EntityState, sizeof(idEntityStateBase), 1);
+			}
+		}
+
+		const u32 removedCount = parser._inRemovedEntities.GetSize();
+		_outputFile->Write(&removedCount, 4, 1);
+		_outputFile->Write(parser._inRemovedEntities.GetStartAddress(), 4 * removedCount, 1);
+	}
+
+	_data->SnapshotReadIndex ^= 1;
+}

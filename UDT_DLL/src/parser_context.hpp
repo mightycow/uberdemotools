@@ -9,9 +9,10 @@
 
 #define UDT_PRIVATE_PLUG_IN_LIST(N) \
 	UDT_PLUG_IN_LIST(N) \
-	N(CutByPattern, udtCutByPatternPlugIn, udtCutSection)
+	N(CutByPattern, udtCutByPatternPlugIn,     udtCutSection) \
+	N(ConvertToUDT, udtParserPlugInQuakeToUDT, udtNothing)
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) Enum,
 struct udtPrivateParserPlugIn
 {
 	enum Id

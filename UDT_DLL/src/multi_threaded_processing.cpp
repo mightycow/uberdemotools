@@ -260,19 +260,8 @@ static void ThreadFunction(void* userData)
 		const u64 currentJobByteCount = shared->FileSizes[i];
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
-		bool success = false;
-		if(shared->JobType == (u32)udtParsingJobType::General)
-		{
-			success = ParseDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], false);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::CutByPattern)
-		{
-			success = CutByPattern(data->Context, &newParseInfo, shared->FilePaths[i]);
-		}
-		else if(shared->JobType == (u32)udtParsingJobType::Conversion)
-		{
-			success = ConvertDemoFile(data->Context, &newParseInfo, shared->FilePaths[i], (const udtProtocolConversionArg*)shared->JobSpecificInfo);
-		}
+		const udtParsingJobType::Id jobType = (udtParsingJobType::Id)shared->JobType;
+		const bool success = ProcessSingleDemoFile(jobType, data->Context, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;

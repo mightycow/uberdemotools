@@ -4,6 +4,7 @@
 #include "plug_in_game_state.hpp"
 #include "analysis_obituaries.hpp"
 #include "analysis_cut_by_pattern.hpp"
+#include "plug_in_converter_quake_to_udt.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -19,7 +20,7 @@ void ConstructPlugInT(udtBaseParserPlugIn* address)
 }
 
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) (u32)sizeof(Type),
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) (u32)sizeof(Type),
 const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
@@ -27,7 +28,7 @@ const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 };
 #undef UDT_PRIVATE_PLUG_IN_ITEM
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, ApiType) &ConstructPlugInT<Type>,
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) &ConstructPlugInT<Type>,
 const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)

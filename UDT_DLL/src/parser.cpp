@@ -661,6 +661,28 @@ bool udtBaseParser::ParseSnapshot()
 	_inLastSnapshotMessageNumber = newSnap.messageNum;
 
 	//
+	// Process plug-ins now so that modifiers can alter the snapshots.
+	//
+
+	if(EnablePlugIns && !PlugIns.IsEmpty())
+	{
+		udtSnapshotCallbackArg info;
+		info.ServerTime = _inServerTime;
+		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
+		info.Snapshot = &newSnap;
+		info.OldSnapshot = oldSnap;
+		info.Entities = _inChangedEntities.GetStartAddress();
+		info.EntityCount = _inChangedEntities.GetSize();
+		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
+		info.RemovedEntityCount = _inRemovedEntities.GetSize();
+
+		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+		{
+			PlugIns[i]->ProcessSnapshotMessage(info, *this);
+		}
+	}
+
+	//
 	// Write to the output message.
 	//
 
@@ -691,23 +713,6 @@ bool udtBaseParser::ParseSnapshot()
 			EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
 		}
 		++_outSnapshotsWritten;
-	}
-
-	if(EnablePlugIns && !PlugIns.IsEmpty())
-	{
-		udtSnapshotCallbackArg info;
-		info.ServerTime = _inServerTime;
-		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
-		info.Snapshot = &newSnap;
-		info.Entities = _inChangedEntities.GetStartAddress();
-		info.EntityCount = _inChangedEntities.GetSize();
-		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
-		info.RemovedEntityCount = _inRemovedEntities.GetSize();
-
-		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
-		{
-			PlugIns[i]->ProcessSnapshotMessage(info, *this);
-		}
 	}
 
 	return true;
@@ -1000,6 +1005,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	// it can be used as the source for a later delta.
 	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (MAX_PARSE_ENTITIES-1));
 
+	s32 removedEntityNumber = old ? old->number : 0;
 	if(unchanged) 
 	{
 		Com_Memcpy(state, old, _inProtocolSizeOfEntityState);
@@ -1024,7 +1030,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	if(state->number == (MAX_GENTITIES-1)) 
 	{
 		// We have to return now.
-		_inRemovedEntities.Add(old); // @TODO: Is this correct? Using old?
+		_inRemovedEntities.Add(removedEntityNumber);
 		return;	
 	}
 
