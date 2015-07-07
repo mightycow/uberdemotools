@@ -66,7 +66,7 @@ void udtdEntityTimeShifterPlugIn::FixSnapshot(udtdSnapshotData& dest, const udtd
 			destEntity.Valid = true;
 			destEntity.EntityState.eFlags &= ~EF_DEAD;
 
-			destEntity.EntityState.pos.trTime += _delaySnapshotCount * 33;
+			destEntity.EntityState.pos.trTime += _delaySnapshotCount * _snapshotDuration;
 			for(s32 j = 0; j < 3; ++j)
 			{
 				destEntity.EntityState.pos.trBase[j] = sourceEntity.EntityState.pos.trBase[j];
