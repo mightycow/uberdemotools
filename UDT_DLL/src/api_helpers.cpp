@@ -394,7 +394,12 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 			continue;
 		}
 
-		converterToQuake->ProcessNextMessage(messageType);
+		// udtParserRunner::ParseNextMessage() may read more than just a snapshot.
+		// It can also read a server command bundled in the same message.
+		while(converterToQuake->ProcessNextMessage(messageType))
+		{
+		}
+
 		tempWrite.Clear();
 	}
 
