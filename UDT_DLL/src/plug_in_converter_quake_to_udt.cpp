@@ -124,17 +124,18 @@ void udtParserPlugInQuakeToUDT::ProcessSnapshotMessage(const udtSnapshotCallback
 	udtdSnapshot& snapshot = _data->Snapshots[writeIndex];
 	snapshot.ServerTime = arg.ServerTime;
 
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	for(u32 i = 0; i < MAX_GENTITIES; ++i)
 	{
-		const idEntityStateBase& entity = *arg.Entities[i].Entity;
-		snapshot.Entities[entity.number].Valid = true;
-		memcpy(&snapshot.Entities[entity.number].EntityState, &entity, (size_t)_protocolSizeOfEntityState);
+		snapshot.Entities[i].Valid = false;
 	}
 
-	for(u32 i = 0, count = arg.RemovedEntityCount; i < count; ++i)
+	for(s32 i = 0, count = arg.Snapshot->numEntities; i < count; ++i)
 	{
-		const s32 number = arg.RemovedEntities[i];
-		snapshot.Entities[number].Valid = false;
+		const s32 index = (arg.Snapshot->parseEntitiesNum + i) & (MAX_PARSE_ENTITIES - 1);
+		idEntityStateBase& entity = *parser.GetEntity(index);
+		const s32 number = entity.number;
+		snapshot.Entities[number].Valid = true;
+		memcpy(&snapshot.Entities[number].EntityState, &entity, _protocolSizeOfEntityState);
 	}
 }
 
