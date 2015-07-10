@@ -5,6 +5,7 @@
 #include "api.h"
 
 
+// Don't ever allocate an instance of this on the stack.
 struct udtdEntityTimeShifterPlugIn : public udtdConverterPlugIn
 {
 public:
@@ -21,7 +22,7 @@ private:
 		MaxSnapshotCount = 8
 	};
 
-	udtdSnapshotData _backupSnaps[MaxSnapshotCount];
+	udtdSnapshotData _backupSnaps[MaxSnapshotCount + 1];
 	udtdSnapshotData _newOldSnap;
 	udtdSnapshotData _newCurSnap;
 	udtVMLinearAllocator _tempAllocator;
