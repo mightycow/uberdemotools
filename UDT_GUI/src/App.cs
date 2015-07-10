@@ -60,6 +60,7 @@ namespace Uber.DemoTools
         public int FlickRailMinSpeedSnaps = 2;
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
+        public int TimeShiftSnapshotCount = 2;
     }
 
     public class MapConversionRule
@@ -350,6 +351,12 @@ namespace Uber.DemoTools
             demoFragsTab.Header = "Deaths";
             demoFragsTab.Content = fragEvents.RootControl;
 
+            var modifiers = new ModifierComponent(this);
+            _appComponents.Add(modifiers);
+            var modifiersTab = new TabItem();
+            modifiersTab.Header = "Modifiers";
+            modifiersTab.Content = modifiers.RootControl;
+
             var settings = new AppSettingsComponent(this);
             _appComponents.Add(settings);
             var settingsTab = new TabItem();
@@ -374,6 +381,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutByTimeTab);
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
+            tabControl.Items.Add(modifiersTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 

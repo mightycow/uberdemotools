@@ -17,10 +17,12 @@ namespace Uber.DemoTools
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
         private const int MaxBatchSizeConverting = 512;
+        private const int MaxBatchSizeTimeShifting = 512; // @TODO:
 #else
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
+        private const int MaxBatchSizeTimeShifting = 2048; // @TODO:
 #endif
 
         private const string _dllPath = "UDT.dll";
@@ -361,6 +363,13 @@ namespace Uber.DemoTools
             public Int32 Reserved2;
 	    };
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtTimeShiftArg
+        {
+            public Int32 SnapshotCount;
+            public Int32 Reserved1;
+        };
+
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
@@ -429,6 +438,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtConvertDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtProtocolConversionArg conversionInfo);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtTimeShiftDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtTimeShiftArg timeShiftArg);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -1070,6 +1082,50 @@ namespace Uber.DemoTools
             try
             {
                 result = udtConvertDemoFiles(ref parseArg, ref multiParseArg, ref conversionArg);
+            }
+            finally
+            {
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
+        }
+
+        public static bool TimeShiftDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int snapshotCount)
+        {
+            // @TODO: Split the work...
+            return TimeShiftDemosImpl(ref parseArg, filePaths, maxThreadCount, snapshotCount);
+        }
+
+        private static bool TimeShiftDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int snapshotCount)
+        {
+            var resources = new ArgumentResources();
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = filePath;
+                resources.GlobalAllocationHandles.Add(filePath);
+            }
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var timeShiftArg = new udtTimeShiftArg();
+            timeShiftArg.SnapshotCount = snapshotCount;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtTimeShiftDemoFiles(ref parseArg, ref multiParseArg, ref timeShiftArg);
             }
             finally
             {

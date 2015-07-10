@@ -21,6 +21,8 @@ namespace Uber.DemoTools
         MultiRailFilters,
         FlagCaptureFilters,
         FlickRailFilters,
+        Modifiers,
+        TimeShiftModifier,
         Count
     }
 
