@@ -6,7 +6,7 @@
 udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
-	_data = NULL;
+	_data = (udtdData*)malloc(sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
 	_protocolSizeOfEntityState = 0;
@@ -20,7 +20,6 @@ udtParserPlugInQuakeToUDT::~udtParserPlugInQuakeToUDT()
 
 bool udtParserPlugInQuakeToUDT::Init(udtProtocol::Id protocol)
 {
-	_data = (udtdData*)malloc(sizeof(udtdData));
 	if(_data == NULL)
 	{
 		return false;
