@@ -9,7 +9,7 @@ void udtdEntityTimeShifterPlugIn::Init(const udtTimeShiftArg& timeShiftArg)
 	_backupSnapIndex = 0;
 	_parsedSnapIndex = 0;
 	_snapshotDuration = 33;
-	_delaySnapshotCount = timeShiftArg.SnapshotCount;
+	_delaySnapshotCount = udt_clamp(timeShiftArg.SnapshotCount, 1, (s32)MaxSnapshotCount);
 	_tempAllocator.Init(1 << 16);
 }
 
@@ -64,7 +64,6 @@ void udtdEntityTimeShifterPlugIn::FixSnapshot(udtdSnapshotData& dest, const udtd
 		   sourceEntity.EntityState.clientNum == destEntity.EntityState.clientNum)
 		{
 			destEntity.Valid = true;
-			destEntity.EntityState.eFlags &= ~EF_DEAD;
 
 			destEntity.EntityState.pos.trTime += _delaySnapshotCount * _snapshotDuration;
 			for(s32 j = 0; j < 3; ++j)
