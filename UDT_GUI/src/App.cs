@@ -1083,6 +1083,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(image);
 
             var window = new Window();
+            window.Owner = MainWindow;
             window.WindowStyle = WindowStyle.ToolWindow;
             window.ResizeMode = ResizeMode.NoResize;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);

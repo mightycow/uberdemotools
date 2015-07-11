@@ -87,6 +87,7 @@ namespace Uber.DemoTools
             okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
             cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
 
+            window.Owner = parent;
             window.WindowStyle = WindowStyle.ToolWindow;
             window.AllowsTransparency = false;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
