@@ -1,8 +1,6 @@
 To do:
 - DLL: TimeShiftDemo: better allocator re-use
 - GUI: TimeShiftDemo: job splitting
-- GUI: Settings: Rename "Chat Offsets" to "Cut Offsets" and "Chat History" to "Chat/Death History"
-- GUI: Fix the problem where when you alt-tab away from the "Cut Offsets" dialog, you can't get back to it
 - GUI: Add merging support
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
