@@ -22,6 +22,8 @@ struct udtdSnapshotData
 
 struct udtdConverterPlugIn
 {
+	virtual ~udtdConverterPlugIn() {}
+
 	virtual void ModifySnapshot(udtdSnapshotData& /*curSnap*/, udtdSnapshotData& /*oldSnap*/) {}
 	virtual void AnalyzeConfigString(s32 /*index*/, const char* /*configString*/, u32 /*stringLength*/) {}
 };
