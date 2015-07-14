@@ -1491,7 +1491,7 @@ namespace Uber.DemoTools
             demos = demos.FindAll(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
             if(demos.Count == 0)
             {
-                LogError("All of the selected demos are in the target format.");
+                LogError("All of the selected demos are either in the target format or an unsupported input format.");
                 return;
             }
             
