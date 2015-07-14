@@ -8,9 +8,19 @@ void udtdEntityTimeShifterPlugIn::Init(const udtTimeShiftArg& timeShiftArg)
 	memset(_backupSnaps, 0, sizeof(_backupSnaps));
 	_backupSnapIndex = 0;
 	_parsedSnapIndex = 0;
-	_snapshotDuration = 33;
+	_snapshotDuration = 1000 / 30; // CPMA default: 30 Hz.
 	_delaySnapshotCount = udt_clamp(timeShiftArg.SnapshotCount, 1, (s32)MaxSnapshotCount);
+	_protocol = udtProtocol::Invalid;
 	_tempAllocator.Init(1 << 16);
+}
+
+void udtdEntityTimeShifterPlugIn::InitPlugIn(udtProtocol::Id protocol)
+{
+	_protocol = protocol;
+	if(protocol != udtProtocol::Dm68)
+	{
+		_snapshotDuration = 1000 / 40; // Quake Live runs at 40 Hz.
+	}
 }
 
 void udtdEntityTimeShifterPlugIn::ModifySnapshot(udtdSnapshotData& curSnap, udtdSnapshotData& oldSnap)
@@ -35,6 +45,11 @@ void udtdEntityTimeShifterPlugIn::ModifySnapshot(udtdSnapshotData& curSnap, udtd
 
 void udtdEntityTimeShifterPlugIn::AnalyzeConfigString(s32 index, const char* configString, u32 /*stringLength*/)
 {
+	if(_protocol != udtProtocol::Dm68)
+	{
+		return;
+	}
+
 	if(index == CS_SERVERINFO)
 	{
 		s32 snaps = 0;

@@ -12,6 +12,7 @@ public:
 	void Init(const udtTimeShiftArg& timeShiftArg);
 
 private:
+	void InitPlugIn(udtProtocol::Id protocol) override;
 	void ModifySnapshot(udtdSnapshotData& curSnap, udtdSnapshotData& oldSnap) override;
 	void AnalyzeConfigString(s32 index, const char* configString, u32 /*stringLength*/) override;
 	void CopySnapshot(udtdSnapshotData& dest, const udtdSnapshotData& source);
@@ -27,6 +28,7 @@ private:
 	udtdSnapshotData _newCurSnap;
 	udtVMLinearAllocator _tempAllocator;
 	const udtTimeShiftArg* _info;
+	udtProtocol::Id _protocol;
 	s32 _backupSnapIndex;
 	s32 _parsedSnapIndex;
 	s32 _snapshotDuration;

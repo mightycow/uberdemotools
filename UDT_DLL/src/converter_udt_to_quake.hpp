@@ -24,10 +24,12 @@ struct udtdConverterPlugIn
 {
 	virtual ~udtdConverterPlugIn() {}
 
+	virtual void InitPlugIn(udtProtocol::Id /*protocol*/) {}
 	virtual void ModifySnapshot(udtdSnapshotData& /*curSnap*/, udtdSnapshotData& /*oldSnap*/) {}
 	virtual void AnalyzeConfigString(s32 /*index*/, const char* /*configString*/, u32 /*stringLength*/) {}
 };
 
+// Don't ever allocate an instance of this on the stack.
 struct udtdConverter
 {
 public:
@@ -87,4 +89,5 @@ private:
 	bool _firstSnapshot;
 	s32 _outMessageSequence;
 	udtVMArrayWithAlloc<udtdConverterPlugIn*> _plugIns;
+	bool _firstMessage;
 };

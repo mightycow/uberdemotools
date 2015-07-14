@@ -8,6 +8,7 @@ udtdConverter::udtdConverter()
 	_protocol = udtProtocol::Invalid;
 	_protocolSizeOfEntityState = 0;
 	_protocolSizeOfPlayerState = 0;
+	_firstMessage = true;
 }
 
 void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id protocol)
@@ -31,6 +32,7 @@ void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id pr
 	memset(_inRemovedEntities, 0, sizeof(_inRemovedEntities));
 	memset(_areaMask, 0, sizeof(_areaMask));
 	_firstSnapshot = true;
+	_firstMessage = true;
 
 	_plugIns.Init(UDT_MEMORY_PAGE_SIZE);
 }
@@ -51,6 +53,15 @@ void udtdConverter::AddPlugIn(udtdConverterPlugIn* plugIn)
 
 bool udtdConverter::ProcessNextMessage(udtdMessageType::Id& type)
 {
+	if(_firstMessage)
+	{
+		_firstMessage = false;
+		for(u32 i = 0, count = _plugIns.GetSize(); i < count; ++i)
+		{
+			_plugIns[i]->InitPlugIn(_protocol);
+		}
+	}
+
 	s32 messageType = 0;
 	if(_input->Read(&messageType, 4, 1) != 1)
 	{
