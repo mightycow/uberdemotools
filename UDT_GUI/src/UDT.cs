@@ -871,57 +871,23 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
-            var timer = new Stopwatch();
-            timer.Start();
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeCutting);
+            var newParseArg = runner.NewParseArg;
 
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeCutting)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                var result = CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
-
-            var demos = new List<DemoInfo>();
-            var batchCount = (fileCount + MaxBatchSizeCutting - 1) / MaxBatchSizeCutting;
-            var filesPerBatch = fileCount / batchCount;
-            var success = true;
-            for(int i = 0; i < batchCount; ++i)
-            {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-
-                var newResources = new ArgumentResources();
-                CutDemosByPatternImpl(newResources, ref newParseArg, currentFiles, patterns, options);
-
-                fileIndex += currentFileCount;
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                CutDemosByPatternImpl(resources, ref newParseArg, runner.GetNextFiles(i), patterns, options);
+                resources.Free();
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
-                    success = false;
                     break;
                 }
             }
 
-            resources.Free();
+            PrintExecutionTime(runner.Timer);
 
-            PrintExecutionTime(timer);
-
-            return success;
+            return true;
         }
 
         private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
@@ -985,48 +951,20 @@ namespace Uber.DemoTools
 
         public static bool ConvertDemos(ref udtParseArg parseArg, udtProtocol outProtocol, List<MapConversionRule> mapRules, List<string> filePaths, int maxThreadCount)
         {
-            var timer = new Stopwatch();
-            timer.Start();
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeConverting);
+            var newParseArg = runner.NewParseArg;
 
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeConverting)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                var result = ConvertDemosImpl(ref parseArg, outProtocol, mapRules, filePaths, maxThreadCount);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
-
-            var batchCount = (fileCount + MaxBatchSizeConverting - 1) / MaxBatchSizeConverting;
-            var filesPerBatch = fileCount / batchCount;
-            for(int i = 0; i < batchCount; ++i)
-            {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-                fileIndex += currentFileCount;
-
-                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, currentFiles, maxThreadCount);
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, runner.GetNextFiles(i), maxThreadCount);
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
                 }
             }
 
-            PrintExecutionTime(timer);
+            PrintExecutionTime(runner.Timer);
 
             return true;
         }
@@ -1151,51 +1089,24 @@ namespace Uber.DemoTools
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
-            var timer = new Stopwatch();
-            timer.Start();
-
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeParsing)
-            {
-                var result = ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeParsing);
+            var newParseArg = runner.NewParseArg;
 
             var demos = new List<DemoInfo>();
-            var batchCount = (fileCount + MaxBatchSizeParsing - 1) / MaxBatchSizeParsing;
-            var filesPerBatch = fileCount / batchCount;
-            for(int i = 0; i < batchCount; ++i)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-
-                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount, fileIndex);
+                var fileIndex = runner.FileIndex;
+                var files = runner.GetNextFiles(i);
+                var currentResults = ParseDemosImpl(ref newParseArg, files, maxThreadCount, fileIndex);
                 demos.AddRange(currentResults);
-
-                fileIndex += currentFileCount;
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
                 }
             }
 
-            PrintExecutionTime(timer);
+            PrintExecutionTime(runner.Timer);
 
             return demos;
         }
@@ -1553,6 +1464,11 @@ namespace Uber.DemoTools
             public int BatchCount
             {
                 get { return _batchCount; }
+            }
+
+            public int FileIndex
+            {
+                get { return _fileIndex; }
             }
 
             public Stopwatch Timer
