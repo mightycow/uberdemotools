@@ -1,6 +1,5 @@
 To do:
 - DLL: TimeShiftDemo: better allocator re-use
-- GUI: Use the BatchJobRunner for all batch operations
 - GUI: Find a proper value for MaxBatchSizeTimeShifting (once TimeShiftDemo properly shares its allocators)
 - GUI: Add merging support
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
