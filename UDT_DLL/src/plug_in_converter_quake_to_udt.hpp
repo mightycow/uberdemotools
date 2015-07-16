@@ -50,6 +50,7 @@ private:
 		s32 LastSnapshotTimeMs;
 	};
 
+	udtVMLinearAllocator _allocator;
 	udtStream* _outputFile;
 	udtdData* _data;
 	udtProtocol::Id _protocol;

@@ -6,7 +6,8 @@
 udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
-	_data = (udtdData*)malloc(sizeof(udtdData));
+	_allocator.Init((uptr)sizeof(udtdData));
+	_data = (udtdData*)_allocator.Allocate((uptr)sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
 	_protocolSizeOfEntityState = 0;
@@ -15,7 +16,6 @@ udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 
 udtParserPlugInQuakeToUDT::~udtParserPlugInQuakeToUDT()
 {
-	free(_data);
 }
 
 bool udtParserPlugInQuakeToUDT::ResetForNextDemo(udtProtocol::Id protocol)
