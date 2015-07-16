@@ -24,6 +24,7 @@ struct udtPrivateParserPlugIn
 #undef UDT_PRIVATE_PLUG_IN_ITEM
 
 
+// Don't ever allocate an instance of this on the stack.
 struct udtParserContext
 {
 private:
