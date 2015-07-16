@@ -12,6 +12,10 @@ udtdConverter::udtdConverter()
 	_plugIns.Init(UDT_MEMORY_PAGE_SIZE);
 }
 
+udtdConverter::~udtdConverter()
+{
+}
+
 void udtdConverter::ResetForNextDemo(udtStream& input, udtStream* output, udtProtocol::Id protocol)
 {
 	_input = &input;
@@ -422,12 +426,12 @@ void udtdConverter::MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipT
 
 	MergeEntities(dest, destOld, source, sourceOld);
 }
-
+/*
 static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase cur)
 {
 	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(vec3_t)) != 0;
 }
-
+*/
 static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
 {
 	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
@@ -506,23 +510,67 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequenc
 	es.generic1 = ps.generic1;
 }
 
-void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld)
+void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld)
 {
 	for(u32 i = 0; i < MAX_GENTITIES; ++i)
 	{
-		const bool condition1 = source.Entities[i].Valid && !dest.Entities[i].Valid;
-		const bool condition2 = source.Entities[i].Valid && dest.Entities[i].Valid && 
-			IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
-			!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState);
-		if(condition1 || condition2)
+		const idEntityStateBase& sourceEnt = source.Entities[i].EntityState;
+		if(sourceEnt.eType != ET_PLAYER)
+		{
+			// We only deal with players for now.
+			continue;
+		}
+
+		if(sourceEnt.clientNum == dest.PlayerState.clientNum)
+		{
+			// Avoid adding the first-person player to the entities list.
+			continue;
+		}
+
+		if(IsPlayerAlreadyDefined(dest, sourceEnt.clientNum, i))
+		{
+			// Avoid doubling players... alive or dead.
+			continue;
+		}
+
+		if(source.Entities[i].Valid && !dest.Entities[i].Valid)
 		{
 			dest.Entities[i].Valid = true;
 			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
 		}
+
+		/*
+		const bool newPlayer = source.Entities[i].Valid && !dest.Entities[i].Valid;
+		const bool movingPlayer = source.Entities[i].Valid && dest.Entities[i].Valid &&
+			IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
+			!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState);
+		if(newPlayer || movingPlayer)
+		{
+			dest.Entities[i].Valid = true;
+			// @TODO: Copy everything or not?
+			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+		}
+		*/
 	}
 
 	const s32 firstPersonNumber = source.PlayerState.clientNum;
 
 	dest.Entities[firstPersonNumber].Valid = true;
 	PlayerStateToEntityState(dest.Entities[firstPersonNumber].EntityState, sourceOld.PlayerState.eventSequence, source.PlayerState, false, dest.ServerTime, _protocol);
+}
+
+bool udtdConverter::IsPlayerAlreadyDefined(const udtdSnapshotData& snapshot, s32 clientNum, s32 entityNumber)
+{
+	for(s32 i = 0; i < MAX_GENTITIES; ++i)
+	{
+		if(snapshot.Entities[i].Valid &&
+		   i != entityNumber &&
+		   snapshot.Entities[i].EntityState.eType == ET_PLAYER &&
+		   snapshot.Entities[i].EntityState.clientNum == clientNum)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

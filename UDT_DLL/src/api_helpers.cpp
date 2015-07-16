@@ -750,19 +750,30 @@ struct DemoMerger
 			{
 				break;
 			}
-
+			
 			// udtParserRunner::ParseNextMessage() may read more than just a snapshot.
 			// It can also read a server command bundled in the same message.
+			bool stop = false;
 			while(demo.ConverterToQuake.ProcessNextMessage(messageType))
 			{
+				if(messageType == udtdMessageType::Snapshot && demo.ConverterToQuake.GetServerTimeOld() >= firstTime)
+				{
+					stop = true;
+				}
 			}
 
 			demo.WriteBuffer.Clear();
+			if(stop)
+			{
+				break;
+			}
+			/*
+			demo.ConverterToQuake.ProcessNextMessage(messageType);
 
 			if(messageType == udtdMessageType::Snapshot && demo.ConverterToQuake.GetServerTimeOld() >= firstTime)
 			{
 				break;
-			}
+			}*/
 		}
 	}
 

@@ -40,6 +40,7 @@ public:
 	};
 
 	udtdConverter();
+	~udtdConverter();
 
 	void ResetForNextDemo(udtStream& input, udtStream* output, udtProtocol::Id protocol);
 	void SetStreams(udtStream& input, udtStream* output);
@@ -57,6 +58,7 @@ private:
 	void WriteSnapshot(const SnapshotInfo& info);
 	void ProcessEndOfFile();
 	void WriteOutputMessageToFile(bool increaseMessageSequence);
+	bool IsPlayerAlreadyDefined(const udtdSnapshotData& snapshot, s32 clientNum, s32 entityNumber);
 
 public:
 	s32  GetServerTime() const { return _snapshots[_snapshotReadIndex].ServerTime; } // @TODO: rename/change
