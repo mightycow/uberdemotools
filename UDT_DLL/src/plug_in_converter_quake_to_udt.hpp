@@ -13,7 +13,7 @@ public:
 	udtParserPlugInQuakeToUDT();
 	~udtParserPlugInQuakeToUDT();
 
-	bool Init(udtProtocol::Id protocol);
+	bool ResetForNextDemo(udtProtocol::Id protocol);
 	void SetOutputStream(udtStream* output);
 
 	void InitAllocators(u32 demoCount) override;

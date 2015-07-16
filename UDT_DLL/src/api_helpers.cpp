@@ -311,11 +311,10 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	udtVMLinearAllocator allocator;
-	allocator.Init(1 << 24);
+	context->ModifierContext.ResetForNextDemo();
 
 	udtString outputFilePath;
-	CreateTimeShiftDemoName(outputFilePath, allocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath, timeShiftArg, protocol);
+	CreateTimeShiftDemoName(outputFilePath, context->ModifierContext.TempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath, timeShiftArg, protocol);
 
 	udtFileStream output;
 	if(!output.Open(outputFilePath.String, udtFileOpenMode::Write))
@@ -341,41 +340,26 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	udtVMScopedStackAllocator allocatorScope(allocator);
-	udtdConverter* const converterToQuake = allocatorScope.NewObject<udtdConverter>();
-	if(converterToQuake == NULL)
-	{
-		return false;
-	}
+	udtdConverter& converterToQuake = context->ModifierContext.Converter;
+	udtdEntityTimeShifterPlugIn& timeShifter = context->ModifierContext.TimeShifterPlugIn;
+	udtVMMemoryStream& tempWrite = context->ModifierContext.WriteStream;
 
-	udtdEntityTimeShifterPlugIn* const timeShifter = allocatorScope.NewObject<udtdEntityTimeShifterPlugIn>();
-	if(timeShifter == NULL)
-	{
-		return false;
-	}
+	timeShifter.ResetForNextDemo(*timeShiftArg);
+	converterToQuake.ResetForNextDemo(input, NULL, protocol);
+	converterToQuake.ClearPlugIns();
+	converterToQuake.AddPlugIn(&timeShifter);
 
-	udtVMMemoryStream tempWrite;
-	if(!tempWrite.Open(1 << 20))
+	udtdMessageType::Id messageType = udtdMessageType::EndOfFile;
+	udtParserPlugInQuakeToUDT& converterToUDT = *(udtParserPlugInQuakeToUDT*)plugInBase;
+
+	if(!converterToUDT.ResetForNextDemo(protocol))
 	{
 		return false;
 	}
 
 	udtReadOnlyMemoryStream tempRead;
-
-	timeShifter->Init(*timeShiftArg);
-	converterToQuake->Init(input, NULL, protocol);
-	converterToQuake->AddPlugIn(timeShifter);
-
-	udtdMessageType::Id messageType = udtdMessageType::EndOfFile;
-	udtParserPlugInQuakeToUDT& converterToUDT = *(udtParserPlugInQuakeToUDT*)plugInBase;
-
-	if(!converterToUDT.Init(protocol))
-	{
-		return false;
-	}
-
 	converterToUDT.SetOutputStream(&tempWrite);
-	converterToQuake->SetStreams(tempRead, &output);
+	converterToQuake.SetStreams(tempRead, &output);
 
 	for(;;)
 	{
@@ -396,7 +380,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 
 		// udtParserRunner::ParseNextMessage() may read more than just a snapshot.
 		// It can also read a server command bundled in the same message.
-		while(converterToQuake->ProcessNextMessage(messageType))
+		while(converterToQuake.ProcessNextMessage(messageType))
 		{
 		}
 
@@ -648,7 +632,7 @@ struct DemoMerger
 				return false;
 			}
 			demo.ConverterToUDT = (udtParserPlugInQuakeToUDT*)plugInBase;
-			if(!demo.ConverterToUDT->Init(protocol))
+			if(!demo.ConverterToUDT->ResetForNextDemo(protocol))
 			{
 				return false;
 			}
@@ -681,7 +665,7 @@ struct DemoMerger
 			}
 
 			demo.ConverterToUDT->SetOutputStream(&demo.WriteBuffer);
-			demo.ConverterToQuake.Init(demo.ReadBuffer, i == 0 ? &output : NULL, protocol);
+			demo.ConverterToQuake.ResetForNextDemo(demo.ReadBuffer, i == 0 ? &output : NULL, protocol);
 		}
 
 		DemoData& firstDemo = _demos[0];

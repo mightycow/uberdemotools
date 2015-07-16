@@ -9,9 +9,10 @@ udtdConverter::udtdConverter()
 	_protocolSizeOfEntityState = 0;
 	_protocolSizeOfPlayerState = 0;
 	_firstMessage = true;
+	_plugIns.Init(UDT_MEMORY_PAGE_SIZE);
 }
 
-void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id protocol)
+void udtdConverter::ResetForNextDemo(udtStream& input, udtStream* output, udtProtocol::Id protocol)
 {
 	_input = &input;
 	_output = output;
@@ -33,8 +34,6 @@ void udtdConverter::Init(udtStream& input, udtStream* output, udtProtocol::Id pr
 	memset(_areaMask, 0, sizeof(_areaMask));
 	_firstSnapshot = true;
 	_firstMessage = true;
-
-	_plugIns.Init(UDT_MEMORY_PAGE_SIZE);
 }
 
 void udtdConverter::SetStreams(udtStream& input, udtStream* output)
@@ -49,6 +48,11 @@ void udtdConverter::AddPlugIn(udtdConverterPlugIn* plugIn)
 	{
 		_plugIns.Add(plugIn);
 	}
+}
+
+void udtdConverter::ClearPlugIns()
+{
+	_plugIns.Clear();
 }
 
 bool udtdConverter::ProcessNextMessage(udtdMessageType::Id& type)

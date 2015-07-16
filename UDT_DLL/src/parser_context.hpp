@@ -5,6 +5,7 @@
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
 #include "array.hpp"
+#include "modifier_context.hpp"
 
 
 #define UDT_PRIVATE_PLUG_IN_LIST(N) \
@@ -50,6 +51,7 @@ private:
 public:
 	udtContext Context;
 	udtBaseParser Parser;
+	udtModifierContext ModifierContext;
 	udtVMLinearAllocator PlugInAllocator;
 	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
 	udtVMArrayWithAlloc<u32> InputIndices;

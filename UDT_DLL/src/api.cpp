@@ -389,7 +389,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	// TODO: Move this to api_helpers.cpp and implement it the same way Cut by Pattern is?
 	udtParserPlugInSplitter plugIn;
-	plugIn.Init(1, context->PlugInTempAllocator);
+	plugIn.ResetForNextDemo(1, context->PlugInTempAllocator);
 	context->Parser.AddPlugIn(&plugIn);
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{

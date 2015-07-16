@@ -41,9 +41,10 @@ public:
 
 	udtdConverter();
 
-	void Init(udtStream& input, udtStream* output, udtProtocol::Id protocol);
+	void ResetForNextDemo(udtStream& input, udtStream* output, udtProtocol::Id protocol);
 	void SetStreams(udtStream& input, udtStream* output);
 	void AddPlugIn(udtdConverterPlugIn* plugIn);
+	void ClearPlugIns();
 	bool ProcessNextMessage(udtdMessageType::Id& type);
 	bool ProcessNextMessageRead(udtdMessageType::Id& type, SnapshotInfo& snapshot);
 	bool ProcessNextMessageWrite(udtdMessageType::Id type, const SnapshotInfo& snapshot);

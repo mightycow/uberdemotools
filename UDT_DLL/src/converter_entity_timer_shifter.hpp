@@ -9,7 +9,10 @@
 struct udtdEntityTimeShifterPlugIn : public udtdConverterPlugIn
 {
 public:
-	void Init(const udtTimeShiftArg& timeShiftArg);
+	udtdEntityTimeShifterPlugIn();
+	~udtdEntityTimeShifterPlugIn();
+
+	void ResetForNextDemo(const udtTimeShiftArg& timeShiftArg);
 
 private:
 	void InitPlugIn(udtProtocol::Id protocol) override;

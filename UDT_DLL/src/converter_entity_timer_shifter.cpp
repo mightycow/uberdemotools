@@ -3,7 +3,16 @@
 #include "api.h"
 
 
-void udtdEntityTimeShifterPlugIn::Init(const udtTimeShiftArg& timeShiftArg)
+udtdEntityTimeShifterPlugIn::udtdEntityTimeShifterPlugIn()
+{
+	_tempAllocator.Init(1 << 16);
+}
+
+udtdEntityTimeShifterPlugIn::~udtdEntityTimeShifterPlugIn()
+{
+}
+
+void udtdEntityTimeShifterPlugIn::ResetForNextDemo(const udtTimeShiftArg& timeShiftArg)
 {
 	memset(_backupSnaps, 0, sizeof(_backupSnaps));
 	_backupSnapIndex = 0;
@@ -11,7 +20,6 @@ void udtdEntityTimeShifterPlugIn::Init(const udtTimeShiftArg& timeShiftArg)
 	_snapshotDuration = 1000 / 30; // CPMA default: 30 Hz.
 	_delaySnapshotCount = udt_clamp(timeShiftArg.SnapshotCount, 1, (s32)MaxSnapshotCount);
 	_protocol = udtProtocol::Invalid;
-	_tempAllocator.Init(1 << 16);
 }
 
 void udtdEntityTimeShifterPlugIn::InitPlugIn(udtProtocol::Id protocol)

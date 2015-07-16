@@ -64,7 +64,7 @@ void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount
 		udtBaseParserPlugIn* const plugIn = (udtBaseParserPlugIn*)PlugInAllocator.Allocate(PlugInByteSizes[plugInId]);
 		(*PlugInConstructors[plugInId])(plugIn);
 
-		plugIn->Init(demoCount, PlugInTempAllocator);
+		plugIn->ResetForNextDemo(demoCount, PlugInTempAllocator);
 
 		AddOnItem item;
 		item.Id = (udtParserPlugIn::Id)plugInId;

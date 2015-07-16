@@ -18,7 +18,7 @@ udtParserPlugInQuakeToUDT::~udtParserPlugInQuakeToUDT()
 	free(_data);
 }
 
-bool udtParserPlugInQuakeToUDT::Init(udtProtocol::Id protocol)
+bool udtParserPlugInQuakeToUDT::ResetForNextDemo(udtProtocol::Id protocol)
 {
 	if(_data == NULL)
 	{
