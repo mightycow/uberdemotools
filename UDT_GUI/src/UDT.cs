@@ -17,12 +17,12 @@ namespace Uber.DemoTools
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
         private const int MaxBatchSizeConverting = 512;
-        private const int MaxBatchSizeTimeShifting = 512; // @TODO:
+        private const int MaxBatchSizeTimeShifting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
-        private const int MaxBatchSizeTimeShifting = 2048; // @TODO:
+        private const int MaxBatchSizeTimeShifting = 2048;
 #endif
 
         private const string _dllPath = "UDT.dll";
