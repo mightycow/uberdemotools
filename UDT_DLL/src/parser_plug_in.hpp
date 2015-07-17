@@ -46,8 +46,6 @@ struct udtCommandCallbackArg
 };
 
 
-struct udtVMLinearAllocator;
-
 struct udtBaseParserPlugIn
 {
 	udtBaseParserPlugIn() 
@@ -63,7 +61,7 @@ struct udtBaseParserPlugIn
 	}
 
 	// Call once.
-	void ResetForNextDemo(u32 demoCount, udtVMLinearAllocator& tempAllocator)
+	void Init(u32 demoCount, udtVMLinearAllocator& tempAllocator)
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
