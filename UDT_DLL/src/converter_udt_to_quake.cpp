@@ -575,9 +575,13 @@ void udtdConverter::MergePlayerEntity(udtdSnapshotData& dest, udtdSnapshotData& 
 		// The other demo says this player is moving and we think it doesn't, so copy some data over.
 		dest.Entities[i].Valid = true;
 		memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+		// This will help avoid a bunch of problems due to inconsistent event sequences.
+		dest.Entities[i].EntityState.event = 0;
+		dest.Entities[i].EntityState.eventParm = 0;
 	}
 }
 
-void udtdConverter::MergeItemEntity(udtdSnapshotData& /*dest*/, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& /*source*/, const udtdSnapshotData& /*sourceOld*/, u32 /*number*/)
+void udtdConverter::MergeItemEntity(udtdSnapshotData& /*dest*/, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& /*source*/, const udtdSnapshotData& /*sourceOld*/, u32 /*i*/)
 {
+	// @TODO: Item pickup tracking for all demos.
 }
