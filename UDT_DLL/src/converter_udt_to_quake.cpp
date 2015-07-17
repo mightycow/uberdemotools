@@ -426,12 +426,12 @@ void udtdConverter::MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipT
 
 	MergeEntities(dest, destOld, source, sourceOld);
 }
-/*
+
 static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase cur)
 {
 	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(vec3_t)) != 0;
 }
-*/
+
 static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
 {
 	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
@@ -510,7 +510,7 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequenc
 	es.generic1 = ps.generic1;
 }
 
-void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld)
+void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld)
 {
 	for(u32 i = 0; i < MAX_GENTITIES; ++i)
 	{
@@ -535,22 +535,18 @@ void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& /*de
 
 		if(source.Entities[i].Valid && !dest.Entities[i].Valid)
 		{
+			// The other demo has a player we don't have.
 			dest.Entities[i].Valid = true;
 			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
 		}
-
-		/*
-		const bool newPlayer = source.Entities[i].Valid && !dest.Entities[i].Valid;
-		const bool movingPlayer = source.Entities[i].Valid && dest.Entities[i].Valid &&
-			IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
-			!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState);
-		if(newPlayer || movingPlayer)
+		else if(source.Entities[i].Valid && dest.Entities[i].Valid &&
+				IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
+				!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState))
 		{
+			// The other demo says this player is moving and we think it doesn't, so copy some data over.
 			dest.Entities[i].Valid = true;
-			// @TODO: Copy everything or not?
 			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
 		}
-		*/
 	}
 
 	const s32 firstPersonNumber = source.PlayerState.clientNum;
