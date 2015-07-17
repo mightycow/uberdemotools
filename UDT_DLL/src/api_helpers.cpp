@@ -767,13 +767,6 @@ struct DemoMerger
 			{
 				break;
 			}
-			/*
-			demo.ConverterToQuake.ProcessNextMessage(messageType);
-
-			if(messageType == udtdMessageType::Snapshot && demo.ConverterToQuake.GetServerTimeOld() >= firstTime)
-			{
-				break;
-			}*/
 		}
 	}
 
