@@ -515,37 +515,13 @@ void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& dest
 	for(u32 i = 0; i < MAX_GENTITIES; ++i)
 	{
 		const idEntityStateBase& sourceEnt = source.Entities[i].EntityState;
-		if(sourceEnt.eType != ET_PLAYER)
+		if(sourceEnt.eType == ET_PLAYER)
 		{
-			// We only deal with players for now.
-			continue;
+			MergePlayerEntity(dest, destOld, source, sourceOld, i);
 		}
-
-		if(sourceEnt.clientNum == dest.PlayerState.clientNum)
+		else if(sourceEnt.eType == ET_ITEM)
 		{
-			// Avoid adding the first-person player to the entities list.
-			continue;
-		}
-
-		if(IsPlayerAlreadyDefined(dest, sourceEnt.clientNum, i))
-		{
-			// Avoid doubling players... alive or dead.
-			continue;
-		}
-
-		if(source.Entities[i].Valid && !dest.Entities[i].Valid)
-		{
-			// The other demo has a player we don't have.
-			dest.Entities[i].Valid = true;
-			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
-		}
-		else if(source.Entities[i].Valid && dest.Entities[i].Valid &&
-				IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
-				!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState))
-		{
-			// The other demo says this player is moving and we think it doesn't, so copy some data over.
-			dest.Entities[i].Valid = true;
-			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+			MergeItemEntity(dest, destOld, source, sourceOld, i);
 		}
 	}
 
@@ -569,4 +545,39 @@ bool udtdConverter::IsPlayerAlreadyDefined(const udtdSnapshotData& snapshot, s32
 	}
 
 	return false;
+}
+
+void udtdConverter::MergePlayerEntity(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld, u32 i)
+{
+	const idEntityStateBase& sourceEnt = source.Entities[i].EntityState;
+	if(sourceEnt.clientNum == dest.PlayerState.clientNum)
+	{
+		// Avoid adding the first-person player to the entities list.
+		return;
+	}
+
+	if(IsPlayerAlreadyDefined(dest, sourceEnt.clientNum, i))
+	{
+		// Avoid doubling players... alive or dead.
+		return;
+	}
+
+	if(source.Entities[i].Valid && !dest.Entities[i].Valid)
+	{
+		// The other demo has a player we don't have.
+		dest.Entities[i].Valid = true;
+		memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+	}
+	else if(source.Entities[i].Valid && dest.Entities[i].Valid &&
+			IsMoving(sourceOld.Entities[i].EntityState, source.Entities[i].EntityState) &&
+			!IsMoving(destOld.Entities[i].EntityState, dest.Entities[i].EntityState))
+	{
+		// The other demo says this player is moving and we think it doesn't, so copy some data over.
+		dest.Entities[i].Valid = true;
+		memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+	}
+}
+
+void udtdConverter::MergeItemEntity(udtdSnapshotData& /*dest*/, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& /*source*/, const udtdSnapshotData& /*sourceOld*/, u32 /*number*/)
+{
 }

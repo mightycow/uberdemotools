@@ -59,6 +59,8 @@ private:
 	void ProcessEndOfFile();
 	void WriteOutputMessageToFile(bool increaseMessageSequence);
 	bool IsPlayerAlreadyDefined(const udtdSnapshotData& snapshot, s32 clientNum, s32 entityNumber);
+	void MergePlayerEntity(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld, u32 number);
+	void MergeItemEntity(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld, u32 number);
 
 public:
 	s32  GetServerTime() const { return _snapshots[_snapshotReadIndex].ServerTime; } // @TODO: rename/change
