@@ -637,7 +637,7 @@ struct DemoMerger
 				return false;
 			}
 
-			if(!demo.Context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, i == 0 ? info->ProgressContext : NULL))
+			if(!demo.Context->Context.SetCallbacks(info->MessageCb, i == 0 ? info->ProgressCb : NULL, info->ProgressContext))
 			{
 				return false;
 			}
