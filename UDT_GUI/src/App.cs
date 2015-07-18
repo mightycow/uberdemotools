@@ -1527,6 +1527,16 @@ namespace Uber.DemoTools
                 return;
             }
 
+            var firstProtocol = demos[0].ProtocolNumber;
+            for(var i = 1; i < demos.Count; ++i)
+            {
+                if(demos[i].ProtocolNumber != firstProtocol)
+                {
+                    LogError("Protocol mismatch detected. All demos must be using the protocol.");
+                    return;
+                }
+            }
+
             // @TODO: Dialog to select the primary demo.
             // @TODO: Put the selected demo to the start of the list.
 
