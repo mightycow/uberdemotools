@@ -361,6 +361,8 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	converterToUDT.SetOutputStream(&tempWrite);
 	converterToQuake.SetStreams(tempRead, &output);
 
+	context->Context.LogInfo("Writing time-shifted demo: %s", outputFilePath.String);
+
 	for(;;)
 	{
 		if(!runner.ParseNextMessage())
@@ -672,6 +674,8 @@ struct DemoMerger
 		s32 firstTime = S32_MIN;
 		udtdMessageType::Id messageType = udtdMessageType::Invalid;
 		udtdConverter::SnapshotInfo snapshotInfo;
+
+		firstDemo.Context->Context.LogInfo("Writing merged demo: %s", outputFilePath.String);
 
 		for(;;)
 		{
