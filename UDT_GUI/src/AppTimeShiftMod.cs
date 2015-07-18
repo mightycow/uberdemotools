@@ -90,8 +90,8 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "This modifier will move the position of the non-first-person view players back in time by the specified amount of snapshot.\n" + 
-                "The main purpose of this is to make the demo look more like what it looked when the player was playing, which is desirable for movie-making.\n" + 
+                "This modifier will move the position of the non-first-person view players back in time by the specified amount of snapshots.\n" + 
+                "The main purpose of this is to make the demo look more like what the player whose view was recorded in first-person actually saw, which is desirable for movie-making.\n" + 
                 "\n" +
                 "For LG tracking, 1 snapshot should do.\n" +
                 "For rail shots, 1 + (first-person player ping / snapshot duration) should do.\n" + 
