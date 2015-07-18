@@ -523,6 +523,14 @@ void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& dest
 		{
 			MergeItemEntity(dest, destOld, source, sourceOld, i);
 		}
+		// Here, we filter out any events pertaining to the player in first-person.
+		// @FIXME: If the guy in first-person has client number 0, this will prevent a lot of stuff from being merged.
+		else if(sourceEnt.clientNum != dest.PlayerState.clientNum &&
+				source.Entities[i].Valid && !dest.Entities[i].Valid)
+		{
+			dest.Entities[i].Valid = true;
+			memcpy(&dest.Entities[i].EntityState, &source.Entities[i].EntityState, (size_t)_protocolSizeOfEntityState);
+		}
 	}
 
 	const s32 firstPersonNumber = source.PlayerState.clientNum;
@@ -583,5 +591,8 @@ void udtdConverter::MergePlayerEntity(udtdSnapshotData& dest, udtdSnapshotData& 
 
 void udtdConverter::MergeItemEntity(udtdSnapshotData& /*dest*/, udtdSnapshotData& /*destOld*/, const udtdSnapshotData& /*source*/, const udtdSnapshotData& /*sourceOld*/, u32 /*i*/)
 {
-	// @TODO: Item pickup tracking for all demos.
+	// @TODO: Item pickup tracking for all demos?
+	// Adding items from other demos when the primary one doesn't have them defined is unfortunately not correct.
+	// It can happen that the player of the secondary demos didn't get notified that an item was taken.
+	// You would then see a strange thing in the merged demo: a player jumps over an item and it stays there.
 }
