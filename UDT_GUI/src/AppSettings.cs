@@ -21,6 +21,8 @@ namespace Uber.DemoTools
         MultiRailFilters,
         FlagCaptureFilters,
         FlickRailFilters,
+        Modifiers,
+        TimeShiftModifier,
         Count
     }
 
@@ -138,7 +140,7 @@ namespace Uber.DemoTools
             skipChatOffsetsDialogCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
             skipChatOffsetsDialogCheckBox.VerticalAlignment = VerticalAlignment.Center;
             skipChatOffsetsDialogCheckBox.IsChecked = _app.Config.SkipChatOffsetsDialog;
-            skipChatOffsetsDialogCheckBox.Content = " Skip the 'Chat Offsets' dialog?";
+            skipChatOffsetsDialogCheckBox.Content = " Skip the 'Cut Offsets' dialog?";
             skipChatOffsetsDialogCheckBox.Checked += (obj, args) => OnSkipChatOffsetsChecked();
             skipChatOffsetsDialogCheckBox.Unchecked += (obj, args) => OnSkipChatOffsetsUnchecked();
 
@@ -244,7 +246,7 @@ namespace Uber.DemoTools
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Output Mode", outputModeCheckBox));
             panelList.Add(App.CreateTuple("=>  Output Folder", outputFolderRow));
-            panelList.Add(App.CreateTuple("Chat History", skipChatOffsetsDialogCheckBox));
+            panelList.Add(App.CreateTuple("Chat/Death History", skipChatOffsetsDialogCheckBox));
             panelList.Add(App.CreateTuple("Recursive Scan", skipFolderScanModeCheckBox));
             panelList.Add(App.CreateTuple("=> Recursive", folderScanModeCheckBox));
             panelList.Add(App.CreateTuple("Max Thread Count", maxThreadCountTextBox));

@@ -27,12 +27,13 @@ public:
 	static u64  GetFileLength(const char* filePath);
 
 	bool   Open(const char* filePath, udtFileOpenMode::Id mode);
-	u32    Read(void* dstBuff, u32 elementSize, u32 count);
-	u32    Write(const void* srcBuff, u32 elementSize, u32 count);
-	s32	   Seek(s32 offset, udtSeekOrigin::Id origin);
-	s32	   Offset();
-	u64    Length();
-	s32    Close();
+
+	u32    Read(void* dstBuff, u32 elementSize, u32 count) override;
+	u32    Write(const void* srcBuff, u32 elementSize, u32 count) override;
+	s32	   Seek(s32 offset, udtSeekOrigin::Id origin) override;
+	s32	   Offset() override;
+	u64    Length() override;
+	s32    Close() override;
 
 private:
 	void   Destroy();

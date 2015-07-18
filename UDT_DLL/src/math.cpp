@@ -47,6 +47,13 @@ namespace Float3
 		return sqrtf(SquaredLength(a));
 	}
 
+	void Add(f32* result, const f32* a, const f32* b)
+	{
+		result[0] = a[0] + b[0];
+		result[1] = a[1] + b[1];
+		result[2] = a[2] + b[2];
+	}
+
 	void Mad(f32* result, const f32* a, const f32* b, f32 s)
 	{
 		result[0] = a[0] + b[0] * s;
@@ -66,6 +73,20 @@ namespace Float3
 		result[0] += a[0];
 		result[1] += a[1];
 		result[2] += a[2];
+	}
+
+	void EulerAnglesToAxisVector(f32* result, const f32* angles)
+	{
+		const f32 angle1 = angles[YAW] * (UDT_PI * 2 / 360);
+		const f32 sy = sin(angle1);
+		const f32 cy = cos(angle1);
+		const f32 angle2 = angles[PITCH] * (UDT_PI * 2 / 360);
+		const f32 sp = sin(angle2);
+		const f32 cp = cos(angle2);
+
+		result[0] = cp*cy;
+		result[1] = cp*sy;
+		result[2] = -sp;
 	}
 }
 

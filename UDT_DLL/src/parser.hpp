@@ -132,7 +132,7 @@ public:
 	udtConfigString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
 	udtVMArrayWithAlloc<u32> _inGameStateFileOffsets;
 	udtVMArrayWithAlloc<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
-	udtVMArrayWithAlloc<idEntityStateBase*> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArrayWithAlloc<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.

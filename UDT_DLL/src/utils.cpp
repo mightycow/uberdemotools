@@ -4,6 +4,7 @@
 #include "scoped_stack_allocator.hpp"
 #include "parser_context.hpp"
 #include "path.hpp"
+#include "parser_runner.hpp"
 
 #include <cstdlib>
 #include <cstdio>
@@ -331,7 +332,7 @@ bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& al
 	return true;
 }
 
-s32 GetErrorCode(bool success, s32* cancel)
+s32 GetErrorCode(bool success, const s32* cancel)
 {
 	if(success)
 	{
@@ -343,85 +344,19 @@ s32 GetErrorCode(bool success, s32* cancel)
 
 bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
 {
-	udtContext* const context = parser._context;
-
-	size_t elementsRead;
-	udtMessage inMsg;
-	u8* const inMsgData = parser._persistentAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
-	s32 inServerMessageSequence;
-
-	inMsg.InitContext(context);
-	inMsg.InitProtocol(parser._inProtocol);
-
-	udtTimer timer;
-	timer.Start();
-
-	const u64 fileStartOffset = (u64)file.Offset();
-	const u64 fileEnd = file.Length();
-	const u64 maxByteCount = fileEnd - fileStartOffset;
-	for(;;)
+	udtParserRunner runner;
+	if(!runner.Init(parser, file, cancelOperation))
 	{
-		if(cancelOperation != NULL && *cancelOperation != 0)
-		{
-			parser.FinishParsing(false);
-			return false;
-		}
-
-		const u32 fileOffset = (u32)file.Offset();
-
-		elementsRead = file.Read(&inServerMessageSequence, 4, 1);
-		if(elementsRead != 1)
-		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
-			break;
-		}
-
-		inMsg.Init(&inMsgData[0], MAX_MSGLEN);
-
-		elementsRead = file.Read(&inMsg.Buffer.cursize, 4, 1);
-		if(elementsRead != 1)
-		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
-			break;
-		}
-
-		if(inMsg.Buffer.cursize == -1)
-		{
-			break;
-		}
-
-		if(inMsg.Buffer.cursize > inMsg.Buffer.maxsize)
-		{
-			context->LogError("Demo file %s has a message length greater than MAX_SIZE", parser._inFileName.String);
-			parser.FinishParsing(false);
-			return false;
-		}
-
-		elementsRead = file.Read(inMsg.Buffer.data, inMsg.Buffer.cursize, 1);
-		if(elementsRead != 1)
-		{
-			parser._context->LogWarning("Demo file %s is truncated", parser._inFileName.String);
-			break;
-		}
-
-		inMsg.Buffer.readcount = 0;
-		if(!parser.ParseNextMessage(inMsg, inServerMessageSequence, fileOffset))
-		{
-			break;
-		}
-
-		if(timer.GetElapsedMs() >= UDT_MIN_PROGRESS_TIME_MS)
-		{
-			timer.Restart();
-			const u64 currentByteCount = (u64)fileOffset - fileStartOffset;
-			const f32 currentProgress = (f32)currentByteCount / (f32)maxByteCount;
-			parser._context->NotifyProgress(currentProgress);
-		}
+		return false;
 	}
 
-	parser.FinishParsing(true);
+	while(runner.ParseNextMessage())
+	{
+	}
 
-	return true;
+	runner.FinishParsing();
+
+	return runner.WasSuccess();
 }
 
 char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)

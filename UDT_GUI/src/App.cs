@@ -60,6 +60,7 @@ namespace Uber.DemoTools
         public int FlickRailMinSpeedSnaps = 2;
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
+        public int TimeShiftSnapshotCount = 2;
     }
 
     public class MapConversionRule
@@ -203,6 +204,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
         private static RoutedCommand _convertDemo68Command = new RoutedCommand();
         private static RoutedCommand _convertDemo90Command = new RoutedCommand();
+        private static RoutedCommand _mergeDemosCommand = new RoutedCommand();
         private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
@@ -350,6 +352,12 @@ namespace Uber.DemoTools
             demoFragsTab.Header = "Deaths";
             demoFragsTab.Content = fragEvents.RootControl;
 
+            var modifiers = new ModifierComponent(this);
+            _appComponents.Add(modifiers);
+            var modifiersTab = new TabItem();
+            modifiersTab.Header = "Modifiers";
+            modifiersTab.Content = modifiers.RootControl;
+
             var settings = new AppSettingsComponent(this);
             _appComponents.Add(settings);
             var settingsTab = new TabItem();
@@ -374,6 +382,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutByTimeTab);
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
+            tabControl.Items.Add(modifiersTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -551,6 +560,7 @@ namespace Uber.DemoTools
             InitDemoListAnalyzeCommand();
             InitDemoListConversion68Command();
             InitDemoListConversion90Command();
+            InitDemoListMergeCommand();
             InitDemoListSelectAllCommand();
             InitDemoListContextMenu();
             
@@ -730,6 +740,11 @@ namespace Uber.DemoTools
             convertDemo90Item.Command = _convertDemo90Command;
             convertDemo90Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
+            var mergeDemosItem = new MenuItem();
+            mergeDemosItem.Header = "Merge Selected";
+            mergeDemosItem.Command = _mergeDemosCommand;
+            mergeDemosItem.Click += (obj, args) => OnMergeDemosClicked();
+
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
             selectAllDemosItem.Command = _selectAllDemosCommand;
@@ -739,6 +754,7 @@ namespace Uber.DemoTools
             demosContextMenu.Items.Add(analyzeDemoItem);
             demosContextMenu.Items.Add(convertDemo68Item);
             demosContextMenu.Items.Add(convertDemo90Item);
+            demosContextMenu.Items.Add(mergeDemosItem);
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
@@ -848,8 +864,6 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
-
-
         private bool CanExecuteConvertCommand(UDT_DLL.udtProtocol outputFormat)
         {
             var demos = SelectedDemos;
@@ -859,6 +873,31 @@ namespace Uber.DemoTools
             }
 
             return demos.Exists(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
+        }
+
+        private bool CanExecuteMergeCommand()
+        {
+            var demos = SelectedDemos;
+            if(demos == null)
+            {
+                return false;
+            }
+
+            if(demos.Count < 2)
+            {
+                return false;
+            }
+
+            var firstProtocol = demos[0].ProtocolNumber;
+            for(var i = 1; i < demos.Count; ++i)
+            {
+                if(demos[i].ProtocolNumber != firstProtocol)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void InitDemoListConversion68Command()
@@ -874,6 +913,14 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _convertDemo90Command;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteConvertCommand(UDT_DLL.udtProtocol.Dm90); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListMergeCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _mergeDemosCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteMergeCommand(); };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -1075,6 +1122,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(image);
 
             var window = new Window();
+            window.Owner = MainWindow;
             window.WindowStyle = WindowStyle.ToolWindow;
             window.ResizeMode = ResizeMode.NoResize;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
@@ -1199,6 +1247,7 @@ namespace Uber.DemoTools
             analyzeButton.Width = 75;
             analyzeButton.Height = 25;
             analyzeButton.Margin = new Thickness(5);
+            analyzeButton.ToolTip = "Read the demos for information used to populate the Info, Chat & Deaths tabs";
             analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
 
             var convert68Button = new Button();
@@ -1217,6 +1266,14 @@ namespace Uber.DemoTools
             convert90Button.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
             convert90Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
+            var mergeDemosButton = new Button();
+            mergeDemosButton.Content = "Merge";
+            mergeDemosButton.Width = 75;
+            mergeDemosButton.Height = 25;
+            mergeDemosButton.Margin = new Thickness(5);
+            mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo\nThis is for demos of the same match only";
+            mergeDemosButton.Click += (obj, args) => OnMergeDemosClicked();
+
             var multiDemoActionButtonsPanel = new StackPanel();
             multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
             multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
@@ -1225,6 +1282,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Children.Add(analyzeButton);
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
             multiDemoActionButtonsPanel.Children.Add(convert90Button);
+            multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
 
             var multiDemoActionButtonsGroupBox = new GroupBox();
             multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1482,7 +1540,7 @@ namespace Uber.DemoTools
             demos = demos.FindAll(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
             if(demos.Count == 0)
             {
-                LogError("All of the selected demos are in the target format.");
+                LogError("All of the selected demos are either in the target format or an unsupported input format.");
                 return;
             }
             
@@ -1497,6 +1555,46 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoConvertThread, threadData);
+        }
+
+        private void OnMergeDemosClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count < 2)
+            {
+                LogError("No enough demos selected. Please select at least two to proceed.");
+                return;
+            }
+
+            var firstProtocol = demos[0].ProtocolNumber;
+            for(var i = 1; i < demos.Count; ++i)
+            {
+                if(demos[i].ProtocolNumber != firstProtocol)
+                {
+                    LogError("Protocol mismatch detected. All demos must be using the protocol.");
+                    return;
+                }
+            }
+
+            // Select the primary demo.
+            var dialog = new DemoMergingDialog(_window, demos);
+            if(dialog.SelectionIndex < 0)
+            {
+                return;
+            }
+
+            // If the selected demo isn't already the first, swap it with the first.
+            if(dialog.SelectionIndex != 0)
+            {
+                var item = demos[dialog.SelectionIndex];
+                demos[dialog.SelectionIndex] = demos[0];
+                demos[0] = item;
+            }
+
+            DisableUiNonThreadSafe();
+
+            JoinJobThread();
+            StartJobThread(DemoMergeThread, demos);
         }
 
         public delegate void VoidDelegate();
@@ -1647,6 +1745,38 @@ namespace Uber.DemoTools
             catch(Exception exception)
             {
                 LogError("Caught an exception while converting demos: {0}", exception.Message);
+            }
+
+            Marshal.FreeHGlobal(outputFolderPtr);
+        }
+
+        private void DemoMergeThread(object arg)
+        {
+            var demos = arg as List<DemoInfo>;
+            if(demos == null)
+            {
+                LogError("Invalid thread argument type");
+                return;
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            InitParseArg();
+            ParseArg.OutputFolderPath = outputFolderPtr;
+
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
+            {
+                filePaths.Add(demo.FilePath);
+            }
+
+            try
+            {
+                UDT_DLL.MergeDemos(ref ParseArg, filePaths);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while merging demos: {0}", exception.Message);
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
@@ -2381,6 +2511,94 @@ namespace Uber.DemoTools
 
             element.InputBindings.Add(inputBinding);
             element.CommandBindings.Add(commandBinding);
+        }
+    }
+
+    public class DemoMergingDialog
+    {
+        private int _selectionIndex = -1;
+
+        public int SelectionIndex
+        {
+            get { return _selectionIndex; }
+        }
+
+        public DemoMergingDialog(Window parent, List<DemoInfo> demos)
+        {
+            var demosComboBox = new ComboBox();
+            demosComboBox.Margin = new Thickness(5);
+            foreach(var demo in demos)
+            {
+                demosComboBox.Items.Add(Path.GetFileName(demo.FilePath));
+            }
+            demosComboBox.SelectedIndex = 0;
+
+            var helpText = new TextBlock();
+            helpText.Margin = new Thickness(5);
+            helpText.Text = "Select the demo whose first-person/free-float camera view we use for the output demo.";
+            helpText.TextAlignment = TextAlignment.Left;
+            helpText.TextWrapping = TextWrapping.Wrap;
+
+            var selectionGroupBox = new GroupBox();
+            selectionGroupBox.Header = "Demo Selection";
+            selectionGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            selectionGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            selectionGroupBox.Margin = new Thickness(5);
+            selectionGroupBox.Content = demosComboBox;
+
+            var okButton = new Button();
+            okButton.Content = "OK";
+            okButton.Width = 75;
+            okButton.Height = 25;
+            okButton.Margin = new Thickness(5);
+            okButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var cancelButton = new Button();
+            cancelButton.Content = "Cancel";
+            cancelButton.Width = 75;
+            cancelButton.Height = 25;
+            cancelButton.Margin = new Thickness(5);
+            cancelButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var rootPanel = new DockPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            rootPanel.VerticalAlignment = VerticalAlignment.Center;
+            rootPanel.Children.Add(helpText);
+            rootPanel.Children.Add(selectionGroupBox);
+            rootPanel.Children.Add(cancelButton);
+            rootPanel.Children.Add(okButton);
+
+            DockPanel.SetDock(helpText, Dock.Top);
+            DockPanel.SetDock(selectionGroupBox, Dock.Top);
+            DockPanel.SetDock(cancelButton, Dock.Right);
+            DockPanel.SetDock(okButton, Dock.Right);
+
+            var window = new Window();
+            okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
+            cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
+
+            window.Owner = parent;
+            window.WindowStyle = WindowStyle.ToolWindow;
+            window.AllowsTransparency = false;
+            window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
+            window.ShowInTaskbar = false;
+            window.Width = 240;
+            window.Height = 180;
+            window.Left = parent.Left + (parent.Width - window.Width) / 2;
+            window.Top = parent.Top + (parent.Height - window.Height) / 2;
+            window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            window.Title = "Primary Demo Selection";
+            window.Content = rootPanel;
+            window.ResizeMode = ResizeMode.NoResize;
+            window.ShowDialog();
+
+            var valid = window.DialogResult ?? false;
+            if(!valid)
+            {
+                return;
+            }
+
+            _selectionIndex = demosComboBox.SelectedIndex;
         }
     }
 }

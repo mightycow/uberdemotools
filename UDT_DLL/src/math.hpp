@@ -17,9 +17,11 @@ namespace Float3
 	extern f32  Dist(const f32* a, const f32* b);
 	extern f32  SquaredLength(const f32* a);
 	extern f32  Length(const f32* a);
+	extern void Add(f32* result, const f32* a, const f32* b);
 	extern void Mad(f32* result, const f32* a, const f32* b, f32 s);
 	extern void Zero(f32* result);
-	extern void Increment(f32* result, const float* a);
+	extern void Increment(f32* result, const f32* a);
+	extern void EulerAnglesToAxisVector(f32* result, const f32* angles);
 }
 
 namespace Quat

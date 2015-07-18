@@ -93,14 +93,14 @@ struct udtCrashType
 
 // Macro arguments:
 // 1. enum name 
-// 2. plug-in type (internal)
-// 3. plug-in data type (for the user)
+// 2. plug-in class type (internal)
+// 3. plug-in output class type (for reading back the results of Analyzer plug-ins)
 #define UDT_PLUG_IN_LIST(N) \
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
 	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, ApiType) Enum,
+#define UDT_PLUG_IN_ITEM(Enum, Type, OutputType) Enum,
 struct udtParserPlugIn
 {
 	enum Id
@@ -320,6 +320,8 @@ struct udtPatternType
 	};
 };
 #undef UDT_CUT_PATTERN_ITEM
+
+#define    UDT_MAX_MERGE_DEMO_COUNT    8
 
 
 #ifdef __cplusplus
@@ -844,6 +846,16 @@ extern "C"
 		s32 Reserved2;
 	};
 
+	struct udtTimeShiftArg
+	{
+		// By how many snapshots do we shift the position of 
+		// non-first-person players back in time.
+		s32 SnapshotCount;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 #pragma pack(pop)
 
 	//
@@ -863,6 +875,9 @@ extern "C"
 
 	// Returns zero if not a valid protocol.
 	UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol);
+
+	// Returns zero if not a valid protocol.
+	UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol);
 
 	// Returns zero if not a valid protocol.
 	UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol);
@@ -899,6 +914,10 @@ extern "C"
 
 	// Creates a sub-demo starting and ending at the specified times.
 	UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath);
+
+	// Creates a new demo that is basically the first demo passed with extra entity data from the other demos.
+	// The maximum amount of demos merged (i.e. the maximum value of fileCount) is UDT_MAX_MERGE_DEMO_COUNT.
+	UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, u32 fileCount);
 
 	// Gets the address and element count for the requested parse data type.
 	// The "plugInId" argument is of type udtParserPlugIn::Id.
@@ -937,6 +956,9 @@ extern "C"
 
 	// Creates, for each demo that isn't in the target protocol, a new demo file with the specified protocol.
 	UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg);
+
+	// Creates, for each demo, a new demo where non-first-person player entities are shifted back in time by the specified amount of snapshots.
+	UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg);
 
 #ifdef __cplusplus
 }

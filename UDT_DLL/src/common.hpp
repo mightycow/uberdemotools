@@ -595,22 +595,13 @@ typedef idClientSnapshot90 idLargestClientSnapshot;
 
 inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return &((idClientSnapshot68*)snap)->ps;
+		case udtProtocol::Dm68: return &((idClientSnapshot68*)snap)->ps;
+		case udtProtocol::Dm73: return &((idClientSnapshot73*)snap)->ps;
+		case udtProtocol::Dm90: return &((idClientSnapshot90*)snap)->ps;
+		default: return NULL;
 	}
-
-	if(protocol == udtProtocol::Dm73)
-	{
-		return &((idClientSnapshot73*)snap)->ps;
-	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return &((idClientSnapshot90*)snap)->ps;
-	}
-
-	return NULL;
 }
 
 // allow a lot of command backups for very fast systems
@@ -963,8 +954,8 @@ typedef enum {
 	STAT_WEAPONS_68,					// 16 bit fields
 	STAT_ARMOR_68,				
 	STAT_DEAD_YAW_68,					// look this direction when dead (FIXME: get rid of?)
-	STAT_CLIENTS_READY_68,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_68					// health / armor limit, changable by handicap
+	STAT_CLIENTS_READY_68,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
+	STAT_MAX_HEALTH_68					// health / armor limit, changeable by handicap
 } statIndex_68_t;
 
 typedef enum {
@@ -974,8 +965,8 @@ typedef enum {
 	STAT_WEAPONS_73p,					// 16 bit fields
 	STAT_ARMOR_73p,				
 	STAT_BATTLE_SUIT_KILL_COUNT_73p,
-	STAT_CLIENTS_READY_73p,				// bit mask of clients wishing to exit the s32ermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_73p,				// health / armor limit, changable by handicap
+	STAT_CLIENTS_READY_73p,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
+	STAT_MAX_HEALTH_73p,				// health / armor limit, changeable by handicap
 	STAT_POWERUP_REMAINING_73p = 11,
 	STAT_QUAD_KILL_COUNT_73p = 13,
 	STAT_ARMOR_TIER_73p = 14
@@ -1000,7 +991,7 @@ typedef enum {
 	PERS_EXCELLENT_COUNT_68,		// two successive kills in a short amount of time
 	PERS_DEFEND_COUNT_68,			// defend awards
 	PERS_ASSIST_COUNT_68,			// assist awards
-	PERS_GAUNTLET_FRAG_COUNT_68,	// kills with the guantlet
+	PERS_GAUNTLET_FRAG_COUNT_68,	// kills with the gauntlet
 	PERS_CAPTURES_68				// captures
 } persEnum_68_t;
 
