@@ -1,6 +1,6 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-UDT is a set of tools for analyzing and cutting **Quake 3** (.dm_68) and **Quake Live** (.dm_73 and .dm_90) demo files.
+UDT is a set of tools for analyzing, cutting and modifying **Quake 3** (.dm_68) and **Quake Live** (.dm_73 and .dm_90) demo files.
 
 The main features are:
 
@@ -8,6 +8,8 @@ The main features are:
 - Cutting by time: creating a new demo file that is a time sub-range of the original demo file for easier processing or demo viewing
 - Splitting demos: given a demo with multiple map changes, create a new demo file per map change (plus one for the stuff before the first map change)
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
+- Time shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
+- Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
 
 Official UDT binaries
 ---------------------
@@ -20,23 +22,25 @@ What's in the project?
 The project is currently comprised of 3 parts:
 
 1. A shared library, `UDT_DLL`, with a C interface, written in C++. Supported OSes: Windows, Linux
-2. A set of command-line tools, `UDT_cutter` and `UDT_splitter`, written in C++. Supported OSes: Windows, Linux
+2. A set of command-line tools, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter` and `UDT_merger`, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
 
 Overview of the binaries
 
-| Project name | Type        | Language | Windows | Linux | Dependencies | Description |
-|:-------------|:------------|:--------:|:-------:|:-----:|:------------:|:-------------
-| UDT_DLL      | Library     | C++      | X       | X     |              | Shared library that does the actual cutting and analysis work |
-| UDT_cutter   | Application | C++      | X       | X     |              | Command-line application for cutting demos by time or chat patterns (*Cut by Chat*) |
-| UDT_splitter | Application | C++      | X       | X     |              | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
-| UDT_GUI      | Application | C#       | X       |       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns |
+| Project name    | Type        | Language | Platforms     | Dependencies | Description |
+|:----------------|:------------|:--------:|:-------------:|:------------:|-------------|
+| UDT_DLL         | Library     | C++      | Windows Linux |  | Shared library that does the actual cutting and analysis work |
+| UDT_cutter      | Application | C++      | Windows Linux |  | Command-line application for cutting demos by time or chat patterns (*Cut by Chat*) |
+| UDT_splitter    | Application | C++      | Windows Linux |  | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
+| UDT_timeshifter | Application | C++      | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
+| UDT_merger      | Application | C++      | Windows Linux |  | Command-line application for merging multiple demos into one |
+| UDT_GUI         | Application | C#       | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
 
 Installation
 ------------
 
 No installation is required for any of the binaries.  
-`UDT_DLL`, `UDT_cutter` and `UDT_splitter` have no third-party dependencies.
+`UDT_DLL`, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter` and `UDT_merger` have no third-party dependencies.
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
@@ -97,8 +101,10 @@ Here are the patterns you can look for in demos:
 1. To which player(s) is the pattern matching applied to?
 2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
 
-[Technical Notes](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md)
--------
+Technical Notes
+---------------
+
+The technical notes have their own page [here](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md).
 
 Contact
 -------
