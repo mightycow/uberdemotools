@@ -204,6 +204,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
         private static RoutedCommand _convertDemo68Command = new RoutedCommand();
         private static RoutedCommand _convertDemo90Command = new RoutedCommand();
+        private static RoutedCommand _mergeDemosCommand = new RoutedCommand();
         private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
@@ -559,6 +560,7 @@ namespace Uber.DemoTools
             InitDemoListAnalyzeCommand();
             InitDemoListConversion68Command();
             InitDemoListConversion90Command();
+            InitDemoListMergeCommand();
             InitDemoListSelectAllCommand();
             InitDemoListContextMenu();
             
@@ -738,6 +740,11 @@ namespace Uber.DemoTools
             convertDemo90Item.Command = _convertDemo90Command;
             convertDemo90Item.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
+            var mergeDemosItem = new MenuItem();
+            mergeDemosItem.Header = "Merge Selected";
+            mergeDemosItem.Command = _mergeDemosCommand;
+            mergeDemosItem.Click += (obj, args) => OnMergeDemosClicked();
+
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
             selectAllDemosItem.Command = _selectAllDemosCommand;
@@ -747,6 +754,7 @@ namespace Uber.DemoTools
             demosContextMenu.Items.Add(analyzeDemoItem);
             demosContextMenu.Items.Add(convertDemo68Item);
             demosContextMenu.Items.Add(convertDemo90Item);
+            demosContextMenu.Items.Add(mergeDemosItem);
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
@@ -856,8 +864,6 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
-
-
         private bool CanExecuteConvertCommand(UDT_DLL.udtProtocol outputFormat)
         {
             var demos = SelectedDemos;
@@ -867,6 +873,31 @@ namespace Uber.DemoTools
             }
 
             return demos.Exists(d => IsValidInputFormatForConverter(outputFormat, d.ProtocolNumber));
+        }
+
+        private bool CanExecuteMergeCommand()
+        {
+            var demos = SelectedDemos;
+            if(demos == null)
+            {
+                return false;
+            }
+
+            if(demos.Count < 2)
+            {
+                return false;
+            }
+
+            var firstProtocol = demos[0].ProtocolNumber;
+            for(var i = 1; i < demos.Count; ++i)
+            {
+                if(demos[i].ProtocolNumber != firstProtocol)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private void InitDemoListConversion68Command()
@@ -882,6 +913,14 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _convertDemo90Command;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteConvertCommand(UDT_DLL.udtProtocol.Dm90); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListMergeCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _mergeDemosCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteMergeCommand(); };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
