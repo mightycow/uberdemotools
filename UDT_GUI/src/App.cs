@@ -1271,7 +1271,7 @@ namespace Uber.DemoTools
             mergeDemosButton.Width = 75;
             mergeDemosButton.Height = 25;
             mergeDemosButton.Margin = new Thickness(5);
-            mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo";
+            mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo\nThis is for demos of the same match only";
             mergeDemosButton.Click += (obj, args) => OnMergeDemosClicked();
 
             var multiDemoActionButtonsPanel = new StackPanel();
