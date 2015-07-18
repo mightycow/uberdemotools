@@ -1208,6 +1208,7 @@ namespace Uber.DemoTools
             analyzeButton.Width = 75;
             analyzeButton.Height = 25;
             analyzeButton.Margin = new Thickness(5);
+            analyzeButton.ToolTip = "Read the demos for information used to populate the Info, Chat & Deaths tabs";
             analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
 
             var convert68Button = new Button();
@@ -1226,6 +1227,14 @@ namespace Uber.DemoTools
             convert90Button.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
             convert90Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
 
+            var mergeDemosButton = new Button();
+            mergeDemosButton.Content = "Merge";
+            mergeDemosButton.Width = 75;
+            mergeDemosButton.Height = 25;
+            mergeDemosButton.Margin = new Thickness(5);
+            mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo";
+            mergeDemosButton.Click += (obj, args) => OnMergeDemosClicked();
+
             var multiDemoActionButtonsPanel = new StackPanel();
             multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
             multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
@@ -1234,6 +1243,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Children.Add(analyzeButton);
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
             multiDemoActionButtonsPanel.Children.Add(convert90Button);
+            multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
 
             var multiDemoActionButtonsGroupBox = new GroupBox();
             multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1508,6 +1518,24 @@ namespace Uber.DemoTools
             StartJobThread(DemoConvertThread, threadData);
         }
 
+        private void OnMergeDemosClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count < 2)
+            {
+                LogError("No enough demos selected. Please select at least two to proceed.");
+                return;
+            }
+
+            // @TODO: Dialog to select the primary demo.
+            // @TODO: Put the selected demo to the start of the list.
+
+            DisableUiNonThreadSafe();
+
+            JoinJobThread();
+            StartJobThread(DemoMergeThread, demos);
+        }
+
         public delegate void VoidDelegate();
 
         private void AddDemoToListView(DemoDisplayInfo info)
@@ -1656,6 +1684,38 @@ namespace Uber.DemoTools
             catch(Exception exception)
             {
                 LogError("Caught an exception while converting demos: {0}", exception.Message);
+            }
+
+            Marshal.FreeHGlobal(outputFolderPtr);
+        }
+
+        private void DemoMergeThread(object arg)
+        {
+            var demos = arg as List<DemoInfo>;
+            if(demos == null)
+            {
+                LogError("Invalid thread argument type");
+                return;
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            InitParseArg();
+            ParseArg.OutputFolderPath = outputFolderPtr;
+
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
+            {
+                filePaths.Add(demo.FilePath);
+            }
+
+            try
+            {
+                UDT_DLL.MergeDemos(ref ParseArg, filePaths);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while merging demos: {0}", exception.Message);
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);

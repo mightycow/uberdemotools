@@ -410,6 +410,9 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtMergeDemoFiles(ref udtParseArg info, IntPtr filePaths, UInt32 fileCount);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetDemoDataInfo(udtParserContextRef context, UInt32 demoIdx, udtParserPlugIn plugInId, ref IntPtr buffer, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -642,6 +645,24 @@ namespace Uber.DemoTools
 
             var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePath) == udtErrorCode.None;
             pinnedCut.Free();
+
+            return success;
+        }
+
+        public static bool MergeDemos(ref udtParseArg parseArg, List<string> filePaths)
+        {
+            var resources = new ArgumentResources();
+            var filePathsArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                filePathsArray[i] = Marshal.StringToHGlobalAnsi(filePaths[i]);
+                resources.GlobalAllocationHandles.Add(filePathsArray[i]);
+            }
+            var pinnedFilePaths = new PinnedObject(filePathsArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+
+            var success = udtMergeDemoFiles(ref parseArg, pinnedFilePaths.Address, (UInt32)filePaths.Count) == udtErrorCode.None;
+            resources.Free();
 
             return success;
         }
