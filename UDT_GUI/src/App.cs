@@ -1537,8 +1537,20 @@ namespace Uber.DemoTools
                 }
             }
 
-            // @TODO: Dialog to select the primary demo.
-            // @TODO: Put the selected demo to the start of the list.
+            // Select the primary demo.
+            var dialog = new DemoMergingDialog(_window, demos);
+            if(dialog.SelectionIndex < 0)
+            {
+                return;
+            }
+
+            // If the selected demo isn't already the first, swap it with the first.
+            if(dialog.SelectionIndex != 0)
+            {
+                var item = demos[dialog.SelectionIndex];
+                demos[dialog.SelectionIndex] = demos[0];
+                demos[0] = item;
+            }
 
             DisableUiNonThreadSafe();
 
@@ -2460,6 +2472,94 @@ namespace Uber.DemoTools
 
             element.InputBindings.Add(inputBinding);
             element.CommandBindings.Add(commandBinding);
+        }
+    }
+
+    public class DemoMergingDialog
+    {
+        private int _selectionIndex = -1;
+
+        public int SelectionIndex
+        {
+            get { return _selectionIndex; }
+        }
+
+        public DemoMergingDialog(Window parent, List<DemoInfo> demos)
+        {
+            var demosComboBox = new ComboBox();
+            demosComboBox.Margin = new Thickness(5);
+            foreach(var demo in demos)
+            {
+                demosComboBox.Items.Add(Path.GetFileName(demo.FilePath));
+            }
+            demosComboBox.SelectedIndex = 0;
+
+            var helpText = new TextBlock();
+            helpText.Margin = new Thickness(5);
+            helpText.Text = "Select the demo whose first-person/free-float\ncamera view we use for the output demo.";
+            helpText.TextAlignment = TextAlignment.Left;
+            helpText.TextWrapping = TextWrapping.Wrap;
+
+            var selectionGroupBox = new GroupBox();
+            selectionGroupBox.Header = "Demo Selection";
+            selectionGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            selectionGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            selectionGroupBox.Margin = new Thickness(5);
+            selectionGroupBox.Content = demosComboBox;
+
+            var okButton = new Button();
+            okButton.Content = "OK";
+            okButton.Width = 75;
+            okButton.Height = 25;
+            okButton.Margin = new Thickness(5);
+            okButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var cancelButton = new Button();
+            cancelButton.Content = "Cancel";
+            cancelButton.Width = 75;
+            cancelButton.Height = 25;
+            cancelButton.Margin = new Thickness(5);
+            cancelButton.HorizontalAlignment = HorizontalAlignment.Right;
+
+            var rootPanel = new DockPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            rootPanel.VerticalAlignment = VerticalAlignment.Center;
+            rootPanel.Children.Add(helpText);
+            rootPanel.Children.Add(selectionGroupBox);
+            rootPanel.Children.Add(cancelButton);
+            rootPanel.Children.Add(okButton);
+
+            DockPanel.SetDock(helpText, Dock.Top);
+            DockPanel.SetDock(selectionGroupBox, Dock.Top);
+            DockPanel.SetDock(cancelButton, Dock.Right);
+            DockPanel.SetDock(okButton, Dock.Right);
+
+            var window = new Window();
+            okButton.Click += (obj, args) => { window.DialogResult = true; window.Close(); };
+            cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
+
+            window.Owner = parent;
+            window.WindowStyle = WindowStyle.ToolWindow;
+            window.AllowsTransparency = false;
+            window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
+            window.ShowInTaskbar = false;
+            window.Width = 240;
+            window.Height = 180;
+            window.Left = parent.Left + (parent.Width - window.Width) / 2;
+            window.Top = parent.Top + (parent.Height - window.Height) / 2;
+            window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            window.Title = "Primary Demo Selection";
+            window.Content = rootPanel;
+            window.ResizeMode = ResizeMode.NoResize;
+            window.ShowDialog();
+
+            var valid = window.DialogResult ?? false;
+            if(!valid)
+            {
+                return;
+            }
+
+            _selectionIndex = demosComboBox.SelectedIndex;
         }
     }
 }
