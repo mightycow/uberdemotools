@@ -161,7 +161,7 @@ bool udtdConverter::ProcessNextMessageWrite(udtdMessageType::Id type, const Snap
 
 bool udtdConverter::ProcessGameState()
 {
-	s32 sequenceAcknowledge = 0; // @TODO:
+	s32 sequenceAcknowledge = 0;
 	s32 messageSequence = 0;
 	s32 commandSequence = 0;
 	s32 clientNum = 0;
@@ -245,7 +245,7 @@ void udtdConverter::ProcessCommand()
 	_input->Read(_inStringData, stringLength, 1);
 	_inStringData[stringLength] = '\0';
 
-	s32 sequenceAcknowledge = 0; // @TODO:
+	s32 sequenceAcknowledge = 0;
 	_outMsg.Init(_outMsgData, sizeof(_outMsgData));
 	_outMsg.Bitstream();
 	_outMsg.WriteLong(sequenceAcknowledge);
