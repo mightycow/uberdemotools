@@ -2535,7 +2535,7 @@ namespace Uber.DemoTools
 
             var helpText = new TextBlock();
             helpText.Margin = new Thickness(5);
-            helpText.Text = "Select the demo whose first-person/free-float\ncamera view we use for the output demo.";
+            helpText.Text = "Select the demo whose first-person/free-float camera view we use for the output demo.";
             helpText.TextAlignment = TextAlignment.Left;
             helpText.TextWrapping = TextWrapping.Wrap;
 
