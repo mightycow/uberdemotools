@@ -1,5 +1,4 @@
 To do:
-- GUI: Add merging support
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
 - Text format export (XML? JSON?)
