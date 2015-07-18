@@ -72,27 +72,24 @@ private:
 	idEntityStateBase* GetEntity(s32 idx) { return (idEntityStateBase*)&_inReadEntities[idx * _protocolSizeOfEntityState]; }
 	idEntityStateBase* GetBaseline(s32 idx) { return (idEntityStateBase*)&_inBaselineEntities[idx * _protocolSizeOfPlayerState]; }
 
-	// @TODO: Re-order the fields.
-
+	u8 _inBaselineEntities[MAX_GENTITIES * sizeof(idLargestEntityState)]; // 1 KB * a lot
+	u8 _inReadEntities[MAX_GENTITIES * sizeof(idLargestEntityState)]; // 1 KB * a lot
+	u8 _outMsgData[MAX_MSGLEN]; // 16 KB
+	char _inStringData[BIG_INFO_STRING]; // 8 KB
+	s32 _inRemovedEntities[MAX_GENTITIES]; // 4 KB
+	udtdSnapshotData _snapshots[2];
+	u8 _areaMask[32];
+	udtMessage _outMsg;
+	udtContext _context;
+	udtVMArrayWithAlloc<udtdConverterPlugIn*> _plugIns;
 	udtStream* _input; // The user owns this.
 	udtStream* _output; // The user owns this. Optional.
 	udtProtocol::Id _protocol;
 	u32 _protocolSizeOfEntityState;
 	u32 _protocolSizeOfPlayerState;
-	u8 _inMessageData[MAX_MSGLEN];
-	char _inStringData[BIG_INFO_STRING];
-	udtMessage _outMsg;
-	udtContext _context;
-	u8 _outMsgData[MAX_MSGLEN];
 	s32 _outCommandSequence;
-	udtdSnapshotData _snapshots[2];
 	s32 _snapshotReadIndex;
-	u8 _inBaselineEntities[MAX_GENTITIES * sizeof(idLargestEntityState)];
-	u8 _inReadEntities[MAX_GENTITIES * sizeof(idLargestEntityState)];
-	s32 _inRemovedEntities[MAX_GENTITIES];
-	u8 _areaMask[32];
-	bool _firstSnapshot;
 	s32 _outMessageSequence;
-	udtVMArrayWithAlloc<udtdConverterPlugIn*> _plugIns;
+	bool _firstSnapshot;
 	bool _firstMessage;
 };
