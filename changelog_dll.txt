@@ -1,3 +1,10 @@
+0.7.0 (19.07.2015)
+FIX: The command-line cutter would crash if one of the demo return codes was not None
+ADD: Demo time shifting (a sort of anti-lag so you can see something similar to what the player saw)
+ADD: Demo merging (creating an augmented demo from multiple input demos of the same match)
+ADD: UDT_timeshifter: A command-line tool for time shifting demos
+ADD: UDT_merger: A command-line tool for merging demos
+
 0.6.3 (19.06.2015)
 ADD: Added an option to enable or disable the merging of overlapping cut sections matched by different pattern types
 FIX: The cut section merging code was using the same (temp) allocator for 2 different arrays leading to less events being cut in many cases
