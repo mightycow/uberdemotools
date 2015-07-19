@@ -116,7 +116,7 @@ namespace Uber.DemoTools
                 "Recommended minimum value for angular velocity:" +
                 "\n- 800 degrees/second for a fast flick shot" +
                 "\n- 500 degrees/second for a reasonably fast flick shot" + 
-                "\n\nReommended minimum angle delta for a good flick shot:" + 
+                "\n\nRecommended minimum angle delta for a good flick shot:" + 
                 "\n- 50 degrees if over the duration of 2 snapshots in Quake 3 (snapshot duration: usually 33 ms)" +
                 "\n- 37 degrees if over the duration of 2 snapshots in Quake Live (snapshot duration: 25 ms)" + 
                 "\n\nNote that:" + 
