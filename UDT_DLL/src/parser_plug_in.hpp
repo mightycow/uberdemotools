@@ -9,6 +9,10 @@
 
 struct udtBaseParser;
 
+struct udtNothing
+{
+};
+
 struct udtChangedEntity
 {
 	idEntityStateBase* Entity;
@@ -24,9 +28,10 @@ struct udtGamestateCallbackArg
 
 struct udtSnapshotCallbackArg
 {
-	idClientSnapshotBase* Snapshot;
+	idClientSnapshotBase* Snapshot; // Never NULL.
+	idClientSnapshotBase* OldSnapshot; // May be NULL.
 	udtChangedEntity* Entities;
-	idEntityStateBase** RemovedEntities;
+	s32* RemovedEntities;
 	s32 SnapshotArrayIndex;
 	u32 EntityCount;
 	u32 RemovedEntityCount;
@@ -40,8 +45,6 @@ struct udtCommandCallbackArg
 	s32 CommandSequence;
 };
 
-
-struct udtVMLinearAllocator;
 
 struct udtBaseParserPlugIn
 {
@@ -82,9 +85,20 @@ struct udtBaseParserPlugIn
 	{
 		FinishDemoAnalysis();
 
-		u8* const endAddress = FinalAllocator.GetCurrentAddress();
-		Arrays[DemoIndex].StartAddress = CurrentArrayStartAddress;
-		Arrays[DemoIndex].ElementCount = (u32)(endAddress - CurrentArrayStartAddress) / GetElementSize();
+		if(FinalAllocator.GetStartAddress() != NULL)
+		{
+			// For Analyzer plug-ins.
+			u8* const endAddress = FinalAllocator.GetCurrentAddress();
+			Arrays[DemoIndex].StartAddress = CurrentArrayStartAddress;
+			Arrays[DemoIndex].ElementCount = (u32)(endAddress - CurrentArrayStartAddress) / GetElementSize();
+		}
+		else
+		{
+			// For Modifier plug-ins.
+			Arrays[DemoIndex].StartAddress = NULL;
+			Arrays[DemoIndex].ElementCount = 0;
+		}
+
 		++DemoIndex;
 	}
 

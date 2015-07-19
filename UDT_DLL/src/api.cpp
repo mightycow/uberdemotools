@@ -25,7 +25,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.6.3";
+static const char* VersionString = "0.7.0";
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -115,42 +115,35 @@ UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)
 
 UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return sizeof(idEntityState68);
+		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
+		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
+		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
+		default: return 0;
 	}
+}
 
-	if(protocol == udtProtocol::Dm73)
+UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
+{
+	switch(protocol)
 	{
-		return sizeof(idEntityState73);
+		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
+		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
+		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
+		default: return 0;
 	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return sizeof(idEntityState90);
-	}
-
-	return 0;
 }
 
 UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
 {
-	if(protocol == udtProtocol::Dm68)
+	switch(protocol)
 	{
-		return sizeof(idClientSnapshot68);
+		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
+		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
+		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
+		default: return 0;
 	}
-
-	if(protocol == udtProtocol::Dm73)
-	{
-		return sizeof(idClientSnapshot73);
-	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return sizeof(idClientSnapshot90);
-	}
-
-	return 0;
 }
 
 UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
@@ -480,6 +473,43 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	return (s32)udtErrorCode::None;
 }
 
+UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, u32 fileCount)
+{
+	if(info == NULL || filePaths == NULL || fileCount == 0 ||
+	   !HasValidOutputOption(*info))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	fileCount = udt_min(fileCount, (u32)UDT_MAX_MERGE_DEMO_COUNT);
+
+	for(u32 i = 0; i < fileCount; ++i)
+	{
+		if(filePaths[i] == NULL)
+		{
+			return (s32)udtErrorCode::InvalidArgument;
+		}
+	}
+
+	const udtProtocol::Id protocol = udtGetProtocolByFilePath(filePaths[0]);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	// Make sure we're not trying to merge demos with different protocols.
+	for(u32 i = 1; i < fileCount; ++i)
+	{
+		const udtProtocol::Id tempProtocol = udtGetProtocolByFilePath(filePaths[i]);
+		if(tempProtocol != protocol)
+		{
+			return (s32)udtErrorCode::InvalidArgument;
+		}
+	}
+
+	return MergeDemosNoInputCheck(info, filePaths, fileCount, protocol);
+}
+
 UDT_API(udtParserContext*) udtCreateContext()
 {
 	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
@@ -575,6 +605,29 @@ static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 	contextGroup->~udtParserContextGroup();
 }
 
+static s32 RunJobWithLocalContextGroup(udtParsingJobType::Id jobType, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificArg)
+{
+	udtDemoThreadAllocator threadAllocator;
+	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
+	if(!threadJob)
+	{
+		return udtParseMultipleDemosSingleThread(jobType, NULL, info, extraInfo, jobSpecificArg);
+	}
+
+	udtParserContextGroup* contextGroup;
+	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
+	{
+		return udtParseMultipleDemosSingleThread(jobType, NULL, info, extraInfo, jobSpecificArg);
+	}
+
+	udtMultiThreadedParsing parser;
+	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, jobType, jobSpecificArg);
+
+	DestroyContextGroup(contextGroup);
+
+	return GetErrorCode(success, info->CancelOperation);
+}
+
 UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup)
 {
 	if(contextGroup == NULL)
@@ -623,25 +676,7 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	udtDemoThreadAllocator threadAllocator;
-	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
-	if(!threadJob)
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByPattern, NULL, info, extraInfo, patternInfo);
-	}
-
-	udtParserContextGroup* contextGroup;
-	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::CutByPattern, NULL, info, extraInfo, patternInfo);
-	}
-
-	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::CutByPattern, patternInfo);
-
-	DestroyContextGroup(contextGroup);
-
-	return GetErrorCode(success, info->CancelOperation);
+	return RunJobWithLocalContextGroup(udtParsingJobType::CutByPattern, info, extraInfo, patternInfo);
 }
 
 UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg)
@@ -652,25 +687,18 @@ UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	udtDemoThreadAllocator threadAllocator;
-	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
-	if(!threadJob)
+	return RunJobWithLocalContextGroup(udtParsingJobType::Conversion, info, extraInfo, conversionArg);
+}
+
+UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg)
+{
+	if(info == NULL || extraInfo == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
 	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	udtParserContextGroup* contextGroup;
-	if(!CreateContextGroup(&contextGroup, threadAllocator.Threads.GetSize()))
-	{
-		return udtParseMultipleDemosSingleThread(udtParsingJobType::Conversion, NULL, info, extraInfo, conversionArg);
-	}
-
-	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::Conversion, conversionArg);
-
-	DestroyContextGroup(contextGroup);
-
-	return GetErrorCode(success, info->CancelOperation);
+	return RunJobWithLocalContextGroup(udtParsingJobType::TimeShift, info, extraInfo, timeShiftArg);
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)

@@ -301,6 +301,7 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	const s32 result = udtCutDemoFilesByPattern(&info, &threadInfo, &patternArg);
 	
 	udtVMLinearAllocator tempAllocator;
+	tempAllocator.Init(1 << 16);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)

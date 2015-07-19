@@ -21,7 +21,7 @@ struct idNetField
 {
 	const char* name;
 	s32			offset;
-	s32			bits; // 0 = f32
+	s32			bits; // 0 = floating-point number (f32)
 };
 
 struct udtMessage
@@ -41,13 +41,13 @@ public:
 	void	WriteByte(s32 c);
 	void	WriteShort(s32 c);
 	void	WriteLong(s32 c);
-	void	WriteString(const char* s, s32 length);
-	void	WriteBigString(const char* s, s32 length);
+	void	WriteString(const char* s, s32 length);    // The string must be null-terminated.
+	void	WriteBigString(const char* s, s32 length); // The string must be null-terminated.
 
 	void	BeginReading();
 	void	BeginReadingOOB();
 
-	// Reading functions: return -1 if no more s8acters are available.
+	// Reading functions: return -1 if no more characters are available.
 	s32		ReadBits(s32 bits);
 	s32		ReadByte();
 	s32		ReadShort();

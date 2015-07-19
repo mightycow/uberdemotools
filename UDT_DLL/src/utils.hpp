@@ -47,7 +47,7 @@ extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAlloca
 extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.
 extern bool        StringParseSeconds(s32& duration, const char* buffer); // Format is minutes:seconds or seconds.
 extern bool        CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset);
-extern s32         GetErrorCode(bool success, s32* cancel);
+extern s32         GetErrorCode(bool success, const s32* cancel);
 extern bool        RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation);
 extern char*       AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0);
 extern char*       AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength);

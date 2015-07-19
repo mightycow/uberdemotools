@@ -349,6 +349,7 @@ namespace Uber.DemoTools
             cancelButton.Click += (obj, args) => { window.DialogResult = false; window.Close(); };
 
             var appWindow = _app.MainWindow;
+            window.Owner = _app.MainWindow;
             window.WindowStyle = WindowStyle.ToolWindow;
             window.AllowsTransparency = false;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);

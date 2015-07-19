@@ -8,3 +8,8 @@ To do:
 - Frag Sequence cut filter: add a "max. time after spawn" option to detect sequences of spawnfrags
 - Frag Sequence cut filter: add a "all kills vs the same player" option?
 - Auto-rename functionality (read the first game-state message and rename the demo using the info extracted)
+- When parsing for analysis, find the time-out time ranges
+- GUI: Server time calculator with input: match index, match clock time, clock direction, overtime yes/no
+- Merger: Find a way to solve the "item problem"
+- Merger: Find a way to deal with the "player entities event sequence problem"
+- Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?

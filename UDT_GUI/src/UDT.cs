@@ -17,10 +17,12 @@ namespace Uber.DemoTools
         private const int MaxBatchSizeParsing = 128;
         private const int MaxBatchSizeCutting = 512;
         private const int MaxBatchSizeConverting = 512;
+        private const int MaxBatchSizeTimeShifting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
+        private const int MaxBatchSizeTimeShifting = 2048;
 #endif
 
         private const string _dllPath = "UDT.dll";
@@ -361,6 +363,13 @@ namespace Uber.DemoTools
             public Int32 Reserved2;
 	    };
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtTimeShiftArg
+        {
+            public Int32 SnapshotCount;
+            public Int32 Reserved1;
+        };
+
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
@@ -401,6 +410,9 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtMergeDemoFiles(ref udtParseArg info, IntPtr filePaths, UInt32 fileCount);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetDemoDataInfo(udtParserContextRef context, UInt32 demoIdx, udtParserPlugIn plugInId, ref IntPtr buffer, ref UInt32 count);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -429,6 +441,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtConvertDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtProtocolConversionArg conversionInfo);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtTimeShiftDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtTimeShiftArg timeShiftArg);
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -630,6 +645,24 @@ namespace Uber.DemoTools
 
             var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePath) == udtErrorCode.None;
             pinnedCut.Free();
+
+            return success;
+        }
+
+        public static bool MergeDemos(ref udtParseArg parseArg, List<string> filePaths)
+        {
+            var resources = new ArgumentResources();
+            var filePathsArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                filePathsArray[i] = Marshal.StringToHGlobalAnsi(filePaths[i]);
+                resources.GlobalAllocationHandles.Add(filePathsArray[i]);
+            }
+            var pinnedFilePaths = new PinnedObject(filePathsArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+
+            var success = udtMergeDemoFiles(ref parseArg, pinnedFilePaths.Address, (UInt32)filePaths.Count) == udtErrorCode.None;
+            resources.Free();
 
             return success;
         }
@@ -859,57 +892,23 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
-            var timer = new Stopwatch();
-            timer.Start();
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeCutting);
+            var newParseArg = runner.NewParseArg;
 
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeCutting)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                var result = CutDemosByPatternImpl(resources, ref parseArg, filePaths, patterns, options);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
-
-            var demos = new List<DemoInfo>();
-            var batchCount = (fileCount + MaxBatchSizeCutting - 1) / MaxBatchSizeCutting;
-            var filesPerBatch = fileCount / batchCount;
-            var success = true;
-            for(int i = 0; i < batchCount; ++i)
-            {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-
-                var newResources = new ArgumentResources();
-                CutDemosByPatternImpl(newResources, ref newParseArg, currentFiles, patterns, options);
-
-                fileIndex += currentFileCount;
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                CutDemosByPatternImpl(resources, ref newParseArg, runner.GetNextFiles(i), patterns, options);
+                resources.Free();
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
-                    success = false;
                     break;
                 }
             }
 
-            resources.Free();
+            PrintExecutionTime(runner.Timer);
 
-            PrintExecutionTime(timer);
-
-            return success;
+            return true;
         }
 
         private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
@@ -973,48 +972,20 @@ namespace Uber.DemoTools
 
         public static bool ConvertDemos(ref udtParseArg parseArg, udtProtocol outProtocol, List<MapConversionRule> mapRules, List<string> filePaths, int maxThreadCount)
         {
-            var timer = new Stopwatch();
-            timer.Start();
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeConverting);
+            var newParseArg = runner.NewParseArg;
 
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeConverting)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                var result = ConvertDemosImpl(ref parseArg, outProtocol, mapRules, filePaths, maxThreadCount);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
-
-            var batchCount = (fileCount + MaxBatchSizeConverting - 1) / MaxBatchSizeConverting;
-            var filesPerBatch = fileCount / batchCount;
-            for(int i = 0; i < batchCount; ++i)
-            {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-                fileIndex += currentFileCount;
-
-                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, currentFiles, maxThreadCount);
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, runner.GetNextFiles(i), maxThreadCount);
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
                 }
             }
 
-            PrintExecutionTime(timer);
+            PrintExecutionTime(runner.Timer);
 
             return true;
         }
@@ -1079,53 +1050,84 @@ namespace Uber.DemoTools
             return result != udtErrorCode.None;
         }
 
-        public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        public static bool TimeShiftDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int snapshotCount)
         {
-            var timer = new Stopwatch();
-            timer.Start();
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeTimeShifting);
+            var newParseArg = runner.NewParseArg;
 
-            var fileCount = filePaths.Count;
-            if(fileCount <= MaxBatchSizeParsing)
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
             {
-                var result = ParseDemosImpl(ref parseArg, filePaths, maxThreadCount, 0);
-                PrintExecutionTime(timer);
-                return result;
-            }
-
-            var oldProgressCb = parseArg.ProgressCb;
-            var progressBase = 0.0f;
-            var progressRange = 0.0f;
-            var fileIndex = 0;
-
-            var newParseArg = parseArg;
-            newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
-            {
-                var realProgress = progressBase + progressRange * progress;
-                oldProgressCb(realProgress, userData);
-            };
-
-            var demos = new List<DemoInfo>();
-            var batchCount = (fileCount + MaxBatchSizeParsing - 1) / MaxBatchSizeParsing;
-            var filesPerBatch = fileCount / batchCount;
-            for(int i = 0; i < batchCount; ++i)
-            {
-                progressBase = (float)fileIndex / (float)fileCount;
-                var currentFileCount = (i == batchCount - 1) ? (fileCount - fileIndex) : filesPerBatch;
-                var currentFiles = filePaths.GetRange(fileIndex, currentFileCount);
-                progressRange = (float)currentFileCount / (float)fileCount;
-
-                var currentResults = ParseDemosImpl(ref newParseArg, currentFiles, maxThreadCount, fileIndex);
-                demos.AddRange(currentResults);
-
-                fileIndex += currentFileCount;
-
-                if(Marshal.ReadInt32(parseArg.CancelOperation) != 0)
+                TimeShiftDemosImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, snapshotCount);
+                if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
                 }
             }
 
-            PrintExecutionTime(timer);
+            PrintExecutionTime(runner.Timer);
+
+            return true;
+        }
+
+        private static bool TimeShiftDemosImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int snapshotCount)
+        {
+            var resources = new ArgumentResources();
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = filePath;
+                resources.GlobalAllocationHandles.Add(filePath);
+            }
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var timeShiftArg = new udtTimeShiftArg();
+            timeShiftArg.SnapshotCount = snapshotCount;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtTimeShiftDemoFiles(ref parseArg, ref multiParseArg, ref timeShiftArg);
+            }
+            finally
+            {
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
+        }
+
+        public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
+        {
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeParsing);
+            var newParseArg = runner.NewParseArg;
+
+            var demos = new List<DemoInfo>();
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
+            {
+                var fileIndex = runner.FileIndex;
+                var files = runner.GetNextFiles(i);
+                var currentResults = ParseDemosImpl(ref newParseArg, files, maxThreadCount, fileIndex);
+                demos.AddRange(currentResults);
+                if(runner.IsCanceled(parseArg.CancelOperation))
+                {
+                    break;
+                }
+            }
+
+            PrintExecutionTime(runner.Timer);
 
             return demos;
         }
@@ -1430,6 +1432,86 @@ namespace Uber.DemoTools
 
             timer.Stop();
             App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+        }
+
+        private class BatchJobRunner
+        {
+            public BatchJobRunner(udtParseArg parseArg, List<string> filePaths, int maxBatchSize)
+            {
+                var fileCount = filePaths.Count;
+
+                _filePaths = filePaths;
+                _stopwatch = new Stopwatch();
+                _maxBatchSize = maxBatchSize;
+                _oldProgressCb = parseArg.ProgressCb;
+                _batchCount = (fileCount + _maxBatchSize - 1) / _maxBatchSize;
+                _filesPerBatch = fileCount / _batchCount;
+                _newParseArg = parseArg;
+
+                if(fileCount > maxBatchSize)
+                {
+                    _newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+                    {
+                        var realProgress = _progressBase + _progressRange * progress;
+                        _oldProgressCb(realProgress, userData);
+                    };
+                }
+
+                _stopwatch.Start();
+            }
+
+            public List<string> GetNextFiles(int batchIndex)
+            {
+                if(_batchCount <= 1)
+                {
+                    return _filePaths;
+                }
+
+                var fileCount = _filePaths.Count;
+                _progressBase = (float)_fileIndex / (float)fileCount;
+                var currentFileCount = (batchIndex == _batchCount - 1) ? (fileCount - _fileIndex) : _filesPerBatch;
+                var currentFiles = _filePaths.GetRange(_fileIndex, currentFileCount);
+                _progressRange = (float)currentFileCount / (float)fileCount;
+                _fileIndex += currentFileCount;
+
+                return currentFiles;
+            }
+
+            public bool IsCanceled(IntPtr cancelValueAddress)
+            {
+                return Marshal.ReadInt32(cancelValueAddress) != 0;
+            }
+
+            public int BatchCount
+            {
+                get { return _batchCount; }
+            }
+
+            public int FileIndex
+            {
+                get { return _fileIndex; }
+            }
+
+            public Stopwatch Timer
+            {
+                get { return _stopwatch; }
+            }
+
+            public udtParseArg NewParseArg
+            {
+                get { return _newParseArg; }
+            }
+
+            private List<string> _filePaths;
+            private Stopwatch _stopwatch;
+            private int _maxBatchSize = 512;
+            private float _progressBase = 0.0f;
+            private float _progressRange = 0.0f;
+            private int _fileIndex = 0;
+            private int _batchCount = 0;
+            private int _filesPerBatch = 0;
+            private udtProgressCallback _oldProgressCb;
+            private udtParseArg _newParseArg;
         }
     }
 }

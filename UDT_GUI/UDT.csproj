@@ -116,6 +116,8 @@
     <Compile Include="src\AppMultiRailCut.cs" />
 	<Compile Include="src\AppFlagCaptureCut.cs" />
 	<Compile Include="src\AppFlickRailCut.cs" />
+	<Compile Include="src\AppModifiers.cs" />
+	<Compile Include="src\AppTimeShiftMod.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
