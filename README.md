@@ -124,9 +124,11 @@ Thanks
 In alphabetical order:
 * AsphyxEvents
 * cra
+* Danmer
 * gaiia
 * JackBender
 * Naper
+* pakao
 * Sab0o
 * santile
 * Terifire
