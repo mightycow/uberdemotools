@@ -26,6 +26,73 @@ entityState_t communication
 */
 
 //
+// 3
+//
+
+#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState3, field), bits }
+
+// @NOTE: Unlike the arrays for later formats, the order here matters.
+// Each field's index is the corresponding index into the field bit mask.
+const idNetField EntityStateFields3[]
+{
+	ESF(eType, 8),
+	ESF(eFlags, 16),
+	ESF(pos.trType, 8),
+	ESF(pos.trTime, 32),
+	ESF(pos.trDuration, 32),
+	ESF(pos.trBase[0], 0),
+	ESF(pos.trBase[1], 0),
+	ESF(pos.trBase[2], 0),
+	ESF(pos.trDelta[0], 0),
+	ESF(pos.trDelta[1], 0),
+	ESF(pos.trDelta[2], 0),
+	ESF(apos.trType, 8),
+	ESF(apos.trTime, 32),
+	ESF(apos.trDuration, 32),
+	ESF(apos.trBase[0], 0),
+	ESF(apos.trBase[1], 0),
+	ESF(apos.trBase[2], 0),
+	ESF(apos.trDelta[0], 0),
+	ESF(apos.trDelta[1], 0),
+	ESF(apos.trDelta[2], 0),
+	ESF(time, 32),
+	ESF(time2, 32),
+	ESF(origin[0], 0),
+	ESF(origin[1], 0),
+	ESF(origin[2], 0),
+	ESF(origin2[0], 0),
+	ESF(origin2[1], 0),
+	ESF(origin2[2], 0),
+	ESF(angles[0], 0),
+	ESF(angles[1], 0),
+	ESF(angles[2], 0),
+	ESF(angles2[0], 0),
+	ESF(angles2[1], 0),
+	ESF(angles2[2], 0),
+	ESF(otherEntityNum, 10),
+	ESF(otherEntityNum2, 10),
+	ESF(groundEntityNum, 10),
+	ESF(loopSound, 8),
+	ESF(constantLight, 32),
+	ESF(modelindex, 8),
+	ESF(modelindex2, 8),
+	ESF(frame, 16),
+	ESF(clientNum, 8),
+	ESF(solid, 24),
+	ESF(event, 10),
+	ESF(eventParm, 8),
+	ESF(powerups, 16),
+	ESF(weapon, 8),
+	ESF(legsAnim, 8),
+	ESF(torsoAnim, 8)
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount3 = sizeof(EntityStateFields3) / sizeof(EntityStateFields3[0]);
+static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 fields!");
+
+//
 // 68
 //
 
@@ -471,8 +538,8 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm3: // @TODO: create the fields arrays
 			_protocolSizeOfEntityState = sizeof(idEntityState3);
-			_entityStateFields = NULL;
-			_entityStateFieldCount = 0;
+			_entityStateFields = EntityStateFields3;
+			_entityStateFieldCount = EntityStateFieldCount3;
 			_playerStateFields = NULL;
 			_playerStateFieldCount = 0;
 			break;
@@ -1652,7 +1719,6 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 	
 	if(_protocol == udtProtocol::Dm3)
 	{
-		memcpy(to, from, _protocolSizeOfEntityState); // @TODO: okay?
 		to->number = number;
 
 		u8 bitMask[7]; // 50 bits used only.
@@ -1667,60 +1733,37 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		}
 		else
 		{
-			memcpy(&bitMask[0], &KnownBitMasks[maskIndex][0], 7);
+			// Let's not use memcpy for 7 bytes...
+			for(i = 0; i < 7; ++i)
+			{
+				bitMask[i] = KnownBitMasks[maskIndex][i];
+			}
 		}
 
-		// @TODO: Turn this into a loop.
-		if(bitMask[0] & 1)	to->eType = ReadBits(8);
-		if(bitMask[0] & 2)	to->eFlags = ReadBits(16);
-		if(bitMask[0] & 4)	to->pos.trType = (trType_t)ReadBits(8);
-		if(bitMask[0] & 8)	to->pos.trTime = ReadBits(32);
-		if(bitMask[0] & 16)	to->pos.trDuration = ReadBits(32);
-		if(bitMask[0] & 32)	to->pos.trBase[0] = ReadFloat();
-		if(bitMask[0] & 64)	to->pos.trBase[1] = ReadFloat();
-		if(bitMask[0] & 128)	to->pos.trBase[2] = ReadFloat();
-		if(bitMask[1] & 1)	to->pos.trDelta[0] = ReadFloat();
-		if(bitMask[1] & 2)	to->pos.trDelta[1] = ReadFloat();
-		if(bitMask[1] & 4)	to->pos.trDelta[2] = ReadFloat();
-		if(bitMask[1] & 8)	to->apos.trType = (trType_t)ReadBits(8);
-		if(bitMask[1] & 16)	to->apos.trTime = ReadBits(32);
-		if(bitMask[1] & 32)	to->apos.trDuration = ReadBits(32);
-		if(bitMask[1] & 64)	to->apos.trBase[0] = ReadFloat();
-		if(bitMask[1] & 128)	to->apos.trBase[1] = ReadFloat();
-		if(bitMask[2] & 1)	to->apos.trBase[2] = ReadFloat();
-		if(bitMask[2] & 2)	to->apos.trDelta[0] = ReadFloat();
-		if(bitMask[2] & 4)	to->apos.trDelta[1] = ReadFloat();
-		if(bitMask[2] & 8)	to->apos.trDelta[2] = ReadFloat();
-		if(bitMask[2] & 16)	to->time = ReadBits(32);
-		if(bitMask[2] & 32)	to->time2 = ReadBits(32);
-		if(bitMask[2] & 64)	to->origin[0] = ReadFloat();
-		if(bitMask[2] & 128)	to->origin[1] = ReadFloat();
-		if(bitMask[3] & 1)	to->origin[2] = ReadFloat();
-		if(bitMask[3] & 2)	to->origin2[0] = ReadFloat();
-		if(bitMask[3] & 4)	to->origin2[1] = ReadFloat();
-		if(bitMask[3] & 8)	to->origin2[2] = ReadFloat();
-		if(bitMask[3] & 16)	to->angles[0] = ReadFloat();
-		if(bitMask[3] & 32)	to->angles[1] = ReadFloat();
-		if(bitMask[3] & 64)	to->angles[2] = ReadFloat();
-		if(bitMask[3] & 128)	to->angles2[0] = ReadFloat();
-		if(bitMask[4] & 1)	to->angles2[1] = ReadFloat();
-		if(bitMask[4] & 2)	to->angles2[2] = ReadFloat();
-		if(bitMask[4] & 4)	to->otherEntityNum = ReadBits(10);
-		if(bitMask[4] & 8)	to->otherEntityNum2 = ReadBits(10);
-		if(bitMask[4] & 16)	to->groundEntityNum = ReadBits(10);
-		if(bitMask[4] & 32)	to->loopSound = ReadBits(8);
-		if(bitMask[4] & 64)	to->constantLight = ReadBits(32);
-		if(bitMask[4] & 128)	to->modelindex = ReadBits(8);
-		if(bitMask[5] & 1)	to->modelindex2 = ReadBits(8);
-		if(bitMask[5] & 2)	to->frame = ReadBits(16);
-		if(bitMask[5] & 4)	to->clientNum = ReadBits(8);
-		if(bitMask[5] & 8)	to->solid = ReadBits(24);
-		if(bitMask[5] & 16)	to->event = ReadBits(10);
-		if(bitMask[5] & 32)	to->eventParm = ReadBits(8);
-		if(bitMask[5] & 64)	to->powerups = ReadBits(16);
-		if(bitMask[5] & 128)	to->weapon = ReadBits(8);
-		if(bitMask[6] & 1)	to->legsAnim = ReadBits(8);
-		if(bitMask[6] & 2)	to->torsoAnim = ReadBits(8);
+		const idNetField* field = _entityStateFields;
+		const s32 fieldCount = _entityStateFieldCount;
+		for(i = 0; i < fieldCount; i++, field++)
+		{
+			fromF = (s32*)((u8*)from + field->offset);
+			toF = (s32*)((u8*)to + field->offset);
+
+			const s32 byteIndex = i >> 3;
+			const s32 bitIndex = i & 7;
+			if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
+			{
+				*toF = *fromF;
+				continue;
+			}
+
+			if(field->bits == 0)
+			{
+				*(f32*)toF = ReadFloat();
+			}
+			else
+			{
+				*toF = ReadBits(field->bits);
+			}
+		}
 
 		return true;
 	}
