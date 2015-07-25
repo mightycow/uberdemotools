@@ -39,6 +39,10 @@ namespace Uber.DemoTools
         public enum udtProtocol
         {
             Invalid,
+            Dm3,
+            Dm48,
+            Dm66,
+            Dm67,
             Dm68,
             Dm73,
             Dm90
@@ -604,7 +608,11 @@ namespace Uber.DemoTools
         {
             switch(protocol)
             {
-                case udtProtocol.Dm68: return "68 (Quake 3's last protocol)";
+                case udtProtocol.Dm3:  return "3 (Quake 3 1.11-1.17)";
+                case udtProtocol.Dm48: return "48 (Quake 3 1.27)";
+                case udtProtocol.Dm66: return "66 (Quake 3 1.29-1.30)";
+                case udtProtocol.Dm67: return "67 (Quake 3 1.31)";
+                case udtProtocol.Dm68: return "68 (Quake 3 1.32)";
                 case udtProtocol.Dm73: return "73 (Quake Live's old protocol)";
                 case udtProtocol.Dm90: return "90 (Quake Live's current protocol)";
                 default: return "?";

@@ -51,6 +51,10 @@ struct udtErrorCode
 
 #define UDT_PROTOCOL_LIST(N) \
 	N(Invalid, NULL) \
+	N(Dm3 , ".dm3"  ) \
+	N(Dm48, ".dm_48") \
+	N(Dm66, ".dm_66") \
+	N(Dm67, ".dm_67") \
 	N(Dm68, ".dm_68") \
 	N(Dm73, ".dm_73") \
 	N(Dm90, ".dm_90")

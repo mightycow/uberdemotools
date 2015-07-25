@@ -153,12 +153,19 @@ bool udtBaseParser::ParseNextMessage(const udtMessage& inMsg, s32 inServerMessag
 bool udtBaseParser::ParseServerMessage()
 {
 	_outMsg.Init(_outMsgData, sizeof(_outMsgData));
-	_outMsg.Bitstream();
 
-	_inMsg.Bitstream();
+	_outMsg.SetHuffman(_outProtocol >= udtProtocol::Dm66);
+	_inMsg.SetHuffman(_inProtocol >= udtProtocol::Dm66);
 
-	_inReliableSequenceAcknowledge = _inMsg.ReadLong();
-	_outMsg.WriteLong(_inReliableSequenceAcknowledge);
+	if(_inProtocol > udtProtocol::Dm3)
+	{
+		_inReliableSequenceAcknowledge = _inMsg.ReadLong();	
+	}
+
+	if(_outProtocol > udtProtocol::Dm3)
+	{
+		_outMsg.WriteLong(_inReliableSequenceAcknowledge);
+	}
 
 	for(;;)
 	{
@@ -187,6 +194,11 @@ bool udtBaseParser::ParseServerMessage()
 				}
 			}
 		}
+
+		if(_inProtocol == udtProtocol::Dm3 && command == svc_bad)
+		{
+			break;
+		}
 		
 		if(command == svc_EOF) 
 		{
@@ -207,6 +219,8 @@ bool udtBaseParser::ParseServerMessage()
 
 		case svc_gamestate:
 			if(!ParseGamestate()) return false;
+			// @TODO: Add snapshot support for protocols dm3 and dm_48.
+			if(_inProtocol <= udtProtocol::Dm48) return false;
 			break;
 
 		case svc_snapshot:
@@ -433,6 +447,8 @@ bool udtBaseParser::ParseCommandString()
 
 bool udtBaseParser::ParseGamestate()
 {
+	bool continueParsing = true;
+
 	// @TODO: Reset some data, but not for the 1st gamestate message.
 	ResetForGamestateMessage();
 
@@ -446,6 +462,11 @@ bool udtBaseParser::ParseGamestate()
 	for(;;)
 	{
 		const s32 command = _inMsg.ReadByte();
+
+		if(_inProtocol == udtProtocol::Dm3 && command == svc_bad)
+		{
+			break;
+		}
 
 		if(command == svc_EOF)
 		{
@@ -473,6 +494,13 @@ bool udtBaseParser::ParseGamestate()
 		} 
 		else if(command == svc_baseline)
 		{
+			if(_inProtocol == udtProtocol::Dm48)
+			{
+				// @TODO: Entity parsing support for dm_48.
+				continueParsing = false;
+				goto early_exit;
+			}
+
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
@@ -494,9 +522,14 @@ bool udtBaseParser::ParseGamestate()
 		}
 	}
 
-	_inClientNum = _inMsg.ReadLong();
-	_inChecksumFeed = _inMsg.ReadLong();
+	// @TODO: protocol 48?
+	if(_inProtocol > udtProtocol::Dm3)
+	{
+		_inClientNum = _inMsg.ReadLong();
+		_inChecksumFeed = _inMsg.ReadLong();
+	}
 
+early_exit:
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtGamestateCallbackArg info;
@@ -513,7 +546,7 @@ bool udtBaseParser::ParseGamestate()
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
 
-	return true;
+	return continueParsing;
 }
 
 bool udtBaseParser::ParseSnapshot()

@@ -469,6 +469,38 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount73;
 			break;
 
+		case udtProtocol::Dm3: // @TODO: create the fields arrays
+			_protocolSizeOfEntityState = sizeof(idEntityState3);
+			_entityStateFields = NULL;
+			_entityStateFieldCount = 0;
+			_playerStateFields = NULL;
+			_playerStateFieldCount = 0;
+			break;
+
+		case udtProtocol::Dm48: // @TODO: create the fields arrays
+			_protocolSizeOfEntityState = sizeof(idEntityState48);
+			_entityStateFields = NULL;
+			_entityStateFieldCount = 0;
+			_playerStateFields = NULL;
+			_playerStateFieldCount = 0;
+			break;
+
+		case udtProtocol::Dm66: // @TODO: validate
+			_protocolSizeOfEntityState = sizeof(idEntityState66);
+			_entityStateFields = EntityStateFields68;
+			_entityStateFieldCount = EntityStateFieldCount68;
+			_playerStateFields = PlayerStateFields68;
+			_playerStateFieldCount = PlayerStateFieldCount68;
+			break;
+
+		case udtProtocol::Dm67: // @TODO: validate
+			_protocolSizeOfEntityState = sizeof(idEntityState67);
+			_entityStateFields = EntityStateFields68;
+			_entityStateFieldCount = EntityStateFieldCount68;
+			_playerStateFields = PlayerStateFields68;
+			_playerStateFieldCount = PlayerStateFieldCount68;
+			break;
+
 		case udtProtocol::Dm68:
 		default:
 			_protocolSizeOfEntityState = sizeof(idEntityState68);
@@ -505,6 +537,11 @@ void udtMessage::Clear()
 void udtMessage::Bitstream() 
 {
 	Buffer.oob = qfalse;
+}
+
+void udtMessage::SetHuffman(bool huffman)
+{
+	Buffer.oob = huffman ? qfalse : qtrue;
 }
 
 void udtMessage::BeginReading() 
@@ -621,29 +658,49 @@ s32 udtMessage::ReadBits(s32 bits)
 	s32 value = 0;
 	if(Buffer.oob) 
 	{
-		if(bits == 8) 
+		if(_protocol >= udtProtocol::Dm68)
 		{
-			value = Buffer.data[Buffer.readcount];
-			Buffer.readcount += 1;
-			Buffer.bit += 8;
-		} 
-		else if(bits == 16) 
+			if(bits == 8)
+			{
+				value = Buffer.data[Buffer.readcount];
+				Buffer.readcount += 1;
+				Buffer.bit += 8;
+			}
+			else if(bits == 16)
+			{
+				unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
+				value = LittleShort(*sp);
+				Buffer.readcount += 2;
+				Buffer.bit += 16;
+			}
+			else if(bits == 32)
+			{
+				u32* ip = (u32*)&Buffer.data[Buffer.readcount];
+				value = LittleLong(*ip);
+				Buffer.readcount += 4;
+				Buffer.bit += 32;
+			}
+			else
+			{
+				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits\n", bits);
+			}
+		}
+		else
 		{
-			unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
-			value = LittleShort(*sp);
-			Buffer.readcount += 2;
-			Buffer.bit += 16;
-		} 
-		else if(bits == 32) 
-		{
-			u32* ip = (u32*)&Buffer.data[Buffer.readcount];
-			value = LittleLong(*ip);
-			Buffer.readcount += 4;
-			Buffer.bit += 32;
-		} 
-		else 
-		{
-			Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits\n", bits);
+			if(bits > 32)
+			{
+				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits (more than 32)\n", bits);
+			}
+
+			u32 readBits = *(u32*)&Buffer.data[Buffer.readcount];
+			const u32 bitPosition = (u32)Buffer.bit % 8;
+			const u32 diff = 32 - (u32)bits;
+			readBits >>= bitPosition;
+			readBits <<= diff;
+			readBits >>= diff;
+			value = (s32)readBits;
+			Buffer.bit += bits;
+			Buffer.readcount = Buffer.bit >> 3;
 		}
 	} 
 	else
@@ -768,7 +825,7 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 
 s32 udtMessage::ReadByte()
 {
-	s32 c = (u8)ReadBits(8);
+	s32 c = ReadBits(8);
 	if(Buffer.readcount > Buffer.cursize) 
 	{
 		c = -1;
@@ -779,7 +836,7 @@ s32 udtMessage::ReadByte()
 
 s32 udtMessage::ReadShort()
 {
-	s32 c = (short)ReadBits(16);
+	s32 c = ReadBits(16);
 	if(Buffer.readcount > Buffer.cursize) 
 	{
 		c = -1;
@@ -797,6 +854,20 @@ s32 udtMessage::ReadLong()
 	}
 
 	return c;
+}
+
+f32 udtMessage::ReadFloat()
+{
+	if(ReadBits(1))
+	{
+		const s32 bits = ReadBits(32);
+
+		return *(f32*)&bits;
+	}
+
+	const s32 intValue = ReadBits(13) - 4096;
+
+	return (f32)(intValue);
 }
 
 char* udtMessage::ReadString(s32& length) 
@@ -1517,6 +1588,42 @@ Can go from either a baseline or a previous packet_entity
 ==================
 */
 
+static const u8 KnownBitMasks[32][7] =
+{
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE1, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0xE0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x40, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x20, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0xED, 0x07, 0x00, 0x00, 0x00, 0x80, 0x00 },
+	{ 0xE0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xED, 0x07, 0x00, 0x00, 0x00, 0x30, 0x00 },
+	{ 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x60, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE1, 0x00, 0x00, 0x00, 0x04, 0x20, 0x00 },
+	{ 0xE1, 0x00, 0xC0, 0x01, 0x20, 0x20, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0x60, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x40, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x01, 0x00, 0x01 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x30, 0x00 },
+	{ 0xE0, 0x80, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x20, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x02 },
+	{ 0xE0, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00 }
+};
+
 bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
 	s32			i, lc;
@@ -1542,7 +1649,82 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		to->number = number;
 		return false;
 	}
+	
+	if(_protocol == udtProtocol::Dm3)
+	{
+		memcpy(to, from, _protocolSizeOfEntityState); // @TODO: okay?
+		to->number = number;
 
+		u8 bitMask[7]; // 50 bits used only.
+		const s32 maskIndex = ReadBits(5);
+		if(maskIndex == 0x1F)
+		{
+			for(i = 0; i < 6; ++i)
+			{
+				bitMask[i] = (u8)ReadBits(8);
+			}
+			bitMask[6] = ReadBits(2) & 3;
+		}
+		else
+		{
+			memcpy(&bitMask[0], &KnownBitMasks[maskIndex][0], 7);
+		}
+
+		// @TODO: Turn this into a loop.
+		if(bitMask[0] & 1)	to->eType = ReadBits(8);
+		if(bitMask[0] & 2)	to->eFlags = ReadBits(16);
+		if(bitMask[0] & 4)	to->pos.trType = (trType_t)ReadBits(8);
+		if(bitMask[0] & 8)	to->pos.trTime = ReadBits(32);
+		if(bitMask[0] & 16)	to->pos.trDuration = ReadBits(32);
+		if(bitMask[0] & 32)	to->pos.trBase[0] = ReadFloat();
+		if(bitMask[0] & 64)	to->pos.trBase[1] = ReadFloat();
+		if(bitMask[0] & 128)	to->pos.trBase[2] = ReadFloat();
+		if(bitMask[1] & 1)	to->pos.trDelta[0] = ReadFloat();
+		if(bitMask[1] & 2)	to->pos.trDelta[1] = ReadFloat();
+		if(bitMask[1] & 4)	to->pos.trDelta[2] = ReadFloat();
+		if(bitMask[1] & 8)	to->apos.trType = (trType_t)ReadBits(8);
+		if(bitMask[1] & 16)	to->apos.trTime = ReadBits(32);
+		if(bitMask[1] & 32)	to->apos.trDuration = ReadBits(32);
+		if(bitMask[1] & 64)	to->apos.trBase[0] = ReadFloat();
+		if(bitMask[1] & 128)	to->apos.trBase[1] = ReadFloat();
+		if(bitMask[2] & 1)	to->apos.trBase[2] = ReadFloat();
+		if(bitMask[2] & 2)	to->apos.trDelta[0] = ReadFloat();
+		if(bitMask[2] & 4)	to->apos.trDelta[1] = ReadFloat();
+		if(bitMask[2] & 8)	to->apos.trDelta[2] = ReadFloat();
+		if(bitMask[2] & 16)	to->time = ReadBits(32);
+		if(bitMask[2] & 32)	to->time2 = ReadBits(32);
+		if(bitMask[2] & 64)	to->origin[0] = ReadFloat();
+		if(bitMask[2] & 128)	to->origin[1] = ReadFloat();
+		if(bitMask[3] & 1)	to->origin[2] = ReadFloat();
+		if(bitMask[3] & 2)	to->origin2[0] = ReadFloat();
+		if(bitMask[3] & 4)	to->origin2[1] = ReadFloat();
+		if(bitMask[3] & 8)	to->origin2[2] = ReadFloat();
+		if(bitMask[3] & 16)	to->angles[0] = ReadFloat();
+		if(bitMask[3] & 32)	to->angles[1] = ReadFloat();
+		if(bitMask[3] & 64)	to->angles[2] = ReadFloat();
+		if(bitMask[3] & 128)	to->angles2[0] = ReadFloat();
+		if(bitMask[4] & 1)	to->angles2[1] = ReadFloat();
+		if(bitMask[4] & 2)	to->angles2[2] = ReadFloat();
+		if(bitMask[4] & 4)	to->otherEntityNum = ReadBits(10);
+		if(bitMask[4] & 8)	to->otherEntityNum2 = ReadBits(10);
+		if(bitMask[4] & 16)	to->groundEntityNum = ReadBits(10);
+		if(bitMask[4] & 32)	to->loopSound = ReadBits(8);
+		if(bitMask[4] & 64)	to->constantLight = ReadBits(32);
+		if(bitMask[4] & 128)	to->modelindex = ReadBits(8);
+		if(bitMask[5] & 1)	to->modelindex2 = ReadBits(8);
+		if(bitMask[5] & 2)	to->frame = ReadBits(16);
+		if(bitMask[5] & 4)	to->clientNum = ReadBits(8);
+		if(bitMask[5] & 8)	to->solid = ReadBits(24);
+		if(bitMask[5] & 16)	to->event = ReadBits(10);
+		if(bitMask[5] & 32)	to->eventParm = ReadBits(8);
+		if(bitMask[5] & 64)	to->powerups = ReadBits(16);
+		if(bitMask[5] & 128)	to->weapon = ReadBits(8);
+		if(bitMask[6] & 1)	to->legsAnim = ReadBits(8);
+		if(bitMask[6] & 2)	to->torsoAnim = ReadBits(8);
+
+		return true;
+	}
+	
 	lc = ReadByte();
 	if(lc > _entityStateFieldCount || lc < 0)
 	{

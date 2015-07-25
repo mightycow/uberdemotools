@@ -36,6 +36,7 @@ public:
 	void	Clear ();
 	void	WriteData (const void* data, s32 length);
 	void	Bitstream();
+	void	SetHuffman(bool huffman);
 
 	void	WriteBits(s32 value, s32 bits);
 	void	WriteByte(s32 c);
@@ -52,6 +53,7 @@ public:
 	s32		ReadByte();
 	s32		ReadShort();
 	s32		ReadLong();
+	f32		ReadFloat();
 
 	char*	ReadString(s32& length);
 	char*	ReadBigString(s32& length);

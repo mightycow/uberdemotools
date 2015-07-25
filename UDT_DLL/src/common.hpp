@@ -193,6 +193,22 @@ struct idEntityStateBase
 	s32		generic1;
 };
 
+struct idEntityState3 : idEntityStateBase
+{
+};
+
+struct idEntityState48 : idEntityStateBase
+{
+};
+
+struct idEntityState66 : idEntityStateBase
+{
+};
+
+struct idEntityState67 : idEntityStateBase
+{
+};
+
 struct idEntityState68 : idEntityStateBase
 {
 };
@@ -417,6 +433,22 @@ struct idPlayerStateBase
 	s32			entityEventSequence;
 };
 
+struct idPlayerState3 : idPlayerStateBase
+{
+};
+
+struct idPlayerState48 : idPlayerStateBase
+{
+};
+
+struct idPlayerState66 : idPlayerStateBase
+{
+};
+
+struct idPlayerState67 : idPlayerStateBase
+{
+};
+
 struct idPlayerState68 : idPlayerStateBase
 {
 };
@@ -570,10 +602,27 @@ struct idClientSnapshotBase
 	s32				numEntities;			// all of the entities that need to be presented
 	s32				parseEntitiesNum;		// at the time of this snapshot
 
-	s32				serverCommandNum;		// execute all commands up to this before
-	// making the snapshot current
+	s32				serverCommandNum;		// execute all commands up to this before making the snapshot current
+};
 
-	//PlayerStateType	ps;						// complete information about the current player at this time
+struct idClientSnapshot3 : idClientSnapshotBase
+{
+	idPlayerState3 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot48 : idClientSnapshotBase
+{
+	idPlayerState48 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot66 : idClientSnapshotBase
+{
+	idPlayerState66 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot67 : idClientSnapshotBase
+{
+	idPlayerState67 ps; // complete information about the current player at this time
 };
 
 struct idClientSnapshot68 : idClientSnapshotBase
@@ -597,6 +646,10 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 {
 	switch(protocol)
 	{
+		case udtProtocol::Dm3: return &((idClientSnapshot3*)snap)->ps;
+		case udtProtocol::Dm48: return &((idClientSnapshot48*)snap)->ps;
+		case udtProtocol::Dm66: return &((idClientSnapshot66*)snap)->ps;
+		case udtProtocol::Dm67: return &((idClientSnapshot67*)snap)->ps;
 		case udtProtocol::Dm68: return &((idClientSnapshot68*)snap)->ps;
 		case udtProtocol::Dm73: return &((idClientSnapshot73*)snap)->ps;
 		case udtProtocol::Dm90: return &((idClientSnapshot90*)snap)->ps;

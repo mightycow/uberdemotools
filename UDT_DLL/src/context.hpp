@@ -46,7 +46,5 @@ private:
 
 	udtProtocolConverter90to68_CPMA _converter90to68;
 	udtProtocolConverter73to90      _converter73to90;
-	udtProtocolConverterIdentity    _converter68;
-	udtProtocolConverterIdentity    _converter73;
-	udtProtocolConverterIdentity    _converter90;
+	udtProtocolConverterIdentity    _converterIdentity;
 };
