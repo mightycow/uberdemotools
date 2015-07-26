@@ -93,6 +93,74 @@ const s32 EntityStateFieldCount3 = sizeof(EntityStateFields3) / sizeof(EntitySta
 static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 fields!");
 
 //
+// 48
+//
+
+#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState48, field), bits }
+
+// @NOTE: Unlike the arrays for later formats, the order here matters.
+// Each field's index is the corresponding index into the field bit mask.
+const idNetField EntityStateFields48[]
+{
+	ESF(eType, 8),
+	ESF(eFlags, 16),
+	ESF(pos.trType, 8),
+	ESF(pos.trTime, 32),
+	ESF(pos.trDuration, 32),
+	ESF(pos.trBase[0], 0),
+	ESF(pos.trBase[1], 0),
+	ESF(pos.trBase[2], 0),
+	ESF(pos.trDelta[0], 0),
+	ESF(pos.trDelta[1], 0),
+	ESF(pos.trDelta[2], 0),
+	ESF(apos.trType, 8),
+	ESF(apos.trTime, 32),
+	ESF(apos.trDuration, 32),
+	ESF(apos.trBase[0], 0),
+	ESF(apos.trBase[1], 0),
+	ESF(apos.trBase[2], 0),
+	ESF(apos.trDelta[0], 0),
+	ESF(apos.trDelta[1], 0),
+	ESF(apos.trDelta[2], 0),
+	ESF(time, 32),
+	ESF(time2, 32),
+	ESF(origin[0], 0),
+	ESF(origin[1], 0),
+	ESF(origin[2], 0),
+	ESF(origin2[0], 0),
+	ESF(origin2[1], 0),
+	ESF(origin2[2], 0),
+	ESF(angles[0], 0),
+	ESF(angles[1], 0),
+	ESF(angles[2], 0),
+	ESF(angles2[0], 0),
+	ESF(angles2[1], 0),
+	ESF(angles2[2], 0),
+	ESF(otherEntityNum, 10),
+	ESF(otherEntityNum2, 10),
+	ESF(groundEntityNum, 10),
+	ESF(loopSound, 8),
+	ESF(constantLight, 32),
+	ESF(modelindex, 8),
+	ESF(modelindex2, 8),
+	ESF(frame, 16),
+	ESF(clientNum, 8),
+	ESF(solid, 24),
+	ESF(event, 10),
+	ESF(eventParm, 8),
+	ESF(powerups, 16),
+	ESF(weapon, 8),
+	ESF(legsAnim, 8),
+	ESF(torsoAnim, 8),
+	ESF(generic1, 8)
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount48 = sizeof(EntityStateFields48) / sizeof(EntityStateFields48[0]);
+static_assert(EntityStateFieldCount48 == 51, "dm_48 network entity states have 51 fields!");
+
+//
 // 68
 //
 
@@ -536,7 +604,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount73;
 			break;
 
-		case udtProtocol::Dm3: // @TODO: create the fields arrays
+		case udtProtocol::Dm3: // @TODO: create the player state fields arrays
 			_protocolSizeOfEntityState = sizeof(idEntityState3);
 			_entityStateFields = EntityStateFields3;
 			_entityStateFieldCount = EntityStateFieldCount3;
@@ -544,15 +612,15 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = 0;
 			break;
 
-		case udtProtocol::Dm48: // @TODO: create the fields arrays
+		case udtProtocol::Dm48: // @TODO: create the player state fields arrays
 			_protocolSizeOfEntityState = sizeof(idEntityState48);
-			_entityStateFields = NULL;
-			_entityStateFieldCount = 0;
+			_entityStateFields = EntityStateFields48;
+			_entityStateFieldCount = EntityStateFieldCount48;
 			_playerStateFields = NULL;
 			_playerStateFieldCount = 0;
 			break;
 
-		case udtProtocol::Dm66: // @TODO: validate
+		case udtProtocol::Dm66:
 			_protocolSizeOfEntityState = sizeof(idEntityState66);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
@@ -560,7 +628,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount68;
 			break;
 
-		case udtProtocol::Dm67: // @TODO: validate
+		case udtProtocol::Dm67:
 			_protocolSizeOfEntityState = sizeof(idEntityState67);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
@@ -1736,6 +1804,58 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 			// Let's not use memcpy for 7 bytes...
 			for(i = 0; i < 7; ++i)
 			{
+				bitMask[i] = KnownBitMasks[maskIndex][i];
+			}
+		}
+
+		const idNetField* field = _entityStateFields;
+		const s32 fieldCount = _entityStateFieldCount;
+		for(i = 0; i < fieldCount; i++, field++)
+		{
+			fromF = (s32*)((u8*)from + field->offset);
+			toF = (s32*)((u8*)to + field->offset);
+
+			const s32 byteIndex = i >> 3;
+			const s32 bitIndex = i & 7;
+			if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
+			{
+				*toF = *fromF;
+				continue;
+			}
+
+			if(field->bits == 0)
+			{
+				*(f32*)toF = ReadFloat();
+			}
+			else
+			{
+				*toF = ReadBits(field->bits);
+			}
+		}
+
+		return true;
+	}
+
+	if(_protocol == udtProtocol::Dm48)
+	{
+		to->number = number;
+
+		u8 bitMask[7]; // 51 bits used only.
+		const s32 maskIndex = ReadBits(5);
+		if(maskIndex == 0x1F)
+		{
+			for(i = 0; i < 6; ++i)
+			{
+				bitMask[i] = (u8)ReadBits(8);
+			}
+			bitMask[6] = ReadBits(3) & 7;
+		}
+		else
+		{
+			// Let's not use memcpy for 7 bytes...
+			for(i = 0; i < 7; ++i)
+			{
+				// @TODO: What are the known bit masks for dm_48?
 				bitMask[i] = KnownBitMasks[maskIndex][i];
 			}
 		}

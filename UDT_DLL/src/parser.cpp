@@ -175,6 +175,11 @@ bool udtBaseParser::ParseServerMessage()
 			return false;
 		}
 
+		if(_inMsg.Buffer.readcount == _inMsg.Buffer.cursize)
+		{
+			break;
+		}
+
 		s32 command = _inMsg.ReadByte();
 		
 		if(_inProtocol >= udtProtocol::Dm90)
@@ -195,12 +200,7 @@ bool udtBaseParser::ParseServerMessage()
 			}
 		}
 
-		if(_inProtocol == udtProtocol::Dm3 && command == svc_bad)
-		{
-			break;
-		}
-		
-		if(command == svc_EOF) 
+		if(command == svc_EOF || (_inProtocol == udtProtocol::Dm3 && command == svc_bad))
 		{
 			break;
 		}
@@ -447,8 +447,6 @@ bool udtBaseParser::ParseCommandString()
 
 bool udtBaseParser::ParseGamestate()
 {
-	bool continueParsing = true;
-
 	// @TODO: Reset some data, but not for the 1st gamestate message.
 	ResetForGamestateMessage();
 
@@ -463,7 +461,7 @@ bool udtBaseParser::ParseGamestate()
 	{
 		const s32 command = _inMsg.ReadByte();
 
-		if(_inProtocol == udtProtocol::Dm3 && command == svc_bad)
+		if(_inProtocol <= udtProtocol::Dm48 && command == svc_bad)
 		{
 			break;
 		}
@@ -494,13 +492,6 @@ bool udtBaseParser::ParseGamestate()
 		} 
 		else if(command == svc_baseline)
 		{
-			if(_inProtocol == udtProtocol::Dm48)
-			{
-				// @TODO: Entity parsing support for dm_48.
-				continueParsing = false;
-				goto early_exit;
-			}
-
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
@@ -522,14 +513,17 @@ bool udtBaseParser::ParseGamestate()
 		}
 	}
 
-	// @TODO: protocol 48?
-	if(_inProtocol > udtProtocol::Dm3)
+	if(_inProtocol >= udtProtocol::Dm66)
 	{
 		_inClientNum = _inMsg.ReadLong();
 		_inChecksumFeed = _inMsg.ReadLong();
 	}
+	else
+	{
+		_inClientNum = -1;
+		_inChecksumFeed = 0;
+	}
 
-early_exit:
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtGamestateCallbackArg info;
@@ -546,7 +540,7 @@ early_exit:
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
 
-	return continueParsing;
+	return true;
 }
 
 bool udtBaseParser::ParseSnapshot()
