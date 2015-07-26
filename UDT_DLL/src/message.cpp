@@ -368,6 +368,65 @@ playerState_t communication
 */
 
 //
+// 3
+//
+
+#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState3, field), bits }
+
+static const idNetField PlayerStateFields3[] =
+{
+	PSF(commandTime, 32),
+	PSF(pm_type, 8),
+	PSF(bobCycle, 8),
+	PSF(pm_flags, 16),
+	PSF(pm_time, 16),
+	PSF(origin[0], 0),
+	PSF(origin[1], 0),
+	PSF(origin[2], 0),
+	PSF(velocity[0], 0),
+	PSF(velocity[1], 0),
+	PSF(velocity[2], 0),
+	PSF(weaponTime, 16),
+	PSF(gravity, 16),
+	PSF(speed, 16),
+	PSF(delta_angles[0], 16),
+	PSF(delta_angles[1], 16),
+	PSF(delta_angles[2], 16),
+	PSF(groundEntityNum, 10),
+	PSF(legsTimer, 8),
+	PSF(torsoTimer, 12),
+	PSF(legsAnim, 8),
+	PSF(torsoAnim, 8),
+	PSF(movementDir, 4),
+	PSF(eFlags, 16),
+	PSF(eventSequence, 16),
+	PSF(events[0], 8),
+	PSF(events[1], 8),
+	PSF(eventParms[0], 8),
+	PSF(eventParms[1], 8),
+	PSF(externalEvent, 8),
+	PSF(externalEventParm, 8),
+	PSF(clientNum, 8),
+	PSF(weapon, 5),
+	PSF(weaponstate, 4),
+	PSF(viewangles[0], 0),
+	PSF(viewangles[1], 0),
+	PSF(viewangles[2], 0),
+	PSF(viewheight, 8),
+	PSF(damageEvent, 8),
+	PSF(damageYaw, 8),
+	PSF(damagePitch, 8),
+	PSF(damageCount, 8),
+	PSF(grapplePoint[0], 0),
+	PSF(grapplePoint[1], 0),
+	PSF(grapplePoint[2], 0)
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount3 = sizeof(PlayerStateFields3) / sizeof(PlayerStateFields3[0]);
+
+//
 // 68
 //
 
@@ -675,12 +734,12 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount73;
 			break;
 
-		case udtProtocol::Dm3: // @TODO: create the player state fields arrays
+		case udtProtocol::Dm3:
 			_protocolSizeOfEntityState = sizeof(idEntityState3);
 			_entityStateFields = EntityStateFields3;
 			_entityStateFieldCount = EntityStateFieldCount3;
-			_playerStateFields = NULL;
-			_playerStateFieldCount = 0;
+			_playerStateFields = PlayerStateFields3;
+			_playerStateFieldCount = PlayerStateFieldCount3;
 			break;
 
 		case udtProtocol::Dm48: // @TODO: create the player state fields arrays
@@ -1527,52 +1586,25 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 
 void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 {
-	// @TODO: Turn this into a loop.
-	if(ReadBits(1)) to->commandTime = ReadBits(32);
-	if(ReadBits(1)) to->pm_type = ReadBits(8);
-	if(ReadBits(1)) to->bobCycle = ReadBits(8);
-	if(ReadBits(1)) to->pm_flags = ReadBits(16);
-	if(ReadBits(1)) to->pm_time = ReadBits(16);
-	if(ReadBits(1)) to->origin[0] = ReadFloat();
-	if(ReadBits(1)) to->origin[1] = ReadFloat();
-	if(ReadBits(1)) to->origin[2] = ReadFloat();
-	if(ReadBits(1)) to->velocity[0] = ReadFloat();
-	if(ReadBits(1)) to->velocity[1] = ReadFloat();
-	if(ReadBits(1)) to->velocity[2] = ReadFloat();
-	if(ReadBits(1)) to->weaponTime = ReadBits(16);
-	if(ReadBits(1)) to->gravity = ReadBits(16);
-	if(ReadBits(1)) to->speed = ReadBits(16);
-	if(ReadBits(1)) to->delta_angles[0] = ReadBits(16);
-	if(ReadBits(1)) to->delta_angles[1] = ReadBits(16);
-	if(ReadBits(1)) to->delta_angles[2] = ReadBits(16);
-	if(ReadBits(1)) to->groundEntityNum = ReadBits(10);
-	if(ReadBits(1)) to->legsTimer = ReadBits(8);
-	if(ReadBits(1)) to->torsoTimer = ReadBits(12);
-	if(ReadBits(1)) to->legsAnim = ReadBits(8);
-	if(ReadBits(1)) to->torsoAnim = ReadBits(8);
-	if(ReadBits(1)) to->movementDir = ReadBits(4);
-	if(ReadBits(1)) to->eFlags = ReadBits(16);
-	if(ReadBits(1)) to->eventSequence = ReadBits(16);
-	if(ReadBits(1)) to->events[0] = ReadBits(8);
-	if(ReadBits(1)) to->events[1] = ReadBits(8);
-	if(ReadBits(1)) to->eventParms[0] = ReadBits(8);
-	if(ReadBits(1)) to->eventParms[1] = ReadBits(8);
-	if(ReadBits(1)) to->externalEvent = ReadBits(8);
-	if(ReadBits(1)) to->externalEventParm = ReadBits(8);
-	if(ReadBits(1)) to->clientNum = ReadBits(8);
-	if(ReadBits(1)) to->weapon = ReadBits(5);
-	if(ReadBits(1)) to->weaponstate = ReadBits(4);
-	if(ReadBits(1)) to->viewangles[0] = ReadFloat();
-	if(ReadBits(1)) to->viewangles[1] = ReadFloat();
-	if(ReadBits(1)) to->viewangles[2] = ReadFloat();
-	if(ReadBits(1)) to->viewheight = ReadBits(8);
-	if(ReadBits(1)) to->damageEvent = ReadBits(8);
-	if(ReadBits(1)) to->damageYaw = ReadBits(8);
-	if(ReadBits(1)) to->damagePitch = ReadBits(8);
-	if(ReadBits(1)) to->damageCount = ReadBits(8);
-	if(ReadBits(1)) to->grapplePoint[0] = ReadFloat();
-	if(ReadBits(1)) to->grapplePoint[1] = ReadFloat();
-	if(ReadBits(1)) to->grapplePoint[2] = ReadFloat();
+	const idNetField* field = _playerStateFields;
+	const s32 fieldCount = _playerStateFieldCount;
+	for(s32 i = 0; i < fieldCount; i++, field++)
+	{
+		if(!ReadBits(1))
+		{
+			continue;
+		}
+
+		s32* const toF = (s32*)((u8*)to + field->offset);
+		if(field->bits == 0)
+		{
+			*(f32*)toF = ReadFloat();
+		}
+		else
+		{
+			*toF = ReadBits(field->bits);
+		}
+	}
 
 	// Stats array.
 	if(ReadBits(1))

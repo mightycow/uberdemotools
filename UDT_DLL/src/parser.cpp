@@ -580,10 +580,10 @@ bool udtBaseParser::ParseSnapshot()
 		newSnap.deltaNum = newSnap.messageNum - deltaNum;
 	}
 
+	newSnap.snapFlags = _inMsg.ReadByte();
+
 	if(_inProtocol == udtProtocol::Dm3)
 	{
-		newSnap.snapFlags = _inMsg.ReadByte();
-
 		areaMaskLength = _inMsg.ReadByte();
 		if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 		{
@@ -591,10 +591,6 @@ bool udtBaseParser::ParseSnapshot()
 			return false;
 		}
 		_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
-	}
-	else
-	{
-		newSnap.snapFlags = _inMsg.ReadByte();
 	}
 
 	//
