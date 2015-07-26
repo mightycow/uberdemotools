@@ -228,14 +228,12 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		case svc_voip:
-			// @TODO:
-			printf("!!!! Command byte: svc_voip\n");
+			_context->LogWarning("@TODO: Command byte: svc_voip");
 			_outMsg.WriteByte(svc_nop);
 			break;
 
 		case svc_download:
-			// @TODO:
-			printf("!!!! Command byte: svc_download\n");
+			_context->LogWarning("@TODO: Command byte: svc_download");
 			_outMsg.WriteByte(svc_nop);
 			break;
 
