@@ -45,7 +45,8 @@ namespace Uber.DemoTools
             Dm67,
             Dm68,
             Dm73,
-            Dm90
+            Dm90,
+            Dm91
         }
 
         public enum udtErrorCode : int
@@ -613,8 +614,9 @@ namespace Uber.DemoTools
                 case udtProtocol.Dm66: return "66 (Quake 3 1.29-1.30)";
                 case udtProtocol.Dm67: return "67 (Quake 3 1.31)";
                 case udtProtocol.Dm68: return "68 (Quake 3 1.32)";
-                case udtProtocol.Dm73: return "73 (Quake Live's old protocol)";
-                case udtProtocol.Dm90: return "90 (Quake Live's current protocol)";
+                case udtProtocol.Dm73: return "73 (Quake Live)";
+                case udtProtocol.Dm90: return "90 (Quake Live)";
+                case udtProtocol.Dm91: return "91 (Quake Live)";
                 default: return "?";
             }
         }

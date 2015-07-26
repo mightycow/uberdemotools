@@ -57,7 +57,8 @@ struct udtErrorCode
 	N(Dm67, ".dm_67") \
 	N(Dm68, ".dm_68") \
 	N(Dm73, ".dm_73") \
-	N(Dm90, ".dm_90")
+	N(Dm90, ".dm_90") \
+	N(Dm91, ".dm_91")
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Enum,
 struct udtProtocol

@@ -557,6 +557,71 @@ static const idNetField PlayerStateFields90[] =
 
 static const s32 PlayerStateFieldCount90 = sizeof(PlayerStateFields90) / sizeof(PlayerStateFields90[0]);
 
+//
+// 91
+//
+
+#define PSF(x) #x,(s32)(sptr)(&((idPlayerState91*)0)->x)
+
+static const idNetField PlayerStateFields91[] =
+{
+	{ PSF(commandTime), 32 },
+	{ PSF(origin[0]), 0 },
+	{ PSF(origin[1]), 0 },
+	{ PSF(bobCycle), 8 },
+	{ PSF(velocity[0]), 0 },
+	{ PSF(velocity[1]), 0 },
+	{ PSF(viewangles[1]), 0 },
+	{ PSF(viewangles[0]), 0 },
+	{ PSF(weaponTime), -16 },
+	{ PSF(origin[2]), 0 },
+	{ PSF(velocity[2]), 0 },
+	{ PSF(legsTimer), 8 },
+	{ PSF(pm_time), -16 },
+	{ PSF(eventSequence), 16 },
+	{ PSF(torsoAnim), 8 },
+	{ PSF(movementDir), 4 },
+	{ PSF(events[0]), 8 },
+	{ PSF(legsAnim), 8 },
+	{ PSF(events[1]), 8 },
+	{ PSF(pm_flags), 24 },
+	{ PSF(groundEntityNum), GENTITYNUM_BITS },
+	{ PSF(weaponstate), 4 },
+	{ PSF(eFlags), 16 },
+	{ PSF(externalEvent), 10 },
+	{ PSF(gravity), 16 },
+	{ PSF(speed), 16 },
+	{ PSF(delta_angles[1]), 16 },
+	{ PSF(externalEventParm), 8 },
+	{ PSF(viewheight), -8 },
+	{ PSF(damageEvent), 8 },
+	{ PSF(damageYaw), 8 },
+	{ PSF(damagePitch), 8 },
+	{ PSF(damageCount), 8 },
+	{ PSF(generic1), 8 },
+	{ PSF(pm_type), 8 },
+	{ PSF(delta_angles[0]), 16 },
+	{ PSF(delta_angles[2]), 16 },
+	{ PSF(torsoTimer), 12 },
+	{ PSF(eventParms[0]), 8 },
+	{ PSF(eventParms[1]), 8 },
+	{ PSF(clientNum), 8 },
+	{ PSF(weapon), 5 },
+	{ PSF(viewangles[2]), 0 },
+	{ PSF(grapplePoint[0]), 0 }, // New in protocol 90.
+	{ PSF(grapplePoint[1]), 0 }, // New in protocol 90.
+	{ PSF(grapplePoint[2]), 0 }, // New in protocol 90.
+	{ PSF(jumppad_ent), 10 },
+	{ PSF(loopSound), 16 },
+	{ PSF(jumpTime), 32 },    // New in protocol 90.
+	{ PSF(doubleJumped), 1 }, // New in protocol 90.
+	// @TODO: New 91 fields.
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount91 = sizeof(PlayerStateFields91) / sizeof(PlayerStateFields91[0]);
+
 
 /*
 ==============================================================================
@@ -588,6 +653,14 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 	switch(protocol)
 	{
+		case udtProtocol::Dm91:
+			_protocolSizeOfEntityState = sizeof(idEntityState91);
+			_entityStateFields = EntityStateFields90;
+			_entityStateFieldCount = EntityStateFieldCount90;
+			_playerStateFields = PlayerStateFields91;
+			_playerStateFieldCount = PlayerStateFieldCount91;
+			break;
+
 		case udtProtocol::Dm90:
 			_protocolSizeOfEntityState = sizeof(idEntityState90);
 			_entityStateFields = EntityStateFields90;
@@ -1462,6 +1535,10 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	*to = *from;
 
 	lc = ReadByte();
+	if(lc > _playerStateFieldCount || lc < 0)
+	{
+		Context->LogErrorAndCrash("udtMessage::ReadDeltaPlayerstate: Invalid playerState field count: %d (numFields %d)", lc, _playerStateFieldCount);
+	}
 
 	const idNetField* field;
 	for(i = 0, field = _playerStateFields; i < lc; i++, field++)

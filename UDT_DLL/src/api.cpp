@@ -124,6 +124,7 @@ UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
+		case udtProtocol::Dm91: return (u32)sizeof(idEntityState91);
 		default: return 0;
 	}
 }
@@ -139,6 +140,7 @@ UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
 		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
+		case udtProtocol::Dm91: return (u32)sizeof(idPlayerState91);
 		default: return 0;
 	}
 }
@@ -154,6 +156,7 @@ UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
 		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
 		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
 		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
+		case udtProtocol::Dm91: return (u32)sizeof(idClientSnapshot91);
 		default: return 0;
 	}
 }

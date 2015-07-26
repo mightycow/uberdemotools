@@ -231,7 +231,18 @@ struct idEntityState90 : idEntityStateBase
 	qbool	doubleJumped;
 };
 
-typedef idEntityState90 idLargestEntityState;
+struct idEntityState91 : idEntityStateBase
+{
+	// New in dm_73.
+	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
+	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
+
+	// New in dm_90.
+	int		jumpTime;
+	qbool	doubleJumped;
+};
+
+typedef idEntityState91 idLargestEntityState;
 
 /*
 ========================================================================
@@ -463,7 +474,14 @@ struct idPlayerState90 : idPlayerStateBase
 	int jumpTime;
 };
 
-typedef idPlayerState90 idLargestPlayerState;
+struct idPlayerState91 : idPlayerStateBase
+{
+	qboolean doubleJumped;
+	int jumpTime;
+	// @TODO: new 91 fields.
+};
+
+typedef idPlayerState91 idLargestPlayerState;
 
 //====================================================================
 
@@ -640,7 +658,12 @@ struct idClientSnapshot90 : idClientSnapshotBase
 	idPlayerState90 ps; // complete information about the current player at this time
 };
 
-typedef idClientSnapshot90 idLargestClientSnapshot;
+struct idClientSnapshot91 : idClientSnapshotBase
+{
+	idPlayerState91 ps; // complete information about the current player at this time
+};
+
+typedef idClientSnapshot91 idLargestClientSnapshot;
 
 inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol)
 {
@@ -653,6 +676,7 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 		case udtProtocol::Dm68: return &((idClientSnapshot68*)snap)->ps;
 		case udtProtocol::Dm73: return &((idClientSnapshot73*)snap)->ps;
 		case udtProtocol::Dm90: return &((idClientSnapshot90*)snap)->ps;
+		case udtProtocol::Dm91: return &((idClientSnapshot91*)snap)->ps;
 		default: return NULL;
 	}
 }

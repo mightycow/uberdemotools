@@ -150,7 +150,8 @@ namespace Uber.DemoTools
             ".dm_67",
             ".dm_68",
             ".dm_73",
-            ".dm_90"
+            ".dm_90",
+            ".dm_91"
         };
 
         private static readonly List<string> DemoExtensionsQ3 = new List<string>
@@ -165,7 +166,8 @@ namespace Uber.DemoTools
         private static readonly List<string> DemoExtensionsQL = new List<string>
         {
             ".dm_73",
-            ".dm_90"
+            ".dm_90",
+            ".dm_91"
         };
 
         private static readonly Dictionary<string, UDT_DLL.udtProtocol> ProtocolFileExtDic = new Dictionary<string, UDT_DLL.udtProtocol>
@@ -176,7 +178,8 @@ namespace Uber.DemoTools
             { ".dm_67", UDT_DLL.udtProtocol.Dm67 },
             { ".dm_68", UDT_DLL.udtProtocol.Dm68 },
             { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
-            { ".dm_90", UDT_DLL.udtProtocol.Dm90 }
+            { ".dm_90", UDT_DLL.udtProtocol.Dm90 },
+            { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
         };
 
         private class ConfigStringDisplayInfo
