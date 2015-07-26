@@ -395,6 +395,11 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	_currentGameState.DemoTakerPlayerIndex = playerIndex;
 	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
 
+	if(playerIndex < 0 || playerIndex >= MAX_CLIENTS)
+	{
+		return;
+	}
+
 	const s32 firstPlayerCsIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
 	const udtBaseParser::udtConfigString cs = configStrings[firstPlayerCsIndex + playerIndex];
 	if(cs.String == NULL || cs.StringLength == 0)
