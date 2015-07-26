@@ -31,7 +31,6 @@ entityState_t communication
 
 #define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState3, field), bits }
 
-// @NOTE: Unlike the arrays for later formats, the order here matters.
 // Each field's index is the corresponding index into the field bit mask.
 const idNetField EntityStateFields3[]
 {
@@ -98,7 +97,6 @@ static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 f
 
 #define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState48, field), bits }
 
-// @NOTE: Unlike the arrays for later formats, the order here matters.
 // Each field's index is the corresponding index into the field bit mask.
 const idNetField EntityStateFields48[]
 {
