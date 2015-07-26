@@ -219,8 +219,8 @@ bool udtBaseParser::ParseServerMessage()
 
 		case svc_gamestate:
 			if(!ParseGamestate()) return false;
-			// @TODO: Add snapshot support for protocols dm3, dm_48 and dm_91.
-			if(_inProtocol <= udtProtocol::Dm48 || _inProtocol == udtProtocol::Dm91) return false;
+			// @TODO: Add snapshot support for protocols dm_48 and dm_91.
+			if(_inProtocol == udtProtocol::Dm48 || _inProtocol == udtProtocol::Dm91) return false;
 			break;
 
 		case svc_snapshot:
@@ -242,6 +242,11 @@ bool udtBaseParser::ParseServerMessage()
 		default:
 			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
 			return false;
+		}
+
+		if(_inProtocol == udtProtocol::Dm3)
+		{
+			_inMsg.GoToNextByte();
 		}
 	}
 
@@ -337,7 +342,7 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoS
 
 bool udtBaseParser::ShouldWriteMessage() const
 {
-	return _outWriteMessage;
+	return _outWriteMessage && _inProtocol >= udtProtocol::Dm66;
 }
 
 void udtBaseParser::WriteFirstMessage()
@@ -552,6 +557,13 @@ bool udtBaseParser::ParseSnapshot()
 	// message before we got to svc_snapshot.
 	//
 
+	s32 areaMaskLength = 0;
+
+	if(_inProtocol == udtProtocol::Dm3)
+	{
+		_inMsg.ReadLong(); // Client command sequence.
+	}
+
 	_inServerTime = _inMsg.ReadLong();
 
 	idLargestClientSnapshot newSnap;
@@ -559,8 +571,6 @@ bool udtBaseParser::ParseSnapshot()
 	newSnap.serverCommandNum = _inServerCommandSequence;
 	newSnap.serverTime = _inServerTime;
 	newSnap.messageNum = _inServerMessageSequence;
-
-	//_context->LogInfo("_inServerTime: %d", _inServerTime);
 
 	s32 deltaNum = _inMsg.ReadByte();
 	if(!deltaNum) 
@@ -571,7 +581,23 @@ bool udtBaseParser::ParseSnapshot()
 	{
 		newSnap.deltaNum = newSnap.messageNum - deltaNum;
 	}
-	newSnap.snapFlags = _inMsg.ReadByte();
+
+	if(_inProtocol == udtProtocol::Dm3)
+	{
+		newSnap.snapFlags = _inMsg.ReadByte();
+
+		areaMaskLength = _inMsg.ReadByte();
+		if(areaMaskLength > (s32)sizeof(newSnap.areamask))
+		{
+			_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+			return false;
+		}
+		_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
+	}
+	else
+	{
+		newSnap.snapFlags = _inMsg.ReadByte();
+	}
 
 	//
 	// If the frame is delta compressed from data that we
@@ -624,14 +650,17 @@ bool udtBaseParser::ParseSnapshot()
 	// Read the area mask.
 	//
 
-	const s32 areaMaskLength = _inMsg.ReadByte();
-	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
+	if(_inProtocol > udtProtocol::Dm3)
 	{
-		_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
-		return false;
+		areaMaskLength = _inMsg.ReadByte();
+		if(areaMaskLength > (s32)sizeof(newSnap.areamask))
+		{
+			_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+			return false;
+		}
+		_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
 	}
-	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
-
+	
 	// Read the player info.
 	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _inProtocol) : NULL, GetPlayerState(&newSnap, _inProtocol));
 

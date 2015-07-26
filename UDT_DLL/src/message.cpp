@@ -772,6 +772,15 @@ bit functions
 =============================================================================
 */
 
+void udtMessage::GoToNextByte()
+{
+	if((Buffer.bit & 7) != 0)
+	{
+		++Buffer.readcount;
+		Buffer.bit = Buffer.readcount << 3;
+	}
+}
+
 // negative bit values include signs
 void udtMessage::WriteBits(s32 value, s32 bits) 
 {
@@ -1516,6 +1525,108 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 	}
 }
 
+void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
+{
+	// @TODO: Turn this into a loop.
+	if(ReadBits(1)) to->commandTime = ReadBits(32);
+	if(ReadBits(1)) to->pm_type = ReadBits(8);
+	if(ReadBits(1)) to->bobCycle = ReadBits(8);
+	if(ReadBits(1)) to->pm_flags = ReadBits(16);
+	if(ReadBits(1)) to->pm_time = ReadBits(16);
+	if(ReadBits(1)) to->origin[0] = ReadFloat();
+	if(ReadBits(1)) to->origin[1] = ReadFloat();
+	if(ReadBits(1)) to->origin[2] = ReadFloat();
+	if(ReadBits(1)) to->velocity[0] = ReadFloat();
+	if(ReadBits(1)) to->velocity[1] = ReadFloat();
+	if(ReadBits(1)) to->velocity[2] = ReadFloat();
+	if(ReadBits(1)) to->weaponTime = ReadBits(16);
+	if(ReadBits(1)) to->gravity = ReadBits(16);
+	if(ReadBits(1)) to->speed = ReadBits(16);
+	if(ReadBits(1)) to->delta_angles[0] = ReadBits(16);
+	if(ReadBits(1)) to->delta_angles[1] = ReadBits(16);
+	if(ReadBits(1)) to->delta_angles[2] = ReadBits(16);
+	if(ReadBits(1)) to->groundEntityNum = ReadBits(10);
+	if(ReadBits(1)) to->legsTimer = ReadBits(8);
+	if(ReadBits(1)) to->torsoTimer = ReadBits(12);
+	if(ReadBits(1)) to->legsAnim = ReadBits(8);
+	if(ReadBits(1)) to->torsoAnim = ReadBits(8);
+	if(ReadBits(1)) to->movementDir = ReadBits(4);
+	if(ReadBits(1)) to->eFlags = ReadBits(16);
+	if(ReadBits(1)) to->eventSequence = ReadBits(16);
+	if(ReadBits(1)) to->events[0] = ReadBits(8);
+	if(ReadBits(1)) to->events[1] = ReadBits(8);
+	if(ReadBits(1)) to->eventParms[0] = ReadBits(8);
+	if(ReadBits(1)) to->eventParms[1] = ReadBits(8);
+	if(ReadBits(1)) to->externalEvent = ReadBits(8);
+	if(ReadBits(1)) to->externalEventParm = ReadBits(8);
+	if(ReadBits(1)) to->clientNum = ReadBits(8);
+	if(ReadBits(1)) to->weapon = ReadBits(5);
+	if(ReadBits(1)) to->weaponstate = ReadBits(4);
+	if(ReadBits(1)) to->viewangles[0] = ReadFloat();
+	if(ReadBits(1)) to->viewangles[1] = ReadFloat();
+	if(ReadBits(1)) to->viewangles[2] = ReadFloat();
+	if(ReadBits(1)) to->viewheight = ReadBits(8);
+	if(ReadBits(1)) to->damageEvent = ReadBits(8);
+	if(ReadBits(1)) to->damageYaw = ReadBits(8);
+	if(ReadBits(1)) to->damagePitch = ReadBits(8);
+	if(ReadBits(1)) to->damageCount = ReadBits(8);
+	if(ReadBits(1)) to->grapplePoint[0] = ReadFloat();
+	if(ReadBits(1)) to->grapplePoint[1] = ReadFloat();
+	if(ReadBits(1)) to->grapplePoint[2] = ReadFloat();
+
+	// Stats array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_STATS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				to->stats[i] = ReadShort();
+			}
+		}
+	}
+
+	// Persistent array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				to->persistant[i] = ReadShort();
+			}
+		}
+	}
+
+	// Ammo array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_WEAPONS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				to->ammo[i] = ReadShort();
+			}
+		}
+	}
+
+	// Power-ups array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_POWERUPS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				// Yep, we read 32 bits for some reason.
+				to->powerups[i] = ReadLong();
+			}
+		}
+	}
+}
 
 void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
@@ -1528,9 +1639,15 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	if(!from) 
 	{
 		from = &dummy;
-		Com_Memset(&dummy, 0, sizeof(dummy));
+		memset(&dummy, 0, sizeof(dummy));
 	}
-	*to = *from;
+	memcpy(to, from, _protocolSizeOfEntityState);
+
+	if(_protocol == udtProtocol::Dm3)
+	{
+		ReadDeltaPlayerstateDM3(to);
+		return;
+	}
 
 	lc = ReadByte();
 	if(lc > _playerStateFieldCount || lc < 0)

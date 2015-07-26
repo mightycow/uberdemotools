@@ -38,6 +38,8 @@ public:
 	void	Bitstream();
 	void	SetHuffman(bool huffman);
 
+	void	GoToNextByte();
+
 	void	WriteBits(s32 value, s32 bits);
 	void	WriteByte(s32 c);
 	void	WriteShort(s32 c);
@@ -75,6 +77,7 @@ public:
 private:
 	void	WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits);
 	s32		ReadDeltaKey(s32 key, s32 oldV, s32 bits);
+	void	ReadDeltaPlayerstateDM3(idPlayerStateBase* to);
 
 public:
 	udtContext*		Context;
