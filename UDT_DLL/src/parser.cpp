@@ -162,10 +162,7 @@ bool udtBaseParser::ParseServerMessage()
 		_inReliableSequenceAcknowledge = _inMsg.ReadLong();	
 	}
 
-	if(_outProtocol > udtProtocol::Dm3)
-	{
-		_outMsg.WriteLong(_inReliableSequenceAcknowledge);
-	}
+	_outMsg.WriteLong(_inReliableSequenceAcknowledge);
 
 	for(;;)
 	{
@@ -555,8 +552,6 @@ bool udtBaseParser::ParseSnapshot()
 	// message before we got to svc_snapshot.
 	//
 
-	s32 areaMaskLength = 0;
-
 	if(_inProtocol == udtProtocol::Dm3)
 	{
 		_inMsg.ReadLong(); // Client command sequence.
@@ -581,17 +576,6 @@ bool udtBaseParser::ParseSnapshot()
 	}
 
 	newSnap.snapFlags = _inMsg.ReadByte();
-
-	if(_inProtocol == udtProtocol::Dm3)
-	{
-		areaMaskLength = _inMsg.ReadByte();
-		if(areaMaskLength > (s32)sizeof(newSnap.areamask))
-		{
-			_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
-			return false;
-		}
-		_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
-	}
 
 	//
 	// If the frame is delta compressed from data that we
@@ -644,16 +628,13 @@ bool udtBaseParser::ParseSnapshot()
 	// Read the area mask.
 	//
 
-	if(_inProtocol > udtProtocol::Dm3)
+	const s32 areaMaskLength = _inMsg.ReadByte();
+	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 	{
-		areaMaskLength = _inMsg.ReadByte();
-		if(areaMaskLength > (s32)sizeof(newSnap.areamask))
-		{
-			_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
-			return false;
-		}
-		_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
+		_context->LogError("ParseSnapshot: invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+		return false;
 	}
+	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
 	
 	// Read the player info.
 	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _inProtocol) : NULL, GetPlayerState(&newSnap, _inProtocol));
