@@ -1119,6 +1119,17 @@ s32 udtMessage::ReadShort()
 	return c;
 }
 
+s32 udtMessage::ReadSignedShort()
+{
+	s32 c = ReadBits(-16);
+	if(Buffer.readcount > Buffer.cursize)
+	{
+		c = -1;
+	}
+
+	return c;
+}
+
 s32 udtMessage::ReadLong()
 {
 	s32 c = ReadBits(32);
@@ -1614,7 +1625,8 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
-				to->stats[i] = ReadShort();
+				// Stats can be negative.
+				to->stats[i] = ReadSignedShort();
 			}
 		}
 	}
@@ -1627,6 +1639,7 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
+				// @TODO: Can those be negative too?
 				to->persistant[i] = ReadShort();
 			}
 		}
@@ -1653,7 +1666,7 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
-				// Yep, we read 32 bits for some reason.
+				// Yep, we read 32 bits.
 				to->powerups[i] = ReadLong();
 			}
 		}

@@ -54,6 +54,7 @@ public:
 	s32		ReadBits(s32 bits);
 	s32		ReadByte();
 	s32		ReadShort();
+	s32		ReadSignedShort();
 	s32		ReadLong();
 	f32		ReadFloat();
 
