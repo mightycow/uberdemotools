@@ -804,7 +804,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount3;
 			break;
 
-		case udtProtocol::Dm48: // @TODO: create the player state fields arrays
+		case udtProtocol::Dm48:
 			_protocolSizeOfEntityState = sizeof(idEntityState48);
 			_entityStateFields = EntityStateFields48;
 			_entityStateFieldCount = EntityStateFieldCount48;
@@ -2059,6 +2059,55 @@ static const u8 KnownBitMasks[32][7] =
 	{ 0xE0, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00 }
 };
 
+void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
+{
+	to->number = number;
+
+	u8 bitMask[7]; // 50-51 bits used only.
+	const s32 maskIndex = ReadBits(5);
+	if(maskIndex == 0x1F)
+	{
+		for(s32 i = 0; i < 6; ++i)
+		{
+			bitMask[i] = (u8)ReadBits(8);
+		}
+		bitMask[6] = (u8)ReadBits(_protocol == udtProtocol::Dm3 ? 2 : 3);
+	}
+	else
+	{
+		// Let's not use memcpy for 7 bytes...
+		for(s32 i = 0; i < 7; ++i)
+		{
+			bitMask[i] = KnownBitMasks[maskIndex][i];
+		}
+	}
+
+	const idNetField* field = _entityStateFields;
+	const s32 fieldCount = _entityStateFieldCount;
+	for(s32 i = 0; i < fieldCount; i++, field++)
+	{
+		const s32* const fromF = (s32*)((u8*)from + field->offset);
+		s32* const toF = (s32*)((u8*)to + field->offset);
+
+		const s32 byteIndex = i >> 3;
+		const s32 bitIndex = i & 7;
+		if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
+		{
+			*toF = *fromF;
+			continue;
+		}
+
+		if(field->bits == 0)
+		{
+			*(f32*)toF = ReadFloat();
+		}
+		else
+		{
+			*toF = ReadBits(field->bits);
+		}
+	}
+}
+
 bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
 	s32			i, lc;
@@ -2085,107 +2134,9 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		return false;
 	}
 
-	// @TODO: Unify the dm3 and dm_48 entity state parsing.
-	
-	if(_protocol == udtProtocol::Dm3)
+	if(_protocol <= udtProtocol::Dm48)
 	{
-		to->number = number;
-
-		u8 bitMask[7]; // 50 bits used only.
-		const s32 maskIndex = ReadBits(5);
-		if(maskIndex == 0x1F)
-		{
-			for(i = 0; i < 6; ++i)
-			{
-				bitMask[i] = (u8)ReadBits(8);
-			}
-			bitMask[6] = ReadBits(2) & 3;
-		}
-		else
-		{
-			// Let's not use memcpy for 7 bytes...
-			for(i = 0; i < 7; ++i)
-			{
-				bitMask[i] = KnownBitMasks[maskIndex][i];
-			}
-		}
-
-		const idNetField* field = _entityStateFields;
-		const s32 fieldCount = _entityStateFieldCount;
-		for(i = 0; i < fieldCount; i++, field++)
-		{
-			fromF = (s32*)((u8*)from + field->offset);
-			toF = (s32*)((u8*)to + field->offset);
-
-			const s32 byteIndex = i >> 3;
-			const s32 bitIndex = i & 7;
-			if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
-			{
-				*toF = *fromF;
-				continue;
-			}
-
-			if(field->bits == 0)
-			{
-				*(f32*)toF = ReadFloat();
-			}
-			else
-			{
-				*toF = ReadBits(field->bits);
-			}
-		}
-
-		return true;
-	}
-
-	if(_protocol == udtProtocol::Dm48)
-	{
-		to->number = number;
-
-		u8 bitMask[7]; // 51 bits used only.
-		const s32 maskIndex = ReadBits(5);
-		if(maskIndex == 0x1F)
-		{
-			for(i = 0; i < 6; ++i)
-			{
-				bitMask[i] = (u8)ReadBits(8);
-			}
-			bitMask[6] = ReadBits(3) & 7;
-		}
-		else
-		{
-			// Let's not use memcpy for 7 bytes...
-			for(i = 0; i < 7; ++i)
-			{
-				bitMask[i] = KnownBitMasks[maskIndex][i];
-			}
-		}
-
-		const idNetField* field = _entityStateFields;
-		const s32 fieldCount = _entityStateFieldCount;
-		for(i = 0; i < fieldCount; i++, field++)
-		{
-			fromF = (s32*)((u8*)from + field->offset);
-			toF = (s32*)((u8*)to + field->offset);
-
-			const s32 byteIndex = i >> 3;
-			const s32 bitIndex = i & 7;
-			if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
-			{
-				*toF = *fromF;
-				continue;
-			}
-
-			if(field->bits == 0)
-			{
-				*(f32*)toF = ReadFloat();
-			}
-			else
-			{
-				*toF = ReadBits(field->bits);
-			}
-		}
-
+		ReadDeltaEntityDM3(from, to, number);
 		return true;
 	}
 	

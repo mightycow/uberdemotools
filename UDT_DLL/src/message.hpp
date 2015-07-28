@@ -79,6 +79,7 @@ private:
 	void	WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits);
 	s32		ReadDeltaKey(s32 key, s32 oldV, s32 bits);
 	void	ReadDeltaPlayerstateDM3(idPlayerStateBase* to);
+	void	ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityStateBase* to, s32 number);
 
 public:
 	udtContext*		Context;
