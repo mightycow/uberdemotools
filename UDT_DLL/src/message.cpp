@@ -101,7 +101,7 @@ static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 f
 const idNetField EntityStateFields48[]
 {
 	ESF(eType, 8),
-	ESF(eFlags, 16),
+	ESF(eFlags, 19), // Changed from 16 to 19...
 	ESF(pos.trType, 8),
 	ESF(pos.trTime, 32),
 	ESF(pos.trDuration, 32),
@@ -427,6 +427,68 @@ static const idNetField PlayerStateFields3[] =
 static const s32 PlayerStateFieldCount3 = sizeof(PlayerStateFields3) / sizeof(PlayerStateFields3[0]);
 
 //
+// 48
+//
+
+#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState48, field), bits }
+
+static const idNetField PlayerStateFields48[] =
+{
+	PSF(commandTime, 32),
+	PSF(pm_type, 8),
+	PSF(bobCycle, 8),
+	PSF(pm_flags, 16),
+	PSF(pm_time, -16),
+	PSF(origin[0], 0),
+	PSF(origin[1], 0),
+	PSF(origin[2], 0),
+	PSF(velocity[0], 0),
+	PSF(velocity[1], 0),
+	PSF(velocity[2], 0),
+	PSF(weaponTime, -16),
+	PSF(gravity, 16),
+	PSF(speed, 16),
+	PSF(delta_angles[0], 16),
+	PSF(delta_angles[1], 16),
+	PSF(delta_angles[2], 16),
+	PSF(groundEntityNum, 10),
+	PSF(legsTimer, 8),
+	PSF(torsoTimer, 12),
+	PSF(legsAnim, 8),
+	PSF(torsoAnim, 8),
+	PSF(movementDir, 4),
+	PSF(eFlags, 16),
+	PSF(eventSequence, 16),
+	PSF(events[0], 8),
+	PSF(events[1], 8),
+	PSF(eventParms[0], 8),
+	PSF(eventParms[1], 8),
+	PSF(externalEvent, 10), // Changed from 8 to 10...
+	PSF(externalEventParm, 8),
+	PSF(clientNum, 8),
+	PSF(weapon, 5),
+	PSF(weaponstate, 4),
+	PSF(viewangles[0], 0),
+	PSF(viewangles[1], 0),
+	PSF(viewangles[2], 0),
+	PSF(viewheight, -8),
+	PSF(damageEvent, 8),
+	PSF(damageYaw, 8),
+	PSF(damagePitch, 8),
+	PSF(damageCount, 8), 
+	PSF(grapplePoint[0], 0),
+	PSF(grapplePoint[1], 0),
+	PSF(grapplePoint[2], 0),
+	PSF(jumppad_ent, 10), // New in dm_48.
+	PSF(loopSound, 16),   // New in dm_48.
+	PSF(generic1, 8),     // New in dm_48.
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount48 = sizeof(PlayerStateFields48) / sizeof(PlayerStateFields48[0]);
+
+//
 // 68
 //
 
@@ -746,8 +808,8 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_protocolSizeOfEntityState = sizeof(idEntityState48);
 			_entityStateFields = EntityStateFields48;
 			_entityStateFieldCount = EntityStateFieldCount48;
-			_playerStateFields = NULL;
-			_playerStateFieldCount = 0;
+			_playerStateFields = PlayerStateFields48;
+			_playerStateFieldCount = PlayerStateFieldCount48;
 			break;
 
 		case udtProtocol::Dm66:
@@ -1688,7 +1750,7 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	}
 	memcpy(to, from, _protocolSizeOfEntityState);
 
-	if(_protocol == udtProtocol::Dm3)
+	if(_protocol <= udtProtocol::Dm48)
 	{
 		ReadDeltaPlayerstateDM3(to);
 		return;
@@ -1960,6 +2022,7 @@ Can go from either a baseline or a previous packet_entity
 ==================
 */
 
+// @NOTE: Same values for dm3 and dm_48 confirmed.
 static const u8 KnownBitMasks[32][7] =
 {
 	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
@@ -2021,6 +2084,8 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		to->number = number;
 		return false;
 	}
+
+	// @TODO: Unify the dm3 and dm_48 entity state parsing.
 	
 	if(_protocol == udtProtocol::Dm3)
 	{
@@ -2092,7 +2157,6 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 			// Let's not use memcpy for 7 bytes...
 			for(i = 0; i < 7; ++i)
 			{
-				// @TODO: What are the known bit masks for dm_48?
 				bitMask[i] = KnownBitMasks[maskIndex][i];
 			}
 		}

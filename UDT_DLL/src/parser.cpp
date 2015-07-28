@@ -197,7 +197,7 @@ bool udtBaseParser::ParseServerMessage()
 			}
 		}
 
-		if(command == svc_EOF || (_inProtocol == udtProtocol::Dm3 && command == svc_bad))
+		if(command == svc_EOF || (_inProtocol <= udtProtocol::Dm48 && command == svc_bad))
 		{
 			break;
 		}
@@ -216,8 +216,8 @@ bool udtBaseParser::ParseServerMessage()
 
 		case svc_gamestate:
 			if(!ParseGamestate()) return false;
-			// @TODO: Add snapshot support for protocols dm_48 and dm_91.
-			if(_inProtocol == udtProtocol::Dm48 || _inProtocol == udtProtocol::Dm91) return false;
+			// @TODO: Add snapshot support for protocol dm_91.
+			if(_inProtocol == udtProtocol::Dm91) return false;
 			break;
 
 		case svc_snapshot:
@@ -239,7 +239,7 @@ bool udtBaseParser::ParseServerMessage()
 			return false;
 		}
 
-		if(_inProtocol == udtProtocol::Dm3)
+		if(_inProtocol <= udtProtocol::Dm48)
 		{
 			_inMsg.GoToNextByte();
 		}
