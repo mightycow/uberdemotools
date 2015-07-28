@@ -568,6 +568,33 @@ static UDT_FORCE_INLINE bool IsColorString(const char* s)
 	return (s != NULL) && (s[0] == '^') && (s[1] != '\0') && (s[1] != '^');
 }
 
+static bool IsHexChar(char c)
+{
+	return
+		(c >= 0x30 && c <= 0x39) || // digits
+		(c >= 0x41 && c <= 0x46) || // uppercase A-F
+		(c >= 0x61 && c <= 0x66);   // lowercase a-f
+}
+
+static bool IsLongOSPColorString(const udtString& string)
+{
+	const char* const s = string.String;
+	if(string.Length < 8 || s[0] != '^' || (char)::tolower(s[1]) != 'x')
+	{
+		return false;
+	}
+
+	for(u32 i = 2; i < 8; ++i)
+	{
+		if(!IsHexChar(s[i]))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 void udtString::CleanUp(udtString& result)
 {
 	if(result.String == NULL)
@@ -584,7 +611,11 @@ void udtString::CleanUp(udtString& result)
 	char c;
 	while((c = *source) != 0)
 	{
-		if(IsColorString(source))
+		if(IsLongOSPColorString(udtString::NewSubstringRef(result, (u32)(source - result.String))))
+		{
+			source += 7;
+		}
+		else if(IsColorString(source))
 		{
 			source++;
 		}
