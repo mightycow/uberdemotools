@@ -729,6 +729,7 @@ udtMessage::udtMessage()
 {
 	_protocol = udtProtocol::Dm68;
 	_protocolSizeOfEntityState = sizeof(idEntityState68);
+	_protocolSizeOfPlayerState = sizeof(idPlayerState68);
 	_entityStateFields = EntityStateFields68;
 	_entityStateFieldCount = EntityStateFieldCount68;
 	_playerStateFields = PlayerStateFields68;
@@ -748,6 +749,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 	{
 		case udtProtocol::Dm91:
 			_protocolSizeOfEntityState = sizeof(idEntityState91);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState91);
 			_entityStateFields = EntityStateFields90;
 			_entityStateFieldCount = EntityStateFieldCount90;
 			_playerStateFields = PlayerStateFields91;
@@ -756,6 +758,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm90:
 			_protocolSizeOfEntityState = sizeof(idEntityState90);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState90);
 			_entityStateFields = EntityStateFields90;
 			_entityStateFieldCount = EntityStateFieldCount90;
 			_playerStateFields = PlayerStateFields90;
@@ -764,6 +767,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm73:
 			_protocolSizeOfEntityState = sizeof(idEntityState73);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState73);
 			_entityStateFields = EntityStateFields73;
 			_entityStateFieldCount = EntityStateFieldCount73;
 			_playerStateFields = PlayerStateFields73;
@@ -772,6 +776,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm3:
 			_protocolSizeOfEntityState = sizeof(idEntityState3);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState3);
 			_entityStateFields = EntityStateFields3;
 			_entityStateFieldCount = EntityStateFieldCount3;
 			_playerStateFields = PlayerStateFields3;
@@ -780,6 +785,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm48:
 			_protocolSizeOfEntityState = sizeof(idEntityState48);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState48);
 			_entityStateFields = EntityStateFields48;
 			_entityStateFieldCount = EntityStateFieldCount48;
 			_playerStateFields = PlayerStateFields48;
@@ -788,6 +794,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm66:
 			_protocolSizeOfEntityState = sizeof(idEntityState66);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState66);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
 			_playerStateFields = PlayerStateFields68;
@@ -796,6 +803,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm67:
 			_protocolSizeOfEntityState = sizeof(idEntityState67);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState67);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
 			_playerStateFields = PlayerStateFields68;
@@ -805,6 +813,7 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 		case udtProtocol::Dm68:
 		default:
 			_protocolSizeOfEntityState = sizeof(idEntityState68);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState68);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
 			_playerStateFields = PlayerStateFields68;
@@ -1171,8 +1180,8 @@ s32 udtMessage::ReadFloat()
 	{
 		return ReadBits(32);
 	}
-
-	return ReadBits(13) - 4096;
+	
+	return ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS;
 }
 
 char* udtMessage::ReadString(s32& length) 
@@ -1587,8 +1596,8 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		from = &dummy;
 		memset(&dummy, 0, sizeof(dummy));
 	}
-	memcpy(to, from, _protocolSizeOfEntityState);
-
+	memcpy(to, from, _protocolSizeOfPlayerState);
+	
 	if(_protocol <= udtProtocol::Dm48)
 	{
 		ReadDeltaPlayerstateDM3(to);

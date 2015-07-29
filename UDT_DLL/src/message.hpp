@@ -85,5 +85,6 @@ private:
 	s32					_entityStateFieldCount;
 	const idNetField*	_playerStateFields;
 	s32					_playerStateFieldCount;
-	s32					_protocolSizeOfEntityState;
+	size_t				_protocolSizeOfEntityState;
+	size_t				_protocolSizeOfPlayerState;
 };
