@@ -3,7 +3,7 @@
 
 
 // if(s32)f == f and (s32)f + (1<<(FLOAT_INT_BITS-1)) < (1 << FLOAT_INT_BITS)
-// the f32 will be sent with FLOAT_INT_BITS, otherwise all 32 bits will be sent
+// the float value will be sent with FLOAT_INT_BITS, otherwise all 32 bits will be sent
 #define	FLOAT_INT_BITS	13
 #define	FLOAT_INT_BIAS	(1<<(FLOAT_INT_BITS-1))
 
@@ -15,15 +15,6 @@
 #	include <stddef.h>
 #	define	 OFFSET_OF(type, member)	offsetof(type, member)
 #endif
-
-
-/*
-============================================================================
-
-entityState_t communication
-
-============================================================================
-*/
 
 //
 // 3
@@ -358,14 +349,6 @@ const idNetField EntityStateFields90[] =
 #undef ESF
 
 const s32 EntityStateFieldCount90 = sizeof(EntityStateFields90) / sizeof(EntityStateFields90[0]);
-
-/*
-============================================================================
-
-playerState_t communication
-
-============================================================================
-*/
 
 //
 // 3
@@ -742,15 +725,6 @@ static const idNetField PlayerStateFields91[] =
 static const s32 PlayerStateFieldCount91 = sizeof(PlayerStateFields91) / sizeof(PlayerStateFields91[0]);
 
 
-/*
-==============================================================================
-
-			MESSAGE IO FUNCTIONS
-
-Handles u8 ordering and avoids alignment errors
-==============================================================================
-*/
-
 udtMessage::udtMessage()
 {
 	_protocol = udtProtocol::Dm68;
@@ -885,14 +859,6 @@ void udtMessage::BeginReadingOOB()
 	Buffer.oob = qtrue;
 }
 
-/*
-=============================================================================
-
-bit functions
-
-=============================================================================
-*/
-
 void udtMessage::GoToNextByte()
 {
 	if((Buffer.bit & 7) != 0)
@@ -933,14 +899,14 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 		else if(bits == 16) 
 		{
 			unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.cursize];
-			*sp = (unsigned short)LittleShort(value);
+			*sp = (unsigned short)value;
 			Buffer.cursize += 2;
 			Buffer.bit += 16;
 		} 
 		else if(bits == 32) 
 		{
 			u32* ip = (u32*)&Buffer.data[Buffer.cursize];
-			*ip = LittleLong(value);
+			*ip = value;
 			Buffer.cursize += 4;
 			Buffer.bit += 32;
 		} 
@@ -1005,14 +971,14 @@ s32 udtMessage::ReadBits(s32 bits)
 			else if(bits == 16)
 			{
 				unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
-				value = LittleShort(*sp);
+				value = *sp;
 				Buffer.readcount += 2;
 				Buffer.bit += 16;
 			}
 			else if(bits == 32)
 			{
 				u32* ip = (u32*)&Buffer.data[Buffer.readcount];
-				value = LittleLong(*ip);
+				value = *ip;
 				Buffer.readcount += 4;
 				Buffer.bit += 32;
 			}
@@ -1074,10 +1040,6 @@ s32 udtMessage::ReadBits(s32 bits)
 
 	return value;
 }
-
-//
-// writing functions
-//
 
 void udtMessage::WriteByte(s32 c) 
 {
@@ -1352,125 +1314,6 @@ s32 udtMessage::PeekByte()
 	Buffer.bit = bit;
 
 	return c;
-}
-
-/*
-=============================================================================
-
-delta functions with keys
-
-=============================================================================
-*/
-
-#define NETLOG(x) 
-
-static const s32 kbitmask[32] = 
-{
-	0x00000001,	0x00000003,	0x00000007,	0x0000000F,
-	0x0000001F,	0x0000003F,	0x0000007F,	0x000000FF,
-	0x000001FF,	0x000003FF,	0x000007FF,	0x00000FFF,
-	0x00001FFF,	0x00003FFF,	0x00007FFF,	0x0000FFFF,
-	0x0001FFFF,	0x0003FFFF,	0x0007FFFF,	0x000FFFFF,
-	0x001FFFFf,	0x003FFFFF,	0x007FFFFF,	0x00FFFFFF,
-	0x01FFFFFF,	0x03FFFFFF,	0x07FFFFFF,	0x0FFFFFFF,
-	0x1FFFFFFF,	0x3FFFFFFF,	0x7FFFFFFF,	0xFFFFFFFF
-};
-
-void udtMessage::WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits)
-{
-	if(oldV == newV) 
-	{
-		WriteBits(0, 1);
-		return;
-	}
-
-	WriteBits(1, 1);
-	WriteBits(newV ^ key, bits);
-}
-
-s32 udtMessage::ReadDeltaKey(s32 key, s32 oldV, s32 bits)
-{
-	if(ReadBits(1)) 
-	{
-		return ReadBits(bits) ^ (key & kbitmask[bits]);
-	}
-
-	return oldV;
-}
-
-void udtMessage::WriteDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to)
-{
-	if(to->serverTime - from->serverTime < 256) 
-	{
-		WriteBits(1, 1);
-		WriteBits(to->serverTime - from->serverTime, 8);
-	}
-	else 
-	{
-		WriteBits(0, 1);
-		WriteBits(to->serverTime, 32);
-	}
-
-	if(from->angles[0] == to->angles[0] &&
-		from->angles[1] == to->angles[1] &&
-		from->angles[2] == to->angles[2] &&
-		from->forwardmove == to->forwardmove &&
-		from->rightmove == to->rightmove &&
-		from->upmove == to->upmove &&
-		from->buttons == to->buttons &&
-		from->weapon == to->weapon) 
-	{
-		// no change
-		WriteBits(0, 1);
-		return;
-	}
-
-	key ^= to->serverTime;
-	WriteBits(1, 1);
-	WriteDeltaKey(key, from->angles[0], to->angles[0], 16);
-	WriteDeltaKey(key, from->angles[1], to->angles[1], 16);
-	WriteDeltaKey(key, from->angles[2], to->angles[2], 16);
-	WriteDeltaKey(key, from->forwardmove, to->forwardmove, 8);
-	WriteDeltaKey(key, from->rightmove, to->rightmove, 8);
-	WriteDeltaKey(key, from->upmove, to->upmove, 8);
-	WriteDeltaKey(key, from->buttons, to->buttons, 16);
-	WriteDeltaKey(key, from->weapon, to->weapon, 8);
-}
-
-void udtMessage::ReadDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to)
-{
-	if(ReadBits(1)) 
-	{
-		to->serverTime = from->serverTime + ReadBits(8);
-	} 
-	else 
-	{
-		to->serverTime = ReadBits(32);
-	}
-
-	if(ReadBits(1)) 
-	{
-		key ^= to->serverTime;
-		to->angles[0] = ReadDeltaKey(key, from->angles[0], 16);
-		to->angles[1] = ReadDeltaKey(key, from->angles[1], 16);
-		to->angles[2] = ReadDeltaKey(key, from->angles[2], 16);
-		to->forwardmove = (s8)ReadDeltaKey(key, from->forwardmove, 8);
-		to->rightmove = (s8)ReadDeltaKey(key, from->rightmove, 8);
-		to->upmove = (s8)ReadDeltaKey(key, from->upmove, 8);
-		to->buttons = ReadDeltaKey(key, from->buttons, 16);
-		to->weapon = (u8)ReadDeltaKey(key, from->weapon, 8);
-	} 
-	else 
-	{
-		to->angles[0] = from->angles[0];
-		to->angles[1] = from->angles[1];
-		to->angles[2] = from->angles[2];
-		to->forwardmove = from->forwardmove;
-		to->rightmove = from->rightmove;
-		to->upmove = from->upmove;
-		to->buttons = from->buttons;
-		to->weapon = from->weapon;
-	}
 }
 
 void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
@@ -1807,14 +1650,12 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		*toF = *fromF;
 	}
 
-
 	// read the arrays
 	if(ReadBits(1)) 
 	{
 		// parse stats
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_STATS");
 			bits = ReadBits(MAX_STATS);
 			for(i=0 ; i<MAX_STATS ; i++) 
 			{
@@ -1828,7 +1669,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse persistant stats
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_PERSISTANT");
 			bits = ReadBits(MAX_PERSISTANT);
 			for(i=0 ; i<MAX_PERSISTANT ; i++) 
 			{
@@ -1842,7 +1682,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse ammo
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_AMMO");
 			bits = ReadBits(MAX_WEAPONS);
 			for(i=0 ; i<MAX_WEAPONS ; i++) 
 			{
@@ -1856,7 +1695,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse powerups
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_POWERUPS");
 			bits = ReadBits(MAX_POWERUPS);
 			for(i=0 ; i<MAX_POWERUPS ; i++) 
 			{

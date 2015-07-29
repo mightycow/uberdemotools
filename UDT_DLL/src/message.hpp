@@ -65,10 +65,6 @@ public:
 
 	s32		PeekByte();
 
-	// User commands always have time, then either all fields or none.
-	void	WriteDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to);
-	void	ReadDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to);
-
 	void	WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to);
 	void	ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to);
 
@@ -76,8 +72,6 @@ public:
 	bool	ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number); // True if entity was added or changed.
 
 private:
-	void	WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits);
-	s32		ReadDeltaKey(s32 key, s32 oldV, s32 bits);
 	void	ReadDeltaPlayerstateDM3(idPlayerStateBase* to);
 	void	ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityStateBase* to, s32 number);
 

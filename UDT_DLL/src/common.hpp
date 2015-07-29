@@ -8,48 +8,16 @@
 #include <stdio.h>
 
 
+// @TODO: Use C++ bool instead.
 typedef s32 qbool;
-#define qfalse (qbool)(0)
-#define qtrue (qbool)(!0)
+#define qfalse ((qbool)(0))
+#define qtrue  ((qbool)(!0))
 typedef qbool qboolean;
 
-#if defined(Q3_VM)
-typedef s32 s32ptr_t;
-#elif defined(_MSC_VER)
-#include <stddef.h>
-typedef __int64 int64_t;
-typedef __int32 int32_t;
-typedef __int16 int16_t;
-typedef __int8  int8_t;
-typedef unsigned __int64 uint64_t;
-typedef unsigned __int32 uint32_t;
-typedef unsigned __int16 uint16_t;
-typedef unsigned __int8	 uint8_t;
-typedef ptrdiff_t intptr_t;
-#else
-//#include <stds32.h>
-//#include <stdint.h>
-#endif
-
-typedef unsigned char		byte;
-
-typedef s32		qhandle_t;
-
-typedef float vec_t;
+typedef f32 vec_t;
 typedef vec_t vec2_t[2];
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
-
-
-#define	MAX_GLOBAL_SERVERS			4096
-#define	MAX_OTHER_SERVERS			128
-#define MAX_PINGREQUESTS			32
-#define MAX_SERVERSTATUSREQUESTS	16
-
-#define Q_COLOR_ESCAPE	'^'
-#define Q_IsColorString(p)	( p && *(p) == Q_COLOR_ESCAPE && *((p)+1) && *((p)+1) != Q_COLOR_ESCAPE )
-
-#define COMPILE_TIME_ASSERT( pred ) 
 
 // angle indexes
 #define	PITCH				0		// up / down
@@ -69,12 +37,10 @@ typedef vec_t vec4_t[4];
 #define	BIG_INFO_KEY		8192
 #define	BIG_INFO_VALUE		8192
 
-
 #define	MAX_QPATH			64		// max length of a quake game pathname
 #define	MAX_OSPATH			256		// max length of a filesystem pathname
 
 #define	MAX_NAME_LENGTH		32		// max length of a client name
-
 
 //
 // these aren't needed by any of the VMs.  put in another header?
@@ -97,29 +63,8 @@ typedef vec_t vec4_t[4];
 #define Q_vsnprintf vsnprintf
 #endif
 
-//endianness
-extern short ShortSwap (short l);
-extern s32 LongSwap (s32 l);
-extern f32 FloatSwap (const f32 *f);
-
-#define LittleShort
-#define LittleLong
-#define LittleFloat
-#define BigShort(x) ShortSwap(x)
-#define BigLong(x) LongSwap(x)
-#define BigFloat(x) FloatSwap(&x)
-
 #define Com_Memset memset
 #define Com_Memcpy memcpy
-
-// usercmd_t is sent to the server each client frame
-typedef struct usercmd_s {
-	s32			serverTime;
-	s32			angles[3];
-	s32			buttons;
-	u8		weapon;
-	s8	forwardmove, rightmove, upmove;
-} usercmd_t;
 
 // if entityState->solid == SOLID_BMODEL, modelindex is an inline model number
 #define	SOLID_BMODEL	0xffffff
@@ -142,12 +87,12 @@ struct idTrajectoryBase
 	vec3_t		trDelta;			// velocity, etc
 };
 
-// entityState_t is the information conveyed from the server
+// This is the information conveyed from the server
 // in an update message about entities that the client will
-// need to render in some way
-// Different eTypes may use the information in different ways
+// need to render in some way.
+// Different eTypes may use the information in different ways.
 // The messages are delta compressed, so it doesn't really matter if
-// the structure size is fairly large
+// the structure size is fairly large.
 struct idEntityStateBase
 {
 	s32		number;			// entity index
@@ -171,7 +116,7 @@ struct idEntityStateBase
 
 	s32		groundEntityNum;// ENTITYNUM_NONE = in air
 
-	s32		constantLight;	// r + (g<<8) + (b<<16) + (s32ensity<<24)
+	s32		constantLight;	// r + (g<<8) + (b<<16) + (intensity<<24)
 	s32		loopSound;		// constantly loop this sound
 
 	s32		modelindex;
@@ -244,14 +189,6 @@ struct idEntityState91 : idEntityStateBase
 
 typedef idEntityState91 idLargestEntityState;
 
-/*
-========================================================================
-
-  ELEMENTS COMMUNICATED ACROSS THE NET
-
-========================================================================
-*/
-
 //
 // per-level limits
 //
@@ -261,12 +198,12 @@ typedef idEntityState91 idLargestEntityState;
 #define	GENTITYNUM_BITS		10		// don't need to send any more
 #define	MAX_GENTITIES		(1<<GENTITYNUM_BITS)
 
-// entitynums are communicated with GENTITY_BITS, so any reserved
-// values that are going to be communcated over the net need to
-// also be in this range
-#define	ENTITYNUM_NONE		(MAX_GENTITIES-1)
-#define	ENTITYNUM_WORLD		(MAX_GENTITIES-2)
-#define	ENTITYNUM_MAX_NORMAL	(MAX_GENTITIES-2)
+// Entity numbers are communicated with GENTITY_BITS bits, so any reserved
+// values that are going to be communicated over the net need to
+// also be in this range.
+#define	ENTITYNUM_NONE       (MAX_GENTITIES-1)
+#define	ENTITYNUM_WORLD	     (MAX_GENTITIES-2)
+#define	ENTITYNUM_MAX_NORMAL (MAX_GENTITIES-2)
 
 
 #define	MAX_MODELS			256		// these are sent over the net as 8 bits
@@ -346,11 +283,6 @@ typedef enum {
 #define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
 
 #define	MAX_GAMESTATE_CHARS	16000
-typedef struct {
-	s32			stringOffsets[MAX_CONFIGSTRINGS];
-	s8		stringData[MAX_GAMESTATE_CHARS];
-	s32			dataCount;
-} gameState_t;
 
 //=========================================================
 
@@ -514,65 +446,12 @@ NET
 
 #define	MAX_PACKET_USERCMDS		32		// max number of usercmd_t in a packet
 
-#define	PORT_ANY			-1
-
 #define	MAX_RELIABLE_COMMANDS	64			// max string commands buffered for restransmit
 
-typedef enum {
-	NA_BOT,
-	NA_BAD,					// an address lookup failed
-	NA_LOOPBACK,
-	NA_BROADCAST,
-	NA_IP,
-} netadrtype_t;
+#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented into multiple packets
 
-typedef enum {
-	NS_CLIENT,
-	NS_SERVER
-} netsrc_t;
-
-typedef struct {
-	netadrtype_t type;
-	u8 ip[4];
-	unsigned short port;
-} netadr_t;
-
-#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented s32o multiple packets
-
-/*
-==============================================================
-
-PROTOCOL
-
-==============================================================
-*/
-
-#define	PROTOCOL_VERSION	68
-
-#define	UPDATE_SERVER_NAME	"update.quake3arena.com"
-// override on command line, config files etc.
-#ifndef MASTER_SERVER_NAME
-#define MASTER_SERVER_NAME	"master.quake3arena.com"
-#endif
-#ifndef AUTHORIZE_SERVER_NAME
-#define	AUTHORIZE_SERVER_NAME	"authorize.quake3arena.com"
-#endif
-
-#define	PORT_MASTER			27950
-#define	PORT_UPDATE			27951
-#ifndef PORT_AUTHORIZE
-#define	PORT_AUTHORIZE		27952
-#endif
-#define	PORT_SERVER			27960
-#define	NUM_SERVER_PORTS	4		// broadcast scan this many ports after
-									// PORT_SERVER so a single machine can
-									// run multiple servers
-
-
-// the svc_strings[] array in cl_parse.c should mirror this
-//
 // server to client
-//
+// the svc_strings[] array in cl_parse.c should mirror this
 enum svc_ops_e
 {
 	svc_bad,
@@ -590,17 +469,6 @@ enum svc_ops_e
 	svc_voip,     // not wrapped in USE_VOIP, so this value is reserved.
 };
 
-//
-// client to server
-//
-enum clc_ops_e {
-	clc_bad,
-	clc_nop, 		
-	clc_move,				// [[usercmd_t]
-	clc_moveNoDelta,		// [[usercmd_t]
-	clc_clientCommand,		// [string] message
-	clc_EOF
-};
 
 // snapshots are a view of the server at a given time
 struct idClientSnapshotBase
@@ -712,6 +580,18 @@ new gamestate_t, potentially several times during an established connection
 
 #define	EVENT_VALID_MSEC	300
 
+typedef enum
+{
+	EV_OBITUARY_3 = 58
+
+} entity_event_3_t;
+
+typedef enum
+{
+	EV_OBITUARY_48 = 60
+
+} entity_event_t;
+
 typedef enum {
 	EV_NONE,
 
@@ -816,7 +696,7 @@ typedef enum {
 	EV_TAUNT_GETFLAG,
 	EV_TAUNT_GUARDBASE,
 	EV_TAUNT_PATROL
-} entity_event_t;
+} entity_event_68_t;
 
 typedef enum {
 	EV_FOOTSTEP_73p = 1,
