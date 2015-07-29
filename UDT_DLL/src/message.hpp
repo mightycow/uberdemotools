@@ -44,6 +44,8 @@ public:
 	void	WriteByte(s32 c);
 	void	WriteShort(s32 c);
 	void	WriteLong(s32 c);
+	void	WriteFloat(s32 c);
+	void	WriteField(s32 c, s32 bits);
 	void	WriteString(const char* s, s32 length);    // The string must be null-terminated.
 	void	WriteBigString(const char* s, s32 length); // The string must be null-terminated.
 

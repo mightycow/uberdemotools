@@ -1073,6 +1073,48 @@ void udtMessage::WriteLong(s32 c)
 	WriteBits(c, 32);
 }
 
+void udtMessage::WriteFloat(s32 c)
+{
+	// Sneaking around the strict aliasing rules.
+	union IntAndFloat
+	{
+		IntAndFloat(s32 i) : AsInt(i) {}
+
+		s32 AsInt;
+		f32 AsFloat;
+	};
+
+	const IntAndFloat fullFloatUnion(c);
+	const f32 fullFloat = fullFloatUnion.AsFloat;
+	const s32 truncatedFloat = (s32)fullFloat;
+	if(truncatedFloat == fullFloat && 
+	   truncatedFloat + FLOAT_INT_BIAS >= 0 &&
+	   truncatedFloat + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS))
+	{
+		// Small integer case.
+		WriteBits(0, 1);
+		WriteBits(truncatedFloat + FLOAT_INT_BIAS, FLOAT_INT_BITS);
+	}
+	else
+	{
+		// Full floating-point value.
+		WriteBits(1, 1);
+		WriteBits(c, 32);
+	}
+}
+
+void udtMessage::WriteField(s32 c, s32 bits)
+{
+	if(bits == 0)
+	{
+		WriteFloat(c);
+	}
+	else
+	{
+		WriteBits(c, bits);
+	}
+}
+
 void udtMessage::WriteString(const char* s, s32 length) 
 {
 	if(!s) 
@@ -1375,37 +1417,12 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 
 		if(*fromF == *toF) 
 		{
-			WriteBits(0, 1);	// no change
+			WriteBits(0, 1);
 			continue;
 		}
 
-		WriteBits(1, 1);	// changed
-//		pcount[i]++;
-
-		if(field->bits == 0) 
-		{
-			f32 fullFloat = *(f32 *)toF;
-			s32 trunc = (s32)fullFloat;
-
-			if( trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
-				trunc + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS)) 
-			{
-				// send as small integer
-				WriteBits(0, 1);
-				WriteBits(trunc + FLOAT_INT_BIAS, FLOAT_INT_BITS);
-			} 
-			else
-			{
-				// send as full floating point value
-				WriteBits(1, 1);
-				WriteBits(*toF, 32);
-			}
-		} 
-		else
-		{
-			// integer
-			WriteBits(*toF, field->bits);
-		}
+		WriteBits(1, 1);
+		WriteField(*toF, field->bits);
 	}
 	c = Buffer.cursize - c;
 
@@ -1788,52 +1805,19 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 
 		if(*fromF == *toF) 
 		{
-			WriteBits(0, 1);	// no change
+			WriteBits(0, 1);
 			continue;
 		}
 
-		WriteBits(1, 1);	// changed
-
-		if(field->bits == 0) 
+		WriteBits(1, 1);
+		if(*toF == 0)
 		{
-			f32 fullFloat = *(f32 *)toF;
-
-			if(fullFloat == 0.0f)
-			{
-				WriteBits(0, 1);
-			} 
-			else
-			{
-				WriteBits(1, 1);
-				s32 trunc = (s32)fullFloat;
-				if(trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
-					trunc + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS)) 
-				{
-					// send as small integer
-					WriteBits(0, 1);
-					WriteBits(trunc + FLOAT_INT_BIAS, FLOAT_INT_BITS);
-				} 
-				else 
-				{
-					// send as full floating point value
-					WriteBits(1, 1);
-					WriteBits(*toF, 32);
-				}
-			}
-		} 
-		else 
-		{
-			if(*toF == 0) 
-			{
-				WriteBits(0, 1);
-			} 
-			else 
-			{
-				WriteBits(1, 1);
-				// integer
-				WriteBits(*toF, field->bits);
-			}
+			WriteBits(0, 1);
+			continue;
 		}
+
+		WriteBits(1, 1);
+		WriteField(*toF, field->bits);
 	}
 }
 
