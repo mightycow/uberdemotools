@@ -1180,8 +1180,16 @@ s32 udtMessage::ReadFloat()
 	{
 		return ReadBits(32);
 	}
+
+	const s32 intValue = ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS;
+	const f32 realValue = (f32)intValue;
 	
-	return ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS;
+	return *(s32*)&realValue;
+}
+
+s32 udtMessage::ReadField(s32 bits)
+{
+	return (bits == 0) ? ReadFloat() : ReadBits(bits);
 }
 
 char* udtMessage::ReadString(s32& length) 
@@ -1517,14 +1525,7 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 		}
 
 		s32* const toF = (s32*)((u8*)to + field->offset);
-		if(field->bits == 0)
-		{
-			*toF = ReadFloat();
-		}
-		else
-		{
-			*toF = ReadBits(field->bits);
-		}
+		*toF = ReadField(field->bits);
 	}
 
 	// Stats array.
@@ -1588,7 +1589,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	s32			i, lc;
 	s32			bits;
 	s32			*fromF, *toF;
-	s32			trunc;
 	idLargestPlayerState dummy;
 
 	if(!from) 
@@ -1616,42 +1616,18 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(! ReadBits(1)) 
+		if(ReadBits(1) == 0) 
 		{
-			// no change
 			*toF = *fromF;
+			continue;
 		} 
-		else 
-		{
-			if(field->bits == 0)
-			{
-				// float
-				if(ReadBits(1) == 0) 
-				{
-					// integral float
-					trunc = ReadBits(FLOAT_INT_BITS);
-					// bias to allow equal parts positive and negative
-					trunc -= FLOAT_INT_BIAS;
-					*(f32 *)toF = (f32)trunc; 
-				} 
-				else
-				{
-					// full floating point value
-					*toF = ReadBits(32);
-				}
-			} 
-			else
-			{
-				// integer
-				*toF = ReadBits(field->bits);
-			}
-		}
+
+		*toF = ReadField(field->bits);
 	}
 	for(i = lc, field = &_playerStateFields[lc]; i < _playerStateFieldCount; i++, field++)
 	{
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
-		// no change
 		*toF = *fromF;
 	}
 
@@ -1940,14 +1916,7 @@ void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityState
 			continue;
 		}
 
-		if(field->bits == 0)
-		{
-			*toF = ReadFloat();
-		}
-		else
-		{
-			*toF = ReadBits(field->bits);
-		}
+		*toF = ReadField(field->bits);
 	}
 }
 
@@ -1997,58 +1966,25 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(! ReadBits(1)) 
+		if(ReadBits(1) == 0) 
 		{
-			// no change
 			*toF = *fromF;
+			continue;
 		} 
-		else 
+
+		if(ReadBits(1) == 0)
 		{
-			if(field->bits == 0) 
-			{
-				// f32
-				if(ReadBits(1) == 0) 
-				{
-					*(f32 *)toF = 0.0f;
-				} 
-				else 
-				{
-					if(ReadBits(1) == 0)
-					{
-						// integral f32
-						s32 trunc = ReadBits(FLOAT_INT_BITS);
-						// bias to allow equal parts positive and negative
-						trunc -= FLOAT_INT_BIAS;
-						*(f32 *)toF = (f32)trunc; 
-					} 
-					else 
-					{
-						// full floating point value
-						*toF = ReadBits(32);
-					}
-				}
-			} 
-			else 
-			{
-				if(ReadBits(1) == 0) 
-				{
-					*toF = 0;
-				} 
-				else 
-				{
-					// integer
-					*toF = ReadBits(field->bits);
-				}
-			}
-//			pcount[i]++;
+			*toF = 0;
+			continue;
 		}
+
+		*toF = ReadField(field->bits);
 	}
 
 	for(i = lc, field = &_entityStateFields[lc] ; i < _entityStateFieldCount ; i++, field++) 
 	{
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
-		// no change
 		*toF = *fromF;
 	}
 

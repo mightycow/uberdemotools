@@ -57,6 +57,7 @@ public:
 	s32		ReadSignedShort();
 	s32		ReadLong();
 	s32		ReadFloat();
+	s32		ReadField(s32 bits); // If bits is 0, reads a float.
 
 	char*	ReadString(s32& length);
 	char*	ReadBigString(s32& length);
