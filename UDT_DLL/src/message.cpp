@@ -1181,10 +1181,19 @@ s32 udtMessage::ReadFloat()
 		return ReadBits(32);
 	}
 
+	// Sneaking around the strict aliasing rules.
+	union FloatAndInt
+	{
+		FloatAndInt(f32 f) : AsFloat(f) {}
+
+		f32 AsFloat;
+		s32 AsInt;
+	};
+
 	const s32 intValue = ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS;
-	const f32 realValue = (f32)intValue;
+	const FloatAndInt realValue((f32)intValue);
 	
-	return *(s32*)&realValue;
+	return realValue.AsInt;
 }
 
 s32 udtMessage::ReadField(s32 bits)
