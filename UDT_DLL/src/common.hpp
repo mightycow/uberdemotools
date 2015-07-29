@@ -172,7 +172,7 @@ struct idEntityState90 : idEntityStateBase
 	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
 
 	// New in dm_90.
-	int		jumpTime;
+	s32		jumpTime;
 	qbool	doubleJumped;
 };
 
@@ -183,8 +183,13 @@ struct idEntityState91 : idEntityStateBase
 	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
 
 	// New in dm_90.
-	int		jumpTime;
+	s32		jumpTime;
 	qbool	doubleJumped;
+
+	// New in dm_91.
+	s32		health;
+	s32		armor;
+	s32		location;
 };
 
 typedef idEntityState91 idLargestEntityState;
@@ -368,12 +373,6 @@ struct idPlayerStateBase
 	s32			generic1;
 	s32			loopSound;
 	s32			jumppad_ent;	// jumppad entity hit this frame
-
-	// not communicated over the net at all
-	s32			ping;			// server to game info for scoreboard
-	s32			pmove_framecount;	// FIXME: don't transmit over the network
-	s32			jumppad_frame;
-	s32			entityEventSequence;
 };
 
 struct idPlayerState3 : idPlayerStateBase
@@ -403,14 +402,21 @@ struct idPlayerState73 : idPlayerStateBase
 struct idPlayerState90 : idPlayerStateBase
 {
 	qboolean doubleJumped;
-	int jumpTime;
+	s32 jumpTime;
 };
 
 struct idPlayerState91 : idPlayerStateBase
 {
 	qboolean doubleJumped;
-	int jumpTime;
-	// @TODO: new 91 fields.
+	s32 jumpTime;
+	s32 weaponPrimary;
+	s32 crouchTime;
+	s32 crouchSlideTime;
+	s32 location;
+	s32 fov;
+	s32 forwardmove;
+	s32 rightmove;
+	s32 upmove;
 };
 
 typedef idPlayerState91 idLargestPlayerState;

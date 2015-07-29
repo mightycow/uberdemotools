@@ -351,6 +351,78 @@ const idNetField EntityStateFields90[] =
 const s32 EntityStateFieldCount90 = sizeof(EntityStateFields90) / sizeof(EntityStateFields90[0]);
 
 //
+// 91
+//
+
+#define ESF(x) #x, (s32)OFFSET_OF(idEntityState91, x)
+
+const idNetField EntityStateFields91[] =
+{
+	{ ESF(pos.trTime), 32 },
+	{ ESF(pos.trBase[0]), 0 },
+	{ ESF(pos.trBase[1]), 0 },
+	{ ESF(pos.trDelta[0]), 0 },
+	{ ESF(pos.trDelta[1]), 0 },
+	{ ESF(pos.trBase[2]), 0 },
+	{ ESF(apos.trBase[1]), 0 },
+	{ ESF(pos.trDelta[2]), 0 },
+	{ ESF(apos.trBase[0]), 0 },
+	{ ESF(pos_gravity), 32 },
+	{ ESF(event), 10 },
+	{ ESF(angles2[1]), 0 },
+	{ ESF(eType), 8 },
+	{ ESF(torsoAnim), 8 },
+	{ ESF(eventParm), 8 },
+	{ ESF(legsAnim), 8 },
+	{ ESF(groundEntityNum), GENTITYNUM_BITS },
+	{ ESF(pos.trType), 8 },
+	{ ESF(eFlags), 19 },
+	{ ESF(otherEntityNum), GENTITYNUM_BITS },
+	{ ESF(weapon), 8 },
+	{ ESF(clientNum), 8 },
+	{ ESF(angles[1]), 0 },
+	{ ESF(pos.trDuration), 32 },
+	{ ESF(apos.trType), 8 },
+	{ ESF(origin[0]), 0 },
+	{ ESF(origin[1]), 0 },
+	{ ESF(origin[2]), 0 },
+	{ ESF(solid), 24 },
+	{ ESF(powerups), 16 },
+	{ ESF(modelindex), 8 },
+	{ ESF(otherEntityNum2), GENTITYNUM_BITS },
+	{ ESF(loopSound), 8 },
+	{ ESF(generic1), 8 },
+	{ ESF(origin2[2]), 0 },
+	{ ESF(origin2[0]), 0 },
+	{ ESF(origin2[1]), 0 },
+	{ ESF(modelindex2), 8 },
+	{ ESF(angles[0]), 0 },
+	{ ESF(time), 32 },
+	{ ESF(apos.trTime), 32 },
+	{ ESF(apos.trDuration), 32 },
+	{ ESF(apos.trBase[2]), 0 },
+	{ ESF(apos.trDelta[0]), 0 },
+	{ ESF(apos.trDelta[1]), 0 },
+	{ ESF(apos.trDelta[2]), 0 },
+	{ ESF(apos_gravity), 32 },
+	{ ESF(time2), 32 },
+	{ ESF(angles[2]), 0 },
+	{ ESF(angles2[0]), 0 },
+	{ ESF(angles2[2]), 0 },
+	{ ESF(constantLight), 32 },
+	{ ESF(frame), 16 },
+	{ ESF(jumpTime), 32 },
+	{ ESF(doubleJumped), 1 },
+	{ ESF(health), 16 }, // New in protocol 91.
+	{ ESF(armor), 16 },  // New in protocol 91.
+	{ ESF(location), 8 } // New in protocol 91.
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount91 = sizeof(EntityStateFields91) / sizeof(EntityStateFields91[0]);
+
+//
 // 3
 //
 
@@ -709,15 +781,22 @@ static const idNetField PlayerStateFields91[] =
 	{ PSF(eventParms[1]), 8 },
 	{ PSF(clientNum), 8 },
 	{ PSF(weapon), 5 },
+	{ PSF(weaponPrimary), 8 },
 	{ PSF(viewangles[2]), 0 },
-	{ PSF(grapplePoint[0]), 0 }, // New in protocol 90.
-	{ PSF(grapplePoint[1]), 0 }, // New in protocol 90.
-	{ PSF(grapplePoint[2]), 0 }, // New in protocol 90.
+	{ PSF(grapplePoint[0]), 0 },
+	{ PSF(grapplePoint[1]), 0 },
+	{ PSF(grapplePoint[2]), 0 },
 	{ PSF(jumppad_ent), 10 },
 	{ PSF(loopSound), 16 },
-	{ PSF(jumpTime), 32 },    // New in protocol 90.
-	{ PSF(doubleJumped), 1 }, // New in protocol 90.
-	// @TODO: New 91 fields.
+	{ PSF(jumpTime), 32 },
+	{ PSF(doubleJumped), 1 },
+	{ PSF(crouchTime), 32 },      // New in protocol 91.
+	{ PSF(crouchSlideTime), 32 }, // New in protocol 91.
+	{ PSF(location), 8 },         // New in protocol 91.
+	{ PSF(fov), 8 },              // New in protocol 91.
+	{ PSF(forwardmove), 8 },      // New in protocol 91.
+	{ PSF(rightmove), 8 },        // New in protocol 91.
+	{ PSF(upmove), 8 }            // New in protocol 91.
 };
 
 #undef PSF
@@ -750,8 +829,8 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 		case udtProtocol::Dm91:
 			_protocolSizeOfEntityState = sizeof(idEntityState91);
 			_protocolSizeOfPlayerState = sizeof(idPlayerState91);
-			_entityStateFields = EntityStateFields90;
-			_entityStateFieldCount = EntityStateFieldCount90;
+			_entityStateFields = EntityStateFields91;
+			_entityStateFieldCount = EntityStateFieldCount91;
 			_playerStateFields = PlayerStateFields91;
 			_playerStateFieldCount = PlayerStateFieldCount91;
 			break;

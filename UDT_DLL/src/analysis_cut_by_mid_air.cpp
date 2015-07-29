@@ -178,7 +178,7 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequen
 	if(ps.eventSequence != lastEventSequence)
 	{
 		const s32 seq = (ps.eventSequence & 1) ^ 1;
-		es.event = ps.events[seq] | ((ps.entityEventSequence & 3) << 8);
+		es.event = ps.events[seq];
 		es.eventParm = ps.eventParms[seq];
 		lastEventSequence = ps.eventSequence;
 	}

@@ -216,8 +216,6 @@ bool udtBaseParser::ParseServerMessage()
 
 		case svc_gamestate:
 			if(!ParseGamestate()) return false;
-			// @TODO: Add snapshot support for protocol dm_91.
-			if(_inProtocol == udtProtocol::Dm91) return false;
 			break;
 
 		case svc_snapshot:
