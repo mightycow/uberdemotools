@@ -135,7 +135,7 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 	}
 	else if(!udtString::IsNullOrEmpty(pi.PlayerName))
 	{
-		const s32 firstPlayerCsIdx = parser._inProtocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
+		const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 		for(s32 i = 0; i < MAX_CLIENTS; ++i)
 		{
 			udtString playerName;
@@ -193,7 +193,7 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 		return;
 	}
 
-	const s32 firstPlayerCsIdx = parser._inProtocol == udtProtocol::Dm68 ? CS_PLAYERS_68 : CS_PLAYERS_73p;
+	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 	const s32 playerIndex = csIndex - firstPlayerCsIdx;
 	if(playerIndex < 0 || playerIndex >= MAX_CLIENTS)
 	{

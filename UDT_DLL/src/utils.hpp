@@ -32,6 +32,13 @@ T udt_clamp(const T x, const T a, const T b)
 }
 
 
+struct udtObituaryEvent
+{
+	s32 AttackerIndex; // A player or -1 if the world.
+	s32 TargetIndex; // Always a player.
+	s32 MeanOfDeath; // Of type udtMeanOfDeath::Id.
+};
+
 struct CallbackCutDemoFileStreamCreationInfo
 {
 	const char* OutputFolderPath;
@@ -54,10 +61,14 @@ extern char*       AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 s
 extern s32         ConvertPowerUpFlagsToValue(s32 flags);
 extern const char* GetTeamName(s32 team);
 extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
+extern s32         GetUDTPlayerMODBitFromUDTMod(s32 udtMod); // Returns -1 if unknown or invalid.
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
 extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);
+extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol);
+extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // Returns -1 if unknown or invalid.
+extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.
@@ -66,3 +77,19 @@ extern bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& alloc
 // Gets the string value of a config string variable.
 // The variable name matching is case sensitive.
 extern bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString);
+
+namespace idEntityEvent
+{
+	extern s32 Obituary(udtProtocol::Id protocol);
+	extern s32 WeaponFired(udtProtocol::Id protocol);
+};
+
+namespace idEntityType
+{
+	extern s32 Event(udtProtocol::Id protocol);
+}
+
+namespace idConfigStringIndex
+{
+	extern s32 FirstPlayer(udtProtocol::Id protocol);
+}

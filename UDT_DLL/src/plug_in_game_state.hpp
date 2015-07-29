@@ -36,7 +36,7 @@ private:
 	void ProcessCpmaGameInfo(const char* commandString, udtBaseParser& parser);
 	void ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs);
 	void ProcessQlServerInfo(const char* commandString, udtBaseParser& parser);
-	void ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings);
+	void ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings, udtProtocol::Id protocol);
 	void ProcessSystemAndServerInfo(const udtString& configStrings);
 	void ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString);
 

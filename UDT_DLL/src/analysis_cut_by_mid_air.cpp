@@ -93,7 +93,7 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 	}
 }
 
-static bool IsAllowedMeanOfDeath(s32 idMOD, udtProtocol::Id procotol)
+static bool IsAllowedIdMeanOfDeath(s32 idMOD, udtProtocol::Id procotol)
 {
 	const s32 bit = GetUDTPlayerMODBitFromIdMod(idMOD, procotol);
 
@@ -103,7 +103,7 @@ static bool IsAllowedMeanOfDeath(s32 idMOD, udtProtocol::Id procotol)
 		bit == (s32)udtPlayerMeansOfDeathBits::BFG;
 }
 
-static bool IsAllowedWeapon(s32 idWeapon, udtProtocol::Id procotol)
+static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 {
 	const s32 weapon = GetUDTWeaponFromIdWeapon(idWeapon, procotol);
 
@@ -118,7 +118,7 @@ static s32 RoundToNearest(s32 x, s32 n)
 	return ((x + (n / 2)) / n) * n;
 }
 
-static bool IsAllowedWeapon(u32 udtWeapon, u32 allowedWeapons)
+static bool IsAllowedUDTWeapon(u32 udtWeapon, u32 allowedWeapons)
 {
 	const u32 result = allowedWeapons & (1 << udtWeapon);
 
@@ -340,8 +340,8 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		{
 			// Store the projectile fired by the tracked player, if any.
 			const s32 eventType = es->event & (~EV_EVENT_BITS);
-			const s32 fireWeaponEventId = (_protocol == udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
-			if(eventType == fireWeaponEventId && IsAllowedWeapon(es->weapon, _protocol))
+			const s32 fireWeaponEventId = idEntityEvent::WeaponFired(_protocol);
+			if(eventType == fireWeaponEventId && IsAllowedIdWeapon(es->weapon, _protocol))
 			{
 				AddProjectile(es->weapon, currentPosition, arg.ServerTime);
 			}
@@ -380,7 +380,6 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	}
 
 	// Find a player getting mid-aired.
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -388,27 +387,26 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			continue;
 		}
 
-		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		const s32 eventType = ent->eType & (~EV_EVENT_BITS);
-		if(eventType != (s32)(ET_EVENTS + obituaryEvtId))
+		udtObituaryEvent eventInfo;
+		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
 
-		const s32 targetIdx = ent->otherEntityNum;
-		if(targetIdx < 0 || targetIdx >= MAX_CLIENTS || targetIdx == trackedPlayerIndex)
+		const s32 targetIdx = eventInfo.TargetIndex;
+		if(targetIdx == trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const s32 attackerIdx = ent->otherEntityNum2;
-		if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS || attackerIdx != trackedPlayerIndex)
+		const s32 attackerIdx = eventInfo.AttackerIndex;
+		if(attackerIdx == -1 || attackerIdx != trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const s32 meanOfDeath = ent->eventParm;
-		if(!IsAllowedMeanOfDeath(meanOfDeath, parser._inProtocol))
+		const s32 idMeanOfDeath = arg.Entities[i].Entity->eventParm;
+		if(!IsAllowedIdMeanOfDeath(idMeanOfDeath, parser._inProtocol))
 		{
 			continue;
 		}
@@ -420,8 +418,8 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		}
 
 		const udtCutByMidAirArg& extraInfo = GetExtraInfo<udtCutByMidAirArg>();
-		const s32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, _protocol);
-		if(udtWeapon != -1 && !IsAllowedWeapon(udtWeapon, extraInfo.AllowedWeapons))
+		const s32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, _protocol);
+		if(udtWeapon != -1 && !IsAllowedUDTWeapon(udtWeapon, extraInfo.AllowedWeapons))
 		{
 			continue;
 		}

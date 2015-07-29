@@ -880,6 +880,12 @@ typedef enum {
 							// this avoids having to set eFlags and eventNum
 } entityType_t;
 
+typedef enum
+{
+	ET_EVENTS_3 = 12
+
+} entityType_3_t;
+
 // NOTE: may not have more than 16
 typedef enum {
 	PW_NONE,
