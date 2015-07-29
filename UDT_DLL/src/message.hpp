@@ -56,7 +56,7 @@ public:
 	s32		ReadShort();
 	s32		ReadSignedShort();
 	s32		ReadLong();
-	f32		ReadFloat();
+	s32		ReadFloat();
 
 	char*	ReadString(s32& length);
 	char*	ReadBigString(s32& length);

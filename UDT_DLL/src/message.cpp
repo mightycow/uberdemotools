@@ -1165,18 +1165,14 @@ s32 udtMessage::ReadLong()
 	return c;
 }
 
-f32 udtMessage::ReadFloat()
+s32 udtMessage::ReadFloat()
 {
 	if(ReadBits(1))
 	{
-		const s32 bits = ReadBits(32);
-
-		return *(f32*)&bits;
+		return ReadBits(32);
 	}
 
-	const s32 intValue = ReadBits(13) - 4096;
-
-	return (f32)(intValue);
+	return ReadBits(13) - 4096;
 }
 
 char* udtMessage::ReadString(s32& length) 
@@ -1514,7 +1510,7 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 		s32* const toF = (s32*)((u8*)to + field->offset);
 		if(field->bits == 0)
 		{
-			*(f32*)toF = ReadFloat();
+			*toF = ReadFloat();
 		}
 		else
 		{
@@ -1937,7 +1933,7 @@ void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityState
 
 		if(field->bits == 0)
 		{
-			*(f32*)toF = ReadFloat();
+			*toF = ReadFloat();
 		}
 		else
 		{
