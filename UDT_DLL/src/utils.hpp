@@ -93,3 +93,15 @@ namespace idConfigStringIndex
 {
 	extern s32 FirstPlayer(udtProtocol::Id protocol);
 }
+
+namespace idPowerUpIndex
+{
+	extern s32 RedFlag(udtProtocol::Id protocol);
+	extern s32 BlueFlag(udtProtocol::Id protocol);
+	extern s32 NeutralFlag(udtProtocol::Id protocol);
+}
+
+namespace idPersStatsIndex
+{
+	extern s32 FlagCaptures(udtProtocol::Id protocol);
+}

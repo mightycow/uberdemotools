@@ -58,17 +58,22 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	s32 captureCount = _previousCaptureCount;
 	bool justCapped = false;
 
+	// Neutral flag index might be -1 if the protocol doesn't know it.
+	const s32 redFlagIdx = idPowerUpIndex::RedFlag(parser._inProtocol);
+	const s32 blueFlagIdx = idPowerUpIndex::BlueFlag(parser._inProtocol);
+	const s32 neutralFlagIdx = idPowerUpIndex::NeutralFlag(parser._inProtocol);
+
 	if(ps->clientNum == trackedPlayerIdx)
 	{
 		hasFlag =
-			ps->powerups[PW_REDFLAG] == S32_MAX ||
-			ps->powerups[PW_BLUEFLAG] == S32_MAX ||
-			ps->powerups[PW_NEUTRALFLAG] == S32_MAX;
-		const s32 captureCountPersIdx = (parser._inProtocol) == udtProtocol::Dm68 ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
+			ps->powerups[redFlagIdx] == S32_MAX ||
+			ps->powerups[blueFlagIdx] == S32_MAX ||
+			(neutralFlagIdx != -1 && ps->powerups[neutralFlagIdx] == S32_MAX);
+		const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
 		captureCount = ps->persistant[captureCountPersIdx];
 		justCapped = captureCount > _previousCaptureCount;
 	}
-	else
+	else if(parser._inProtocol >= udtProtocol::Dm48) // @NOTE: EF_AWARD_CAP doesn't exist in dm3.
 	{
 		idEntityStateBase* const es = FindPlayerEntity(arg, trackedPlayerIdx);
 		if(es == NULL)
@@ -77,9 +82,9 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		}
 
 		hasFlag =
-			(es->powerups & (1 << PW_REDFLAG)) != 0 ||
-			(es->powerups & (1 << PW_BLUEFLAG)) != 0 ||
-			(es->powerups & (1 << PW_NEUTRALFLAG)) != 0;
+			(es->powerups & (1 << redFlagIdx)) != 0 ||
+			(es->powerups & (1 << blueFlagIdx)) != 0 ||
+			(neutralFlagIdx != -1 && (es->powerups & (1 << neutralFlagIdx)) != 0);
 		capped = (es->eFlags & EF_AWARD_CAP) != 0;
 		justCapped = !_previousCapped && capped;
 	}
