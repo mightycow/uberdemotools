@@ -61,6 +61,7 @@ namespace Uber.DemoTools
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
         public int TimeShiftSnapshotCount = 2;
+        public string LastDemoOpenFolderPath = "";
     }
 
     public class MapConversionRule
@@ -139,21 +140,47 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.4.6";
+        private const string GuiVersion = "0.4.7";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
         {
+            ".dm3",
+            ".dm_48",
+            ".dm_66",
+            ".dm_67",
             ".dm_68",
             ".dm_73",
-            ".dm_90"
+            ".dm_90",
+            ".dm_91"
+        };
+
+        private static readonly List<string> DemoExtensionsQ3 = new List<string>
+        {
+            ".dm3",
+            ".dm_48",
+            ".dm_66",
+            ".dm_67",
+            ".dm_68"
+        };
+
+        private static readonly List<string> DemoExtensionsQL = new List<string>
+        {
+            ".dm_73",
+            ".dm_90",
+            ".dm_91"
         };
 
         private static readonly Dictionary<string, UDT_DLL.udtProtocol> ProtocolFileExtDic = new Dictionary<string, UDT_DLL.udtProtocol>
         {
+            { ".dm3",   UDT_DLL.udtProtocol.Dm3  },
+            { ".dm_48", UDT_DLL.udtProtocol.Dm48 },
+            { ".dm_66", UDT_DLL.udtProtocol.Dm66 },
+            { ".dm_67", UDT_DLL.udtProtocol.Dm67 },
             { ".dm_68", UDT_DLL.udtProtocol.Dm68 },
             { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
-            { ".dm_90", UDT_DLL.udtProtocol.Dm90 }
+            { ".dm_90", UDT_DLL.udtProtocol.Dm90 },
+            { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
         };
 
         private class ConfigStringDisplayInfo
@@ -1050,17 +1077,32 @@ namespace Uber.DemoTools
         {
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
-                // @TODO: Construct the filter programmatically.
+                var extensionsQ3 = "*" + DemoExtensionsQ3[0];
+                for(var i = 1; i < DemoExtensionsQ3.Count; ++i)
+                {
+                    extensionsQ3 += ";*" + DemoExtensionsQ3[i];
+                }
+
+                var extensionsQL = "*" + DemoExtensionsQL[0];
+                for(var i = 1; i < DemoExtensionsQL.Count; ++i)
+                {
+                    extensionsQL += ";*" + DemoExtensionsQL[i];
+                }
+
                 var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
                 openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73;*.dm_90)|*.dm_73;*.dm_90";
+                openFileDialog.Filter = string.Format("Quake 3 demos ({0})|{0}|Quake Live demos ({1})|{1}", extensionsQ3, extensionsQL);
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
                 }
 
+                if(openFileDialog.FileNames.Length > 0)
+                {
+                    SaveBrowsingFolder(Path.GetDirectoryName(openFileDialog.FileNames[0]));
+                }
                 var filePaths = new List<string>();
                 filePaths.AddRange(openFileDialog.FileNames);
                 AddDemos(filePaths, new List<string>());
@@ -1083,6 +1125,7 @@ namespace Uber.DemoTools
                     return;
                 }
 
+                SaveBrowsingFolder(openFolderDialog.SelectedPath);
                 AddDemos(new List<string>(), new List<string> { openFolderDialog.SelectedPath });
             }
         }
@@ -1630,14 +1673,25 @@ namespace Uber.DemoTools
 
         public string GetDefaultBrowsingFolder()
         {
-            if(!_config.UseInputFolderAsDefaultBrowsingLocation ||
-                string.IsNullOrWhiteSpace(_config.InputFolder) ||
-                !Directory.Exists(_config.InputFolder))
+            if(_config.UseInputFolderAsDefaultBrowsingLocation &&
+                !string.IsNullOrWhiteSpace(_config.InputFolder) &&
+                Directory.Exists(_config.InputFolder))
             {
-                return null;
+                return _config.InputFolder;
             }
 
-            return _config.InputFolder;
+            if(!string.IsNullOrWhiteSpace(_config.LastDemoOpenFolderPath) &&
+                Directory.Exists(_config.LastDemoOpenFolderPath))
+            {
+                return _config.LastDemoOpenFolderPath;
+            }
+
+            return null;
+        }
+
+        public void SaveBrowsingFolder(string folderPath)
+        {
+            _config.LastDemoOpenFolderPath = folderPath;
         }
 
         public void InitParseArg()

@@ -2,6 +2,7 @@
 
 
 #include "linear_allocator.hpp"
+#include "api.h"
 
 
 struct udtString
@@ -57,7 +58,8 @@ struct udtString
 	static bool IsNullOrEmpty(const udtString& string);
 	static bool IsNullOrEmpty(const char* string);
 
-	static void CleanUp(udtString& result); // Strips Quake color codes and keeps printable codes only.
+	// Strips Quake color codes and keeps printable codes only depending on the protocol version.
+	static void CleanUp(udtString& result, udtProtocol::Id protocol);
 
 	char* String;
 	u32 Length;

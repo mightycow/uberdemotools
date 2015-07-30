@@ -11,14 +11,9 @@ static bool AreTeammates(s32 team1, s32 team2)
 		(team1 == (s32)udtTeam::Red || (s32)team1 == udtTeam::Blue);
 }
 
-static bool IsAllowedMeanOfDeath(s32 idMOD, u32 udtPlayerMODFlags, udtProtocol::Id procotol)
+static bool IsAllowedUDTMeanOfDeath(s32 udtMod, u32 udtPlayerMODFlags)
 {
-	if(procotol <= (s32)udtProtocol::Invalid || procotol >= (s32)udtProtocol::Count)
-	{
-		return true;
-	}
-
-	const s32 bit = GetUDTPlayerMODBitFromIdMod(idMOD, procotol);
+	const s32 bit = GetUDTPlayerMODBitFromUDTMod(udtMod);
 
 	return (udtPlayerMODFlags & (u32)bit) != 0;
 }
@@ -91,7 +86,7 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 		}
 
 		// Did we use a weapon that's not allowed?
-		if(!IsAllowedMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths, parser._inProtocol))
+		if(!IsAllowedUDTMeanOfDeath(data.MeanOfDeath, extraInfo.AllowedMeansOfDeaths))
 		{
 			AddCurrentSectionIfValid();
 			continue;

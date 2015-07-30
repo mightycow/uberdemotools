@@ -25,7 +25,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.7.0";
+static const char* VersionString = "0.8.0";
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -117,9 +117,14 @@ UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 {
 	switch(protocol)
 	{
+		case udtProtocol::Dm3: return (u32)sizeof(idEntityState3);
+		case udtProtocol::Dm48: return (u32)sizeof(idEntityState48);
+		case udtProtocol::Dm66: return (u32)sizeof(idEntityState66);
+		case udtProtocol::Dm67: return (u32)sizeof(idEntityState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
+		case udtProtocol::Dm91: return (u32)sizeof(idEntityState91);
 		default: return 0;
 	}
 }
@@ -128,9 +133,14 @@ UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
 {
 	switch(protocol)
 	{
+		case udtProtocol::Dm3: return (u32)sizeof(idPlayerState3);
+		case udtProtocol::Dm48: return (u32)sizeof(idPlayerState48);
+		case udtProtocol::Dm66: return (u32)sizeof(idPlayerState66);
+		case udtProtocol::Dm67: return (u32)sizeof(idPlayerState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
+		case udtProtocol::Dm91: return (u32)sizeof(idPlayerState91);
 		default: return 0;
 	}
 }
@@ -139,9 +149,14 @@ UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
 {
 	switch(protocol)
 	{
+		case udtProtocol::Dm3: return (u32)sizeof(idClientSnapshot3);
+		case udtProtocol::Dm48: return (u32)sizeof(idClientSnapshot48);
+		case udtProtocol::Dm66: return (u32)sizeof(idClientSnapshot66);
+		case udtProtocol::Dm67: return (u32)sizeof(idClientSnapshot67);
 		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
 		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
 		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
+		case udtProtocol::Dm91: return (u32)sizeof(idClientSnapshot91);
 		default: return 0;
 	}
 }

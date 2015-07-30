@@ -1,0 +1,198 @@
+FIELD:
+name: 4 bytes
+offset: 4 bytes
+bits: 4 bytes
+
+The following data was extracted from quake3.exe 1.27g
+
+2C D3 4B 00 commandTime
+00 00 00 00 
+20 00 00 00 32 bits
+
+24 D3 4B 00 pm_type
+04 00 00 00
+08 00 00 00 8 bits
+
+18 D3 4B 00 bobCycle
+08 00 00 00 
+08 00 00 00 8 bits
+
+0C D3 4B 00 pm_flags
+0C 00 00 00 
+10 00 00 00 16 bits
+
+04 D3 4B 00 pm_time
+10 00 00 00 
+F0 FF FF FF 16 bits signed
+
+88 D4 4B 00 origin[0]
+14 00 00 00
+00 00 00 00 32 bits float
+
+7C D4 4B 00 origin[1]
+18 00 00 00 
+00 00 00 00 32 bits float
+
+70 D4 4B 00 origin[2]
+1C 00 00 00 
+00 00 00 00 32 bits float
+
+F8 D2 4B 00 velocity[0]
+20 00 00 00 
+00 00 00 00 32 bits float
+
+EC D2 4B 00 velocity[1]
+24 00 00 00
+00 00 00 00 32 bits float
+
+E0 D2 4B 00 velocity[2]
+28 00 00 00 
+00 00 00 00 32 bits float
+
+D4 D2 4B 00 weaponTime
+2C 00 00 00 
+F0 FF FF FF 16 bits signed
+
+CC D2 4B 00 gravity
+30 00 00 00 
+10 00 00 00 16 bits
+
+C4 D2 4B 00 speed
+34 00 00 00
+10 00 00 00 16 bits
+
+B4 D2 4B 00 delta_angles[0]
+38 00 00 00 
+10 00 00 00 16 bits
+
+A4 D2 4B 00 delta_angles[1]
+3C 00 00 00 
+10 00 00 00 16 bits
+
+94 D2 4B 00 delta_angles[2]
+40 00 00 00 
+10 00 00 00 16 bits
+
+D4 D3 4B 00 groundEntityNum
+44 00 00 00
+0A 00 00 00 10 bits
+
+88 D2 4B 00 legsTimer
+48 00 00 00 
+08 00 00 00 8 bits
+
+7C D2 4B 00 torsoTimer
+50 00 00 00 
+0C 00 00 00 12 bits
+
+50 D3 4B 00 legsAnim
+4C 00 00 00 
+08 00 00 00 8 bits
+
+44 D3 4B 00 torsoAnim
+54 00 00 00
+08 00 00 00 8 bits
+
+70 D2 4B 00 movementDir
+58 00 00 00 
+04 00 00 00 4 bits
+
+B4 D5 4B 00 eFlags
+68 00 00 00 
+10 00 00 00 16 bits
+
+60 D2 4B 00 eventSequence
+6C 00 00 00 
+10 00 00 00 16 bits
+
+54 D2 4B 00 events[0]
+70 00 00 00
+08 00 00 00 8 bits
+
+48 D2 4B 00 events[1]
+74 00 00 00 
+08 00 00 00 8 bits
+
+38 D2 4B 00 eventParms[0]
+78 00 00 00 
+08 00 00 00 8 bits
+
+28 D2 4B 00 eventParms[1]
+7C 00 00 00 
+08 00 00 00 8 bits
+ 
+18 D2 4B 00 externalEvent
+80 00 00 00
+0A 00 00 00 10 bits
+
+04 D2 4B 00 externalEventParm
+84 00 00 00 
+08 00 00 00 8 bits
+
+8C D3 4B 00 clientNum
+8C 00 00 00 
+08 00 00 00 8 bits
+
+5C D3 4B 00 weapon
+90 00 00 00 
+05 00 00 00 5 bits
+
+F8 D1 4B 00 weaponstate
+94 00 00 00
+04 00 00 00 4 bits
+
+E8 D1 4B 00 viewangles[0]
+98 00 00 00 
+00 00 00 00 32 bits float
+
+D8 D1 4B 00 viewangles[1]
+9C 00 00 00 
+00 00 00 00 32 bits float 
+
+C8 D1 4B 00 viewangles[2]
+A0 00 00 00 
+00 00 00 00 32 bits float
+
+BC D1 4B 00 viewheight
+A4 00 00 00
+F8 FF FF FF 8 bits signed
+
+B0 D1 4B 00 damageEvent
+A8 00 00 00 
+08 00 00 00 8 bits
+
+A4 D1 4B 00 damageYaw
+AC 00 00 00 
+08 00 00 00 8 bits
+
+98 D1 4B 00 damagePitch
+B0 00 00 00 
+08 00 00 00 8 bits
+
+8C D1 4B 00 damageCount
+B4 00 00 00
+08 00 00 00 8 bits
+
+7C D1 4B 00 grapplePoint[0]
+5C 00 00 00 
+00 00 00 00 32 bits float
+
+6C D1 4B 00 grapplePoint[1]
+60 00 00 00 
+00 00 00 00 32 bits float 
+
+5C D1 4B 00 grapplePoint[2]
+64 00 00 00 
+00 00 00 00 32 bits float
+
+50 D1 4B 00 jumppad_ent
+C0 01 00 00
+0A 00 00 00 10 bits
+
+C8 D3 4B 00 loopSound
+BC 01 00 00 
+10 00 00 00 16 bits
+
+38 D3 4B 00 generic1
+B8 01 00 00 
+08 00 00 00 8 bits

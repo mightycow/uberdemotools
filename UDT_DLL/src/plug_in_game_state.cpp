@@ -48,6 +48,7 @@ static bool IsInterestingKey(const char* keyName)
 udtParserPlugInGameState::udtParserPlugInGameState() 
 	: _gameType(udtGameType::BaseQ3)
 	, _gameStateQL(udtGameStateQL::Invalid)
+	, _protocol(udtProtocol::Invalid)
 	, _firstGameState(true)
 	, _nextSnapshotIsWarmUpEnd(false)
 {
@@ -169,6 +170,8 @@ void udtParserPlugInGameState::ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs)
 
 void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
+	_protocol = parser._inProtocol;
+
 	if(_firstGameState)
 	{
 		_gameType = udtGameType::BaseQ3;
@@ -209,10 +212,10 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	const udtString backslashString = udtString::NewConstRef("\\");
 	const udtString* systemAndServerStringParts[3] = { &systemInfoString, &serverInfoString, &backslashString };
 	const udtString systemAndServerString = udtString::NewFromConcatenatingMultiple(_stringAllocator, systemAndServerStringParts, (u32)UDT_COUNT_OF(systemAndServerStringParts));
-	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings);
+	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings, parser._inProtocol);
 	ProcessSystemAndServerInfo(systemAndServerString);
 
-	const s32 playerCSBaseIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
+	const s32 playerCSBaseIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
@@ -390,12 +393,17 @@ void udtParserPlugInGameState::AddCurrentGameState()
 	ClearPlayerInfos();
 }
 
-void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings)
+void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings, udtProtocol::Id protocol)
 {
 	_currentGameState.DemoTakerPlayerIndex = playerIndex;
 	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
 
-	const s32 firstPlayerCsIndex = (_gameType == udtGameType::QL) ? (s32)CS_PLAYERS_73p : (s32)CS_PLAYERS_68;
+	if(playerIndex < 0 || playerIndex >= MAX_CLIENTS)
+	{
+		return;
+	}
+
+	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(protocol);
 	const udtBaseParser::udtConfigString cs = configStrings[firstPlayerCsIndex + playerIndex];
 	if(cs.String == NULL || cs.StringLength == 0)
 	{
@@ -405,7 +413,7 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	udtString name;
 	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
 	{
-		udtString::CleanUp(name);
+		udtString::CleanUp(name, protocol);
 		_currentGameState.DemoTakerName = name.String;
 	}
 }
@@ -463,7 +471,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		}
 		else
 		{
-			udtString::CleanUp(name);
+			udtString::CleanUp(name, _protocol);
 		}
 
 		s32 team = -1;
