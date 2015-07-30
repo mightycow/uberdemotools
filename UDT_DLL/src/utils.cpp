@@ -680,57 +680,6 @@ void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context
 	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
 }
 
-namespace idEntityEvent
-{
-	s32 Obituary(udtProtocol::Id protocol)
-	{
-		switch(protocol)
-		{
-			case udtProtocol::Dm3:  return (s32)EV_OBITUARY_3;
-			case udtProtocol::Dm48: return (s32)EV_OBITUARY_48;
-			case udtProtocol::Dm66:
-			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return (s32)EV_OBITUARY_68;
-			case udtProtocol::Dm73:
-			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return (s32)EV_OBITUARY_73p;
-			default: return -1;
-		}
-	}
-
-	s32 WeaponFired(udtProtocol::Id protocol)
-	{
-		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
-	}
-};
-
-namespace idEntityType
-{
-	s32 Event(udtProtocol::Id protocol)
-	{
-		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
-	}
-}
-
-namespace idConfigStringIndex
-{
-	s32 FirstPlayer(udtProtocol::Id protocol)
-	{
-		switch(protocol)
-		{
-			case udtProtocol::Dm3:
-			case udtProtocol::Dm48:
-			case udtProtocol::Dm66:
-			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return (s32)CS_PLAYERS_68;
-			case udtProtocol::Dm73:
-			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return (s32)CS_PLAYERS_73p;
-			default: return -1;
-		}
-	}
-}
-
 bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
 {
 	const s32 obituaryEvtId = idEntityEvent::Obituary(protocol);
@@ -849,4 +798,74 @@ const char* GetUDTModName(s32 mod)
 	}
 
 	return MeansOfDeathNames[mod];
+}
+
+namespace idEntityEvent
+{
+	s32 Obituary(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return (s32)EV_OBITUARY_3;
+			case udtProtocol::Dm48: return (s32)EV_OBITUARY_48;
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)EV_OBITUARY_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)EV_OBITUARY_73p;
+			default: return -1;
+		}
+	}
+
+	s32 WeaponFired(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
+	}
+};
+
+namespace idEntityType
+{
+	s32 Event(udtProtocol::Id protocol)
+	{
+		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
+	}
+}
+
+namespace idConfigStringIndex
+{
+	s32 FirstPlayer(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
+	}
+}
+
+namespace idPowerUpIndex
+{
+	s32 RedFlag(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REDFLAG : (s32)PW_REDFLAG_91;
+	}
+
+	s32 BlueFlag(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_BLUEFLAG : (s32)PW_BLUEFLAG_91;
+	}
+
+	s32 NeutralFlag(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1; // @NOTE: dm3 doesn't have a neutral flag slot.
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_NEUTRALFLAG : (s32)PW_NEUTRALFLAG_91;
+	}
+}
+
+namespace idPersStatsIndex
+{
+	s32 FlagCaptures(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1; // @NOTE: dm3 doesn't have a flag captures slot.
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
+	}
 }

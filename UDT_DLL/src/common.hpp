@@ -914,6 +914,29 @@ typedef enum {
 
 } powerup_t;
 
+typedef enum
+{
+	PW_REDFLAG_91 = 2,
+	PW_BLUEFLAG_91 = 3,
+	PW_NEUTRALFLAG_91 = 4,
+	PW_QUAD_91 = 5,
+	PW_BATTLESUIT_91 = 6,
+	PW_HASTE_91 = 7,
+	PW_INVIS_91 = 8,
+	PW_REGEN_91 = 9,
+	PW_FLIGHT_91 = 10,
+	PW_INVULNERABILITY_91 = 11,
+
+	// These are not powerups.
+	// They occupy slots here for entity state marshaling.
+	NOTPW_SCOUT_91 = 12,
+	NOTPW_GUARD_91 = 13,
+	NOTPW_DOUBLER_91 = 14,
+	NOTPW_ARMORREGEN_91 = 15,
+
+	PW_FREEZE_91 = 16,
+} powerup_91_t;
+
 
 // player_state->stats[] indexes
 // NOTE: may not have more than 16
