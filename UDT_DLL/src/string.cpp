@@ -595,7 +595,7 @@ static bool IsLongOSPColorString(const udtString& string)
 	return true;
 }
 
-void udtString::CleanUp(udtString& result)
+void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 {
 	if(result.String == NULL)
 	{
@@ -619,7 +619,10 @@ void udtString::CleanUp(udtString& result)
 		{
 			source++;
 		}
-		else if(c >= 0x20 && c <= 0x7E)
+		// Protocols up to 90 : only keep printable codes.
+		// Protocols 91 and up: keep everything.
+		else if(protocol >= udtProtocol::Dm91 || 
+				(c >= 0x20 && c <= 0x7E))
 		{
 			*dest++ = c;
 			newLength++;

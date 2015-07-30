@@ -76,6 +76,7 @@ private:
 
 	udtGameType::Id _gameType;
 	udtGameStateQL::Id _gameStateQL;
+	udtProtocol::Id _protocol;
 
 	bool _firstGameState;
 	bool _nextSnapshotIsWarmUpEnd;

@@ -161,7 +161,7 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
+bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
 {
 	if(string.String == NULL || rule.Pattern == NULL)
 	{
@@ -173,7 +173,7 @@ bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule&
 
 	if(rule.IgnoreColorCodes)
 	{
-		udtString::CleanUp(input);
+		udtString::CleanUp(input, procotol);
 	}
 
 	if(!rule.CaseSensitive)

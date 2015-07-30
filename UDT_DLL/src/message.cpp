@@ -1211,12 +1211,15 @@ void udtMessage::WriteString(const char* s, s32 length)
 	char string[MAX_STRING_CHARS];
 	Q_strncpyz(string, s, sizeof(string));
 
-	// get rid of 0xff s8s, because old clients don't like them
-	for(s32 i = 0 ; i < length; ++i) 
+	if(_protocol <= udtProtocol::Dm90)
 	{
-		if(((u8*)string)[i] > 127) 
+		// get rid of 0xff bytes, because old clients don't like them
+		for(s32 i = 0; i < length; ++i)
 		{
-			string[i] = '.';
+			if(((u8*)string)[i] > 127)
+			{
+				string[i] = '.';
+			}
 		}
 	}
 
@@ -1239,12 +1242,15 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 	char string[BIG_INFO_STRING];
 	Q_strncpyz(string, s, sizeof(string));
 
-	// get rid of 0xff s8s, because old clients don't like them
-	for(s32 i = 0; i < length; ++i) 
+	if(_protocol <= udtProtocol::Dm90)
 	{
-		if(((u8*)string)[i] > 127) 
+		// get rid of 0xff bytes, because old clients don't like them
+		for(s32 i = 0; i < length; ++i)
 		{
-			string[i] = '.';
+			if(((u8*)string)[i] > 127)
+			{
+				string[i] = '.';
+			}
 		}
 	}
 
@@ -1341,13 +1347,13 @@ char* udtMessage::ReadString(s32& length)
 		{
 			c = '.';
 		}
-
+		
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}
-
+		
 		stringBuffer[stringLength] = (s8)c;
 		stringLength++;
 	} 
@@ -1380,7 +1386,7 @@ char* udtMessage::ReadBigString(s32& length)
 		}
 
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}
@@ -1417,7 +1423,7 @@ char* udtMessage::ReadStringLine(s32& length)
 		}
 
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}

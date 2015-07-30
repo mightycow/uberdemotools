@@ -48,6 +48,7 @@ static bool IsInterestingKey(const char* keyName)
 udtParserPlugInGameState::udtParserPlugInGameState() 
 	: _gameType(udtGameType::BaseQ3)
 	, _gameStateQL(udtGameStateQL::Invalid)
+	, _protocol(udtProtocol::Invalid)
 	, _firstGameState(true)
 	, _nextSnapshotIsWarmUpEnd(false)
 {
@@ -169,6 +170,8 @@ void udtParserPlugInGameState::ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs)
 
 void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
+	_protocol = parser._inProtocol;
+
 	if(_firstGameState)
 	{
 		_gameType = udtGameType::BaseQ3;
@@ -410,7 +413,7 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	udtString name;
 	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
 	{
-		udtString::CleanUp(name);
+		udtString::CleanUp(name, protocol);
 		_currentGameState.DemoTakerName = name.String;
 	}
 }
@@ -468,7 +471,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		}
 		else
 		{
-			udtString::CleanUp(name);
+			udtString::CleanUp(name, _protocol);
 		}
 
 		s32 team = -1;

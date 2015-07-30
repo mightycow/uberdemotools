@@ -65,7 +65,7 @@ extern s32         GetUDTPlayerMODBitFromUDTMod(s32 udtMod); // Returns -1 if un
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
-extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator);
+extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol);
 extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol);
 extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // Returns -1 if unknown or invalid.
 extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.

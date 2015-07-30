@@ -86,7 +86,7 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 		return NULL;
 	}
 
-	udtString::CleanUp(playerName);
+	udtString::CleanUp(playerName, parser._inProtocol);
 
 	return AllocateString(_playerNamesAllocator, playerName.String);
 }

@@ -324,7 +324,7 @@ bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtBaseParser& 
 		return false;
 	}
 
-	udtString::CleanUp(playerName);
+	udtString::CleanUp(playerName, parser._inProtocol);
 	udtString::MakeLowerCase(playerName);
 
 	return true;
