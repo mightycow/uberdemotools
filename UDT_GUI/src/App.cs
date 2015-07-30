@@ -61,6 +61,7 @@ namespace Uber.DemoTools
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
         public int TimeShiftSnapshotCount = 2;
+        public string LastDemoOpenFolderPath = "";
     }
 
     public class MapConversionRule
@@ -1098,6 +1099,10 @@ namespace Uber.DemoTools
                     return;
                 }
 
+                if(openFileDialog.FileNames.Length > 0)
+                {
+                    SaveBrowsingFolder(Path.GetDirectoryName(openFileDialog.FileNames[0]));
+                }
                 var filePaths = new List<string>();
                 filePaths.AddRange(openFileDialog.FileNames);
                 AddDemos(filePaths, new List<string>());
@@ -1120,6 +1125,7 @@ namespace Uber.DemoTools
                     return;
                 }
 
+                SaveBrowsingFolder(openFolderDialog.SelectedPath);
                 AddDemos(new List<string>(), new List<string> { openFolderDialog.SelectedPath });
             }
         }
@@ -1667,14 +1673,25 @@ namespace Uber.DemoTools
 
         public string GetDefaultBrowsingFolder()
         {
-            if(!_config.UseInputFolderAsDefaultBrowsingLocation ||
-                string.IsNullOrWhiteSpace(_config.InputFolder) ||
-                !Directory.Exists(_config.InputFolder))
+            if(_config.UseInputFolderAsDefaultBrowsingLocation &&
+                !string.IsNullOrWhiteSpace(_config.InputFolder) &&
+                Directory.Exists(_config.InputFolder))
             {
-                return null;
+                return _config.InputFolder;
             }
 
-            return _config.InputFolder;
+            if(!string.IsNullOrWhiteSpace(_config.LastDemoOpenFolderPath) &&
+                Directory.Exists(_config.LastDemoOpenFolderPath))
+            {
+                return _config.LastDemoOpenFolderPath;
+            }
+
+            return null;
+        }
+
+        public void SaveBrowsingFolder(string folderPath)
+        {
+            _config.LastDemoOpenFolderPath = folderPath;
         }
 
         public void InitParseArg()
