@@ -1,3 +1,9 @@
+0.8.0 (30.07.2015)
+ADD: Full parse/write support of demo protocols 66, 67 (Quake 3) and 91 (Quake Live)
+ADD: Full parse support of demo protocols 3 and 48 (Quake 3)
+FIX: Potential crash in the game state analyzer when a player index is out of bounds
+FIX: Now cleaning up the long OSP color codes (^X followed by 6 hex chars, case insensitive)
+
 0.7.0 (19.07.2015)
 FIX: The command-line cutter would crash if one of the demo return codes was not None
 ADD: Demo time shifting (a sort of anti-lag so you can see something similar to what the player saw)
