@@ -1,3 +1,6 @@
+0.8.0a (30.07.2015)
+FIX: Cut by Flag Captures now works with dm_91 demos
+
 0.8.0 (30.07.2015)
 ADD: Full parse/write support of demo protocols 66, 67 (Quake 3) and 91 (Quake Live)
 ADD: Full parse support of demo protocols 3 and 48 (Quake 3)
