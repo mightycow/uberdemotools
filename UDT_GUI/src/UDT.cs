@@ -1271,8 +1271,8 @@ namespace Uber.DemoTools
                 int minutes = totalSeconds / 60;
                 int seconds = totalSeconds % 60;
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var player = Marshal.PtrToStringAnsi(data.PlayerNameNoCol) ?? "N/A";
-                var message = Marshal.PtrToStringAnsi(data.MessageNoCol) ?? "N/A";
+                var player = SafeGetString(data.PlayerNameNoCol, "N/A");
+                var message = SafeGetString(data.MessageNoCol, "N/A");
                 var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player, message);
                 info.ChatEvents.Add(item);
             }
@@ -1290,12 +1290,31 @@ namespace Uber.DemoTools
 
         private static string SafeGetString(IntPtr address, string onError)
         {
-            return Marshal.PtrToStringAnsi(address) ?? onError;
+            if(address == IntPtr.Zero)
+            {
+                return "N/A";
+            }
+
+            var length = 0;
+            while(Marshal.ReadByte(address, length) != 0)
+            {
+                ++length;
+            }
+
+            if(length == 0)
+            {
+                return "";
+            }
+
+            var buffer = new byte[length];
+            Marshal.Copy(address, buffer, 0, buffer.Length);
+
+            return Encoding.UTF8.GetString(buffer);
         }
 
         private static string SafeGetString(IntPtr address)
         {
-            return Marshal.PtrToStringAnsi(address) ?? "";
+            return SafeGetString(address, "");
         }
 
         private static string FormatDemoTaker(udtParseDataGameState info)
@@ -1425,9 +1444,9 @@ namespace Uber.DemoTools
                 int minutes = totalSeconds / 60;
                 int seconds = totalSeconds % 60;
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var attacker = Marshal.PtrToStringAnsi(data.AttackerName) ?? "N/A";
-                var target = Marshal.PtrToStringAnsi(data.TargetName) ?? "N/A";
-                var mod = Marshal.PtrToStringAnsi(data.MeanOfDeathName) ?? "N/A";
+                var attacker = SafeGetString(data.AttackerName, "N/A");
+                var target = SafeGetString(data.TargetName, "N/A");
+                var mod = SafeGetString(data.MeanOfDeathName, "N/A");
                 var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
                 info.FragEvents.Add(item);
             }
