@@ -1,6 +1,6 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-UDT is a set of tools for analyzing, cutting and modifying **Quake 3** (.dm_68) and **Quake Live** (.dm_73 and .dm_90) demo files.
+UDT is a set of tools for analyzing, cutting and modifying **Quake 3** and **Quake Live** demo files.
 
 The main features are:
 
@@ -35,6 +35,23 @@ Overview of the binaries
 | UDT_timeshifter | Application | C++      | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
 | UDT_merger      | Application | C++      | Windows Linux |  | Command-line application for merging multiple demos into one |
 | UDT_GUI         | Application | C#       | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
+
+Supported demo formats
+----------------------
+
+Read-only demos can be analyzed.  
+Read/write demos can be analyzed, modified and cut.
+
+| Demo file extension | Game version | Support level |
+|:------|:------------------|:-----------|
+| dm3   | Quake 3 1.11-1.17 | Read-only  |
+| dm_48 | Quake 3 1.27      | Read-only  |
+| dm_66 | Quake 3 1.29-1.30 | Read/write |
+| dm_67 | Quake 3 1.31      | Read/write |
+| dm_68 | Quake 3 1.32      | Read/write |
+| dm_73 | Quake Live        | Read/write |
+| dm_90 | Quake Live        | Read/write |
+| dm_91 | Quake Live        | Read/write |
 
 Installation
 ------------
