@@ -56,7 +56,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	const udtString arg1 = tokenizer.GetArg(1);
 	const udtString originalCommand = udtString::NewCloneFromRef(_chatStringAllocator, arg1);
 	udtString cleanedUpCommand = udtString::NewCloneFromRef(_chatStringAllocator, arg1);
-	udtString::CleanUp(cleanedUpCommand);
+	udtString::CleanUp(cleanedUpCommand, parser._inProtocol);
 	chatEvent.Strings[0].OriginalCommand = originalCommand.String;
 	chatEvent.Strings[1].OriginalCommand = cleanedUpCommand.String;
 

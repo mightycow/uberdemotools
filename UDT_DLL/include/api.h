@@ -51,9 +51,14 @@ struct udtErrorCode
 
 #define UDT_PROTOCOL_LIST(N) \
 	N(Invalid, NULL) \
+	N(Dm3 , ".dm3"  ) \
+	N(Dm48, ".dm_48") \
+	N(Dm66, ".dm_66") \
+	N(Dm67, ".dm_67") \
 	N(Dm68, ".dm_68") \
 	N(Dm73, ".dm_73") \
-	N(Dm90, ".dm_90")
+	N(Dm90, ".dm_90") \
+	N(Dm91, ".dm_91")
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Enum,
 struct udtProtocol
@@ -270,6 +275,50 @@ struct udtPlayerMeansOfDeathBits
 	};
 };
 #undef UDT_PLAYER_MOD_ITEM
+
+#define UDT_MEAN_OF_DEATH_LIST(N) \
+	N(Shotgun, "shotgun") \
+	N(Gauntlet, "gauntlet") \
+	N(MachineGun, "machine gun") \
+	N(Grenade, "grenade") \
+	N(GrenadeSplash, "grenade splash") \
+	N(Rocket, "rocket") \
+	N(RocketSplash, "rocket splash") \
+	N(Plasma, "plasma") \
+	N(PlasmaSplash, "plasma splash") \
+	N(Railgun, "railgun") \
+	N(Lightning, "lightning") \
+	N(BFG, "BFG") \
+	N(BFGSplash, "BFG splash") \
+	N(Water, "water") \
+	N(Slime, "slime") \
+	N(Lava, "lava") \
+	N(Crush, "crush") \
+	N(TeleFrag, "telefrag") \
+	N(Fall, "fall") \
+	N(Suicide, "suicide") \
+	N(TargetLaser, "target laser") \
+	N(TriggerHurt, "trigger hurt") \
+	N(NailGun, "nailgun") \
+	N(ChainGun, "chaingun") \
+	N(ProximityMine, "proximity mine") \
+	N(Kamikaze, "kamikaze") \
+	N(Juiced, "juiced") \
+	N(Grapple, "grapple") \
+	N(TeamSwitch, "team switch") \
+	N(Thaw, "thaw") \
+	N(HeavyMachineGun, "heavy machine gun")
+
+#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc) Enum,
+struct udtMeanOfDeath
+{
+	enum Id
+	{
+		UDT_MEAN_OF_DEATH_LIST(UDT_MEAN_OF_DEATH_ITEM)
+		Count
+	};
+};
+#undef UDT_MEAN_OF_DEATH_ITEM
 
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
@@ -829,7 +878,7 @@ extern "C"
 		s32 TargetIdx;
 
 		// The way the target died.
-		// See meansOfDeath_t.
+		// Of type udtMeanOfDeath::Id.
 		s32 MeanOfDeath;
 
 		// The index of the attacker's team.

@@ -153,11 +153,15 @@ bool udtBaseParser::ParseNextMessage(const udtMessage& inMsg, s32 inServerMessag
 bool udtBaseParser::ParseServerMessage()
 {
 	_outMsg.Init(_outMsgData, sizeof(_outMsgData));
-	_outMsg.Bitstream();
 
-	_inMsg.Bitstream();
+	_outMsg.SetHuffman(_outProtocol >= udtProtocol::Dm66);
+	_inMsg.SetHuffman(_inProtocol >= udtProtocol::Dm66);
 
-	_inReliableSequenceAcknowledge = _inMsg.ReadLong();
+	if(_inProtocol > udtProtocol::Dm3)
+	{
+		_inReliableSequenceAcknowledge = _inMsg.ReadLong();	
+	}
+
 	_outMsg.WriteLong(_inReliableSequenceAcknowledge);
 
 	for(;;)
@@ -166,6 +170,11 @@ bool udtBaseParser::ParseServerMessage()
 		{
 			_context->LogError("ParseServerMessage: read past the end of the server message (in file: %s)", GetFileName());
 			return false;
+		}
+
+		if(_inMsg.Buffer.readcount == _inMsg.Buffer.cursize)
+		{
+			break;
 		}
 
 		s32 command = _inMsg.ReadByte();
@@ -187,8 +196,8 @@ bool udtBaseParser::ParseServerMessage()
 				}
 			}
 		}
-		
-		if(command == svc_EOF) 
+
+		if(command == svc_EOF || (_inProtocol <= udtProtocol::Dm48 && command == svc_bad))
 		{
 			break;
 		}
@@ -214,20 +223,23 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		case svc_voip:
-			// @TODO:
-			printf("!!!! Command byte: svc_voip\n");
+			_context->LogWarning("@TODO: Command byte: svc_voip");
 			_outMsg.WriteByte(svc_nop);
 			break;
 
 		case svc_download:
-			// @TODO:
-			printf("!!!! Command byte: svc_download\n");
+			_context->LogWarning("@TODO: Command byte: svc_download");
 			_outMsg.WriteByte(svc_nop);
 			break;
 
 		default:
 			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
 			return false;
+		}
+
+		if(_inProtocol <= udtProtocol::Dm48)
+		{
+			_inMsg.GoToNextByte();
 		}
 	}
 
@@ -323,7 +335,7 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoS
 
 bool udtBaseParser::ShouldWriteMessage() const
 {
-	return _outWriteMessage;
+	return _outWriteMessage && _inProtocol >= udtProtocol::Dm66;
 }
 
 void udtBaseParser::WriteFirstMessage()
@@ -447,6 +459,11 @@ bool udtBaseParser::ParseGamestate()
 	{
 		const s32 command = _inMsg.ReadByte();
 
+		if(_inProtocol <= udtProtocol::Dm48 && command == svc_bad)
+		{
+			break;
+		}
+
 		if(command == svc_EOF)
 		{
 			break;
@@ -494,8 +511,16 @@ bool udtBaseParser::ParseGamestate()
 		}
 	}
 
-	_inClientNum = _inMsg.ReadLong();
-	_inChecksumFeed = _inMsg.ReadLong();
+	if(_inProtocol >= udtProtocol::Dm66)
+	{
+		_inClientNum = _inMsg.ReadLong();
+		_inChecksumFeed = _inMsg.ReadLong();
+	}
+	else
+	{
+		_inClientNum = -1;
+		_inChecksumFeed = 0;
+	}
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
@@ -525,6 +550,11 @@ bool udtBaseParser::ParseSnapshot()
 	// message before we got to svc_snapshot.
 	//
 
+	if(_inProtocol == udtProtocol::Dm3)
+	{
+		_inMsg.ReadLong(); // Client command sequence.
+	}
+
 	_inServerTime = _inMsg.ReadLong();
 
 	idLargestClientSnapshot newSnap;
@@ -532,8 +562,6 @@ bool udtBaseParser::ParseSnapshot()
 	newSnap.serverCommandNum = _inServerCommandSequence;
 	newSnap.serverTime = _inServerTime;
 	newSnap.messageNum = _inServerMessageSequence;
-
-	//_context->LogInfo("_inServerTime: %d", _inServerTime);
 
 	s32 deltaNum = _inMsg.ReadByte();
 	if(!deltaNum) 
@@ -544,6 +572,7 @@ bool udtBaseParser::ParseSnapshot()
 	{
 		newSnap.deltaNum = newSnap.messageNum - deltaNum;
 	}
+
 	newSnap.snapFlags = _inMsg.ReadByte();
 
 	//
@@ -604,7 +633,7 @@ bool udtBaseParser::ParseSnapshot()
 		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
-
+	
 	// Read the player info.
 	_inMsg.ReadDeltaPlayerstate(oldSnap ? GetPlayerState(oldSnap, _inProtocol) : NULL, GetPlayerState(&newSnap, _inProtocol));
 

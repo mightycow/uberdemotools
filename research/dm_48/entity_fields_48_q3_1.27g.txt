@@ -1,0 +1,210 @@
+FIELD:
+name: 4 bytes
+offset: 4 bytes
+bits: 4 bytes
+
+The following data was extracted from quake3.exe 1.27g
+
+BC D5 4B 00 eType
+04 00 00 00 
+08 00 00 00 8 bits
+
+B4 D5 4B 00 eFlags
+08 00 00 00 
+13 00 00 00 19 bits ?!?!
+
+A8 D5 4B 00 pos.trType
+0C 00 00 00
+08 00 00 00 8 bits
+
+9C D5 4B 00 pos.trTime
+10 00 00 00 
+20 00 00 00 32 bits
+
+8C D5 4B 00 pos.trDuration
+14 00 00 00 
+20 00 00 00 32 bits
+
+7C D5 4B 00 pos.trBase[0]
+18 00 00 00 
+00 00 00 00 32 bits float
+
+6C D5 4B 00 pos.trBase[1]
+1C 00 00 00
+00 00 00 00 32 bits float
+
+5C D5 4B 00 pos.trBase[2]
+20 00 00 00 
+00 00 00 00 32 bits float
+
+4C D5 4B 00 pos.trDelta[0]
+24 00 00 00 
+00 00 00 00 32 bits float
+
+3C D5 4B 00 pos.trDelta[1]
+28 00 00 00 
+00 00 00 00 32 bits float
+
+2C D5 4B 00 pos.trDelta[2]
+2C 00 00 00
+00 00 00 00 32 bits float
+
+20 D5 4B 00 apos.trType
+30 00 00 00 
+08 00 00 00 8 bits
+
+14 D5 4B 00 apos.trTime
+34 00 00 00 
+20 00 00 00 32 bits
+
+04 D5 4B 00 apos.trDuration
+38 00 00 00 
+20 00 00 00 32 bits
+
+F4 D4 4B 00 apos.trBase[0]
+3C 00 00 00
+00 00 00 00 32 bits float
+
+E4 D4 4B 00 apos.trBase[1]
+40 00 00 00 
+00 00 00 00 32 bits float
+
+D4 D4 4B 00 apos.trBase[2]
+44 00 00 00 
+00 00 00 00 32 bits float
+
+C4 D4 4B 00 apos.trDelta[0]
+48 00 00 00 
+00 00 00 00 32 bits float
+
+B4 D4 4B 00 apos.trDelta[1]
+4C 00 00 00
+00 00 00 00 32 bits float
+
+A4 D4 4B 00 apos.trDelta[2]
+50 00 00 00 
+00 00 00 00 32 bits float
+
+9C D4 4B 00 time
+54 00 00 00 
+20 00 00 00 32 bits
+
+94 D4 4B 00 time2
+58 00 00 00 
+20 00 00 00 32 bits
+
+88 D4 4B 00 origin[0]
+5C 00 00 00
+00 00 00 00 32 bits float
+
+7C D4 4B 00 origin[1]
+60 00 00 00 
+00 00 00 00 32 bits float
+
+70 D4 4B 00 origin[2]
+64 00 00 00 
+00 00 00 00 32 bits float
+
+64 D4 4B 00 origin2[0]
+68 00 00 00 
+00 00 00 00 32 bits float
+
+58 D4 4B 00 origin2[1]
+6C 00 00 00
+00 00 00 00 32 bits float
+
+4C D4 4B 00 origin2[2]
+70 00 00 00 
+00 00 00 00 32 bits float
+
+40 D4 4B 00 angles[0]
+74 00 00 00 
+00 00 00 00 32 bits float
+
+34 D4 4B 00 angles[1]
+78 00 00 00 
+00 00 00 00 32 bits float
+
+28 D4 4B 00 angles[2]
+7C 00 00 00
+00 00 00 00 32 bits float
+
+1C D4 4B 00 angles2[0]
+80 00 00 00 
+00 00 00 00 32 bits float
+
+10 D4 4B 00 angles2[1]
+84 00 00 00 
+00 00 00 00 32 bits float
+
+04 D4 4B 00 angles2[2]
+88 00 00 00 
+00 00 00 00 32 bits float
+
+F4 D3 4B 00 otherEntityNum
+8C 00 00 00
+0A 00 00 00 10 bits
+
+E4 D3 4B 00 otherEntityNum2
+90 00 00 00 
+0A 00 00 00 10 bits
+
+D4 D3 4B 00 groundEntityNum
+94 00 00 00 
+0A 00 00 00 10 bits
+
+C8 D3 4B 00 loopSound
+9C 00 00 00 
+08 00 00 00 8 bits
+
+B8 D3 4B 00 constantLight
+98 00 00 00
+20 00 00 00 32 bits
+
+AC D3 4B 00 modelindex
+A0 00 00 00 
+08 00 00 00 8 bits
+
+A0 D3 4B 00 modelindex2
+A4 00 00 00 
+08 00 00 00 8 bits
+
+98 D3 4B 00 frame
+AC 00 00 00 
+10 00 00 00 16 bits
+
+8C D3 4B 00 clientNum
+A8 00 00 00
+08 00 00 00 8 bits
+
+84 D3 4B 00 solid
+B0 00 00 00 
+18 00 00 00 24 bits
+
+7C D3 4B 00 event
+B4 00 00 00 
+0A 00 00 00 10 bits
+
+70 D3 4B 00 eventParm
+B8 00 00 00 
+08 00 00 00 8 bits
+
+64 D3 4B 00 powerups
+BC 00 00 00
+10 00 00 00 16 bits
+
+5C D3 4B 00 weapon
+C0 00 00 00 
+08 00 00 00 8 bits
+
+50 D3 4B 00 legsAnim
+C4 00 00 00 
+08 00 00 00 8 bits
+
+44 D3 4B 00 torsoAnim
+C8 00 00 00 
+08 00 00 00 8 bits
+
+38 D3 4B 00 generic1
+CC 00 00 00
+08 00 00 00 8 bits

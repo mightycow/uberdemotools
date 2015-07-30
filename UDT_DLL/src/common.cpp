@@ -7,59 +7,6 @@
 #include <ctype.h>
 
 
-/*
-============================================================================
-
-BYTE ORDER FUNCTIONS
-these don't belong in here and should never be used by a VM
-
-============================================================================
-*/
-
-short   ShortSwap (short l)
-{
-	u8    b1,b2;
-
-	b1 = l&255;
-	b2 = (l>>8)&255;
-
-	return (b1<<8) + b2;
-}
-
-s32    LongSwap (s32 l)
-{
-	u8    b1,b2,b3,b4;
-
-	b1 = l&255;
-	b2 = (l>>8)&255;
-	b3 = (l>>16)&255;
-	b4 = (l>>24)&255;
-
-	return ((s32)b1<<24) + ((s32)b2<<16) + ((s32)b3<<8) + b4;
-}
-
-typedef union {
-    f32	f;
-    u32 i;
-} _FloatByteUnion;
-
-f32 FloatSwap (const f32 *f) {
-	_FloatByteUnion out;
-
-	out.f = *f;
-	out.i = LongSwap(out.i);
-
-	return out.f;
-}
-
-/*
-============================================================================
-
-					LIBRARY REPLACEMENT FUNCTIONS
-
-============================================================================
-*/
-
 s32 Q_isprint( s32 c )
 {
 	if ( c >= 0x20 && c <= 0x7E )

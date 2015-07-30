@@ -31,7 +31,6 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	u32 railKillCount = 0;
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -39,28 +38,27 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 			continue;
 		}
 
-		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		const s32 eventType = ent->eType & (~EV_EVENT_BITS);
-		if(eventType != (s32)(ET_EVENTS + obituaryEvtId))
+		udtObituaryEvent eventInfo;
+		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
 
-		const s32 targetIdx = ent->otherEntityNum;
-		const s32 attackerIdx = ent->otherEntityNum2;
-		if(targetIdx < 0 || targetIdx >= MAX_CLIENTS || 
-		   attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+		const s32 attackerIdx = eventInfo.AttackerIndex;
+		if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
 		{
 			continue;
 		}
 
+		const s32 targetIdx = eventInfo.TargetIndex;
 		if(attackerIdx != trackedPlayerIndex || targetIdx == trackedPlayerIndex)
 		{
 			continue;
 		}
-
-		const s32 meanOfDeath = ent->eventParm;
-		const u32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, parser._inProtocol);
+		
+		// @NOTE: eventInfo.MeanOfDeath is of type udtMeanOfDeath::Id.
+		const s32 idMeanOfDeath = arg.Entities[i].Entity->eventParm;
+		const u32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, parser._inProtocol);
 		if(udtWeapon == udtWeapon::Railgun)
 		{
 			++railKillCount;

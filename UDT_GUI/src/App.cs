@@ -144,16 +144,42 @@ namespace Uber.DemoTools
 
         private static readonly List<string> DemoExtensions = new List<string>
         {
+            ".dm3",
+            ".dm_48",
+            ".dm_66",
+            ".dm_67",
             ".dm_68",
             ".dm_73",
-            ".dm_90"
+            ".dm_90",
+            ".dm_91"
+        };
+
+        private static readonly List<string> DemoExtensionsQ3 = new List<string>
+        {
+            ".dm3",
+            ".dm_48",
+            ".dm_66",
+            ".dm_67",
+            ".dm_68"
+        };
+
+        private static readonly List<string> DemoExtensionsQL = new List<string>
+        {
+            ".dm_73",
+            ".dm_90",
+            ".dm_91"
         };
 
         private static readonly Dictionary<string, UDT_DLL.udtProtocol> ProtocolFileExtDic = new Dictionary<string, UDT_DLL.udtProtocol>
         {
+            { ".dm3",   UDT_DLL.udtProtocol.Dm3  },
+            { ".dm_48", UDT_DLL.udtProtocol.Dm48 },
+            { ".dm_66", UDT_DLL.udtProtocol.Dm66 },
+            { ".dm_67", UDT_DLL.udtProtocol.Dm67 },
             { ".dm_68", UDT_DLL.udtProtocol.Dm68 },
             { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
-            { ".dm_90", UDT_DLL.udtProtocol.Dm90 }
+            { ".dm_90", UDT_DLL.udtProtocol.Dm90 },
+            { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
         };
 
         private class ConfigStringDisplayInfo
@@ -1050,12 +1076,23 @@ namespace Uber.DemoTools
         {
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
-                // @TODO: Construct the filter programmatically.
+                var extensionsQ3 = "*" + DemoExtensionsQ3[0];
+                for(var i = 1; i < DemoExtensionsQ3.Count; ++i)
+                {
+                    extensionsQ3 += ";*" + DemoExtensionsQ3[i];
+                }
+
+                var extensionsQL = "*" + DemoExtensionsQL[0];
+                for(var i = 1; i < DemoExtensionsQL.Count; ++i)
+                {
+                    extensionsQL += ";*" + DemoExtensionsQL[i];
+                }
+
                 var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
                 openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                openFileDialog.Filter = "Quake 3 demos (*.dm_68)|*.dm_68|Quake Live demos (*.dm_73;*.dm_90)|*.dm_73;*.dm_90";
+                openFileDialog.Filter = string.Format("Quake 3 demos ({0})|{0}|Quake Live demos ({1})|{1}", extensionsQ3, extensionsQL);
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;

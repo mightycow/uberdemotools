@@ -13,3 +13,6 @@ To do:
 - Merger: Find a way to solve the "item problem"
 - Merger: Find a way to deal with the "player entities event sequence problem"
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
+- Converters: dm3 -> dm_68 and dm_48 -> dm_68
+- New command-line tool: UDT_json to output a JSON file with some demo metadata
+- New scores/stats analyzer that reads stuff from server commands whenever they are available

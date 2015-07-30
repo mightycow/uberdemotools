@@ -70,7 +70,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		}
 	}
 
-	const s32 obituaryEvtId = parser._inProtocol == udtProtocol::Dm68 ? (s32)EV_OBITUARY_68 : (s32)EV_OBITUARY_73p;
+	const s32 obituaryEvtId = idEntityEvent::Obituary(parser._inProtocol);
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)

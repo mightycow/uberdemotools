@@ -19,6 +19,14 @@ static const char* LogLevels[4] =
 	"Fatal: "
 };
 
+#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc) Desc,
+static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
+{
+	UDT_MEAN_OF_DEATH_LIST(UDT_MEAN_OF_DEATH_ITEM)
+	"unknown"
+};
+#undef UDT_MEAN_OF_DEATH_ITEM
+
 
 void CallbackConsoleMessage(s32 logLevel, const char* message)
 {
@@ -153,7 +161,7 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator)
+bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
 {
 	if(string.String == NULL || rule.Pattern == NULL)
 	{
@@ -165,7 +173,7 @@ bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule&
 
 	if(rule.IgnoreColorCodes)
 	{
-		udtString::CleanUp(input);
+		udtString::CleanUp(input, procotol);
 	}
 
 	if(!rule.CaseSensitive)
@@ -528,6 +536,35 @@ s32 GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	return GetUDTPlayerMODBitFromIdMod73p(idMod);
 }
 
+s32 GetUDTPlayerMODBitFromUDTMod(s32 udtMod)
+{
+	switch((udtMeanOfDeath::Id)udtMod)
+	{
+		case udtMeanOfDeath::Shotgun: return (s32)udtPlayerMeansOfDeathBits::Shotgun;
+		case udtMeanOfDeath::Gauntlet: return (s32)udtPlayerMeansOfDeathBits::Gauntlet;
+		case udtMeanOfDeath::MachineGun: return (s32)udtPlayerMeansOfDeathBits::MachineGun;
+		case udtMeanOfDeath::Grenade: return (s32)udtPlayerMeansOfDeathBits::Grenade;
+		case udtMeanOfDeath::GrenadeSplash: return (s32)udtPlayerMeansOfDeathBits::GrenadeSplash;
+		case udtMeanOfDeath::Rocket: return (s32)udtPlayerMeansOfDeathBits::Rocket;
+		case udtMeanOfDeath::RocketSplash: return (s32)udtPlayerMeansOfDeathBits::RocketSplash;
+		case udtMeanOfDeath::Plasma: return (s32)udtPlayerMeansOfDeathBits::Plasma;
+		case udtMeanOfDeath::PlasmaSplash: return (s32)udtPlayerMeansOfDeathBits::PlasmaSplash;
+		case udtMeanOfDeath::Railgun: return (s32)udtPlayerMeansOfDeathBits::Railgun;
+		case udtMeanOfDeath::Lightning: return (s32)udtPlayerMeansOfDeathBits::Lightning;
+		case udtMeanOfDeath::BFG: return (s32)udtPlayerMeansOfDeathBits::BFG;
+		case udtMeanOfDeath::BFGSplash: return (s32)udtPlayerMeansOfDeathBits::BFGSplash;
+		case udtMeanOfDeath::TeleFrag: return (s32)udtPlayerMeansOfDeathBits::TeleFrag;
+		case udtMeanOfDeath::NailGun: return (s32)udtPlayerMeansOfDeathBits::NailGun;
+		case udtMeanOfDeath::ChainGun: return (s32)udtPlayerMeansOfDeathBits::ChainGun;
+		case udtMeanOfDeath::ProximityMine: return (s32)udtPlayerMeansOfDeathBits::ProximityMine;
+		case udtMeanOfDeath::Kamikaze: return (s32)udtPlayerMeansOfDeathBits::Kamikaze;
+		case udtMeanOfDeath::Grapple: return (s32)udtPlayerMeansOfDeathBits::Grapple;
+		case udtMeanOfDeath::Thaw: return (s32)udtPlayerMeansOfDeathBits::Thaw;
+		case udtMeanOfDeath::HeavyMachineGun: return (s32)udtPlayerMeansOfDeathBits::HeavyMachineGun;
+		default: return -1;
+	}
+}
+
 s32 GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol)
 {
 	if(udtIsValidProtocol(protocol) == 0)
@@ -641,4 +678,175 @@ void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context
 	context.LogInfo("Used memory: %s", bytes);
 	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
 	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
+}
+
+namespace idEntityEvent
+{
+	s32 Obituary(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return (s32)EV_OBITUARY_3;
+			case udtProtocol::Dm48: return (s32)EV_OBITUARY_48;
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)EV_OBITUARY_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)EV_OBITUARY_73p;
+			default: return -1;
+		}
+	}
+
+	s32 WeaponFired(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
+	}
+};
+
+namespace idEntityType
+{
+	s32 Event(udtProtocol::Id protocol)
+	{
+		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
+	}
+}
+
+namespace idConfigStringIndex
+{
+	s32 FirstPlayer(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:
+			case udtProtocol::Dm48:
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)CS_PLAYERS_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)CS_PLAYERS_73p;
+			default: return -1;
+		}
+	}
+}
+
+bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
+{
+	const s32 obituaryEvtId = idEntityEvent::Obituary(protocol);
+	const s32 eventTypeId = idEntityType::Event(protocol);
+	const s32 eventType = entity.eType & (~EV_EVENT_BITS);
+	if(eventType != eventTypeId + obituaryEvtId)
+	{
+		return false;
+	}
+
+	// The target must always be a player.
+	const s32 targetIdx = entity.otherEntityNum;
+	if(targetIdx < 0 || targetIdx >= MAX_CLIENTS)
+	{
+		return false;
+	}
+
+	// The attacker can be the world, though.
+	s32 attackerIdx = entity.otherEntityNum2;
+	if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+	{
+		attackerIdx = -1;
+	}
+
+	info.AttackerIndex = attackerIdx;
+	info.TargetIndex = targetIdx;
+	info.MeanOfDeath = GetUDTModFromIdMod(entity.eventParm, protocol);
+
+	return true;
+}
+
+s32 GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	if(protocol <= udtProtocol::Dm68)
+	{
+		switch((idMeansOfDeath68::Id)idMod)
+		{
+			case idMeansOfDeath68::Shotgun: return (s32)udtMeanOfDeath::Shotgun;
+			case idMeansOfDeath68::Gauntlet: return (s32)udtMeanOfDeath::Gauntlet;
+			case idMeansOfDeath68::MachineGun: return (s32)udtMeanOfDeath::MachineGun;
+			case idMeansOfDeath68::Grenade: return (s32)udtMeanOfDeath::Grenade;
+			case idMeansOfDeath68::GrenadeSplash: return (s32)udtMeanOfDeath::GrenadeSplash;
+			case idMeansOfDeath68::Rocket: return (s32)udtMeanOfDeath::Rocket;
+			case idMeansOfDeath68::RocketSplash: return (s32)udtMeanOfDeath::RocketSplash;
+			case idMeansOfDeath68::Plasma: return (s32)udtMeanOfDeath::Plasma;
+			case idMeansOfDeath68::PlasmaSplash: return (s32)udtMeanOfDeath::PlasmaSplash;
+			case idMeansOfDeath68::RailGun: return (s32)udtMeanOfDeath::Railgun;
+			case idMeansOfDeath68::Lightning: return (s32)udtMeanOfDeath::Lightning;
+			case idMeansOfDeath68::BFG: return (s32)udtMeanOfDeath::BFG;
+			case idMeansOfDeath68::BFGSplash: return (s32)udtMeanOfDeath::BFGSplash;
+			case idMeansOfDeath68::Water: return (s32)udtMeanOfDeath::Water;
+			case idMeansOfDeath68::Slime: return (s32)udtMeanOfDeath::Slime;
+			case idMeansOfDeath68::Lava: return (s32)udtMeanOfDeath::Lava;
+			case idMeansOfDeath68::Crush: return (s32)udtMeanOfDeath::Crush;
+			case idMeansOfDeath68::TeleFrag: return (s32)udtMeanOfDeath::TeleFrag;
+			case idMeansOfDeath68::Fall: return (s32)udtMeanOfDeath::Fall;
+			case idMeansOfDeath68::Suicide: return (s32)udtMeanOfDeath::Suicide;
+			case idMeansOfDeath68::TargetLaser: return (s32)udtMeanOfDeath::TargetLaser;
+			case idMeansOfDeath68::HurtTrigger: return (s32)udtMeanOfDeath::TriggerHurt;
+			case idMeansOfDeath68::Grapple: return (s32)udtMeanOfDeath::Grapple;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm73)
+	{
+		switch((idMeansOfDeath73p::Id)idMod)
+		{
+			case idMeansOfDeath73p::Shotgun: return (s32)udtMeanOfDeath::Shotgun;
+			case idMeansOfDeath73p::Gauntlet: return (s32)udtMeanOfDeath::Gauntlet;
+			case idMeansOfDeath73p::MachineGun: return (s32)udtMeanOfDeath::MachineGun;
+			case idMeansOfDeath73p::Grenade: return (s32)udtMeanOfDeath::Grenade;
+			case idMeansOfDeath73p::GrenadeSplash: return (s32)udtMeanOfDeath::GrenadeSplash;
+			case idMeansOfDeath73p::Rocket: return (s32)udtMeanOfDeath::Rocket;
+			case idMeansOfDeath73p::RocketSplash: return (s32)udtMeanOfDeath::RocketSplash;
+			case idMeansOfDeath73p::Plasma: return (s32)udtMeanOfDeath::Plasma;
+			case idMeansOfDeath73p::PlasmaSplash: return (s32)udtMeanOfDeath::PlasmaSplash;
+			case idMeansOfDeath73p::RailGun: return (s32)udtMeanOfDeath::Railgun;
+			case idMeansOfDeath73p::Lightning: return (s32)udtMeanOfDeath::Lightning;
+			case idMeansOfDeath73p::BFG: return (s32)udtMeanOfDeath::BFG;
+			case idMeansOfDeath73p::BFGSplash: return (s32)udtMeanOfDeath::BFGSplash;
+			case idMeansOfDeath73p::Water: return (s32)udtMeanOfDeath::Water;
+			case idMeansOfDeath73p::Slime: return (s32)udtMeanOfDeath::Slime;
+			case idMeansOfDeath73p::Lava: return (s32)udtMeanOfDeath::Lava;
+			case idMeansOfDeath73p::Crush: return (s32)udtMeanOfDeath::Crush;
+			case idMeansOfDeath73p::TeleFrag: return (s32)udtMeanOfDeath::TeleFrag;
+			case idMeansOfDeath73p::Fall: return (s32)udtMeanOfDeath::Fall;
+			case idMeansOfDeath73p::Suicide: return (s32)udtMeanOfDeath::Suicide;
+			case idMeansOfDeath73p::TargetLaser: return (s32)udtMeanOfDeath::TargetLaser;
+			case idMeansOfDeath73p::HurtTrigger: return (s32)udtMeanOfDeath::TriggerHurt;
+			case idMeansOfDeath73p::NailGun: return (s32)udtMeanOfDeath::NailGun;
+			case idMeansOfDeath73p::ChainGun: return (s32)udtMeanOfDeath::ChainGun;
+			case idMeansOfDeath73p::ProximityMine: return (s32)udtMeanOfDeath::ProximityMine;
+			case idMeansOfDeath73p::Kamikaze: return (s32)udtMeanOfDeath::Kamikaze;
+			case idMeansOfDeath73p::Juiced: return (s32)udtMeanOfDeath::Juiced;
+			case idMeansOfDeath73p::Grapple: return (s32)udtMeanOfDeath::Grapple;
+			case idMeansOfDeath73p::TeamSwitch: return (s32)udtMeanOfDeath::TeamSwitch;
+			case idMeansOfDeath73p::Thaw: return (s32)udtMeanOfDeath::Thaw;
+			case idMeansOfDeath73p::HeavyMachineGun: return (s32)udtMeanOfDeath::HeavyMachineGun;
+			default: return -1;
+		}
+	}
+
+	return -1;
+}
+
+const char* GetUDTModName(s32 mod)
+{
+	if(mod < 0 || mod >= (s32)udtMeanOfDeath::Count)
+	{
+		mod = (s32)udtMeanOfDeath::Count;
+	}
+
+	return MeansOfDeathNames[mod];
 }

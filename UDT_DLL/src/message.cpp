@@ -3,7 +3,7 @@
 
 
 // if(s32)f == f and (s32)f + (1<<(FLOAT_INT_BITS-1)) < (1 << FLOAT_INT_BITS)
-// the f32 will be sent with FLOAT_INT_BITS, otherwise all 32 bits will be sent
+// the float value will be sent with FLOAT_INT_BITS, otherwise all 32 bits will be sent
 #define	FLOAT_INT_BITS	13
 #define	FLOAT_INT_BIAS	(1<<(FLOAT_INT_BITS-1))
 
@@ -16,14 +16,138 @@
 #	define	 OFFSET_OF(type, member)	offsetof(type, member)
 #endif
 
+//
+// 3
+//
 
-/*
-============================================================================
+#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState3, field), bits }
 
-entityState_t communication
+// Each field's index is the corresponding index into the field bit mask.
+const idNetField EntityStateFields3[]
+{
+	ESF(eType, 8),
+	ESF(eFlags, 16),
+	ESF(pos.trType, 8),
+	ESF(pos.trTime, 32),
+	ESF(pos.trDuration, 32),
+	ESF(pos.trBase[0], 0),
+	ESF(pos.trBase[1], 0),
+	ESF(pos.trBase[2], 0),
+	ESF(pos.trDelta[0], 0),
+	ESF(pos.trDelta[1], 0),
+	ESF(pos.trDelta[2], 0),
+	ESF(apos.trType, 8),
+	ESF(apos.trTime, 32),
+	ESF(apos.trDuration, 32),
+	ESF(apos.trBase[0], 0),
+	ESF(apos.trBase[1], 0),
+	ESF(apos.trBase[2], 0),
+	ESF(apos.trDelta[0], 0),
+	ESF(apos.trDelta[1], 0),
+	ESF(apos.trDelta[2], 0),
+	ESF(time, 32),
+	ESF(time2, 32),
+	ESF(origin[0], 0),
+	ESF(origin[1], 0),
+	ESF(origin[2], 0),
+	ESF(origin2[0], 0),
+	ESF(origin2[1], 0),
+	ESF(origin2[2], 0),
+	ESF(angles[0], 0),
+	ESF(angles[1], 0),
+	ESF(angles[2], 0),
+	ESF(angles2[0], 0),
+	ESF(angles2[1], 0),
+	ESF(angles2[2], 0),
+	ESF(otherEntityNum, 10),
+	ESF(otherEntityNum2, 10),
+	ESF(groundEntityNum, 10),
+	ESF(loopSound, 8),
+	ESF(constantLight, 32),
+	ESF(modelindex, 8),
+	ESF(modelindex2, 8),
+	ESF(frame, 16),
+	ESF(clientNum, 8),
+	ESF(solid, 24),
+	ESF(event, 10),
+	ESF(eventParm, 8),
+	ESF(powerups, 16),
+	ESF(weapon, 8),
+	ESF(legsAnim, 8),
+	ESF(torsoAnim, 8)
+};
 
-============================================================================
-*/
+#undef ESF
+
+const s32 EntityStateFieldCount3 = sizeof(EntityStateFields3) / sizeof(EntityStateFields3[0]);
+static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 fields!");
+
+//
+// 48
+//
+
+#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState48, field), bits }
+
+// Each field's index is the corresponding index into the field bit mask.
+const idNetField EntityStateFields48[]
+{
+	ESF(eType, 8),
+	ESF(eFlags, 19), // Changed from 16 to 19...
+	ESF(pos.trType, 8),
+	ESF(pos.trTime, 32),
+	ESF(pos.trDuration, 32),
+	ESF(pos.trBase[0], 0),
+	ESF(pos.trBase[1], 0),
+	ESF(pos.trBase[2], 0),
+	ESF(pos.trDelta[0], 0),
+	ESF(pos.trDelta[1], 0),
+	ESF(pos.trDelta[2], 0),
+	ESF(apos.trType, 8),
+	ESF(apos.trTime, 32),
+	ESF(apos.trDuration, 32),
+	ESF(apos.trBase[0], 0),
+	ESF(apos.trBase[1], 0),
+	ESF(apos.trBase[2], 0),
+	ESF(apos.trDelta[0], 0),
+	ESF(apos.trDelta[1], 0),
+	ESF(apos.trDelta[2], 0),
+	ESF(time, 32),
+	ESF(time2, 32),
+	ESF(origin[0], 0),
+	ESF(origin[1], 0),
+	ESF(origin[2], 0),
+	ESF(origin2[0], 0),
+	ESF(origin2[1], 0),
+	ESF(origin2[2], 0),
+	ESF(angles[0], 0),
+	ESF(angles[1], 0),
+	ESF(angles[2], 0),
+	ESF(angles2[0], 0),
+	ESF(angles2[1], 0),
+	ESF(angles2[2], 0),
+	ESF(otherEntityNum, 10),
+	ESF(otherEntityNum2, 10),
+	ESF(groundEntityNum, 10),
+	ESF(loopSound, 8),
+	ESF(constantLight, 32),
+	ESF(modelindex, 8),
+	ESF(modelindex2, 8),
+	ESF(frame, 16),
+	ESF(clientNum, 8),
+	ESF(solid, 24),
+	ESF(event, 10),
+	ESF(eventParm, 8),
+	ESF(powerups, 16),
+	ESF(weapon, 8),
+	ESF(legsAnim, 8),
+	ESF(torsoAnim, 8),
+	ESF(generic1, 8)
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount48 = sizeof(EntityStateFields48) / sizeof(EntityStateFields48[0]);
+static_assert(EntityStateFieldCount48 == 51, "dm_48 network entity states have 51 fields!");
 
 //
 // 68
@@ -226,13 +350,198 @@ const idNetField EntityStateFields90[] =
 
 const s32 EntityStateFieldCount90 = sizeof(EntityStateFields90) / sizeof(EntityStateFields90[0]);
 
-/*
-============================================================================
+//
+// 91
+//
 
-playerState_t communication
+#define ESF(x) #x, (s32)OFFSET_OF(idEntityState91, x)
 
-============================================================================
-*/
+const idNetField EntityStateFields91[] =
+{
+	{ ESF(pos.trTime), 32 },
+	{ ESF(pos.trBase[0]), 0 },
+	{ ESF(pos.trBase[1]), 0 },
+	{ ESF(pos.trDelta[0]), 0 },
+	{ ESF(pos.trDelta[1]), 0 },
+	{ ESF(pos.trBase[2]), 0 },
+	{ ESF(apos.trBase[1]), 0 },
+	{ ESF(pos.trDelta[2]), 0 },
+	{ ESF(apos.trBase[0]), 0 },
+	{ ESF(pos_gravity), 32 },
+	{ ESF(event), 10 },
+	{ ESF(angles2[1]), 0 },
+	{ ESF(eType), 8 },
+	{ ESF(torsoAnim), 8 },
+	{ ESF(eventParm), 8 },
+	{ ESF(legsAnim), 8 },
+	{ ESF(groundEntityNum), GENTITYNUM_BITS },
+	{ ESF(pos.trType), 8 },
+	{ ESF(eFlags), 19 },
+	{ ESF(otherEntityNum), GENTITYNUM_BITS },
+	{ ESF(weapon), 8 },
+	{ ESF(clientNum), 8 },
+	{ ESF(angles[1]), 0 },
+	{ ESF(pos.trDuration), 32 },
+	{ ESF(apos.trType), 8 },
+	{ ESF(origin[0]), 0 },
+	{ ESF(origin[1]), 0 },
+	{ ESF(origin[2]), 0 },
+	{ ESF(solid), 24 },
+	{ ESF(powerups), 16 },
+	{ ESF(modelindex), 8 },
+	{ ESF(otherEntityNum2), GENTITYNUM_BITS },
+	{ ESF(loopSound), 8 },
+	{ ESF(generic1), 8 },
+	{ ESF(origin2[2]), 0 },
+	{ ESF(origin2[0]), 0 },
+	{ ESF(origin2[1]), 0 },
+	{ ESF(modelindex2), 8 },
+	{ ESF(angles[0]), 0 },
+	{ ESF(time), 32 },
+	{ ESF(apos.trTime), 32 },
+	{ ESF(apos.trDuration), 32 },
+	{ ESF(apos.trBase[2]), 0 },
+	{ ESF(apos.trDelta[0]), 0 },
+	{ ESF(apos.trDelta[1]), 0 },
+	{ ESF(apos.trDelta[2]), 0 },
+	{ ESF(apos_gravity), 32 },
+	{ ESF(time2), 32 },
+	{ ESF(angles[2]), 0 },
+	{ ESF(angles2[0]), 0 },
+	{ ESF(angles2[2]), 0 },
+	{ ESF(constantLight), 32 },
+	{ ESF(frame), 16 },
+	{ ESF(jumpTime), 32 },
+	{ ESF(doubleJumped), 1 },
+	{ ESF(health), 16 }, // New in protocol 91.
+	{ ESF(armor), 16 },  // New in protocol 91.
+	{ ESF(location), 8 } // New in protocol 91.
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount91 = sizeof(EntityStateFields91) / sizeof(EntityStateFields91[0]);
+
+//
+// 3
+//
+
+#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState3, field), bits }
+
+static const idNetField PlayerStateFields3[] =
+{
+	PSF(commandTime, 32),
+	PSF(pm_type, 8),
+	PSF(bobCycle, 8),
+	PSF(pm_flags, 16),
+	PSF(pm_time, 16),
+	PSF(origin[0], 0),
+	PSF(origin[1], 0),
+	PSF(origin[2], 0),
+	PSF(velocity[0], 0),
+	PSF(velocity[1], 0),
+	PSF(velocity[2], 0),
+	PSF(weaponTime, 16),
+	PSF(gravity, 16),
+	PSF(speed, 16),
+	PSF(delta_angles[0], 16),
+	PSF(delta_angles[1], 16),
+	PSF(delta_angles[2], 16),
+	PSF(groundEntityNum, 10),
+	PSF(legsTimer, 8),
+	PSF(torsoTimer, 12),
+	PSF(legsAnim, 8),
+	PSF(torsoAnim, 8),
+	PSF(movementDir, 4),
+	PSF(eFlags, 16),
+	PSF(eventSequence, 16),
+	PSF(events[0], 8),
+	PSF(events[1], 8),
+	PSF(eventParms[0], 8),
+	PSF(eventParms[1], 8),
+	PSF(externalEvent, 8),
+	PSF(externalEventParm, 8),
+	PSF(clientNum, 8),
+	PSF(weapon, 5),
+	PSF(weaponstate, 4),
+	PSF(viewangles[0], 0),
+	PSF(viewangles[1], 0),
+	PSF(viewangles[2], 0),
+	PSF(viewheight, 8),
+	PSF(damageEvent, 8),
+	PSF(damageYaw, 8),
+	PSF(damagePitch, 8),
+	PSF(damageCount, 8),
+	PSF(grapplePoint[0], 0),
+	PSF(grapplePoint[1], 0),
+	PSF(grapplePoint[2], 0)
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount3 = sizeof(PlayerStateFields3) / sizeof(PlayerStateFields3[0]);
+
+//
+// 48
+//
+
+#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState48, field), bits }
+
+static const idNetField PlayerStateFields48[] =
+{
+	PSF(commandTime, 32),
+	PSF(pm_type, 8),
+	PSF(bobCycle, 8),
+	PSF(pm_flags, 16),
+	PSF(pm_time, -16),
+	PSF(origin[0], 0),
+	PSF(origin[1], 0),
+	PSF(origin[2], 0),
+	PSF(velocity[0], 0),
+	PSF(velocity[1], 0),
+	PSF(velocity[2], 0),
+	PSF(weaponTime, -16),
+	PSF(gravity, 16),
+	PSF(speed, 16),
+	PSF(delta_angles[0], 16),
+	PSF(delta_angles[1], 16),
+	PSF(delta_angles[2], 16),
+	PSF(groundEntityNum, 10),
+	PSF(legsTimer, 8),
+	PSF(torsoTimer, 12),
+	PSF(legsAnim, 8),
+	PSF(torsoAnim, 8),
+	PSF(movementDir, 4),
+	PSF(eFlags, 16),
+	PSF(eventSequence, 16),
+	PSF(events[0], 8),
+	PSF(events[1], 8),
+	PSF(eventParms[0], 8),
+	PSF(eventParms[1], 8),
+	PSF(externalEvent, 10), // Changed from 8 to 10...
+	PSF(externalEventParm, 8),
+	PSF(clientNum, 8),
+	PSF(weapon, 5),
+	PSF(weaponstate, 4),
+	PSF(viewangles[0], 0),
+	PSF(viewangles[1], 0),
+	PSF(viewangles[2], 0),
+	PSF(viewheight, -8),
+	PSF(damageEvent, 8),
+	PSF(damageYaw, 8),
+	PSF(damagePitch, 8),
+	PSF(damageCount, 8), 
+	PSF(grapplePoint[0], 0),
+	PSF(grapplePoint[1], 0),
+	PSF(grapplePoint[2], 0),
+	PSF(jumppad_ent, 10), // New in dm_48.
+	PSF(loopSound, 16),   // New in dm_48.
+	PSF(generic1, 8),     // New in dm_48.
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount48 = sizeof(PlayerStateFields48) / sizeof(PlayerStateFields48[0]);
 
 //
 // 68
@@ -422,20 +731,84 @@ static const idNetField PlayerStateFields90[] =
 
 static const s32 PlayerStateFieldCount90 = sizeof(PlayerStateFields90) / sizeof(PlayerStateFields90[0]);
 
+//
+// 91
+//
 
-/*
-==============================================================================
+#define PSF(x) #x,(s32)(sptr)(&((idPlayerState91*)0)->x)
 
-			MESSAGE IO FUNCTIONS
+static const idNetField PlayerStateFields91[] =
+{
+	{ PSF(commandTime), 32 },
+	{ PSF(origin[0]), 0 },
+	{ PSF(origin[1]), 0 },
+	{ PSF(bobCycle), 8 },
+	{ PSF(velocity[0]), 0 },
+	{ PSF(velocity[1]), 0 },
+	{ PSF(viewangles[1]), 0 },
+	{ PSF(viewangles[0]), 0 },
+	{ PSF(weaponTime), -16 },
+	{ PSF(origin[2]), 0 },
+	{ PSF(velocity[2]), 0 },
+	{ PSF(legsTimer), 8 },
+	{ PSF(pm_time), -16 },
+	{ PSF(eventSequence), 16 },
+	{ PSF(torsoAnim), 8 },
+	{ PSF(movementDir), 4 },
+	{ PSF(events[0]), 8 },
+	{ PSF(legsAnim), 8 },
+	{ PSF(events[1]), 8 },
+	{ PSF(pm_flags), 24 },
+	{ PSF(groundEntityNum), GENTITYNUM_BITS },
+	{ PSF(weaponstate), 4 },
+	{ PSF(eFlags), 16 },
+	{ PSF(externalEvent), 10 },
+	{ PSF(gravity), 16 },
+	{ PSF(speed), 16 },
+	{ PSF(delta_angles[1]), 16 },
+	{ PSF(externalEventParm), 8 },
+	{ PSF(viewheight), -8 },
+	{ PSF(damageEvent), 8 },
+	{ PSF(damageYaw), 8 },
+	{ PSF(damagePitch), 8 },
+	{ PSF(damageCount), 8 },
+	{ PSF(generic1), 8 },
+	{ PSF(pm_type), 8 },
+	{ PSF(delta_angles[0]), 16 },
+	{ PSF(delta_angles[2]), 16 },
+	{ PSF(torsoTimer), 12 },
+	{ PSF(eventParms[0]), 8 },
+	{ PSF(eventParms[1]), 8 },
+	{ PSF(clientNum), 8 },
+	{ PSF(weapon), 5 },
+	{ PSF(weaponPrimary), 8 },
+	{ PSF(viewangles[2]), 0 },
+	{ PSF(grapplePoint[0]), 0 },
+	{ PSF(grapplePoint[1]), 0 },
+	{ PSF(grapplePoint[2]), 0 },
+	{ PSF(jumppad_ent), 10 },
+	{ PSF(loopSound), 16 },
+	{ PSF(jumpTime), 32 },
+	{ PSF(doubleJumped), 1 },
+	{ PSF(crouchTime), 32 },      // New in protocol 91.
+	{ PSF(crouchSlideTime), 32 }, // New in protocol 91.
+	{ PSF(location), 8 },         // New in protocol 91.
+	{ PSF(fov), 8 },              // New in protocol 91.
+	{ PSF(forwardmove), 8 },      // New in protocol 91.
+	{ PSF(rightmove), 8 },        // New in protocol 91.
+	{ PSF(upmove), 8 }            // New in protocol 91.
+};
 
-Handles u8 ordering and avoids alignment errors
-==============================================================================
-*/
+#undef PSF
+
+static const s32 PlayerStateFieldCount91 = sizeof(PlayerStateFields91) / sizeof(PlayerStateFields91[0]);
+
 
 udtMessage::udtMessage()
 {
 	_protocol = udtProtocol::Dm68;
 	_protocolSizeOfEntityState = sizeof(idEntityState68);
+	_protocolSizeOfPlayerState = sizeof(idPlayerState68);
 	_entityStateFields = EntityStateFields68;
 	_entityStateFieldCount = EntityStateFieldCount68;
 	_playerStateFields = PlayerStateFields68;
@@ -453,8 +826,18 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 	switch(protocol)
 	{
+		case udtProtocol::Dm91:
+			_protocolSizeOfEntityState = sizeof(idEntityState91);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState91);
+			_entityStateFields = EntityStateFields91;
+			_entityStateFieldCount = EntityStateFieldCount91;
+			_playerStateFields = PlayerStateFields91;
+			_playerStateFieldCount = PlayerStateFieldCount91;
+			break;
+
 		case udtProtocol::Dm90:
 			_protocolSizeOfEntityState = sizeof(idEntityState90);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState90);
 			_entityStateFields = EntityStateFields90;
 			_entityStateFieldCount = EntityStateFieldCount90;
 			_playerStateFields = PlayerStateFields90;
@@ -463,15 +846,53 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 
 		case udtProtocol::Dm73:
 			_protocolSizeOfEntityState = sizeof(idEntityState73);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState73);
 			_entityStateFields = EntityStateFields73;
 			_entityStateFieldCount = EntityStateFieldCount73;
 			_playerStateFields = PlayerStateFields73;
 			_playerStateFieldCount = PlayerStateFieldCount73;
 			break;
 
+		case udtProtocol::Dm3:
+			_protocolSizeOfEntityState = sizeof(idEntityState3);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState3);
+			_entityStateFields = EntityStateFields3;
+			_entityStateFieldCount = EntityStateFieldCount3;
+			_playerStateFields = PlayerStateFields3;
+			_playerStateFieldCount = PlayerStateFieldCount3;
+			break;
+
+		case udtProtocol::Dm48:
+			_protocolSizeOfEntityState = sizeof(idEntityState48);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState48);
+			_entityStateFields = EntityStateFields48;
+			_entityStateFieldCount = EntityStateFieldCount48;
+			_playerStateFields = PlayerStateFields48;
+			_playerStateFieldCount = PlayerStateFieldCount48;
+			break;
+
+		case udtProtocol::Dm66:
+			_protocolSizeOfEntityState = sizeof(idEntityState66);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState66);
+			_entityStateFields = EntityStateFields68;
+			_entityStateFieldCount = EntityStateFieldCount68;
+			_playerStateFields = PlayerStateFields68;
+			_playerStateFieldCount = PlayerStateFieldCount68;
+			break;
+
+		case udtProtocol::Dm67:
+			_protocolSizeOfEntityState = sizeof(idEntityState67);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState67);
+			_entityStateFields = EntityStateFields68;
+			_entityStateFieldCount = EntityStateFieldCount68;
+			_playerStateFields = PlayerStateFields68;
+			_playerStateFieldCount = PlayerStateFieldCount68;
+			break;
+
 		case udtProtocol::Dm68:
 		default:
 			_protocolSizeOfEntityState = sizeof(idEntityState68);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState68);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
 			_playerStateFields = PlayerStateFields68;
@@ -507,6 +928,11 @@ void udtMessage::Bitstream()
 	Buffer.oob = qfalse;
 }
 
+void udtMessage::SetHuffman(bool huffman)
+{
+	Buffer.oob = huffman ? qfalse : qtrue;
+}
+
 void udtMessage::BeginReading() 
 {
 	Buffer.readcount = 0;
@@ -521,13 +947,14 @@ void udtMessage::BeginReadingOOB()
 	Buffer.oob = qtrue;
 }
 
-/*
-=============================================================================
-
-bit functions
-
-=============================================================================
-*/
+void udtMessage::GoToNextByte()
+{
+	if((Buffer.bit & 7) != 0)
+	{
+		++Buffer.readcount;
+		Buffer.bit = Buffer.readcount << 3;
+	}
+}
 
 // negative bit values include signs
 void udtMessage::WriteBits(s32 value, s32 bits) 
@@ -560,14 +987,14 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 		else if(bits == 16) 
 		{
 			unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.cursize];
-			*sp = (unsigned short)LittleShort(value);
+			*sp = (unsigned short)value;
 			Buffer.cursize += 2;
 			Buffer.bit += 16;
 		} 
 		else if(bits == 32) 
 		{
 			u32* ip = (u32*)&Buffer.data[Buffer.cursize];
-			*ip = LittleLong(value);
+			*ip = value;
 			Buffer.cursize += 4;
 			Buffer.bit += 32;
 		} 
@@ -621,29 +1048,49 @@ s32 udtMessage::ReadBits(s32 bits)
 	s32 value = 0;
 	if(Buffer.oob) 
 	{
-		if(bits == 8) 
+		if(_protocol >= udtProtocol::Dm68)
 		{
-			value = Buffer.data[Buffer.readcount];
-			Buffer.readcount += 1;
-			Buffer.bit += 8;
-		} 
-		else if(bits == 16) 
+			if(bits == 8)
+			{
+				value = Buffer.data[Buffer.readcount];
+				Buffer.readcount += 1;
+				Buffer.bit += 8;
+			}
+			else if(bits == 16)
+			{
+				unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
+				value = *sp;
+				Buffer.readcount += 2;
+				Buffer.bit += 16;
+			}
+			else if(bits == 32)
+			{
+				u32* ip = (u32*)&Buffer.data[Buffer.readcount];
+				value = *ip;
+				Buffer.readcount += 4;
+				Buffer.bit += 32;
+			}
+			else
+			{
+				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits\n", bits);
+			}
+		}
+		else
 		{
-			unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
-			value = LittleShort(*sp);
-			Buffer.readcount += 2;
-			Buffer.bit += 16;
-		} 
-		else if(bits == 32) 
-		{
-			u32* ip = (u32*)&Buffer.data[Buffer.readcount];
-			value = LittleLong(*ip);
-			Buffer.readcount += 4;
-			Buffer.bit += 32;
-		} 
-		else 
-		{
-			Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits\n", bits);
+			if(bits > 32)
+			{
+				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits (more than 32)\n", bits);
+			}
+
+			u32 readBits = *(u32*)&Buffer.data[Buffer.readcount];
+			const u32 bitPosition = (u32)Buffer.bit % 8;
+			const u32 diff = 32 - (u32)bits;
+			readBits >>= bitPosition;
+			readBits <<= diff;
+			readBits >>= diff;
+			value = (s32)readBits;
+			Buffer.bit += bits;
+			Buffer.readcount = Buffer.bit >> 3;
 		}
 	} 
 	else
@@ -682,10 +1129,6 @@ s32 udtMessage::ReadBits(s32 bits)
 	return value;
 }
 
-//
-// writing functions
-//
-
 void udtMessage::WriteByte(s32 c) 
 {
 	WriteBits(c, 8);
@@ -709,6 +1152,48 @@ void udtMessage::WriteLong(s32 c)
 	WriteBits(c, 32);
 }
 
+void udtMessage::WriteFloat(s32 c)
+{
+	// Sneaking around the strict aliasing rules.
+	union IntAndFloat
+	{
+		IntAndFloat(s32 i) : AsInt(i) {}
+
+		s32 AsInt;
+		f32 AsFloat;
+	};
+
+	const IntAndFloat fullFloatUnion(c);
+	const f32 fullFloat = fullFloatUnion.AsFloat;
+	const s32 truncatedFloat = (s32)fullFloat;
+	if(truncatedFloat == fullFloat && 
+	   truncatedFloat + FLOAT_INT_BIAS >= 0 &&
+	   truncatedFloat + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS))
+	{
+		// Small integer case.
+		WriteBits(0, 1);
+		WriteBits(truncatedFloat + FLOAT_INT_BIAS, FLOAT_INT_BITS);
+	}
+	else
+	{
+		// Full floating-point value.
+		WriteBits(1, 1);
+		WriteBits(c, 32);
+	}
+}
+
+void udtMessage::WriteField(s32 c, s32 bits)
+{
+	if(bits == 0)
+	{
+		WriteFloat(c);
+	}
+	else
+	{
+		WriteBits(c, bits);
+	}
+}
+
 void udtMessage::WriteString(const char* s, s32 length) 
 {
 	if(!s) 
@@ -726,12 +1211,15 @@ void udtMessage::WriteString(const char* s, s32 length)
 	char string[MAX_STRING_CHARS];
 	Q_strncpyz(string, s, sizeof(string));
 
-	// get rid of 0xff s8s, because old clients don't like them
-	for(s32 i = 0 ; i < length; ++i) 
+	if(_protocol <= udtProtocol::Dm90)
 	{
-		if(((u8*)string)[i] > 127) 
+		// get rid of 0xff bytes, because old clients don't like them
+		for(s32 i = 0; i < length; ++i)
 		{
-			string[i] = '.';
+			if(((u8*)string)[i] > 127)
+			{
+				string[i] = '.';
+			}
 		}
 	}
 
@@ -754,12 +1242,15 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 	char string[BIG_INFO_STRING];
 	Q_strncpyz(string, s, sizeof(string));
 
-	// get rid of 0xff s8s, because old clients don't like them
-	for(s32 i = 0; i < length; ++i) 
+	if(_protocol <= udtProtocol::Dm90)
 	{
-		if(((u8*)string)[i] > 127) 
+		// get rid of 0xff bytes, because old clients don't like them
+		for(s32 i = 0; i < length; ++i)
 		{
-			string[i] = '.';
+			if(((u8*)string)[i] > 127)
+			{
+				string[i] = '.';
+			}
 		}
 	}
 
@@ -768,7 +1259,7 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 
 s32 udtMessage::ReadByte()
 {
-	s32 c = (u8)ReadBits(8);
+	s32 c = ReadBits(8);
 	if(Buffer.readcount > Buffer.cursize) 
 	{
 		c = -1;
@@ -779,8 +1270,19 @@ s32 udtMessage::ReadByte()
 
 s32 udtMessage::ReadShort()
 {
-	s32 c = (short)ReadBits(16);
+	s32 c = ReadBits(16);
 	if(Buffer.readcount > Buffer.cursize) 
+	{
+		c = -1;
+	}
+
+	return c;
+}
+
+s32 udtMessage::ReadSignedShort()
+{
+	s32 c = ReadBits(-16);
+	if(Buffer.readcount > Buffer.cursize)
 	{
 		c = -1;
 	}
@@ -797,6 +1299,33 @@ s32 udtMessage::ReadLong()
 	}
 
 	return c;
+}
+
+s32 udtMessage::ReadFloat()
+{
+	if(ReadBits(1))
+	{
+		return ReadBits(32);
+	}
+
+	// Sneaking around the strict aliasing rules.
+	union FloatAndInt
+	{
+		FloatAndInt(f32 f) : AsFloat(f) {}
+
+		f32 AsFloat;
+		s32 AsInt;
+	};
+
+	const s32 intValue = ReadBits(FLOAT_INT_BITS) - FLOAT_INT_BIAS;
+	const FloatAndInt realValue((f32)intValue);
+	
+	return realValue.AsInt;
+}
+
+s32 udtMessage::ReadField(s32 bits)
+{
+	return (bits == 0) ? ReadFloat() : ReadBits(bits);
 }
 
 char* udtMessage::ReadString(s32& length) 
@@ -818,13 +1347,13 @@ char* udtMessage::ReadString(s32& length)
 		{
 			c = '.';
 		}
-
+		
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}
-
+		
 		stringBuffer[stringLength] = (s8)c;
 		stringLength++;
 	} 
@@ -857,7 +1386,7 @@ char* udtMessage::ReadBigString(s32& length)
 		}
 
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}
@@ -894,7 +1423,7 @@ char* udtMessage::ReadStringLine(s32& length)
 		}
 
 		// don't allow higher ascii values
-		if(c > 127) 
+		if(_protocol <= udtProtocol::Dm90 && c > 127)
 		{
 			c = '.';
 		}
@@ -936,125 +1465,6 @@ s32 udtMessage::PeekByte()
 	return c;
 }
 
-/*
-=============================================================================
-
-delta functions with keys
-
-=============================================================================
-*/
-
-#define NETLOG(x) 
-
-static const s32 kbitmask[32] = 
-{
-	0x00000001,	0x00000003,	0x00000007,	0x0000000F,
-	0x0000001F,	0x0000003F,	0x0000007F,	0x000000FF,
-	0x000001FF,	0x000003FF,	0x000007FF,	0x00000FFF,
-	0x00001FFF,	0x00003FFF,	0x00007FFF,	0x0000FFFF,
-	0x0001FFFF,	0x0003FFFF,	0x0007FFFF,	0x000FFFFF,
-	0x001FFFFf,	0x003FFFFF,	0x007FFFFF,	0x00FFFFFF,
-	0x01FFFFFF,	0x03FFFFFF,	0x07FFFFFF,	0x0FFFFFFF,
-	0x1FFFFFFF,	0x3FFFFFFF,	0x7FFFFFFF,	0xFFFFFFFF
-};
-
-void udtMessage::WriteDeltaKey(s32 key, s32 oldV, s32 newV, s32 bits)
-{
-	if(oldV == newV) 
-	{
-		WriteBits(0, 1);
-		return;
-	}
-
-	WriteBits(1, 1);
-	WriteBits(newV ^ key, bits);
-}
-
-s32 udtMessage::ReadDeltaKey(s32 key, s32 oldV, s32 bits)
-{
-	if(ReadBits(1)) 
-	{
-		return ReadBits(bits) ^ (key & kbitmask[bits]);
-	}
-
-	return oldV;
-}
-
-void udtMessage::WriteDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to)
-{
-	if(to->serverTime - from->serverTime < 256) 
-	{
-		WriteBits(1, 1);
-		WriteBits(to->serverTime - from->serverTime, 8);
-	}
-	else 
-	{
-		WriteBits(0, 1);
-		WriteBits(to->serverTime, 32);
-	}
-
-	if(from->angles[0] == to->angles[0] &&
-		from->angles[1] == to->angles[1] &&
-		from->angles[2] == to->angles[2] &&
-		from->forwardmove == to->forwardmove &&
-		from->rightmove == to->rightmove &&
-		from->upmove == to->upmove &&
-		from->buttons == to->buttons &&
-		from->weapon == to->weapon) 
-	{
-		// no change
-		WriteBits(0, 1);
-		return;
-	}
-
-	key ^= to->serverTime;
-	WriteBits(1, 1);
-	WriteDeltaKey(key, from->angles[0], to->angles[0], 16);
-	WriteDeltaKey(key, from->angles[1], to->angles[1], 16);
-	WriteDeltaKey(key, from->angles[2], to->angles[2], 16);
-	WriteDeltaKey(key, from->forwardmove, to->forwardmove, 8);
-	WriteDeltaKey(key, from->rightmove, to->rightmove, 8);
-	WriteDeltaKey(key, from->upmove, to->upmove, 8);
-	WriteDeltaKey(key, from->buttons, to->buttons, 16);
-	WriteDeltaKey(key, from->weapon, to->weapon, 8);
-}
-
-void udtMessage::ReadDeltaUsercmdKey(s32 key, const usercmd_t* from, usercmd_t* to)
-{
-	if(ReadBits(1)) 
-	{
-		to->serverTime = from->serverTime + ReadBits(8);
-	} 
-	else 
-	{
-		to->serverTime = ReadBits(32);
-	}
-
-	if(ReadBits(1)) 
-	{
-		key ^= to->serverTime;
-		to->angles[0] = ReadDeltaKey(key, from->angles[0], 16);
-		to->angles[1] = ReadDeltaKey(key, from->angles[1], 16);
-		to->angles[2] = ReadDeltaKey(key, from->angles[2], 16);
-		to->forwardmove = (s8)ReadDeltaKey(key, from->forwardmove, 8);
-		to->rightmove = (s8)ReadDeltaKey(key, from->rightmove, 8);
-		to->upmove = (s8)ReadDeltaKey(key, from->upmove, 8);
-		to->buttons = ReadDeltaKey(key, from->buttons, 16);
-		to->weapon = (u8)ReadDeltaKey(key, from->weapon, 8);
-	} 
-	else 
-	{
-		to->angles[0] = from->angles[0];
-		to->angles[1] = from->angles[1];
-		to->angles[2] = from->angles[2];
-		to->forwardmove = from->forwardmove;
-		to->rightmove = from->rightmove;
-		to->upmove = from->upmove;
-		to->buttons = from->buttons;
-		to->weapon = from->weapon;
-	}
-}
-
 void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
 	s32				i;
@@ -1092,37 +1502,12 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 
 		if(*fromF == *toF) 
 		{
-			WriteBits(0, 1);	// no change
+			WriteBits(0, 1);
 			continue;
 		}
 
-		WriteBits(1, 1);	// changed
-//		pcount[i]++;
-
-		if(field->bits == 0) 
-		{
-			f32 fullFloat = *(f32 *)toF;
-			s32 trunc = (s32)fullFloat;
-
-			if( trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
-				trunc + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS)) 
-			{
-				// send as small integer
-				WriteBits(0, 1);
-				WriteBits(trunc + FLOAT_INT_BIAS, FLOAT_INT_BITS);
-			} 
-			else
-			{
-				// send as full floating point value
-				WriteBits(1, 1);
-				WriteBits(*toF, 32);
-			}
-		} 
-		else
-		{
-			// integer
-			WriteBits(*toF, field->bits);
-		}
+		WriteBits(1, 1);
+		WriteField(*toF, field->bits);
 	}
 	c = Buffer.cursize - c;
 
@@ -1239,23 +1624,102 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 	}
 }
 
+void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
+{
+	const idNetField* field = _playerStateFields;
+	const s32 fieldCount = _playerStateFieldCount;
+	for(s32 i = 0; i < fieldCount; i++, field++)
+	{
+		if(!ReadBits(1))
+		{
+			continue;
+		}
+
+		s32* const toF = (s32*)((u8*)to + field->offset);
+		*toF = ReadField(field->bits);
+	}
+
+	// Stats array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_STATS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				// Stats can be negative.
+				to->stats[i] = ReadSignedShort();
+			}
+		}
+	}
+
+	// Persistent array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				// @TODO: Can those be negative too?
+				to->persistant[i] = ReadShort();
+			}
+		}
+	}
+
+	// Ammo array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_WEAPONS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				to->ammo[i] = ReadShort();
+			}
+		}
+	}
+
+	// Power-ups array.
+	if(ReadBits(1))
+	{
+		const s32 mask = ReadShort();
+		for(s32 i = 0; i < MAX_POWERUPS; ++i)
+		{
+			if((mask & (1 << i)) != 0) // bit set?
+			{
+				// Yep, we read 32 bits.
+				to->powerups[i] = ReadLong();
+			}
+		}
+	}
+}
 
 void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
 	s32			i, lc;
 	s32			bits;
 	s32			*fromF, *toF;
-	s32			trunc;
 	idLargestPlayerState dummy;
 
 	if(!from) 
 	{
 		from = &dummy;
-		Com_Memset(&dummy, 0, sizeof(dummy));
+		memset(&dummy, 0, sizeof(dummy));
 	}
-	*to = *from;
+	memcpy(to, from, _protocolSizeOfPlayerState);
+	
+	if(_protocol <= udtProtocol::Dm48)
+	{
+		ReadDeltaPlayerstateDM3(to);
+		return;
+	}
 
 	lc = ReadByte();
+	if(lc > _playerStateFieldCount || lc < 0)
+	{
+		Context->LogErrorAndCrash("udtMessage::ReadDeltaPlayerstate: Invalid playerState field count: %d (numFields %d)", lc, _playerStateFieldCount);
+	}
 
 	const idNetField* field;
 	for(i = 0, field = _playerStateFields; i < lc; i++, field++)
@@ -1263,45 +1727,20 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(! ReadBits(1)) 
+		if(ReadBits(1) == 0) 
 		{
-			// no change
 			*toF = *fromF;
+			continue;
 		} 
-		else 
-		{
-			if(field->bits == 0)
-			{
-				// float
-				if(ReadBits(1) == 0) 
-				{
-					// integral float
-					trunc = ReadBits(FLOAT_INT_BITS);
-					// bias to allow equal parts positive and negative
-					trunc -= FLOAT_INT_BIAS;
-					*(f32 *)toF = (f32)trunc; 
-				} 
-				else
-				{
-					// full floating point value
-					*toF = ReadBits(32);
-				}
-			} 
-			else
-			{
-				// integer
-				*toF = ReadBits(field->bits);
-			}
-		}
+
+		*toF = ReadField(field->bits);
 	}
 	for(i = lc, field = &_playerStateFields[lc]; i < _playerStateFieldCount; i++, field++)
 	{
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
-		// no change
 		*toF = *fromF;
 	}
-
 
 	// read the arrays
 	if(ReadBits(1)) 
@@ -1309,7 +1748,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse stats
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_STATS");
 			bits = ReadBits(MAX_STATS);
 			for(i=0 ; i<MAX_STATS ; i++) 
 			{
@@ -1323,7 +1761,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse persistant stats
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_PERSISTANT");
 			bits = ReadBits(MAX_PERSISTANT);
 			for(i=0 ; i<MAX_PERSISTANT ; i++) 
 			{
@@ -1337,7 +1774,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse ammo
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_AMMO");
 			bits = ReadBits(MAX_WEAPONS);
 			for(i=0 ; i<MAX_WEAPONS ; i++) 
 			{
@@ -1351,7 +1787,6 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 		// parse powerups
 		if(ReadBits(1)) 
 		{
-			NETLOG("PS_POWERUPS");
 			bits = ReadBits(MAX_POWERUPS);
 			for(i=0 ; i<MAX_POWERUPS ; i++) 
 			{
@@ -1455,52 +1890,19 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 
 		if(*fromF == *toF) 
 		{
-			WriteBits(0, 1);	// no change
+			WriteBits(0, 1);
 			continue;
 		}
 
-		WriteBits(1, 1);	// changed
-
-		if(field->bits == 0) 
+		WriteBits(1, 1);
+		if(*toF == 0)
 		{
-			f32 fullFloat = *(f32 *)toF;
-
-			if(fullFloat == 0.0f)
-			{
-				WriteBits(0, 1);
-			} 
-			else
-			{
-				WriteBits(1, 1);
-				s32 trunc = (s32)fullFloat;
-				if(trunc == fullFloat && trunc + FLOAT_INT_BIAS >= 0 && 
-					trunc + FLOAT_INT_BIAS < (1 << FLOAT_INT_BITS)) 
-				{
-					// send as small integer
-					WriteBits(0, 1);
-					WriteBits(trunc + FLOAT_INT_BIAS, FLOAT_INT_BITS);
-				} 
-				else 
-				{
-					// send as full floating point value
-					WriteBits(1, 1);
-					WriteBits(*toF, 32);
-				}
-			}
-		} 
-		else 
-		{
-			if(*toF == 0) 
-			{
-				WriteBits(0, 1);
-			} 
-			else 
-			{
-				WriteBits(1, 1);
-				// integer
-				WriteBits(*toF, field->bits);
-			}
+			WriteBits(0, 1);
+			continue;
 		}
+
+		WriteBits(1, 1);
+		WriteField(*toF, field->bits);
 	}
 }
 
@@ -1516,6 +1918,85 @@ If the delta removes the entity, entityState_t->number will be set to MAX_GENTIT
 Can go from either a baseline or a previous packet_entity
 ==================
 */
+
+// @NOTE: Same values for dm3 and dm_48 confirmed.
+static const u8 KnownBitMasks[32][7] =
+{
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE1, 0x00, 0x00, 0x00, 0x00, 0x20, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0xE0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x40, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x20, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0xED, 0x07, 0x00, 0x00, 0x00, 0x80, 0x00 },
+	{ 0xE0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xED, 0x07, 0x00, 0x00, 0x00, 0x30, 0x00 },
+	{ 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x60, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0xE1, 0x00, 0x00, 0x00, 0x04, 0x20, 0x00 },
+	{ 0xE1, 0x00, 0xC0, 0x01, 0x20, 0x20, 0x00 },
+	{ 0xE0, 0xC0, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0x60, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x40, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x01, 0x00, 0x00 },
+	{ 0x60, 0xC0, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x01, 0x00, 0x01 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x30, 0x00 },
+	{ 0xE0, 0x80, 0x00, 0x00, 0x00, 0x10, 0x00 },
+	{ 0x20, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00 },
+	{ 0x60, 0x80, 0x00, 0x00, 0x00, 0x00, 0x02 },
+	{ 0xE0, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00 }
+};
+
+void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
+{
+	to->number = number;
+
+	u8 bitMask[7]; // 50-51 bits used only.
+	const s32 maskIndex = ReadBits(5);
+	if(maskIndex == 0x1F)
+	{
+		for(s32 i = 0; i < 6; ++i)
+		{
+			bitMask[i] = (u8)ReadBits(8);
+		}
+		bitMask[6] = (u8)ReadBits(_protocol == udtProtocol::Dm3 ? 2 : 3);
+	}
+	else
+	{
+		// Let's not use memcpy for 7 bytes...
+		for(s32 i = 0; i < 7; ++i)
+		{
+			bitMask[i] = KnownBitMasks[maskIndex][i];
+		}
+	}
+
+	const idNetField* field = _entityStateFields;
+	const s32 fieldCount = _entityStateFieldCount;
+	for(s32 i = 0; i < fieldCount; i++, field++)
+	{
+		const s32* const fromF = (s32*)((u8*)from + field->offset);
+		s32* const toF = (s32*)((u8*)to + field->offset);
+
+		const s32 byteIndex = i >> 3;
+		const s32 bitIndex = i & 7;
+		if((bitMask[byteIndex] & (1 << bitIndex)) == 0)
+		{
+			*toF = *fromF;
+			continue;
+		}
+
+		*toF = ReadField(field->bits);
+	}
+}
 
 bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
@@ -1543,6 +2024,12 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		return false;
 	}
 
+	if(_protocol <= udtProtocol::Dm48)
+	{
+		ReadDeltaEntityDM3(from, to, number);
+		return true;
+	}
+	
 	lc = ReadByte();
 	if(lc > _entityStateFieldCount || lc < 0)
 	{
@@ -1557,58 +2044,25 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(! ReadBits(1)) 
+		if(ReadBits(1) == 0) 
 		{
-			// no change
 			*toF = *fromF;
+			continue;
 		} 
-		else 
+
+		if(ReadBits(1) == 0)
 		{
-			if(field->bits == 0) 
-			{
-				// f32
-				if(ReadBits(1) == 0) 
-				{
-					*(f32 *)toF = 0.0f;
-				} 
-				else 
-				{
-					if(ReadBits(1) == 0)
-					{
-						// integral f32
-						s32 trunc = ReadBits(FLOAT_INT_BITS);
-						// bias to allow equal parts positive and negative
-						trunc -= FLOAT_INT_BIAS;
-						*(f32 *)toF = (f32)trunc; 
-					} 
-					else 
-					{
-						// full floating point value
-						*toF = ReadBits(32);
-					}
-				}
-			} 
-			else 
-			{
-				if(ReadBits(1) == 0) 
-				{
-					*toF = 0;
-				} 
-				else 
-				{
-					// integer
-					*toF = ReadBits(field->bits);
-				}
-			}
-//			pcount[i]++;
+			*toF = 0;
+			continue;
 		}
+
+		*toF = ReadField(field->bits);
 	}
 
 	for(i = lc, field = &_entityStateFields[lc] ; i < _entityStateFieldCount ; i++, field++) 
 	{
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
-		// no change
 		*toF = *fromF;
 	}
 
