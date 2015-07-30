@@ -686,21 +686,21 @@ namespace idEntityEvent
 	{
 		switch(protocol)
 		{
-			case udtProtocol::Dm3:  return EV_OBITUARY_3;
-			case udtProtocol::Dm48: return EV_OBITUARY_48;
+			case udtProtocol::Dm3:  return (s32)EV_OBITUARY_3;
+			case udtProtocol::Dm48: return (s32)EV_OBITUARY_48;
 			case udtProtocol::Dm66:
 			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return EV_OBITUARY_68;
+			case udtProtocol::Dm68: return (s32)EV_OBITUARY_68;
 			case udtProtocol::Dm73:
 			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return EV_OBITUARY_73p;
+			case udtProtocol::Dm91: return (s32)EV_OBITUARY_73p;
 			default: return -1;
 		}
 	}
 
 	s32 WeaponFired(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_FIRE_WEAPON_68 : EV_FIRE_WEAPON_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
 	}
 };
 
@@ -708,7 +708,7 @@ namespace idEntityType
 {
 	s32 Event(udtProtocol::Id protocol)
 	{
-		return (protocol == udtProtocol::Dm3) ? ET_EVENTS_3 : ET_EVENTS;
+		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
 	}
 }
 
@@ -722,10 +722,10 @@ namespace idConfigStringIndex
 			case udtProtocol::Dm48:
 			case udtProtocol::Dm66:
 			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return CS_PLAYERS_68;
+			case udtProtocol::Dm68: return (s32)CS_PLAYERS_68;
 			case udtProtocol::Dm73:
 			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return CS_PLAYERS_73p;
+			case udtProtocol::Dm91: return (s32)CS_PLAYERS_73p;
 			default: return -1;
 		}
 	}
