@@ -51,7 +51,9 @@ static void WriteStats(udtJSONWriter& writer, const udtTeamStats& stats, const c
 	writer.WriteStringValue("team", team);
 	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
 	{
-		if((stats.Flags & ((s64)1 << (s64)i)) != 0)
+		const s32 byteIndex = i >> 3;
+		const s32 bitIndex = i & 7;
+		if((stats.Flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
 			writer.WriteIntValue(TeamStatsFieldNames[i], stats.Fields[i]);
 		}
@@ -76,7 +78,9 @@ static void WriteStats(udtJSONWriter& writer, const udtPlayerStats& stats, const
 
 	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
 	{
-		if((stats.Flags & ((s64)1 << (s64)i)) != 0)
+		const s32 byteIndex = i >> 3;
+		const s32 bitIndex = i & 7;
+		if((stats.Flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
 			writer.WriteIntValue(PlayerStatsFieldNames[i], stats.Fields[i]);
 		}

@@ -406,32 +406,88 @@ struct udtPatternType
 	N(MedkitPickups, "medkit pickups") \
 	N(GauntletKills, "gauntlet kills") \
 	N(GauntletAccuracy, "gauntlet accuracy") \
+	N(GauntletShots, "gauntlet shots") \
+	N(GauntletHits, "gauntlet hits") \
+	N(GauntletDamage, "gauntlet damage") \
+	N(GauntletDrops, "gauntlet drops") \
 	N(MachineGunKills, "machinegun kills") \
 	N(MachineGunAccuracy, "machinegun accuracy") \
+	N(MachineGunShots, "machinegun shots") \
+	N(MachineGunHits, "machinegun hits") \
+	N(MachineGunDamage, "machinegun damage") \
+	N(MachineGunDrops, "machinegun drops") \
 	N(ShotgunKills, "shotgun kills") \
 	N(ShotgunAccuracy, "shotgun accuracy") \
+	N(ShotgunShots, "shotgun shots") \
+	N(ShotgunHits, "shotgun hits") \
+	N(ShotgunDamage, "shotgun damage") \
+	N(ShotgunDrops, "shotgun drops") \
 	N(GrenadeLauncherKills, "grenade launcher kills") \
 	N(GrenadeLauncherAccuracy, "grenade launcher accuracy") \
+	N(GrenadeLauncherShots, "grenade launcher shots") \
+	N(GrenadeLauncherHits, "grenade launcher hits") \
+	N(GrenadeLauncherDamage, "grenade launcher damage") \
+	N(GrenadeLauncherDrops, "grenade launcher drops") \
 	N(RocketLauncherKills, "rocket launcher kills") \
 	N(RocketLauncherAccuracy, "rocket launcher accuracy") \
+	N(RocketLauncherShots, "rocket launcher shots") \
+	N(RocketLauncherHits, "rocket launcher hits") \
+	N(RocketLauncherDamage, "rocket launcher damage") \
+	N(RocketLauncherDrops, "rocket launcher drops") \
 	N(PlasmaGunKills, "plasma gun kills") \
 	N(PlasmaGunAccuracy, "plasma gun accuracy") \
+	N(PlasmaGunShots, "plasma gun shots") \
+	N(PlasmaGunHits, "plasma gun hits") \
+	N(PlasmaGunDamage, "plasma gun damage") \
+	N(PlasmaGunDrops, "plasma gun drops") \
 	N(RailgunKills, "railgun kills") \
 	N(RailgunAccuracy, "railgun accuracy") \
+	N(RailgunShots, "railgun shots") \
+	N(RailgunHits, "railgun hits") \
+	N(RailgunDamage, "railgun damage") \
+	N(RailgunDrops, "railgun drops") \
 	N(LightningGunKills, "lightning gun kills") \
 	N(LightningGunAccuracy, "lightning gun accuracy") \
+	N(LightningGunShots, "lightning gun shots") \
+	N(LightningGunHits, "lightning gun hits") \
+	N(LightningGunDamage, "lightning gun damage") \
+	N(LightningGunDrops, "lightning gun drops") \
 	N(BFGKills, "bfg kills") \
 	N(BFGAccuracy, "bfg accuracy") \
-	N(GrapplingHookAccuracy, "grappling hook accuracy") \
+	N(BFGShots, "bfg shots") \
+	N(BFGHits, "bfg hits") \
+	N(BFGDamage, "bfg damage") \
+	N(BFGDrops, "bfg drops") \
 	N(GrapplingHookKills, "grappling hook kills") \
+	N(GrapplingHookAccuracy, "grappling hook accuracy") \
+	N(GrapplingHookShots, "grappling hook shots") \
+	N(GrapplingHookHits, "grappling hook hits") \
+	N(GrapplingHookDamage, "grappling hook damage") \
+	N(GrapplingHookDrops, "grappling hook drops") \
 	N(NailGunKills, "nailgun kills") \
 	N(NailGunAccuracy, "nailgun accuracy") \
+	N(NailGunShots, "nailgun shots") \
+	N(NailGunHits, "nailgun hits") \
+	N(NailGunDamage, "nailgun damage") \
+	N(NailGunDrops, "nailgun drops") \
 	N(ChainGunKills, "chaingun kills") \
 	N(ChainGunAccuracy, "chaingun accuracy") \
+	N(ChainGunShots, "chaingun shots") \
+	N(ChainGunHits, "chaingun hits") \
+	N(ChainGunDamage, "chaingun damage") \
+	N(ChainGunDrops, "chaingun drops") \
 	N(ProximityMineLauncherKills, "proximity mine kills") \
 	N(ProximityMineLauncherAccuracy, "proximity mine accuracy") \
+	N(ProximityMineLauncherShots, "proximity mine shots") \
+	N(ProximityMineLauncherHits, "proximity mine hits") \
+	N(ProximityMineLauncherDamage, "proximity mine damage") \
+	N(ProximityMineLauncherDrops, "proximity mine drops") \
 	N(HeavyMachineGunKills, "heavy machinegun kills") \
-	N(HeavyMachineGunAccuracy, "heavy machinegun accuracy")
+	N(HeavyMachineGunAccuracy, "heavy machinegun accuracy") \
+	N(HeavyMachineGunShots, "heavy machinegun shots") \
+	N(HeavyMachineGunHits, "heavy machinegun hits") \
+	N(HeavyMachineGunDamage, "heavy machinegun damage") \
+	N(HeavyMachineGunDrops, "heavy machinegun drops")
 
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc) Enum,
 struct udtPlayerStatsField
@@ -443,8 +499,6 @@ struct udtPlayerStatsField
 	};
 };
 #undef UDT_PLAYER_STATS_ITEM
-
-static_assert(udtPlayerStatsField::Count <= 64, "Too many player stats fields for the bit mask");
 
 #define UDT_TEAM_STATS_LIST(N) \
 	N(Score, "score") \
@@ -476,9 +530,10 @@ struct udtTeamStatsField
 };
 #undef UDT_TEAM_STATS_ITEM
 
-static_assert(udtTeamStatsField::Count <= 64, "Too many team stats fields for the bit mask");
 
-#define    UDT_MAX_MERGE_DEMO_COUNT    8
+#define    UDT_MAX_MERGE_DEMO_COUNT             8
+#define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
+#define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    16
 
 
 #ifdef __cplusplus
@@ -1007,7 +1062,7 @@ extern "C"
 	{
 		// A bit mask describing which fields are valid.
 		// See udtPlayerStatsField::Id.
-		s64 Flags;
+		u8 Flags[UDT_PLAYER_STATS_MASK_BYTE_COUNT];
 
 		// The player's name at the time the stats were given by the server.
 		// May be NULL.
@@ -1026,7 +1081,7 @@ extern "C"
 	{
 		// A bit mask describing which fields are valid.
 		// See udtTeamStatsField::Id.
-		s64 Flags;
+		u8 Flags[UDT_TEAM_STATS_MASK_BYTE_COUNT];
 
 		// The statistics themselves.
 		s32 Fields[udtTeamStatsField::Count];

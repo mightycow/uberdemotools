@@ -59,13 +59,16 @@ private:
 	};
 
 	s32  GetValue(s32 index);
-	void ParseFields(s32* dest, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset = 0);
+	void ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset = 0);
 	s64  CreateBitMask(const udtStatsField* fields, s32 fieldCount);
 	void AddCurrentStats();
 	void ProcessConfigString(s32 csIndex, const udtString& configString);
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
 	void ParseQLScoresTDM();
 	void ParseQLStatsTDM();
+	void ParseQLScoresDuel();
+	void ParseQLScoresCTF();
+	void ParseQLStatsCTF();
 
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;

@@ -2,6 +2,10 @@
 #include "utils.hpp"
 
 
+static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_COUNT * 8), "Too many team stats fields for the bit mask size");
+static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYTE_COUNT * 8), "Too many player stats fields for the bit mask size");
+
+
 // @TODO: Move etc.
 #define    CS_INTERMISSION_91    14
 
@@ -38,13 +42,37 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 			}
 		}
 	}
-	else if(udtString::Equals(commandName, "scores_tdm") && _gameEnded)
+
+	if(!_gameEnded)
 	{
-		ParseQLScoresTDM();
+		return;
 	}
-	else if(udtString::Equals(commandName, "tdmstats") && _gameEnded)
+	
+	struct CommandHandler
 	{
-		ParseQLStatsTDM();
+		typedef void (udtParserPlugInStats::*MemberFunction)();
+		const char* Name;
+		MemberFunction Function;
+	};
+
+#define HANDLER(Name, Function) { Name, &udtParserPlugInStats::Function }
+	static const CommandHandler handlers[] =
+	{
+		HANDLER("scores_tdm", ParseQLScoresTDM),
+		HANDLER("tdmstats", ParseQLStatsTDM),
+		HANDLER("scores_duel", ParseQLScoresDuel),
+		HANDLER("scores_ctf", ParseQLScoresCTF),
+		HANDLER("ctfstats", ParseQLStatsCTF)
+	};
+#undef HANDLER
+
+	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
+	{
+		if(udtString::Equals(commandName, handlers[i].Name))
+		{
+			(this->*(handlers[i].Function))();
+			break;
+		}
 	}
 }
 
@@ -139,17 +167,18 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 		PLAYER_FIELD(DamageGiven, 14)
 	};
 
+	static const udtStatsField teamScoreFields[] =
+	{
+		TEAM_FIELD(Score, 30)
+	};
+
 	udtParseDataStats* const stats = &_stats;
-	ParseFields(stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
-	ParseFields(stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
+	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
+	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
+	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields));
+	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 1);
 
-	const s64 teamFlags = CreateBitMask(teamFields, (s32)UDT_COUNT_OF(teamFields)) | ((s64)1 << (s64)udtTeamStatsField::Score);
 	const s32 playerScores = GetValue(29);
-	stats->TeamStats[0].Fields[udtTeamStatsField::Score] = GetValue(30);
-	stats->TeamStats[1].Fields[udtTeamStatsField::Score] = GetValue(31);
-	stats->TeamStats[0].Flags |= teamFlags;
-	stats->TeamStats[1].Flags |= teamFlags;
-
 	if(_tokenizer->GetArgCount() != (u32)(32 + playerScores * (s32)UDT_COUNT_OF(playerFields)))
 	{
 		return;
@@ -162,8 +191,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 		if(clientNumber >= 0 && clientNumber < 64)
 		{
 			udtPlayerStats& playerStats = stats->PlayerStats[clientNumber];
-			ParseFields(playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
-			playerStats.Flags |= CreateBitMask(playerFields, (s32)UDT_COUNT_OF(playerFields));
+			ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
 		}
 
 		offset += 1 + (s32)UDT_COUNT_OF(playerFields);
@@ -201,16 +229,35 @@ void udtParserPlugInStats::ParseQLStatsTDM()
 	udtParseDataStats* const stats = &_stats;
 	udtPlayerStats* const playerStats = &stats->PlayerStats[clientNumber];
 
-	ParseFields(playerStats->Fields, fields, (s32)UDT_COUNT_OF(fields));
-	playerStats->Flags |= CreateBitMask(fields, (s32)UDT_COUNT_OF(fields));
+	ParseFields(playerStats->Flags, playerStats->Fields, fields, (s32)UDT_COUNT_OF(fields));
 }
 
-void udtParserPlugInStats::ParseFields(s32* dest, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
+void udtParserPlugInStats::ParseQLScoresDuel()
+{
+	// @TODO:
+}
+
+void udtParserPlugInStats::ParseQLScoresCTF()
+{
+	// @TODO:
+}
+
+void udtParserPlugInStats::ParseQLStatsCTF()
+{
+	// @TODO:
+}
+
+void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
 {
 	for(s32 i = 0; i < fieldCount; ++i)
 	{
-		s32* const field = dest + fields[i].Index;
+		const s32 fieldIndex = fields[i].Index;
+		s32* const field = destFields + fieldIndex;
 		*field = GetValue(fields[i].TokenIndex + tokenOffset);
+		
+		const s32 byteIndex = fieldIndex >> 3;
+		const s32 bitIndex = fieldIndex & 7;
+		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
 	}
 }
 
@@ -219,28 +266,32 @@ s32 udtParserPlugInStats::GetValue(s32 index)
 	return (s32)atoi(_tokenizer->GetArgString((u32)index));
 }
 
-s64 udtParserPlugInStats::CreateBitMask(const udtStatsField* fields, s32 fieldCount)
-{
-	s64 bitMask = 0;
-	for(s32 i = 0; i < fieldCount; ++i)
-	{
-		bitMask |= (s64)1 << (s64)fields[i].Index;
-	}
-
-	return bitMask;
-}
-
 void udtParserPlugInStats::AddCurrentStats()
 {
-	bool valid = _stats.TeamStats[0].Flags != 0 || _stats.TeamStats[1].Flags != 0;
+	bool valid = false;
+	for(s32 i = 0; i < 2; ++i)
+	{
+		for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.PlayerStats[i].Flags); ++j)
+		{
+			if(_stats.PlayerStats[i].Flags[j] != 0)
+			{
+				valid = true;
+				break;
+			}
+		}
+	}
+
 	if(!valid)
 	{
 		for(s32 i = 0; i < 64; ++i)
 		{
-			if(_stats.PlayerStats[i].Flags != 0)
+			for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.TeamStats[i].Flags); ++j)
 			{
-				valid = true;
-				break;
+				if(_stats.TeamStats[i].Flags[j] != 0)
+				{
+					valid = true;
+					break;
+				}
 			}
 		}
 	}
