@@ -65,6 +65,12 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		HANDLER("ctfstats", ParseQLStatsCTF)
 	};
 #undef HANDLER
+	/*
+	@TODO:
+	QL  : scores adscores scores_ad rrscores tdmscores tdmscores2 castats cascores dscores scores_ft scores_race scores_rr scores_ca
+	CPMA: mstats dmscores mm2 xscores xstats2
+	OSP : are there any? :p
+	*/
 
 	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
 	{
