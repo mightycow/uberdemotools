@@ -15,6 +15,7 @@ namespace udtPath
 
 	extern bool GetFileName(udtString& fileName, udtVMLinearAllocator& allocator, const udtString& filePath);
 	extern bool GetFileNameWithoutExtension(udtString& fileNameNoExt, udtVMLinearAllocator& allocator, const udtString& filePath);
+	extern bool GetFilePathWithoutExtension(udtString& filePathNoExt, udtVMLinearAllocator& allocator, const udtString& filePath);
 	extern bool GetFolderPath(udtString& folderPath, udtVMLinearAllocator& allocator, const udtString& filePath); // Doesn't leave a trailing separator.
 	extern bool GetFileExtension(udtString& fileExtension, udtVMLinearAllocator& allocator, const udtString& filePath);
 }

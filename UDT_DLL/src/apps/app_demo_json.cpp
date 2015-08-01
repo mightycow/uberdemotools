@@ -2,6 +2,7 @@
 #include "shared.hpp"
 #include "stack_trace.hpp"
 #include "utils.hpp"
+#include "path.hpp"
 #include "memory_stream.hpp"
 #include "file_stream.hpp"
 #include "json_writer.hpp"
@@ -41,7 +42,22 @@ static void CrashHandler(const char* message)
 static void PrintHelp()
 {
 	printf("\n");
-	printf("UDT_json demo_path json_path\n");
+	printf("UDT_json demo_path [json_path]\n");
+	printf("If the output path isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
+}
+
+template<int N>
+static bool IsSomeBitSet(const u8 (&flags)[N])
+{
+	for(int i = 0; i < N; ++i)
+	{
+		if(flags[i] != 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 static void WriteStats(udtJSONWriter& writer, const udtTeamStats& stats, const char* team)
@@ -95,7 +111,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 	for(s32 i = 0; i < 2; ++i)
 	{
 		const udtTeamStats& teamStats = stats.TeamStats[i];
-		if(teamStats.Flags != 0)
+		if(IsSomeBitSet(teamStats.Flags))
 		{
 			WriteStats(writer, teamStats, i == 0 ? "red" : "blue");
 		}
@@ -106,7 +122,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 	for(s32 i = 0; i < 64; ++i)
 	{
 		const udtPlayerStats& playerStats = stats.PlayerStats[i];
-		if(playerStats.Flags != 0)
+		if(IsSomeBitSet(playerStats.Flags))
 		{
 			WriteStats(writer, playerStats, playerStats.Name, playerStats.CleanName);
 		}
@@ -199,6 +215,24 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	}
 	jsonWriter.EndFile();
 
+	udtVMLinearAllocator outputPathAllocator;
+	if(jsonPath == NULL)
+	{
+		if(!outputPathAllocator.Init(1 << 16))
+		{
+			return __LINE__;
+		}
+
+		udtString filePathNoExt;
+		if(!udtPath::GetFilePathWithoutExtension(filePathNoExt, outputPathAllocator, udtString::NewConstRef(demoPath)))
+		{
+			return __LINE__;
+		}
+
+		const udtString filePath = udtString::NewFromConcatenating(outputPathAllocator, filePathNoExt, udtString::NewConstRef(".json"));
+		jsonPath = filePath.String;
+	}
+
 	udtFileStream jsonFile;
 	if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
 	{
@@ -215,7 +249,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 
 int main(int argc, char** argv)
 {
-	if(argc < 3)
+	if(argc < 2)
 	{
 		PrintHelp();
 		return 1;

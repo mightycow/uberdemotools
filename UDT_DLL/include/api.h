@@ -399,6 +399,10 @@ struct udtPatternType
 	N(MegaHealthPickups, "mega health pickups") \
 	N(QuadDamagePickups, "quad damage pickups") \
 	N(BattleSuitPickups, "battle suit pickups") \
+	N(RedArmorPickupTime, "red armor time") \
+	N(YellowArmorPickupTime, "yellow armor time") \
+	N(GreenArmorPickupTime, "green armor time") \
+	N(MegaHealthPickupTime, "mega health armor time") \
 	N(RegenPickups, "regen pickups") \
 	N(HastePickups, "haste pickups") \
 	N(InvisPickups, "invis pickups") \

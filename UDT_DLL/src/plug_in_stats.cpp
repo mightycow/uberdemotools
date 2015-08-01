@@ -9,6 +9,8 @@ static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYT
 // @TODO: Move etc.
 #define    CS_INTERMISSION_91    14
 
+// @TODO: Convert the BestWeapon field to a udtWeapon::Id number?
+
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
@@ -240,7 +242,75 @@ void udtParserPlugInStats::ParseQLStatsTDM()
 
 void udtParserPlugInStats::ParseQLScoresDuel()
 {
-	// @TODO:
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Hits, Offset), \
+	PLAYER_FIELD(Weapon##Shots, Offset + 1), \
+	PLAYER_FIELD(Weapon##Accuracy, Offset + 2), \
+	PLAYER_FIELD(Weapon##Damage, Offset + 3), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 4) \
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 1),
+		PLAYER_FIELD(Time, 2),
+		PLAYER_FIELD(Kills, 3),
+		PLAYER_FIELD(Deaths, 4),
+		PLAYER_FIELD(Accuracy, 5),
+		PLAYER_FIELD(BestWeapon, 6),
+		PLAYER_FIELD(DamageGiven, 7),
+		PLAYER_FIELD(Impressives, 8),
+		PLAYER_FIELD(Excellents, 9),
+		PLAYER_FIELD(Gauntlets, 10),
+		PLAYER_FIELD(Perfect, 11),
+		PLAYER_FIELD(RedArmorPickups, 12),
+		PLAYER_FIELD(RedArmorPickupTime, 13),
+		PLAYER_FIELD(YellowArmorPickups, 14),
+		PLAYER_FIELD(YellowArmorPickupTime, 15),
+		PLAYER_FIELD(GreenArmorPickups, 16),
+		PLAYER_FIELD(GreenArmorPickupTime, 17),
+		PLAYER_FIELD(MegaHealthPickups, 18),
+		PLAYER_FIELD(MegaHealthPickupTime, 19),
+		WEAPON_FIELDS(Gauntlet, 20),
+		WEAPON_FIELDS(MachineGun, 25),
+		WEAPON_FIELDS(Shotgun, 30),
+		WEAPON_FIELDS(GrenadeLauncher, 35),
+		WEAPON_FIELDS(RocketLauncher, 40),
+		WEAPON_FIELDS(LightningGun, 45),
+		WEAPON_FIELDS(Railgun, 50),
+		WEAPON_FIELDS(PlasmaGun, 55),
+		WEAPON_FIELDS(BFG, 60),
+		WEAPON_FIELDS(GrapplingHook, 65),
+		WEAPON_FIELDS(NailGun, 70),
+		WEAPON_FIELDS(ProximityMineLauncher, 75),
+		WEAPON_FIELDS(ChainGun, 80),
+		WEAPON_FIELDS(HeavyMachineGun, 85)
+	};
+
+#undef WEAPON_FIELDS
+
+	const s32 scoreCount = GetValue(1);
+	if((s32)_tokenizer->GetArgCount() != 2 + (scoreCount * (1 + (s32)UDT_COUNT_OF(fields))))
+	{
+		return;
+	}
+
+	s32 offset = 2;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset++);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			udtPlayerStats& stats = _stats.PlayerStats[clientNumber];
+			ParseFields(stats.Flags, stats.Fields, fields, (s32)UDT_COUNT_OF(fields), offset);
+		}
+		offset += (s32)UDT_COUNT_OF(fields);
+	}
 }
 
 void udtParserPlugInStats::ParseQLScoresCTF()
@@ -277,23 +347,23 @@ void udtParserPlugInStats::AddCurrentStats()
 	bool valid = false;
 	for(s32 i = 0; i < 2; ++i)
 	{
-		for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.PlayerStats[i].Flags); ++j)
+		for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.TeamStats[i].Flags); ++j)
 		{
-			if(_stats.PlayerStats[i].Flags[j] != 0)
+			if(_stats.TeamStats[i].Flags[j] != 0)
 			{
 				valid = true;
 				break;
 			}
 		}
 	}
-
+		
 	if(!valid)
 	{
 		for(s32 i = 0; i < 64; ++i)
 		{
-			for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.TeamStats[i].Flags); ++j)
+			for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.PlayerStats[i].Flags); ++j)
 			{
-				if(_stats.TeamStats[i].Flags[j] != 0)
+				if(_stats.PlayerStats[i].Flags[j] != 0)
 				{
 					valid = true;
 					break;
