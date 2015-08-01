@@ -103,7 +103,8 @@ struct udtCrashType
 #define UDT_PLUG_IN_LIST(N) \
 	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
 	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
-	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary)
+	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
+	N(Stats,      udtParserPlugInStats,      udtParseDataStats)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -369,6 +370,113 @@ struct udtPatternType
 	};
 };
 #undef UDT_CUT_PATTERN_ITEM
+
+#define UDT_PLAYER_STATS_LIST(N) \
+	N(TeamIndex, "team index") \
+	N(Score, "score") \
+	N(Ping, "ping") \
+	N(Time, "time") \
+	N(Kills, "kills") \
+	N(Deaths, "deaths") \
+	N(Accuracy, "accuracy") \
+	N(BestWeapon, "best weapon") \
+	N(BestWeaponAccuracy, "best weapon accuracy") \
+	N(Perfect, "perfect") \
+	N(Impressives, "impressives") \
+	N(Excellents, "excellents") \
+	N(Gauntlets, "gauntlets") \
+	N(TeamKills, "team kills") \
+	N(TeamKilled, "team killed") \
+	N(Suicides, "suicides") \
+	N(DamageGiven, "damage given") \
+	N(DamageReceived, "damage received") \
+	N(Captures, "captures") \
+	N(Defends, "defends") \
+	N(Assists, "assists") \
+	N(RedArmorPickups, "red armor pickups") \
+	N(YellowArmorPickups, "yellow armor pickups") \
+	N(GreenArmorPickups, "green armor pickups") \
+	N(MegaHealthPickups, "mega health pickups") \
+	N(QuadDamagePickups, "quad damage pickups") \
+	N(BattleSuitPickups, "battle suit pickups") \
+	N(RegenPickups, "regen pickups") \
+	N(HastePickups, "haste pickups") \
+	N(InvisPickups, "invis pickups") \
+	N(FlagPickups, "flag pickups") \
+	N(MedkitPickups, "medkit pickups") \
+	N(GauntletKills, "gauntlet kills") \
+	N(GauntletAccuracy, "gauntlet accuracy") \
+	N(MachineGunKills, "machinegun kills") \
+	N(MachineGunAccuracy, "machinegun accuracy") \
+	N(ShotgunKills, "shotgun kills") \
+	N(ShotgunAccuracy, "shotgun accuracy") \
+	N(GrenadeLauncherKills, "grenade launcher kills") \
+	N(GrenadeLauncherAccuracy, "grenade launcher accuracy") \
+	N(RocketLauncherKills, "rocket launcher kills") \
+	N(RocketLauncherAccuracy, "rocket launcher accuracy") \
+	N(PlasmaGunKills, "plasma gun kills") \
+	N(PlasmaGunAccuracy, "plasma gun accuracy") \
+	N(RailgunKills, "railgun kills") \
+	N(RailgunAccuracy, "railgun accuracy") \
+	N(LightningGunKills, "lightning gun kills") \
+	N(LightningGunAccuracy, "lightning gun accuracy") \
+	N(BFGKills, "bfg kills") \
+	N(BFGAccuracy, "bfg accuracy") \
+	N(GrapplingHookAccuracy, "grappling hook accuracy") \
+	N(GrapplingHookKills, "grappling hook kills") \
+	N(NailGunKills, "nailgun kills") \
+	N(NailGunAccuracy, "nailgun accuracy") \
+	N(ChainGunKills, "chaingun kills") \
+	N(ChainGunAccuracy, "chaingun accuracy") \
+	N(ProximityMineLauncherKills, "proximity mine kills") \
+	N(ProximityMineLauncherAccuracy, "proximity mine accuracy") \
+	N(HeavyMachineGunKills, "heavy machinegun kills") \
+	N(HeavyMachineGunAccuracy, "heavy machinegun accuracy")
+
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc) Enum,
+struct udtPlayerStatsField
+{
+	enum Id
+	{
+		UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+		Count
+	};
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+static_assert(udtPlayerStatsField::Count <= 64, "Too many player stats fields for the bit mask");
+
+#define UDT_TEAM_STATS_LIST(N) \
+	N(Score, "score") \
+	N(RedArmorPickups, "red armor pickups") \
+	N(YellowArmorPickups, "yellow armor pickups") \
+	N(GreenArmorPickups, "green armor pickups") \
+	N(MegaHealthPickups, "mega health pickups") \
+	N(QuadDamagePickups, "quad damage pickups") \
+	N(BattleSuitPickups, "battle suit pickups") \
+	N(RegenPickups, "regen pickups") \
+	N(HastePickups, "haste pickups") \
+	N(InvisPickups, "invis pickups") \
+	N(FlagPickups, "flag pickups") \
+	N(MedkitPickups, "medkit pickups") \
+	N(QuadTime, "quad time") \
+	N(BattleSuitTime, "battle suit time") \
+	N(RegenTime, "regen time") \
+	N(HasteTime, "haste time") \
+	N(InvisTime, "invis time")
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc) Enum,
+struct udtTeamStatsField
+{
+	enum Id
+	{
+		UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+		Count
+	};
+};
+#undef UDT_TEAM_STATS_ITEM
+
+static_assert(udtTeamStatsField::Count <= 64, "Too many team stats fields for the bit mask");
 
 #define    UDT_MAX_MERGE_DEMO_COUNT    8
 
@@ -893,6 +1001,44 @@ extern "C"
 		
 		// Ignore this.
 		s32 Reserved2;
+	};
+
+	struct udtPlayerStats
+	{
+		// A bit mask describing which fields are valid.
+		// See udtPlayerStatsField::Id.
+		s64 Flags;
+
+		// The player's name at the time the stats were given by the server.
+		// May be NULL.
+		const char* Name;
+
+		// The player's name at the time the stats were given by the server.
+		// This version has color codes stripped out for clarity.
+		// May be NULL.
+		const char* CleanName;
+
+		// The statistics themselves.
+		s32 Fields[udtPlayerStatsField::Count];
+	};
+
+	struct udtTeamStats
+	{
+		// A bit mask describing which fields are valid.
+		// See udtTeamStatsField::Id.
+		s64 Flags;
+
+		// The statistics themselves.
+		s32 Fields[udtTeamStatsField::Count];
+	};
+
+	struct udtParseDataStats
+	{
+		// To be indexed by client number.
+		udtPlayerStats PlayerStats[64];
+
+		// 0 is red, 1 is blue.
+		udtTeamStats TeamStats[2];
 	};
 
 	struct udtTimeShiftArg

@@ -140,7 +140,15 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
 
-		
+	project "UDT_json"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_json.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		files { path_src_apps.."/json_writer.cpp" }
+		files { path_src_apps.."/json_writer.hpp" }
+		ApplyProjectSettings()
 			
 			
 	

@@ -5,6 +5,7 @@
 #include "analysis_obituaries.hpp"
 #include "analysis_cut_by_pattern.hpp"
 #include "plug_in_converter_quake_to_udt.hpp"
+#include "plug_in_stats.hpp"
 
 // For the placement new operator.
 #include <new>

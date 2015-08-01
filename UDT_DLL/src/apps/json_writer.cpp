@@ -1,0 +1,135 @@
+#include "json_writer.hpp"
+
+
+udtJSONWriter::udtJSONWriter()
+{
+	_stream = NULL;
+	memset(_itemIndices, 0, sizeof(_itemIndices));
+	_level = 0;
+}
+
+udtJSONWriter::~udtJSONWriter()
+{
+}
+
+void udtJSONWriter::SetOutputStream(udtStream* stream)
+{
+	_stream = stream;
+}
+
+void udtJSONWriter::StartFile()
+{
+	memset(_itemIndices, 0, sizeof(_itemIndices));
+	_level = 0;
+
+	Write("{");
+	++_level;
+}
+
+void udtJSONWriter::EndFile()
+{
+	Write("\r\n}");
+}
+
+void udtJSONWriter::StartObject()
+{
+	WriteNewLine();
+	Write("{");
+	++_level;
+	_itemIndices[_level] = 0;
+}
+
+void udtJSONWriter::StartObject(const char* name)
+{
+	WriteNewLine();
+	Write("\"");
+	Write(name);
+	Write("\":");
+	WriteNewLine();
+	Write("{");
+	++_level;
+	_itemIndices[_level] = 0;
+}
+
+void udtJSONWriter::EndObject()
+{
+	--_level;
+	WriteNewLine();
+	Write("}");
+}
+
+void udtJSONWriter::StartArray()
+{
+	WriteNewLine();
+	Write("[");
+	++_level;
+	_itemIndices[_level] = 0;
+}
+
+void udtJSONWriter::StartArray(const char* name)
+{
+	WriteNewLine();
+	Write("\"");
+	Write(name);
+	Write("\":");
+	WriteNewLine();
+	Write("[");
+	++_level;
+	_itemIndices[_level] = 0;
+}
+
+void udtJSONWriter::EndArray()
+{
+	--_level;
+	WriteNewLine();
+	Write("]");
+}
+
+void udtJSONWriter::WriteNewLine()
+{
+	Write("\r\n");
+	for(u32 i = 0; i < _level; ++i)
+	{
+		Write("\t");
+	}
+}
+
+void udtJSONWriter::Write(const char* string)
+{
+	_stream->Write(string, (u32)strlen(string), 1);
+}
+
+void udtJSONWriter::WriteIntValue(const char* name, s32 number)
+{
+	char numberString[64];
+	sprintf(numberString, "%d", number);
+
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
+	WriteNewLine();
+	Write("\"");
+	Write(name);
+	Write("\": \"");
+	Write(numberString);
+	Write("\"");
+	++_itemIndices[_level];
+}
+
+void udtJSONWriter::WriteStringValue(const char* name, const char* string)
+{
+	if(_itemIndices[_level] > 0)
+	{
+		Write(", ");
+	}
+
+	WriteNewLine();
+	Write("\"");
+	Write(name);
+	Write("\": \"");
+	Write(string);
+	Write("\"");
+	++_itemIndices[_level];
+}
