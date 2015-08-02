@@ -313,7 +313,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 		{
 			ProcessQlServerInfo(configString, parser);
 		}
-		else if(csIndex == CS_INTERMISSION_73)
+		else if(csIndex == idConfigStringIndex::Intermission(_protocol))
 		{
 			s32 intermissionValue = 0;
 			if(StringParseInt(intermissionValue, configString) && intermissionValue == 1)
