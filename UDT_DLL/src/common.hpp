@@ -252,7 +252,6 @@ typedef enum {
 #define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
 #define	CS_MODELS_68			32
 #define CS_WARMUP_END           13
-#define CS_INTERMISSION_73      14
 #define CS_PAUSE_START          669
 #define CS_PAUSE_COUNTDOWN      670
 #define CS_CA_ROUND_INFO        661

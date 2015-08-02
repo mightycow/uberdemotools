@@ -838,6 +838,11 @@ namespace idConfigStringIndex
 	{
 		return (protocol <= udtProtocol::Dm68) ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
 	}
+
+	s32 Intermission(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)CS_INTERMISSION_68 : (s32)CS_INTERMISSION_73p;
+	}
 }
 
 namespace idPowerUpIndex

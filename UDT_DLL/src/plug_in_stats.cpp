@@ -6,10 +6,6 @@ static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_CO
 static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYTE_COUNT * 8), "Too many player stats fields for the bit mask size");
 
 
-// @TODO: Move etc.
-#define    CS_INTERMISSION_91    14
-
-
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
 	_tokenizer = &parser._context->Tokenizer;
@@ -17,14 +13,10 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 	ClearStats();
 
-	// @TODO: Protocol versions...
-	if(_protocol == udtProtocol::Dm91)
+	const char* intermissionCs = parser._inConfigStrings[idConfigStringIndex::Intermission(_protocol)].String;
+	if(intermissionCs != NULL)
 	{
-		const char* cs = parser._inConfigStrings[CS_INTERMISSION_91].String;
-		if(cs != NULL)
-		{ 
-			_gameEnded = strcmp(cs, "1") == 0;
-		}
+		_gameEnded = strcmp(intermissionCs, "1") == 0;
 	}
 
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
@@ -95,18 +87,14 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 }
 
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
-{
-	// @TODO: Protocol versions...
-	if(_protocol == udtProtocol::Dm91 && 
-	   csIndex == CS_INTERMISSION_91 && 
+{	
+	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
 	   udtString::Equals(configString, "1"))
 	{
 		_gameEnded = true;
 	}
 
-	// @TODO: Protocol versions...
-	if(_protocol == udtProtocol::Dm91 &&
-	   csIndex == CS_INTERMISSION_91 &&
+	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
 	   udtString::Equals(configString, "0"))
 	{
 		if(_gameEnded)
