@@ -375,7 +375,7 @@ struct udtPatternType
 	N(TeamIndex, "team index") \
 	N(Score, "score") \
 	N(Ping, "ping") \
-	N(Time, "time") \
+	N(Time, "play time") \
 	N(Kills, "kills") \
 	N(Deaths, "deaths") \
 	N(Accuracy, "accuracy") \
@@ -403,9 +403,9 @@ struct udtPatternType
 	N(YellowArmorPickupTime, "yellow armor time") \
 	N(GreenArmorPickupTime, "green armor time") \
 	N(MegaHealthPickupTime, "mega health armor time") \
-	N(RegenPickups, "regen pickups") \
+	N(RegenPickups, "regeneration pickups") \
 	N(HastePickups, "haste pickups") \
-	N(InvisPickups, "invis pickups") \
+	N(InvisPickups, "invisibility pickups") \
 	N(FlagPickups, "flag pickups") \
 	N(MedkitPickups, "medkit pickups") \
 	N(GauntletKills, "gauntlet kills") \
@@ -512,16 +512,17 @@ struct udtPlayerStatsField
 	N(MegaHealthPickups, "mega health pickups") \
 	N(QuadDamagePickups, "quad damage pickups") \
 	N(BattleSuitPickups, "battle suit pickups") \
-	N(RegenPickups, "regen pickups") \
+	N(RegenPickups, "regeneration pickups") \
 	N(HastePickups, "haste pickups") \
-	N(InvisPickups, "invis pickups") \
+	N(InvisPickups, "invisibility pickups") \
 	N(FlagPickups, "flag pickups") \
 	N(MedkitPickups, "medkit pickups") \
-	N(QuadTime, "quad time") \
-	N(BattleSuitTime, "battle suit time") \
-	N(RegenTime, "regen time") \
-	N(HasteTime, "haste time") \
-	N(InvisTime, "invis time")
+	N(QuadDamageTime, "quad damage possession time") \
+	N(BattleSuitTime, "battle suit possession time") \
+	N(RegenTime, "regeneration possession time") \
+	N(HasteTime, "haste possession time") \
+	N(InvisTime, "invisibility possession time") \
+	N(FlagTime, "flag possession time") \
 
 #define UDT_TEAM_STATS_ITEM(Enum, Desc) Enum,
 struct udtTeamStatsField
@@ -1076,6 +1077,11 @@ extern "C"
 		// This version has color codes stripped out for clarity.
 		// May be NULL.
 		const char* CleanName;
+
+		// The index of the player's team.
+		// Of type udtTeam::Id.
+		// Defaults to 0 for now. @TODO: Should default to something else.
+		s32 TeamIndex;
 
 		// The statistics themselves.
 		s32 Fields[udtPlayerStatsField::Count];

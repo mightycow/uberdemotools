@@ -64,12 +64,14 @@ private:
 	void AddCurrentStats();
 	void ProcessConfigString(s32 csIndex, const udtString& configString);
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
+	bool GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex);
 	void ParseQLScoresTDM();
 	void ParseQLStatsTDM();
 	void ParseQLScoresDuel();
 	void ParseQLScoresCTF();
 	void ParseQLStatsCTF();
 
+	u8 _playerIndices[64];
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;
 	udtVMLinearAllocator _namesAllocator;

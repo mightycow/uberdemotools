@@ -9,13 +9,21 @@ static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYT
 // @TODO: Move etc.
 #define    CS_INTERMISSION_91    14
 
-// @TODO: Convert the BestWeapon field to a udtWeapon::Id number?
-
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
 	_tokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
+
+	// @TODO: Protocol versions...
+	if(_protocol == udtProtocol::Dm91)
+	{
+		const char* cs = parser._inConfigStrings[CS_INTERMISSION_91].String;
+		if(cs != NULL)
+		{ 
+			_gameEnded = strcmp(cs, "1") == 0;
+		}
+	}
 
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	for(s32 i = 0; i < 64; ++i)
@@ -86,6 +94,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
 {
+	// @TODO: Protocol versions...
 	if(_protocol == udtProtocol::Dm91 && 
 	   csIndex == CS_INTERMISSION_91 && 
 	   udtString::Equals(configString, "1"))
@@ -93,6 +102,7 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		_gameEnded = true;
 	}
 
+	// @TODO: Protocol versions...
 	if(_protocol == udtProtocol::Dm91 &&
 	   csIndex == CS_INTERMISSION_91 &&
 	   udtString::Equals(configString, "0"))
@@ -119,6 +129,12 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 		return;
 	}
 
+	s32 teamIndex = -1;
+	if(ParseConfigStringValueInt(teamIndex, _namesAllocator, "t", configString))
+	{
+		_stats.PlayerStats[playerIndex].TeamIndex = teamIndex;
+	}
+
 	udtString name;
 	if(ParseConfigStringValueString(name, _namesAllocator, "n", configString))
 	{
@@ -134,7 +150,7 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 
 void udtParserPlugInStats::ParseQLScoresTDM()
 {
-	if(_tokenizer->GetArgCount() < 31)
+	if(_tokenizer->GetArgCount() < 32)
 	{
 		return;
 	}
@@ -150,7 +166,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 		TEAM_FIELD(RegenPickups, 7),
 		TEAM_FIELD(HastePickups, 8),
 		TEAM_FIELD(InvisPickups, 9),
-		TEAM_FIELD(QuadTime, 10),
+		TEAM_FIELD(QuadDamageTime, 10),
 		TEAM_FIELD(BattleSuitTime, 11),
 		TEAM_FIELD(RegenTime, 12),
 		TEAM_FIELD(HasteTime, 13),
@@ -228,8 +244,8 @@ void udtParserPlugInStats::ParseQLStatsTDM()
 		PLAYER_FIELD(BattleSuitPickups, 12)
 	};
 
-	const s32 clientNumber = GetValue(1);
-	if(clientNumber < 0 || clientNumber >= 64)
+	s32 clientNumber = -1;
+	if(!GetClientNumberFromScoreIndex(clientNumber, 1))
 	{
 		return;
 	}
@@ -315,12 +331,116 @@ void udtParserPlugInStats::ParseQLScoresDuel()
 
 void udtParserPlugInStats::ParseQLScoresCTF()
 {
-	// @TODO:
+	if(_tokenizer->GetArgCount() < 38)
+	{
+		return;
+	}
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(RedArmorPickups, 0),
+		TEAM_FIELD(YellowArmorPickups, 1),
+		TEAM_FIELD(GreenArmorPickups, 2),
+		TEAM_FIELD(MegaHealthPickups, 3),
+		TEAM_FIELD(QuadDamagePickups, 4),
+		TEAM_FIELD(BattleSuitPickups, 5),
+		TEAM_FIELD(RegenPickups, 6),
+		TEAM_FIELD(HastePickups, 7),
+		TEAM_FIELD(InvisPickups, 8),
+		TEAM_FIELD(FlagPickups, 9),
+		TEAM_FIELD(MedkitPickups, 10),
+		TEAM_FIELD(QuadDamageTime, 11),
+		TEAM_FIELD(BattleSuitTime, 12),
+		TEAM_FIELD(RegenTime, 13),
+		TEAM_FIELD(HasteTime, 14),
+		TEAM_FIELD(InvisTime, 15),
+		TEAM_FIELD(FlagTime, 16)
+	};
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0),
+		PLAYER_FIELD(Score, 1),
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		PLAYER_FIELD(Accuracy, 6),
+		PLAYER_FIELD(BestWeapon, 7),
+		PLAYER_FIELD(Impressives, 8),
+		PLAYER_FIELD(Excellents, 9),
+		PLAYER_FIELD(Gauntlets, 10),
+		PLAYER_FIELD(Defends, 11),
+		PLAYER_FIELD(Assists, 12),
+		PLAYER_FIELD(Captures, 13),
+		PLAYER_FIELD(Perfect, 14)
+	};
+
+	static const udtStatsField teamScoreFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	udtParseDataStats* const stats = &_stats;
+	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 1);
+	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 18);
+	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 36);
+	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 37);
+
+	const s32 playerScores = GetValue(35);
+	if(_tokenizer->GetArgCount() != (u32)(38 + playerScores * (2 + (s32)UDT_COUNT_OF(playerFields))))
+	{
+		return;
+	}
+
+	s32 offset = 38;
+	for(s32 i = 0; i < playerScores; ++i)
+	{
+		const s32 clientNumber = GetValue(offset++);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			udtPlayerStats& playerStats = stats->PlayerStats[clientNumber];
+			ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
+		}
+
+		offset += 1 + (s32)UDT_COUNT_OF(playerFields); // +1 because we skip the "Is Alive" field.
+	}
 }
 
 void udtParserPlugInStats::ParseQLStatsCTF()
 {
-	// @TODO:
+	if(_tokenizer->GetArgCount() != 14)
+	{
+		return;
+	}
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(Suicides, 2),
+		PLAYER_FIELD(DamageGiven, 3),
+		PLAYER_FIELD(DamageReceived, 4),
+		PLAYER_FIELD(RedArmorPickups, 5),
+		PLAYER_FIELD(YellowArmorPickups, 6),
+		PLAYER_FIELD(GreenArmorPickups, 7),
+		PLAYER_FIELD(MegaHealthPickups, 8),
+		PLAYER_FIELD(QuadDamagePickups, 9),
+		PLAYER_FIELD(BattleSuitPickups, 10),
+		PLAYER_FIELD(RegenPickups, 11),
+		PLAYER_FIELD(HastePickups, 12),
+		PLAYER_FIELD(InvisPickups, 13)
+	};
+
+	s32 clientNumber = -1;
+	if(!GetClientNumberFromScoreIndex(clientNumber, 1))
+	{
+		return;
+	}
+
+	udtParseDataStats* const stats = &_stats;
+	udtPlayerStats* const playerStats = &stats->PlayerStats[clientNumber];
+
+	ParseFields(playerStats->Flags, playerStats->Fields, fields, (s32)UDT_COUNT_OF(fields));
 }
 
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
@@ -374,7 +494,36 @@ void udtParserPlugInStats::AddCurrentStats()
 
 	if(valid)
 	{
+		// Fix up the stats and save them.
+		for(s32 i = 0; i < 64; ++i)
+		{
+			s32& bestWeapon = _stats.PlayerStats[i].Fields[udtPlayerStatsField::BestWeapon];
+			bestWeapon = GetUDTWeaponFromIdWeapon(bestWeapon, _protocol);
+			if(bestWeapon == -1)
+			{
+				bestWeapon = (s32)udtWeapon::Gauntlet;
+			}
+		}
 		_statsArray.Add(_stats);
+
+		// Clear the stats for the next match.
 		memset(&_stats, 0, sizeof(_stats));
 	}
+}
+
+bool udtParserPlugInStats::GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex)
+{
+	const s32 scoreIndex = GetValue(fieldIndex);
+	if(scoreIndex < 0 || scoreIndex >= 64)
+	{
+		return false;
+	}
+
+	clientNumber = (s32)_playerIndices[scoreIndex];
+	if(clientNumber < 0 || clientNumber >= 64)
+	{
+		return false;
+	}
+
+	return true;
 }
