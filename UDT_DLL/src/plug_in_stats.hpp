@@ -62,6 +62,7 @@ private:
 	void ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset = 0);
 	s64  CreateBitMask(const udtStatsField* fields, s32 fieldCount);
 	void AddCurrentStats();
+	void ClearStats();
 	void ProcessConfigString(s32 csIndex, const udtString& configString);
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
 	bool GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex);

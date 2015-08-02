@@ -348,6 +348,7 @@ struct udtStringArray
 		PlayerMeansOfDeath,
 		Teams,
 		CutPatterns,
+		GameTypes,
 		Count
 	};
 };
@@ -534,6 +535,32 @@ struct udtTeamStatsField
 	};
 };
 #undef UDT_TEAM_STATS_ITEM
+
+#define UDT_GAME_TYPE_LIST(N) \
+	N(FFA, "free for all") \
+	N(Duel, "duel") \
+	N(Race, "race") \
+	N(TDM, "team deathmatch") \
+	N(CA, "clan arena") \
+	N(CTF, "capture the flag") \
+	N(OneFlagCTF, "one flag ctf") \
+	N(Obelisk, "obelisk") \
+	N(Harvester, "harvester") \
+	N(Domination, "domination") \
+	N(AD, "attack and defend") \
+	N(RedRover, "red rover")
+
+#define UDT_GAME_TYPE_ITEM(Enum, Desc) Enum,
+struct udtGameType
+{
+	enum Id
+	{
+		UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+		Count,
+		FirstTeamMode = TDM
+	};
+};
+#undef UDT_GAME_TYPE_ITEM
 
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
@@ -1080,7 +1107,7 @@ extern "C"
 
 		// The index of the player's team.
 		// Of type udtTeam::Id.
-		// Defaults to 0 for now. @TODO: Should default to something else.
+		// Defaults to -1 when invalid or uninitialized.
 		s32 TeamIndex;
 
 		// The statistics themselves.
@@ -1104,6 +1131,10 @@ extern "C"
 
 		// 0 is red, 1 is blue.
 		udtTeamStats TeamStats[2];
+
+		// Of type udtGameType::Id.
+		// Defaults to (u32)-1 when invalid or uninitialized.
+		u32 GameType;
 	};
 
 	struct udtTimeShiftArg

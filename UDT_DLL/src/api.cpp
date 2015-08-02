@@ -92,6 +92,14 @@ static const char* CutPatternNames[] =
 };
 #undef UDT_CUT_PATTERN_ITEM
 
+#define UDT_GAME_TYPE_ITEM(Enum, Desc) Desc,
+static const char* GameTypeNames[] =
+{
+	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+	"after last game type"
+};
+#undef UDT_GAME_TYPE_ITEM
+
 
 UDT_API(const char*) udtGetVersionString()
 {
@@ -250,6 +258,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::CutPatterns:
 			*elements = CutPatternNames;
 			*elementCount = (u32)(UDT_COUNT_OF(CutPatternNames) - 1);
+			break;
+
+		case udtStringArray::GameTypes:
+			*elements = GameTypeNames;
+			*elementCount = (u32)(UDT_COUNT_OF(GameTypeNames) - 1);
 			break;
 
 		default:

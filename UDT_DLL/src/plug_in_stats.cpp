@@ -15,6 +15,8 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_tokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
 
+	ClearStats();
+
 	// @TODO: Protocol versions...
 	if(_protocol == udtProtocol::Dm91)
 	{
@@ -197,6 +199,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 	};
 
 	udtParseDataStats* const stats = &_stats;
+	stats->GameType = (u32)udtGameType::TDM;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields));
@@ -317,6 +320,8 @@ void udtParserPlugInStats::ParseQLScoresDuel()
 		return;
 	}
 
+	_stats.GameType = (u32)udtGameType::Duel;
+
 	s32 offset = 2;
 	for(s32 i = 0; i < scoreCount; ++i)
 	{
@@ -383,6 +388,7 @@ void udtParserPlugInStats::ParseQLScoresCTF()
 	};
 
 	udtParseDataStats* const stats = &_stats;
+	stats->GameType = (u32)udtGameType::CTF;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 1);
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 18);
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 36);
@@ -508,7 +514,19 @@ void udtParserPlugInStats::AddCurrentStats()
 		_statsArray.Add(_stats);
 
 		// Clear the stats for the next match.
-		memset(&_stats, 0, sizeof(_stats));
+		ClearStats();
+	}
+}
+
+void udtParserPlugInStats::ClearStats()
+{
+	memset(&_stats, 0, sizeof(_stats));
+
+	_stats.GameType = u32(~0);
+
+	for(s32 i = 0; i < 64; ++i)
+	{
+		_stats.PlayerStats[i].TeamIndex = -1;
 	}
 }
 

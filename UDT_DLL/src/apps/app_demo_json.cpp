@@ -60,6 +60,66 @@ static bool IsSomeBitSet(const u8 (&flags)[N])
 	return false;
 }
 
+static bool HasValidTeamStats(const udtParseDataStats& stats)
+{
+	for(s32 i = 0; i < 2; ++i)
+	{
+		if(IsSomeBitSet(stats.TeamStats[i].Flags))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool HasValidPlayerStats(const udtParseDataStats& stats)
+{
+	for(s32 i = 0; i < 64; ++i)
+	{
+		if(IsSomeBitSet(stats.PlayerStats[i].Flags))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex)
+{
+	const char** teamNames = NULL;
+	u32 teamCount = 0;
+	if(udtGetStringArray(udtStringArray::Teams, &teamNames, &teamCount) != (s32)udtErrorCode::None)
+	{
+		return;
+	}
+
+	if(udtTeamIndex < 0 || udtTeamIndex >= (s32)teamCount)
+	{
+		return;
+	}
+
+	writer.WriteStringValue("team", teamNames[udtTeamIndex]);
+}
+
+static void WriteUDTGameType(udtJSONWriter& writer, u32 udtGameType)
+{
+	const char** gameTypeNames = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetStringArray(udtStringArray::GameTypes, &gameTypeNames, &gameTypeCount) != (s32)udtErrorCode::None)
+	{
+		return;
+	}
+
+	if(udtGameType >= gameTypeCount)
+	{
+		return;
+	}
+
+	writer.WriteStringValue("game type", gameTypeNames[udtGameType]);
+}
+
 static void WriteTeamStats(udtJSONWriter& writer, const udtTeamStats& stats, const char* team)
 {
 	writer.StartObject();
@@ -94,22 +154,7 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 		writer.WriteStringValue("clean name", stats.CleanName);
 	}
 
-	if(stats.TeamIndex != -1)
-	{
-		const char* teamName = NULL;
-		switch((udtTeam::Id)stats.TeamIndex)
-		{
-			case udtTeam::Free: teamName = "free"; break;
-			case udtTeam::Red: teamName = "red"; break;
-			case udtTeam::Blue: teamName = "blue"; break;
-			case udtTeam::Spectators: teamName = "spectators"; break;
-			default: break;
-		}
-		if(teamName != NULL)
-		{
-			writer.WriteStringValue("team", teamName);
-		}
-	}
+	WriteUDTTeamIndex(writer, stats.TeamIndex);
 
 	const char** weaponNames = NULL;
 	u32 weaponCount = 0;
@@ -138,26 +183,45 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 
 static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 {
-	writer.StartObject("team stats");
-	for(s32 i = 0; i < 2; ++i)
+	const bool hasTeamStats = HasValidTeamStats(stats);
+	const bool hasPlayerStats = HasValidPlayerStats(stats);
+	if(!hasTeamStats && !hasPlayerStats)
 	{
-		const udtTeamStats& teamStats = stats.TeamStats[i];
-		if(IsSomeBitSet(teamStats.Flags))
-		{
-			WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
-		}
+		return;
 	}
-	writer.EndObject();
+
+	writer.StartObject("game stats");
+
+	WriteUDTGameType(writer, stats.GameType);
+
+	if(hasTeamStats)
+	{
+		writer.StartObject("team stats");
+		for(s32 i = 0; i < 2; ++i)
+		{
+			const udtTeamStats& teamStats = stats.TeamStats[i];
+			if(IsSomeBitSet(teamStats.Flags))
+			{
+				WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
+			}
+		}
+		writer.EndObject();
+	}
 	
-	writer.StartObject("player stats");
-	for(s32 i = 0; i < 64; ++i)
+	if(hasPlayerStats)
 	{
-		const udtPlayerStats& playerStats = stats.PlayerStats[i];
-		if(IsSomeBitSet(playerStats.Flags))
+		writer.StartObject("player stats");
+		for(s32 i = 0; i < 64; ++i)
 		{
-			WritePlayerStats(writer, playerStats, i);
+			const udtPlayerStats& playerStats = stats.PlayerStats[i];
+			if(IsSomeBitSet(playerStats.Flags))
+			{
+				WritePlayerStats(writer, playerStats, i);
+			}
 		}
+		writer.EndObject();
 	}
+
 	writer.EndObject();
 }
 
@@ -240,9 +304,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	jsonWriter.StartFile();
 	for(u32 i = 0; i < statsCount; ++i)
 	{
-		jsonWriter.StartObject("game stats");
 		WriteStats(jsonWriter, stats[i]);
-		jsonWriter.EndObject();
 	}
 	jsonWriter.EndFile();
 
