@@ -71,6 +71,7 @@ private:
 	void ParseQLScoresDuel();
 	void ParseQLScoresCTF();
 	void ParseQLStatsCTF();
+	void ParseQLScoresOld();
 
 	u8 _playerIndices[64];
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.

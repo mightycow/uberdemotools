@@ -66,7 +66,8 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		HANDLER("tdmstats", ParseQLStatsTDM),
 		HANDLER("scores_duel", ParseQLScoresDuel),
 		HANDLER("scores_ctf", ParseQLScoresCTF),
-		HANDLER("ctfstats", ParseQLStatsCTF)
+		HANDLER("ctfstats", ParseQLStatsCTF),
+		HANDLER("scores", ParseQLScoresOld)
 	};
 #undef HANDLER
 	/*
@@ -436,6 +437,70 @@ void udtParserPlugInStats::ParseQLStatsCTF()
 	udtPlayerStats* const playerStats = &stats->PlayerStats[clientNumber];
 
 	ParseFields(playerStats->Flags, playerStats->Fields, fields, (s32)UDT_COUNT_OF(fields));
+}
+
+void udtParserPlugInStats::ParseQLScoresOld()
+{
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
+	}
+
+	s32 scoreCount = GetValue(1);
+	if(scoreCount < 0)
+	{
+		return;
+	}
+
+	scoreCount = udt_min(scoreCount, 64);
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	ParseFields(_stats.TeamStats[0].Flags, _stats.TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 2);
+	ParseFields(_stats.TeamStats[1].Flags, _stats.TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 3);
+
+	if((s32)_tokenizer->GetArgCount() != 4 + (scoreCount * 18))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 1),
+		PLAYER_FIELD(Time, 2),
+		// We skip the flag scores and power-ups.
+		PLAYER_FIELD(Accuracy, 5),
+		PLAYER_FIELD(Impressives, 6),
+		PLAYER_FIELD(Excellents, 7),
+		PLAYER_FIELD(Gauntlets, 8),
+		PLAYER_FIELD(Defends, 9),
+		PLAYER_FIELD(Assists, 10),
+		PLAYER_FIELD(Perfect, 11),
+		PLAYER_FIELD(Captures, 12),
+		// We skip alive.
+		PLAYER_FIELD(Kills, 14),
+		PLAYER_FIELD(Deaths, 15),
+		PLAYER_FIELD(BestWeapon, 16)
+	};
+
+	s32 offset = 4;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber < 0 || clientNumber >= 64)
+		{
+			continue;
+		}
+
+		udtPlayerStats& playerStats = _stats.PlayerStats[clientNumber];
+		ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+
+		offset += 18;
+	}
 }
 
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
