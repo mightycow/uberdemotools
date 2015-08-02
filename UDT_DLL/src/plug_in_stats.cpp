@@ -203,7 +203,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 1);
 
 	const s32 playerScores = GetValue(29);
-	if(_tokenizer->GetArgCount() != (u32)(32 + playerScores * (s32)UDT_COUNT_OF(playerFields)))
+	if(_tokenizer->GetArgCount() != (u32)(32 + playerScores * (1 + (s32)UDT_COUNT_OF(playerFields))))
 	{
 		return;
 	}
@@ -214,6 +214,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 		const s32 clientNumber = GetValue(offset);
 		if(clientNumber >= 0 && clientNumber < 64)
 		{
+			_playerIndices[i] = (u8)clientNumber;
 			udtPlayerStats& playerStats = stats->PlayerStats[clientNumber];
 			ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
 		}
