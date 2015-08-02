@@ -267,13 +267,17 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	udtFileStream jsonFile;
 	if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
 	{
+		fprintf(stderr, "ERROR: Failed to open file '%s' for writing.\n", jsonPath);
 		return __LINE__;
 	}
 
 	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
 	{
+		fprintf(stderr, "ERROR: Failed to write to file '%s'.\n", jsonPath);
 		return __LINE__;
 	}
+
+	fprintf(stdout, "Done writing to file '%s'.\n", jsonPath);
 
 	return 0;
 }
