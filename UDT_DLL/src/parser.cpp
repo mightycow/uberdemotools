@@ -417,6 +417,11 @@ bool udtBaseParser::ParseCommandString()
 		}
 	}
 
+	// @TODO: Add support for "bcs0", "bcs1" and "bcs2".
+	// bcs0: start new big config string
+	// bcs1: append to current big config string
+	// bcs2: append to current big config string and finalize it
+
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
 		udtCommandCallbackArg info;
