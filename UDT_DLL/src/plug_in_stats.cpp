@@ -492,13 +492,12 @@ void udtParserPlugInStats::ParseQLScoresOld()
 	for(s32 i = 0; i < scoreCount; ++i)
 	{
 		const s32 clientNumber = GetValue(offset);
-		if(clientNumber < 0 || clientNumber >= 64)
+		if(clientNumber >= 0 && clientNumber < 64)
 		{
-			continue;
+			_playerIndices[i] = (u8)clientNumber;
+			udtPlayerStats& playerStats = _stats.PlayerStats[clientNumber];
+			ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 		}
-
-		udtPlayerStats& playerStats = _stats.PlayerStats[clientNumber];
-		ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 
 		offset += 18;
 	}
@@ -506,10 +505,74 @@ void udtParserPlugInStats::ParseQLScoresOld()
 
 void udtParserPlugInStats::ParseQLScoresDuelOld()
 {
-	// @TODO:
-	if(_tokenizer->GetArgCount() < 2)
+	// HMG stats were added in dm_90 and then removed in dm_91...
+	const u32 expectedTokenCount = (_protocol == udtProtocol::Dm90) ? (u32)177 : (u32)167;
+	if(_tokenizer->GetArgCount() < expectedTokenCount)
 	{
 		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Hits, Offset), \
+	PLAYER_FIELD(Weapon##Shots, Offset + 1), \
+	PLAYER_FIELD(Weapon##Accuracy, Offset + 2), \
+	PLAYER_FIELD(Weapon##Damage, Offset + 3), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 4) \
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(Ping, 0),
+		PLAYER_FIELD(Kills, 1),
+		PLAYER_FIELD(Deaths, 2),
+		PLAYER_FIELD(Accuracy, 3),
+		PLAYER_FIELD(DamageGiven, 4),
+		PLAYER_FIELD(Impressives, 5),
+		PLAYER_FIELD(Excellents, 6),
+		PLAYER_FIELD(Gauntlets, 7),
+		// We skip 2 fields.
+		PLAYER_FIELD(RedArmorPickups, 10),
+		PLAYER_FIELD(RedArmorPickupTime, 11),
+		PLAYER_FIELD(YellowArmorPickups, 12),
+		PLAYER_FIELD(YellowArmorPickupTime, 13),
+		PLAYER_FIELD(GreenArmorPickups, 14),
+		PLAYER_FIELD(GreenArmorPickupTime, 15),
+		PLAYER_FIELD(MegaHealthPickups, 16),
+		PLAYER_FIELD(MegaHealthPickupTime, 17),
+		WEAPON_FIELDS(Gauntlet, 18),
+		WEAPON_FIELDS(MachineGun, 23),
+		WEAPON_FIELDS(Shotgun, 28),
+		WEAPON_FIELDS(GrenadeLauncher, 33),
+		WEAPON_FIELDS(RocketLauncher, 38),
+		WEAPON_FIELDS(LightningGun, 43),
+		WEAPON_FIELDS(Railgun, 48),
+		WEAPON_FIELDS(PlasmaGun, 53),
+		WEAPON_FIELDS(BFG, 58),
+		WEAPON_FIELDS(GrapplingHook, 63),
+		WEAPON_FIELDS(NailGun, 68),
+		WEAPON_FIELDS(ProximityMineLauncher, 73),
+		WEAPON_FIELDS(ChainGun, 78),
+		WEAPON_FIELDS(HeavyMachineGun, 83)
+	};
+
+#undef WEAPON_FIELDS
+
+	_stats.GameType = (u32)udtGameType::Duel;
+
+	// HMG stats were added in dm_90 and then removed in dm_91...
+	const s32 realFieldCount = (_protocol == udtProtocol::Dm90) ? (u32)88 : (u32)83;
+	const s32 parseFieldCount = realFieldCount - 2;
+	
+	s32 offset = 1;
+	for(s32 i = 0; i < 2; ++i)
+	{
+		const s32 clientNumber = (s32)_playerIndices[i];
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			udtPlayerStats& playerStats = _stats.PlayerStats[clientNumber];
+			ParseFields(playerStats.Flags, playerStats.Fields, fields, parseFieldCount, offset);
+		}
+
+		offset += realFieldCount;
 	}
 }
 
