@@ -9,16 +9,19 @@ CPMA:
 - CS_CPMA_GAME_INFO: tw  -1 means in warm-up           --> ts last restart time --- if ts is 0, the match countdown is starting
 - CS_CPMA_GAME_INFO: tw   0 means in match             --> ts match start time
 - CS_CPMA_GAME_INFO: tw > 0 means in warm-up countdown --> ts last restart time --- tw countdown end time
+- No command is sent to notify that a match ends, and tw/ts don't change at the end of a match recored with cg_autoAction
+- No command is sent to specify there is an overtime
+- It has to be derived implicitly or using center print and buzzer commands.
 
 BaseQ3:
 - No command is sent to signify that the match ended
-- When a match starts, Q3 sends the commands "cs 21" (CS_LEVEL_START_TIME) and "map_restart"
+- When a match starts, Q3 sends the commands "cs 21" or "cs 13" (CS_LEVEL_START_TIME) and "map_restart"
 - Can only infer the match end time from start time and time/score limits
 
-Quake Live 73 (and 90?):
+Quake Live:
 - cs 0 > g_roundWarmupDelay timeInMs
 - cs 0 > g_gameState PRE_GAME COUNT_DOWN IN_PROGRESS 
-- When a match ends: cs 14 1 (14 is CS_INTERMISSION_73)
+- When a match ends: "cs 14 1" (14 is CS_INTERMISSION)
 */
 
 
@@ -293,7 +296,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	}
 	else if(_gameType == udtGameType::BaseQ3)
 	{
-		if(csIndex == CS_LEVEL_START_TIME_68)
+		if(csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 		{
 			int matchStartTimeMs = S32_MIN;
 			if(sscanf(configString, "%d", &matchStartTimeMs) == 1)

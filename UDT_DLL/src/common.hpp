@@ -279,7 +279,9 @@ typedef enum {
 #define CS_FLAGSTATUS_73p		658
 #define CS_SHADERSTATE_73p		665
 #define CS_PARTICLES_73p		(CS_LOCATIONS_73p + MAX_LOCATIONS)
-// Quake Live 688 689 ???
+
+#define CS_LEVEL_START_TIME_3   13
+
 // CPMA
 #define CS_CPMA_GAME_INFO       672
 #define CS_CPMA_ROUND_INFO      710
