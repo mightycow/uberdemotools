@@ -67,19 +67,20 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		HANDLER("scores_duel", ParseQLScoresDuel),
 		HANDLER("scores_ctf", ParseQLScoresCTF),
 		HANDLER("ctfstats", ParseQLStatsCTF),
-		HANDLER("scores", ParseQLScoresOld)
+		HANDLER("scores", ParseQLScoresOld),
+		HANDLER("dscores", ParseQLScoresDuelOld)
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : adscores scores_ad rrscores tdmscores tdmscores2 castats cascores dscores scores_ft scores_race scores_rr scores_ca
+	QL  : adscores scores_ad rrscores tdmscores tdmscores2 castats cascores scores_ft scores_race scores_rr scores_ca
 	CPMA: mstats dmscores mm2 xscores xstats2
 	OSP : are there any? :p
 	*/
 
 	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
 	{
-		if(udtString::Equals(commandName, handlers[i].Name))
+		if(udtString::EqualsNoCase(commandName, handlers[i].Name))
 		{
 			(this->*(handlers[i].Function))();
 			break;
@@ -90,13 +91,13 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
 {	
 	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
-	   udtString::Equals(configString, "1"))
+	   (udtString::Equals(configString, "1") || udtString::Equals(configString, "qtrue")))
 	{
 		_gameEnded = true;
 	}
 
 	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
-	   udtString::Equals(configString, "0"))
+	   (udtString::Equals(configString, "0") || udtString::Equals(configString, "qfalse")))
 	{
 		if(_gameEnded)
 		{
@@ -500,6 +501,15 @@ void udtParserPlugInStats::ParseQLScoresOld()
 		ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 
 		offset += 18;
+	}
+}
+
+void udtParserPlugInStats::ParseQLScoresDuelOld()
+{
+	// @TODO:
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
 	}
 }
 
