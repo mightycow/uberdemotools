@@ -276,14 +276,13 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	}
 
 	const char* const configString = tokenizer.GetArgString(2);
-	if(_gameType == udtGameType::QL && csIndex >= CS_PLAYERS_73p && csIndex < CS_PLAYERS_73p + 64)
+	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(_protocol);
+	if(csIndex >= firstPlayerCsIndex && csIndex < firstPlayerCsIndex + 64)
 	{
-		ProcessPlayerInfo(csIndex - CS_PLAYERS_73p, parser._inConfigStrings[csIndex]);
+		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex]);
 	}
-	else if(_gameType != udtGameType::QL && csIndex >= CS_PLAYERS_68 && csIndex < CS_PLAYERS_68 + 64)
-	{
-		ProcessPlayerInfo(csIndex - CS_PLAYERS_68, parser._inConfigStrings[csIndex]);
-	}
+
+	// @TODO: Always use the intermission to know when a match starts and ends?
 
 	if(_gameType == udtGameType::CPMA)
 	{
@@ -315,8 +314,9 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 		}
 		else if(csIndex == idConfigStringIndex::Intermission(_protocol))
 		{
-			s32 intermissionValue = 0;
-			if(StringParseInt(intermissionValue, configString) && intermissionValue == 1)
+			// It can be written as "0", "1", "qfalse" and "qtrue".
+			const udtString cs = tokenizer.GetArg(2);
+			if(udtString::EqualsNoCase(cs, "1") || udtString::EqualsNoCase(cs, "qtrue"))
 			{
 				AddCurrentMatchIfValid();
 			}
