@@ -388,11 +388,13 @@ bool udtBaseParser::ParseCommandString()
 	
 	// We haven't, so let's store the last sequence number received.
 	_inServerCommandSequence = commandSequence;
-	
+
+tokenize:	
 	CommandLineTokenizer& tokenizer = _context->Tokenizer;
 	tokenizer.Tokenize(commandString);
 	const int tokenCount = tokenizer.GetArgCount();
-	if(strcmp(tokenizer.GetArgString(0), "cs") == 0 && tokenCount == 3)
+	const udtString commandName = (tokenCount > 0) ? tokenizer.GetArg(0) : udtString::NewEmptyConstant();
+	if(tokenCount == 3 && udtString::Equals(commandName, "cs"))
 	{
 		s32 csIndex = -1;
 		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
@@ -416,11 +418,24 @@ bool udtBaseParser::ParseCommandString()
 			_inConfigStrings[csIndex].StringLength = csStringLength;
 		}
 	}
-
-	// @TODO: Add support for "bcs0", "bcs1" and "bcs2".
-	// bcs0: start new big config string
-	// bcs1: append to current big config string
-	// bcs2: append to current big config string and finalize it
+	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs0"))
+	{
+		// Start a new big config string.
+		sprintf(_inBigConfigString, "cs %s \"%s", tokenizer.GetArgString(1), tokenizer.GetArgString(2));
+	}
+	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs1"))
+	{
+		// Append to current big config string.
+		strcat(_inBigConfigString, tokenizer.GetArgString(2));
+	}
+	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs2"))
+	{
+		// Append to current big config string and finalize it.
+		strcat(_inBigConfigString, tokenizer.GetArgString(2));
+		strcat(_inBigConfigString, "\"");
+		commandString = _inBigConfigString;
+		goto tokenize;
+	}
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
