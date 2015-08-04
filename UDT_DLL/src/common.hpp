@@ -281,6 +281,7 @@ typedef enum {
 #define CS_PARTICLES_73p		(CS_LOCATIONS_73p + MAX_LOCATIONS)
 
 #define CS_LEVEL_START_TIME_3   13
+#define CS_INTERMISSION_3       14
 
 // CPMA
 #define CS_CPMA_GAME_INFO       672

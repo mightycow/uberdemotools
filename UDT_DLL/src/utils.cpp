@@ -841,7 +841,18 @@ namespace idConfigStringIndex
 
 	s32 Intermission(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? (s32)CS_INTERMISSION_68 : (s32)CS_INTERMISSION_73p;
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return (s32)CS_INTERMISSION_3;
+			case udtProtocol::Dm48:
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)CS_INTERMISSION_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)CS_INTERMISSION_73p;
+			default: return -1;
+		}
 	}
 
 	s32 LevelStartTime(udtProtocol::Id protocol)

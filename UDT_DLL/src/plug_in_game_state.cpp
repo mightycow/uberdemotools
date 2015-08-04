@@ -3,28 +3,6 @@
 #include "scoped_stack_allocator.hpp"
 
 
-/*
-CPMA:
-- First score read (gamestate) should be from either the CS_CPMA_GAME_INFO or CS_CPMA_ROUND_INFO config strings
-- CS_CPMA_GAME_INFO: tw  -1 means in warm-up           --> ts last restart time --- if ts is 0, the match countdown is starting
-- CS_CPMA_GAME_INFO: tw   0 means in match             --> ts match start time
-- CS_CPMA_GAME_INFO: tw > 0 means in warm-up countdown --> ts last restart time --- tw countdown end time
-- No command is sent to notify that a match ends, and tw/ts don't change at the end of a match recored with cg_autoAction
-- No command is sent to specify there is an overtime
-- It has to be derived implicitly or using center print and buzzer commands.
-
-BaseQ3:
-- No command is sent to signify that the match ended
-- When a match starts, Q3 sends the commands "cs 21" or "cs 13" (CS_LEVEL_START_TIME) and "map_restart"
-- Can only infer the match end time from start time and time/score limits
-
-Quake Live:
-- cs 0 > g_roundWarmupDelay timeInMs
-- cs 0 > g_gameState PRE_GAME COUNT_DOWN IN_PROGRESS 
-- When a match ends: "cs 14 1" (14 is CS_INTERMISSION)
-*/
-
-
 static const char* FilteredKeys[] =
 {
 	"sv_referencedPakNames",
@@ -49,12 +27,9 @@ static bool IsInterestingKey(const char* keyName)
 
 
 udtParserPlugInGameState::udtParserPlugInGameState() 
-	: _gameType(udtGameType::BaseQ3)
-	, _gameStateQL(udtGameStateQL::Invalid)
-	, _protocol(udtProtocol::Invalid)
-	, _firstGameState(true)
-	, _nextSnapshotIsWarmUpEnd(false)
 {
+	_protocol = udtProtocol::Invalid;
+
 	ClearGameState();
 	ClearPlayerInfos();
 	ClearMatch();
@@ -76,14 +51,15 @@ void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 	_players.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_gameStates.SetAllocator(FinalAllocator);
+
+	_analyzer.SetTempAllocator(*TempAllocator);
 }
 
 void udtParserPlugInGameState::StartDemoAnalysis()
 {
-	_gameType = udtGameType::BaseQ3;
-	_gameStateQL = udtGameStateQL::Invalid;
-	_firstGameState = true;
-	_nextSnapshotIsWarmUpEnd = false;
+	_protocol = udtProtocol::Invalid;
+
+	_analyzer.ResetForNextDemo();
 
 	ClearGameState();
 	ClearMatch();
@@ -92,116 +68,20 @@ void udtParserPlugInGameState::StartDemoAnalysis()
 
 void udtParserPlugInGameState::FinishDemoAnalysis()
 {
+	_analyzer.FinishDemoAnalysis();
+
 	AddCurrentGameState();
-}
-
-void udtParserPlugInGameState::ProcessQlServerInfo(const char* commandString, udtBaseParser& parser)
-{
-	const udtGameStateQL::Id oldState = _gameStateQL;
-	udtGameStateQL::Id newState = udtGameStateQL::Invalid;
-
-	udtVMLinearAllocator& tempAllocator = *TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
-
-	udtString gameStateString;
-	if(!ParseConfigStringValueString(gameStateString, tempAllocator, "g_gameState", commandString))
-	{
-		return;
-	}
-
-	if(udtString::Equals(gameStateString, "PRE_GAME"))
-	{
-		newState = udtGameStateQL::PreGame;
-	}
-	else if(udtString::Equals(gameStateString, "COUNT_DOWN"))
-	{
-		newState = udtGameStateQL::CountDown;
-	}
-	else if(udtString::Equals(gameStateString, "IN_PROGRESS"))
-	{
-		newState = udtGameStateQL::InProgress;
-	}
-	_gameStateQL = newState;
-
-	if(_currentMatch.WarmUpEndTimeMs == S32_MIN && oldState != udtGameStateQL::CountDown && newState == udtGameStateQL::CountDown)
-	{
-		_nextSnapshotIsWarmUpEnd = true;
-	}
-
-	if(_currentMatch.MatchStartTimeMs == S32_MIN && oldState == udtGameStateQL::CountDown && newState == udtGameStateQL::InProgress)
-	{
-		_currentMatch.MatchStartTimeMs = parser._inServerTime;
-	}
-}
-
-void udtParserPlugInGameState::ProcessCpmaGameInfo(const char* commandString, udtBaseParser& parser)
-{
-	s32 tw = -1;
-	s32 ts = -1;
-	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
-	if(ParseConfigStringValueInt(tw, *TempAllocator, "tw", commandString) && ParseConfigStringValueInt(ts, *TempAllocator, "ts", commandString))
-	{
-		ProcessCpmaTwTs(tw, ts, parser._inServerTime);
-	}
-}
-
-void udtParserPlugInGameState::ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs)
-{
-	if(_currentMatch.MatchStartTimeMs == S32_MIN && tw == 0)
-	{
-		_currentMatch.MatchStartTimeMs = ts;
-	}
-
-	if(_currentMatch.WarmUpEndTimeMs == S32_MIN && tw == -1 && ts == 0)
-	{
-		// Might not be able to query the server time right now (if processing a gamestate update).
-		// So we just grab the next snapshot's server time.
-		_nextSnapshotIsWarmUpEnd = true;
-	}
-	
-	if(_currentMatch.MatchStartTimeMs == S32_MIN && _currentMatch.WarmUpEndTimeMs == S32_MIN && tw > 0)
-	{
-		_currentMatch.WarmUpEndTimeMs = serverTimeMs;
-	}
-	
-	// We're back to warm-up, so a match might have just ended.
-	if(tw == -1 && ts != 0)
-	{
-		AddCurrentMatchIfValid();
-	}
 }
 
 void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
-	_protocol = parser._inProtocol;
-
-	if(_firstGameState)
-	{
-		_gameType = udtGameType::BaseQ3;
-		if(parser._inProtocol >= udtProtocol::Dm73)
-		{
-			_gameType = udtGameType::QL;
-		}
-		else
-		{
-			udtVMLinearAllocator& tempAllocator = *TempAllocator;
-			udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
-
-			udtString gameName;
-			udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
-			if(cs != NULL && 
-			   ParseConfigStringValueString(gameName, tempAllocator, "gamename", cs->String) &&
-			   udtString::Equals(gameName, "cpma"))
-			{
-				_gameType = udtGameType::CPMA;
-			}
-		}
-	}
-	else
+	_analyzer.ProcessGamestateMessage(info, parser);
+	if(_analyzer.GameStateIndex() > 0)
 	{
 		AddCurrentGameState();
 	}
-	_firstGameState = false;
+
+	_protocol = parser._inProtocol;
 
 	_currentGameState.FileOffset = parser._inFileOffset;
 	_currentGameState.Matches = _matches.GetEndAddress();
@@ -223,43 +103,14 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	{
 		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
 	}
-
-	if(_gameType == udtGameType::CPMA)
-	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_CPMA_GAME_INFO);
-		if(cs != NULL)
-		{
-			ProcessCpmaGameInfo(cs->String, parser);
-		}
-	}
-	else if(_gameType == udtGameType::QL)
-	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
-		if(cs != NULL)
-		{
-			ProcessQlServerInfo(cs->String, parser);
-		}
-	}
 }
 
-void udtParserPlugInGameState::ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*info*/, udtBaseParser& parser)
+void udtParserPlugInGameState::ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)
 {
+	_analyzer.ProcessSnapshotMessage(info, parser);
+
 	_currentGameState.FirstSnapshotTimeMs = udt_min(_currentGameState.FirstSnapshotTimeMs, parser._inServerTime);
 	_currentGameState.LastSnapshotTimeMs = udt_max(_currentGameState.LastSnapshotTimeMs, parser._inServerTime);
-
-	if(_gameType == udtGameType::CPMA || _gameType == udtGameType::QL)
-	{
-		_currentMatch.MatchEndTimeMs = parser._inServerTime;
-	}
-
-	if(_nextSnapshotIsWarmUpEnd)
-	{
-		_nextSnapshotIsWarmUpEnd = false;
-		if(_currentMatch.WarmUpEndTimeMs == S32_MIN)
-		{
-			_currentMatch.WarmUpEndTimeMs = parser._inServerTime;
-		}
-	}
 
 	for(s32 i = 0; i < 64; ++i)
 	{
@@ -270,60 +121,23 @@ void udtParserPlugInGameState::ProcessSnapshotMessage(const udtSnapshotCallbackA
 
 void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
 {
+	_analyzer.ProcessCommandMessage(info, parser);
+	AddCurrentMatchIfValid();
+
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(info.String);
 	s32 csIndex = 0;
-	if(tokenizer.GetArgCount() != 3 || !udtString::Equals(tokenizer.GetArg(0), "cs") || !StringParseInt(csIndex, tokenizer.GetArgString(1)))
+	if(tokenizer.GetArgCount() != 3 || 
+	   !udtString::Equals(tokenizer.GetArg(0), "cs") || 
+	   !StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
 	}
 
-	const char* const configString = tokenizer.GetArgString(2);
 	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(_protocol);
 	if(csIndex >= firstPlayerCsIndex && csIndex < firstPlayerCsIndex + 64)
 	{
 		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex]);
-	}
-
-	// @TODO: Always use the intermission to know when a match starts and ends?
-
-	if(_gameType == udtGameType::CPMA)
-	{
-		if(csIndex == CS_CPMA_GAME_INFO)
-		{
-			ProcessCpmaGameInfo(configString, parser);
-		}
-	}
-	else if(_gameType == udtGameType::BaseQ3)
-	{
-		if(csIndex == idConfigStringIndex::LevelStartTime(_protocol))
-		{
-			int matchStartTimeMs = S32_MIN;
-			if(sscanf(configString, "%d", &matchStartTimeMs) == 1)
-			{
-				AddCurrentMatchIfValid();
-				if(_currentMatch.MatchStartTimeMs == S32_MIN)
-				{
-					_currentMatch.MatchStartTimeMs = matchStartTimeMs;
-				}
-			}
-		}
-	}
-	else if(_gameType == udtGameType::QL)
-	{
-		if(csIndex == CS_SERVERINFO)
-		{
-			ProcessQlServerInfo(configString, parser);
-		}
-		else if(csIndex == idConfigStringIndex::Intermission(_protocol))
-		{
-			// It can be written as "0", "1", "qfalse" and "qtrue".
-			const udtString cs = tokenizer.GetArg(2);
-			if(udtString::EqualsNoCase(cs, "1") || udtString::EqualsNoCase(cs, "qtrue"))
-			{
-				AddCurrentMatchIfValid();
-			}
-		}
 	}
 }
 
@@ -361,14 +175,20 @@ void udtParserPlugInGameState::ClearGameState()
 
 void udtParserPlugInGameState::AddCurrentMatchIfValid()
 {
-	if(_currentMatch.MatchStartTimeMs == S32_MIN)
+	if(!_analyzer.MatchJustEnded())
 	{
 		return;
 	}
 
+	_currentMatch.MatchStartTimeMs = _analyzer.MatchStartTime();
+	_currentMatch.MatchEndTimeMs = _analyzer.MatchEndTime();
+	_currentMatch.WarmUpEndTimeMs = S32_MIN;
+
 	_matches.Add(_currentMatch);
 	++_currentGameState.MatchCount;
 	ClearMatch();
+
+	_analyzer.SetInWarmUp();
 }
 
 void udtParserPlugInGameState::AddCurrentPlayersIfValid()
