@@ -75,7 +75,8 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 	@TODO:
 	QL  : adscores scores_ad rrscores tdmscores tdmscores2 castats cascores scores_ft scores_race scores_rr scores_ca
 	CPMA: mstats xstats2 xscores
-	OSP : are there any? :p
+	OSP : statsinfo xstats1 bstats
+	Q3  : scores (has less fields than the QL version)
 	mstats:  full stats for one player sent multiple times during a game
 	xstats2: full stats for one player sent at the end of a game, encoded the same as mstats
 	xscores: team and player scores sent multiple times during a game
