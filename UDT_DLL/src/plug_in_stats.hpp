@@ -4,50 +4,22 @@
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
 #include "array.hpp"
+#include "analysis_general.hpp"
 
 
 struct udtParserPlugInStats : udtBaseParserPlugIn
 {
 public:
-	udtParserPlugInStats()
-	{
-		_tokenizer = NULL;
-		_protocol = udtProtocol::Invalid;
-		_gameEnded = false;
-		memset(&_stats, 0, sizeof(_stats));
-	}
+	udtParserPlugInStats();
+	~udtParserPlugInStats();
 
-	~udtParserPlugInStats()
-	{
-	}
-
-	void InitAllocators(u32 demoCount) override
-	{
-		FinalAllocator.Init((uptr)4 * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount);
-		_namesAllocator.Init((uptr)(1 << 14) * (uptr)demoCount);
-		_statsArray.SetAllocator(FinalAllocator);
-	}
-
-	u32 GetElementSize() const override
-	{
-		return (u32)sizeof(udtParseDataStats);
-	};
-
-	void StartDemoAnalysis()
-	{
-		_tokenizer = NULL;
-		_protocol = udtProtocol::Invalid;
-		_gameEnded = false;
-		memset(&_stats, 0, sizeof(_stats));
-	}
-
-	void FinishDemoAnalysis()
-	{
-		AddCurrentStats();
-	}
-
+	void InitAllocators(u32 demoCount) override;
+	u32  GetElementSize() const override;
+	void StartDemoAnalysis() override;
+	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser) override;
+	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInStats);
@@ -66,6 +38,7 @@ private:
 	void ProcessConfigString(s32 csIndex, const udtString& configString);
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
 	bool GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex);
+	bool AreStatsValid();
 	void ParseQLScoresTDM();
 	void ParseQLStatsTDM();
 	void ParseQLScoresDuel();
@@ -75,6 +48,7 @@ private:
 	void ParseQLScoresDuelOld();
 
 	u8 _playerIndices[64];
+	udtGeneralAnalyzer _analyzer;
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;
 	udtVMLinearAllocator _namesAllocator;

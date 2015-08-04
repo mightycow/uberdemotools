@@ -175,7 +175,7 @@ void udtParserPlugInGameState::ClearGameState()
 
 void udtParserPlugInGameState::AddCurrentMatchIfValid()
 {
-	if(!_analyzer.MatchJustEnded())
+	if(!_analyzer.HasMatchJustEnded())
 	{
 		return;
 	}

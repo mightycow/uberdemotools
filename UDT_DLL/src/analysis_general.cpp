@@ -146,7 +146,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		   udtString::ContainsNoCase(index, printMessage, "timelimit hit"))
 		{
 			UpdateGameState(udtGameState::WarmUp);
-			if(MatchJustEnded())
+			if(HasMatchJustEnded())
 			{
 				_matchEndTime = parser._inServerTime;
 			}
@@ -158,7 +158,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	   udtString::Equals(tokenizer.GetArg(0), "map_restart"))
 	{
 		UpdateGameState(udtGameState::InProgress);
-		if(MatchJustStarted())
+		if(HasMatchJustStarted())
 		{
 			_matchStartTime = GetLevelStartTime();
 			_matchEndTime = S32_MIN;
@@ -193,15 +193,20 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	}
 }
 
-bool udtGeneralAnalyzer::MatchJustStarted() const
+bool udtGeneralAnalyzer::HasMatchJustStarted() const
 {
 	return _lastGameState != udtGameState::InProgress && _gameState == udtGameState::InProgress;
 }
 
-bool udtGeneralAnalyzer::MatchJustEnded() const
+bool udtGeneralAnalyzer::HasMatchJustEnded() const
 {
 	// The stricter rule is to avoid CPMA round endings to look like match endings.
 	return _lastGameState == udtGameState::InProgress && _gameState == udtGameState::WarmUp;
+}
+
+bool udtGeneralAnalyzer::IsMatchInProgress() const
+{
+	return _gameState == udtGameState::InProgress;
 }
 
 s32 udtGeneralAnalyzer::MatchStartTime() const
@@ -225,6 +230,12 @@ void udtGeneralAnalyzer::SetInWarmUp()
 	_gameState = udtGameState::WarmUp;
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
+}
+
+void udtGeneralAnalyzer::SetInProgress()
+{
+	_lastGameState = udtGameState::InProgress;
+	_gameState = udtGameState::InProgress;
 }
 
 void udtGeneralAnalyzer::ClearMatch()
@@ -303,7 +314,7 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 	else
 	{
 		UpdateGameState(udtGameState::WarmUp);
-		if(MatchJustEnded())
+		if(HasMatchJustEnded())
 		{
 			_matchEndTime = _parser->_inServerTime;
 		}
@@ -341,7 +352,7 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 	{
 		_matchEndTime = S32_MIN;
 		UpdateGameState(udtGameState::InProgress);
-		if(MatchJustStarted())
+		if(HasMatchJustStarted())
 		{
 			_matchStartTime = GetLevelStartTime();
 		}
@@ -355,7 +366,7 @@ void udtGeneralAnalyzer::ProcessIntermissionConfigString(const udtString& config
 	   udtString::EqualsNoCase(configString, "qtrue"))
 	{
 		UpdateGameState(udtGameState::WarmUp);
-		if(MatchJustEnded())
+		if(HasMatchJustEnded())
 		{
 			_matchEndTime = _parser->_inServerTime;
 		}

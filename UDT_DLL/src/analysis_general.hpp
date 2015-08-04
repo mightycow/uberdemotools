@@ -19,12 +19,14 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
 	// The start and end times will only be valid when MatchJustEnded() returns true.
-	bool MatchJustStarted() const;
-	bool MatchJustEnded() const;
+	bool HasMatchJustStarted() const;
+	bool HasMatchJustEnded() const;
+	bool IsMatchInProgress() const;
 	s32  MatchStartTime() const;
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
 	void SetInWarmUp();
+	void SetInProgress();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtGeneralAnalyzer);

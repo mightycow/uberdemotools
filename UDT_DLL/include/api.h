@@ -1135,6 +1135,9 @@ extern "C"
 		// Of type udtGameType::Id.
 		// Defaults to (u32)-1 when invalid or uninitialized.
 		u32 GameType;
+
+		// The duration of the match.
+		u32 MatchDurationMs;
 	};
 
 	struct udtTimeShiftArg

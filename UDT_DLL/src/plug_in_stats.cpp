@@ -6,18 +6,60 @@ static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_CO
 static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYTE_COUNT * 8), "Too many player stats fields for the bit mask size");
 
 
-void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
+#define UDT_MAX_STATS 4
+
+
+udtParserPlugInStats::udtParserPlugInStats()
 {
+	_tokenizer = NULL;
+	_protocol = udtProtocol::Invalid;
+	memset(&_stats, 0, sizeof(_stats));
+}
+
+udtParserPlugInStats::~udtParserPlugInStats()
+{
+}
+
+void udtParserPlugInStats::InitAllocators(u32 demoCount)
+{
+	FinalAllocator.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount);
+	_namesAllocator.Init((uptr)(1 << 14) * (uptr)demoCount);
+	_statsArray.SetAllocator(FinalAllocator);
+	_analyzer.SetTempAllocator(*TempAllocator);
+}
+
+u32 udtParserPlugInStats::GetElementSize() const
+{
+	return (u32)sizeof(udtParseDataStats);
+};
+
+void udtParserPlugInStats::StartDemoAnalysis()
+{
+	_analyzer.ResetForNextDemo();
+
+	_tokenizer = NULL;
+	_protocol = udtProtocol::Invalid;
+	_gameEnded = false;
+	memset(&_stats, 0, sizeof(_stats));
+}
+
+void udtParserPlugInStats::FinishDemoAnalysis()
+{
+	_analyzer.FinishDemoAnalysis();
+	if(!_analyzer.IsMatchInProgress() && _gameEnded)
+	{
+		AddCurrentStats();
+	}
+}
+
+void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessGamestateMessage(arg, parser);
+
 	_tokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
 
 	ClearStats();
-
-	const char* intermissionCs = parser._inConfigStrings[idConfigStringIndex::Intermission(_protocol)].String;
-	if(intermissionCs != NULL)
-	{
-		_gameEnded = strcmp(intermissionCs, "1") == 0;
-	}
 
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	for(s32 i = 0; i < 64; ++i)
@@ -27,8 +69,20 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	}
 }
 
-void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
+void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
+	_analyzer.ProcessCommandMessage(arg, parser);
+	if(_analyzer.HasMatchJustStarted())
+	{
+		_gameEnded = false;
+		AddCurrentStats();
+		_analyzer.SetInProgress();
+	}
+	else if(_analyzer.HasMatchJustEnded())
+	{
+		_gameEnded = true;
+	}
+
 	if(_tokenizer->GetArgCount() < 2)
 	{
 		return;
@@ -47,7 +101,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		}
 	}
 
-	if(!_gameEnded)
+	if(_analyzer.IsMatchInProgress() || !_gameEnded)
 	{
 		return;
 	}
@@ -92,25 +146,13 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& /*
 	}
 }
 
+void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+{
+	_analyzer.ProcessSnapshotMessage(arg, parser);
+}
+
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
 {	
-	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
-	   (udtString::Equals(configString, "1") || udtString::Equals(configString, "qtrue")))
-	{
-		_gameEnded = true;
-	}
-
-	if(csIndex == idConfigStringIndex::Intermission(_protocol) &&
-	   (udtString::Equals(configString, "0") || udtString::Equals(configString, "qfalse")))
-	{
-		if(_gameEnded)
-		{
-			AddCurrentStats();
-		}
-
-		_gameEnded = false;
-	}
-
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	if(csIndex >= firstPlayerCs && csIndex < firstPlayerCs + 64)
 	{
@@ -599,53 +641,58 @@ s32 udtParserPlugInStats::GetValue(s32 index)
 	return (s32)atoi(_tokenizer->GetArgString((u32)index));
 }
 
-void udtParserPlugInStats::AddCurrentStats()
+bool udtParserPlugInStats::AreStatsValid()
 {
-	bool valid = false;
+	// Any valid team stats?
 	for(s32 i = 0; i < 2; ++i)
 	{
 		for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.TeamStats[i].Flags); ++j)
 		{
 			if(_stats.TeamStats[i].Flags[j] != 0)
 			{
-				valid = true;
-				break;
-			}
-		}
-	}
-		
-	if(!valid)
-	{
-		for(s32 i = 0; i < 64; ++i)
-		{
-			for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.PlayerStats[i].Flags); ++j)
-			{
-				if(_stats.PlayerStats[i].Flags[j] != 0)
-				{
-					valid = true;
-					break;
-				}
+				return true;
 			}
 		}
 	}
 
-	if(valid)
+	// Any valid player stats?
+	for(s32 i = 0; i < 64; ++i)
 	{
-		// Fix up the stats and save them.
-		for(s32 i = 0; i < 64; ++i)
+		for(s32 j = 0; j < (s32)UDT_COUNT_OF(_stats.PlayerStats[i].Flags); ++j)
 		{
-			s32& bestWeapon = _stats.PlayerStats[i].Fields[udtPlayerStatsField::BestWeapon];
-			bestWeapon = GetUDTWeaponFromIdWeapon(bestWeapon, _protocol);
-			if(bestWeapon == -1)
+			if(_stats.PlayerStats[i].Flags[j] != 0)
 			{
-				bestWeapon = (s32)udtWeapon::Gauntlet;
+				return true;
 			}
 		}
-		_statsArray.Add(_stats);
-
-		// Clear the stats for the next match.
-		ClearStats();
 	}
+
+	return false;
+}
+
+void udtParserPlugInStats::AddCurrentStats()
+{
+	if(_statsArray.GetSize() == UDT_MAX_STATS ||
+	   !AreStatsValid())
+	{
+		return;
+	}
+
+	// Fix up the stats and save them.
+	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime());
+	for(s32 i = 0; i < 64; ++i)
+	{
+		s32& bestWeapon = _stats.PlayerStats[i].Fields[udtPlayerStatsField::BestWeapon];
+		bestWeapon = GetUDTWeaponFromIdWeapon(bestWeapon, _protocol);
+		if(bestWeapon == -1)
+		{
+			bestWeapon = (s32)udtWeapon::Gauntlet;
+		}
+	}
+	_statsArray.Add(_stats);
+
+	// Clear the stats for the next match.
+	ClearStats();
 }
 
 void udtParserPlugInStats::ClearStats()

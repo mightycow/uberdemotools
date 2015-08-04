@@ -193,6 +193,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 	writer.StartObject("game stats");
 
 	WriteUDTGameType(writer, stats.GameType);
+	writer.WriteIntValue("duration", (s32)(stats.MatchDurationMs / 1000));
 
 	if(hasTeamStats)
 	{
