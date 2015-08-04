@@ -39,6 +39,7 @@ private:
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
 	bool GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex);
 	bool AreStatsValid();
+	void ParseScores();
 	void ParseQLScoresTDM();
 	void ParseQLStatsTDM();
 	void ParseQLScoresDuel();
@@ -46,6 +47,8 @@ private:
 	void ParseQLStatsCTF();
 	void ParseQLScoresOld();
 	void ParseQLScoresDuelOld();
+	void ParseQ3Scores();
+	void ParseQ3ScoresDM3();
 
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
