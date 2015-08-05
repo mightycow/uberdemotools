@@ -50,6 +50,8 @@ private:
 	void ParseQ3Scores();
 	void ParseQ3ScoresDM3();
 	void ParseCPMAXStats2();
+	void ParseQLScoresTDMVeryOld();
+	void ParseQLScoresTDMOld();
 	void ComputeAccuracies(udtPlayerStats& playerStats);
 	void ComputeAccuracy(udtPlayerStats& playerStats, s32 acc, s32 hits, s32 shots);
 
