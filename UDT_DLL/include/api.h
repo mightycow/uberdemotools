@@ -415,54 +415,72 @@ struct udtPatternType
 	N(GauntletHits, "gauntlet hits") \
 	N(GauntletDamage, "gauntlet damage") \
 	N(GauntletDrops, "gauntlet drops") \
+	N(GauntletDeaths, "gauntlet deaths") \
+	N(GauntletPickups, "gauntlet pickups") \
 	N(MachineGunKills, "machinegun kills") \
 	N(MachineGunAccuracy, "machinegun accuracy") \
 	N(MachineGunShots, "machinegun shots") \
 	N(MachineGunHits, "machinegun hits") \
 	N(MachineGunDamage, "machinegun damage") \
 	N(MachineGunDrops, "machinegun drops") \
+	N(MachineGunDeaths, "machinegun deaths") \
+	N(MachineGunPickups, "machinegun pickups") \
 	N(ShotgunKills, "shotgun kills") \
 	N(ShotgunAccuracy, "shotgun accuracy") \
 	N(ShotgunShots, "shotgun shots") \
 	N(ShotgunHits, "shotgun hits") \
 	N(ShotgunDamage, "shotgun damage") \
 	N(ShotgunDrops, "shotgun drops") \
+	N(ShotgunDeaths, "shotgun deaths") \
+	N(ShotgunPickups, "shotgun pickups") \
 	N(GrenadeLauncherKills, "grenade launcher kills") \
 	N(GrenadeLauncherAccuracy, "grenade launcher accuracy") \
 	N(GrenadeLauncherShots, "grenade launcher shots") \
 	N(GrenadeLauncherHits, "grenade launcher hits") \
 	N(GrenadeLauncherDamage, "grenade launcher damage") \
 	N(GrenadeLauncherDrops, "grenade launcher drops") \
+	N(GrenadeLauncherDeaths, "grenade launcher deaths") \
+	N(GrenadeLauncherPickups, "grenade launcher pickups") \
 	N(RocketLauncherKills, "rocket launcher kills") \
 	N(RocketLauncherAccuracy, "rocket launcher accuracy") \
 	N(RocketLauncherShots, "rocket launcher shots") \
 	N(RocketLauncherHits, "rocket launcher hits") \
 	N(RocketLauncherDamage, "rocket launcher damage") \
 	N(RocketLauncherDrops, "rocket launcher drops") \
+	N(RocketLauncherDeaths, "rocket launcher deaths") \
+	N(RocketLauncherPickups, "rocket launcher pickups") \
 	N(PlasmaGunKills, "plasma gun kills") \
 	N(PlasmaGunAccuracy, "plasma gun accuracy") \
 	N(PlasmaGunShots, "plasma gun shots") \
 	N(PlasmaGunHits, "plasma gun hits") \
 	N(PlasmaGunDamage, "plasma gun damage") \
 	N(PlasmaGunDrops, "plasma gun drops") \
+	N(PlasmaGunDeaths, "plasma gun deaths") \
+	N(PlasmaGunPickups, "plasma gun pickups") \
 	N(RailgunKills, "railgun kills") \
 	N(RailgunAccuracy, "railgun accuracy") \
 	N(RailgunShots, "railgun shots") \
 	N(RailgunHits, "railgun hits") \
 	N(RailgunDamage, "railgun damage") \
 	N(RailgunDrops, "railgun drops") \
+	N(RailgunDeaths, "railgun deaths") \
+	N(RailgunPickups, "railgun pickups") \
 	N(LightningGunKills, "lightning gun kills") \
 	N(LightningGunAccuracy, "lightning gun accuracy") \
 	N(LightningGunShots, "lightning gun shots") \
 	N(LightningGunHits, "lightning gun hits") \
 	N(LightningGunDamage, "lightning gun damage") \
 	N(LightningGunDrops, "lightning gun drops") \
+	N(LightningGunDeaths, "lightning gun deaths") \
+	N(LightningGunPickups, "lightning gun pickups") \
 	N(BFGKills, "bfg kills") \
 	N(BFGAccuracy, "bfg accuracy") \
 	N(BFGShots, "bfg shots") \
 	N(BFGHits, "bfg hits") \
 	N(BFGDamage, "bfg damage") \
 	N(BFGDrops, "bfg drops") \
+	N(BFGDeaths, "bfg deaths") \
+	N(BFGPickups, "bfg pickups") \
 	N(GrapplingHookKills, "grappling hook kills") \
 	N(GrapplingHookAccuracy, "grappling hook accuracy") \
 	N(GrapplingHookShots, "grappling hook shots") \
@@ -492,7 +510,9 @@ struct udtPatternType
 	N(HeavyMachineGunShots, "heavy machinegun shots") \
 	N(HeavyMachineGunHits, "heavy machinegun hits") \
 	N(HeavyMachineGunDamage, "heavy machinegun damage") \
-	N(HeavyMachineGunDrops, "heavy machinegun drops")
+	N(HeavyMachineGunDrops, "heavy machinegun drops") \
+	N(ArmorTaken, "armor taken") \
+	N(HealthTaken, "health taken")
 
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc) Enum,
 struct udtPlayerStatsField
@@ -565,7 +585,7 @@ struct udtGameType
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
 #define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
-#define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    16
+#define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    32
 
 
 #ifdef __cplusplus

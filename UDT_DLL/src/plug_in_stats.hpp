@@ -49,6 +49,9 @@ private:
 	void ParseQLScoresDuelOld();
 	void ParseQ3Scores();
 	void ParseQ3ScoresDM3();
+	void ParseCPMAXStats2();
+	void ComputeAccuracies(udtPlayerStats& playerStats);
+	void ComputeAccuracy(udtPlayerStats& playerStats, s32 acc, s32 hits, s32 shots);
 
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
