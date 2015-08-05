@@ -62,24 +62,12 @@ void udtGeneralAnalyzer::FinishDemoAnalysis()
 	}
 }
 
-void udtGeneralAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtGeneralAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
 {
-	arg;
-	parser;
-
-	if(_lastGameState == _gameState && 
-	   _gameState != udtGameState::InProgress)
-	{
-		// Do it ourselves so the user doesn't have to.
-		ClearMatch();
-	}
 }
 
-void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	arg;
-	parser;
-
 	++_gameStateIndex;
 	_parser = &parser;
 	_protocol = parser._inProtocol;
@@ -130,9 +118,6 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 
 void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	arg;
-	parser;
-
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(arg.String);
 
@@ -161,7 +146,6 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		if(HasMatchJustStarted())
 		{
 			_matchStartTime = GetLevelStartTime();
-			_matchEndTime = S32_MIN;
 		}
 	}
 
@@ -299,7 +283,6 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 	if(tw == 0)
 	{
 		UpdateGameState(udtGameState::InProgress);
-		_matchEndTime = S32_MIN;
 		if(_matchStartTime == S32_MIN)
 		{
 			_matchStartTime = ts;
@@ -308,8 +291,6 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 	else if(tw > 0)
 	{
 		UpdateGameState(udtGameState::CountDown);
-		_matchStartTime = S32_MIN;
-		_matchEndTime = S32_MIN;
 	}
 	else
 	{
@@ -317,11 +298,6 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		if(HasMatchJustEnded())
 		{
 			_matchEndTime = _parser->_inServerTime;
-		}
-		else
-		{
-			_matchStartTime = S32_MIN;
-			_matchEndTime = S32_MIN;
 		}
 	}
 }
@@ -338,19 +314,14 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 
 	if(udtString::Equals(gameStateString, "PRE_GAME"))
 	{
-		_matchStartTime = S32_MIN;
-		_matchEndTime = S32_MIN;
 		UpdateGameState(udtGameState::WarmUp);
 	}
 	else if(udtString::Equals(gameStateString, "COUNT_DOWN"))
 	{
-		_matchStartTime = S32_MIN;
-		_matchEndTime = S32_MIN;
 		UpdateGameState(udtGameState::CountDown);
 	}
 	else if(udtString::Equals(gameStateString, "IN_PROGRESS"))
 	{
-		_matchEndTime = S32_MIN;
 		UpdateGameState(udtGameState::InProgress);
 		if(HasMatchJustStarted())
 		{
@@ -385,7 +356,7 @@ s32 udtGeneralAnalyzer::GetLevelStartTime()
 	s32 matchStartTimeMs = S32_MIN;
 	if(sscanf(cs->String, "%d", &matchStartTimeMs) == 1)
 	{
-		_matchStartTime = (s32)matchStartTimeMs;
+		matchStartTimeMs = (s32)matchStartTimeMs;
 	}
 
 	return (s32)matchStartTimeMs;
