@@ -46,7 +46,8 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_gameStateIndex = -1;
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
-	_gameType = udtGameType::Q3;
+	_game = udtGame::Q3;
+	_gameType = udtGameType::Invalid;
 	_gameState = udtGameState::WarmUp;
 	_lastGameState = udtGameState::WarmUp;
 	_protocol = udtProtocol::Invalid;
@@ -77,10 +78,10 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	// First game state message?
 	if(_gameStateIndex == 0)
 	{
-		_gameType = udtGameType::Q3;
+		_game = udtGame::Q3;
 		if(_protocol >= udtProtocol::Dm73)
 		{
-			_gameType = udtGameType::QL;
+			_game = udtGame::QL;
 		}
 		else
 		{
@@ -92,7 +93,13 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 		}
 	}
 
-	if(_gameType == udtGameType::CPMA)
+	udtBaseParser::udtConfigString* const serverInfoCs = parser.FindConfigStringByIndex(CS_SERVERINFO);
+	if(serverInfoCs != NULL)
+	{
+		ProcessGameTypeConfigString(serverInfoCs->String);
+	}
+
+	if(_game == udtGame::CPMA)
 	{
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_CPMA_GAME_INFO);
 		if(cs != NULL)
@@ -100,7 +107,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 			ProcessCPMAGameInfoConfigString(cs->String);
 		}
 	}
-	else if(_gameType == udtGameType::QL)
+	else if(_game == udtGame::QL)
 	{
 		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
 		if(cs != NULL)
@@ -108,7 +115,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 			ProcessQLServerInfoConfigString(cs->String);
 		}
 	}
-	else if(_gameType == udtGameType::Q3 || _gameType == udtGameType::OSP)
+	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
 		_matchStartTime = GetLevelStartTime();
 	}
@@ -121,7 +128,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(arg.String);
 
-	if(_gameType == udtGameType::CPMA && 
+	if(_game == udtGame::CPMA && 
 	   tokenizer.GetArgCount() == 2 && 
 	   udtString::Equals(tokenizer.GetArg(0), "print"))
 	{
@@ -138,7 +145,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		}
 	}
 
-	if(_gameType != udtGameType::CPMA &&
+	if(_game != udtGame::CPMA &&
 	   tokenizer.GetArgCount() == 1 &&
 	   udtString::Equals(tokenizer.GetArg(0), "map_restart"))
 	{
@@ -159,19 +166,19 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 
 	const char* const configString = tokenizer.GetArgString(2);
 
-	if(_gameType == udtGameType::CPMA && csIndex == CS_CPMA_GAME_INFO)
+	if(_game == udtGame::CPMA && csIndex == CS_CPMA_GAME_INFO)
 	{
 		ProcessCPMAGameInfoConfigString(configString);
 	}
-	else if(_gameType != udtGameType::CPMA && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
+	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 	{
 		_matchStartTime = GetLevelStartTime();
 	}
-	else if(_gameType == udtGameType::QL && csIndex == CS_SERVERINFO)
+	else if(_game == udtGame::QL && csIndex == CS_SERVERINFO)
 	{
 		ProcessQLServerInfoConfigString(configString);
 	}
-	else if(_gameType != udtGameType::CPMA && csIndex == idConfigStringIndex::Intermission(_protocol))
+	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::Intermission(_protocol))
 	{	
 		ProcessIntermissionConfigString(tokenizer.GetArg(2));
 	}
@@ -206,6 +213,11 @@ s32 udtGeneralAnalyzer::MatchEndTime() const
 s32 udtGeneralAnalyzer::GameStateIndex() const
 {
 	return _gameStateIndex;
+}
+
+udtGameType::Id udtGeneralAnalyzer::GetGameType() const
+{
+	return _gameType;
 }
 
 void udtGeneralAnalyzer::SetInWarmUp()
@@ -251,17 +263,17 @@ void udtGeneralAnalyzer::ProcessQ3ServerInfoConfigString(const char* configStrin
 	if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", configString) &&
 	   udtString::Equals(gameName, "cpma"))
 	{
-		_gameType = udtGameType::CPMA;
+		_game = udtGame::CPMA;
 	}
 	else if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", configString) &&
 			udtString::ContainsNoCase(charIndex, gameName, "osp"))
 	{
-		_gameType = udtGameType::OSP;
+		_game = udtGame::OSP;
 	}
 	else if(ParseConfigStringValueString(gameName, *_tempAllocator, "gameversion", configString) &&
 			udtString::ContainsNoCase(charIndex, gameName, "osp"))
 	{
-		_gameType = udtGameType::OSP;
+		_game = udtGame::OSP;
 	}
 }
 
@@ -341,6 +353,23 @@ void udtGeneralAnalyzer::ProcessIntermissionConfigString(const udtString& config
 		{
 			_matchEndTime = _parser->_inServerTime;
 		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessGameTypeConfigString(const char* configString)
+{
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	s32 gameType = 0;
+	if(!ParseConfigStringValueInt(gameType, *_tempAllocator, "g_gametype", configString))
+	{
+		return;
+	}
+
+	const s32 udtGT = GetUDTGameTypeFromIdGameType(gameType, _protocol, _game);
+	if(udtGT >= 0 && udtGT < (s32)udtGameType::Count)
+	{
+		_gameType = (udtGameType::Id)udtGT;
 	}
 }
 

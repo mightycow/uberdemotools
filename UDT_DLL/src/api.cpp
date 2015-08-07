@@ -92,8 +92,16 @@ static const char* CutPatternNames[] =
 };
 #undef UDT_CUT_PATTERN_ITEM
 
-#define UDT_GAME_TYPE_ITEM(Enum, Desc) Desc,
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) Desc,
 static const char* GameTypeNames[] =
+{
+	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+	"after last game type"
+};
+#undef UDT_GAME_TYPE_ITEM
+
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) ShortDesc,
+static const char* ShortGameTypeNames[] =
 {
 	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
 	"after last game type"
@@ -263,6 +271,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::GameTypes:
 			*elements = GameTypeNames;
 			*elementCount = (u32)(UDT_COUNT_OF(GameTypeNames) - 1);
+			break;
+
+		case udtStringArray::ShortGameTypes:
+			*elements = ShortGameTypeNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ShortGameTypeNames) - 1);
 			break;
 
 		default:

@@ -349,6 +349,7 @@ struct udtStringArray
 		Teams,
 		CutPatterns,
 		GameTypes,
+		ShortGameTypes,
 		Count
 	};
 };
@@ -557,26 +558,32 @@ struct udtTeamStatsField
 #undef UDT_TEAM_STATS_ITEM
 
 #define UDT_GAME_TYPE_LIST(N) \
-	N(FFA, "free for all") \
-	N(Duel, "duel") \
-	N(Race, "race") \
-	N(TDM, "team deathmatch") \
-	N(CA, "clan arena") \
-	N(CTF, "capture the flag") \
-	N(OneFlagCTF, "one flag ctf") \
-	N(Obelisk, "obelisk") \
-	N(Harvester, "harvester") \
-	N(Domination, "domination") \
-	N(AD, "attack and defend") \
-	N(RedRover, "red rover")
-
-#define UDT_GAME_TYPE_ITEM(Enum, Desc) Enum,
+	N(SP, "SP", "Single Player") \
+	N(FFA, "FFA", "Free for All") \
+	N(Duel, "1v1", "Duel") \
+	N(Race, "race", "Race") \
+	N(HM, "HM", "HoonyMode") \
+	N(TDM, "TDM", "Team DeathMatch") \
+	N(CA, "CA", "Clan Arena") \
+	N(CTF, "CTF", "Capture The Flag") \
+	N(OneFlagCTF, "1FCTF", "One Flag CTF") \
+	N(Obelisk, "OB", "Obelisk") \
+	N(Harvester, "HAR", "Harvester") \
+	N(Domination, "DOM", "Domination") \
+	N(CTFS, "CTFS", "Capture Strike") \
+	N(RedRover, "RR", "Red Rover") \
+	N(NTF, "NTF", "Not Team Fortress") \
+	N(TwoVsTwo, "2v2", "2v2 TDM") \
+	N(FT, "FT", "Freeze Tag")
+	
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) Enum,
 struct udtGameType
 {
 	enum Id
 	{
 		UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
 		Count,
+		Invalid,
 		FirstTeamMode = TDM
 	};
 };

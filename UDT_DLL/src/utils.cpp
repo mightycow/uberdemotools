@@ -664,6 +664,82 @@ s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	return -1;
 }
 
+s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id game)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	if(protocol == udtProtocol::Dm3)
+	{
+		switch((idGameType3::Id)gt)
+		{
+			case idGameType3::FFA: return (s32)udtGameType::FFA;
+			case idGameType3::Duel: return (s32)udtGameType::Duel;
+			case idGameType3::SP: return (s32)udtGameType::SP;
+			case idGameType3::TDM: return (s32)udtGameType::TDM;
+			case idGameType3::CTF: return (s32)udtGameType::CTF;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68 && game != udtGame::CPMA)
+	{
+		switch((idGameType48p::Id)gt)
+		{
+			case idGameType48p::FFA: return (s32)udtGameType::FFA;
+			case idGameType48p::Duel: return (s32)udtGameType::Duel;
+			case idGameType48p::SP: return (s32)udtGameType::SP;
+			case idGameType48p::TDM: return (s32)udtGameType::TDM;
+			case idGameType48p::CTF: return (s32)udtGameType::CTF;
+			case idGameType48p::OneFlagCTF: return (s32)udtGameType::OneFlagCTF;
+			case idGameType48p::Obelisk: return (s32)udtGameType::Obelisk;
+			case idGameType48p::Harvester: return (s32)udtGameType::Harvester;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm73)
+	{
+		switch((idGameType73p::Id)gt)
+		{
+			case idGameType73p::FFA: return (s32)udtGameType::FFA;
+			case idGameType73p::Duel: return (s32)udtGameType::Duel;
+			case idGameType73p::Race: return (s32)udtGameType::Race;
+			case idGameType73p::TDM: return (s32)udtGameType::TDM;
+			case idGameType73p::CA: return (s32)udtGameType::CA;
+			case idGameType73p::CTF: return (s32)udtGameType::CTF;
+			case idGameType73p::OneFlagCTF: return (s32)udtGameType::OneFlagCTF;
+			case idGameType73p::Obelisk: return (s32)udtGameType::Obelisk;
+			case idGameType73p::Harvester: return (s32)udtGameType::Harvester;
+			case idGameType73p::FT: return (s32)udtGameType::FT;
+			case idGameType73p::Domination: return (s32)udtGameType::Domination;
+			case idGameType73p::CTFS: return (s32)udtGameType::CTFS;
+			case idGameType73p::RedRover: return (s32)udtGameType::RedRover;
+			default: return -1;
+		}
+	}
+	else if(protocol <= udtProtocol::Dm68 && game == udtGame::CPMA)
+	{
+		switch((idGameType68_CPMA::Id)gt)
+		{
+			case idGameType68_CPMA::HM: return (s32)udtGameType::HM;
+			case idGameType68_CPMA::FFA: return (s32)udtGameType::FFA;
+			case idGameType68_CPMA::Duel: return (s32)udtGameType::Duel;
+			case idGameType68_CPMA::SP: return (s32)udtGameType::SP;
+			case idGameType68_CPMA::TDM: return (s32)udtGameType::TDM;
+			case idGameType68_CPMA::CTF: return (s32)udtGameType::CTF;
+			case idGameType68_CPMA::CA: return (s32)udtGameType::CA;
+			case idGameType68_CPMA::FT: return (s32)udtGameType::FT;
+			case idGameType68_CPMA::CTFS: return (s32)udtGameType::CTFS;
+			case idGameType68_CPMA::NTF: return (s32)udtGameType::NTF;
+			case idGameType68_CPMA::TwoVsTwo: return (s32)udtGameType::TwoVsTwo;
+			default: return -1;
+		}
+	}
+
+	return -1;
+}
+
 void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
 {
 	char* bytes;

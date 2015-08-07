@@ -1316,3 +1316,83 @@ struct idItem90
 		Count
 	};
 };
+
+struct idGameType3
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		SP,
+		TDM,
+		CTF,
+		Count
+	};
+};
+
+struct idGameType48p
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		SP,
+		TDM,
+		CTF,
+		OneFlagCTF,
+		Obelisk,
+		Harvester,
+		Count
+	};
+};
+
+struct idGameType68_CPMA
+{
+	enum Id
+	{
+		HM = -1,
+		FFA = 0,
+		Duel = 1,
+		SP = 2,
+		TDM = 3,
+		CTF = 4,
+		CA = 5,
+		FT = 6,
+		CTFS = 7,
+		NTF = 8,
+		TwoVsTwo = 9,
+		Count
+	};
+};
+
+struct idGameType73p
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		Race,
+		TDM,
+		CA,
+		CTF,
+		OneFlagCTF,
+		Obelisk,
+		Harvester,
+		FT,
+		Domination,
+		CTFS,
+		RedRover,
+		Count
+	};
+};
+
+struct udtGame
+{
+	enum Id
+	{
+		Q3,
+		QL,
+		CPMA,
+		OSP
+	};
+};

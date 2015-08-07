@@ -18,7 +18,6 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
-	// The start and end times will only be valid when MatchJustEnded() returns true.
 	bool HasMatchJustStarted() const;
 	bool HasMatchJustEnded() const;
 	bool IsMatchInProgress() const;
@@ -28,22 +27,11 @@ public:
 	void SetInWarmUp();
 	void SetInProgress();
 
+	udtGameType::Id GetGameType() const;
+
 private:
 	UDT_NO_COPY_SEMANTICS(udtGeneralAnalyzer);
 
-	// "gamename" in cs 0.
-	struct udtGameType
-	{
-		enum Id
-		{
-			Q3,
-			QL,
-			CPMA,
-			OSP
-		};
-	};
-
-	// "g_gameState" in cs 0.
 	struct udtGameState
 	{
 		enum Id
@@ -61,6 +49,7 @@ private:
 	void ProcessCPMAGameInfoConfigString(const char* configString);
 	void ProcessQLServerInfoConfigString(const char* configString);
 	void ProcessIntermissionConfigString(const udtString& configString);
+	void ProcessGameTypeConfigString(const char* configString);
 	s32  GetLevelStartTime();
 
 	udtBaseParser* _parser;
@@ -68,6 +57,7 @@ private:
 	s32 _gameStateIndex;
 	s32 _matchStartTime;
 	s32 _matchEndTime;
+	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;
 	udtGameState::Id _lastGameState;

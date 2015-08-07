@@ -103,7 +103,24 @@ static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex)
 	writer.WriteStringValue("team", teamNames[udtTeamIndex]);
 }
 
-static void WriteUDTGameType(udtJSONWriter& writer, u32 udtGameType)
+static void WriteUDTGameTypeShort(udtJSONWriter& writer, u32 udtGameType)
+{
+	const char** gameTypeNames = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetStringArray(udtStringArray::ShortGameTypes, &gameTypeNames, &gameTypeCount) != (s32)udtErrorCode::None)
+	{
+		return;
+	}
+
+	if(udtGameType >= gameTypeCount)
+	{
+		return;
+	}
+
+	writer.WriteStringValue("game type short", gameTypeNames[udtGameType]);
+}
+
+static void WriteUDTGameTypeLong(udtJSONWriter& writer, u32 udtGameType)
 {
 	const char** gameTypeNames = NULL;
 	u32 gameTypeCount = 0;
@@ -192,7 +209,8 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 
 	writer.StartObject("game stats");
 
-	WriteUDTGameType(writer, stats.GameType);
+	WriteUDTGameTypeShort(writer, stats.GameType);
+	WriteUDTGameTypeLong(writer, stats.GameType);
 	writer.WriteIntValue("duration", (s32)(stats.MatchDurationMs / 1000));
 
 	if(hasTeamStats)

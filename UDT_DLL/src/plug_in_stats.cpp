@@ -13,7 +13,8 @@ udtParserPlugInStats::udtParserPlugInStats()
 {
 	_tokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
-	memset(&_stats, 0, sizeof(_stats));
+	_gameEnded = false;
+	ClearStats();
 }
 
 udtParserPlugInStats::~udtParserPlugInStats()
@@ -40,7 +41,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_tokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_gameEnded = false;
-	memset(&_stats, 0, sizeof(_stats));
+	ClearStats();
 }
 
 void udtParserPlugInStats::FinishDemoAnalysis()
@@ -206,6 +207,8 @@ void udtParserPlugInStats::ParseScores()
 
 void udtParserPlugInStats::ParseQLScoresTDM()
 {
+	_stats.GameType = (u32)udtGameType::TDM;
+
 	if(_tokenizer->GetArgCount() < 32)
 	{
 		return;
@@ -253,7 +256,6 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 	};
 
 	udtParseDataStats* const stats = &_stats;
-	stats->GameType = (u32)udtGameType::TDM;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields));
@@ -282,6 +284,8 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 
 void udtParserPlugInStats::ParseQLStatsTDM()
 {
+	_stats.GameType = (u32)udtGameType::TDM;
+
 	// If more than 13 tokens, weapon stats follow.
 	if(_tokenizer->GetArgCount() < 13)
 	{
@@ -351,6 +355,8 @@ void udtParserPlugInStats::ParseQLStatsTDM()
 
 void udtParserPlugInStats::ParseQLScoresDuel()
 {
+	_stats.GameType = (u32)udtGameType::Duel;
+
 	if(_tokenizer->GetArgCount() < 2)
 	{
 		return;
@@ -409,8 +415,6 @@ void udtParserPlugInStats::ParseQLScoresDuel()
 		return;
 	}
 
-	_stats.GameType = (u32)udtGameType::Duel;
-
 	s32 offset = 2;
 	for(s32 i = 0; i < scoreCount; ++i)
 	{
@@ -426,6 +430,8 @@ void udtParserPlugInStats::ParseQLScoresDuel()
 
 void udtParserPlugInStats::ParseQLScoresCTF()
 {
+	_stats.GameType = (u32)udtGameType::CTF;
+
 	if(_tokenizer->GetArgCount() < 38)
 	{
 		return;
@@ -477,7 +483,6 @@ void udtParserPlugInStats::ParseQLScoresCTF()
 	};
 
 	udtParseDataStats* const stats = &_stats;
-	stats->GameType = (u32)udtGameType::CTF;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 1);
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 18);
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 36);
@@ -506,6 +511,8 @@ void udtParserPlugInStats::ParseQLScoresCTF()
 
 void udtParserPlugInStats::ParseQLStatsCTF()
 {
+	_stats.GameType = (u32)udtGameType::CTF;
+
 	if(_tokenizer->GetArgCount() != 14)
 	{
 		return;
@@ -604,6 +611,8 @@ void udtParserPlugInStats::ParseQLScoresOld()
 
 void udtParserPlugInStats::ParseQLScoresDuelOld()
 {
+	_stats.GameType = (u32)udtGameType::Duel;
+
 	// HMG stats were added in dm_90 and then removed in dm_91...
 	const u32 expectedTokenCount = (_protocol == udtProtocol::Dm90) ? (u32)177 : (u32)167;
 	if(_tokenizer->GetArgCount() < expectedTokenCount)
@@ -654,8 +663,6 @@ void udtParserPlugInStats::ParseQLScoresDuelOld()
 	};
 
 #undef WEAPON_FIELDS
-
-	_stats.GameType = (u32)udtGameType::Duel;
 
 	// HMG stats were added in dm_90 and then removed in dm_91...
 	const s32 realFieldCount = (_protocol == udtProtocol::Dm90) ? (u32)88 : (u32)83;
@@ -872,6 +879,8 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 
 void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 {
+	_stats.GameType = (u32)udtGameType::TDM;
+
 	if(_tokenizer->GetArgCount() < 17)
 	{
 		return;
@@ -898,7 +907,6 @@ void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 	};
 
 	udtParseDataStats* const stats = &_stats;
-	stats->GameType = (u32)udtGameType::TDM;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 8);
 
@@ -921,6 +929,8 @@ void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 
 void udtParserPlugInStats::ParseQLScoresTDMOld()
 {
+	_stats.GameType = (u32)udtGameType::TDM;
+
 	if(_tokenizer->GetArgCount() < 29)
 	{
 		return;
@@ -954,7 +964,6 @@ void udtParserPlugInStats::ParseQLScoresTDMOld()
 	};
 
 	udtParseDataStats* const stats = &_stats;
-	stats->GameType = (u32)udtGameType::TDM;
 	ParseFields(stats->TeamStats[0].Flags, stats->TeamStats[0].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseFields(stats->TeamStats[1].Flags, stats->TeamStats[1].Fields, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
 
@@ -1031,8 +1040,12 @@ void udtParserPlugInStats::AddCurrentStats()
 		return;
 	}
 
+	//
 	// Fix up the stats and save them.
+	//
+
 	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime());
+
 	for(s32 i = 0; i < 64; ++i)
 	{
 		s32& bestWeapon = _stats.PlayerStats[i].Fields[udtPlayerStatsField::BestWeapon];
@@ -1043,6 +1056,13 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		ComputeAccuracies(_stats.PlayerStats[i]);
 	}
+
+	if(_stats.GameType == udtGameType::Invalid && 
+	   _analyzer.GetGameType() != udtGameType::Invalid)
+	{
+		_stats.GameType = _analyzer.GetGameType();
+	}
+
 	_statsArray.Add(_stats);
 
 	// Clear the stats for the next match.
@@ -1053,7 +1073,7 @@ void udtParserPlugInStats::ClearStats()
 {
 	memset(&_stats, 0, sizeof(_stats));
 
-	_stats.GameType = u32(~0);
+	_stats.GameType = (u32)udtGameType::Invalid;
 
 	for(s32 i = 0; i < 64; ++i)
 	{
