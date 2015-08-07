@@ -130,7 +130,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : adscores scores_ad rrscores tdmscores tdmscores2 castats cascores scores_ft scores_race scores_rr scores_ca
+	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr scores_ca
 	CPMA: xscores
 	OSP : statsinfo xstats1 bstats
 	mstats:  full stats for one player sent multiple times during a game
