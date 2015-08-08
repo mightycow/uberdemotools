@@ -1,7 +1,6 @@
 To do:
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
-- Text format export (XML? JSON?)
 - Player position smoothing for "laggy" demos
 - DLL: Better mid-air detection heuristics?
 - DLL: Give plug-ins the ability to tell when their job is done so that parsing can be stopped early
@@ -14,5 +13,7 @@ To do:
 - Merger: Find a way to deal with the "player entities event sequence problem"
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Converters: dm3/dm_48 -> dm_68 and dm_73/dm_90 -> dm_91
-- New command-line tool: UDT_json to output a JSON file with some demo metadata
-- New scores/stats analyzer that reads stuff from server commands whenever they are available
+- General analyzer: mod, mod version, map, gameplay (VQ3, CQ3, PMC, CPM, etc)
+- Stats analyzer: support for all known scores/stats commands
+- Gamestate analyzer: game mode (short + long)
+- Stats analyzer: add defrag support if it sends the real/correct run times through server commands
