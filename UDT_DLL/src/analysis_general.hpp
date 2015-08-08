@@ -51,6 +51,8 @@ private:
 	void ProcessIntermissionConfigString(const udtString& configString);
 	void ProcessGameTypeConfigString(const char* configString);
 	s32  GetLevelStartTime();
+	s32  GetWarmUpEndTime();
+	bool IsIntermission();
 
 	udtBaseParser* _parser;
 	udtVMLinearAllocator* _tempAllocator;

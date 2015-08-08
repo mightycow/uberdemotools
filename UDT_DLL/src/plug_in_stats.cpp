@@ -9,10 +9,28 @@ static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYT
 #define UDT_MAX_STATS 4
 
 
+static bool IsBitSet(const u8* flags, s32 index)
+{
+	const s32 byteIndex = index >> 3;
+	const s32 bitIndex = index & 7;
+
+	return (flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0;
+}
+
+static void SetBit(u8* flags, s32 index)
+{
+	const s32 byteIndex = index >> 3;
+	const s32 bitIndex = index & 7;
+
+	flags[byteIndex] |= (u8)1 << (u8)bitIndex;
+}
+
+
 udtParserPlugInStats::udtParserPlugInStats()
 {
 	_tokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
+	_followedClientNumber = -1;
 	_gameEnded = false;
 	ClearStats();
 }
@@ -40,6 +58,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 
 	_tokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
+	_followedClientNumber = -1;
 	_gameEnded = false;
 	ClearStats();
 }
@@ -59,6 +78,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 	_tokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
+	_followedClientNumber = -1;
 
 	ClearStats();
 
@@ -126,14 +146,15 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("dscores", ParseQLScoresDuelOld),
 		HANDLER("xstats2", ParseCPMAXStats2),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
-		HANDLER("tdmscores2", ParseQLScoresTDMOld)
+		HANDLER("tdmscores2", ParseQLScoresTDMOld),
+		HANDLER("statsinfo", ParseOSPStatsInfo)
 	};
 #undef HANDLER
 	/*
 	@TODO:
 	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr scores_ca
 	CPMA: xscores
-	OSP : statsinfo xstats1 bstats
+	OSP : xstats1 bstats
 	mstats:  full stats for one player sent multiple times during a game
 	xstats2: full stats for one player sent at the end of a game, encoded the same as mstats
 	xscores: team and player scores sent multiple times during a game
@@ -151,6 +172,12 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 
 void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
+	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, _protocol);
+	if(ps != NULL)
+	{ 
+		_followedClientNumber = ps->clientNum;
+	}
+
 	_analyzer.ProcessSnapshotMessage(arg, parser);
 }
 
@@ -188,6 +215,9 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 
 #define    PLAYER_FIELD(Name, Index)    { (s32)udtPlayerStatsField::Name, Index }
 #define    TEAM_FIELD(Name, Index)      { (s32)udtTeamStatsField::Name, Index }
+
+#define    PLAYER_VALUE(Name, Value)    { (s32)udtPlayerStatsField::Name, Value }
+#define    TEAM_VALUE(Name, Value)      { (s32)udtTeamStatsField::Name, Value }
 
 void udtParserPlugInStats::ParseScores()
 {
@@ -984,6 +1014,111 @@ void udtParserPlugInStats::ParseQLScoresTDMOld()
 	}
 }
 
+void udtParserPlugInStats::ParseOSPStatsInfo()
+{
+	// 22 fields including the weapon mask.
+	if(_followedClientNumber < 0 || 
+	   _followedClientNumber >= 64 ||
+	   _tokenizer->GetArgCount() < 23)
+	{
+		return;
+	}
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(Score, 2),
+		PLAYER_FIELD(Suicides, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		PLAYER_FIELD(DamageGiven, 9),
+		PLAYER_FIELD(DamageReceived, 10),
+		PLAYER_FIELD(MegaHealthPickups, 18),
+		PLAYER_FIELD(GreenArmorPickups, 19),
+		PLAYER_FIELD(RedArmorPickups, 20),
+		PLAYER_FIELD(YellowArmorPickups, 21)
+	};
+
+	udtPlayerStats& playerStats = _stats.PlayerStats[_followedClientNumber];
+	ParseFields(playerStats.Flags, playerStats.Fields, fields, (s32)UDT_COUNT_OF(fields));
+
+	const s32 armorTaken = (GetValue(11) >> 16) & 0xFFFF;
+	const s32 healthTaken = (GetValue(12) >> 16) & 0xFFFF;
+	const udtStatsFieldValue newValues[2] = { PLAYER_VALUE(ArmorTaken, armorTaken), PLAYER_VALUE(HealthTaken, healthTaken) };
+	SetFields(playerStats.Flags, playerStats.Fields, newValues, (s32)UDT_COUNT_OF(newValues));
+
+	const s32 weaponMask = GetValue(22);
+	s32 weaponCount = 0; // Yes, this loop implements popcnt.
+	for(s32 i = 0; i < 32; ++i)
+	{
+		if((weaponMask & (1 << i)) != 0)
+		{
+			++weaponCount;
+		}
+	}
+
+	if(_tokenizer->GetArgCount() < (u32)(23 + 4 * weaponCount))
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon) \
+	{ \
+		(s32)udtPlayerStatsField::Weapon##Hits, \
+		(s32)udtPlayerStatsField::Weapon##Drops, \
+		(s32)udtPlayerStatsField::Weapon##Shots, \
+		(s32)udtPlayerStatsField::Weapon##Pickups, \
+		(s32)udtPlayerStatsField::Weapon##Kills, \
+		(s32)udtPlayerStatsField::Weapon##Deaths  \
+	}
+
+	static const s32 weaponFieldIndices[11][6] =
+	{
+		WEAPON_FIELDS(Gauntlet), // Weapon 0 is nothing.
+		WEAPON_FIELDS(Gauntlet),
+		WEAPON_FIELDS(MachineGun),
+		WEAPON_FIELDS(Shotgun),
+		WEAPON_FIELDS(GrenadeLauncher),
+		WEAPON_FIELDS(RocketLauncher),
+		WEAPON_FIELDS(LightningGun),
+		WEAPON_FIELDS(Railgun),
+		WEAPON_FIELDS(PlasmaGun),
+		WEAPON_FIELDS(BFG),
+		WEAPON_FIELDS(GrapplingHook)
+	};
+
+#undef WEAPON_FIELDS
+
+	s32 offset = 23;
+	for(s32 i = 1; i < 11; ++i)
+	{
+		if((weaponMask & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32* const indices = weaponFieldIndices[i];
+		const s32 hitsAndDrops = GetValue(offset++);
+		const s32 shotsAndPickups = GetValue(offset++);
+		const s32 kills = GetValue(offset++);
+		const s32 deaths = GetValue(offset++);
+		const s32 hits = hitsAndDrops & 0xFFFF;
+		const s32 drops = (hitsAndDrops >> 16) & 0xFFFF;
+		const s32 shots = shotsAndPickups & 0xFFFF;
+		const s32 pickups = (shotsAndPickups >> 16) & 0xFFFF;
+		const udtStatsFieldValue newWeaponValues[] =
+		{
+			{ indices[0], hits },
+			{ indices[1], drops },
+			{ indices[2], shots },
+			{ indices[3], pickups },
+			{ indices[4], kills },
+			{ indices[5], deaths }
+		};
+
+		SetFields(playerStats.Flags, playerStats.Fields, newWeaponValues, (s32)UDT_COUNT_OF(newWeaponValues));
+	}
+}
+
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
 {
 	for(s32 i = 0; i < fieldCount; ++i)
@@ -992,6 +1127,20 @@ void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtS
 		s32* const field = destFields + fieldIndex;
 		*field = GetValue(fields[i].TokenIndex + tokenOffset);
 		
+		const s32 byteIndex = fieldIndex >> 3;
+		const s32 bitIndex = fieldIndex & 7;
+		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
+	}
+}
+
+void udtParserPlugInStats::SetFields(u8* destMask, s32* destFields, const udtStatsFieldValue* fields, s32 fieldCount)
+{
+	for(s32 i = 0; i < fieldCount; ++i)
+	{
+		const s32 fieldIndex = fields[i].Index;
+		s32* const field = destFields + fieldIndex;
+		*field = fields[i].Value;
+
 		const s32 byteIndex = fieldIndex >> 3;
 		const s32 bitIndex = fieldIndex & 7;
 		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
@@ -1118,22 +1267,6 @@ void udtParserPlugInStats::ComputeAccuracies(udtPlayerStats& playerStats)
 #undef COMPUTE_ACC
 }
 
-static bool IsBitSet(const u8* flags, s32 index)
-{
-	const s32 byteIndex = index >> 3;
-	const s32 bitIndex = index & 7;
-
-	return (flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0;
-}
-
-static void SetBit(u8* flags, s32 index)
-{
-	const s32 byteIndex = index >> 3;
-	const s32 bitIndex = index & 7;
-
-	flags[byteIndex] |= (u8)1 << (u8)bitIndex;
-}
-
 void udtParserPlugInStats::ComputeAccuracy(udtPlayerStats& playerStats, s32 acc, s32 hits, s32 shots)
 {
 	if(IsBitSet(playerStats.Flags, acc) || 
@@ -1145,6 +1278,6 @@ void udtParserPlugInStats::ComputeAccuracy(udtPlayerStats& playerStats, s32 acc,
 
 	const s32 hitCount = playerStats.Fields[hits];
 	const s32 shotCount = playerStats.Fields[shots];
-	playerStats.Fields[acc] = shotCount == 0 ? 0 : ((100 * hitCount) / shotCount);
+	playerStats.Fields[acc] = shotCount == 0 ? 0 : (((100 * hitCount) + (shotCount / 2)) / shotCount);
 	SetBit(playerStats.Flags, acc);
 }

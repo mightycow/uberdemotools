@@ -95,6 +95,7 @@ namespace idConfigStringIndex
 	extern s32 FirstPlayer(udtProtocol::Id protocol);
 	extern s32 Intermission(udtProtocol::Id protocol);
 	extern s32 LevelStartTime(udtProtocol::Id protocol);
+	extern s32 WarmUpEndTime(udtProtocol::Id protocol);
 }
 
 namespace idPowerUpIndex

@@ -488,6 +488,8 @@ struct udtPatternType
 	N(GrapplingHookHits, "grappling hook hits") \
 	N(GrapplingHookDamage, "grappling hook damage") \
 	N(GrapplingHookDrops, "grappling hook drops") \
+	N(GrapplingHookDeaths, "grappling hook deaths") \
+	N(GrapplingHookPickups, "grappling hook pickups") \
 	N(NailGunKills, "nailgun kills") \
 	N(NailGunAccuracy, "nailgun accuracy") \
 	N(NailGunShots, "nailgun shots") \

@@ -946,6 +946,11 @@ namespace idConfigStringIndex
 			default: return -1;
 		}
 	}
+
+	s32 WarmUpEndTime(udtProtocol::Id /*protocol*/)
+	{
+		return (s32)CS_WARMUP;
+	}
 }
 
 namespace idPowerUpIndex

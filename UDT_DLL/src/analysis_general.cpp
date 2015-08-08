@@ -118,6 +118,13 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
 		_matchStartTime = GetLevelStartTime();
+		const s32 warmUpEndTime = GetWarmUpEndTime();
+		const bool noIntermission = !IsIntermission();
+		const bool noWarmUpEndTime = warmUpEndTime == S32_MIN || warmUpEndTime < _matchStartTime;
+		if(noIntermission && noWarmUpEndTime)
+		{
+			UpdateGameState(udtGameState::InProgress);
+		}
 	}
 
 	_processingGameState = false;
@@ -383,10 +390,44 @@ s32 udtGeneralAnalyzer::GetLevelStartTime()
 	}
 
 	s32 matchStartTimeMs = S32_MIN;
-	if(sscanf(cs->String, "%d", &matchStartTimeMs) == 1)
+	if(sscanf(cs->String, "%d", &matchStartTimeMs) != 1)
 	{
-		matchStartTimeMs = (s32)matchStartTimeMs;
+		return S32_MIN;
 	}
 
-	return (s32)matchStartTimeMs;
+	return matchStartTimeMs;
+}
+
+s32 udtGeneralAnalyzer::GetWarmUpEndTime()
+{
+	// The next match start time is given.
+	// When a game starts, the config string gets cleared ("" string).
+	const s32 csIndex = idConfigStringIndex::WarmUpEndTime(_protocol);
+	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
+	if(cs == NULL)
+	{
+		return S32_MIN;
+	}
+
+	s32 warmUpEndTimeMs = S32_MIN;
+	if(sscanf(cs->String, "%d", &warmUpEndTimeMs) != 1)
+	{
+		return S32_MIN;
+	}
+
+	return warmUpEndTimeMs;
+}
+
+bool udtGeneralAnalyzer::IsIntermission()
+{
+	const s32 csIndex = idConfigStringIndex::Intermission(_protocol);
+	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
+	if(cs == NULL)
+	{
+		return false;
+	}
+
+	const udtString configString = udtString::NewConstRef(cs->String, cs->StringLength);
+
+	return udtString::EqualsNoCase(configString, "1") || udtString::EqualsNoCase(configString, "qtrue");
 }

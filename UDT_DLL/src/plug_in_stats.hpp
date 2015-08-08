@@ -30,8 +30,15 @@ private:
 		s32 TokenIndex;
 	};
 
+	struct udtStatsFieldValue
+	{
+		s32 Index;
+		s32 Value;
+	};
+
 	s32  GetValue(s32 index);
 	void ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset = 0);
+	void SetFields(u8* destMask, s32* destFields, const udtStatsFieldValue* fields, s32 fieldCount);
 	s64  CreateBitMask(const udtStatsField* fields, s32 fieldCount);
 	void AddCurrentStats();
 	void ClearStats();
@@ -52,6 +59,7 @@ private:
 	void ParseCPMAXStats2();
 	void ParseQLScoresTDMVeryOld();
 	void ParseQLScoresTDMOld();
+	void ParseOSPStatsInfo();
 	void ComputeAccuracies(udtPlayerStats& playerStats);
 	void ComputeAccuracy(udtPlayerStats& playerStats, s32 acc, s32 hits, s32 shots);
 
@@ -62,5 +70,6 @@ private:
 	udtVMLinearAllocator _namesAllocator;
 	CommandLineTokenizer* _tokenizer;
 	udtProtocol::Id _protocol;
+	s32 _followedClientNumber;
 	bool _gameEnded;
 };
