@@ -21,4 +21,3 @@ To do:
 - Chat analyzer: add non-global messages (team chat, private messages) (tchat, mm2, etc)
 - Raw command analyzer: it simply records all server commands with no cleaning
 - GUI: clicking any column of the "Chats History" list view will crash when the list is empty
-- DLL: the string cleaning function can make the last character disappear it seems

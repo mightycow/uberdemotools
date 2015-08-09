@@ -71,13 +71,14 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 			{
 				continue;
 			}
-
+			
 			const bool hasClanName = tokenizer.GetArgCount() >= 4 && strchr(tokenizer.GetArgString(1), ':') == NULL;
-			const int playerIdx = hasClanName ? 2 : 1;
+			const u32 playerIdx = hasClanName ? 2 : 1;
 			const char* const colon = strchr(data.OriginalCommand, ':');
 			const size_t originalCommandLength = strlen(data.OriginalCommand);
+			const u32 playerCharsToRemove = (tokenizer.GetArgCount() == 5 && udtString::Equals(tokenizer.GetArg(3), ":")) ? 0 : 1;
 			data.ClanName = hasClanName ? AllocateString(_chatStringAllocator, tokenizer.GetArgString(1)) : nullString;
-			data.PlayerName = AllocateString(_chatStringAllocator, tokenizer.GetArgString(playerIdx), (u32)strlen(tokenizer.GetArgString(playerIdx)) - 1);
+			data.PlayerName = AllocateString(_chatStringAllocator, tokenizer.GetArgString(playerIdx), tokenizer.GetArgLength(playerIdx) - playerCharsToRemove);
 			data.Message = (colon + 2 < data.OriginalCommand + originalCommandLength) ? AllocateString(_chatStringAllocator, colon + 2) : nullString;
 		}
 
@@ -94,7 +95,19 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 			udtChatEventData& data = chatEvent.Strings[i];
 			const char* const colon = strchr(data.OriginalCommand, ':');
 			const size_t originalCommandLength = strlen(data.OriginalCommand);
-			data.PlayerName = AllocateString(_chatStringAllocator, data.OriginalCommand, (u32)(colon - data.OriginalCommand));
+			const char* const whiteEm = strstr(data.OriginalCommand, "^7\x19");
+			const char* const em = strstr(data.OriginalCommand, "\x19");
+			u32 playerNameLength = (u32)(colon - data.OriginalCommand);
+			if(whiteEm != NULL && whiteEm < colon && playerNameLength > 3)
+			{
+				playerNameLength -= 3;
+			}
+			else if(em != NULL && em < colon && playerNameLength > 1)
+			{
+				playerNameLength -= 1;
+			}
+
+			data.PlayerName = AllocateString(_chatStringAllocator, data.OriginalCommand, playerNameLength);
 			data.Message = (colon + 2 < data.OriginalCommand + originalCommandLength) ? AllocateString(_chatStringAllocator, colon + 2) : nullString;
 		}
 	}
