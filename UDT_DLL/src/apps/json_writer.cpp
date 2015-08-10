@@ -112,9 +112,23 @@ void udtJSONWriter::WriteIntValue(const char* name, s32 number)
 	WriteNewLine();
 	Write("\"");
 	Write(name);
-	Write("\": \"");
+	Write("\": ");
 	Write(numberString);
+	++_itemIndices[_level];
+}
+
+void udtJSONWriter::WriteBoolValue(const char* name, bool value)
+{
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
+	WriteNewLine();
 	Write("\"");
+	Write(name);
+	Write("\": ");
+	Write(value ? "true" : "false");
 	++_itemIndices[_level];
 }
 

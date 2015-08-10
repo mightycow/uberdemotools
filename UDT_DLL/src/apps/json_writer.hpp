@@ -22,6 +22,7 @@ public:
 	void EndArray();
 
 	void WriteIntValue(const char* name, s32 number);
+	void WriteBoolValue(const char* name, bool value);
 	void WriteStringValue(const char* name, const char* string);
 
 private:
