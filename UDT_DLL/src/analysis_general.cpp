@@ -58,6 +58,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_overTimeType = udtOvertimeType::Timed;
 	_gamePlay = udtGamePlay::VQ3;
 	_protocol = udtProtocol::Invalid;
+	_forfeited = false;
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
@@ -163,22 +164,30 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		u32 index = 0;
 		const udtString printMessage = tokenizer.GetArg(1);
-		if(udtString::ContainsNoCase(index, printMessage, "overtime"))
+		if(udtString::ContainsNoCase(index, printMessage, "sudden death"))
 		{
-			UpdateGameState(udtGameState::InProgress);
-			++_overTimeCount;
-		}
-		else if(udtString::ContainsNoCase(index, printMessage, "sudden death"))
-		{
+			// @NOTE: That message might contain the word "overtime" too,
+			// which is why we check against this one first.
 			UpdateGameState(udtGameState::InProgress);
 			++_overTimeCount;
 			_overTimeType = udtOvertimeType::SuddenDeath;
+		}
+		else if(udtString::ContainsNoCase(index, printMessage, "overtime"))
+		{
+			UpdateGameState(udtGameState::InProgress);
+			++_overTimeCount;
 		}
 		else if(udtString::ContainsNoCase(index, printMessage, "respawn delay"))
 		{
 			UpdateGameState(udtGameState::InProgress);
 			_overTimeCount = 1;
 			_overTimeType = udtOvertimeType::SuddenDeath;
+		}
+
+		if(udtString::ContainsNoCase(index, printMessage, "forfeit") && 
+		   _gameState == udtGameState::InProgress)
+		{
+			_forfeited = true;
 		}
 	}
 
@@ -228,6 +237,14 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	else if(_game == udtGame::OSP && csIndex == CS_OSP_GAMEPLAY)
 	{
 		ProcessOSPGamePlayConfigString(configString);
+	}
+	else if(csIndex == CS_SCORES2)
+	{
+		ProcessScores2(configString);
+	}
+	else if(csIndex == idConfigStringIndex::SecondPlacePlayerName(_protocol))
+	{
+		ProcessScores2Player(configString);
 	}
 }
 
@@ -295,6 +312,11 @@ const char* udtGeneralAnalyzer::ModVersion() const
 const char* udtGeneralAnalyzer::MapName() const
 {
 	return _mapName;
+}
+
+bool udtGeneralAnalyzer::Forfeited() const
+{
+	return _forfeited;
 }
 
 void udtGeneralAnalyzer::SetInWarmUp()
@@ -512,6 +534,43 @@ void udtGeneralAnalyzer::ProcessOSPGamePlayConfigString(const char* configString
 			case 2: _gamePlay = udtGamePlay::CQ3; break;
 			default: break;
 		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessScores2(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	// This is to work around old demos sending a score of -9999 on match start.
+	// Maybe this is an OSP specialty?
+	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
+
+	s32 score = 0;
+	if(_gameState == udtGameState::InProgress &&
+	   StringParseInt(score, configString) &&
+	   score == -9999 && 
+	   matchTime >= 1000)
+	{
+		_forfeited = true;
+	}
+}
+
+void udtGeneralAnalyzer::ProcessScores2Player(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	// The 2nd place player's name becomes empty during a game?
+	if(_gameState == udtGameState::InProgress &&
+	   configString[0] == '\0')
+	{
+		// The player left.
+		_forfeited = true;
 	}
 }
 

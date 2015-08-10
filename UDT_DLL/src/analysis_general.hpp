@@ -25,6 +25,7 @@ public:
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
 	u32  OvertimeCount() const;
+	bool Forfeited() const;
 	void SetInWarmUp();
 	void SetInProgress();
 
@@ -59,6 +60,8 @@ private:
 	void ProcessIntermissionConfigString(const udtString& configString);
 	void ProcessGameTypeFromServerInfo(const char* configString);
 	void ProcessOSPGamePlayConfigString(const char* configString);
+	void ProcessScores2(const char* configString);
+	void ProcessScores2Player(const char* configString);
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
@@ -81,4 +84,5 @@ private:
 	udtGamePlay::Id _gamePlay;
 	udtProtocol::Id _protocol;
 	bool _processingGameState;
+	bool _forfeited;
 };

@@ -204,12 +204,13 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 		return;
 	}
 
-	// @TODO: Now check for forfeits too.
 	const s32 MaxMatchDurationDeltaMs = 1000;
 	s32 durationMs = (s32)stats.MatchDurationMs;
 	const s32 durationMinuteModuloMs = durationMs % 60000;
 	const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-	if(stats.OverTimeCount == 0 && absMinuteDiffMs < MaxMatchDurationDeltaMs)
+	if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) && 
+	   stats.Forfeited == 0 &&
+	   absMinuteDiffMs < MaxMatchDurationDeltaMs)
 	{
 		s32 minutes = (durationMs + 60000 - 1) / 60000;
 		if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
@@ -232,6 +233,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 	{
 		WriteUDTOverTimeType(writer, stats.OverTimeType);
 	}
+	writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
 	WriteUDTGamePlayShort(writer, stats.GamePlay);
 	WriteUDTGamePlayLong(writer, stats.GamePlay);
 

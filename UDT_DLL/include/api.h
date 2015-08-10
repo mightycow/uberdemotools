@@ -1244,6 +1244,12 @@ extern "C"
 
 		// Total number of overtimes in the match.
 		u32 OverTimeCount;
+
+		// 1 if the loser left the game before it was supposed to end, 0 otherwise.
+		u32 Forfeited;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtTimeShiftArg

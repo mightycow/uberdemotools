@@ -1218,6 +1218,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.OverTimeType = (u32)_analyzer.OvertimeType();
 	_stats.Mod = _analyzer.Mod();
 	_stats.ModVersion = _analyzer.ModVersion();
+	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
 
 	_statsArray.Add(_stats);
 

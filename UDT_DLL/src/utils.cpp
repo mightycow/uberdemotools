@@ -951,6 +951,16 @@ namespace idConfigStringIndex
 	{
 		return (s32)CS_WARMUP;
 	}
+
+	s32 FirstPlacePlayerName(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES1PLAYER_91p : -1;
+	}
+
+	s32 SecondPlacePlayerName(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES2PLAYER_91p : -1;
+	}
 }
 
 namespace idPowerUpIndex
