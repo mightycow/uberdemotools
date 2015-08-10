@@ -93,39 +93,21 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 		}
 		else
 		{
-			udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
-			if(cs != NULL)
-			{
-				ProcessQ3ServerInfoConfigString(cs->String);
-			}
-			ProcessModNameAndVersion();
+			ProcessQ3ServerInfoConfigStringOnce(parser._inConfigStrings[CS_SERVERINFO].String);
+			ProcessModNameAndVersionOnce();
 		}
 	}
 
-	ProcessMapName();
-	ProcessGamePlay();
-
-	udtBaseParser::udtConfigString* const serverInfoCs = parser.FindConfigStringByIndex(CS_SERVERINFO);
-	if(serverInfoCs != NULL)
-	{
-		ProcessGameTypeConfigString(serverInfoCs->String);
-	}
+	ProcessMapNameOnce();
+	ProcessGameTypeFromServerInfo(parser._inConfigStrings[CS_SERVERINFO].String);
 
 	if(_game == udtGame::CPMA)
 	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_CPMA_GAME_INFO);
-		if(cs != NULL)
-		{
-			ProcessCPMAGameInfoConfigString(cs->String);
-		}
+		ProcessCPMAGameInfoConfigString(parser._inConfigStrings[CS_CPMA_GAME_INFO].String);
 	}
 	else if(_game == udtGame::QL)
 	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(CS_SERVERINFO);
-		if(cs != NULL)
-		{
-			ProcessQLServerInfoConfigString(cs->String);
-		}
+		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
 	}
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
@@ -136,6 +118,11 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 		if(noIntermission && noWarmUpEndTime)
 		{
 			UpdateGameState(udtGameState::InProgress);
+		}
+
+		if(_game == udtGame::OSP)
+		{
+			ProcessOSPGamePlayConfigString(parser._inConfigStrings[CS_OSP_GAMEPLAY].String);
 		}
 	}
 
@@ -216,6 +203,16 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 
 	const char* const configString = tokenizer.GetArgString(2);
 
+	if(csIndex == CS_SERVERINFO)
+	{
+		ProcessGameTypeFromServerInfo(configString);
+	}
+
+	if(_game == udtGame::QL && csIndex == CS_SERVERINFO)
+	{
+		ProcessQLServerInfoConfigString(configString);
+	}
+
 	if(_game == udtGame::CPMA && csIndex == CS_CPMA_GAME_INFO)
 	{
 		ProcessCPMAGameInfoConfigString(configString);
@@ -224,13 +221,13 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		_matchStartTime = GetLevelStartTime();
 	}
-	else if(_game == udtGame::QL && csIndex == CS_SERVERINFO)
-	{
-		ProcessQLServerInfoConfigString(configString);
-	}
 	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::Intermission(_protocol))
 	{	
 		ProcessIntermissionConfigString(tokenizer.GetArg(2));
+	}
+	else if(_game == udtGame::OSP && csIndex == CS_OSP_GAMEPLAY)
+	{
+		ProcessOSPGamePlayConfigString(configString);
 	}
 }
 
@@ -328,8 +325,13 @@ void udtGeneralAnalyzer::UpdateGameState(udtGameState::Id gameState)
 	}
 }
 
-void udtGeneralAnalyzer::ProcessQ3ServerInfoConfigString(const char* configString)
+void udtGeneralAnalyzer::ProcessQ3ServerInfoConfigStringOnce(const char* configString)
 {
+	if(configString == NULL)
+	{
+		return;
+	}
+
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
 	u32 charIndex = 0;
@@ -353,9 +355,29 @@ void udtGeneralAnalyzer::ProcessQ3ServerInfoConfigString(const char* configStrin
 
 void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configString)
 {
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
+
+	s32 gamePlay = 0;
+	if(ParseConfigStringValueInt(gamePlay, *_tempAllocator, "pm", configString))
+	{
+		switch(gamePlay)
+		{
+			case 0: _gamePlay = udtGamePlay::VQ3; break;
+			case 1: _gamePlay = udtGamePlay::PMC; break;
+			case 2: _gamePlay = udtGamePlay::CPM; break;
+			case 3: _gamePlay = udtGamePlay::CQ3; break;
+			case 4: _gamePlay = udtGamePlay::PMD; break;
+			default: break;
+		}
+	}
+
 	s32 tw = -1;
 	s32 ts = -1;
-	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
 	if(!ParseConfigStringValueInt(tw, *_tempAllocator, "tw", configString) || 
 	   !ParseConfigStringValueInt(ts, *_tempAllocator, "ts", configString))
 	{
@@ -390,7 +412,24 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 
 void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configString)
 {
+	if(configString == NULL)
+	{
+		return;
+	}
+
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	s32 gamePlay = 0;
+	if(ParseConfigStringValueInt(gamePlay, *_tempAllocator, "ruleset", configString))
+	{
+		switch(gamePlay)
+		{
+			case 1: _gamePlay = udtGamePlay::CQL; break; // classic
+			case 2: _gamePlay = udtGamePlay::PQL; break; // turbo
+			case 3: _gamePlay = udtGamePlay::DQL; break; // default
+			default: break;
+		}
+	}
 
 	udtString gameStateString;
 	if(!ParseConfigStringValueString(gameStateString, *_tempAllocator, "g_gameState", configString))
@@ -430,8 +469,13 @@ void udtGeneralAnalyzer::ProcessIntermissionConfigString(const udtString& config
 	}
 }
 
-void udtGeneralAnalyzer::ProcessGameTypeConfigString(const char* configString)
+void udtGeneralAnalyzer::ProcessGameTypeFromServerInfo(const char* configString)
 {
+	if(configString == NULL)
+	{
+		return;
+	}
+
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
 	s32 gameType = 0;
@@ -447,7 +491,31 @@ void udtGeneralAnalyzer::ProcessGameTypeConfigString(const char* configString)
 	}
 }
 
-void udtGeneralAnalyzer::ProcessModNameAndVersion()
+void udtGeneralAnalyzer::ProcessOSPGamePlayConfigString(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	// When voting "promode 1" in OSP, you get BFG splash damage and 100 damage rails...
+	// It's the old ProMode for sure.
+	s32 gamePlay = 0;
+	if(StringParseInt(gamePlay, configString))
+	{
+		switch(gamePlay)
+		{
+			case 0: _gamePlay = udtGamePlay::VQ3; break;
+			case 1: _gamePlay = udtGamePlay::PMC; break;
+			case 2: _gamePlay = udtGamePlay::CQ3; break;
+			default: break;
+		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 {
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
@@ -525,7 +593,7 @@ void udtGeneralAnalyzer::ProcessModNameAndVersion()
 	}
 }
 
-void udtGeneralAnalyzer::ProcessMapName()
+void udtGeneralAnalyzer::ProcessMapNameOnce()
 {
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
@@ -535,67 +603,6 @@ void udtGeneralAnalyzer::ProcessMapName()
 	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", serverInfo))
 	{
 		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
-	}
-}
-
-void udtGeneralAnalyzer::ProcessGamePlay()
-{
-	_gamePlay = _protocol <= udtProtocol::Dm68 ? udtGamePlay::VQ3 : udtGamePlay::CQL;
-	if(_game == udtGame::Q3)
-	{
-		return;
-	}
-
-	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-
-	if(_game == udtGame::CPMA)
-	{
-		const char* const cpmInfo = _parser->_inConfigStrings[CS_CPMA_GAME_INFO].String;
-		s32 gamePlay = 0;
-		if(cpmInfo != NULL && ParseConfigStringValueInt(gamePlay, *_tempAllocator, "pm", cpmInfo))
-		{
-			switch(gamePlay)
-			{
-				case 0: _gamePlay = udtGamePlay::VQ3; break;
-				case 1: _gamePlay = udtGamePlay::PMC; break;
-				case 2: _gamePlay = udtGamePlay::CPM; break;
-				case 3: _gamePlay = udtGamePlay::CQ3; break;
-				case 4: _gamePlay = udtGamePlay::PMD; break;
-				default: break;
-			}
-		}
-	}
-	else if(_game == udtGame::OSP)
-	{
-		// When voting "promode 1" in OSP, you get BFG splash damage and 100 damage rails...
-		// It's the old ProMode for sure.
-		const char* const ospInfo = _parser->_inConfigStrings[CS_OSP_GAMEPLAY].String;
-		s32 gamePlay = 0;
-		if(ospInfo != NULL && StringParseInt(gamePlay, ospInfo))
-		{
-			switch(gamePlay)
-			{
-				case 0: _gamePlay = udtGamePlay::VQ3; break;
-				case 1: _gamePlay = udtGamePlay::PMC; break;
-				case 2: _gamePlay = udtGamePlay::CQ3; break;
-				default: break;
-			}
-		}
-	}
-	else if(_game == udtGame::QL)
-	{
-		const char* const qlInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
-		s32 gamePlay = 0;
-		if(qlInfo != NULL && ParseConfigStringValueInt(gamePlay, *_tempAllocator, "ruleset", qlInfo))
-		{
-			switch(gamePlay)
-			{
-				case 1: _gamePlay = udtGamePlay::CQL; break; // classic
-				case 2: _gamePlay = udtGamePlay::PQL; break; // turbo
-				case 3: _gamePlay = udtGamePlay::DQL; break; // default
-				default: break;
-			}
-		}
 	}
 }
 

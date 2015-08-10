@@ -49,15 +49,16 @@ private:
 		};
 	};
 
+	// Functions with the "Once" suffix only need to be called from ProcessGamestateMessage.
 	void UpdateGameState(udtGameState::Id gameState);
-	void ProcessQ3ServerInfoConfigString(const char* configString);
+	void ProcessModNameAndVersionOnce();
+	void ProcessMapNameOnce();
+	void ProcessQ3ServerInfoConfigStringOnce(const char* configString);
 	void ProcessCPMAGameInfoConfigString(const char* configString);
 	void ProcessQLServerInfoConfigString(const char* configString);
 	void ProcessIntermissionConfigString(const udtString& configString);
-	void ProcessGameTypeConfigString(const char* configString);
-	void ProcessModNameAndVersion();
-	void ProcessMapName();
-	void ProcessGamePlay();
+	void ProcessGameTypeFromServerInfo(const char* configString);
+	void ProcessOSPGamePlayConfigString(const char* configString);
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
