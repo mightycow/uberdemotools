@@ -57,6 +57,7 @@ private:
 	void ProcessGameTypeConfigString(const char* configString);
 	void ProcessModNameAndVersion();
 	void ProcessMapName();
+	void ProcessGamePlay();
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();

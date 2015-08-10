@@ -287,6 +287,9 @@ typedef enum {
 #define CS_CPMA_GAME_INFO       672
 #define CS_CPMA_ROUND_INFO      710
 
+// OSP
+#define CS_OSP_GAMEPLAY         806
+
 #define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
 
 #define	MAX_GAMESTATE_CHARS	16000

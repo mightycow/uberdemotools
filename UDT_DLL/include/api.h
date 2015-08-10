@@ -615,11 +615,13 @@ struct udtMod
 
 #define UDT_GAMEPLAY_LIST(N) \
 	N(VQ3, "VQ3", "Vanilla Quake 3") \
-	N(CQ3, "CQ3", "Chocolate Quake 3") \
-	N(PMC, "PMC", "ProMode Classic") \
-	N(CPM, "CPM", "Challenge ProMode") \
-	N(VQL, "VQL", "Vanilla Quake Live") \
-	N(PQL, "PQL", "Quake Live Turbo")
+	N(CQ3, "CQ3", "Challenge Quake 3") \
+	N(PMC, "PMC", "Classic ProMode") \
+	N(CPM, "CPM", "ProMode") \
+	N(PMD, "PMD", "ProMode DEV") \
+	N(CQL, "VQL", "Classic Quake Live") \
+	N(PQL, "PQL", "Turbo Quake Live") \
+	N(DQL, "QL",  "Default Quake Live")
 
 #define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) Enum,
 struct udtGamePlay

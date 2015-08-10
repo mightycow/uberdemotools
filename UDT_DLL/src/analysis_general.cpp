@@ -79,6 +79,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	++_gameStateIndex;
 	_parser = &parser;
 	_protocol = parser._inProtocol;
+	_gamePlay = _protocol <= udtProtocol::Dm68 ? udtGamePlay::VQ3 : udtGamePlay::CQL;
 
 	_processingGameState = true;
 
@@ -102,6 +103,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 
 	ProcessMapName();
+	ProcessGamePlay();
 
 	udtBaseParser::udtConfigString* const serverInfoCs = parser.FindConfigStringByIndex(CS_SERVERINFO);
 	if(serverInfoCs != NULL)
@@ -144,10 +146,16 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 {
 	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
 	tokenizer.Tokenize(arg.String);
+	if(tokenizer.GetArgCount() == 0)
+	{
+		return;
+	}
+
+	const udtString command = tokenizer.GetArg(0);
 
 	if(_game == udtGame::CPMA && 
-	   tokenizer.GetArgCount() == 2 && 
-	   udtString::Equals(tokenizer.GetArg(0), "print"))
+	   tokenizer.GetArgCount() >= 2 && 
+	   udtString::Equals(command, "print"))
 	{
 		u32 index = 0;
 		const udtString printMessage = tokenizer.GetArg(1);
@@ -162,9 +170,34 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		}
 	}
 
+	if(tokenizer.GetArgCount() >= 2 &&
+	   (udtString::Equals(command, "print") || 
+	   udtString::Equals(command, "cp")))
+	{
+		u32 index = 0;
+		const udtString printMessage = tokenizer.GetArg(1);
+		if(udtString::ContainsNoCase(index, printMessage, "overtime"))
+		{
+			UpdateGameState(udtGameState::InProgress);
+			++_overTimeCount;
+		}
+		else if(udtString::ContainsNoCase(index, printMessage, "sudden death"))
+		{
+			UpdateGameState(udtGameState::InProgress);
+			++_overTimeCount;
+			_overTimeType = udtOvertimeType::SuddenDeath;
+		}
+		else if(udtString::ContainsNoCase(index, printMessage, "respawn delay"))
+		{
+			UpdateGameState(udtGameState::InProgress);
+			_overTimeCount = 1;
+			_overTimeType = udtOvertimeType::SuddenDeath;
+		}
+	}
+
 	if(_game != udtGame::CPMA &&
 	   tokenizer.GetArgCount() == 1 &&
-	   udtString::Equals(tokenizer.GetArg(0), "map_restart"))
+	   udtString::Equals(command, "map_restart"))
 	{
 		UpdateGameState(udtGameState::InProgress);
 		if(HasMatchJustStarted())
@@ -175,7 +208,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 
 	s32 csIndex = 0;
 	if(tokenizer.GetArgCount() != 3 || 
-	   !udtString::Equals(tokenizer.GetArg(0), "cs") || 
+	   !udtString::Equals(command, "cs") || 
 	   !StringParseInt(csIndex, tokenizer.GetArgString(1)))
 	{
 		return;
@@ -502,6 +535,67 @@ void udtGeneralAnalyzer::ProcessMapName()
 	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", serverInfo))
 	{
 		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
+	}
+}
+
+void udtGeneralAnalyzer::ProcessGamePlay()
+{
+	_gamePlay = _protocol <= udtProtocol::Dm68 ? udtGamePlay::VQ3 : udtGamePlay::CQL;
+	if(_game == udtGame::Q3)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	if(_game == udtGame::CPMA)
+	{
+		const char* const cpmInfo = _parser->_inConfigStrings[CS_CPMA_GAME_INFO].String;
+		s32 gamePlay = 0;
+		if(cpmInfo != NULL && ParseConfigStringValueInt(gamePlay, *_tempAllocator, "pm", cpmInfo))
+		{
+			switch(gamePlay)
+			{
+				case 0: _gamePlay = udtGamePlay::VQ3; break;
+				case 1: _gamePlay = udtGamePlay::PMC; break;
+				case 2: _gamePlay = udtGamePlay::CPM; break;
+				case 3: _gamePlay = udtGamePlay::CQ3; break;
+				case 4: _gamePlay = udtGamePlay::PMD; break;
+				default: break;
+			}
+		}
+	}
+	else if(_game == udtGame::OSP)
+	{
+		// When voting "promode 1" in OSP, you get BFG splash damage and 100 damage rails...
+		// It's the old ProMode for sure.
+		const char* const ospInfo = _parser->_inConfigStrings[CS_OSP_GAMEPLAY].String;
+		s32 gamePlay = 0;
+		if(ospInfo != NULL && StringParseInt(gamePlay, ospInfo))
+		{
+			switch(gamePlay)
+			{
+				case 0: _gamePlay = udtGamePlay::VQ3; break;
+				case 1: _gamePlay = udtGamePlay::PMC; break;
+				case 2: _gamePlay = udtGamePlay::CQ3; break;
+				default: break;
+			}
+		}
+	}
+	else if(_game == udtGame::QL)
+	{
+		const char* const qlInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
+		s32 gamePlay = 0;
+		if(qlInfo != NULL && ParseConfigStringValueInt(gamePlay, *_tempAllocator, "ruleset", qlInfo))
+		{
+			switch(gamePlay)
+			{
+				case 1: _gamePlay = udtGamePlay::CQL; break; // classic
+				case 2: _gamePlay = udtGamePlay::PQL; break; // turbo
+				case 3: _gamePlay = udtGamePlay::DQL; break; // default
+				default: break;
+			}
+		}
 	}
 }
 
