@@ -13,7 +13,7 @@ To do:
 - Merger: Find a way to deal with the "player entities event sequence problem"
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Converters: dm3/dm_48 -> dm_68 and dm_73/dm_90 -> dm_91
-- General analyzer: mod, mod version, map, gameplay (VQ3, CQ3, PMC, CPM, etc), overtime count, overtime type (none, timed, sudden death)
+- General analyzer: gameplay (VQ3, CQ3, PMC, CPM, etc), overtime count, overtime type (none, timed, sudden death)
 - Stats analyzer: support for all known scores/stats commands
 - Gamestate analyzer: game mode (short + long)
 - Stats analyzer: add defrag support if it sends the real/correct run times through server commands

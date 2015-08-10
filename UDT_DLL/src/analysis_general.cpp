@@ -36,20 +36,27 @@ udtGeneralAnalyzer::~udtGeneralAnalyzer()
 {
 }
 
-void udtGeneralAnalyzer::SetTempAllocator(udtVMLinearAllocator& tempAllocator)
+void udtGeneralAnalyzer::InitAllocators(udtVMLinearAllocator& tempAllocator, u32 demoCount)
 {
 	_tempAllocator = &tempAllocator;
+	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 16));
 }
 
 void udtGeneralAnalyzer::ResetForNextDemo()
 {
+	_modVersion = NULL;
+	_mapName = NULL;
 	_gameStateIndex = -1;
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
+	_overTimeCount = 0;
 	_game = udtGame::Q3;
 	_gameType = udtGameType::Invalid;
 	_gameState = udtGameState::WarmUp;
 	_lastGameState = udtGameState::WarmUp;
+	_mod = udtMod::None;
+	_overTimeType = udtOvertimeType::Timed;
+	_gamePlay = udtGamePlay::VQ3;
 	_protocol = udtProtocol::Invalid;
 }
 
@@ -90,8 +97,11 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 			{
 				ProcessQ3ServerInfoConfigString(cs->String);
 			}
+			ProcessModNameAndVersion();
 		}
 	}
+
+	ProcessMapName();
 
 	udtBaseParser::udtConfigString* const serverInfoCs = parser.FindConfigStringByIndex(CS_SERVERINFO);
 	if(serverInfoCs != NULL)
@@ -222,9 +232,39 @@ s32 udtGeneralAnalyzer::GameStateIndex() const
 	return _gameStateIndex;
 }
 
-udtGameType::Id udtGeneralAnalyzer::GetGameType() const
+u32 udtGeneralAnalyzer::OvertimeCount() const
+{
+	return _overTimeCount;
+}
+
+udtGameType::Id udtGeneralAnalyzer::GameType() const
 {
 	return _gameType;
+}
+
+udtMod::Id udtGeneralAnalyzer::Mod() const
+{
+	return _mod;
+}
+
+udtOvertimeType::Id udtGeneralAnalyzer::OvertimeType() const
+{
+	return _overTimeType;
+}
+
+udtGamePlay::Id udtGeneralAnalyzer::GamePlay() const
+{
+	return _gamePlay;
+}
+
+const char* udtGeneralAnalyzer::ModVersion() const
+{
+	return _modVersion;
+}
+
+const char* udtGeneralAnalyzer::MapName() const
+{
+	return _mapName;
 }
 
 void udtGeneralAnalyzer::SetInWarmUp()
@@ -239,12 +279,6 @@ void udtGeneralAnalyzer::SetInProgress()
 {
 	_lastGameState = udtGameState::InProgress;
 	_gameState = udtGameState::InProgress;
-}
-
-void udtGeneralAnalyzer::ClearMatch()
-{
-	_matchStartTime = S32_MIN;
-	_matchEndTime = S32_MIN;
 }
 
 void udtGeneralAnalyzer::UpdateGameState(udtGameState::Id gameState)
@@ -266,19 +300,19 @@ void udtGeneralAnalyzer::ProcessQ3ServerInfoConfigString(const char* configStrin
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
 	u32 charIndex = 0;
-	udtString gameName;
-	if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", configString) &&
-	   udtString::Equals(gameName, "cpma"))
+	udtString varValue;
+	if(ParseConfigStringValueString(varValue, *_tempAllocator, "gamename", configString) &&
+	   udtString::Equals(varValue, "cpma"))
 	{
 		_game = udtGame::CPMA;
 	}
-	else if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", configString) &&
-			udtString::ContainsNoCase(charIndex, gameName, "osp"))
+	else if(ParseConfigStringValueString(varValue, *_tempAllocator, "gamename", configString) &&
+			udtString::ContainsNoCase(charIndex, varValue, "osp"))
 	{
 		_game = udtGame::OSP;
 	}
-	else if(ParseConfigStringValueString(gameName, *_tempAllocator, "gameversion", configString) &&
-			udtString::ContainsNoCase(charIndex, gameName, "osp"))
+	else if(ParseConfigStringValueString(varValue, *_tempAllocator, "gameversion", configString) &&
+			udtString::ContainsNoCase(charIndex, varValue, "osp"))
 	{
 		_game = udtGame::OSP;
 	}
@@ -377,6 +411,97 @@ void udtGeneralAnalyzer::ProcessGameTypeConfigString(const char* configString)
 	if(udtGT >= 0 && udtGT < (s32)udtGameType::Count)
 	{
 		_gameType = (udtGameType::Id)udtGT;
+	}
+}
+
+void udtGeneralAnalyzer::ProcessModNameAndVersion()
+{
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
+
+	u32 charIndex = 0;
+	udtString varValue;
+
+	if(_game == udtGame::CPMA)
+	{
+		_mod = udtMod::CPMA;
+
+		if(serverInfo != NULL &&
+		   ParseConfigStringValueString(varValue, *_tempAllocator, "gameversion", serverInfo))
+		{
+			_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+		}
+	}
+	else if(_game == udtGame::OSP)
+	{
+		_mod = udtMod::OSP;
+
+		if(serverInfo != NULL &&
+		   ParseConfigStringValueString(varValue, *_tempAllocator, "gameversion", serverInfo))
+		{
+			u32 openParen = 0;
+			u32 closeParen = 0;
+			u32 vIndex = 0;
+			if(udtString::FindLastCharacterMatch(openParen, varValue, '(') &&
+			   udtString::FindLastCharacterMatch(closeParen, varValue, ')') &&
+			   openParen < closeParen)
+			{
+				// OSP TourneyBlaBla v($(version))
+				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, openParen + 1, closeParen - openParen - 1).String;
+			}
+			else if(udtString::FindFirstCharacterMatch(vIndex, varValue, 'v'))
+			{
+				// OSP v$(version)
+				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, vIndex + 1).String;
+			}
+			else
+			{
+				// Unknown OSP version format.
+				_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+			}
+		}
+	}
+	else if(_mod == udtMod::None)
+	{
+		if(serverInfo != NULL &&
+		   ParseConfigStringValueString(varValue, *_tempAllocator, "gamename", serverInfo) &&
+		   udtString::ContainsNoCase(charIndex, varValue, "defrag"))
+		{
+			_mod = udtMod::Defrag;
+
+			if(ParseConfigStringValueString(varValue, *_tempAllocator, "defrag_vers", serverInfo))
+			{
+				s32 version = 0;
+				if(varValue.Length == 5 && 
+				   StringParseInt(version, varValue.String) &&
+				   version >= 10000 &&
+				   version < 100000)
+				{
+					// Example: "19123" becomes "1.91.23"
+					char stringVersion[16];
+					sprintf(stringVersion, "%c.%c%c.%c%c", varValue.String[0], varValue.String[1], varValue.String[2], varValue.String[3], varValue.String[4]);
+					_modVersion = udtString::NewClone(_stringAllocator, stringVersion).String;
+				}
+				else
+				{
+					// Unknown DeFRaG version format.
+					_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+				}
+			}
+		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessMapName()
+{
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
+	udtString mapName;
+	if(serverInfo != NULL &&
+	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", serverInfo))
+	{
+		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
 	}
 }
 

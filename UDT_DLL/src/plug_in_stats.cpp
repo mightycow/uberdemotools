@@ -44,7 +44,7 @@ void udtParserPlugInStats::InitAllocators(u32 demoCount)
 	FinalAllocator.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount);
 	_namesAllocator.Init((uptr)(1 << 14) * (uptr)demoCount);
 	_statsArray.SetAllocator(FinalAllocator);
-	_analyzer.SetTempAllocator(*TempAllocator);
+	_analyzer.InitAllocators(*TempAllocator, demoCount);
 }
 
 u32 udtParserPlugInStats::GetElementSize() const
@@ -1207,10 +1207,17 @@ void udtParserPlugInStats::AddCurrentStats()
 	}
 
 	if(_stats.GameType == udtGameType::Invalid && 
-	   _analyzer.GetGameType() != udtGameType::Invalid)
+	   _analyzer.GameType() != udtGameType::Invalid)
 	{
-		_stats.GameType = _analyzer.GetGameType();
+		_stats.GameType = _analyzer.GameType();
 	}
+
+	_stats.GamePlay = (u32)_analyzer.GamePlay();
+	_stats.Map = _analyzer.MapName();
+	_stats.OverTimeCount = _analyzer.OvertimeCount();
+	_stats.OverTimeType = (u32)_analyzer.OvertimeType();
+	_stats.Mod = _analyzer.Mod();
+	_stats.ModVersion = _analyzer.ModVersion();
 
 	_statsArray.Add(_stats);
 

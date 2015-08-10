@@ -120,6 +120,11 @@ void udtJSONWriter::WriteIntValue(const char* name, s32 number)
 
 void udtJSONWriter::WriteStringValue(const char* name, const char* string)
 {
+	if(string == NULL)
+	{
+		return;
+	}
+
 	if(_itemIndices[_level] > 0)
 	{
 		Write(", ");

@@ -86,6 +86,23 @@ static bool HasValidPlayerStats(const udtParseDataStats& stats)
 	return false;
 }
 
+static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
+{
+	const char** strings = NULL;
+	u32 stringCount = 0;
+	if(udtGetStringArray(stringId, &strings, &stringCount) != (s32)udtErrorCode::None)
+	{
+		return NULL;
+	}
+
+	if(value >= stringCount)
+	{
+		return NULL;
+	}
+
+	return strings[value];
+}
+
 static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const char* keyName = "team")
 {
 	if(keyName == NULL)
@@ -93,53 +110,37 @@ static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const cha
 		return;
 	}
 
-	const char** teamNames = NULL;
-	u32 teamCount = 0;
-	if(udtGetStringArray(udtStringArray::Teams, &teamNames, &teamCount) != (s32)udtErrorCode::None)
-	{
-		return;
-	}
-
-	if(udtTeamIndex < 0 || udtTeamIndex >= (s32)teamCount)
-	{
-		return;
-	}
-
-	writer.WriteStringValue(keyName, teamNames[udtTeamIndex]);
+	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Teams, (u32)udtTeamIndex));
 }
 
 static void WriteUDTGameTypeShort(udtJSONWriter& writer, u32 udtGameType)
 {
-	const char** gameTypeNames = NULL;
-	u32 gameTypeCount = 0;
-	if(udtGetStringArray(udtStringArray::ShortGameTypes, &gameTypeNames, &gameTypeCount) != (s32)udtErrorCode::None)
-	{
-		return;
-	}
-
-	if(udtGameType >= gameTypeCount)
-	{
-		return;
-	}
-
-	writer.WriteStringValue("game type short", gameTypeNames[udtGameType]);
+	writer.WriteStringValue("game type short", GetUDTStringForValue(udtStringArray::ShortGameTypes, udtGameType));
 }
 
 static void WriteUDTGameTypeLong(udtJSONWriter& writer, u32 udtGameType)
 {
-	const char** gameTypeNames = NULL;
-	u32 gameTypeCount = 0;
-	if(udtGetStringArray(udtStringArray::GameTypes, &gameTypeNames, &gameTypeCount) != (s32)udtErrorCode::None)
-	{
-		return;
-	}
+	writer.WriteStringValue("game type", GetUDTStringForValue(udtStringArray::GameTypes, udtGameType));
+}
 
-	if(udtGameType >= gameTypeCount)
-	{
-		return;
-	}
+static void WriteUDTMod(udtJSONWriter& writer, u32 udtMod)
+{
+	writer.WriteStringValue("mod", GetUDTStringForValue(udtStringArray::ModNames, udtMod));
+}
 
-	writer.WriteStringValue("game type", gameTypeNames[udtGameType]);
+static void WriteUDTGamePlayShort(udtJSONWriter& writer, u32 udtGamePlay)
+{
+	writer.WriteStringValue("gameplay short", GetUDTStringForValue(udtStringArray::ShortGamePlayNames, udtGamePlay));
+}
+
+static void WriteUDTGamePlayLong(udtJSONWriter& writer, u32 udtGamePlay)
+{
+	writer.WriteStringValue("gameplay", GetUDTStringForValue(udtStringArray::GamePlayNames, udtGamePlay));
+}
+
+static void WriteUDTOverTimeType(udtJSONWriter& writer, u32 udtOverTimeType)
+{
+	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
 }
 
 static void WriteTeamStats(udtJSONWriter& writer, const udtTeamStats& stats, const char* team)
@@ -165,17 +166,8 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 	writer.StartObject();
 
 	writer.WriteIntValue("client number", clientNumber);
-
-	if(stats.Name != NULL)
-	{
-		writer.WriteStringValue("name", stats.Name);
-	}
-
-	if(stats.CleanName != NULL)
-	{
-		writer.WriteStringValue("clean name", stats.CleanName);
-	}
-
+	writer.WriteStringValue("name", stats.Name);
+	writer.WriteStringValue("clean name", stats.CleanName);
 	WriteUDTTeamIndex(writer, stats.TeamIndex);
 
 	const char** weaponNames = NULL;
@@ -214,9 +206,19 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 
 	writer.StartObject("game stats");
 
+	WriteUDTMod(writer, stats.Mod);
+	writer.WriteStringValue("mod version", stats.ModVersion);
 	WriteUDTGameTypeShort(writer, stats.GameType);
 	WriteUDTGameTypeLong(writer, stats.GameType);
+	writer.WriteStringValue("map", stats.Map);
 	writer.WriteIntValue("duration", (s32)stats.MatchDurationMs);
+	writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
+	if(stats.OverTimeCount > 0)
+	{
+		WriteUDTOverTimeType(writer, stats.OverTimeType);
+	}
+	WriteUDTGamePlayShort(writer, stats.GamePlay);
+	WriteUDTGamePlayLong(writer, stats.GamePlay);
 
 	if(hasTeamStats)
 	{
@@ -270,25 +272,11 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		{
 			writer.WriteIntValue("client number", info.PlayerIndex);
 		}
-		
-		if(info.Strings[0].PlayerName != NULL)
-		{
-			writer.WriteStringValue("player name", info.Strings[0].PlayerName);
-		}
-		if(info.Strings[0].ClanName != NULL)
-		{
-			writer.WriteStringValue("player clan name", info.Strings[0].ClanName);
-		}
+		writer.WriteStringValue("player name", info.Strings[0].PlayerName);
+		writer.WriteStringValue("player clan name", info.Strings[0].ClanName);
 		writer.WriteStringValue("message", info.Strings[0].Message);
-
-		if(info.Strings[1].PlayerName != NULL)
-		{
-			writer.WriteStringValue("clean player name", info.Strings[1].PlayerName);
-		}
-		if(info.Strings[1].ClanName != NULL)
-		{
-			writer.WriteStringValue("clean player clan name", info.Strings[1].ClanName);
-		}
+		writer.WriteStringValue("clean player name", info.Strings[1].PlayerName);
+		writer.WriteStringValue("clean player clan name", info.Strings[1].ClanName);
 		writer.WriteStringValue("clean message", info.Strings[1].Message);
 
 		writer.EndObject();
@@ -314,7 +302,6 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 
 		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
 		writer.WriteIntValue("server time", info.ServerTimeMs);
-
 		if(info.AttackerIdx >= 0 && info.AttackerIdx < 64)
 		{
 			writer.WriteIntValue("attacker client number", info.AttackerIdx);
@@ -327,7 +314,6 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 			writer.WriteStringValue("target clean name", info.TargetName);
 			WriteUDTTeamIndex(writer, info.TargetTeamIdx, "target team");
 		}
-
 		writer.WriteStringValue("cause of death", info.MeanOfDeathName);
 		
 		writer.EndObject();

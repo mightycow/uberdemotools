@@ -350,6 +350,10 @@ struct udtStringArray
 		CutPatterns,
 		GameTypes,
 		ShortGameTypes,
+		ModNames,
+		GamePlayNames,
+		ShortGamePlayNames,
+		OverTimeTypes,
 		Count
 	};
 };
@@ -590,6 +594,59 @@ struct udtGameType
 	};
 };
 #undef UDT_GAME_TYPE_ITEM
+
+#define UDT_MOD_NAME_LIST(N) \
+	N(None, "None") \
+	N(CPMA, "CPMA") \
+	N(OSP, "OSP") \
+	N(Defrag, "DeFRaG") \
+	N(Unknown, "Unknown")
+
+#define UDT_MOD_NAME_ITEM(Enum, Name) Enum,
+struct udtMod
+{
+	enum Id
+	{
+		UDT_MOD_NAME_LIST(UDT_MOD_NAME_ITEM)
+		Count
+	};
+};
+#undef UDT_MOD_NAME_ITEM
+
+#define UDT_GAMEPLAY_LIST(N) \
+	N(VQ3, "VQ3", "Vanilla Quake 3") \
+	N(CQ3, "CQ3", "Chocolate Quake 3") \
+	N(PMC, "PMC", "ProMode Classic") \
+	N(CPM, "CPM", "Challenge ProMode") \
+	N(VQL, "VQL", "Vanilla Quake Live") \
+	N(PQL, "PQL", "Quake Live Turbo")
+
+#define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) Enum,
+struct udtGamePlay
+{
+	enum Id
+	{
+		UDT_GAMEPLAY_LIST(UDT_GAMEPLAY_ITEM)
+		Count
+	};
+};
+#undef UDT_GAMEPLAY_ITEM
+
+#define UDT_OVERTIME_TYPE_LIST(N) \
+	N(None, "None") \
+	N(Timed, "Timed") \
+	N(SuddenDeath, "Sudden Death")
+
+#define UDT_OVERTIME_TYPE_ITEM(Enum, Desc) Enum,
+struct udtOvertimeType
+{
+	enum Id
+	{
+		UDT_OVERTIME_TYPE_LIST(UDT_OVERTIME_TYPE_ITEM)
+		Count
+	};
+};
+#undef UDT_OVERTIME_TYPE_ITEM
 
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
@@ -1161,12 +1218,30 @@ extern "C"
 		// 0 is red, 1 is blue.
 		udtTeamStats TeamStats[2];
 
+		// NULL if nothing was found.
+		const char* ModVersion;
+
+		// NULL if nothing was wound.
+		const char* Map;
+
 		// Of type udtGameType::Id.
 		// Defaults to (u32)-1 when invalid or uninitialized.
 		u32 GameType;
 
 		// The duration of the match.
 		u32 MatchDurationMs;
+
+		// Of type udtMod::Id.
+		u32 Mod;
+
+		// Of type udtGamePlay::Id.
+		u32 GamePlay;
+
+		// Of type udtOvertime::Id.
+		u32 OverTimeType;
+
+		// Total number of overtimes in the match.
+		u32 OverTimeCount;
 	};
 
 	struct udtTimeShiftArg

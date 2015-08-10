@@ -51,8 +51,7 @@ void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 	_players.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
 	_gameStates.SetAllocator(FinalAllocator);
-
-	_analyzer.SetTempAllocator(*TempAllocator);
+	_analyzer.InitAllocators(*TempAllocator, demoCount);
 }
 
 void udtParserPlugInGameState::StartDemoAnalysis()

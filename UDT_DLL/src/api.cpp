@@ -108,6 +108,38 @@ static const char* ShortGameTypeNames[] =
 };
 #undef UDT_GAME_TYPE_ITEM
 
+#define UDT_MOD_NAME_ITEM(Enum, Name) Name,
+static const char* ModNames[] =
+{
+	UDT_MOD_NAME_LIST(UDT_MOD_NAME_ITEM)
+	"after last mod"
+};
+#undef UDT_MOD_NAME_ITEM
+
+#define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) LongName,
+static const char* GamePlayNames[] =
+{
+	UDT_GAMEPLAY_LIST(UDT_GAMEPLAY_ITEM)
+	"after last long gameplay name"
+};
+#undef UDT_GAMEPLAY_ITEM
+
+#define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) ShortName,
+static const char* ShortGamePlayNames[] =
+{
+	UDT_GAMEPLAY_LIST(UDT_GAMEPLAY_ITEM)
+	"after last short gameplay name"
+};
+#undef UDT_GAMEPLAY_ITEM
+
+#define UDT_OVERTIME_TYPE_ITEM(Enum, Name) Name,
+static const char* OverTimeTypes[] =
+{
+	UDT_OVERTIME_TYPE_LIST(UDT_OVERTIME_TYPE_ITEM)
+	"after last overtime type"
+};
+#undef UDT_OVERTIME_TYPE_ITEM
+
 
 UDT_API(const char*) udtGetVersionString()
 {
@@ -276,6 +308,26 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::ShortGameTypes:
 			*elements = ShortGameTypeNames;
 			*elementCount = (u32)(UDT_COUNT_OF(ShortGameTypeNames) - 1);
+			break;
+
+		case udtStringArray::ModNames:
+			*elements = ModNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ModNames) - 1);
+			break;
+
+		case udtStringArray::GamePlayNames:
+			*elements = GamePlayNames;
+			*elementCount = (u32)(UDT_COUNT_OF(GamePlayNames) - 1);
+			break;
+
+		case udtStringArray::ShortGamePlayNames:
+			*elements = ShortGamePlayNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ShortGamePlayNames) - 1);
+			break;
+
+		case udtStringArray::OverTimeTypes:
+			*elements = OverTimeTypes;
+			*elementCount = (u32)(UDT_COUNT_OF(OverTimeTypes) - 1);
 			break;
 
 		default:
