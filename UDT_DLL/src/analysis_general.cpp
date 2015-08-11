@@ -160,7 +160,8 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 
 	if(tokenizer.GetArgCount() >= 2 &&
 	   (udtString::Equals(command, "print") || 
-	   udtString::Equals(command, "cp")))
+	   udtString::Equals(command, "cp") ||
+	   udtString::Equals(command, "pcp")))
 	{
 		u32 index = 0;
 		const udtString printMessage = tokenizer.GetArg(1);
