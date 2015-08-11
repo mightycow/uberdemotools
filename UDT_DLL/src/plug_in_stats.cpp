@@ -40,6 +40,11 @@ static s32 CPMACharToInt(char c)
 	return 0;
 }
 
+static bool IsTeamMode(udtGameType::Id gameType)
+{
+	return gameType >= udtGameType::FirstTeamMode;
+}
+
 
 udtParserPlugInStats::udtParserPlugInStats()
 {
@@ -1277,6 +1282,15 @@ void udtParserPlugInStats::AddCurrentStats()
 		_stats.GameType = _analyzer.GameType();
 	}
 
+	if(!IsTeamMode((udtGameType::Id)_stats.GameType))
+	{
+		for(s32 i = 0; i < UDT_TEAM_STATS_MASK_BYTE_COUNT; ++i)
+		{
+			_stats.TeamStats[0].Flags[i] = 0;
+			_stats.TeamStats[1].Flags[i] = 0;
+		}
+	}
+
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();
 	_stats.OverTimeCount = _analyzer.OvertimeCount();
@@ -1287,7 +1301,6 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.TimeOutCount = _analyzer.TimeOutCount();
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
-
 	_statsArray.Add(_stats);
 
 	// Clear the stats for the next match.
