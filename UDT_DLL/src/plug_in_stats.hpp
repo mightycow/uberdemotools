@@ -57,6 +57,7 @@ private:
 	void ParseQ3Scores();
 	void ParseQ3ScoresDM3();
 	void ParseCPMAXStats2();
+	void ParseCPMAXScores();
 	void ParseQLScoresTDMVeryOld();
 	void ParseQLScoresTDMOld();
 	void ParseOSPStatsInfo();

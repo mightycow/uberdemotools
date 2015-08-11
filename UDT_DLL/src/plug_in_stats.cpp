@@ -25,6 +25,21 @@ static void SetBit(u8* flags, s32 index)
 	flags[byteIndex] |= (u8)1 << (u8)bitIndex;
 }
 
+static s32 CPMACharToInt(char c)
+{
+	if(c >= 'A'  &&  c <= 'Z')
+	{
+		return c - 39;
+	}
+
+	if(c >= 'a'  &&  c <= 'z')
+	{
+		return c - 97;
+	}
+
+	return 0;
+}
+
 
 udtParserPlugInStats::udtParserPlugInStats()
 {
@@ -145,6 +160,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores", ParseScores),
 		HANDLER("dscores", ParseQLScoresDuelOld),
 		HANDLER("xstats2", ParseCPMAXStats2),
+		HANDLER("xscores", ParseCPMAXScores),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
 		HANDLER("tdmscores2", ParseQLScoresTDMOld),
 		HANDLER("statsinfo", ParseOSPStatsInfo)
@@ -905,6 +921,55 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 	}
 
 	ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
+}
+
+void udtParserPlugInStats::ParseCPMAXScores()
+{
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
+	}
+
+	const s32 clientCount = GetValue(1);
+	if(clientCount <= 0 || 
+	   clientCount >= 64 ||
+	   _tokenizer->GetArgCount() < (u32)(2 + clientCount * 7))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		// We skip a string containing the ping and other stuff.
+		PLAYER_FIELD(Time, 2)
+		// We skip...
+		// power-ups
+		// net / captures
+		// defends
+	};
+
+	s32 offset = 2;
+	for(s32 i = 0; i < clientCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			udtPlayerStats& playerStats = _stats.PlayerStats[clientNumber];
+			ParseFields(playerStats.Flags, playerStats.Fields, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+
+			const udtString textField = _tokenizer->GetArg((u32)offset + 2);
+			if(textField.Length == 12)
+			{
+				// It seems that 3-4 and 5-6 give the low and high values of the ping range.
+				const s32 ping = 32 * CPMACharToInt(textField.String[2]) + CPMACharToInt(textField.String[3]);
+				playerStats.Fields[udtPlayerStatsField::Ping] = ping;
+				SetBit(playerStats.Flags, (s32)udtPlayerStatsField::Ping);
+			}
+		}
+
+		offset += 7;
+	}
 }
 
 void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
