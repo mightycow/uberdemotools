@@ -69,6 +69,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_forfeited = false;
 	_timeOut = false;
 	_mercyLimited = false;
+	_serverPause = false;
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
@@ -119,6 +120,13 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	else if(_game == udtGame::QL)
 	{
 		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
+		const s32 startIdx = idConfigStringIndex::PauseStart(_protocol);
+		const s32 endIdx = idConfigStringIndex::PauseEnd(_protocol);
+		if(startIdx != -1 && endIdx != -1)
+		{
+			ProcessQLPauseStartConfigString(parser._inConfigStrings[startIdx].String);
+			ProcessQLPauseEndConfigString(parser._inConfigStrings[endIdx].String);
+		}
 	}
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
@@ -243,9 +251,21 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		ProcessCPMAGameInfoConfigString(configString);
 	}
-	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
+	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 	{
 		_matchStartTime = GetLevelStartTime();
+	}
+	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
+	{
+		if(_timeOutCount == 0 && !_timeOut)
+		{
+			_matchStartTime = GetLevelStartTime();
+		}
+		else if(!_serverPause)
+		{
+			const s32 shiftedStartTime = GetLevelStartTime();
+			_totalTimeOutDuration = shiftedStartTime - _matchStartTime;
+		}
 	}
 	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::Intermission(_protocol))
 	{	
@@ -262,6 +282,14 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	else if(csIndex == idConfigStringIndex::SecondPlacePlayerName(_protocol))
 	{
 		ProcessScores2Player(configString);
+	}
+	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::PauseStart(_protocol))
+	{
+		ProcessQLPauseStartConfigString(configString);
+	}
+	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::PauseEnd(_protocol))
+	{
+		ProcessQLPauseEndConfigString(configString);
 	}
 }
 
@@ -620,6 +648,48 @@ void udtGeneralAnalyzer::ProcessScores2Player(const char* configString)
 	}
 }
 
+void udtGeneralAnalyzer::ProcessQLPauseStartConfigString(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	s32 startTime = 0;
+
+	// String cleared means no pause/time-out.
+	if(configString[0] == '\0')
+	{
+		if(_timeOut)
+		{
+			++_timeOutCount;
+		}
+		_timeOut = false;
+		_serverPause = false;
+	}
+	else if(StringParseInt(startTime, configString) && 
+			startTime > 0)
+	{
+		_timeOut = true;
+	}
+}
+
+void udtGeneralAnalyzer::ProcessQLPauseEndConfigString(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	s32 endTime = 0;
+	if(_timeOut && 
+	   StringParseInt(endTime, configString) &&
+	   endTime == 0)
+	{
+		_serverPause = true;
+	}
+}
+
 void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 {
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
@@ -731,8 +801,12 @@ s32 udtGeneralAnalyzer::GetLevelStartTime()
 
 s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 {
+	// @TODO: Is the "\time\$(time)" syntax for server pauses?
+
 	// The next match start time is given.
 	// When a game starts, the config string gets cleared ("" string).
+	// It can either be encoded as "$(time)" or "\time\$(time)". :-(
+	// When "\time\$(time)", 0 and -1 have a different meaning it seems.
 	const s32 csIndex = idConfigStringIndex::WarmUpEndTime(_protocol);
 	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
 	if(cs == NULL)
@@ -741,12 +815,18 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 	}
 
 	s32 warmUpEndTimeMs = S32_MIN;
-	if(sscanf(cs->String, "%d", &warmUpEndTimeMs) != 1)
+	if(sscanf(cs->String, "%d", &warmUpEndTimeMs) == 1)
 	{
-		return S32_MIN;
+		return warmUpEndTimeMs;
 	}
 
-	return warmUpEndTimeMs;
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+	if(ParseConfigStringValueInt(warmUpEndTimeMs, *_tempAllocator, "time", cs->String))
+	{
+		return warmUpEndTimeMs;
+	}
+
+	return S32_MIN;
 }
 
 bool udtGeneralAnalyzer::IsIntermission()

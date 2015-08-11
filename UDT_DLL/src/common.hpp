@@ -252,8 +252,8 @@ typedef enum {
 #define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
 #define	CS_MODELS_68			32
 #define CS_WARMUP_END           13
-#define CS_PAUSE_START			669		// if this is non-zero, the game is paused
-#define CS_PAUSE_COUNTDOWN		670		// 0 = pause, !0 = timeout
+#define CS_PAUSE_START_73p		669		// if this is non-zero, the game is paused
+#define CS_PAUSE_COUNTDOWN_73p	670		// 0 = pause, !0 = timeout
 #define CS_CA_ROUND_INFO        661
 #define CS_CA_ROUND_START       662
 #define	CS_PLAYERS_68           544

@@ -65,6 +65,8 @@ private:
 	void ProcessOSPGamePlayConfigString(const char* configString);
 	void ProcessScores2(const char* configString);
 	void ProcessScores2Player(const char* configString);
+	void ProcessQLPauseStartConfigString(const char* configString);
+	void ProcessQLPauseEndConfigString(const char* configString);
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
@@ -92,4 +94,5 @@ private:
 	bool _forfeited;
 	bool _timeOut;
 	bool _mercyLimited;
+	bool _serverPause;
 };
