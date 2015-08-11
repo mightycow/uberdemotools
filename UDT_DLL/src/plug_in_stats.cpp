@@ -1221,6 +1221,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
 	_stats.TimeOutCount = _analyzer.TimeOutCount();
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
+	_stats.MercyLimited = _analyzer.MercyLimited();
 
 	_statsArray.Add(_stats);
 

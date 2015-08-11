@@ -1254,8 +1254,8 @@ extern "C"
 		// The total amount of time spent in time-outs.
 		u32 TotalTimeOutDurationMs;
 
-		// Ignore this.
-		s32 Reserved1;
+		// Did the winning team hit the mercy limit? (QL TDM)
+		u32 MercyLimited;
 	};
 
 	struct udtTimeShiftArg

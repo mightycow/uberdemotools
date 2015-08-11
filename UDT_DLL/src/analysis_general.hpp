@@ -28,6 +28,7 @@ public:
 	u32  TimeOutCount() const;
 	s32  TotalTimeOutDuration() const;
 	bool Forfeited() const;
+	bool MercyLimited() const;
 	void SetInWarmUp();
 	void SetInProgress();
 
@@ -90,4 +91,5 @@ private:
 	bool _processingGameState;
 	bool _forfeited;
 	bool _timeOut;
+	bool _mercyLimited;
 };

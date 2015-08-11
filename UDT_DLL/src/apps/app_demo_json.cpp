@@ -234,6 +234,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 		WriteUDTOverTimeType(writer, stats.OverTimeType);
 	}
 	writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
+	writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
 	WriteUDTGamePlayShort(writer, stats.GamePlay);
 	WriteUDTGamePlayLong(writer, stats.GamePlay);
 	writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);

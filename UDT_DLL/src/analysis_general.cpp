@@ -27,7 +27,7 @@ Quake Live:
 /*
 CPMA:
 - CS_CPMA_GAME_INFO: te    0 means not in time-out --> td last time-out's duration
-- CS_CPMA_GAME_INFO: te != 0 means in time-out     --> te time-out start time --- te 
+- CS_CPMA_GAME_INFO: te != 0 means in time-out     --> te time-out start time
 */
 
 
@@ -68,6 +68,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_protocol = udtProtocol::Invalid;
 	_forfeited = false;
 	_timeOut = false;
+	_mercyLimited = false;
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
@@ -198,6 +199,12 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		   _gameState == udtGameState::InProgress)
 		{
 			_forfeited = true;
+		}
+
+		if(udtString::ContainsNoCase(index, printMessage, "mercylimit") &&
+		   _gameState == udtGameState::InProgress)
+		{
+			_mercyLimited = true;
 		}
 	}
 
@@ -337,6 +344,11 @@ const char* udtGeneralAnalyzer::MapName() const
 bool udtGeneralAnalyzer::Forfeited() const
 {
 	return _forfeited;
+}
+
+bool udtGeneralAnalyzer::MercyLimited() const
+{
+	return _mercyLimited;
 }
 
 void udtGeneralAnalyzer::SetInWarmUp()
