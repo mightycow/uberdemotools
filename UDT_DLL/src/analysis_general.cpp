@@ -24,6 +24,12 @@ Quake Live:
 - When a match ends  : CS_INTERMISSION is set to "1" or "qtrue"
 */
 
+/*
+CPMA:
+- CS_CPMA_GAME_INFO: te    0 means not in time-out --> td last time-out's duration
+- CS_CPMA_GAME_INFO: te != 0 means in time-out     --> te time-out start time --- te 
+*/
+
 
 udtGeneralAnalyzer::udtGeneralAnalyzer()
 {
@@ -50,6 +56,8 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
 	_overTimeCount = 0;
+	_timeOutCount = 0;
+	_totalTimeOutDuration = 0;
 	_game = udtGame::Q3;
 	_gameType = udtGameType::Invalid;
 	_gameState = udtGameState::WarmUp;
@@ -59,6 +67,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_gamePlay = udtGamePlay::VQ3;
 	_protocol = udtProtocol::Invalid;
 	_forfeited = false;
+	_timeOut = false;
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
@@ -285,6 +294,16 @@ u32 udtGeneralAnalyzer::OvertimeCount() const
 	return _overTimeCount;
 }
 
+u32 udtGeneralAnalyzer::TimeOutCount() const
+{
+	return _timeOutCount;
+}
+
+s32 udtGeneralAnalyzer::TotalTimeOutDuration() const
+{
+	return _totalTimeOutDuration;
+}
+
 udtGameType::Id udtGeneralAnalyzer::GameType() const
 {
 	return _gameType;
@@ -396,6 +415,20 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 			case 3: _gamePlay = udtGamePlay::CQ3; break;
 			case 4: _gamePlay = udtGamePlay::PMD; break;
 			default: break;
+		}
+	}
+
+	s32 te = -1;
+	s32 td = -1;
+	if(ParseConfigStringValueInt(te, *_tempAllocator, "te", configString) &&
+	   ParseConfigStringValueInt(td, *_tempAllocator, "td", configString))
+	{
+		const bool oldTimeOut = _timeOut;
+		_timeOut = te != 0;
+		if(oldTimeOut && !_timeOut)
+		{
+			++_timeOutCount;
+			_totalTimeOutDuration += td;
 		}
 	}
 

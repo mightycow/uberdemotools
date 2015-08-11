@@ -236,6 +236,11 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 	writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
 	WriteUDTGamePlayShort(writer, stats.GamePlay);
 	WriteUDTGamePlayLong(writer, stats.GamePlay);
+	writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);
+	if(stats.TimeOutCount > 0)
+	{
+		writer.WriteIntValue("total time-out duration", (s32)stats.TotalTimeOutDurationMs);
+	}
 
 	if(hasTeamStats)
 	{

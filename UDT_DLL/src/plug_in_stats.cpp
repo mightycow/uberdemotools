@@ -1193,7 +1193,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	// Fix up the stats and save them.
 	//
 
-	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime());
+	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime() - _analyzer.TotalTimeOutDuration());
 
 	for(s32 i = 0; i < 64; ++i)
 	{
@@ -1219,6 +1219,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.Mod = _analyzer.Mod();
 	_stats.ModVersion = _analyzer.ModVersion();
 	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
+	_stats.TimeOutCount = _analyzer.TimeOutCount();
+	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 
 	_statsArray.Add(_stats);
 

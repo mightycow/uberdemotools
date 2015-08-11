@@ -1248,6 +1248,12 @@ extern "C"
 		// 1 if the loser left the game before it was supposed to end, 0 otherwise.
 		u32 Forfeited;
 
+		// Total number of time-outs in the match.
+		u32 TimeOutCount;
+
+		// The total amount of time spent in time-outs.
+		u32 TotalTimeOutDurationMs;
+
 		// Ignore this.
 		s32 Reserved1;
 	};

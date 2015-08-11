@@ -25,6 +25,8 @@ public:
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
 	u32  OvertimeCount() const;
+	u32  TimeOutCount() const;
+	s32  TotalTimeOutDuration() const;
 	bool Forfeited() const;
 	void SetInWarmUp();
 	void SetInProgress();
@@ -75,6 +77,8 @@ private:
 	s32 _matchStartTime;
 	s32 _matchEndTime;
 	u32 _overTimeCount;
+	u32 _timeOutCount;
+	s32 _totalTimeOutDuration;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;
@@ -85,4 +89,5 @@ private:
 	udtProtocol::Id _protocol;
 	bool _processingGameState;
 	bool _forfeited;
+	bool _timeOut;
 };
