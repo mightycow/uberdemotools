@@ -16,5 +16,5 @@ To do:
 - Stats analyzer: support for all known scores/stats commands
 - Gamestate analyzer: game mode (short + long)
 - GUI: Unify all extracted information in the "Info" tab and have a combo box for selecting the desired info type (General, Chat, Deaths, Stats, Raw Commands)
-- Raw command analyzer: it simply records all server commands with no cleaning
 - GUI: clicking any column of the "Chats History" list view will crash when the list is empty
+- UDT_json: process the strings to escape the characters that have to be
