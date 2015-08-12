@@ -33,6 +33,11 @@ void udtJSONWriter::EndFile()
 
 void udtJSONWriter::StartObject()
 {
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
 	WriteNewLine();
 	Write("{");
 	++_level;
@@ -41,6 +46,11 @@ void udtJSONWriter::StartObject()
 
 void udtJSONWriter::StartObject(const char* name)
 {
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
 	WriteNewLine();
 	Write("\"");
 	Write(name);
@@ -56,10 +66,16 @@ void udtJSONWriter::EndObject()
 	--_level;
 	WriteNewLine();
 	Write("}");
+	++_itemIndices[_level];
 }
 
 void udtJSONWriter::StartArray()
 {
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
 	WriteNewLine();
 	Write("[");
 	++_level;
@@ -68,6 +84,11 @@ void udtJSONWriter::StartArray()
 
 void udtJSONWriter::StartArray(const char* name)
 {
+	if(_itemIndices[_level] > 0)
+	{
+		Write(",");
+	}
+
 	WriteNewLine();
 	Write("\"");
 	Write(name);
@@ -83,6 +104,7 @@ void udtJSONWriter::EndArray()
 	--_level;
 	WriteNewLine();
 	Write("]");
+	++_itemIndices[_level];
 }
 
 void udtJSONWriter::WriteNewLine()

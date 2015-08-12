@@ -245,7 +245,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 
 	if(hasTeamStats)
 	{
-		writer.StartObject("team stats");
+		writer.StartArray("team stats");
 		for(s32 i = 0; i < 2; ++i)
 		{
 			const udtTeamStats& teamStats = stats.TeamStats[i];
@@ -254,12 +254,12 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 				WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
 			}
 		}
-		writer.EndObject();
+		writer.EndArray();
 	}
 	
 	if(hasPlayerStats)
 	{
-		writer.StartObject("player stats");
+		writer.StartArray("player stats");
 		for(s32 i = 0; i < 64; ++i)
 		{
 			const udtPlayerStats& playerStats = stats.PlayerStats[i];
@@ -268,7 +268,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
 				WritePlayerStats(writer, playerStats, i);
 			}
 		}
-		writer.EndObject();
+		writer.EndArray();
 	}
 
 	writer.EndObject();
@@ -281,7 +281,7 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		return;
 	}
 
-	writer.StartObject("chat");
+	writer.StartArray("chat");
 
 	for(u32 i = 0; i < count; ++i)
 	{
@@ -308,7 +308,7 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		writer.EndObject();
 	}
 
-	writer.EndObject();
+	writer.EndArray();
 }
 
 static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* deathEvents, u32 count)
@@ -318,7 +318,7 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 		return;
 	}
 
-	writer.StartObject("obituaries");
+	writer.StartArray("obituaries");
 
 	for(u32 i = 0; i < count; ++i)
 	{
@@ -345,8 +345,38 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 		writer.EndObject();
 	}
 
-	writer.EndObject();
+	writer.EndArray();
 }
+
+#if RAW_EVENTS
+void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* commands, u32 count)
+{
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("raw commands");
+
+	for(u32 i = 0; i < count; ++i)
+	{
+		const udtParseDataRawCommand& info = commands[i];
+
+		writer.StartObject();
+
+		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
+		writer.WriteIntValue("server time", info.ServerTimeMs);
+
+		// @TODO: process the strings to escape the characters that need it.
+		writer.WriteStringValue("raw command", info.RawCommand);
+		writer.WriteStringValue("clean command", info.CleanCommand);
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+#endif
 
 static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* gameStates, u32 count)
 {
@@ -383,7 +413,7 @@ static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* 
 		}
 		writer.EndArray();
 
-		writer.StartObject("players");
+		writer.StartArray("players");
 		for(u32 j = 0; j < info.PlayerCount; ++j)
 		{
 			writer.StartObject();
@@ -394,7 +424,7 @@ static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* 
 			writer.WriteIntValue("end time", info.Players[j].LastSnapshotTimeMs);
 			writer.EndObject();
 		}
-		writer.EndObject();
+		writer.EndArray();
 		
 		writer.StartObject("config string values");
 		for(u32 j = 0; j < info.KeyValuePairCount; ++j)
@@ -419,7 +449,8 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 		(u32)udtParserPlugIn::Stats,
 		(u32)udtParserPlugIn::Chat,
 		(u32)udtParserPlugIn::Obituaries,
-		(u32)udtParserPlugIn::GameState
+		(u32)udtParserPlugIn::GameState,
+		(u32)udtParserPlugIn::RawCommands
 	};
 
 	udtParseArg info;
@@ -502,7 +533,15 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	{
 		return __LINE__;
 	}
-
+	/*
+	void* rawEventsPointer = NULL;
+	u32 rawEventCount = 0;
+	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::RawCommands, &rawEventsPointer, &rawEventCount) != (s32)udtErrorCode::None ||
+	   rawEventsPointer == NULL)
+	{
+		return __LINE__;
+	}
+	*/
 	udtVMLinearAllocator outputPathAllocator;
 	if(jsonPath == NULL)
 	{
@@ -531,16 +570,23 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	const udtParseDataChat* const chatEvents = (const udtParseDataChat*)chatEventPointer;
 	const udtParseDataObituary* const deathEvents = (const udtParseDataObituary*)deathEventPointer;
 	const udtParseDataGameState* const gameStates = (const udtParseDataGameState*)gameStatesPointer;
+#if RAW_EVENTS
+	const udtParseDataRawCommand* const rawEvents = (const udtParseDataRawCommand*)rawEventsPointer;
+#endif
 	udtJSONWriter jsonWriter;
 	jsonWriter.SetOutputStream(&memoryStream);
 	jsonWriter.StartFile();
+	WriteGameStates(jsonWriter, gameStates, gameStateCount);
+	WriteChatEvents(jsonWriter, chatEvents, chatEventCount);
+	WriteDeathEvents(jsonWriter, deathEvents, deathEventCount);
 	for(u32 i = 0; i < statsCount; ++i)
 	{
 		WriteStats(jsonWriter, stats[i]);
 	}
-	WriteChatEvents(jsonWriter, chatEvents, chatEventCount);
-	WriteDeathEvents(jsonWriter, deathEvents, deathEventCount);
-	WriteGameStates(jsonWriter, gameStates, gameStateCount);
+	// @TODO: Make it JSON compliant...
+#if RAW_EVENTS
+	WriteRawCommands(jsonWriter, rawEvents, rawEventCount);
+#endif
 	jsonWriter.EndFile();
 
 	udtFileStream jsonFile;
