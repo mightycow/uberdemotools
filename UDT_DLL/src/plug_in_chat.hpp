@@ -23,7 +23,8 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInChat);
 
-	void ProcessChatCommand(udtBaseParser& parser, bool teamChat);
+	void ProcessChatCommand(udtBaseParser& parser);
+	void ProcessTeamChatCommand(udtBaseParser& parser);
 	void ProcessCPMATeamChatCommand(udtBaseParser& parser);
 
 public:

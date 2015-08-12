@@ -43,6 +43,22 @@ udtString udtString::NewCloneFromRef(udtVMLinearAllocator& allocator, const udtS
 	return NewClone(allocator, input.String, input.Length);
 }
 
+udtString udtString::NewCleanClone(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* input, u32 inputLength)
+{
+	udtString clone = NewClone(allocator, input, inputLength);
+	udtString::CleanUp(clone, protocol);
+
+	return clone;
+}
+
+udtString udtString::NewCleanCloneFromRef(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const udtString& input)
+{
+	udtString clone = NewCloneFromRef(allocator, input);
+	udtString::CleanUp(clone, protocol);
+
+	return clone;
+}
+
 udtString udtString::NewEmptyConstant()
 {
 	udtString string;
@@ -483,11 +499,11 @@ bool udtString::Equals(const udtString& a, const char* b)
 	return Equals(a, udtString::NewConstRef(b));
 }
 
-bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList)
+bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList, u32 offset)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && charList.String != NULL, false);
 
-	for(u32 i = 0; i < input.Length; ++i)
+	for(u32 i = offset; i < input.Length; ++i)
 	{
 		for(u32 j = 0; j < charList.Length; ++j)
 		{
@@ -521,11 +537,11 @@ bool udtString::FindLastCharacterListMatch(u32& index, const udtString& input, c
 	return false;
 }
 
-bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern)
+bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern, u32 offset)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
 
-	for(u32 i = 0; i < input.Length; ++i)
+	for(u32 i = offset; i < input.Length; ++i)
 	{
 		if(input.String[i] == pattern)
 		{

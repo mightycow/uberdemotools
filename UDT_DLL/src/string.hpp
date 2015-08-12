@@ -14,6 +14,8 @@ struct udtString
 
 	static udtString NewClone(udtVMLinearAllocator& allocator, const char* input, u32 inputLength = (u32)InvalidLength);
 	static udtString NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input);
+	static udtString NewCleanClone(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* input, u32 inputLength = (u32)InvalidLength);
+	static udtString NewCleanCloneFromRef(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const udtString& input);
 	static udtString NewEmptyConstant();
 	static udtString NewConstRef(const char* readOnlyString, u32 length = (u32)InvalidLength);
 	static udtString NewRef(const char* readOnlyString, u32 length, u32 reservedBytes);
@@ -50,9 +52,9 @@ struct udtString
 	static bool EndsWith(const udtString& input, const char* pattern);
 	static bool Equals(const udtString& a, const char* b);
 
-	static bool FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
+	static bool FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList, u32 offset = 0);
 	static bool FindLastCharacterListMatch(u32& index, const udtString& input, const udtString& charList);
-	static bool FindFirstCharacterMatch(u32& index, const udtString& input, char pattern);
+	static bool FindFirstCharacterMatch(u32& index, const udtString& input, char pattern, u32 offset = 0);
 	static bool FindLastCharacterMatch(u32& index, const udtString& input, char pattern);
 
 	static bool IsNullOrEmpty(const udtString& string);
