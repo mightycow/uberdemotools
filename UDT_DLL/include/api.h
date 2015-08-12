@@ -1014,6 +1014,13 @@ extern "C"
 
 		// The message itself.
 		const char* Message;
+
+		// For team messages, where the player was.
+		// May be NULL if unavailable.
+		const char* Location;
+
+		// Ignore this.
+		const char* Reserved1;
 	};
 
 	struct udtParseDataChat
@@ -1035,8 +1042,8 @@ extern "C"
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
 
-		// Ignore this.
-		s32 Reserved1;
+		// 0 if global level, 1 if team level.
+		u32 TeamMessage;
 	};
 
 	struct udtMatchInfo

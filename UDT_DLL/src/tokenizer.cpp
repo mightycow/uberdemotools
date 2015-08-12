@@ -8,6 +8,11 @@
 static const char* EmptyString = "";
 
 
+const char* CommandLineTokenizer::GetOriginalCommand() const
+{
+	return _originalCommand;
+}
+
 u32	CommandLineTokenizer::GetArgCount() const
 {
 	return _argCount;

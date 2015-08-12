@@ -8,6 +8,7 @@
 struct CommandLineTokenizer
 {
 public:
+	const char* GetOriginalCommand() const;
 	u32         GetArgCount() const;
 	const char* GetArgString(u32 arg) const;
 	u32         GetArgLength(u32 arg) const;

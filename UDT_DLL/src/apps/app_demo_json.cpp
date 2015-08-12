@@ -281,7 +281,7 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		return;
 	}
 
-	writer.StartObject("global chat");
+	writer.StartObject("chat");
 
 	for(u32 i = 0; i < count; ++i)
 	{
@@ -291,6 +291,7 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 
 		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
 		writer.WriteIntValue("server time", info.ServerTimeMs);
+		writer.WriteBoolValue("team chat", info.TeamMessage != 0);
 		if(info.PlayerIndex >= 0 && info.PlayerIndex < 64)
 		{
 			writer.WriteIntValue("client number", info.PlayerIndex);
@@ -298,9 +299,11 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		writer.WriteStringValue("player name", info.Strings[0].PlayerName);
 		writer.WriteStringValue("player clan name", info.Strings[0].ClanName);
 		writer.WriteStringValue("message", info.Strings[0].Message);
+		writer.WriteStringValue("location", info.Strings[0].Location);
 		writer.WriteStringValue("clean player name", info.Strings[1].PlayerName);
 		writer.WriteStringValue("clean player clan name", info.Strings[1].ClanName);
 		writer.WriteStringValue("clean message", info.Strings[1].Message);
+		writer.WriteStringValue("clean location", info.Strings[1].Location);
 
 		writer.EndObject();
 	}
