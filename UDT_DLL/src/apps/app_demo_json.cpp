@@ -348,7 +348,6 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 	writer.EndArray();
 }
 
-#if RAW_EVENTS
 void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* commands, u32 count)
 {
 	if(count == 0)
@@ -366,8 +365,6 @@ void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* comma
 
 		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
 		writer.WriteIntValue("server time", info.ServerTimeMs);
-
-		// @TODO: process the strings to escape the characters that need it.
 		writer.WriteStringValue("raw command", info.RawCommand);
 		writer.WriteStringValue("clean command", info.CleanCommand);
 
@@ -376,7 +373,6 @@ void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* comma
 
 	writer.EndArray();
 }
-#endif
 
 static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* gameStates, u32 count)
 {
@@ -533,7 +529,6 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	{
 		return __LINE__;
 	}
-	/*
 	void* rawEventsPointer = NULL;
 	u32 rawEventCount = 0;
 	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::RawCommands, &rawEventsPointer, &rawEventCount) != (s32)udtErrorCode::None ||
@@ -541,7 +536,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	{
 		return __LINE__;
 	}
-	*/
+
 	udtVMLinearAllocator outputPathAllocator;
 	if(jsonPath == NULL)
 	{
@@ -561,7 +556,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	}
 
 	udtVMMemoryStream memoryStream;
-	if(!memoryStream.Open(1 << 20))
+	if(!memoryStream.Open(1 << 24))
 	{
 		return __LINE__;
 	}
@@ -570,9 +565,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	const udtParseDataChat* const chatEvents = (const udtParseDataChat*)chatEventPointer;
 	const udtParseDataObituary* const deathEvents = (const udtParseDataObituary*)deathEventPointer;
 	const udtParseDataGameState* const gameStates = (const udtParseDataGameState*)gameStatesPointer;
-#if RAW_EVENTS
 	const udtParseDataRawCommand* const rawEvents = (const udtParseDataRawCommand*)rawEventsPointer;
-#endif
 	udtJSONWriter jsonWriter;
 	jsonWriter.SetOutputStream(&memoryStream);
 	jsonWriter.StartFile();
@@ -583,10 +576,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	{
 		WriteStats(jsonWriter, stats[i]);
 	}
-	// @TODO: Make it JSON compliant...
-#if RAW_EVENTS
 	WriteRawCommands(jsonWriter, rawEvents, rawEventCount);
-#endif
 	jsonWriter.EndFile();
 
 	udtFileStream jsonFile;

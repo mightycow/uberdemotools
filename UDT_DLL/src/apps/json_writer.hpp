@@ -30,7 +30,9 @@ private:
 
 	void WriteNewLine();
 	void Write(const char* string);
+	void CleanAndWrite(const char* string);
 
+	udtVMLinearAllocator _stringAllocator;
 	udtStream* _stream;
 	u32 _itemIndices[16];
 	u32 _level;
