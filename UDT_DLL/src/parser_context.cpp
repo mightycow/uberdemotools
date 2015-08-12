@@ -6,6 +6,7 @@
 #include "analysis_cut_by_pattern.hpp"
 #include "plug_in_converter_quake_to_udt.hpp"
 #include "plug_in_stats.hpp"
+#include "plug_in_raw_commands.hpp"
 
 // For the placement new operator.
 #include <new>

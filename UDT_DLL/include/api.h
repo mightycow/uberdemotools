@@ -101,10 +101,11 @@ struct udtCrashType
 // 2. plug-in class type (internal)
 // 3. plug-in output class type (for reading back the results of Analyzer plug-ins)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,       udtParserPlugInChat,       udtParseDataChat) \
-	N(GameState,  udtParserPlugInGameState,  udtParseDataGameState) \
-	N(Obituaries, udtParserPlugInObituaries, udtParseDataObituary) \
-	N(Stats,      udtParserPlugInStats,      udtParseDataStats)
+	N(Chat,        udtParserPlugInChat,        udtParseDataChat) \
+	N(GameState,   udtParserPlugInGameState,   udtParseDataGameState) \
+	N(Obituaries,  udtParserPlugInObituaries,  udtParseDataObituary) \
+	N(Stats,       udtParserPlugInStats,       udtParseDataStats) \
+	N(RawCommands, udtParserPlugInRawCommands, udtParseDataRawCommand)
 
 #define UDT_PLUG_IN_ITEM(Enum, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -1263,6 +1264,22 @@ extern "C"
 
 		// Did the winning team hit the mercy limit? (QL TDM)
 		u32 MercyLimited;
+	};
+
+	struct udtParseDataRawCommand
+	{
+		// The raw command, as it was sent from the server.
+		const char* RawCommand;
+
+		// The command with no color codes etc.
+		const char* CleanCommand;
+
+		// The time at which the chat message was sent from the client.
+		s32 ServerTimeMs;
+
+		// The index of the last gamestate message after which this chat event occurred.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
 	};
 
 	struct udtTimeShiftArg
