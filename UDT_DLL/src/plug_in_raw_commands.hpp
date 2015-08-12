@@ -23,7 +23,7 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInRawCommands);
 
-	udtVMLinearAllocator _allocator;
+	udtVMLinearAllocator _stringAllocator;
 	udtVMArray<udtParseDataRawCommand> _commands; // The final array.
 	s32 _gameStateIndex;
 };

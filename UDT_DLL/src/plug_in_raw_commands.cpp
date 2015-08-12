@@ -12,7 +12,7 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
 	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16));
-	_allocator.Init((uptr)demoCount * (uptr)(1 << 18));
+	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 20));
 	_commands.SetAllocator(FinalAllocator);
 }
 
@@ -37,8 +37,8 @@ void udtParserPlugInRawCommands::ProcessGamestateMessage(const udtGamestateCallb
 
 void udtParserPlugInRawCommands::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	const udtString rawCommand = udtString::NewClone(_allocator, arg.String, arg.StringLength);
-	const udtString cleanCommand = udtString::NewCleanClone(_allocator, parser._inProtocol, arg.String, arg.StringLength);
+	const udtString rawCommand = udtString::NewClone(_stringAllocator, arg.String, arg.StringLength);
+	const udtString cleanCommand = udtString::NewCleanClone(_stringAllocator, parser._inProtocol, arg.String, arg.StringLength);
 
 	udtParseDataRawCommand info;
 	info.GameStateIndex = _gameStateIndex;
