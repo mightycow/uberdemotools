@@ -300,10 +300,12 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 		writer.WriteStringValue("player clan name", info.Strings[0].ClanName);
 		writer.WriteStringValue("message", info.Strings[0].Message);
 		writer.WriteStringValue("location", info.Strings[0].Location);
+		writer.WriteStringValue("command", info.Strings[0].OriginalCommand);
 		writer.WriteStringValue("clean player name", info.Strings[1].PlayerName);
 		writer.WriteStringValue("clean player clan name", info.Strings[1].ClanName);
 		writer.WriteStringValue("clean message", info.Strings[1].Message);
 		writer.WriteStringValue("clean location", info.Strings[1].Location);
+		writer.WriteStringValue("clean command", info.Strings[1].OriginalCommand);
 
 		writer.EndObject();
 	}
