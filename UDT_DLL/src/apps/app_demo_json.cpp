@@ -195,83 +195,97 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 	writer.EndObject();
 }
 
-static void WriteStats(udtJSONWriter& writer, const udtParseDataStats& stats)
+static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArray, u32 count)
 {
-	const bool hasTeamStats = HasValidTeamStats(stats);
-	const bool hasPlayerStats = HasValidPlayerStats(stats);
-	if(!hasTeamStats && !hasPlayerStats)
+	if(count == 0)
 	{
 		return;
 	}
 
-	const s32 MaxMatchDurationDeltaMs = 1000;
-	s32 durationMs = (s32)stats.MatchDurationMs;
-	const s32 durationMinuteModuloMs = durationMs % 60000;
-	const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-	if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) && 
-	   stats.Forfeited == 0 &&
-	   absMinuteDiffMs < MaxMatchDurationDeltaMs)
+	writer.StartArray("match stats");
+
+	for(u32 m = 0; m < count; ++m)
 	{
-		s32 minutes = (durationMs + 60000 - 1) / 60000;
-		if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
+		const udtParseDataStats& stats = statsArray[m];
+
+		const bool hasTeamStats = HasValidTeamStats(stats);
+		const bool hasPlayerStats = HasValidPlayerStats(stats);
+		if(!hasTeamStats && !hasPlayerStats)
 		{
-			--minutes;
+			continue;
 		}
-		durationMs = 60000 * minutes;
-	}
 
-	writer.StartObject("game stats");
-
-	WriteUDTMod(writer, stats.Mod);
-	writer.WriteStringValue("mod version", stats.ModVersion);
-	WriteUDTGameTypeShort(writer, stats.GameType);
-	WriteUDTGameTypeLong(writer, stats.GameType);
-	writer.WriteStringValue("map", stats.Map);
-	writer.WriteIntValue("duration", (s32)durationMs);
-	writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
-	if(stats.OverTimeCount > 0)
-	{
-		WriteUDTOverTimeType(writer, stats.OverTimeType);
-	}
-	writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
-	writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
-	WriteUDTGamePlayShort(writer, stats.GamePlay);
-	WriteUDTGamePlayLong(writer, stats.GamePlay);
-	writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);
-	if(stats.TimeOutCount > 0)
-	{
-		writer.WriteIntValue("total time-out duration", (s32)stats.TotalTimeOutDurationMs);
-	}
-
-	if(hasTeamStats)
-	{
-		writer.StartArray("team stats");
-		for(s32 i = 0; i < 2; ++i)
+		const s32 MaxMatchDurationDeltaMs = 1000;
+		s32 durationMs = (s32)stats.MatchDurationMs;
+		const s32 durationMinuteModuloMs = durationMs % 60000;
+		const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
+		if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) &&
+		   stats.Forfeited == 0 &&
+		   absMinuteDiffMs < MaxMatchDurationDeltaMs)
 		{
-			const udtTeamStats& teamStats = stats.TeamStats[i];
-			if(IsSomeBitSet(teamStats.Flags))
+			s32 minutes = (durationMs + 60000 - 1) / 60000;
+			if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
 			{
-				WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
+				--minutes;
 			}
+			durationMs = 60000 * minutes;
 		}
-		writer.EndArray();
-	}
-	
-	if(hasPlayerStats)
-	{
-		writer.StartArray("player stats");
-		for(s32 i = 0; i < 64; ++i)
+
+		writer.StartObject();
+
+		WriteUDTMod(writer, stats.Mod);
+		writer.WriteStringValue("mod version", stats.ModVersion);
+		WriteUDTGameTypeShort(writer, stats.GameType);
+		WriteUDTGameTypeLong(writer, stats.GameType);
+		writer.WriteStringValue("map", stats.Map);
+		writer.WriteIntValue("duration", (s32)durationMs);
+		writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
+		if(stats.OverTimeCount > 0)
 		{
-			const udtPlayerStats& playerStats = stats.PlayerStats[i];
-			if(IsSomeBitSet(playerStats.Flags))
-			{
-				WritePlayerStats(writer, playerStats, i);
-			}
+			WriteUDTOverTimeType(writer, stats.OverTimeType);
 		}
-		writer.EndArray();
+		writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
+		writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
+		WriteUDTGamePlayShort(writer, stats.GamePlay);
+		WriteUDTGamePlayLong(writer, stats.GamePlay);
+		writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);
+		if(stats.TimeOutCount > 0)
+		{
+			writer.WriteIntValue("total time-out duration", (s32)stats.TotalTimeOutDurationMs);
+		}
+
+		if(hasTeamStats)
+		{
+			writer.StartArray("team stats");
+			for(s32 i = 0; i < 2; ++i)
+			{
+				const udtTeamStats& teamStats = stats.TeamStats[i];
+				if(IsSomeBitSet(teamStats.Flags))
+				{
+					WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
+				}
+			}
+			writer.EndArray();
+		}
+
+		if(hasPlayerStats)
+		{
+			writer.StartArray("player stats");
+			for(s32 i = 0; i < 64; ++i)
+			{
+				const udtPlayerStats& playerStats = stats.PlayerStats[i];
+				if(IsSomeBitSet(playerStats.Flags))
+				{
+					WritePlayerStats(writer, playerStats, i);
+				}
+			}
+			writer.EndArray();
+		}
+
+		writer.EndObject();
 	}
 
-	writer.EndObject();
+	writer.EndArray();
 }
 
 static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatEvents, u32 count) 
@@ -574,10 +588,7 @@ static int ProcessDemo(const char* demoPath, const char* jsonPath)
 	WriteGameStates(jsonWriter, gameStates, gameStateCount);
 	WriteChatEvents(jsonWriter, chatEvents, chatEventCount);
 	WriteDeathEvents(jsonWriter, deathEvents, deathEventCount);
-	for(u32 i = 0; i < statsCount; ++i)
-	{
-		WriteStats(jsonWriter, stats[i]);
-	}
+	WriteStats(jsonWriter, stats, statsCount);
 	WriteRawCommands(jsonWriter, rawEvents, rawEventCount);
 	jsonWriter.EndFile();
 
