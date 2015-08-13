@@ -360,7 +360,7 @@ struct udtStringArray
 };
 
 #define UDT_CUT_PATTERN_LIST(N) \
-	N(GlobalChat, "global chat", udtCutByChatArg, udtCutByChatAnalyzer) \
+	N(Chat, "chat", udtCutByChatArg, udtCutByChatAnalyzer) \
 	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
 	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
@@ -845,8 +845,8 @@ extern "C"
 		// Non-zero means color codes are ignored.
 		u32 IgnoreColorCodes;
 
-		// Ignore this.
-		s32 Reserved1;
+		// Non-zero means we search team chat messages too.
+		u32 SearchTeamChat;
 	};
 
 	// Used as udtPatternInfo::TypeSpecificInfo
@@ -1043,7 +1043,7 @@ extern "C"
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
 
-		// 0 if global level, 1 if team level.
+		// Non-zero if it's a team message.
 		u32 TeamMessage;
 	};
 

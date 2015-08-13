@@ -114,7 +114,7 @@ namespace Uber.DemoTools
 
         public enum udtPatternType : uint
         {
-            GlobalChat,
+            Chat,
             FragSequences,
             MidAirFrags,
             MultiFragRails,
@@ -210,7 +210,7 @@ namespace Uber.DemoTools
 		    public UInt32 ChatOperator;
 		    public UInt32 CaseSensitive;
 		    public UInt32 IgnoreColorCodes;
-            public Int32 Reserved1;
+            public UInt32 SearchTeamChat;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -298,14 +298,18 @@ namespace Uber.DemoTools
             public IntPtr ClanName; // const char*
             public IntPtr PlayerName; // const char*
             public IntPtr Message; // const char*
+            public IntPtr Location; // const char*
+            public IntPtr Reserved1; // const char*
             public IntPtr OriginalCommandNoCol; // const char*
             public IntPtr ClanNameNoCol; // const char*
             public IntPtr PlayerNameNoCol; // const char*
             public IntPtr MessageNoCol; // const char*
+            public IntPtr LocationNoCol; // const char*
+            public IntPtr Reserved2; // const char*
 		    public Int32 ServerTimeMs;
 		    public Int32 PlayerIndex;
             public Int32 GameStateIndex;
-            public Int32 Reserved1;
+            public UInt32 TeamMessage;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -724,6 +728,7 @@ namespace Uber.DemoTools
                 rulesArray[i].ChatOperator = GetOperatorFromString(rules[i].Operator);
                 rulesArray[i].IgnoreColorCodes = (UInt32)(rules[i].IgnoreColors ? 1 : 0);
                 rulesArray[i].Pattern = Marshal.StringToHGlobalAnsi(rules[i].Value);
+                rulesArray[i].SearchTeamChat = (UInt32)(rules[i].SearchTeamMessages ? 1 : 0);
                 resources.GlobalAllocationHandles.Add(rulesArray[i].Pattern);
             }
             var pinnedRulesArray = new PinnedObject(rulesArray);
@@ -736,7 +741,7 @@ namespace Uber.DemoTools
             resources.PinnedObjects.Add(pinnedRulesArray);
             resources.PinnedObjects.Add(pinnedRules);
 
-            pattern.Type = (UInt32)udtPatternType.GlobalChat;
+            pattern.Type = (UInt32)udtPatternType.Chat;
             pattern.TypeSpecificInfo = pinnedRules.Address;
 
             return true;
@@ -1273,7 +1278,7 @@ namespace Uber.DemoTools
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
                 var player = SafeGetString(data.PlayerNameNoCol, "N/A");
                 var message = SafeGetString(data.MessageNoCol, "N/A");
-                var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player, message);
+                var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player, message, data.TeamMessage != 0);
                 info.ChatEvents.Add(item);
             }
         }

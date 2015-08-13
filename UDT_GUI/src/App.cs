@@ -21,6 +21,7 @@ namespace Uber.DemoTools
         public string Value = "";
         public bool CaseSensitive = false;
         public bool IgnoreColors = true;
+        public bool SearchTeamMessages = false;
     }
 
     public class UdtConfig

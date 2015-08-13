@@ -261,7 +261,7 @@ namespace Uber.DemoTools
             var patterns = new List<UDT_DLL.udtPatternInfo>();
             var resources = new UDT_DLL.ArgumentResources();
 
-            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.GlobalChat))
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Chat))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
                 UDT_DLL.CreateChatPatternInfo(ref pattern, resources, config.ChatRules);

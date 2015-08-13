@@ -51,7 +51,7 @@ namespace Uber.DemoTools
             var chat = new ChatFiltersComponent(_app);
             _components.Add(chat);
             var chatTab = new TabItem();
-            chatTab.Header = "Global Chat";
+            chatTab.Header = "Chat";
             chatTab.Content = chat.RootControl;
 
             var frag = new FragSequenceFiltersComponent(_app);

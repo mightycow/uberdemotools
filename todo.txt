@@ -16,4 +16,3 @@ To do:
 - Stats analyzer: support for all known scores/stats commands
 - Gamestate analyzer: game mode (short + long)
 - GUI: Unify all extracted information in the "Info" tab and have a combo box for selecting the desired info type (General, Chat, Deaths, Stats, Raw Commands)
-- GUI: clicking any column of the "Chats History" list view will crash when the list is empty

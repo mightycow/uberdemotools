@@ -52,12 +52,14 @@ namespace Uber.DemoTools
                 Pattern = rule.Value;
                 CaseSensitive = rule.CaseSensitive;
                 IgnoreColors = rule.IgnoreColors;
+                SearchTeam = rule.SearchTeamMessages;
             }
 
             public string Operator { get; set; }
             public string Pattern { get; set; }
             public bool CaseSensitive { get; set; }
             public bool IgnoreColors { get; set; }
+            public bool SearchTeam { get; set; }
         }
 
         private DemoInfoListView _chatRulesListView = null;
@@ -66,10 +68,11 @@ namespace Uber.DemoTools
         {
             var chatRulesGridView = new GridView();
             chatRulesGridView.AllowsColumnReorder = false;
-            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Operator", Width = 100, DisplayMemberBinding = new Binding("Operator") });
-            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Pattern", Width = 175, DisplayMemberBinding = new Binding("Pattern") });
-            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Case Sensitive", Width = 100, DisplayMemberBinding = new Binding("CaseSensitive") });
-            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Ignore Colors", Width = 100, DisplayMemberBinding = new Binding("IgnoreColors") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Operator", Width = 90, DisplayMemberBinding = new Binding("Operator") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Pattern", Width = 155, DisplayMemberBinding = new Binding("Pattern") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Case Sens.", Width = 80, DisplayMemberBinding = new Binding("CaseSensitive") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "No Colors", Width = 80, DisplayMemberBinding = new Binding("IgnoreColors") });
+            chatRulesGridView.Columns.Add(new GridViewColumn { Header = "Team", Width = 70, DisplayMemberBinding = new Binding("SearchTeam") });
 
             var chatRulesListView = new DemoInfoListView();
             _chatRulesListView = chatRulesListView;
@@ -149,8 +152,9 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "The StartsWith pattern matching operator is currently applied to the start of the original chat command, not the start of the message portion itself." +
-                "\nIt is therefore advised to use the Contains or EndsWith modes unless you have something very specific in mind (and know the Quake protocol well).";
+                "A cut section is created if the chat message matches any of the rules." +
+                "\nIn other words, rules are logically ORed, not ANDed:" +
+                "\ncreate_cut = match(message, rule_1) OR match(message, rule_2) OR ... OR match(message, rule_N)";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
@@ -303,11 +307,17 @@ namespace Uber.DemoTools
             colorsCheckBox.Content = " Ignore the Quake 3 color codes (e.g. ^1 for red)";
             colorsCheckBox.IsChecked = chatRule.IgnoreColors;
 
+            var teamMessagesCheckBox = new CheckBox();
+            teamMessagesCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            teamMessagesCheckBox.Content = " Search team chat too?";
+            teamMessagesCheckBox.IsChecked = chatRule.SearchTeamMessages;
+
             var panelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             panelList.Add(App.CreateTuple("Operator", operatorComboBox));
             panelList.Add(App.CreateTuple("Pattern", valueEditBox));
             panelList.Add(App.CreateTuple("Case Sensitive?", caseCheckBox));
             panelList.Add(App.CreateTuple("Ignore Colors?", colorsCheckBox));
+            panelList.Add(App.CreateTuple("Team Chat?", teamMessagesCheckBox));
             var rulePanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             rulePanel.HorizontalAlignment = HorizontalAlignment.Center;
             rulePanel.VerticalAlignment = VerticalAlignment.Center;
@@ -370,6 +380,7 @@ namespace Uber.DemoTools
 
             chatRule.CaseSensitive = caseCheckBox.IsChecked ?? false;
             chatRule.IgnoreColors = colorsCheckBox.IsChecked ?? false;
+            chatRule.SearchTeamMessages = teamMessagesCheckBox.IsChecked ?? false;
             chatRule.Operator = ruleNamesDic.Find(r => r.Item1 == operatorComboBox.Text).Item2; ;
             chatRule.Value = valueEditBox.Text;
 
