@@ -128,7 +128,7 @@ protected:
 	virtual void FinishDemoAnalysis() {}
 
 	udtVMLinearAllocator FinalAllocator; // The allocator that will allocate the final array.
-	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this once.
+	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
 	
 private:
 	struct ArrayInfo
