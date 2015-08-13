@@ -219,21 +219,20 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 		return;
 	}
 
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
 	s32 teamIndex = -1;
-	if(ParseConfigStringValueInt(teamIndex, _namesAllocator, "t", configString))
+	if(ParseConfigStringValueInt(teamIndex, *TempAllocator, "t", configString))
 	{
 		_stats.PlayerStats[playerIndex].TeamIndex = teamIndex;
 	}
-
-	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
 
 	udtString clan, name;
 	bool hasClan;
 	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString))
 	{
-		const udtString cleanName = udtString::NewCleanCloneFromRef(_namesAllocator, _protocol, name);
-		_stats.PlayerStats[playerIndex].Name = name.String;
-		_stats.PlayerStats[playerIndex].CleanName = cleanName.String;
+		_stats.PlayerStats[playerIndex].Name = udtString::NewCloneFromRef(_namesAllocator, name).String;
+		_stats.PlayerStats[playerIndex].CleanName = udtString::NewCleanCloneFromRef(_namesAllocator, _protocol, name).String;
 	}
 }
 
