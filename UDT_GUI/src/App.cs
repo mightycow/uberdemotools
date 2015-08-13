@@ -229,6 +229,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
+        private static RoutedCommand _revealDemoCommand = new RoutedCommand();
         private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
         private static RoutedCommand _convertDemo68Command = new RoutedCommand();
         private static RoutedCommand _convertDemo90Command = new RoutedCommand();
@@ -585,6 +586,7 @@ namespace Uber.DemoTools
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
+            InitDemoListRevealCommand();
             InitDemoListAnalyzeCommand();
             InitDemoListConversion68Command();
             InitDemoListConversion90Command();
@@ -753,6 +755,11 @@ namespace Uber.DemoTools
             splitDemoItem.Command = _splitDemoCommand;
             splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
 
+            var revealDemoItem = new MenuItem();
+            revealDemoItem.Header = "Reveal in File Explorer";
+            revealDemoItem.Command = _revealDemoCommand;
+            revealDemoItem.Click += (obj, args) => OnRevealDemoClicked();
+
             var analyzeDemoItem = new MenuItem();
             analyzeDemoItem.Header = "Analyze Selected";
             analyzeDemoItem.Command = _analyzeDemoCommand;
@@ -786,6 +793,8 @@ namespace Uber.DemoTools
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(revealDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(selectAllDemosItem);
 
@@ -969,6 +978,21 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _splitDemoCommand;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private bool CanExecuteRevealCommand()
+        {
+            var demos = SelectedDemos;
+
+            return demos != null && demos.Count == 1;
+        }
+
+        private void InitDemoListRevealCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _revealDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteRevealCommand(); };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -2086,6 +2110,25 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private void OnRevealDemoClicked()
+        {
+            var demo = SelectedDemo;
+            if(demo == null)
+            {
+                LogError("No demo selected. Please select one to proceed.");
+                return;
+            }
+
+            try
+            {
+                Process.Start("explorer.exe", "/select," + demo.FilePath);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open demo in the file explorer: " + exception.Message);
+            }
         }
 
         private void OnAnalyzeDemoClicked()
