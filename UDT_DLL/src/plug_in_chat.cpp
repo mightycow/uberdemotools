@@ -60,20 +60,6 @@ static void StringRemoveEmCharacter(udtString& string)
 	string.Length = (u32)(d - string.String);
 }
 
-static void FixQLClanSeparator(udtString& string)
-{
-	char* s = string.String;
-	while(*s != '\0' && *s != ':')
-	{
-		if(*s == '.')
-		{
-			*s = ' ';
-		}
-
-		++s;
-	}
-}
-
 
 udtParserPlugInChat::udtParserPlugInChat()
 {
@@ -149,42 +135,33 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
 	{
+		ExtractPlayerIndexRelatedData(chatEvent, argument1[1], parser);
+
 		for(u32 i = 0; i < 2; ++i)
 		{
-			FixQLClanSeparator(argument1[i]);
-			const char* const commandArg1 = argument1[i].String;
-			udtChatEventData& data = chatEvent.Strings[i];
-			tokenizer.Tokenize(commandArg1);
-			if(tokenizer.GetArgCount() < 3)
+			u32 colon;
+			if(!udtString::FindFirstCharacterMatch(colon, argument1[i], ':') ||
+			   colon + 2 >= argument1[i].Length)
 			{
 				continue;
 			}
 
-			const bool hasClanName = tokenizer.GetArgCount() >= 4 && strchr(tokenizer.GetArgString(1), ':') == NULL;
-			const u32 playerIdx = hasClanName ? 2 : 1;
-			const char* const colon = strchr(commandArg1, ':');
-			const u32 originalCommandLength = argument1[i].Length;
-			data.ClanName = hasClanName ? AllocateString(_chatStringAllocator, tokenizer.GetArgString(1)) : nullString;
-			data.PlayerName = AllocateString(_chatStringAllocator, tokenizer.GetArgString(playerIdx), tokenizer.GetArgLength(playerIdx) - 1);
-			data.Message = (colon + 2 < commandArg1 + originalCommandLength) ? AllocateString(_chatStringAllocator, colon + 2) : nullString;
-		}
-
-		s32 playerIndex = -1;
-		if(StringParseInt(playerIndex, tokenizer.GetArgString(0)) && playerIndex >= 0 && playerIndex < 64)
-		{
-			chatEvent.PlayerIndex = playerIndex;
+			chatEvent.Strings[i].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], colon + 2).String;
 		}
 	}
 	else
 	{
 		for(u32 i = 0; i < 2; ++i)
 		{
-			const char* const commandArg1 = argument1[i].String;
-			udtChatEventData& data = chatEvent.Strings[i];
-			const char* const colon = strchr(commandArg1, ':');
-			const u32 originalCommandLength = argument1[i].Length;
-			data.PlayerName = AllocateString(_chatStringAllocator, commandArg1, (u32)(colon - commandArg1 - 1));
-			data.Message = (colon + 2 < commandArg1 + originalCommandLength) ? AllocateString(_chatStringAllocator, colon + 2) : nullString;
+			u32 colon;
+			if(!udtString::FindFirstCharacterMatch(colon, argument1[i], ':') ||
+			   colon + 2 >= argument1[i].Length)
+			{
+				continue;
+			}
+
+			chatEvent.Strings[i].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], 0, colon).String;
+			chatEvent.Strings[i].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], colon + 2).String;
 		}
 	}
 
@@ -218,37 +195,17 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
 	{
+		ExtractPlayerIndexRelatedData(chatEvent, argument1[1], parser);
+
 		for(u32 i = 0; i < 2; ++i)
 		{
 			const udtString& arg1 = argument1[i];
-			s32 clientNumber = -1;
 			u32 leftParen1, rightParen1, colon;
-			if(!StringParseInt(clientNumber, arg1.String) ||
-			   clientNumber < 0 || 
-			   clientNumber >= 64 ||
-			   !udtString::FindFirstCharacterMatch(leftParen1, arg1, '(') ||
+			if(!udtString::FindFirstCharacterMatch(leftParen1, arg1, '(') ||
 			   !udtString::FindFirstCharacterMatch(rightParen1, arg1, ')', leftParen1 + 1) ||
 			   !udtString::FindFirstCharacterMatch(colon, arg1, ':', rightParen1 + 1))
 			{
 				continue;
-			}
-			chatEvent.PlayerIndex = clientNumber;
-
-			const char clanNameSeparator = parser._inProtocol >= udtProtocol::Dm91 ? '.' : ' ';
-
-			u32 spaceOrDot;
-			if(udtString::FindFirstCharacterMatch(spaceOrDot, arg1, clanNameSeparator, leftParen1 + 1) &&
-			   spaceOrDot < rightParen1)
-			{
-				const udtString clanName = udtString::NewSubstringClone(_chatStringAllocator, arg1, leftParen1 + 1, spaceOrDot - leftParen1 - 1);
-				const udtString playerName = udtString::NewSubstringClone(_chatStringAllocator, arg1, spaceOrDot + 1, rightParen1 - spaceOrDot - 1);
-				chatEvent.Strings[i].ClanName = clanName.String;
-				chatEvent.Strings[i].PlayerName = playerName.String;
-			}
-			else
-			{
-				const udtString playerName = udtString::NewSubstringClone(_chatStringAllocator, arg1, leftParen1 + 1, rightParen1 - leftParen1 - 1);
-				chatEvent.Strings[i].PlayerName = playerName.String;
 			}
 
 			u32 leftParen2, rightParen2;
@@ -357,3 +314,33 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 
 	ChatEvents.Add(chatEvent);
 }
+
+void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser)
+{
+	s32 playerIndex = -1;
+	if(!StringParseInt(playerIndex, argument1.String) ||
+	   playerIndex < 0 ||
+	   playerIndex >= 64)
+	{
+		return;
+	}
+
+	chatEvent.PlayerIndex = playerIndex;
+
+	const char* const cs = parser._inConfigStrings[idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex].String;
+	udtString clan, player;
+	bool hasClan;
+	if(!GetClanAndPlayerName(clan, player, hasClan, *TempAllocator, parser._inProtocol, cs))
+	{
+		return;
+	}
+
+	chatEvent.Strings[0].PlayerName = udtString::NewCloneFromRef(_chatStringAllocator, player).String;
+	chatEvent.Strings[1].PlayerName = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, player).String;
+	if(hasClan)
+	{
+		chatEvent.Strings[0].ClanName = udtString::NewCloneFromRef(_chatStringAllocator, clan).String;
+		chatEvent.Strings[1].ClanName = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, clan).String;
+	}
+}
+

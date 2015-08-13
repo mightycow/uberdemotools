@@ -26,6 +26,7 @@ private:
 	void ProcessChatCommand(udtBaseParser& parser);
 	void ProcessTeamChatCommand(udtBaseParser& parser);
 	void ProcessCPMATeamChatCommand(udtBaseParser& parser);
+	void ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser);
 
 public:
 	udtVMArray<udtParseDataChat> ChatEvents;

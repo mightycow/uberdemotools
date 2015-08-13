@@ -900,17 +900,19 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 		return true;
 	}
 
-	u32 space = 0;
+	// Some QuakeCon 2015 demos have a '.' between the clan tag and player name.
+	// Some of them have no separator at all and I don't see how the ambiguity can be resolved. :-(
+	u32 separatorIdx = 0;
 	if(protocol <= udtProtocol::Dm90 ||
-	   !udtString::FindFirstCharacterMatch(space, clanAndPlayer, ' '))
+	   !udtString::FindFirstCharacterListMatch(separatorIdx, clanAndPlayer, udtString::NewConstRef(" .")))
 	{
 		player = clanAndPlayer;
 		return true;
 	}
 
 	hasClan = true;
-	clan = udtString::NewSubstringClone(allocator, clanAndPlayer, 0, space);
-	player = udtString::NewSubstringClone(allocator, clanAndPlayer, space + 1);
+	clan = udtString::NewSubstringClone(allocator, clanAndPlayer, 0, separatorIdx);
+	player = udtString::NewSubstringClone(allocator, clanAndPlayer, separatorIdx + 1);
 
 	return true;
 }
