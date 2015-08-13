@@ -165,7 +165,8 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		u32 index = 0;
 		const udtString printMessage = tokenizer.GetArg(1);
-		if(udtString::ContainsNoCase(index, printMessage, "match over") ||
+		if(udtString::ContainsNoCase(index, printMessage, "match complete") || 
+		   udtString::ContainsNoCase(index, printMessage, "match over") ||
 		   udtString::ContainsNoCase(index, printMessage, "timelimit hit"))
 		{
 			UpdateGameState(udtGameState::WarmUp);
