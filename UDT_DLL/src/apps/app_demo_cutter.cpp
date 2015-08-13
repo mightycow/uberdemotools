@@ -65,10 +65,12 @@ struct CutByChatConfig
 
 static void InitRule(udtCutByChatRule& rule)
 {
-	rule.CaseSensitive = true;
+	memset(&rule, 0, sizeof(rule));
+	rule.CaseSensitive = 1;
 	rule.ChatOperator = (u32)udtChatOperator::Contains;
-	rule.IgnoreColorCodes = true;
+	rule.IgnoreColorCodes = 1;
 	rule.Pattern = "WAXEDDD";
+	rule.SearchTeamChat = 0;
 }
 
 static bool CreateConfig(const char* filePath)
@@ -287,7 +289,7 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
 	udtPatternInfo patternInfo;
-	patternInfo.Type = (u32)udtPatternType::GlobalChat;
+	patternInfo.Type = (u32)udtPatternType::Chat;
 	patternInfo.TypeSpecificInfo = &chatInfo;
 
 	udtCutByPatternArg patternArg;
