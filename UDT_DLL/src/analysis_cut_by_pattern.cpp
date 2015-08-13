@@ -139,7 +139,7 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 		for(s32 i = 0; i < MAX_CLIENTS; ++i)
 		{
 			udtString playerName;
-			if(GetPlayerName(playerName, parser, firstPlayerCsIdx + i) &&
+			if(GetTempPlayerName(playerName, parser, firstPlayerCsIdx + i) &&
 			   !udtString::IsNullOrEmpty(playerName) && 
 			   udtString::Equals(playerName, pi.PlayerName))
 			{
@@ -201,7 +201,7 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 	}
 
 	udtString extractedPlayerName;
-	GetPlayerName(extractedPlayerName, parser, csIndex);
+	GetTempPlayerName(extractedPlayerName, parser, csIndex);
 	if(!udtString::IsNullOrEmpty(extractedPlayerName) && udtString::Equals(extractedPlayerName, playerName))
 	{
 		_trackedPlayerIndex = playerIndex;
@@ -308,17 +308,13 @@ s32 udtCutByPatternPlugIn::GetTrackedPlayerIndex() const
 	return _trackedPlayerIndex;
 }
 
-bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx)
+bool udtCutByPatternPlugIn::GetTempPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx)
 {
-	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIdx);
-	if(cs == NULL)
-	{
-		playerName = udtString::NewEmptyConstant();
-		return false;
-	}
-
 	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
-	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs->String))
+
+	udtString clan;
+	bool hasClan;
+	if(!GetClanAndPlayerName(clan, playerName, hasClan, *TempAllocator, parser._inProtocol, parser._inConfigStrings[csIdx].String))
 	{
 		playerName = udtString::NewEmptyConstant();
 		return false;

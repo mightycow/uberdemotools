@@ -1,5 +1,6 @@
 #include "plug_in_stats.hpp"
 #include "utils.hpp"
+#include "scoped_stack_allocator.hpp"
 
 
 static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_COUNT * 8), "Too many team stats fields for the bit mask size");
@@ -224,11 +225,13 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 		_stats.PlayerStats[playerIndex].TeamIndex = teamIndex;
 	}
 
-	udtString name;
-	if(ParseConfigStringValueString(name, _namesAllocator, "n", configString))
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	udtString clan, name;
+	bool hasClan;
+	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString))
 	{
-		udtString cleanName = udtString::NewClone(_namesAllocator, name.String, name.Length);
-		udtString::CleanUp(cleanName, _protocol);
+		const udtString cleanName = udtString::NewCleanCloneFromRef(_namesAllocator, _protocol, name);
 		_stats.PlayerStats[playerIndex].Name = name.String;
 		_stats.PlayerStats[playerIndex].CleanName = cleanName.String;
 	}

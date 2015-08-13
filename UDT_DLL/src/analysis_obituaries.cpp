@@ -73,22 +73,18 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	}
 
 	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
-	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(firstPlayerCsIdx + playerIdx);
-	if(cs == NULL)
-	{
-		return NULL;
-	}
+	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].String;
 
-	udtString playerName;
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", cs->String))
+
+	udtString clan, player;
+	bool hasClan;
+	if(!GetClanAndPlayerName(clan, player, hasClan, *_tempAllocator, parser._inProtocol, cs))
 	{
 		return NULL;
 	}
 
-	udtString::CleanUp(playerName, parser._inProtocol);
-
-	return AllocateString(_playerNamesAllocator, playerName.String);
+	return udtString::NewCleanCloneFromRef(_playerNamesAllocator, parser._inProtocol, player).String;
 }
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)

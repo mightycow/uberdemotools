@@ -232,8 +232,9 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 		return;
 	}
 
-	udtString name;
-	if(ParseConfigStringValueString(name, _stringAllocator, "n", cs.String))
+	udtString clan, name;
+	bool hasClan;
+	if(GetClanAndPlayerName(clan, name, hasClan, _stringAllocator, protocol, cs.String))
 	{
 		udtString::CleanUp(name, protocol);
 		_currentGameState.DemoTakerName = name.String;
@@ -286,14 +287,15 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 	// Player connected?
 	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
 	{
-		udtString name;
-		if(!ParseConfigStringValueString(name, _stringAllocator, "n", configString.String))
+		udtString clan, name, finalName;
+		bool hasClan;
+		if(!GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString.String))
 		{
-			name = udtString::NewConstRef("N/A");
+			finalName = udtString::NewConstRef("N/A");
 		}
 		else
 		{
-			udtString::CleanUp(name, _protocol);
+			finalName = udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, name);
 		}
 
 		s32 team = -1;
@@ -303,7 +305,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		}
 
 		_playerInfos[playerIndex].Index = playerIndex;
-		_playerInfos[playerIndex].FirstName = name.String;
+		_playerInfos[playerIndex].FirstName = finalName.String;
 		_playerInfos[playerIndex].FirstTeam = team;
 	}
 	// Player disconnected?

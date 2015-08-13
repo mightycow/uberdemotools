@@ -876,6 +876,45 @@ const char* GetUDTModName(s32 mod)
 	return MeansOfDeathNames[mod];
 }
 
+bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString)
+{
+	if(configString == NULL)
+	{
+		return false;
+	}
+
+	hasClan = false;
+
+	udtString clanAndPlayer;
+	if(!ParseConfigStringValueString(clanAndPlayer, allocator, "n", configString))
+	{
+		return false;
+	}
+
+	// "xcn" was for the full clan name, "c" for the country.
+	if(protocol <= udtProtocol::Dm90 &&
+	   ParseConfigStringValueString(clan, allocator, "cn", configString))
+	{
+		hasClan = true;
+		player = clanAndPlayer;
+		return true;
+	}
+
+	u32 space = 0;
+	if(protocol <= udtProtocol::Dm90 ||
+	   !udtString::FindFirstCharacterMatch(space, clanAndPlayer, ' '))
+	{
+		player = clanAndPlayer;
+		return true;
+	}
+
+	hasClan = true;
+	clan = udtString::NewSubstringClone(allocator, clanAndPlayer, 0, space);
+	player = udtString::NewSubstringClone(allocator, clanAndPlayer, space + 1);
+
+	return true;
+}
+
 namespace idEntityEvent
 {
 	s32 Obituary(udtProtocol::Id protocol)
