@@ -232,12 +232,13 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 		return;
 	}
 
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
 	udtString clan, name;
 	bool hasClan;
-	if(GetClanAndPlayerName(clan, name, hasClan, _stringAllocator, protocol, cs.String))
+	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, protocol, cs.String))
 	{
-		udtString::CleanUp(name, protocol);
-		_currentGameState.DemoTakerName = name.String;
+		_currentGameState.DemoTakerName = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, name).String;
 	}
 }
 
