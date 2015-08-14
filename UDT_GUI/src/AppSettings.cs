@@ -13,6 +13,7 @@ namespace Uber.DemoTools
         Settings,
         ChatEvents,
         FragEvents,
+        Stats,
         Patterns,
         CutByTime,
         CutByPattern,

@@ -118,6 +118,7 @@
 	<Compile Include="src\AppFlickRailCut.cs" />
 	<Compile Include="src\AppModifiers.cs" />
 	<Compile Include="src\AppTimeShiftMod.cs" />
+	<Compile Include="src\AppStats.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

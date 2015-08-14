@@ -352,16 +352,10 @@ namespace Uber.DemoTools
             var manageDemosTab = new TabItem();
             manageDemosTab.Header = "Manage";
             manageDemosTab.Content = CreateManageDemosTab();
-
-            var demosTab = new TabItem();
-            demosTab.Header = "Info";
-            demosTab.Content = CreateDemoInfoTab();
-
-            var chatEvents = new ChatEventsComponent(this);
-            _appComponents.Add(chatEvents);
-            var demoChatTab = new TabItem();
-            demoChatTab.Header = "Chat";
-            demoChatTab.Content = chatEvents.RootControl;
+            
+            var infoTab = new TabItem();
+            infoTab.Header = "Info";
+            infoTab.Content = CreateInfoTab();
 
             _cutByTimeComponent = new CutByTimeComponent(this);
             _appComponents.Add(_cutByTimeComponent);
@@ -374,12 +368,6 @@ namespace Uber.DemoTools
             var cutByPatternTab = new TabItem();
             cutByPatternTab.Header = "Cut by Patterns";
             cutByPatternTab.Content = cutByPattern.RootControl;
-
-            var fragEvents = new FragEventsComponent(this);
-            _appComponents.Add(fragEvents);
-            var demoFragsTab = new TabItem();
-            demoFragsTab.Header = "Deaths";
-            demoFragsTab.Content = fragEvents.RootControl;
 
             var modifiers = new ModifierComponent(this);
             _appComponents.Add(modifiers);
@@ -405,9 +393,7 @@ namespace Uber.DemoTools
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
             tabControl.Margin = new Thickness(5);
             tabControl.Items.Add(manageDemosTab);
-            tabControl.Items.Add(demosTab);
-            tabControl.Items.Add(demoChatTab);
-            tabControl.Items.Add(demoFragsTab);
+            tabControl.Items.Add(infoTab);
             tabControl.Items.Add(cutByTimeTab);
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
@@ -1225,7 +1211,43 @@ namespace Uber.DemoTools
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, new Label { Content = b });
         }
 
-        private FrameworkElement CreateDemoInfoTab()
+        private FrameworkElement CreateInfoTab()
+        {
+            var generalInfoTab = new TabItem();
+            generalInfoTab.Header = "Info";
+            generalInfoTab.Content = CreateGeneralInfoTab();
+
+            var chatEvents = new ChatEventsComponent(this);
+            _appComponents.Add(chatEvents);
+            var chatTab = new TabItem();
+            chatTab.Header = "Chat";
+            chatTab.Content = chatEvents.RootControl;
+
+            var deathEvents = new FragEventsComponent(this);
+            _appComponents.Add(deathEvents);
+            var deathsTab = new TabItem();
+            deathsTab.Header = "Obituaries";
+            deathsTab.Content = deathEvents.RootControl;
+
+            var stats = new StatsComponent(this);
+            _appComponents.Add(stats);
+            var statsTab = new TabItem();
+            statsTab.Header = "Scores and Stats";
+            statsTab.Content = stats.RootControl;
+
+            var tabControl = new TabControl();
+            tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
+            tabControl.VerticalAlignment = VerticalAlignment.Stretch;
+            tabControl.Margin = new Thickness(5);
+            tabControl.Items.Add(generalInfoTab);
+            tabControl.Items.Add(chatTab);
+            tabControl.Items.Add(deathsTab);
+            tabControl.Items.Add(statsTab);
+
+            return tabControl;
+        }
+
+        private FrameworkElement CreateGeneralInfoTab()
         {
             var configStringGridView = new GridView();
             configStringGridView.AllowsColumnReorder = false;

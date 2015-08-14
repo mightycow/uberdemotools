@@ -15,4 +15,3 @@ To do:
 - Converters: dm3/dm_48 -> dm_68 and dm_73/dm_90 -> dm_91
 - Stats analyzer: support for all known scores/stats commands
 - Gamestate analyzer: game mode (short + long)
-- GUI: Unify all extracted information in the "Info" tab and have a combo box for selecting the desired info type (General, Chat, Deaths, Stats, Raw Commands)
