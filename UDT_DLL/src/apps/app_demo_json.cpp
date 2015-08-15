@@ -46,44 +46,14 @@ static void PrintHelp()
 	printf("If the output path isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
 }
 
-template<int N>
-static bool IsSomeBitSet(const u8 (&flags)[N])
-{
-	for(int i = 0; i < N; ++i)
-	{
-		if(flags[i] != 0)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 static bool HasValidTeamStats(const udtParseDataStats& stats)
 {
-	for(s32 i = 0; i < 2; ++i)
-	{
-		if(IsSomeBitSet(stats.TeamStats[i].Flags))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	return stats.ValidTeams != 0;
 }
 
 static bool HasValidPlayerStats(const udtParseDataStats& stats)
 {
-	for(s32 i = 0; i < 64; ++i)
-	{
-		if(IsSomeBitSet(stats.PlayerStats[i].Flags))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	return stats.ValidPlayers != 0;
 }
 
 static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
@@ -143,25 +113,29 @@ static void WriteUDTOverTimeType(udtJSONWriter& writer, u32 udtOverTimeType)
 	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
 }
 
-static void WriteTeamStats(udtJSONWriter& writer, const udtTeamStats& stats, const char* team)
+static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* flags, const s32* fields, s32 teamIndex)
 {
 	writer.StartObject();
 
-	writer.WriteStringValue("team", team);
+	writer.WriteStringValue("team", teamIndex == (s32)udtTeam::Red ? "red" : "blue");
+
+	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
 	{
 		const s32 byteIndex = i >> 3;
 		const s32 bitIndex = i & 7;
-		if((stats.Flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
-			writer.WriteIntValue(TeamStatsFieldNames[i], stats.Fields[i]);
+			writer.WriteIntValue(TeamStatsFieldNames[i], fields[fieldIdx++]);
 		}
 	}
+
+	fieldsRead = fieldIdx;
 
 	writer.EndObject();
 }
 
-static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats, s32 clientNumber)
+static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber)
 {
 	writer.StartObject();
 
@@ -172,13 +146,14 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 
 	const char** weaponNames = NULL;
 	u32 weaponCount = 0;
+	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
 	{
 		const s32 byteIndex = i >> 3;
 		const s32 bitIndex = i & 7;
-		if((stats.Flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
-			const s32 field = stats.Fields[i];
+			const s32 field = fields[fieldIdx++];
 			if(i == (s32)udtPlayerStatsField::BestWeapon && 
 			   udtGetStringArray(udtStringArray::Weapons, &weaponNames, &weaponCount) == (s32)udtErrorCode::None &&
 			   field >= 0 && field < (s32)weaponCount)
@@ -192,6 +167,8 @@ static void WritePlayerStats(udtJSONWriter& writer, const udtPlayerStats& stats,
 		}
 	}
 
+	fieldsRead = fieldIdx;
+
 	writer.EndObject();
 }
 
@@ -204,9 +181,9 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 
 	writer.StartArray("match stats");
 
-	for(u32 m = 0; m < count; ++m)
+	for(u32 matchIdx = 0; matchIdx < count; ++matchIdx)
 	{
-		const udtParseDataStats& stats = statsArray[m];
+		const udtParseDataStats& stats = statsArray[matchIdx];
 
 		const bool hasTeamStats = HasValidTeamStats(stats);
 		const bool hasPlayerStats = HasValidPlayerStats(stats);
@@ -256,32 +233,48 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 
 		if(hasTeamStats)
 		{
+			const u8* flags = stats.TeamFlags;
+			const s32* fields = stats.TeamFields;
+
 			writer.StartArray("team stats");
+
 			for(s32 i = 0; i < 2; ++i)
 			{
-				const udtTeamStats& teamStats = stats.TeamStats[i];
-				if(IsSomeBitSet(teamStats.Flags))
+				if((stats.ValidTeams & ((u64)1 << (u64)i)) != 0)
 				{
-					WriteTeamStats(writer, teamStats, i == 0 ? "red" : "blue");
+					s32 fieldsRead;
+					WriteTeamStats(fieldsRead, writer, flags, fields, i);
+					flags += UDT_TEAM_STATS_MASK_BYTE_COUNT;
+					fields += fieldsRead;
 				}
 			}
+
 			writer.EndArray();
 		}
-
+		
 		if(hasPlayerStats)
 		{
+			const u8* flags = stats.PlayerFlags;
+			const s32* fields = stats.PlayerFields;
+			const udtPlayerStats* extraStats = stats.PlayerStats;
+
 			writer.StartArray("player stats");
+
 			for(s32 i = 0; i < 64; ++i)
 			{
-				const udtPlayerStats& playerStats = stats.PlayerStats[i];
-				if(IsSomeBitSet(playerStats.Flags))
+				if((stats.ValidPlayers & ((u64)1 << (u64)i)) != 0)
 				{
-					WritePlayerStats(writer, playerStats, i);
+					s32 fieldsRead;
+					WritePlayerStats(fieldsRead, writer, *extraStats, flags, fields, i);
+					flags += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
+					fields += fieldsRead;
+					extraStats += 1;
 				}
 			}
+
 			writer.EndArray();
 		}
-
+		
 		writer.EndObject();
 	}
 

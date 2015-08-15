@@ -1188,6 +1188,98 @@ extern "C"
 
 	struct udtPlayerStats
 	{
+		// The player's name at the time the stats were given by the server.
+		// May be NULL.
+		const char* Name;
+
+		// The player's name at the time the stats were given by the server.
+		// This version has color codes stripped out for clarity.
+		// May be NULL.
+		const char* CleanName;
+
+		// The index of the player's team.
+		// Of type udtTeam::Id.
+		// Defaults to -1 when invalid or uninitialized.
+		s32 TeamIndex;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
+	struct udtParseDataStats
+	{
+		// A bit mask describing which teams are valid (1 is red, 2 is blue).
+		u64 ValidTeams;
+
+		// A bit mask describing which players are valid.
+		u64 ValidPlayers;
+
+		// A bit set describing which team stats fields are valid.
+		// Array length: popcnt(ValidTeams) * UDT_TEAM_STATS_MASK_BYTE_COUNT bytes.
+		// See udtTeamStatsField::Id.
+		const u8* TeamFlags;
+
+		// A bit set describing which players stats fields are valid.
+		// Array length: popcnt(ValidPlayers) * UDT_PLAYER_STATS_MASK_BYTE_COUNT bytes.
+		// See udtPlayerStatsField::Id.
+		const u8* PlayerFlags;
+
+		// The team stats.
+		// Array length: popcnt(RedTeam.Flags) + popcnt(BlueTeam.Flags)
+		const s32* TeamFields;
+
+		// The player stats.
+		// Array length: popcnt(Player1.Flags) + ... + popcnt(PlayerN.Flags)
+		const s32* PlayerFields;
+
+		// The length of the array is the number of bits set in ValidPlayers.
+		// The player's client numbers will correspond to the indices of the bits set in ValidPlayers.
+		const udtPlayerStats* PlayerStats;
+
+		// @TODO: Remove and add to the game states analyzer.
+		// NULL if nothing was found.
+		const char* ModVersion;
+
+		// NULL if nothing was found.
+		const char* Map;
+
+		// Of type udtGameType::Id.
+		// Defaults to (u32)-1 when invalid or uninitialized.
+		u32 GameType;
+
+		// The duration of the match.
+		u32 MatchDurationMs;
+
+		// @TODO: Remove and add to the game states analyzer.
+		// Of type udtMod::Id.
+		u32 Mod;
+
+		// Of type udtGamePlay::Id.
+		u32 GamePlay;
+
+		// Of type udtOvertime::Id.
+		u32 OverTimeType;
+
+		// Total number of overtimes in the match.
+		u32 OverTimeCount;
+
+		// 1 if the loser left the game before it was supposed to end, 0 otherwise.
+		u32 Forfeited;
+
+		// Total number of time-outs in the match.
+		u32 TimeOutCount;
+
+		// The total amount of time spent in time-outs.
+		u32 TotalTimeOutDurationMs;
+
+		// Did the winning team hit the mercy limit? (QL TDM)
+		u32 MercyLimited;
+	};
+
+
+	/*
+	struct udtPlayerStats
+	{
 		// A bit mask describing which fields are valid.
 		// See udtPlayerStatsField::Id.
 		u8 Flags[UDT_PLAYER_STATS_MASK_BYTE_COUNT];
@@ -1265,6 +1357,7 @@ extern "C"
 		// Did the winning team hit the mercy limit? (QL TDM)
 		u32 MercyLimited;
 	};
+	*/
 
 	struct udtParseDataRawCommand
 	{
