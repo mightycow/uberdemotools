@@ -1243,6 +1243,9 @@ extern "C"
 		// NULL if nothing was found.
 		const char* Map;
 
+		// Ignore this.
+		const u8* Reserved1;
+
 		// Of type udtGameType::Id.
 		// Defaults to (u32)-1 when invalid or uninitialized.
 		u32 GameType;
@@ -1275,89 +1278,6 @@ extern "C"
 		// Did the winning team hit the mercy limit? (QL TDM)
 		u32 MercyLimited;
 	};
-
-
-	/*
-	struct udtPlayerStats
-	{
-		// A bit mask describing which fields are valid.
-		// See udtPlayerStatsField::Id.
-		u8 Flags[UDT_PLAYER_STATS_MASK_BYTE_COUNT];
-
-		// The player's name at the time the stats were given by the server.
-		// May be NULL.
-		const char* Name;
-
-		// The player's name at the time the stats were given by the server.
-		// This version has color codes stripped out for clarity.
-		// May be NULL.
-		const char* CleanName;
-
-		// The index of the player's team.
-		// Of type udtTeam::Id.
-		// Defaults to -1 when invalid or uninitialized.
-		s32 TeamIndex;
-
-		// The statistics themselves.
-		s32 Fields[udtPlayerStatsField::Count];
-	};
-
-	struct udtTeamStats
-	{
-		// A bit mask describing which fields are valid.
-		// See udtTeamStatsField::Id.
-		u8 Flags[UDT_TEAM_STATS_MASK_BYTE_COUNT];
-
-		// The statistics themselves.
-		s32 Fields[udtTeamStatsField::Count];
-	};
-
-	struct udtParseDataStats
-	{
-		// To be indexed by client number.
-		udtPlayerStats PlayerStats[64];
-
-		// 0 is red, 1 is blue.
-		udtTeamStats TeamStats[2];
-
-		// NULL if nothing was found.
-		const char* ModVersion;
-
-		// NULL if nothing was wound.
-		const char* Map;
-
-		// Of type udtGameType::Id.
-		// Defaults to (u32)-1 when invalid or uninitialized.
-		u32 GameType;
-
-		// The duration of the match.
-		u32 MatchDurationMs;
-
-		// Of type udtMod::Id.
-		u32 Mod;
-
-		// Of type udtGamePlay::Id.
-		u32 GamePlay;
-
-		// Of type udtOvertime::Id.
-		u32 OverTimeType;
-
-		// Total number of overtimes in the match.
-		u32 OverTimeCount;
-
-		// 1 if the loser left the game before it was supposed to end, 0 otherwise.
-		u32 Forfeited;
-
-		// Total number of time-outs in the match.
-		u32 TimeOutCount;
-
-		// The total amount of time spent in time-outs.
-		u32 TotalTimeOutDurationMs;
-
-		// Did the winning team hit the mercy limit? (QL TDM)
-		u32 MercyLimited;
-	};
-	*/
 
 	struct udtParseDataRawCommand
 	{

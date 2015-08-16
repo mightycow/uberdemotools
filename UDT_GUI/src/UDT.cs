@@ -79,7 +79,8 @@ namespace Uber.DemoTools
             Chat,
             GameState,
             Obituaries,
-            MidAirs,
+            Stats,
+            RawCommands,
             Count
         }
 
@@ -109,6 +110,12 @@ namespace Uber.DemoTools
             PlayerMeansOfDeath,
             Teams,
             CutPatterns,
+            GameTypes,
+            ShortGameTypes,
+            ModNames,
+            GamePlayNames,
+            ShortGamePlayNames,
+            OverTimeTypes,
             Count
         }
 
@@ -121,6 +128,35 @@ namespace Uber.DemoTools
             FlagCaptures,
             FlickRails,
             Count
+        }
+
+        private enum udtGameType : uint
+        {
+            SP,
+            FFA,
+            Duel,
+            Race,
+            HM,
+            TDM,
+            CA,
+            CTF,
+            OneFlagCTF,
+            Obelisk,
+            Harvester,
+            Domination,
+            CTFS,
+            RedRover,
+            NTF,
+            TwoVsTwo,
+            FT,
+            Count
+        }
+
+        private enum udtOvertimeType : uint
+        {
+            None,
+            Timed,
+            SuddenDeath
         }
 
         [Flags]
@@ -373,6 +409,40 @@ namespace Uber.DemoTools
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtPlayerStats
+	    {
+		    public IntPtr Name; // const char*
+		    public IntPtr CleanName; // const char*
+		    public Int32 TeamIndex;
+            public Int32 Reserved1;
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+	    struct udtParseDataStats
+	    {
+		    public UInt64 ValidTeams;
+		    public UInt64 ValidPlayers;
+		    public IntPtr TeamFlags; // const u8*
+		    public IntPtr PlayerFlags; // const u8*
+		    public IntPtr TeamFields; // const s32*
+		    public IntPtr PlayerFields; // const s32*
+		    public IntPtr PlayerStats; // const udtPlayerStats*
+		    public IntPtr ModVersion; // const char*
+		    public IntPtr Map; // const char*
+            public IntPtr Reserved1;
+		    public UInt32 GameType;
+		    public UInt32 MatchDurationMs;
+		    public UInt32 Mod;
+		    public UInt32 GamePlay;
+		    public UInt32 OverTimeType;
+		    public UInt32 OverTimeCount;
+		    public UInt32 Forfeited;
+		    public UInt32 TimeOutCount;
+		    public UInt32 TotalTimeOutDurationMs;
+		    public UInt32 MercyLimited;
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtTimeShiftArg
         {
             public Int32 SnapshotCount;
@@ -459,7 +529,8 @@ namespace Uber.DemoTools
         { 
             (UInt32)udtParserPlugIn.Chat, 
             (UInt32)udtParserPlugIn.GameState,
-            (UInt32)udtParserPlugIn.Obituaries
+            (UInt32)udtParserPlugIn.Obituaries,
+            (UInt32)udtParserPlugIn.Stats
         };
 
         public static List<string> GetStringArray(udtStringArray array)
@@ -1255,6 +1326,7 @@ namespace Uber.DemoTools
             ExtractChatEvents(context, demoIdx, ref info);
             ExtractGameStateEvents(context, demoIdx, ref info);
             ExtractObituaries(context, demoIdx, ref info);
+            ExtractStats(context, demoIdx, ref info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
@@ -1276,8 +1348,8 @@ namespace Uber.DemoTools
                 int minutes = totalSeconds / 60;
                 int seconds = totalSeconds % 60;
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var player = SafeGetString(data.PlayerNameNoCol, "N/A");
-                var message = SafeGetString(data.MessageNoCol, "N/A");
+                var player = SafeGetUTF8String(data.PlayerNameNoCol, "N/A");
+                var message = SafeGetUTF8String(data.MessageNoCol, "N/A");
                 var item = new ChatEventDisplayInfo(data.GameStateIndex, time, player, message, data.TeamMessage != 0);
                 info.ChatEvents.Add(item);
             }
@@ -1293,7 +1365,7 @@ namespace Uber.DemoTools
             return bytes.ToString() + (bytes == 0 ? " byte" : " bytes");
         }
 
-        private static string SafeGetString(IntPtr address, string onError)
+        public static string SafeGetUTF8String(IntPtr address, string onError)
         {
             if(address == IntPtr.Zero)
             {
@@ -1317,14 +1389,14 @@ namespace Uber.DemoTools
             return Encoding.UTF8.GetString(buffer);
         }
 
-        private static string SafeGetString(IntPtr address)
+        public static string SafeGetUTF8String(IntPtr address)
         {
-            return SafeGetString(address, "");
+            return SafeGetUTF8String(address, "");
         }
 
         private static string FormatDemoTaker(udtParseDataGameState info)
         {
-            var name = SafeGetString(info.DemoTakerName, "N/A");
+            var name = SafeGetUTF8String(info.DemoTakerName, "N/A");
 
             return string.Format("{0} (player index {1})", name, info.DemoTakerPlayerIndex);
         }
@@ -1336,8 +1408,8 @@ namespace Uber.DemoTools
                 var address = new IntPtr(data.KeyValuePairs.ToInt64() + i * sizeof(udtGameStateKeyValuePair));
                 var kvPair = (udtGameStateKeyValuePair)Marshal.PtrToStructure(address, typeof(udtGameStateKeyValuePair));
 
-                var key = SafeGetString(kvPair.Name, "N/A");
-                var value = SafeGetString(kvPair.Value, "N/A");
+                var key = SafeGetUTF8String(kvPair.Name, "N/A");
+                var value = SafeGetUTF8String(kvPair.Value, "N/A");
                 info.Generic.Add(Tuple.Create(space + key, value));
             }
         }
@@ -1370,7 +1442,7 @@ namespace Uber.DemoTools
                 var startTime = FormatMinutesSecondsFromMs(player.FirstSnapshotTimeMs);
                 var endTime = FormatMinutesSecondsFromMs(player.LastSnapshotTimeMs);
                 var time = startTime + " - " + endTime;
-                var name = SafeGetString(player.FirstName, "N/A");
+                var name = SafeGetUTF8String(player.FirstName, "N/A");
                 var value = string.Format("{0}, {1}, team {2}", name, time, GetTeamName(player.FirstTeam));
 
                 info.Generic.Add(Tuple.Create(desc, value));
@@ -1449,12 +1521,66 @@ namespace Uber.DemoTools
                 int minutes = totalSeconds / 60;
                 int seconds = totalSeconds % 60;
                 var time = string.Format("{0}:{1}", minutes, seconds.ToString("00"));
-                var attacker = SafeGetString(data.AttackerName, "N/A");
-                var target = SafeGetString(data.TargetName, "N/A");
-                var mod = SafeGetString(data.MeanOfDeathName, "N/A");
+                var attacker = SafeGetUTF8String(data.AttackerName, "N/A");
+                var target = SafeGetUTF8String(data.TargetName, "N/A");
+                var mod = SafeGetUTF8String(data.MeanOfDeathName, "N/A");
                 var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
                 info.FragEvents.Add(item);
             }
+        }
+
+        private static void ExtractStats(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        {
+            uint statsCount = 0;
+            IntPtr stats = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Stats, ref stats, ref statsCount) != udtErrorCode.None)
+            {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for stats failed");
+                return;
+            }
+
+            for(uint i = 0; i < statsCount; ++i)
+            {
+                var address = new IntPtr(stats.ToInt64() + i * sizeof(udtParseDataStats));
+                var data = (udtParseDataStats)Marshal.PtrToStructure(address, typeof(udtParseDataStats));
+                ExtractStatsSingleMatch(data, ref info);
+            }
+        }
+        
+        private static void ExtractStatsSingleMatch(udtParseDataStats data, ref DemoInfo info)
+        {
+            var stats = new DemoStatsInfo();
+
+            stats.AddGenericField("Mod", GetUDTStringForValueOrNull(udtStringArray.ModNames, data.Mod));
+            if(data.Mod != 0)
+            {
+                stats.AddGenericField("Mod version", data.ModVersion);
+            }
+            stats.AddGenericField("Game type", GetUDTStringForValueOrNull(udtStringArray.GameTypes, data.GameType));
+            stats.AddGenericField("Game play", GetUDTStringForValueOrNull(udtStringArray.GamePlayNames, data.GamePlay));
+            stats.AddGenericField("Map name", data.Map);
+            stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)GetFixedMatchDuration(data) / 1000));
+            // @TODO: @FIXME: Why is ProtocolNumber becoming invalid?
+            if(info.ProtocolNumber >= udtProtocol.Dm73 && data.GameType == (uint)udtGameType.TDM)
+            {
+                stats.AddGenericField("Mercy limit hit?", data.MercyLimited != 0 ? "yes" : "no");
+            }
+            stats.AddGenericField("Forfeited?", data.Forfeited != 0 ? "yes" : "no");
+            stats.AddGenericField("Overtime count", data.OverTimeCount.ToString());
+            if(data.OverTimeCount > 0)
+            {
+                stats.AddGenericField("Overtime type", GetUDTStringForValueOrNull(udtStringArray.OverTimeTypes, data.OverTimeType));
+            }
+            stats.AddGenericField("Time-out count", data.TimeOutCount.ToString());
+            if(data.TimeOutCount > 0)
+            {
+                stats.AddGenericField("Total time-out duration", App.FormatMinutesSeconds((int)data.TotalTimeOutDurationMs / 1000));
+            }
+
+            // @TODO: Team stats
+            // @TODO: Player stats
+
+            info.MatchStats.Add(stats);
         }
 
         private static void PrintExecutionTime(Stopwatch timer)
@@ -1546,6 +1672,39 @@ namespace Uber.DemoTools
             private int _filesPerBatch = 0;
             private udtProgressCallback _oldProgressCb;
             private udtParseArg _newParseArg;
+        }
+
+        private static string GetUDTStringForValueOrNull(udtStringArray stringId, uint value)
+        {
+            var strings = GetStringArray(stringId);
+            if(value >= (uint)strings.Count)
+            {
+                return null;
+            }
+
+            return strings[(int)value];
+        }
+
+        private static uint GetFixedMatchDuration(udtParseDataStats stats)
+        {
+            var MaxMatchDurationDeltaMs = 1000;
+            var durationMs = (int)stats.MatchDurationMs;
+            var durationMinuteModuloMs = durationMs % 60000;
+            var absMinuteDiffMs = Math.Min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
+            if((stats.OverTimeCount == 0 || stats.OverTimeType == (uint)udtOvertimeType.Timed) &&
+               stats.Forfeited == 0 &&
+               absMinuteDiffMs < MaxMatchDurationDeltaMs)
+            {
+                var minutes = (durationMs + 60000 - 1) / 60000;
+                if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
+                {
+                    --minutes;
+                }
+
+                return (uint)(60000 * minutes);
+            }
+
+            return stats.MatchDurationMs;
         }
     }
 }

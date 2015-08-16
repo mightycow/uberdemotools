@@ -108,6 +108,7 @@ namespace Uber.DemoTools
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
+        public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -1808,7 +1809,9 @@ namespace Uber.DemoTools
                 demos[i].Generic = newDemo.Generic;
                 demos[i].InputIndex = newDemo.InputIndex;
                 demos[i].Protocol = newDemo.Protocol;
+                demos[i].ProtocolNumber = newDemo.ProtocolNumber;
                 demos[i].FilePath = newDemo.FilePath;
+                demos[i].MatchStats = newDemo.MatchStats;
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);
