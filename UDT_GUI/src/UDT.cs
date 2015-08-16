@@ -1307,6 +1307,7 @@ namespace Uber.DemoTools
                     info.InputIndex = inputIndexBase + (int)inputIdx;
                     info.FilePath = Path.GetFullPath(filePath);
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
+                    info.ProtocolNumber = UDT_DLL.udtGetProtocolByFilePath(info.FilePath);
                     
                     ExtractDemoInfo(context, j, ref info);
                     infoList.Add(info);
@@ -1560,7 +1561,6 @@ namespace Uber.DemoTools
             stats.AddGenericField("Game play", GetUDTStringForValueOrNull(udtStringArray.GamePlayNames, data.GamePlay));
             stats.AddGenericField("Map name", data.Map);
             stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)GetFixedMatchDuration(data) / 1000));
-            // @TODO: @FIXME: Why is ProtocolNumber becoming invalid?
             if(info.ProtocolNumber >= udtProtocol.Dm73 && data.GameType == (uint)udtGameType.TDM)
             {
                 stats.AddGenericField("Mercy limit hit?", data.MercyLimited != 0 ? "yes" : "no");
