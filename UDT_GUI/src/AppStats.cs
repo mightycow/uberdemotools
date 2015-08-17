@@ -13,12 +13,13 @@ namespace Uber.DemoTools
         public string Key = "";
         public string Value = "";
         public int ComparisonMode = 0;
+        public int FieldBitIndex = 0;
     }
 
     public class StatsInfoGroup
     {
         public string Name = "N/A"; // What should be used as a column header.
-        public readonly List<DemoStatsField> Fields;
+        public readonly List<DemoStatsField> Fields = new List<DemoStatsField>();
     }
 
     public class DemoStatsInfo
@@ -104,12 +105,22 @@ namespace Uber.DemoTools
             ShowMatchInfo(stats.GenericFields.Count > 0);
             ShowTeamStats(stats.TeamStats.Count > 0);
             ShowPlayerStats(stats.PlayerStats.Count > 0);
-            
-            // @TODO: fill in the fields
 
             foreach(var field in stats.GenericFields)
             {
                 _matchInfoListView.Items.Add(new string[] { field.Key, field.Value });
+            }
+            
+            if(stats.TeamStats.Count == 2 &&
+               stats.TeamStats[0].Fields.Count == stats.TeamStats[1].Fields.Count)
+            {
+                var fieldCount = stats.TeamStats[0].Fields.Count;
+                for(var i = 0; i < fieldCount; ++i)
+                {
+                    var field0 = stats.TeamStats[0].Fields[i];
+                    var field1 = stats.TeamStats[1].Fields[i];
+                    _teamStatsListView.Items.Add(new string[] { field0.Key, field0.Value, field1.Value });
+                }
             }
         }
 
@@ -188,7 +199,14 @@ namespace Uber.DemoTools
             statsGroupBox.Margin = new Thickness(5);
             statsGroupBox.Content = rootPanel;
 
-            return statsGroupBox;
+            var scrollViewer = new ScrollViewer();
+            scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
+            scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
+            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scrollViewer.Content = statsGroupBox;
+
+            return scrollViewer; 
         }
 
         private DemoInfoListView CreateMatchInfoListView()
@@ -240,7 +258,7 @@ namespace Uber.DemoTools
             headerRed.Tag = "Red";
             columnRed.Header = headerRed;
             columnRed.Width = 200;
-            columnKey.DisplayMemberBinding = new Binding("[1]");
+            columnRed.DisplayMemberBinding = new Binding("[1]");
 
             var columnBlue = new GridViewColumn();
             var headerBlue = new GridViewColumnHeader();
@@ -248,7 +266,7 @@ namespace Uber.DemoTools
             headerBlue.Tag = "Blue";
             columnBlue.Header = headerBlue;
             columnBlue.Width = 200;
-            columnKey.DisplayMemberBinding = new Binding("[2]");
+            columnBlue.DisplayMemberBinding = new Binding("[2]");
 
             var gridView = new GridView();
             gridView.AllowsColumnReorder = false;

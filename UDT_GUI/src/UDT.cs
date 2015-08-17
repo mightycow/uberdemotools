@@ -429,6 +429,8 @@ namespace Uber.DemoTools
 		    public IntPtr PlayerStats; // const udtPlayerStats*
 		    public IntPtr ModVersion; // const char*
 		    public IntPtr Map; // const char*
+            public IntPtr FirstPlaceName; // const char*
+            public IntPtr SecondPlaceName; // const char*
             public IntPtr Reserved1;
 		    public UInt32 GameType;
 		    public UInt32 MatchDurationMs;
@@ -440,6 +442,8 @@ namespace Uber.DemoTools
 		    public UInt32 TimeOutCount;
 		    public UInt32 TotalTimeOutDurationMs;
 		    public UInt32 MercyLimited;
+            public Int32 FirstPlaceScore;
+            public Int32 SecondPlaceScore;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -448,6 +452,11 @@ namespace Uber.DemoTools
             public Int32 SnapshotCount;
             public Int32 Reserved1;
         };
+
+        private const int UDT_TEAM_STATS_MASK_BYTE_COUNT = 8;
+        private const int UDT_PLAYER_STATS_MASK_BYTE_COUNT = 32;
+        private const int UDT_TEAM_STATS_FIELD_COUNT = 18;
+        private const int UDT_PLAYER_STATS_FIELD_COUNT = 142;
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
@@ -1552,6 +1561,11 @@ namespace Uber.DemoTools
         {
             var stats = new DemoStatsInfo();
 
+            var name1 = SafeGetUTF8String(data.FirstPlaceName);
+            var name2 = SafeGetUTF8String(data.SecondPlaceName);
+            var finalScore = string.Format("{0} {1} - {2} {3}", name1, data.FirstPlaceScore, data.SecondPlaceScore, name2);
+
+            stats.AddGenericField("Final Score", finalScore);
             stats.AddGenericField("Mod", GetUDTStringForValueOrNull(udtStringArray.ModNames, data.Mod));
             if(data.Mod != 0)
             {
@@ -1579,8 +1593,58 @@ namespace Uber.DemoTools
 
             // @TODO: Team stats
             // @TODO: Player stats
+            ExtractTeamStats(data, ref info, ref stats);
 
             info.MatchStats.Add(stats);
+        }
+
+        private static void ExtractTeamStats(udtParseDataStats data, ref DemoInfo info, ref DemoStatsInfo stats)
+        {
+            /*
+            // @TODO: Find a work-around?
+            // Meh, no real static_assert equivalent in the language. :/
+            if(UDT_TEAM_STATS_MASK_BYTE_COUNT != 8)
+            {
+                return;
+            }
+            */
+            if((data.ValidTeams & (ulong)3) != (ulong)3)
+            {
+                return;
+            }
+
+            // Do a memcmp on the flags.
+            if(Marshal.ReadInt64(data.TeamFlags) != Marshal.ReadInt64(data.TeamFlags, 8))
+            {
+                return;
+            }
+
+            var theFlags = Marshal.ReadInt64(data.TeamFlags);
+
+            var fieldIdx = 0;
+            for(int i = 0; i < 2; ++i)
+            {
+                var teamStats = new StatsInfoGroup();
+                teamStats.Name = i == 0 ? "RED" : "BLUE";
+                for(int j = 0; j < UDT_TEAM_STATS_FIELD_COUNT; ++j)
+                {
+                    var byteIndex = j / 8;
+                    var bitIndex = j % 8;
+                    var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex);
+                    if((byteValue & (byte)(1 << bitIndex)) != 0)
+                    {
+                        var field = new DemoStatsField();
+                        field.Key = "???"; // @TODO:
+                        field.Value = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4).ToString();
+                        field.FieldBitIndex = j;
+                        field.ComparisonMode = 0;
+                        teamStats.Fields.Add(field);
+                        ++fieldIdx;
+                    }
+                }
+
+                stats.TeamStats.Add(teamStats);
+            }
         }
 
         private static void PrintExecutionTime(Stopwatch timer)
