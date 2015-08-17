@@ -1395,6 +1395,57 @@ void udtParserPlugInStats::AddCurrentStats()
 		playerFlags += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
 		*playerStats++ = _playerStats[i];
 	}
+
+	if(IsTeamMode((udtGameType::Id)_stats.GameType))
+	{
+		s32 redScore = 0;
+		s32 blueScore = 0;
+		if((_stats.ValidTeams & 1) != 0 &&
+		   IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
+		   (_stats.ValidTeams & 2) != 0 &&
+		   IsBitSet(GetTeamFlags(1), (s32)udtTeamStatsField::Score))
+		{
+			redScore = GetTeamFields(0)[udtTeamStatsField::Score];
+			blueScore = GetTeamFields(1)[udtTeamStatsField::Score];
+			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
+			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
+			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
+			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+		}
+	}
+	else
+	{
+		s32 firstPlaceScore = -9999;
+		s32 secondPlaceScore = -9999;
+		s32 firstPlaceIndex = -1;
+		s32 secondPlaceIndex = -1;
+		for(s32 i = 0; i < 64; ++i)
+		{
+			if((_stats.ValidPlayers & ((u64)1 << (u64)i)) != 0 &&
+			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
+			{
+				const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
+				if(score > firstPlaceScore)
+				{
+					firstPlaceScore = score;
+					secondPlaceScore = firstPlaceScore;
+					firstPlaceIndex = i;
+					secondPlaceIndex = firstPlaceIndex;
+				}
+			}
+		}
+		
+		_stats.FirstPlaceScore = firstPlaceScore;
+		_stats.SecondPlaceScore = secondPlaceScore;
+		if(firstPlaceIndex >= 0 && firstPlaceIndex < 64)
+		{
+			_stats.FirstPlaceName = _playerStats[firstPlaceIndex].CleanName;
+		}
+		if(secondPlaceIndex >= 0 && secondPlaceIndex < 64)
+		{
+			_stats.SecondPlaceName = _playerStats[secondPlaceIndex].CleanName;
+		}
+	}
 	
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();

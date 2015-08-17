@@ -1243,6 +1243,12 @@ extern "C"
 		// NULL if nothing was found.
 		const char* Map;
 
+		// Name of the first place player or team name.
+		const char* FirstPlaceName;
+
+		// Name of the second place player or team name.
+		const char* SecondPlaceName;
+
 		// Ignore this.
 		const u8* Reserved1;
 
@@ -1277,6 +1283,12 @@ extern "C"
 
 		// Did the winning team hit the mercy limit? (QL TDM)
 		u32 MercyLimited;
+
+		// Score of whoever is 1st place.
+		s32 FirstPlaceScore;
+
+		// Score of whoever is 2nd place.
+		s32 SecondPlaceScore;
 	};
 
 	struct udtParseDataRawCommand
