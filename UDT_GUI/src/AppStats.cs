@@ -78,6 +78,26 @@ namespace Uber.DemoTools
             public FontWeight BlueFontWeight { get { return Bold[1] ? FontWeights.Bold : FontWeights.Normal; } }
         }
 
+        private class PlayerStatsDisplayInfo
+        {
+            public PlayerStatsDisplayInfo(string key, int playerCount)
+            {
+                Key = key;
+                Values = new string[playerCount];
+                Bold = new bool[playerCount];
+                for(var i = 0; i < playerCount; ++i)
+                {
+                    Values[i] = "";
+                    Bold[i] = false;
+                }
+            }
+
+            public string Key { get; set; }
+            public string[] Values { get; set; }
+            public bool[] Bold { get; set; }
+            //public FontWeight FontWeight0 { get { return Bold[0] ? FontWeights.Bold : FontWeights.Normal; } }
+        }
+
         private const int KeyColumnWidth = 150;
 
         public FrameworkElement RootControl { get; private set; }
@@ -163,6 +183,60 @@ namespace Uber.DemoTools
                 }
 
                 _teamStatsListView.ItemsSource = items;
+            }
+
+            // The annoyance we have to deal with is that we don't necessarily have the same fields
+            // defined for all players. Also, the order isn't guaranteed.
+            var playerCount = stats.PlayerStats.Count;
+            var playerItems = new ObservableCollection<PlayerStatsDisplayInfo>();
+            for(var i = 0; i < UDT_DLL.UDT_PLAYER_STATS_FIELD_COUNT; ++i)
+            {
+                DemoStatsField field = null;
+                for(var j = 0; j < playerCount; ++j)
+                {
+                    field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field != null)
+                    {
+                        break;
+                    }
+                }
+                if(field == null)
+                {
+                    continue;
+                }
+
+                var info = new PlayerStatsDisplayInfo(field.Key, playerCount);
+
+                var playerIdx = 0;
+                for(var j = 0; j < playerCount; ++j)
+                {
+                    field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field != null)
+                    {
+                        info.Values[playerIdx] = field.Value;
+                        ++playerIdx;
+                    }
+                }
+
+                playerItems.Add(info);
+            }
+            _playerStatsListView.ItemsSource = playerItems;
+
+            // Update the player columns while preserving the key column.
+            var gridView = _playerStatsListView.View as GridView;
+            var column0 = gridView.Columns[0];
+            gridView.Columns.Clear();
+            gridView.Columns.Add(column0);
+            for(var i = 0; i < playerCount; ++i)
+            {
+                var column = new GridViewColumn();
+                var header = new GridViewColumnHeader();
+                header.Content = stats.PlayerStats[i].Name;
+                header.Tag = "Value";
+                column.Header = header;
+                column.Width = KeyColumnWidth;
+                column.DisplayMemberBinding = new Binding(string.Format("Values[{0}]", i));
+                gridView.Columns.Add(column);
             }
         }
 
@@ -345,7 +419,7 @@ namespace Uber.DemoTools
             headerKey.Tag = "Key";
             columnKey.Header = headerKey;
             columnKey.Width = KeyColumnWidth;
-            columnKey.DisplayMemberBinding = new Binding("[0]");
+            columnKey.DisplayMemberBinding = new Binding("Key");
 
             var gridView = new GridView();
             gridView.AllowsColumnReorder = false;

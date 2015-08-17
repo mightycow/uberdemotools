@@ -124,7 +124,7 @@ namespace Uber.DemoTools
         public enum udtByteArray : uint
         {
             TeamStatsCompModes,
-            PlayerSatsCompModes,
+            PlayerStatsCompModes,
             Count
         }
 
@@ -470,10 +470,10 @@ namespace Uber.DemoTools
             public Int32 Reserved1;
         };
 
-        private const int UDT_TEAM_STATS_MASK_BYTE_COUNT = 8;
-        private const int UDT_PLAYER_STATS_MASK_BYTE_COUNT = 32;
-        private const int UDT_TEAM_STATS_FIELD_COUNT = 18;
-        private const int UDT_PLAYER_STATS_FIELD_COUNT = 142;
+        public const int UDT_TEAM_STATS_MASK_BYTE_COUNT = 8;
+        public const int UDT_PLAYER_STATS_MASK_BYTE_COUNT = 32;
+        public const int UDT_TEAM_STATS_FIELD_COUNT = 18;
+        public const int UDT_PLAYER_STATS_FIELD_COUNT = 142;
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
@@ -1611,30 +1611,16 @@ namespace Uber.DemoTools
                 stats.AddGenericField("Total time-out duration", App.FormatMinutesSeconds((int)data.TotalTimeOutDurationMs / 1000));
             }
 
-            // @TODO: Team stats
-            // @TODO: Player stats
             ExtractTeamStats(data, ref info, ref stats);
+            ExtractPlayerStats(data, ref info, ref stats);
 
             info.MatchStats.Add(stats);
         }
 
         private static void ExtractTeamStats(udtParseDataStats data, ref DemoInfo info, ref DemoStatsInfo stats)
         {
-            /*
-            // @TODO: Find a work-around?
-            // Meh, no real static_assert equivalent in the language. :/
-            if(UDT_TEAM_STATS_MASK_BYTE_COUNT != 8)
-            {
-                return;
-            }
-            */
-            if((data.ValidTeams & (ulong)3) != (ulong)3)
-            {
-                return;
-            }
-
-            // Do a memcmp on the flags.
-            if(Marshal.ReadInt64(data.TeamFlags) != Marshal.ReadInt64(data.TeamFlags, 8))
+            if((data.ValidTeams & (ulong)3) != (ulong)3 ||
+                Marshal.ReadInt64(data.TeamFlags) != Marshal.ReadInt64(data.TeamFlags, 8))
             {
                 return;
             }
@@ -1670,7 +1656,7 @@ namespace Uber.DemoTools
                         var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
                         var field = new DemoStatsField();
                         var fieldValue = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4);
-                        field.Key = ProcessStatFieldName(fieldName);
+                        field.Key = ProcessStatsFieldName(fieldName);
                         field.Value = fieldValue.ToString();
                         field.IntegerValue = fieldValue;
                         field.FieldBitIndex = j;
@@ -1681,6 +1667,63 @@ namespace Uber.DemoTools
                 }
 
                 stats.TeamStats.Add(teamStats);
+            }
+        }
+
+        private static void ExtractPlayerStats(udtParseDataStats data, ref DemoInfo info, ref DemoStatsInfo stats)
+        {
+            IntPtr fieldNames = IntPtr.Zero;
+            UInt32 fieldNameCount = 0;
+            if(udtGetStringArray(udtStringArray.PlayerStatsNames, ref fieldNames, ref fieldNameCount) != udtErrorCode.None)
+            {
+                return;
+            }
+            var pointerSize = Marshal.SizeOf(typeof(IntPtr));
+            
+            IntPtr fieldCompModes = IntPtr.Zero;
+            UInt32 fieldCompModeCount = 0;
+            if(udtGetByteArray(udtByteArray.PlayerStatsCompModes, ref fieldCompModes, ref fieldCompModeCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
+            var extraInfoAddress = data.PlayerStats.ToInt64();
+            var extraInfoItemSize = Marshal.SizeOf(typeof(udtPlayerStats));
+            var fieldIdx = 0;
+            for(int i = 0; i < 64; ++i)
+            {
+                if((data.ValidPlayers & ((ulong)1 << i)) == 0)
+                {
+                    continue;
+                }
+
+                var playerStats = new StatsInfoGroup();
+                var extraInfo = (udtPlayerStats)Marshal.PtrToStructure(new IntPtr(extraInfoAddress), typeof(udtPlayerStats));
+                playerStats.Name = SafeGetUTF8String(extraInfo.CleanName);
+                for(int j = 0; j < UDT_PLAYER_STATS_FIELD_COUNT; ++j)
+                {
+                    var byteIndex = j / 8;
+                    var bitIndex = j % 8;
+                    var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + i * UDT_PLAYER_STATS_MASK_BYTE_COUNT);
+                    if((byteValue & (byte)(1 << bitIndex)) != 0)
+                    {
+                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
+                        var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
+                        var field = new DemoStatsField();
+                        var fieldValue = Marshal.ReadInt32(data.PlayerFields, fieldIdx * 4);
+                        field.Key = ProcessStatsFieldName(fieldName);
+                        field.Value = fieldValue.ToString();
+                        field.IntegerValue = fieldValue;
+                        field.FieldBitIndex = j;
+                        field.ComparisonMode = (udtStatsCompMode)Marshal.ReadByte(fieldCompModes, j);
+                        playerStats.Fields.Add(field);
+                        ++fieldIdx;
+                    }
+                }
+
+                stats.PlayerStats.Add(playerStats);
+
+                extraInfoAddress += extraInfoItemSize;
             }
         }
 
@@ -1699,7 +1742,7 @@ namespace Uber.DemoTools
             return s.Substring(0, 1).ToUpper() + s.Substring(1);
         }
 
-        private static string ProcessStatFieldName(string name)
+        private static string ProcessStatsFieldName(string name)
         {
             return CapitalizeString(name).Replace("possession", "poss.");
         }
