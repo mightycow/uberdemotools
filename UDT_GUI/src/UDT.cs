@@ -1721,7 +1721,11 @@ namespace Uber.DemoTools
                     }
                 }
 
-                stats.PlayerStats.Add(playerStats);
+                // Get rid of spectators.
+                if(extraInfo.TeamIndex != 3)
+                {
+                    stats.PlayerStats.Add(playerStats);
+                }
 
                 extraInfoAddress += extraInfoItemSize;
             }

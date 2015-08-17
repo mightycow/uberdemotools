@@ -84,18 +84,17 @@ namespace Uber.DemoTools
             {
                 Key = key;
                 Values = new string[playerCount];
-                Bold = new bool[playerCount];
+                ValueFontWeights = new FontWeight[playerCount];
                 for(var i = 0; i < playerCount; ++i)
                 {
                     Values[i] = "";
-                    Bold[i] = false;
+                    ValueFontWeights[i] = FontWeights.Normal;
                 }
             }
 
             public string Key { get; set; }
             public string[] Values { get; set; }
-            public bool[] Bold { get; set; }
-            //public FontWeight FontWeight0 { get { return Bold[0] ? FontWeights.Bold : FontWeights.Normal; } }
+            public FontWeight[] ValueFontWeights { get; set; }
         }
 
         private const int KeyColumnWidth = 150;
@@ -207,15 +206,38 @@ namespace Uber.DemoTools
 
                 var info = new PlayerStatsDisplayInfo(field.Key, playerCount);
 
-                var playerIdx = 0;
+                var boldIndex = -1;
+                var extremeValue = field.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins ? int.MinValue : int.MaxValue;
                 for(var j = 0; j < playerCount; ++j)
                 {
                     field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
-                    if(field != null)
+                    if(field == null)
                     {
-                        info.Values[playerIdx] = field.Value;
-                        ++playerIdx;
+                        continue;
                     }
+
+                    info.Values[j] = field.Value;
+
+                    var currValue = field.IntegerValue;
+                    if(field.ComparisonMode != UDT_DLL.udtStatsCompMode.NeitherWins && currValue == extremeValue && j > 0)
+                    {
+                        boldIndex = -1;
+                    }
+                    else if(field.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins && (currValue > extremeValue || j == 0))
+                    {
+                        extremeValue = currValue;
+                        boldIndex = j;
+                    }
+                    else if(field.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins && (currValue < extremeValue || j == 0))
+                    {
+                        extremeValue = currValue;
+                        boldIndex = j;
+                    }                    
+                }
+
+                if(boldIndex != -1)
+                {
+                    info.ValueFontWeights[boldIndex] = FontWeights.Bold;
                 }
 
                 playerItems.Add(info);
@@ -229,13 +251,18 @@ namespace Uber.DemoTools
             gridView.Columns.Add(column0);
             for(var i = 0; i < playerCount; ++i)
             {
+                var template = new DataTemplate();
+                var factory = new FrameworkElementFactory(typeof(TextBlock));
+                factory.SetBinding(TextBlock.TextProperty, new Binding(string.Format("Values[{0}]", i)));
+                factory.SetBinding(TextBlock.FontWeightProperty, new Binding(string.Format("ValueFontWeights[{0}]", i)));
+                template.VisualTree = factory;
                 var column = new GridViewColumn();
                 var header = new GridViewColumnHeader();
                 header.Content = stats.PlayerStats[i].Name;
                 header.Tag = "Value";
                 column.Header = header;
                 column.Width = KeyColumnWidth;
-                column.DisplayMemberBinding = new Binding(string.Format("Values[{0}]", i));
+                column.CellTemplate = template;
                 gridView.Columns.Add(column);
             }
         }
