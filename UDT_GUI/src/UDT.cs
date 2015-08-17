@@ -116,6 +116,8 @@ namespace Uber.DemoTools
             GamePlayNames,
             ShortGamePlayNames,
             OverTimeTypes,
+            TeamStatsNames,
+            PlayerStatsNames,
             Count
         }
 
@@ -1619,6 +1621,14 @@ namespace Uber.DemoTools
                 return;
             }
 
+            IntPtr fieldNames = IntPtr.Zero;
+            UInt32 fieldNameCount = 0;
+            if(udtGetStringArray(udtStringArray.TeamStatsNames, ref fieldNames, ref fieldNameCount) != udtErrorCode.None)
+            {
+                return;
+            }
+            var pointerSize = Marshal.SizeOf(typeof(IntPtr));
+
             var fieldIdx = 0;
             for(int i = 0; i < 2; ++i)
             {
@@ -1631,8 +1641,10 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
+                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
+                        var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
                         var field = new DemoStatsField();
-                        field.Key = "???"; // @TODO:
+                        field.Key = ProcessStatFieldName(fieldName);
                         field.Value = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4).ToString();
                         field.FieldBitIndex = j;
                         field.ComparisonMode = 0;
@@ -1643,6 +1655,26 @@ namespace Uber.DemoTools
 
                 stats.TeamStats.Add(teamStats);
             }
+        }
+
+        private static string CapitalizeString(string s)
+        {
+            if(s.Length == 0)
+            {
+                return s;
+            }
+
+            if(s.Length == 1)
+            {
+                return s.ToUpper();
+            }
+
+            return s.Substring(0, 1).ToUpper() + s.Substring(1);
+        }
+
+        private static string ProcessStatFieldName(string name)
+        {
+            return CapitalizeString(name).Replace("possession", "poss.");
         }
 
         private static void PrintExecutionTime(Stopwatch timer)

@@ -140,6 +140,22 @@ static const char* OverTimeTypes[] =
 };
 #undef UDT_OVERTIME_TYPE_ITEM
 
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc) Desc,
+static const char* PlayerStatsFieldNames[]
+{
+	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+		""
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc) Desc,
+static const char* TeamStatsFieldNames[]
+{
+	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+		""
+};
+#undef UDT_TEAM_STATS_ITEM
+
 
 UDT_API(const char*) udtGetVersionString()
 {
@@ -328,6 +344,16 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::OverTimeTypes:
 			*elements = OverTimeTypes;
 			*elementCount = (u32)(UDT_COUNT_OF(OverTimeTypes) - 1);
+			break;
+
+		case udtStringArray::TeamStatsNames:
+			*elements = TeamStatsFieldNames;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsFieldNames) - 1);
+			break;
+
+		case udtStringArray::PlayerStatsNames:
+			*elements = PlayerStatsFieldNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsFieldNames) - 1);
 			break;
 
 		default:

@@ -355,6 +355,8 @@ struct udtStringArray
 		GamePlayNames,
 		ShortGamePlayNames,
 		OverTimeTypes,
+		TeamStatsNames,
+		PlayerStatsNames,
 		Count
 	};
 };
