@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -59,6 +60,24 @@ namespace Uber.DemoTools
         private int _selectedStatsIndex = 0;
         private App _app;
 
+        private class TeamStatsDisplayInfo
+        {
+            public TeamStatsDisplayInfo(string key, string red, string blue)
+            {
+                Key = key;
+                Red = red;
+                Blue = blue;
+                Bold = new bool[] { false, false };
+            }
+
+            public string Key { get; set; }
+            public string Red { get; set; }
+            public string Blue { get; set; }
+            public bool[] Bold { get; set; }
+            public FontWeight RedFontWeight { get { return Bold[0] ? FontWeights.Bold : FontWeights.Normal; } }
+            public FontWeight BlueFontWeight { get { return Bold[1] ? FontWeights.Bold : FontWeights.Normal; } }
+        }
+
         private const int KeyColumnWidth = 150;
 
         public FrameworkElement RootControl { get; private set; }
@@ -115,13 +134,35 @@ namespace Uber.DemoTools
             if(stats.TeamStats.Count == 2 &&
                stats.TeamStats[0].Fields.Count == stats.TeamStats[1].Fields.Count)
             {
+                var items = new ObservableCollection<TeamStatsDisplayInfo>();
                 var fieldCount = stats.TeamStats[0].Fields.Count;
                 for(var i = 0; i < fieldCount; ++i)
                 {
                     var field0 = stats.TeamStats[0].Fields[i];
                     var field1 = stats.TeamStats[1].Fields[i];
-                    _teamStatsListView.Items.Add(new string[] { field0.Key, field0.Value, field1.Value });
+
+                    var index = -1;
+                    if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins)
+                    {
+                        index = field0.IntegerValue > field1.IntegerValue ? 0 : index;
+                        index = field0.IntegerValue < field1.IntegerValue ? 1 : index;
+                    }
+                    else if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins)
+                    {
+                        index = field0.IntegerValue < field1.IntegerValue ? 0 : index;
+                        index = field0.IntegerValue > field1.IntegerValue ? 1 : index;
+                    }
+
+                    var info = new TeamStatsDisplayInfo(field0.Key, field0.Value, field1.Value);
+                    if(index != -1)
+                    {
+                        info.Bold[index] = true;
+                    }
+
+                    items.Add(info);
                 }
+
+                _teamStatsListView.ItemsSource = items;
             }
         }
 
@@ -243,6 +284,17 @@ namespace Uber.DemoTools
             return listView;
         }
 
+        private static DataTemplate CreateCellTemplate(string textBinding, string fontWeightBinding)
+        {
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBlock));
+            factory.SetBinding(TextBlock.TextProperty, new Binding(textBinding));
+            factory.SetBinding(TextBlock.FontWeightProperty, new Binding(fontWeightBinding));
+            template.VisualTree = factory;
+
+            return template;
+        }
+
         private DemoInfoListView CreateTeamStatsListView()
         {
             var columnKey = new GridViewColumn();
@@ -251,7 +303,7 @@ namespace Uber.DemoTools
             headerKey.Tag = "Key";
             columnKey.Header = headerKey;
             columnKey.Width = KeyColumnWidth;
-            columnKey.DisplayMemberBinding = new Binding("[0]");
+            columnKey.DisplayMemberBinding = new Binding("Key");
 
             var columnRed = new GridViewColumn();
             var headerRed = new GridViewColumnHeader();
@@ -259,7 +311,7 @@ namespace Uber.DemoTools
             headerRed.Tag = "Red";
             columnRed.Header = headerRed;
             columnRed.Width = 200;
-            columnRed.DisplayMemberBinding = new Binding("[1]");
+            columnRed.CellTemplate = CreateCellTemplate("Red", "RedFontWeight");
 
             var columnBlue = new GridViewColumn();
             var headerBlue = new GridViewColumnHeader();
@@ -267,7 +319,7 @@ namespace Uber.DemoTools
             headerBlue.Tag = "Blue";
             columnBlue.Header = headerBlue;
             columnBlue.Width = 200;
-            columnBlue.DisplayMemberBinding = new Binding("[2]");
+            columnBlue.CellTemplate = CreateCellTemplate("Blue", "BlueFontWeight");
 
             var gridView = new GridView();
             gridView.AllowsColumnReorder = false;
