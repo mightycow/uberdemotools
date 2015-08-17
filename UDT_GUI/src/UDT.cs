@@ -121,6 +121,13 @@ namespace Uber.DemoTools
             Count
         }
 
+        public enum udtByteArray : uint
+        {
+            TeamStatsCompModes,
+            PlayerSatsCompModes,
+            Count
+        }
+
         public enum udtPatternType : uint
         {
             Chat,
@@ -131,6 +138,14 @@ namespace Uber.DemoTools
             FlickRails,
             Count
         }
+
+        public enum udtStatsCompMode : uint
+        {
+            NeitherWins,
+            BiggerWins,
+            SmallerWins,
+            Count
+        };
 
         private enum udtGameType : uint
         {
@@ -483,6 +498,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetStringArray(udtStringArray arrayId, ref IntPtr array, ref UInt32 elementCount);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtGetByteArray(udtByteArray arrayId, ref IntPtr array, ref UInt32 elementCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtSetCrashHandler(IntPtr crashHandler);
@@ -1629,6 +1647,13 @@ namespace Uber.DemoTools
             }
             var pointerSize = Marshal.SizeOf(typeof(IntPtr));
 
+            IntPtr fieldCompModes = IntPtr.Zero;
+            UInt32 fieldCompModeCount = 0;
+            if(udtGetByteArray(udtByteArray.TeamStatsCompModes, ref fieldCompModes, ref fieldCompModeCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
             var fieldIdx = 0;
             for(int i = 0; i < 2; ++i)
             {
@@ -1644,10 +1669,12 @@ namespace Uber.DemoTools
                         var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
                         var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
                         var field = new DemoStatsField();
+                        var fieldValue = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4);
                         field.Key = ProcessStatFieldName(fieldName);
-                        field.Value = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4).ToString();
+                        field.Value = fieldValue.ToString();
+                        field.IntegerValue = fieldValue;
                         field.FieldBitIndex = j;
-                        field.ComparisonMode = 0;
+                        field.ComparisonMode = (udtStatsCompMode)Marshal.ReadByte(fieldCompModes, j);
                         teamStats.Fields.Add(field);
                         ++fieldIdx;
                     }

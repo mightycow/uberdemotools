@@ -12,8 +12,9 @@ namespace Uber.DemoTools
     {
         public string Key = "";
         public string Value = "";
-        public int ComparisonMode = 0;
+        public UDT_DLL.udtStatsCompMode ComparisonMode = UDT_DLL.udtStatsCompMode.NeitherWins;
         public int FieldBitIndex = 0;
+        public int IntegerValue = 0;
     }
 
     public class StatsInfoGroup

@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 
-#define UDT_PLAYER_STATS_ITEM(Enum, Desc) Desc,
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp) Desc,
 static const char* PlayerStatsFieldNames[udtPlayerStatsField::Count + 1]
 {
 	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
@@ -19,7 +19,7 @@ static const char* PlayerStatsFieldNames[udtPlayerStatsField::Count + 1]
 };
 #undef UDT_PLAYER_STATS_ITEM
 
-#define UDT_TEAM_STATS_ITEM(Enum, Desc) Desc,
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) Desc,
 static const char* TeamStatsFieldNames[udtPlayerStatsField::Count + 1]
 {
 	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
