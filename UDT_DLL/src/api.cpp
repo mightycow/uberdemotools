@@ -393,7 +393,7 @@ UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32*
 			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsCompModesArray) - 1);
 			break;
 
-		case udtByteArray::PlayerSatsCompModes:
+		case udtByteArray::PlayerStatsCompModes:
 			*elements = PlayerStatsCompModesArray;
 			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsCompModesArray) - 1);
 			break;

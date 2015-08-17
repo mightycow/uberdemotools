@@ -366,7 +366,7 @@ struct udtByteArray
 	enum Id
 	{
 		TeamStatsCompModes,
-		PlayerSatsCompModes,
+		PlayerStatsCompModes,
 		Count
 	};
 };
