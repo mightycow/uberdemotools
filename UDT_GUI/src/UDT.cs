@@ -1619,8 +1619,6 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var theFlags = Marshal.ReadInt64(data.TeamFlags);
-
             var fieldIdx = 0;
             for(int i = 0; i < 2; ++i)
             {
