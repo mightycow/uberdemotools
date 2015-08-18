@@ -1427,10 +1427,10 @@ void udtParserPlugInStats::AddCurrentStats()
 				const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
 				if(score > firstPlaceScore)
 				{
-					firstPlaceScore = score;
 					secondPlaceScore = firstPlaceScore;
-					firstPlaceIndex = i;
+					firstPlaceScore = score;
 					secondPlaceIndex = firstPlaceIndex;
+					firstPlaceIndex = i;
 				}
 			}
 		}
