@@ -24,6 +24,7 @@ namespace Uber.DemoTools
         public string Name = "N/A"; // What should be used as a column header.
         public readonly List<DemoStatsField> Fields = new List<DemoStatsField>();
         public int Index = 0; // Used for sorting the groups...
+        public int TeamIndex = -1; // Only relevant to players.
     }
 
     public class DemoStatsInfo
