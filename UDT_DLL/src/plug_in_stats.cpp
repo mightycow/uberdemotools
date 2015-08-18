@@ -134,6 +134,13 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_protocol = parser._inProtocol;
 	_followedClientNumber = -1;
 
+	_firstPlaceClientNumber = -1;
+	_secondPlaceClientNumber = -1;
+	_cpmaScoreRed = S32_MIN;
+	_cpmaScoreBlue = S32_MIN;
+	_firstPlaceScore = S32_MIN;
+	_secondPlaceScore = S32_MIN;
+
 	ClearStats();
 
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
@@ -200,6 +207,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("dscores", ParseQLScoresDuelOld),
 		HANDLER("xstats2", ParseCPMAXStats2),
 		HANDLER("xscores", ParseCPMAXScores),
+		HANDLER("dmscores", ParseCPMADMScores),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
 		HANDLER("tdmscores2", ParseQLScoresTDMOld),
 		HANDLER("statsinfo", ParseOSPStatsInfo)
@@ -208,7 +216,6 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	/*
 	@TODO:
 	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr scores_ca
-	CPMA: xscores
 	OSP : xstats1 bstats
 	mstats:  full stats for one player sent multiple times during a game
 	xstats2: full stats for one player sent at the end of a game, encoded the same as mstats
@@ -242,6 +249,20 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	if(csIndex >= firstPlayerCs && csIndex < firstPlayerCs + 64)
 	{
 		ProcessPlayerConfigString(configString.String, csIndex - firstPlayerCs);
+	}
+	else if(_analyzer.Mod() == udtMod::CPMA && csIndex == CS_CPMA_GAME_INFO)
+	{
+		udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+		ParseConfigStringValueInt(_cpmaScoreRed, *TempAllocator, "sr", configString.String);
+		ParseConfigStringValueInt(_cpmaScoreBlue, *TempAllocator, "sb", configString.String);
+	}
+	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
+	{
+		StringParseInt(_firstPlaceScore, configString.String);
+	}
+	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES2)
+	{
+		StringParseInt(_secondPlaceScore, configString.String);
 	}
 }
 
@@ -1016,6 +1037,17 @@ void udtParserPlugInStats::ParseCPMAXScores()
 	}
 }
 
+void udtParserPlugInStats::ParseCPMADMScores()
+{
+	if(_tokenizer->GetArgCount() < 3)
+	{
+		return;
+	}
+
+	_firstPlaceClientNumber = GetValue(1);
+	_secondPlaceClientNumber = GetValue(2);
+}
+
 void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 {
 	_stats.GameType = (u32)udtGameType::TDM;
@@ -1436,11 +1468,21 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
 			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
 		}
+		else if(_analyzer.Mod() == udtMod::CPMA)
+		{
+			redScore = _cpmaScoreRed;
+			blueScore = _cpmaScoreBlue;
+			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
+			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
+			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
+			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+		}
+		// @TODO: How do we know who is who?
 	}
 	else
 	{
-		s32 firstPlaceScore = -9999;
-		s32 secondPlaceScore = -9999;
+		s32 firstPlaceScore = S32_MIN;
+		s32 secondPlaceScore = S32_MIN;
 		s32 firstPlaceIndex = -1;
 		s32 secondPlaceIndex = -1;
 		for(s32 i = 0; i < 64; ++i)
@@ -1463,16 +1505,49 @@ void udtParserPlugInStats::AddCurrentStats()
 				}
 			}
 		}
-		
-		_stats.FirstPlaceScore = firstPlaceScore;
-		_stats.SecondPlaceScore = secondPlaceScore;
-		if(firstPlaceIndex >= 0 && firstPlaceIndex < 64)
+
+		if(firstPlaceScore != S32_MIN &&
+		   secondPlaceScore != S32_MIN &&
+		   firstPlaceIndex != -1 &&
+		   secondPlaceIndex != -1)
 		{
+			_stats.FirstPlaceScore = firstPlaceScore;
+			_stats.SecondPlaceScore = secondPlaceScore;
 			_stats.FirstPlaceName = _playerStats[firstPlaceIndex].CleanName;
-		}
-		if(secondPlaceIndex >= 0 && secondPlaceIndex < 64)
-		{
 			_stats.SecondPlaceName = _playerStats[secondPlaceIndex].CleanName;
+		}
+		else if(_analyzer.Mod() != udtMod::CPMA &&
+				_firstPlaceScore != S32_MIN &&
+				_secondPlaceScore != S32_MIN &&
+				_firstPlaceClientNumber >= 0 &&
+				_firstPlaceClientNumber < 64 &&
+				_secondPlaceClientNumber >= 0 &&
+				_secondPlaceClientNumber < 64)
+		{
+			_stats.FirstPlaceScore = _firstPlaceScore;
+			_stats.SecondPlaceScore = _secondPlaceScore;
+			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
+			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
+		}
+		else if(_analyzer.Mod() == udtMod::CPMA &&
+				_cpmaScoreRed != S32_MIN &&
+				_cpmaScoreBlue != S32_MIN &&
+				_firstPlaceClientNumber >= 0 &&
+				_firstPlaceClientNumber < 64 &&
+				_secondPlaceClientNumber >= 0 &&
+				_secondPlaceClientNumber < 64)
+		{
+			_stats.FirstPlaceScore = udt_max(_cpmaScoreRed, _cpmaScoreBlue);
+			_stats.SecondPlaceScore = udt_min(_cpmaScoreRed, _cpmaScoreBlue);
+			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
+			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
+		}
+		else
+		{
+			_stats.FirstPlaceScore = S32_MIN;
+			_stats.SecondPlaceScore = S32_MIN;
+			_stats.FirstPlaceName = NULL;
+			_stats.SecondPlaceName = NULL;
 		}
 	}
 	

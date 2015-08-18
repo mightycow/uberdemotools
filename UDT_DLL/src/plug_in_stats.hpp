@@ -58,6 +58,7 @@ private:
 	void ParseQ3ScoresDM3();
 	void ParseCPMAXStats2();
 	void ParseCPMAXScores();
+	void ParseCPMADMScores();
 	void ParseQLScoresTDMVeryOld();
 	void ParseQLScoresTDMOld();
 	void ParseOSPStatsInfo();
@@ -103,5 +104,11 @@ private:
 	udtProtocol::Id _protocol;
 	s32 _followedClientNumber;
 	u32 _maxAllowedStats;
+	s32 _firstPlaceClientNumber;
+	s32 _secondPlaceClientNumber;
+	s32 _cpmaScoreRed;
+	s32 _cpmaScoreBlue;
+	s32 _firstPlaceScore;
+	s32 _secondPlaceScore;
 	bool _gameEnded;
 };
