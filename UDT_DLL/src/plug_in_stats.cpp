@@ -915,7 +915,7 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 
 #undef WEAPON_FIELDS
 
-	static const udtStatsField playerFields[] =
+	static const udtStatsField playerFields0[] =
 	{
 		PLAYER_FIELD(DamageGiven, 0),
 		PLAYER_FIELD(DamageReceived, 1),
@@ -924,12 +924,16 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 		PLAYER_FIELD(MegaHealthPickups, 4),
 		PLAYER_FIELD(RedArmorPickups, 5),
 		PLAYER_FIELD(YellowArmorPickups, 6),
-		PLAYER_FIELD(GreenArmorPickups, 7),
-		// We skip some stuff...
-		PLAYER_FIELD(Score, 11),
-		PLAYER_FIELD(Kills, 12),
-		PLAYER_FIELD(Deaths, 13),
-		PLAYER_FIELD(Suicides, 14)
+		PLAYER_FIELD(GreenArmorPickups, 7)
+		// We ignore more stuff that follows.
+	};
+
+	static const udtStatsField playerFields1[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Kills, 1),
+		PLAYER_FIELD(Deaths, 2),
+		PLAYER_FIELD(Suicides, 3)
 		// We ignore more stuff that follows.
 	};
 
@@ -943,7 +947,25 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 		}
 	}
 
-	ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
+	ParsePlayerFields(clientNumber, playerFields0, (s32)UDT_COUNT_OF(playerFields0), offset);
+	offset += 8;
+
+	for(u32 i = (u32)offset, count = _tokenizer->GetArgCount(); i < count; ++i)
+	{
+		const udtString token = _tokenizer->GetArg(i);
+		if(token.Length >= 4 && (token.String[0] < '0' || token.String[0] > '9'))
+		{
+			offset = (s32)i + 1;
+			break;
+		}
+	}
+
+	if(_tokenizer->GetArgCount() < ((u32)offset + 4))
+	{
+		return;
+	}
+
+	ParsePlayerFields(clientNumber, playerFields1, (s32)UDT_COUNT_OF(playerFields1), offset);
 }
 
 void udtParserPlugInStats::ParseCPMAXScores()
@@ -981,7 +1003,7 @@ void udtParserPlugInStats::ParseCPMAXScores()
 			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 
 			const udtString textField = _tokenizer->GetArg((u32)offset + 2);
-			if(textField.Length == 12)
+			if(textField.Length >= 4)
 			{
 				// It seems that 3-4 and 5-6 give the low and high values of the ping range.
 				const s32 ping = 32 * CPMACharToInt(textField.String[2]) + CPMACharToInt(textField.String[3]);
