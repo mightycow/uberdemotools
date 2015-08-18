@@ -1432,6 +1432,11 @@ void udtParserPlugInStats::AddCurrentStats()
 					secondPlaceIndex = firstPlaceIndex;
 					firstPlaceIndex = i;
 				}
+				else if(score > secondPlaceScore)
+				{
+					secondPlaceScore = score;
+					secondPlaceIndex = i;
+				}
 			}
 		}
 		
