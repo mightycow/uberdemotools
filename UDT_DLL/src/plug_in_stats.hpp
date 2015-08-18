@@ -102,5 +102,6 @@ private:
 	CommandLineTokenizer* _tokenizer;
 	udtProtocol::Id _protocol;
 	s32 _followedClientNumber;
+	u32 _maxAllowedStats;
 	bool _gameEnded;
 };

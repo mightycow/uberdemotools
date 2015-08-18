@@ -7,7 +7,7 @@ static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_CO
 static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYTE_COUNT * 8), "Too many player stats fields for the bit mask size");
 
 
-#define UDT_MAX_STATS 4
+#define    UDT_MAX_STATS    4
 
 
 static bool IsBitSet(const u8* flags, s32 index)
@@ -83,6 +83,7 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_tokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
+	_maxAllowedStats = UDT_MAX_STATS;
 	_gameEnded = false;
 	ClearStats();
 }
@@ -97,6 +98,7 @@ void udtParserPlugInStats::InitAllocators(u32 demoCount)
 	_allocator.Init((uptr)(1 << 20) * (uptr)demoCount);
 	_statsArray.SetAllocator(FinalAllocator);
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
+	_maxAllowedStats = demoCount * (u32)UDT_MAX_STATS;
 }
 
 u32 udtParserPlugInStats::GetElementSize() const
@@ -1268,7 +1270,7 @@ bool udtParserPlugInStats::AreStatsValid()
 
 void udtParserPlugInStats::AddCurrentStats()
 {
-	if(_statsArray.GetSize() == UDT_MAX_STATS ||
+	if(_statsArray.GetSize() >= _maxAllowedStats ||
 	   !AreStatsValid())
 	{
 		return;
