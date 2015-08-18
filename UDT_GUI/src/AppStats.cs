@@ -118,8 +118,8 @@ namespace Uber.DemoTools
             _statsPanel.Visibility = showStats ? Visibility.Visible : Visibility.Collapsed;
             _noStatsPanel.Visibility = showStats ? Visibility.Collapsed : Visibility.Visible;
             _matchInfoListView.Items.Clear();
-            _teamStatsListView.Items.Clear();
-            _playerStatsListView.Items.Clear();
+            _teamStatsListView.ItemsSource = new ObservableCollection<TeamStatsDisplayInfo>();
+            _playerStatsListView.ItemsSource = new ObservableCollection<PlayerStatsDisplayInfo>();
             if(!showStats)
             {
                 ShowMatchInfo(false);
