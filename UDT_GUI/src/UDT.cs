@@ -1338,7 +1338,7 @@ namespace Uber.DemoTools
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
                     info.ProtocolNumber = UDT_DLL.udtGetProtocolByFilePath(info.FilePath);
                     
-                    ExtractDemoInfo(context, j, ref info);
+                    ExtractDemoInfo(context, j, info);
                     infoList.Add(info);
                 }
             }
@@ -1351,15 +1351,15 @@ namespace Uber.DemoTools
             return infoList;
         }
 
-        private static void ExtractDemoInfo(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        private static void ExtractDemoInfo(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
-            ExtractChatEvents(context, demoIdx, ref info);
-            ExtractGameStateEvents(context, demoIdx, ref info);
-            ExtractObituaries(context, demoIdx, ref info);
-            ExtractStats(context, demoIdx, ref info);
+            ExtractChatEvents(context, demoIdx, info);
+            ExtractGameStateEvents(context, demoIdx, info);
+            ExtractObituaries(context, demoIdx, info);
+            ExtractStats(context, demoIdx, info);
         }
 
-        private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
             uint chatEventCount = 0;
             IntPtr chatEvents = IntPtr.Zero;
@@ -1501,7 +1501,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        private static void ExtractGameStateEvents(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
             uint gsEventCount = 0;
             IntPtr gsEvents = IntPtr.Zero;
@@ -1532,7 +1532,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private static void ExtractObituaries(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        private static void ExtractObituaries(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
             uint obituaryEventCount = 0;
             IntPtr obituaryEvents = IntPtr.Zero;
@@ -1559,7 +1559,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private static void ExtractStats(udtParserContextRef context, uint demoIdx, ref DemoInfo info)
+        private static void ExtractStats(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
             uint statsCount = 0;
             IntPtr stats = IntPtr.Zero;
@@ -1573,17 +1573,17 @@ namespace Uber.DemoTools
             {
                 var address = new IntPtr(stats.ToInt64() + i * sizeof(udtParseDataStats));
                 var data = (udtParseDataStats)Marshal.PtrToStructure(address, typeof(udtParseDataStats));
-                ExtractStatsSingleMatch(data, ref info);
+                ExtractStatsSingleMatch(data, info);
             }
         }
         
-        private static void ExtractStatsSingleMatch(udtParseDataStats data, ref DemoInfo info)
+        private static void ExtractStatsSingleMatch(udtParseDataStats data, DemoInfo info)
         {
             var stats = new DemoStatsInfo();
 
             var name1 = SafeGetUTF8String(data.FirstPlaceName);
             var name2 = SafeGetUTF8String(data.SecondPlaceName);
-            var finalScore = string.Format("{0} {1} - {2} {3}", name1, data.FirstPlaceScore, data.SecondPlaceScore, name2);
+            var finalScore = string.Format("{0} {1} : {2} {3}", name1, data.FirstPlaceScore, data.SecondPlaceScore, name2);
 
             stats.AddGenericField("Final Score", finalScore);
             stats.AddGenericField("Mod", GetUDTStringForValueOrNull(udtStringArray.ModNames, data.Mod));
@@ -1611,13 +1611,13 @@ namespace Uber.DemoTools
                 stats.AddGenericField("Total time-out duration", App.FormatMinutesSeconds((int)data.TotalTimeOutDurationMs / 1000));
             }
 
-            ExtractTeamStats(data, ref info, ref stats);
-            ExtractPlayerStats(data, ref info, ref stats);
+            ExtractTeamStats(data, info, ref stats);
+            ExtractPlayerStats(data, info, ref stats);
 
             info.MatchStats.Add(stats);
         }
 
-        private static void ExtractTeamStats(udtParseDataStats data, ref DemoInfo info, ref DemoStatsInfo stats)
+        private static void ExtractTeamStats(udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)
         {
             if((data.ValidTeams & (ulong)3) != (ulong)3 ||
                 Marshal.ReadInt64(data.TeamFlags) != Marshal.ReadInt64(data.TeamFlags, 8))
@@ -1670,7 +1670,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private static void ExtractPlayerStats(udtParseDataStats data, ref DemoInfo info, ref DemoStatsInfo stats)
+        private static void ExtractPlayerStats(udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)
         {
             IntPtr fieldNames = IntPtr.Zero;
             UInt32 fieldNameCount = 0;
