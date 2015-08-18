@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 
 namespace Uber.DemoTools
@@ -58,6 +59,7 @@ namespace Uber.DemoTools
         private FrameworkElement _matchInfoPanel;
         private FrameworkElement _teamStatsPanel;
         private FrameworkElement _playerStatsPanel;
+        private ScrollViewer _scrollViewer;
         private int _selectedStatsIndex = 0;
         private App _app;
 
@@ -290,6 +292,9 @@ namespace Uber.DemoTools
             var matchInfoListView = CreateMatchInfoListView();
             var teamStatsListView = CreateTeamStatsListView();
             var playerStatsListView = CreatePlayerStatsListView();
+            FixListViewMouseWheelHandling(matchInfoListView);
+            FixListViewMouseWheelHandling(teamStatsListView);
+            FixListViewMouseWheelHandling(playerStatsListView);
             _matchInfoListView = matchInfoListView;
             _teamStatsListView = teamStatsListView;
             _playerStatsListView = playerStatsListView;
@@ -337,6 +342,7 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(_statsPanel);
 
             var scrollViewer = new ScrollViewer();
+            _scrollViewer = scrollViewer;
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
             scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
@@ -455,7 +461,25 @@ namespace Uber.DemoTools
 
             return listView;
         }
+        
+        private void FixListViewMouseWheelHandling(ListView listView)
+        {
+            listView.AddHandler(ListView.MouseWheelEvent, new RoutedEventHandler(MouseWheelHandler), true);
+        }
 
+        private void MouseWheelHandler(object sender, RoutedEventArgs args)
+        {
+            if(_scrollViewer == null)
+            {
+                return;
+            }
+
+            var info = args as MouseWheelEventArgs;
+            var posDelta = (double)info.Delta;
+            var curPos = _scrollViewer.VerticalOffset;
+            _scrollViewer.ScrollToVerticalOffset(curPos - posDelta);
+        }
+        
         private void ShowMatchInfo(bool show)
         {
             _matchInfoPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
