@@ -1691,6 +1691,7 @@ namespace Uber.DemoTools
             var extraInfoAddress = data.PlayerStats.ToInt64();
             var extraInfoItemSize = Marshal.SizeOf(typeof(udtPlayerStats));
             var fieldIdx = 0;
+            var flagsByteOffset = 0;
             for(int i = 0; i < 64; ++i)
             {
                 if((data.ValidPlayers & ((ulong)1 << i)) == 0)
@@ -1705,7 +1706,7 @@ namespace Uber.DemoTools
                 {
                     var byteIndex = j / 8;
                     var bitIndex = j % 8;
-                    var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + i * UDT_PLAYER_STATS_MASK_BYTE_COUNT);
+                    var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
                         var field = new DemoStatsField();
@@ -1748,6 +1749,7 @@ namespace Uber.DemoTools
                 }
 
                 extraInfoAddress += extraInfoItemSize;
+                flagsByteOffset += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
             }
 
             // Sort the players by team index. Red comes first.
