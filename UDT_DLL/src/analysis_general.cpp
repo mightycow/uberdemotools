@@ -196,6 +196,10 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		{
 			UpdateGameState(udtGameState::InProgress);
 			++_overTimeCount;
+			if(_mod == udtMod::CPMA && _gameType == udtGameType::CTFS)
+			{
+				_overTimeType = udtOvertimeType::SuddenDeath;
+			}
 		}
 		else if(udtString::ContainsNoCase(index, printMessage, "respawn delay"))
 		{
