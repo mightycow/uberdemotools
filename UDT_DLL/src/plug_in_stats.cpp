@@ -1456,9 +1456,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	{
 		s32 redScore = 0;
 		s32 blueScore = 0;
-		if((_stats.ValidTeams & 1) != 0 &&
+		if((_stats.ValidTeams & 3) == 3 &&
 		   IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
-		   (_stats.ValidTeams & 2) != 0 &&
 		   IsBitSet(GetTeamFlags(1), (s32)udtTeamStatsField::Score))
 		{
 			redScore = GetTeamFields(0)[udtTeamStatsField::Score];
@@ -1477,7 +1476,10 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
 			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
 		}
-		// @TODO: How do we know who is who?
+		else
+		{
+			// @TODO: How do we know who is who?
+		}
 	}
 	else
 	{
@@ -1490,18 +1492,23 @@ void udtParserPlugInStats::AddCurrentStats()
 			if((_stats.ValidPlayers & ((u64)1 << (u64)i)) != 0 &&
 			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
 			{
-				const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
-				if(score > firstPlaceScore)
+				if(_playerStats[i].TeamIndex == 0 ||
+				   (IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
+				    GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == 0))
 				{
-					secondPlaceScore = firstPlaceScore;
-					firstPlaceScore = score;
-					secondPlaceIndex = firstPlaceIndex;
-					firstPlaceIndex = i;
-				}
-				else if(score > secondPlaceScore)
-				{
-					secondPlaceScore = score;
-					secondPlaceIndex = i;
+					const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
+					if(score > firstPlaceScore)
+					{
+						secondPlaceScore = firstPlaceScore;
+						firstPlaceScore = score;
+						secondPlaceIndex = firstPlaceIndex;
+						firstPlaceIndex = i;
+					}
+					else if(score > secondPlaceScore)
+					{
+						secondPlaceScore = score;
+						secondPlaceIndex = i;
+					}
 				}
 			}
 		}
