@@ -1687,6 +1687,7 @@ namespace Uber.DemoTools
                 return;
             }
 
+            var teamIndices = new List<int>();
             var extraInfoAddress = data.PlayerStats.ToInt64();
             var extraInfoItemSize = Marshal.SizeOf(typeof(udtPlayerStats));
             var fieldIdx = 0;
@@ -1707,13 +1708,31 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + i * UDT_PLAYER_STATS_MASK_BYTE_COUNT);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
-                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
-                        var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
                         var field = new DemoStatsField();
-                        var fieldValue = Marshal.ReadInt32(data.PlayerFields, fieldIdx * 4);
-                        field.Key = ProcessStatsFieldName(fieldName);
-                        field.Value = fieldValue.ToString();
-                        field.IntegerValue = fieldValue;
+                        var fieldName = "";
+                        var fieldValue = "";
+                        var fieldIntegerValue = Marshal.ReadInt32(data.PlayerFields, fieldIdx * 4);
+                        if(j == 0) // team index
+                        {
+                            fieldName = "Team";
+                            fieldValue = GetUDTStringForValueOrNull(udtStringArray.Teams, (uint)fieldIntegerValue) ?? "N/A";
+                        }
+                        else if(j == 7) // best weapon
+                        {
+                            fieldName = "Best weapon";
+                            fieldValue = GetUDTStringForValueOrNull(udtStringArray.Weapons, (uint)fieldIntegerValue) ?? "N/A";
+                        }
+                        else
+                        {
+                            var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
+                            fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
+                            fieldName = ProcessStatsFieldName(fieldName);
+                            fieldValue = fieldIntegerValue.ToString();
+                        }
+
+                        field.Key = fieldName;
+                        field.Value = fieldValue;
+                        field.IntegerValue = fieldIntegerValue;
                         field.FieldBitIndex = j;
                         field.ComparisonMode = (udtStatsCompMode)Marshal.ReadByte(fieldCompModes, j);
                         playerStats.Fields.Add(field);
@@ -1725,10 +1744,18 @@ namespace Uber.DemoTools
                 if(extraInfo.TeamIndex != 3)
                 {
                     stats.PlayerStats.Add(playerStats);
+                    teamIndices.Add(extraInfo.TeamIndex);
                 }
 
                 extraInfoAddress += extraInfoItemSize;
             }
+
+            // Sort the players by team index. Red comes first.
+            for(var i = 0; i < stats.PlayerStats.Count; ++i)
+            {
+                stats.PlayerStats[i].Index = i;
+            }
+            stats.PlayerStats.Sort((a, b) => teamIndices[a.Index] - teamIndices[b.Index]);
         }
 
         private static string CapitalizeString(string s)

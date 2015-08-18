@@ -22,6 +22,7 @@ namespace Uber.DemoTools
     {
         public string Name = "N/A"; // What should be used as a column header.
         public readonly List<DemoStatsField> Fields = new List<DemoStatsField>();
+        public int Index = 0; // Used for sorting the groups...
     }
 
     public class DemoStatsInfo
@@ -335,19 +336,12 @@ namespace Uber.DemoTools
             rootPanel.Children.Add(_noStatsPanel);
             rootPanel.Children.Add(_statsPanel);
 
-            var statsGroupBox = new GroupBox();
-            statsGroupBox.Header = "Scores and Stats";
-            statsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            statsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
-            statsGroupBox.Margin = new Thickness(5);
-            statsGroupBox.Content = rootPanel;
-
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
             scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            scrollViewer.Content = statsGroupBox;
+            scrollViewer.Content = rootPanel;
 
             return scrollViewer; 
         }
@@ -449,7 +443,7 @@ namespace Uber.DemoTools
             columnKey.DisplayMemberBinding = new Binding("Key");
 
             var gridView = new GridView();
-            gridView.AllowsColumnReorder = false;
+            gridView.AllowsColumnReorder = true;
             gridView.Columns.Add(columnKey);
 
             var listView = new DemoInfoListView();
