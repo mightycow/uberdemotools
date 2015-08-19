@@ -1251,7 +1251,6 @@ extern "C"
 		// The player's client numbers will correspond to the indices of the bits set in ValidPlayers.
 		const udtPlayerStats* PlayerStats;
 
-		// @TODO: Remove and add to the game states analyzer.
 		// NULL if nothing was found.
 		const char* ModVersion;
 
@@ -1264,6 +1263,12 @@ extern "C"
 		// Name of the second place player or team name.
 		const char* SecondPlaceName;
 
+		// Custom red team name or NULL if not available.
+		const char* CustomRedName;
+
+		// Custom blue team name or NULL if not available.
+		const char* CustomBlueName;
+
 		// Ignore this.
 		const u8* Reserved1;
 
@@ -1274,7 +1279,6 @@ extern "C"
 		// The duration of the match.
 		u32 MatchDurationMs;
 
-		// @TODO: Remove and add to the game states analyzer.
 		// Of type udtMod::Id.
 		u32 Mod;
 

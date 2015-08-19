@@ -253,6 +253,18 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		udtVMScopedStackAllocator allocatorScope(*TempAllocator);
 		ParseConfigStringValueInt(_cpmaScoreRed, *TempAllocator, "sr", configString.String);
 		ParseConfigStringValueInt(_cpmaScoreBlue, *TempAllocator, "sb", configString.String);
+
+		udtString redTeamName, blueTeamName;
+		if(ParseConfigStringValueString(redTeamName, *TempAllocator, "nr", configString.String) &&
+		   redTeamName.Length != 0)
+		{
+			_stats.CustomRedName = udtString::NewCleanCloneFromRef(_allocator, _protocol, redTeamName).String;
+		}
+		if(ParseConfigStringValueString(blueTeamName, *TempAllocator, "nb", configString.String) &&
+		   blueTeamName.Length != 0)
+		{
+			_stats.CustomBlueName = udtString::NewCleanCloneFromRef(_allocator, _protocol, blueTeamName).String;
+		}
 	}
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
 	{

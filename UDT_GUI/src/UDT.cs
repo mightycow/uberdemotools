@@ -446,6 +446,8 @@ namespace Uber.DemoTools
 		    public IntPtr Map; // const char*
             public IntPtr FirstPlaceName; // const char*
             public IntPtr SecondPlaceName; // const char*
+            public IntPtr CustomRedName; // const char*
+            public IntPtr CustomBlueName; // const char*
             public IntPtr Reserved1;
 		    public UInt32 GameType;
 		    public UInt32 MatchDurationMs;
@@ -1582,8 +1584,19 @@ namespace Uber.DemoTools
             var name1 = SafeGetUTF8String(data.FirstPlaceName);
             var name2 = SafeGetUTF8String(data.SecondPlaceName);
             var finalScore = string.Format("{0} {1} : {2} {3}", name1, data.FirstPlaceScore, data.SecondPlaceScore, name2);
+            stats.AddGenericField("Final score", finalScore);
 
-            stats.AddGenericField("Final Score", finalScore);
+            var redTeamName = data.CustomRedName != IntPtr.Zero ? Marshal.PtrToStringAnsi(data.CustomRedName) : null;
+            var blueTeamName = data.CustomBlueName != IntPtr.Zero ? Marshal.PtrToStringAnsi(data.CustomBlueName) : null;
+            if(redTeamName != null)
+            {
+                stats.AddGenericField("Red team name", redTeamName);
+            }
+            if(blueTeamName != null)
+            {
+                stats.AddGenericField("Blue team name", blueTeamName);
+            }
+
             stats.AddGenericField("Mod", GetUDTStringForValueOrNull(udtStringArray.ModNames, data.Mod));
             if(data.Mod != 0)
             {
@@ -1643,6 +1656,20 @@ namespace Uber.DemoTools
             {
                 var teamStats = new StatsInfoGroup();
                 teamStats.Name = i == 0 ? "RED" : "BLUE";
+
+                var customTeamNameAddress = i == 0 ? data.CustomRedName : data.CustomBlueName;
+                var customTeamName = customTeamNameAddress != IntPtr.Zero ? Marshal.PtrToStringAnsi(customTeamNameAddress) : null;
+                if(customTeamName != null)
+                {
+                    var customNameField = new DemoStatsField();
+                    customNameField.Key = "Custom name";
+                    customNameField.Value = customTeamName;
+                    customNameField.FieldBitIndex = -1;
+                    customNameField.IntegerValue = -1;
+                    customNameField.ComparisonMode = udtStatsCompMode.NeitherWins;
+                    teamStats.Fields.Add(customNameField);
+                }
+
                 for(int j = 0; j < UDT_TEAM_STATS_FIELD_COUNT; ++j)
                 {
                     var byteIndex = j / 8;
