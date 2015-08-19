@@ -278,12 +278,28 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 
 void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s32 playerIndex)
 {
-	if(configString == NULL)
+	if(configString == NULL || *configString == '\0')
 	{
+		// Player disconnected, invalidate all fields.
+		_playerTeamIndices[playerIndex] = -1;
+		_playerStats[playerIndex].Name = NULL;
+		_playerStats[playerIndex].CleanName = NULL;
 		return;
 	}
 
 	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	udtString cpmaModel, cpmaName;
+	if(_analyzer.Mod() == udtMod::CPMA &&
+	   ParseConfigStringValueString(cpmaModel, *TempAllocator, "model", configString) &&
+	   udtString::IsNullOrEmpty(cpmaModel) &&
+	   ParseConfigStringValueString(cpmaName, *TempAllocator, "n", configString) &&
+	   udtString::Equals(cpmaName, "UnnamedPlayer"))
+	{
+		// In a duel demo I have, a new player appears in team free when there's already 2 players there,
+		// which is impossible. Not sure if this is CPMA specific.
+		return;
+	}
 
 	s32 teamIndex = -1;
 	if(ParseConfigStringValueInt(teamIndex, *TempAllocator, "t", configString))
@@ -1552,9 +1568,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			if((_stats.ValidPlayers & ((u64)1 << (u64)i)) != 0 &&
 			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
 			{
-				if(_playerTeamIndices[i] == (s32)udtTeam::Free ||
-				   (IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
-				    GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == 0))
+				if(IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
+				   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == (s32)udtTeam::Free)
 				{
 					const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
 					if(score > firstPlaceScore)
