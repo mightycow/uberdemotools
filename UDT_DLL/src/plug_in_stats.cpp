@@ -204,6 +204,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores", ParseScores),
 		HANDLER("dscores", ParseQLScoresDuelOld),
 		HANDLER("xstats2", ParseCPMAXStats2),
+		HANDLER("mstats", ParseCPMAMStats),
 		HANDLER("xscores", ParseCPMAXScores),
 		HANDLER("dmscores", ParseCPMADMScores),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
@@ -910,9 +911,16 @@ void udtParserPlugInStats::ParseQ3ScoresDM3()
 	}
 }
 
-void udtParserPlugInStats::ParseCPMAXStats2()
+void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 {
 	if(_tokenizer->GetArgCount() < 3)
+	{
+		return;
+	}
+
+	if(!endGameStats && 
+	   _analyzer.Forfeited() && 
+	   GetValue(2) == 0)
 	{
 		return;
 	}
@@ -1013,6 +1021,16 @@ void udtParserPlugInStats::ParseCPMAXStats2()
 	}
 
 	ParsePlayerFields(clientNumber, playerFields1, (s32)UDT_COUNT_OF(playerFields1), offset);
+}
+
+void udtParserPlugInStats::ParseCPMAXStats2()
+{
+	ParseCPMAStats(true);
+}
+
+void udtParserPlugInStats::ParseCPMAMStats()
+{
+	ParseCPMAStats(false);
 }
 
 void udtParserPlugInStats::ParseCPMAXScores()

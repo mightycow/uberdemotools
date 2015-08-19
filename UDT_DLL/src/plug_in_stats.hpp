@@ -56,7 +56,9 @@ private:
 	void ParseQLScoresDuelOld();
 	void ParseQ3Scores();
 	void ParseQ3ScoresDM3();
+	void ParseCPMAStats(bool endGameStats);
 	void ParseCPMAXStats2();
+	void ParseCPMAMStats();
 	void ParseCPMAXScores();
 	void ParseCPMADMScores();
 	void ParseQLScoresTDMVeryOld();
