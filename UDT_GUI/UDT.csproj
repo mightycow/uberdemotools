@@ -104,6 +104,7 @@
     <Compile Include="src\UDT.cs" />
     <Compile Include="src\WpfHelper.cs" />
     <Compile Include="src\Tuple.cs" />
+	<Compile Include="src\ListHelper.cs" />
     <Compile Include="src\PinnedObject.cs" />
     <Compile Include="src\AppChatEvents.cs" />
     <Compile Include="src\AppTimeCut.cs" />
