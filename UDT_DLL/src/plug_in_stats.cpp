@@ -1000,6 +1000,13 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 			ParsePlayerFields(clientNumber, weaponFields[i], (s32)UDT_COUNT_OF(weaponFields[i]), offset);
 			offset += 6;
 		}
+		else
+		{
+			for(s32 j = 0; j < (s32)UDT_COUNT_OF(weaponFields[i]); ++j)
+			{
+				SetPlayerField(clientNumber, (udtPlayerStatsField::Id)weaponFields[i][j].Index, 0);
+			}
+		}
 	}
 
 	ParsePlayerFields(clientNumber, playerFields0, (s32)UDT_COUNT_OF(playerFields0), offset);
@@ -1272,6 +1279,10 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 	{
 		if((weaponMask & (1 << i)) == 0)
 		{
+			for(s32 j = 0; j < (s32)UDT_COUNT_OF(weaponFieldIndices[i]); ++j)
+			{
+				SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)weaponFieldIndices[i][j], 0);
+			}
 			continue;
 		}
 
