@@ -1841,7 +1841,7 @@ namespace Uber.DemoTools
 
         private static string ProcessStatsFieldName(string name)
         {
-            return CapitalizeString(name).Replace("possession", "poss.");
+            return CapitalizeString(name.Replace("bfg", "BFG").Replace("possession", "poss."));
         }
 
         private static void PrintExecutionTime(Stopwatch timer)
