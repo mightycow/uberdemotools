@@ -257,6 +257,10 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		ProcessCPMAGameInfoConfigString(configString);
 	}
+	else if(_game == udtGame::CPMA && csIndex == CS_CPMA_ROUND_INFO)
+	{
+		ProcessCPMARoundInfoConfigString(configString);
+	}
 	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 	{
 		UpdateMatchStartTime();
@@ -510,6 +514,23 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		{
 			_matchEndTime = _parser->_inServerTime;
 		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessCPMARoundInfoConfigString(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	s32 score = 0;
+	if((ParseConfigStringValueInt(score, *_tempAllocator, "sr", configString) && score == -9999) ||
+	   (ParseConfigStringValueInt(score, *_tempAllocator, "sb", configString) && score == -9999))
+	{
+		_forfeited = true;
 	}
 }
 

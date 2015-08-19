@@ -59,6 +59,7 @@ private:
 	void ProcessMapNameOnce();
 	void ProcessQ3ServerInfoConfigStringOnce(const char* configString);
 	void ProcessCPMAGameInfoConfigString(const char* configString);
+	void ProcessCPMARoundInfoConfigString(const char* configString);
 	void ProcessQLServerInfoConfigString(const char* configString);
 	void ProcessIntermissionConfigString(const udtString& configString);
 	void ProcessGameTypeFromServerInfo(const char* configString);
