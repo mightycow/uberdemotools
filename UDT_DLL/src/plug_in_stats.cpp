@@ -154,8 +154,9 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
+	// So we add stats when a match starts (that isn't the first one) or the demo ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
-	if(_analyzer.HasMatchJustStarted())
+	if(_analyzer.HasMatchJustStarted() && _gameEnded)
 	{
 		_gameEnded = false;
 		AddCurrentStats();
@@ -1335,12 +1336,23 @@ void udtParserPlugInStats::AddCurrentStats()
 
 	for(s32 i = 0; i < 64; ++i)
 	{
+		// Fix the weapon index.
 		s32& bestWeapon = GetPlayerFields(i)[udtPlayerStatsField::BestWeapon];
 		bestWeapon = GetUDTWeaponFromIdWeapon(bestWeapon, _protocol);
 		if(bestWeapon == -1)
 		{
 			bestWeapon = (s32)udtWeapon::Gauntlet;
+		
 		}
+		
+		// Fix the team index when needed and possible.
+		if(!IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
+		   _playerStats[i].TeamIndex != -1)
+		{
+			SetBit(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex);
+			GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] = _playerStats[i].TeamIndex;
+		}
+		
 		ComputePlayerAccuracies(i);
 	}
 

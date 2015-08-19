@@ -1759,22 +1759,6 @@ namespace Uber.DemoTools
                 stats.PlayerStats[i].Index = i;
             }
             stats.PlayerStats.Sort((a, b) => teamIndices[a.Index] - teamIndices[b.Index]);
-
-            // Make sure we specify the team for every player.
-            foreach(var player in stats.PlayerStats)
-            {
-                if(player.Fields.FindIndex(f => f.FieldBitIndex == 0) < 0)
-                {
-                    var teamIndex = player.TeamIndex;
-                    var newField = new DemoStatsField();
-                    newField.Key = "Team";
-                    newField.Value = GetUDTStringForValueOrNull(udtStringArray.Teams, (uint)teamIndex) ?? "N/A";
-                    newField.IntegerValue = teamIndex;
-                    newField.FieldBitIndex = 0;
-                    newField.ComparisonMode = udtStatsCompMode.NeitherWins;
-                    player.Fields.Insert(0, newField);
-                }
-            }
         }
 
         private static string CapitalizeString(string s)
