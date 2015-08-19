@@ -101,6 +101,7 @@ private:
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;
 	udtPlayerStats _playerStats[64];
+	s32 _playerTeamIndices[64];
 	s32 _playerFields[64][udtPlayerStatsField::Count];
 	s32 _teamFields[2][udtTeamStatsField::Count];
 	u8 _playerFlags[64][UDT_PLAYER_STATS_MASK_BYTE_COUNT];

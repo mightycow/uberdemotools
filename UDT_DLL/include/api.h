@@ -1219,14 +1219,6 @@ extern "C"
 		// This version has color codes stripped out for clarity.
 		// May be NULL.
 		const char* CleanName;
-
-		// The index of the player's team.
-		// Of type udtTeam::Id.
-		// Defaults to -1 when invalid or uninitialized.
-		s32 TeamIndex;
-
-		// Ignore this.
-		s32 Reserved1;
 	};
 
 	struct udtParseDataStats

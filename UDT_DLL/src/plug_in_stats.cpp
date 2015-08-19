@@ -276,7 +276,7 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 	s32 teamIndex = -1;
 	if(ParseConfigStringValueInt(teamIndex, *TempAllocator, "t", configString))
 	{
-		_playerStats[playerIndex].TeamIndex = teamIndex;
+		_playerTeamIndices[playerIndex] = teamIndex;
 	}
 
 	udtString clan, name;
@@ -1352,9 +1352,9 @@ void udtParserPlugInStats::AddCurrentStats()
 		
 		// Fix the team index when needed and possible.
 		if(!IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
-		   _playerStats[i].TeamIndex != -1)
+		   _playerTeamIndices[i] != -1)
 		{
-			SetPlayerField(i, udtPlayerStatsField::TeamIndex, _playerStats[i].TeamIndex);
+			SetPlayerField(i, udtPlayerStatsField::TeamIndex, _playerTeamIndices[i]);
 		}
 		
 		ComputePlayerAccuracies(i);
@@ -1540,7 +1540,7 @@ void udtParserPlugInStats::AddCurrentStats()
 			if((_stats.ValidPlayers & ((u64)1 << (u64)i)) != 0 &&
 			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
 			{
-				if(_playerStats[i].TeamIndex == 0 ||
+				if(_playerTeamIndices[i] == (s32)udtTeam::Free ||
 				   (IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
 				    GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == 0))
 				{
@@ -1634,7 +1634,7 @@ void udtParserPlugInStats::ClearStats()
 	_stats.GameType = (u32)udtGameType::Invalid;
 	for(s32 i = 0; i < 64; ++i)
 	{
-		_playerStats[i].TeamIndex = -1;
+		_playerTeamIndices[i] = -1;
 	}
 }
 

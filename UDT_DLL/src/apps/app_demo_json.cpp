@@ -73,6 +73,16 @@ static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
 	return strings[value];
 }
 
+static void WriteUDTWeapon(udtJSONWriter& writer, s32 udtWeaponIndex, const char* keyName = "weapon")
+{
+	if(keyName == NULL)
+	{
+		return;
+	}
+
+	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Weapons, (u32)udtWeaponIndex));
+}
+
 static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const char* keyName = "team")
 {
 	if(keyName == NULL)
@@ -142,10 +152,7 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPl
 	writer.WriteIntValue("client number", clientNumber);
 	writer.WriteStringValue("name", stats.Name);
 	writer.WriteStringValue("clean name", stats.CleanName);
-	WriteUDTTeamIndex(writer, stats.TeamIndex);
 
-	const char** weaponNames = NULL;
-	u32 weaponCount = 0;
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
 	{
@@ -154,15 +161,19 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPl
 		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
 			const s32 field = fields[fieldIdx++];
-			if(i == (s32)udtPlayerStatsField::BestWeapon && 
-			   udtGetStringArray(udtStringArray::Weapons, &weaponNames, &weaponCount) == (s32)udtErrorCode::None &&
-			   field >= 0 && field < (s32)weaponCount)
+			switch((udtPlayerStatsField::Id)i)
 			{
-				writer.WriteStringValue(PlayerStatsFieldNames[i], weaponNames[field]);
-			}
-			else
-			{
-				writer.WriteIntValue(PlayerStatsFieldNames[i], field);
+				case udtPlayerStatsField::BestWeapon: 
+					WriteUDTWeapon(writer, field, "best weapon"); 
+					break;
+
+				case udtPlayerStatsField::TeamIndex: 
+					WriteUDTTeamIndex(writer, field); 
+					break;
+
+				default: 
+					writer.WriteIntValue(PlayerStatsFieldNames[i], field); 
+					break;
 			}
 		}
 	}

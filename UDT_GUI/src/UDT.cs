@@ -430,8 +430,6 @@ namespace Uber.DemoTools
 	    {
 		    public IntPtr Name; // const char*
 		    public IntPtr CleanName; // const char*
-		    public Int32 TeamIndex;
-            public Int32 Reserved1;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
