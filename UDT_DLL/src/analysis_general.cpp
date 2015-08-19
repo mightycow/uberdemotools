@@ -55,6 +55,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_gameStateIndex = -1;
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
+	_prevMatchStartTime = S32_MIN;
 	_overTimeCount = 0;
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
@@ -130,7 +131,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
-		_matchStartTime = GetLevelStartTime();
+		UpdateMatchStartTime();
 		const s32 warmUpEndTime = GetWarmUpEndTime();
 		const bool noIntermission = !IsIntermission();
 		const bool noWarmUpEndTime = warmUpEndTime == S32_MIN || warmUpEndTime < _matchStartTime;
@@ -220,7 +221,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 			_mercyLimited = true;
 		}
 	}
-
+	
 	if(_game != udtGame::CPMA &&
 	   tokenizer.GetArgCount() == 1 &&
 	   udtString::Equals(command, "map_restart"))
@@ -228,10 +229,10 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 		UpdateGameState(udtGameState::InProgress);
 		if(HasMatchJustStarted())
 		{
-			_matchStartTime = GetLevelStartTime();
+			UpdateMatchStartTime();
 		}
 	}
-
+	
 	s32 csIndex = 0;
 	if(tokenizer.GetArgCount() != 3 || 
 	   !udtString::Equals(command, "cs") || 
@@ -258,13 +259,13 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	}
 	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 	{
-		_matchStartTime = GetLevelStartTime();
+		UpdateMatchStartTime();
 	}
 	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
 	{
 		if(_timeOutCount == 0 && !_timeOut)
 		{
-			_matchStartTime = GetLevelStartTime();
+			UpdateMatchStartTime();
 		}
 		else if(!_serverPause)
 		{
@@ -316,7 +317,7 @@ bool udtGeneralAnalyzer::IsMatchInProgress() const
 
 s32 udtGeneralAnalyzer::MatchStartTime() const
 {
-	return _matchStartTime;
+	return (_matchStartTime < _matchEndTime) ? _matchStartTime : _prevMatchStartTime;
 }
 
 s32 udtGeneralAnalyzer::MatchEndTime() const
@@ -494,6 +495,7 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		UpdateGameState(udtGameState::InProgress);
 		if(_matchStartTime == S32_MIN)
 		{
+			_prevMatchStartTime = _matchStartTime;
 			_matchStartTime = ts;
 		}
 	}
@@ -551,7 +553,7 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 		UpdateGameState(udtGameState::InProgress);
 		if(HasMatchJustStarted())
 		{
-			_matchStartTime = GetLevelStartTime();
+			UpdateMatchStartTime();
 		}
 	}
 }
@@ -846,4 +848,14 @@ bool udtGeneralAnalyzer::IsIntermission()
 	const udtString configString = udtString::NewConstRef(cs->String, cs->StringLength);
 
 	return udtString::EqualsNoCase(configString, "1") || udtString::EqualsNoCase(configString, "qtrue");
+}
+
+void udtGeneralAnalyzer::UpdateMatchStartTime()
+{
+	const s32 newStartTime = GetLevelStartTime();
+	if(_matchEndTime == S32_MIN || newStartTime < _matchEndTime)
+	{
+		_prevMatchStartTime = _matchStartTime;
+		_matchStartTime = newStartTime;
+	}
 }

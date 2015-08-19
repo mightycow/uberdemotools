@@ -70,6 +70,7 @@ private:
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
+	void UpdateMatchStartTime();
 
 	udtVMLinearAllocator _stringAllocator;
 	udtBaseParser* _parser;
@@ -79,6 +80,7 @@ private:
 	s32 _gameStateIndex;
 	s32 _matchStartTime;
 	s32 _matchEndTime;
+	s32 _prevMatchStartTime;
 	u32 _overTimeCount;
 	u32 _timeOutCount;
 	s32 _totalTimeOutDuration;
