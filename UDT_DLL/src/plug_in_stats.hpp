@@ -90,6 +90,12 @@ private:
 		SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), fields, fieldCount);
 	}
 
+	void SetPlayerField(s32 clientNumber, udtPlayerStatsField::Id fieldId, s32 value)
+	{
+		const udtStatsFieldValue field = { (s32)fieldId, value };
+		SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), &field, 1);
+	}
+
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.

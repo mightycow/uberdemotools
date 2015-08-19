@@ -1026,8 +1026,7 @@ void udtParserPlugInStats::ParseCPMAXScores()
 			{
 				// It seems that 3-4 and 5-6 give the low and high values of the ping range.
 				const s32 ping = 32 * CPMACharToInt(textField.String[2]) + CPMACharToInt(textField.String[3]);
-				GetPlayerFields(clientNumber)[udtPlayerStatsField::Ping] = ping;
-				SetBit(GetPlayerFlags(clientNumber), (s32)udtPlayerStatsField::Ping);
+				SetPlayerField(clientNumber, udtPlayerStatsField::Ping, ping);
 			}
 		}
 
@@ -1334,6 +1333,12 @@ void udtParserPlugInStats::AddCurrentStats()
 
 	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime() - _analyzer.TotalTimeOutDuration());
 
+	if(_stats.GameType == udtGameType::Invalid &&
+	   _analyzer.GameType() != udtGameType::Invalid)
+	{
+		_stats.GameType = _analyzer.GameType();
+	}
+
 	for(s32 i = 0; i < 64; ++i)
 	{
 		// Fix the weapon index.
@@ -1349,17 +1354,47 @@ void udtParserPlugInStats::AddCurrentStats()
 		if(!IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
 		   _playerStats[i].TeamIndex != -1)
 		{
-			SetBit(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex);
-			GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] = _playerStats[i].TeamIndex;
+			SetPlayerField(i, udtPlayerStatsField::TeamIndex, _playerStats[i].TeamIndex);
 		}
 		
 		ComputePlayerAccuracies(i);
 	}
 
-	if(_stats.GameType == udtGameType::Invalid && 
-	   _analyzer.GameType() != udtGameType::Invalid)
+	// Make sure damage given and damage received are defined for both players in a duel.
+	if((udtGameType::Id)_stats.GameType == udtGameType::Duel)
 	{
-		_stats.GameType = _analyzer.GameType();
+		s32 playerIndices[2] = { -1, -1 };
+		s32 playersFound = 0;
+		for(s32 i = 0; i < 64; ++i)
+		{
+			if(IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
+			   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == (s32)udtTeam::Free)
+			{
+				playerIndices[playersFound++] = i;
+				if(playersFound == 2)
+				{
+					break;
+				}
+			}
+		}
+
+		if(playersFound == 2)
+		{
+			for(s32 i = 0; i < 2; ++i)
+			{
+				s32& damageGiven = GetPlayerFields(playerIndices[i])[udtPlayerStatsField::DamageGiven];
+				if(damageGiven > 0)
+				{
+					SetPlayerField(playerIndices[i ^ 1], udtPlayerStatsField::DamageReceived, damageGiven);
+				}
+
+				s32& damageReceived = GetPlayerFields(playerIndices[i])[udtPlayerStatsField::DamageReceived];
+				if(damageReceived > 0)
+				{
+					SetPlayerField(playerIndices[i ^ 1], udtPlayerStatsField::DamageGiven, damageReceived);
+				}
+			}
+		}
 	}
 
 	for(u32 i = 0; i < 2; ++i)
