@@ -212,6 +212,7 @@ namespace Uber.DemoTools
 
                 var boldIndex = -1;
                 var extremeValue = field.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins ? int.MinValue : int.MaxValue;
+                var playerCountWithThatField = 0;
                 for(var j = 0; j < playerCount; ++j)
                 {
                     field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
@@ -219,6 +220,8 @@ namespace Uber.DemoTools
                     {
                         continue;
                     }
+
+                    ++playerCountWithThatField;
 
                     info.Values[j] = field.Value;
 
@@ -239,7 +242,7 @@ namespace Uber.DemoTools
                     }                    
                 }
 
-                if(boldIndex != -1)
+                if(playerCountWithThatField > 1 && boldIndex != -1)
                 {
                     info.ValueFontWeights[boldIndex] = FontWeights.Bold;
                 }
