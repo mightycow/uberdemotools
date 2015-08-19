@@ -1687,7 +1687,6 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var teamIndices = new List<int>();
             var extraInfoAddress = data.PlayerStats.ToInt64();
             var extraInfoItemSize = Marshal.SizeOf(typeof(udtPlayerStats));
             var fieldIdx = 0;
@@ -1737,28 +1736,67 @@ namespace Uber.DemoTools
                         field.FieldBitIndex = j;
                         field.ComparisonMode = (udtStatsCompMode)Marshal.ReadByte(fieldCompModes, j);
                         playerStats.Fields.Add(field);
-                        playerStats.TeamIndex = extraInfo.TeamIndex;
                         ++fieldIdx;
                     }
                 }
 
+                var teamIndexField = playerStats.Fields.Find(f => f.FieldBitIndex == 0);
+                var teamIndex = teamIndexField != null ? teamIndexField.IntegerValue : -1;
+                playerStats.TeamIndex = teamIndex;
+
                 // Get rid of spectators.
-                if(extraInfo.TeamIndex != 3)
+                if(teamIndex != 3)
                 {
                     stats.PlayerStats.Add(playerStats);
-                    teamIndices.Add(extraInfo.TeamIndex);
                 }
 
                 extraInfoAddress += extraInfoItemSize;
                 flagsByteOffset += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
             }
-
-            // Sort the players by team index. Red comes first.
+            
+            var highestFieldCount = 0;
+            var highestFieldCountIndex = -1;
+            var highestFieldCountTeam = -1;
             for(var i = 0; i < stats.PlayerStats.Count; ++i)
             {
-                stats.PlayerStats[i].Index = i;
+                var fieldCount = stats.PlayerStats[i].Fields.Count;
+                if(fieldCount > highestFieldCount)
+                {
+                    var teamIndexField = stats.PlayerStats[i].Fields.Find(f => f.FieldBitIndex == 0);
+                    highestFieldCount = fieldCount;
+                    highestFieldCountIndex = i;
+                    highestFieldCountTeam = teamIndexField != null ? teamIndexField.IntegerValue : -1;
+                }
+                else if(fieldCount == highestFieldCount)
+                {
+                    highestFieldCountIndex = -1;
+                }
             }
-            stats.PlayerStats.Sort((a, b) => teamIndices[a.Index] - teamIndices[b.Index]);
+
+            if(highestFieldCountIndex != -1 &&
+                highestFieldCountTeam != -1 &&
+                highestFieldCountIndex != 0)
+            {
+                var a = highestFieldCountIndex;
+                var b = 0;
+                var temp = stats.PlayerStats[a];
+                stats.PlayerStats[a] = stats.PlayerStats[b];
+                stats.PlayerStats[b] = temp;
+            }
+            
+            //
+            // Sort the players by team index.
+            // Red comes first unless a blue player has more stats than the others.
+            //
+
+            if(highestFieldCountTeam == 2)
+            {
+                stats.PlayerStats.StableSort((a, b) => b.TeamIndex - a.TeamIndex);
+            }
+            else
+            {
+                stats.PlayerStats.StableSort((a, b) => a.TeamIndex - b.TeamIndex);
+            }
         }
 
         private static string CapitalizeString(string s)
