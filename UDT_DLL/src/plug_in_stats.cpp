@@ -153,6 +153,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
+	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
 	if(_analyzer.HasMatchJustStarted())
 	{
@@ -171,23 +172,19 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	}
 
 	const udtString commandName = _tokenizer->GetArg(0);
-	if(udtString::Equals(commandName, "cs"))
+	s32 csIndex = -1;
+	if(_tokenizer->GetArgCount() == 3 && 
+	   udtString::Equals(commandName, "cs") &&
+	   StringParseInt(csIndex, _tokenizer->GetArgString(1)))
 	{
-		if(_tokenizer->GetArgCount() == 3)
-		{
-			s32 csIndex = -1;
-			if(sscanf(_tokenizer->GetArgString(1), "%d", &csIndex) == 1)
-			{
-				ProcessConfigString(csIndex, _tokenizer->GetArg(2));
-			}
-		}
+		ProcessConfigString(csIndex, _tokenizer->GetArg(2));
 	}
 
-	if(_analyzer.IsMatchInProgress() || !_gameEnded)
-	{
-		return;
-	}
-	
+	// For some demos we don't have more commands when the match is over.
+	// We just decide that incomplete data is better than no data at all.
+	// If that changes, we can uncomment the following line again.
+	//if(_analyzer.IsMatchInProgress() || !_gameEnded) return;
+
 	struct CommandHandler
 	{
 		typedef void (udtParserPlugInStats::*MemberFunction)();
@@ -1478,7 +1475,11 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		else
 		{
-			// @TODO: How do we know who is who?
+			// @TODO: How do we know if first place is red or blue?
+			_stats.FirstPlaceScore = S32_MIN;
+			_stats.SecondPlaceScore = S32_MIN;
+			_stats.FirstPlaceName = NULL;
+			_stats.SecondPlaceName = NULL;
 		}
 	}
 	else
