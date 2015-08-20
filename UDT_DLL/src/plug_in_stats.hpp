@@ -41,7 +41,7 @@ private:
 	void SetFields(u8* destMask, s32* destFields, const udtStatsFieldValue* fields, s32 fieldCount);
 	s64  CreateBitMask(const udtStatsField* fields, s32 fieldCount);
 	void AddCurrentStats();
-	void ClearStats();
+	void ClearStats(bool newGameState = false);
 	void ProcessConfigString(s32 csIndex, const udtString& configString);
 	void ProcessPlayerConfigString(const char* configString, s32 playerIndex);
 	bool GetClientNumberFromScoreIndex(s32& clientNumber, s32 fieldIndex);
