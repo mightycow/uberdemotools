@@ -18,6 +18,7 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
+	void ResetForNextMatch();
 	bool HasMatchJustStarted() const;
 	bool HasMatchJustEnded() const;
 	bool IsMatchInProgress() const;

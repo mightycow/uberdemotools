@@ -128,6 +128,13 @@ void udtParserPlugInStats::FinishDemoAnalysis()
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
+	if(_analyzer.GameStateIndex() >= 1 && 
+	   !_analyzer.IsMatchInProgress() && 
+	   _gameEnded)
+	{
+		AddCurrentStats();
+	}
+
 	_analyzer.ProcessGamestateMessage(arg, parser);
 
 	_tokenizer = &parser._context->Tokenizer;
@@ -161,6 +168,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		_gameEnded = false;
 		AddCurrentStats();
 		_analyzer.SetInProgress();
+		_analyzer.ResetForNextMatch();
 	}
 	else if(_analyzer.HasMatchJustEnded())
 	{

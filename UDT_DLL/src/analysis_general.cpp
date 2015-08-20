@@ -303,6 +303,18 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	}
 }
 
+void udtGeneralAnalyzer::ResetForNextMatch()
+{
+	_overTimeCount = 0;
+	_timeOutCount = 0;
+	_totalTimeOutDuration = 0;
+	_overTimeType = udtOvertimeType::Timed;
+	_forfeited = false;
+	_timeOut = false;
+	_mercyLimited = false;
+	_serverPause = false;
+}
+
 bool udtGeneralAnalyzer::HasMatchJustStarted() const
 {
 	return _lastGameState != udtGameState::InProgress && _gameState == udtGameState::InProgress;
