@@ -420,6 +420,8 @@ struct udtStatsCompMode
 	N(Suicides, "suicides", SmallerWins) \
 	N(DamageGiven, "damage given", BiggerWins) \
 	N(DamageReceived, "damage received", SmallerWins) \
+	N(ArmorTaken, "armor taken", BiggerWins) \
+	N(HealthTaken, "health taken", BiggerWins) \
 	N(Captures, "captures", BiggerWins) \
 	N(Defends, "defends", BiggerWins) \
 	N(Assists, "assists", BiggerWins) \
@@ -541,9 +543,7 @@ struct udtStatsCompMode
 	N(HeavyMachineGunShots, "heavy machinegun shots", BiggerWins) \
 	N(HeavyMachineGunHits, "heavy machinegun hits", BiggerWins) \
 	N(HeavyMachineGunDamage, "heavy machinegun damage", BiggerWins) \
-	N(HeavyMachineGunDrops, "heavy machinegun drops", SmallerWins) \
-	N(ArmorTaken, "armor taken", BiggerWins) \
-	N(HealthTaken, "health taken", BiggerWins)
+	N(HeavyMachineGunDrops, "heavy machinegun drops", SmallerWins)
 
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp) Enum,
 struct udtPlayerStatsField
