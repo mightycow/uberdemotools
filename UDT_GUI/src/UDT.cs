@@ -1769,8 +1769,8 @@ namespace Uber.DemoTools
                 var teamIndex = teamIndexField != null ? teamIndexField.IntegerValue : -1;
                 playerStats.TeamIndex = teamIndex;
 
-                // Get rid of spectators.
-                if(teamIndex != 3)
+                // Get rid of spectators and players without a team.
+                if(teamIndex >= 0 && teamIndex < 3)
                 {
                     stats.PlayerStats.Add(playerStats);
                 }
