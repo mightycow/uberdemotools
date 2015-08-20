@@ -4,6 +4,10 @@
 
 
 /*
+=================
+Match starts/ends
+=================
+
 CPMA:
 - CS_CPMA_GAME_INFO: tw  -1 means in warm-up           --> ts last restart time --- if ts is 0, the match countdown is starting
 - CS_CPMA_GAME_INFO: tw   0 means in match             --> ts match start time
@@ -22,12 +26,24 @@ Quake Live:
 - cs 0 > g_gameState PRE_GAME COUNT_DOWN IN_PROGRESS
 - When a match starts: map_restart is called, g_gameState is set to IN_PROGRESS in cs 0 and CS_LEVEL_START_TIME holds the exact start time
 - When a match ends  : CS_INTERMISSION is set to "1" or "qtrue"
-*/
 
-/*
+=========
+Time-outs
+=========
+
 CPMA:
 - CS_CPMA_GAME_INFO: te    0 means not in time-out --> td last time-out's duration
 - CS_CPMA_GAME_INFO: te != 0 means in time-out     --> te time-out start time
+
+======
+Scores
+======
+
+CPMA:
+- Non-team modes: sb is 1st place score, sr is 2nd place score
+- Non-team modes: 1st and 2nd place client numbers are given by the dmscores command
+- Duel: during the match, the score is sent via the round info CS and when it ends the game info CS
+- Duel: when a player forfeits by going to the spectators team, his round score is set to -9999
 */
 
 
@@ -185,7 +201,8 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 	{
 		u32 index = 0;
 		const udtString printMessage = tokenizer.GetArg(1);
-		if(udtString::ContainsNoCase(index, printMessage, "sudden death"))
+		if(udtString::ContainsNoCase(index, printMessage, "sudden death") &&
+		   !udtString::ContainsNoCase(index, printMessage, "overtime mode:"))
 		{
 			// @NOTE: That message might contain the word "overtime" too,
 			// which is why we check against this one first.
@@ -193,7 +210,8 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 			++_overTimeCount;
 			_overTimeType = udtOvertimeType::SuddenDeath;
 		}
-		else if(udtString::ContainsNoCase(index, printMessage, "overtime"))
+		else if(udtString::ContainsNoCase(index, printMessage, "overtime") &&
+				!udtString::ContainsNoCase(index, printMessage, "overtime mode:"))
 		{
 			UpdateGameState(udtGameState::InProgress);
 			++_overTimeCount;
@@ -202,7 +220,8 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg,
 				_overTimeType = udtOvertimeType::SuddenDeath;
 			}
 		}
-		else if(udtString::ContainsNoCase(index, printMessage, "respawn delay"))
+		else if(udtString::ContainsNoCase(index, printMessage, "respawn delay") &&
+				!udtString::ContainsNoCase(index, printMessage, "weapon respawn delay:"))
 		{
 			UpdateGameState(udtGameState::InProgress);
 			_overTimeCount = 1;
