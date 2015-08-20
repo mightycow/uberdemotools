@@ -59,8 +59,9 @@ namespace Uber.DemoTools
         private FrameworkElement _matchInfoPanel;
         private FrameworkElement _teamStatsPanel;
         private FrameworkElement _playerStatsPanel;
+        private FrameworkElement _matchSelectionPanel;
+        private ComboBox _matchSelectionComboBox;
         private ScrollViewer _scrollViewer;
-        private int _selectedStatsIndex = 0;
         private App _app;
 
         private class TeamStatsDisplayInfo
@@ -119,14 +120,12 @@ namespace Uber.DemoTools
             var showStats = demoInfo.Analyzed;
             _statsPanel.Visibility = showStats ? Visibility.Visible : Visibility.Collapsed;
             _noStatsPanel.Visibility = showStats ? Visibility.Collapsed : Visibility.Visible;
-            _matchInfoListView.Items.Clear();
-            _teamStatsListView.ItemsSource = new ObservableCollection<TeamStatsDisplayInfo>();
-            _playerStatsListView.ItemsSource = new ObservableCollection<PlayerStatsDisplayInfo>();
             if(!showStats)
             {
                 ShowMatchInfo(false);
                 ShowTeamStats(false);
                 ShowPlayerStats(false);
+                ShowMatchSelector(false);
                 return;
             }
 
@@ -135,24 +134,33 @@ namespace Uber.DemoTools
                 ShowMatchInfo(false);
                 ShowTeamStats(false);
                 ShowPlayerStats(false);
+                ShowMatchSelector(false);
                 return;
             }
 
-            if(_selectedStatsIndex < 0 || _selectedStatsIndex >= demoInfo.MatchStats.Count)
+            _matchSelectionComboBox.Items.Clear();
+            for(var i = 0; i < demoInfo.MatchStats.Count; ++i)
             {
-                _selectedStatsIndex = 0;
+                _matchSelectionComboBox.Items.Add("Match #" + (i + 1).ToString());
             }
+            _matchSelectionComboBox.SelectedIndex = 0;
 
-            var stats = demoInfo.MatchStats[_selectedStatsIndex];
+            ShowMatchSelector(demoInfo.MatchStats.Count > 1);
+            PopulateViews(demoInfo.MatchStats[0]);
+        }
+
+        private void PopulateViews(DemoStatsInfo stats)
+        {
             ShowMatchInfo(stats.GenericFields.Count > 0);
             ShowTeamStats(stats.TeamStats.Count > 0);
             ShowPlayerStats(stats.PlayerStats.Count > 0);
 
+            _matchInfoListView.Items.Clear();
             foreach(var field in stats.GenericFields)
             {
                 _matchInfoListView.Items.Add(new string[] { field.Key, field.Value });
             }
-            
+
             if(stats.TeamStats.Count == 2 &&
                stats.TeamStats[0].Fields.Count == stats.TeamStats[1].Fields.Count)
             {
@@ -238,7 +246,7 @@ namespace Uber.DemoTools
                     {
                         extremeValue = currValue;
                         boldIndex = j;
-                    }                    
+                    }
                 }
 
                 if(playerCountWithThatField > 1 && boldIndex != -1)
@@ -326,11 +334,32 @@ namespace Uber.DemoTools
             playerStatsGroupBox.Header = "Player Scores and Stats";
             playerStatsGroupBox.Content = playerStatsListView;
 
+            var matchSelectionTextBlock = new TextBlock();
+            matchSelectionTextBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            matchSelectionTextBlock.VerticalAlignment = VerticalAlignment.Center;
+            matchSelectionTextBlock.Text = "Selected Match:  ";
+
+            var matchSelectionComboBox = new ComboBox();
+            _matchSelectionComboBox = matchSelectionComboBox;
+            matchSelectionComboBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            matchSelectionComboBox.VerticalAlignment = VerticalAlignment.Center;
+            matchSelectionComboBox.SelectionChanged += (obj, args) => OnMatchSelectionChanged();
+
+            var matchSelectionPanel = new StackPanel();
+            _matchSelectionPanel = matchSelectionPanel;
+            matchSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            matchSelectionPanel.VerticalAlignment = VerticalAlignment.Top;
+            matchSelectionPanel.Margin = new Thickness(5, 2, 5, 2);
+            matchSelectionPanel.Orientation = Orientation.Horizontal;
+            matchSelectionPanel.Children.Add(matchSelectionTextBlock);
+            matchSelectionPanel.Children.Add(matchSelectionComboBox);
+
             var statsPanel = new StackPanel();
             statsPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             statsPanel.VerticalAlignment = VerticalAlignment.Stretch;
             statsPanel.Margin = new Thickness(5);
             statsPanel.Orientation = Orientation.Vertical;
+            statsPanel.Children.Add(matchSelectionPanel);
             statsPanel.Children.Add(matchInfoGroupBox);
             statsPanel.Children.Add(teamStatsGroupBox);
             statsPanel.Children.Add(playerStatsGroupBox);
@@ -351,6 +380,11 @@ namespace Uber.DemoTools
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.Content = rootPanel;
+
+            ShowMatchInfo(false);
+            ShowTeamStats(false);
+            ShowPlayerStats(false);
+            ShowMatchSelector(false);
 
             return scrollViewer; 
         }
@@ -482,6 +516,23 @@ namespace Uber.DemoTools
             var curPos = _scrollViewer.VerticalOffset;
             _scrollViewer.ScrollToVerticalOffset(curPos - posDelta);
         }
+
+        private void OnMatchSelectionChanged()
+        {
+            var currentDemo = App.Instance.SelectedDemo;
+            if(currentDemo == null)
+            {
+                return;
+            }
+
+            var matchIndex = _matchSelectionComboBox.SelectedIndex;
+            if(matchIndex < 0 || matchIndex >= currentDemo.MatchStats.Count)
+            {
+                return;
+            }
+
+            PopulateViews(currentDemo.MatchStats[matchIndex]);
+        }
         
         private void ShowMatchInfo(bool show)
         {
@@ -496,6 +547,11 @@ namespace Uber.DemoTools
         private void ShowPlayerStats(bool show)
         {
             _playerStatsPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ShowMatchSelector(bool show)
+        {
+            _matchSelectionPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }
