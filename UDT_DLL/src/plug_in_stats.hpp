@@ -64,6 +64,7 @@ private:
 	void ParseQLScoresTDMVeryOld();
 	void ParseQLScoresTDMOld();
 	void ParseOSPStatsInfo();
+	void ParseQLScoresCA();
 	void ComputePlayerAccuracies(s32 clientNumber);
 	void ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots);
 

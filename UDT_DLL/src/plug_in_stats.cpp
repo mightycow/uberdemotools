@@ -240,12 +240,13 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("dmscores", ParseCPMADMScores),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
 		HANDLER("tdmscores2", ParseQLScoresTDMOld),
-		HANDLER("statsinfo", ParseOSPStatsInfo)
+		HANDLER("statsinfo", ParseOSPStatsInfo),
+		HANDLER("scores_ca", ParseQLScoresCA)
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr scores_ca
+	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr
 	OSP : xstats1 bstats
 	*/
 
@@ -1341,6 +1342,88 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 		};
 
 		SetPlayerFields(_followedClientNumber, newWeaponValues, (s32)UDT_COUNT_OF(newWeaponValues));
+	}
+}
+
+void udtParserPlugInStats::ParseQLScoresCA()
+{
+	_stats.GameType = (u32)udtGameType::CA;
+
+	if(_tokenizer->GetArgCount() < 4)
+	{
+		return;
+	}
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	static const udtStatsField playerFields16[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0),
+		PLAYER_FIELD(Score, 1),
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		PLAYER_FIELD(Accuracy, 6),
+		PLAYER_FIELD(BestWeapon, 7),
+		PLAYER_FIELD(BestWeaponAccuracy, 8),
+		PLAYER_FIELD(DamageGiven, 9),
+		PLAYER_FIELD(Impressives, 10),
+		PLAYER_FIELD(Excellents, 11),
+		PLAYER_FIELD(Gauntlets, 12),
+		PLAYER_FIELD(Perfect, 13)
+		// We skip the alive field.
+	};
+
+	static const udtStatsField playerFields17[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0),
+		// We skip the subscriber field.
+		PLAYER_FIELD(Score, 2),
+		PLAYER_FIELD(Ping, 3),
+		PLAYER_FIELD(Time, 4),
+		PLAYER_FIELD(Kills, 5),
+		PLAYER_FIELD(Deaths, 6),
+		PLAYER_FIELD(Accuracy, 7),
+		PLAYER_FIELD(BestWeapon, 8),
+		PLAYER_FIELD(BestWeaponAccuracy, 9),
+		PLAYER_FIELD(DamageGiven, 10),
+		PLAYER_FIELD(Impressives, 11),
+		PLAYER_FIELD(Excellents, 12),
+		PLAYER_FIELD(Gauntlets, 13),
+		PLAYER_FIELD(Perfect, 14)
+		// We skip the alive field.
+	};
+
+	const s32 scoreCount = GetValue(1);
+	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields), 2);
+	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 3);
+
+	if(_tokenizer->GetArgCount() < (u32)(4 + scoreCount * 16))
+	{
+		return;
+	}
+
+	// It seems that protocol 91 will drop the subscriber field.
+	// This will select between the 2 options to be sure.
+	const s32 statsPerPlayer = _tokenizer->GetArgCount() == (u32)(4 + scoreCount * 17) ? 17 : 16;
+	const udtStatsField* const fields = statsPerPlayer == 16 ? playerFields16 : playerFields17;
+	const s32 fieldCount = statsPerPlayer == 16 ? (s32)UDT_COUNT_OF(playerFields16) : (s32)UDT_COUNT_OF(playerFields17);
+
+	s32 offset = 4;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, fields, fieldCount, offset + 1);
+		}
+
+		offset += statsPerPlayer;
 	}
 }
 
