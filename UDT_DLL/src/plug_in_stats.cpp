@@ -242,12 +242,14 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("tdmscores2", ParseQLScoresTDMOld),
 		HANDLER("statsinfo", ParseOSPStatsInfo),
 		HANDLER("scores_ca", ParseQLScoresCA),
-		HANDLER("ctfscores", ParseQLScoresCTFOld)
+		HANDLER("ctfscores", ParseQLScoresCTFOld),
+		HANDLER("cascores", ParseQLScoresCAOld),
+		HANDLER("castats", ParseQLStatsCA)
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr
+	QL  : adscores scores_ad rrscores scores_ft scores_race scores_rr
 	OSP : xstats1 bstats
 	*/
 
@@ -1545,6 +1547,79 @@ void udtParserPlugInStats::ParseQLScoresCTFOld()
 
 		offset += statsPerPlayer;
 	}
+}
+
+void udtParserPlugInStats::ParseQLScoresCAOld()
+{
+	_stats.GameType = (u32)udtGameType::CA;
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0),
+		// We skip the subscriber field.
+		PLAYER_FIELD(DamageGiven, 2),
+		PLAYER_FIELD(Accuracy, 3)
+	};
+
+	const s32 statsPerPlayer = 5;
+	const s32 scoreCount = ((s32)_tokenizer->GetArgCount() - 1) / statsPerPlayer;
+
+	s32 offset = 1;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+		}
+
+		offset += statsPerPlayer;
+	}
+}
+
+void udtParserPlugInStats::ParseQLStatsCA()
+{
+	_stats.GameType = (u32)udtGameType::CA;
+
+	if(_tokenizer->GetArgCount() < 31)
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Accuracy, Offset + 0), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 1)
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(DamageGiven, 0),
+		PLAYER_FIELD(DamageReceived, 1),
+		WEAPON_FIELDS(Gauntlet, 2),
+		WEAPON_FIELDS(MachineGun, 4),
+		WEAPON_FIELDS(Shotgun, 6),
+		WEAPON_FIELDS(GrenadeLauncher, 8),
+		WEAPON_FIELDS(RocketLauncher, 10),
+		WEAPON_FIELDS(LightningGun, 12),
+		WEAPON_FIELDS(Railgun, 14),
+		WEAPON_FIELDS(PlasmaGun, 16),
+		WEAPON_FIELDS(BFG, 18),
+		WEAPON_FIELDS(GrapplingHook, 20),
+		WEAPON_FIELDS(NailGun, 22),
+		WEAPON_FIELDS(ProximityMineLauncher, 24),
+		WEAPON_FIELDS(ChainGun, 26),
+		WEAPON_FIELDS(HeavyMachineGun, 28)
+	};
+
+#undef WEAPON_FIELDS
+
+	s32 clientNumber = -1;
+	if(!GetClientNumberFromScoreIndex(clientNumber, 1))
+	{
+		return;
+	}
+
+	ParsePlayerFields(clientNumber, fields, (s32)UDT_COUNT_OF(fields), 2);
 }
 
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
