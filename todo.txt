@@ -1,5 +1,6 @@
 To do:
 * DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
+* Stats analyzer: support for all known scores/stats commands
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
 - Player position smoothing for "laggy" demos
 - DLL: Better mid-air detection heuristics?
@@ -13,5 +14,6 @@ To do:
 - Merger: Find a way to deal with the "player entities event sequence problem"
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Converters: dm3/dm_48 -> dm_68 and dm_73/dm_90 -> dm_91
-- Stats analyzer: support for all known scores/stats commands
 - Gamestate analyzer: game mode (short + long)
+- Stats analyzer: determine who is the winner (can be tricky when the game was forfeited)
+- Move JSON export to the library and add the option to the GUI
