@@ -10,6 +10,15 @@ static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYT
 #define    UDT_MAX_STATS    4
 
 
+/*
+CPMA stats/scores commands:
+- mstats  : full stats for one player sent multiple times during a game
+- xstats2 : full stats for one player sent at the end of a game, encoded the same as mstats
+- xscores : team and player scores sent multiple times during a game
+- dmscores: first and second place client numbers for non-team games sent whenever it changes
+*/
+
+
 static bool IsBitSet(const u8* flags, s32 index)
 {
 	const s32 byteIndex = index >> 3;
@@ -203,6 +212,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	}
 
 	// For some demos we don't have more commands when the match is over.
+	// That is always true for forfeited games in CPMA.
 	// We just decide that incomplete data is better than no data at all.
 	// If that changes, we can uncomment the following line again.
 	//if(_analyzer.IsMatchInProgress() || !_gameEnded) return;
@@ -237,9 +247,6 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	@TODO:
 	QL  : adscores scores_ad rrscores castats cascores scores_ft scores_race scores_rr scores_ca
 	OSP : xstats1 bstats
-	mstats:  full stats for one player sent multiple times during a game
-	xstats2: full stats for one player sent at the end of a game, encoded the same as mstats
-	xscores: team and player scores sent multiple times during a game
 	*/
 
 	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
