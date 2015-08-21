@@ -64,6 +64,7 @@ private:
 	void ParseQLScoresTDMVeryOld();
 	void ParseQLScoresTDMOld();
 	void ParseOSPStatsInfo();
+	void ParseOSPXStats1();
 	void ParseQLScoresCA();
 	void ParseQLScoresCTFOld();
 	void ParseQLScoresCAOld();

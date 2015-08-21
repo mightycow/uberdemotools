@@ -244,13 +244,14 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores_ca", ParseQLScoresCA),
 		HANDLER("ctfscores", ParseQLScoresCTFOld),
 		HANDLER("cascores", ParseQLScoresCAOld),
-		HANDLER("castats", ParseQLStatsCA)
+		HANDLER("castats", ParseQLStatsCA),
+		HANDLER("xstats1", ParseOSPXStats1)
 	};
 #undef HANDLER
 	/*
 	@TODO:
 	QL  : adscores scores_ad rrscores scores_ft scores_race scores_rr
-	OSP : xstats1 bstats
+	OSP : bstats
 	*/
 
 	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
@@ -1353,8 +1354,8 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 
 	const s32 armorTaken = (GetValue(11) >> 16) & 0xFFFF;
 	const s32 healthTaken = (GetValue(12) >> 16) & 0xFFFF;
-	const udtStatsFieldValue newValues[2] = { PLAYER_VALUE(ArmorTaken, armorTaken), PLAYER_VALUE(HealthTaken, healthTaken) };
-	SetPlayerFields(_followedClientNumber, newValues, (s32)UDT_COUNT_OF(newValues));
+	SetPlayerField(_followedClientNumber, udtPlayerStatsField::ArmorTaken, armorTaken);
+	SetPlayerField(_followedClientNumber, udtPlayerStatsField::HealthTaken, healthTaken);
 
 	const s32 weaponMask = GetValue(22);
 	const s32 weaponCount = (s32)PopCount((u32)weaponMask);
@@ -1412,18 +1413,110 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 		const s32 drops = (hitsAndDrops >> 16) & 0xFFFF;
 		const s32 shots = shotsAndPickups & 0xFFFF;
 		const s32 pickups = (shotsAndPickups >> 16) & 0xFFFF;
-		const udtStatsFieldValue newWeaponValues[] =
-		{
-			{ indices[0], hits },
-			{ indices[1], drops },
-			{ indices[2], shots },
-			{ indices[3], pickups },
-			{ indices[4], kills },
-			{ indices[5], deaths }
-		};
-
-		SetPlayerFields(_followedClientNumber, newWeaponValues, (s32)UDT_COUNT_OF(newWeaponValues));
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[0], hits);
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[1], drops);
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[2], shots);
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[3], pickups);
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[4], kills);
+		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[5], deaths);
 	}
+}
+
+void udtParserPlugInStats::ParseOSPXStats1()
+{
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
+	}
+
+	const s32 clientNumber = GetValue(1);
+	if(clientNumber < 0 || clientNumber >= 64)
+	{
+		return;
+	}
+
+	const s32 weaponMask = GetValue(2);
+	const s32 weaponCount = (s32)PopCount((u32)weaponMask);
+
+	if(_tokenizer->GetArgCount() < (u32)(3 + 4 * weaponCount))
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon) \
+	{ \
+		(s32)udtPlayerStatsField::Weapon##Hits, \
+		(s32)udtPlayerStatsField::Weapon##Drops, \
+		(s32)udtPlayerStatsField::Weapon##Shots, \
+		(s32)udtPlayerStatsField::Weapon##Pickups, \
+		(s32)udtPlayerStatsField::Weapon##Kills, \
+		(s32)udtPlayerStatsField::Weapon##Deaths  \
+	}
+
+	static const s32 weaponFieldIndices[11][6] =
+	{
+		WEAPON_FIELDS(Gauntlet), // Weapon 0 is nothing.
+		WEAPON_FIELDS(Gauntlet),
+		WEAPON_FIELDS(MachineGun),
+		WEAPON_FIELDS(Shotgun),
+		WEAPON_FIELDS(GrenadeLauncher),
+		WEAPON_FIELDS(RocketLauncher),
+		WEAPON_FIELDS(LightningGun),
+		WEAPON_FIELDS(Railgun),
+		WEAPON_FIELDS(PlasmaGun),
+		WEAPON_FIELDS(BFG),
+		WEAPON_FIELDS(GrapplingHook)
+	};
+
+#undef WEAPON_FIELDS
+
+	s32 offset = 3;
+	for(s32 i = 1; i < 11; ++i)
+	{
+		if((weaponMask & (1 << i)) == 0)
+		{
+			for(s32 j = 0; j < (s32)UDT_COUNT_OF(weaponFieldIndices[i]); ++j)
+			{
+				SetPlayerField(clientNumber, (udtPlayerStatsField::Id)weaponFieldIndices[i][j], 0);
+			}
+			continue;
+		}
+
+		const s32* const indices = weaponFieldIndices[i];
+		const s32 hitsAndDrops = GetValue(offset++);
+		const s32 shotsAndPickups = GetValue(offset++);
+		const s32 kills = GetValue(offset++);
+		const s32 deaths = GetValue(offset++);
+		const s32 hits = hitsAndDrops & 0xFFFF;
+		const s32 drops = (hitsAndDrops >> 16) & 0xFFFF;
+		const s32 shots = shotsAndPickups & 0xFFFF;
+		const s32 pickups = (shotsAndPickups >> 16) & 0xFFFF;
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[0], hits);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[1], drops);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[2], shots);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[3], pickups);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[4], kills);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)indices[5], deaths);
+	}
+
+	if(_tokenizer->GetArgCount() < (u32)(offset + 8))
+	{
+		return;
+	}
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(ArmorTaken, 0),
+		PLAYER_FIELD(HealthTaken, 1),
+		PLAYER_FIELD(DamageGiven, 2),
+		PLAYER_FIELD(DamageReceived, 3),
+		PLAYER_FIELD(MegaHealthPickups, 4),
+		PLAYER_FIELD(GreenArmorPickups, 5),
+		PLAYER_FIELD(RedArmorPickups, 6),
+		PLAYER_FIELD(YellowArmorPickups, 7)
+	};
+
+	ParsePlayerFields(clientNumber, fields, (s32)UDT_COUNT_OF(fields), offset);
 }
 
 void udtParserPlugInStats::ParseQLScoresCA()
