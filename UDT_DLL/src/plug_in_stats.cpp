@@ -384,6 +384,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 {
 	_stats.GameType = (u32)udtGameType::TDM;
 
+	s32 baseOffset = 32;
 	if(_tokenizer->GetArgCount() < 32)
 	{
 		return;
@@ -407,51 +408,87 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 		TEAM_FIELD(InvisTime, 14),
 	};
 
-	static const udtStatsField playerFields[] =
+	static const udtStatsField playerFields90[] =
 	{
-		PLAYER_FIELD(TeamIndex, 1),
-		PLAYER_FIELD(Score, 2),
-		PLAYER_FIELD(Ping, 3),
-		PLAYER_FIELD(Time, 4),
-		PLAYER_FIELD(Kills, 5),
-		PLAYER_FIELD(Deaths, 6),
-		PLAYER_FIELD(Accuracy, 7),
-		PLAYER_FIELD(BestWeapon, 8),
-		PLAYER_FIELD(Impressives, 9),
-		PLAYER_FIELD(Excellents, 10),
-		PLAYER_FIELD(Gauntlets, 11),
-		PLAYER_FIELD(TeamKills, 12),
-		PLAYER_FIELD(TeamKilled, 13),
-		PLAYER_FIELD(DamageGiven, 14)
+		// We skip the subscriber field.
+		PLAYER_FIELD(Score, 1),
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		PLAYER_FIELD(Accuracy, 6),
+		PLAYER_FIELD(BestWeapon, 7),
+		PLAYER_FIELD(Impressives, 8),
+		PLAYER_FIELD(Excellents, 9),
+		PLAYER_FIELD(Gauntlets, 10),
+		PLAYER_FIELD(TeamKills, 11),
+		PLAYER_FIELD(TeamKilled, 12),
+		PLAYER_FIELD(DamageGiven, 13)
+	};
+
+	static const udtStatsField playerFields91[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 1),
+		PLAYER_FIELD(Time, 2),
+		PLAYER_FIELD(Kills, 3),
+		PLAYER_FIELD(Deaths, 4),
+		PLAYER_FIELD(Accuracy, 5),
+		PLAYER_FIELD(BestWeapon, 6),
+		PLAYER_FIELD(Impressives, 7),
+		PLAYER_FIELD(Excellents, 8),
+		PLAYER_FIELD(Gauntlets, 9),
+		PLAYER_FIELD(TeamKills, 10),
+		PLAYER_FIELD(TeamKilled, 11),
+		PLAYER_FIELD(DamageGiven, 12)
 	};
 
 	static const udtStatsField teamScoreFields[] =
 	{
-		TEAM_FIELD(Score, 30)
+		TEAM_FIELD(Score, 0)
 	};
 	
 	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
-	ParseTeamFields(0, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields));
-	ParseTeamFields(1, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 1);
 
-	const s32 playerScores = GetValue(29);
-	if(_tokenizer->GetArgCount() != (u32)(32 + playerScores * (1 + (s32)UDT_COUNT_OF(playerFields))))
+	const s32 scoreCount = GetValue(29);
+
+	// Some old demos don't have the team scores...
+	bool hasTeamScores = true;
+	if(_protocol <= udtProtocol::Dm90 &&
+	   _tokenizer->GetArgCount() <= (u32)(30 + scoreCount * 16))
+	{
+		hasTeamScores = false;
+		baseOffset = 30;
+	}
+
+	if(hasTeamScores)
+	{
+		ParseTeamFields(0, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 30);
+		ParseTeamFields(1, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 31);
+	}
+
+	const s32 statsPerPlayer = _protocol <= udtProtocol::Dm90 ? 16 : 15;
+	if(_tokenizer->GetArgCount() < (u32)(baseOffset + scoreCount * statsPerPlayer))
 	{
 		return;
 	}
 
-	s32 offset = 32;
-	for(s32 i = 0; i < playerScores; ++i)
+	const udtStatsField* const playerFields = _protocol <= udtProtocol::Dm90 ? playerFields90 : playerFields91;
+	const s32 playerFieldCount = _protocol <= udtProtocol::Dm90 ? (s32)UDT_COUNT_OF(playerFields90) : (s32)UDT_COUNT_OF(playerFields91);
+
+	s32 offset = baseOffset;
+	for(s32 i = 0; i < scoreCount; ++i)
 	{
 		const s32 clientNumber = GetValue(offset);
 		if(clientNumber >= 0 && clientNumber < 64)
 		{
 			_playerIndices[i] = (u8)clientNumber;
-			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
+			SetPlayerField(clientNumber, udtPlayerStatsField::TeamIndex, GetValue(offset + 1));
+			ParsePlayerFields(clientNumber, playerFields, playerFieldCount, offset + 2);
 		}
 
-		offset += 1 + (s32)UDT_COUNT_OF(playerFields);
+		offset += statsPerPlayer;
 	}
 }
 
