@@ -241,7 +241,8 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
 		HANDLER("tdmscores2", ParseQLScoresTDMOld),
 		HANDLER("statsinfo", ParseOSPStatsInfo),
-		HANDLER("scores_ca", ParseQLScoresCA)
+		HANDLER("scores_ca", ParseQLScoresCA),
+		HANDLER("ctfscores", ParseQLScoresCTFOld)
 	};
 #undef HANDLER
 	/*
@@ -1483,6 +1484,63 @@ void udtParserPlugInStats::ParseQLScoresCA()
 			_playerIndices[i] = (u8)clientNumber;
 			SetPlayerField(clientNumber, udtPlayerStatsField::TeamIndex, GetValue(offset + 1));
 			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 2 + secondPartOffset);
+		}
+
+		offset += statsPerPlayer;
+	}
+}
+
+void udtParserPlugInStats::ParseQLScoresCTFOld()
+{
+	_stats.GameType = (u32)udtGameType::CTF;
+
+	const s32 baseOffset = 35;
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
+	{
+		return;
+	}
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(RedArmorPickups, 0),
+		TEAM_FIELD(YellowArmorPickups, 1),
+		TEAM_FIELD(GreenArmorPickups, 2),
+		TEAM_FIELD(MegaHealthPickups, 3),
+		TEAM_FIELD(QuadDamagePickups, 4),
+		TEAM_FIELD(BattleSuitPickups, 5),
+		TEAM_FIELD(RegenPickups, 6),
+		TEAM_FIELD(HastePickups, 7),
+		TEAM_FIELD(InvisPickups, 8),
+		TEAM_FIELD(FlagPickups, 9),
+		TEAM_FIELD(MedkitPickups, 10),
+		TEAM_FIELD(QuadDamageTime, 11),
+		TEAM_FIELD(BattleSuitTime, 12),
+		TEAM_FIELD(RegenTime, 13),
+		TEAM_FIELD(HasteTime, 14),
+		TEAM_FIELD(InvisTime, 15),
+		TEAM_FIELD(FlagTime, 16)
+	};
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0)
+		// We skip the subscriber field.
+	};
+
+	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields), 1);
+	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 18);
+
+	const s32 statsPerPlayer = 3;
+	const s32 scoreCount = ((s32)_tokenizer->GetArgCount() - baseOffset) / statsPerPlayer;
+
+	s32 offset = baseOffset;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 		}
 
 		offset += statsPerPlayer;
