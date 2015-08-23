@@ -167,6 +167,8 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_secondPlaceClientNumber = -1;
 	_cpmaScoreRed = S32_MIN;
 	_cpmaScoreBlue = S32_MIN;
+	_cpmaRoundScoreRed = 0;
+	_cpmaRoundScoreBlue = 0;
 	_firstPlaceScore = S32_MIN;
 	_secondPlaceScore = S32_MIN;
 
@@ -305,6 +307,24 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		   blueTeamName.Length != 0)
 		{
 			_stats.CustomBlueName = udtString::NewCleanCloneFromRef(_allocator, _protocol, blueTeamName).String;
+		}
+	}
+	else if(_analyzer.Mod() == udtMod::CPMA && csIndex == CS_CPMA_ROUND_INFO)
+	{
+		s32 sr, sb;
+		ParseConfigStringValueInt(sr, *TempAllocator, "sr", configString.String);
+		ParseConfigStringValueInt(sb, *TempAllocator, "sb", configString.String);
+		if(sr != -9999 && sb != -9999)
+		{
+			_cpmaRoundScoreRed = sr;
+			_cpmaRoundScoreBlue = sb;
+		}
+		else if(_analyzer.GameType() == udtGameType::Duel && 
+				_firstPlaceClientNumber >= 0 &&
+				_firstPlaceClientNumber < 64 &&
+				_playerTeamIndices[_firstPlaceClientNumber] == (s32)udtTeam::Spectators)
+		{
+			_stats.SecondPlaceWon = 1;
 		}
 	}
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
@@ -1214,7 +1234,8 @@ void udtParserPlugInStats::ParseCPMAXScores()
 
 void udtParserPlugInStats::ParseCPMADMScores()
 {
-	if(_tokenizer->GetArgCount() < 3)
+	if(_tokenizer->GetArgCount() < 3 ||
+	   !_analyzer.IsMatchInProgress())
 	{
 		return;
 	}
@@ -2025,14 +2046,13 @@ void udtParserPlugInStats::AddCurrentStats()
 
 		if(_analyzer.Mod() == udtMod::CPMA &&
 		   _analyzer.Forfeited() &&
-		   (_cpmaScoreRed != -9999 || _cpmaScoreBlue != -9999) &&
 		   _firstPlaceClientNumber >= 0 &&
 		   _firstPlaceClientNumber < 64 &&
 		   _secondPlaceClientNumber >= 0 &&
 		   _secondPlaceClientNumber < 64)
 		{
-			_stats.FirstPlaceScore = udt_max(_cpmaScoreRed, _cpmaScoreBlue);
-			_stats.SecondPlaceScore = udt_min(_cpmaScoreRed, _cpmaScoreBlue);
+			_stats.FirstPlaceScore = udt_max(_cpmaRoundScoreRed, _cpmaRoundScoreBlue);
+			_stats.SecondPlaceScore = udt_min(_cpmaRoundScoreRed, _cpmaRoundScoreBlue);
 			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
 		}

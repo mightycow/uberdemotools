@@ -461,6 +461,8 @@ namespace Uber.DemoTools
 		    public UInt32 MercyLimited;
             public Int32 FirstPlaceScore;
             public Int32 SecondPlaceScore;
+            public UInt32 SecondPlaceWon;
+            public Int32 Reserved2;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1584,7 +1586,15 @@ namespace Uber.DemoTools
             var name1 = SafeGetUTF8String(data.FirstPlaceName);
             var name2 = SafeGetUTF8String(data.SecondPlaceName);
             var finalScore = string.Format("{0} {1} : {2} {3}", name1, data.FirstPlaceScore, data.SecondPlaceScore, name2);
-            stats.AddGenericField("Final score", finalScore);
+            if(data.Forfeited != 0)
+            {
+                stats.AddGenericField("Score before forfeit", finalScore);
+                stats.AddGenericField("Victor", data.SecondPlaceWon != 0 ? name2 : name1);
+            }
+            else
+            {
+                stats.AddGenericField("Final score", finalScore);
+            }
 
             var redTeamName = data.CustomRedName != IntPtr.Zero ? Marshal.PtrToStringAnsi(data.CustomRedName) : null;
             var blueTeamName = data.CustomBlueName != IntPtr.Zero ? Marshal.PtrToStringAnsi(data.CustomBlueName) : null;

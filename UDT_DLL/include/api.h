@@ -1291,7 +1291,7 @@ extern "C"
 		// Total number of overtimes in the match.
 		u32 OverTimeCount;
 
-		// 1 if the loser left the game before it was supposed to end, 0 otherwise.
+		// Non-zero if the loser left the game before it was supposed to end, 0 otherwise.
 		u32 Forfeited;
 
 		// Total number of time-outs in the match.
@@ -1308,6 +1308,12 @@ extern "C"
 
 		// Score of whoever is 2nd place.
 		s32 SecondPlaceScore;
+
+		// Non-zero if the player/team with the lowest score won by forfeit, zero otherwise.
+		u32 SecondPlaceWon;
+
+		// Ignore this.
+		s32 Reserved2;
 	};
 
 	struct udtParseDataRawCommand

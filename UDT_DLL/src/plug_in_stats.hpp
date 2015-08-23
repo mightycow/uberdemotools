@@ -122,6 +122,8 @@ private:
 	s32 _secondPlaceClientNumber;
 	s32 _cpmaScoreRed;
 	s32 _cpmaScoreBlue;
+	s32 _cpmaRoundScoreRed;
+	s32 _cpmaRoundScoreBlue;
 	s32 _firstPlaceScore;
 	s32 _secondPlaceScore;
 	bool _gameEnded;
