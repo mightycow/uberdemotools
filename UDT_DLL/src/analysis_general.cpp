@@ -607,7 +607,7 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 	else if(udtString::Equals(gameStateString, "IN_PROGRESS"))
 	{
 		UpdateGameState(udtGameState::InProgress);
-		if(HasMatchJustStarted())
+		if(HasMatchJustStarted() || _processingGameState)
 		{
 			UpdateMatchStartTime();
 		}
