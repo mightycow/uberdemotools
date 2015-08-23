@@ -126,6 +126,10 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 			ProcessModNameAndVersionOnce();
 		}
 	}
+	else
+	{
+		ResetForNextGameState();
+	}
 
 	ProcessMapNameOnce();
 	ProcessGameTypeFromServerInfo(parser._inConfigStrings[CS_SERVERINFO].String);
@@ -910,4 +914,14 @@ void udtGeneralAnalyzer::UpdateMatchStartTime()
 		_prevMatchStartTime = _matchStartTime;
 		_matchStartTime = newStartTime;
 	}
+}
+
+void udtGeneralAnalyzer::ResetForNextGameState()
+{
+	ResetForNextMatch();
+	_matchStartTime = S32_MIN;
+	_matchEndTime = S32_MIN;
+	_prevMatchStartTime = S32_MIN;
+	_gameState = udtGameState::WarmUp;
+	_lastGameState = udtGameState::WarmUp;
 }

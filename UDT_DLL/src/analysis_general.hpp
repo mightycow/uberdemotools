@@ -73,6 +73,7 @@ private:
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
 	void UpdateMatchStartTime();
+	void ResetForNextGameState();
 
 	udtVMLinearAllocator _stringAllocator;
 	udtBaseParser* _parser;
