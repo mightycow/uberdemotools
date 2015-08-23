@@ -308,6 +308,18 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		{
 			_stats.CustomBlueName = udtString::NewCleanCloneFromRef(_allocator, _protocol, blueTeamName).String;
 		}
+		
+		s32 cr, cb;
+		if(_analyzer.GameType() >= udtGameType::FirstTeamMode && 
+		   _analyzer.IsMatchInProgress() &&
+		   _cpmaRoundScoreRed != _cpmaRoundScoreBlue &&
+		   ParseConfigStringValueInt(cr, *TempAllocator, "cr", configString.String) &&
+		   ParseConfigStringValueInt(cb, *TempAllocator, "cb", configString.String) &&
+		   ((_cpmaRoundScoreRed > _cpmaRoundScoreBlue && cr == 0) || (_cpmaRoundScoreBlue > _cpmaRoundScoreRed && cb == 0)))
+		{
+			// All the players of the leading team left.
+			_stats.SecondPlaceWon = 1;
+		}
 	}
 	else if(_analyzer.Mod() == udtMod::CPMA && csIndex == CS_CPMA_ROUND_INFO)
 	{
@@ -319,7 +331,7 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 			_cpmaRoundScoreRed = sr;
 			_cpmaRoundScoreBlue = sb;
 		}
-		else if(_analyzer.GameType() == udtGameType::Duel && 
+		else if(_analyzer.GameType() < udtGameType::FirstTeamMode && 
 				_firstPlaceClientNumber >= 0 &&
 				_firstPlaceClientNumber < 64 &&
 				_playerTeamIndices[_firstPlaceClientNumber] == (s32)udtTeam::Spectators)

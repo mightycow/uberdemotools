@@ -519,36 +519,45 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 
 	s32 tw = -1;
 	s32 ts = -1;
-	if(!ParseConfigStringValueInt(tw, *_tempAllocator, "tw", configString) || 
-	   !ParseConfigStringValueInt(ts, *_tempAllocator, "ts", configString))
+	if(ParseConfigStringValueInt(tw, *_tempAllocator, "tw", configString) &&
+	   ParseConfigStringValueInt(ts, *_tempAllocator, "ts", configString))
 	{
-		return;
-	}
-
-	// CPMA problem:
-	// Can go from InProgress to WarmUp for CTFS/CA rounds.
-	// So we only keep the very first round start until we get a real match end.
-
-	if(tw == 0)
-	{
-		UpdateGameState(udtGameState::InProgress);
-		if(_matchStartTime == S32_MIN)
+		// CPMA problem:
+		// Can go from InProgress to WarmUp for CTFS/CA rounds.
+		// So we only keep the very first round start until we get a real match end.
+		if(tw == 0)
 		{
-			_prevMatchStartTime = _matchStartTime;
-			_matchStartTime = ts;
+			UpdateGameState(udtGameState::InProgress);
+			if(_matchStartTime == S32_MIN)
+			{
+				_prevMatchStartTime = _matchStartTime;
+				_matchStartTime = ts;
+			}
+		}
+		else if(tw > 0)
+		{
+			UpdateGameState(udtGameState::CountDown);
+		}
+		else
+		{
+			UpdateGameState(udtGameState::WarmUp);
+			if(HasMatchJustEnded())
+			{
+				_matchEndTime = _parser->_inServerTime;
+			}
 		}
 	}
-	else if(tw > 0)
+
+	s32 cr = -1;
+	s32 cb = -1;
+	if(_gameType >= udtGameType::FirstTeamMode &&
+	   _gameState == udtGameState::InProgress &&
+	   ParseConfigStringValueInt(cr, *_tempAllocator, "cr", configString) &&
+	   ParseConfigStringValueInt(cb, *_tempAllocator, "cb", configString) &&
+	   (cr == 0 || cb == 0))
 	{
-		UpdateGameState(udtGameState::CountDown);
-	}
-	else
-	{
-		UpdateGameState(udtGameState::WarmUp);
-		if(HasMatchJustEnded())
-		{
-			_matchEndTime = _parser->_inServerTime;
-		}
+		// If all the players of a team leave during a match, the team forfeits.
+		_forfeited = true;
 	}
 }
 
