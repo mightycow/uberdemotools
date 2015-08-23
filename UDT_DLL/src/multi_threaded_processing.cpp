@@ -151,13 +151,13 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	{
 		const u32 first = Threads[i].FirstFileIndex;
 
-		u64 totalByteCount = 0;
+		u64 totalThreadByteCount = 0;
 		for(u32 j = 0; j < Threads[i].FileCount; ++j)
 		{
-			totalByteCount += udtFileStream::GetFileLength(FilePaths[first + j]);
+			totalThreadByteCount += udtFileStream::GetFileLength(FilePaths[first + j]);
 		}
 
-		assert(Threads[i].TotalByteCount == totalByteCount);
+		assert(Threads[i].TotalByteCount == totalThreadByteCount);
 	}
 #endif
 	
