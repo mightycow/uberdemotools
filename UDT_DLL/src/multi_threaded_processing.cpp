@@ -200,7 +200,6 @@ static void ThreadFunction(void* userData)
 	udtParsingThreadData* const data = (udtParsingThreadData*)userData;
 	if(data == NULL)
 	{
-		data->Finished = true;
 		return;
 	}
 
