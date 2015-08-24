@@ -60,6 +60,9 @@ struct udtString
 	static bool IsNullOrEmpty(const udtString& string);
 	static bool IsNullOrEmpty(const char* string);
 
+	static bool IsNull(const udtString& string);
+	static bool IsEmpty(const udtString& string);
+
 	// Strips Quake color codes and keeps printable codes only depending on the protocol version.
 	static void CleanUp(udtString& result, udtProtocol::Id protocol);
 

@@ -1092,6 +1092,11 @@ udtBaseParser::udtConfigString* udtBaseParser::FindConfigStringByIndex(s32 csInd
 	return (_inConfigStrings[csIndex].String) != NULL ? (&_inConfigStrings[csIndex]) : NULL;
 }
 
+udtString udtBaseParser::GetConfigString(s32 csIndex)
+{
+	return udtString::NewConstRef(_inConfigStrings[csIndex].String, _inConfigStrings[csIndex].StringLength);
+}
+
 char* udtBaseParser::AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength, u32* outStringLength)
 {
 	if(stringLength == 0)

@@ -165,12 +165,12 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 	_firstPlaceClientNumber = -1;
 	_secondPlaceClientNumber = -1;
-	_cpmaScoreRed = S32_MIN;
-	_cpmaScoreBlue = S32_MIN;
+	_cpmaScoreRed = 0;
+	_cpmaScoreBlue = 0;
 	_cpmaRoundScoreRed = 0;
 	_cpmaRoundScoreBlue = 0;
-	_firstPlaceScore = S32_MIN;
-	_secondPlaceScore = S32_MIN;
+	_firstPlaceScore = 0;
+	_secondPlaceScore = 0;
 
 	ClearStats(true);
 
@@ -179,6 +179,17 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	{
 		const udtBaseParser::udtConfigString& cs = parser._inConfigStrings[firstPlayerCs + i];
 		ProcessPlayerConfigString(cs.String, i);
+	}
+
+	if(_analyzer.Mod() == udtMod::CPMA)
+	{
+		ProcessConfigString(CS_CPMA_GAME_INFO, parser.GetConfigString(CS_CPMA_GAME_INFO));
+		ProcessConfigString(CS_CPMA_ROUND_INFO, parser.GetConfigString(CS_CPMA_ROUND_INFO));
+	}
+	else
+	{
+		ProcessConfigString(CS_SCORES1, parser.GetConfigString(CS_SCORES1));
+		ProcessConfigString(CS_SCORES2, parser.GetConfigString(CS_SCORES2));
 	}
 }
 
@@ -279,6 +290,11 @@ void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
 {	
+	if(udtString::IsNull(configString))
+	{
+		return;
+	}
+
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	if(csIndex >= firstPlayerCs && csIndex < firstPlayerCs + 64)
 	{
@@ -341,11 +357,37 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	}
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
 	{
-		StringParseInt(_firstPlaceScore, configString.String);
+		s32 score = -1;
+		if(StringParseInt(score, configString.String))
+		{
+			if(score != -999)
+			{
+				_firstPlaceScore = score;
+			}
+			else if(_analyzer.GameType() >= udtGameType::FirstTeamMode &&
+					_firstPlaceScore > _secondPlaceScore)
+			{
+				// In team modes, scores1 is red and scores2 is blue.
+				_stats.SecondPlaceWon = 1;
+			}
+		}
 	}
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES2)
 	{
-		StringParseInt(_secondPlaceScore, configString.String);
+		s32 score = -1;
+		if(StringParseInt(score, configString.String))
+		{
+			if(score != -999)
+			{
+				_secondPlaceScore = score;
+			}
+			else if(_analyzer.GameType() >= udtGameType::FirstTeamMode &&
+					_secondPlaceScore > _firstPlaceScore)
+			{
+				// In team modes, scores1 is red and scores2 is blue.
+				_stats.SecondPlaceWon = 1;
+			}
+		}
 	}
 }
 
@@ -1996,9 +2038,20 @@ void udtParserPlugInStats::AddCurrentStats()
 	{
 		s32 redScore = 0;
 		s32 blueScore = 0;
-		if((_stats.ValidTeams & 3) == 3 &&
-		   IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
-		   IsBitSet(GetTeamFlags(1), (s32)udtTeamStatsField::Score))
+		if(_analyzer.Forfeited() &&
+		   _protocol >= udtProtocol::Dm73)
+		{
+			// Short-circuit the scores commands in case of a forfeit so we don't get the -999 scores.
+			redScore = _firstPlaceScore;
+			blueScore = _secondPlaceScore;
+			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
+			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
+			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
+			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+		}
+		else if((_stats.ValidTeams & 3) == 3 &&
+				IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
+				IsBitSet(GetTeamFlags(1), (s32)udtTeamStatsField::Score))
 		{
 			redScore = GetTeamFields(0)[udtTeamStatsField::Score];
 			blueScore = GetTeamFields(1)[udtTeamStatsField::Score];
@@ -2018,11 +2071,12 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		else
 		{
-			// @TODO: How do we know if first place is red or blue?
-			_stats.FirstPlaceScore = S32_MIN;
-			_stats.SecondPlaceScore = S32_MIN;
-			_stats.FirstPlaceName = NULL;
-			_stats.SecondPlaceName = NULL;
+			redScore = _firstPlaceScore;
+			blueScore = _secondPlaceScore;
+			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
+			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
+			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
+			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
 		}
 	}
 	else
@@ -2079,8 +2133,6 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.SecondPlaceName = _playerStats[secondPlaceIndex].CleanName;
 		}
 		else if(_analyzer.Mod() != udtMod::CPMA &&
-				_firstPlaceScore != S32_MIN &&
-				_secondPlaceScore != S32_MIN &&
 				_firstPlaceClientNumber >= 0 &&
 				_firstPlaceClientNumber < 64 &&
 				_secondPlaceClientNumber >= 0 &&
@@ -2092,8 +2144,6 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
 		}
 		else if(_analyzer.Mod() == udtMod::CPMA &&
-				_cpmaScoreRed != S32_MIN &&
-				_cpmaScoreBlue != S32_MIN &&
 				_firstPlaceClientNumber >= 0 &&
 				_firstPlaceClientNumber < 64 &&
 				_secondPlaceClientNumber >= 0 &&

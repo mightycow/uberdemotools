@@ -39,6 +39,7 @@ public:
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
 	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not available.
+	udtString             GetConfigString(s32 csIndex);
 
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
