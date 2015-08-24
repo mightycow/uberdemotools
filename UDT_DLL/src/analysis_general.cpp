@@ -844,10 +844,10 @@ void udtGeneralAnalyzer::ProcessMapNameOnce()
 {
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
-	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
+	const udtString& cs = _parser->GetConfigString(CS_SERVERINFO);
 	udtString mapName;
-	if(serverInfo != NULL &&
-	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", serverInfo))
+	if(!udtString::IsNullOrEmpty(cs) &&
+	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", cs.String))
 	{
 		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
 	}
@@ -856,14 +856,14 @@ void udtGeneralAnalyzer::ProcessMapNameOnce()
 s32 udtGeneralAnalyzer::GetLevelStartTime()
 {
 	const s32 csIndex = idConfigStringIndex::LevelStartTime(_protocol);
-	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
-	if(cs == NULL)
+	const udtString& cs = _parser->GetConfigString(csIndex);
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return S32_MIN;
 	}
 
 	s32 matchStartTimeMs = S32_MIN;
-	if(sscanf(cs->String, "%d", &matchStartTimeMs) != 1)
+	if(!StringParseInt(matchStartTimeMs, cs.String))
 	{
 		return S32_MIN;
 	}
@@ -880,20 +880,20 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 	// It can either be encoded as "$(time)" or "\time\$(time)". :-(
 	// When "\time\$(time)", 0 and -1 have a different meaning it seems.
 	const s32 csIndex = idConfigStringIndex::WarmUpEndTime(_protocol);
-	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
-	if(cs == NULL)
+	const udtString& cs = _parser->GetConfigString(csIndex);
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return S32_MIN;
 	}
 
 	s32 warmUpEndTimeMs = S32_MIN;
-	if(sscanf(cs->String, "%d", &warmUpEndTimeMs) == 1)
+	if(StringParseInt(warmUpEndTimeMs, cs.String))
 	{
 		return warmUpEndTimeMs;
 	}
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-	if(ParseConfigStringValueInt(warmUpEndTimeMs, *_tempAllocator, "time", cs->String))
+	if(ParseConfigStringValueInt(warmUpEndTimeMs, *_tempAllocator, "time", cs.String))
 	{
 		return warmUpEndTimeMs;
 	}
@@ -904,15 +904,13 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 bool udtGeneralAnalyzer::IsIntermission()
 {
 	const s32 csIndex = idConfigStringIndex::Intermission(_protocol);
-	udtBaseParser::udtConfigString* const cs = _parser->FindConfigStringByIndex(csIndex);
-	if(cs == NULL)
+	const udtString& cs = _parser->GetConfigString(csIndex);
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return false;
 	}
 
-	const udtString configString = udtString::NewConstRef(cs->String, cs->StringLength);
-
-	return udtString::EqualsNoCase(configString, "1") || udtString::EqualsNoCase(configString, "qtrue");
+	return udtString::EqualsNoCase(cs, "1") || udtString::EqualsNoCase(cs, "qtrue");
 }
 
 void udtGeneralAnalyzer::UpdateMatchStartTime()

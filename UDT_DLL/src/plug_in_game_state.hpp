@@ -34,9 +34,9 @@ private:
 	void AddCurrentMatchIfValid();
 	void AddCurrentPlayersIfValid();
 	void AddCurrentGameState();
-	void ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings, udtProtocol::Id protocol);
+	void ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol);
 	void ProcessSystemAndServerInfo(const udtString& configStrings);
-	void ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString);
+	void ProcessPlayerInfo(s32 playerIndex, const udtString& configString);
 
 private:
 	udtGeneralAnalyzer _analyzer;

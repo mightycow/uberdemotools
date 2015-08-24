@@ -413,9 +413,7 @@ tokenize:
 			}
 
 			// Copy the config string to some safe location.
-			char* const csString = AllocateString(_configStringAllocator, csStringTemp, csStringLength);
-			_inConfigStrings[csIndex].String = csString;
-			_inConfigStrings[csIndex].StringLength = csStringLength;
+			_inConfigStrings[csIndex] = udtString::NewClone(_configStringAllocator, csStringTemp, csStringLength);
 		}
 	}
 	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs0"))
@@ -502,11 +500,7 @@ bool udtBaseParser::ParseGamestate()
 			const char* const configStringTemp = _inMsg.ReadBigString(configStringLength);
 			
 			// Copy the string to a safe location.
-			char* const configString = AllocateString(_configStringAllocator, configStringTemp, configStringLength);
-
-			// Store it.
-			_inConfigStrings[index].String = configString;
-			_inConfigStrings[index].StringLength = configStringLength;
+			_inConfigStrings[index] = udtString::NewClone(_configStringAllocator, configStringTemp, configStringLength);
 		} 
 		else if(command == svc_baseline)
 		{
@@ -783,8 +777,8 @@ void udtBaseParser::WriteGameState()
 	// Config strings.
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inConfigStrings); ++i)
 	{
-		const udtConfigString& cs = _inConfigStrings[i];
-		if(cs.String == NULL || cs.StringLength == 0)
+		const udtString& cs = _inConfigStrings[i];
+		if(udtString::IsNullOrEmpty(cs))
 		{
 			continue;
 		}
@@ -793,12 +787,14 @@ void udtBaseParser::WriteGameState()
 		{
 			_outMsg.WriteByte(svc_configstring);
 			_outMsg.WriteShort((s32)i);
-			_outMsg.WriteBigString(cs.String, cs.StringLength);
+			_outMsg.WriteBigString(cs.String, cs.Length);
 			continue;
 		}
+
+		udtVMScopedStackAllocator allocatorScope(_tempAllocator);
 		
 		udtConfigStringConversion outCs;
-		_protocolConverter->ConvertConfigString(outCs, _tempAllocator, (s32)i, cs.String, cs.StringLength);
+		_protocolConverter->ConvertConfigString(outCs, _tempAllocator, (s32)i, cs.String, cs.Length);
 		if(outCs.Index >= 0)
 		{
 			_outMsg.WriteByte(svc_configstring);
@@ -1087,14 +1083,14 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	frame->numEntities++;
 }
 
-udtBaseParser::udtConfigString* udtBaseParser::FindConfigStringByIndex(s32 csIndex)
+const udtString& udtBaseParser::GetConfigString(s32 csIndex) const
 {
-	return (_inConfigStrings[csIndex].String) != NULL ? (&_inConfigStrings[csIndex]) : NULL;
-}
+	if(csIndex < 0 || csIndex >= (s32)UDT_COUNT_OF(_inConfigStrings))
+	{
+		return udtString::NewEmptyConstant();
+	}
 
-udtString udtBaseParser::GetConfigString(s32 csIndex)
-{
-	return udtString::NewConstRef(_inConfigStrings[csIndex].String, _inConfigStrings[csIndex].StringLength);
+	return _inConfigStrings[csIndex];
 }
 
 char* udtBaseParser::AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength, u32* outStringLength)

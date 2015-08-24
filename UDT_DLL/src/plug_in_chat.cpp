@@ -278,10 +278,10 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	   locationIdx >= 0 &&
 	   locationIdx < MAX_LOCATIONS)
 	{
-		const udtBaseParser::udtConfigString& cs = parser._inConfigStrings[CS_LOCATIONS_68 + locationIdx];
-		if(cs.String != NULL)
+		const udtString& cs = parser.GetConfigString(CS_LOCATIONS_68 + locationIdx);
+		if(!udtString::IsNull(cs))
 		{
-			const udtString location = udtString::NewClone(_chatStringAllocator, cs.String, cs.StringLength);
+			const udtString location = udtString::NewCloneFromRef(_chatStringAllocator, cs);
 			udtString cleanLocation = udtString::NewCloneFromRef(_chatStringAllocator, location);
 			udtString::CleanUp(cleanLocation, protocol);
 			chatEvent.Strings[0].Location = location.String;

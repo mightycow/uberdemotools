@@ -177,8 +177,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		const udtBaseParser::udtConfigString& cs = parser._inConfigStrings[firstPlayerCs + i];
-		ProcessPlayerConfigString(cs.String, i);
+		ProcessPlayerConfigString(parser.GetConfigString(firstPlayerCs + i).String, i);
 	}
 
 	if(_analyzer.Mod() == udtMod::CPMA)

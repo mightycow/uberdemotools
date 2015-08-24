@@ -38,8 +38,7 @@ public:
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
-	udtConfigString*      FindConfigStringByIndex(s32 csIndex); // Returns NULL when not available.
-	udtString             GetConfigString(s32 csIndex);
+	const udtString&      GetConfigString(s32 csIndex) const;
 
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.
@@ -82,18 +81,6 @@ public:
 		s32 EndTimeMs;
 	};
 
-	struct udtConfigString
-	{
-		const char* String;
-		u32 StringLength;
-	};
-
-	struct udtServerCommand
-	{
-		const char* String;
-		u32 StringLength;
-	};
-
 public:
 	// General.
 	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
@@ -131,7 +118,7 @@ public:
 	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.
-	udtConfigString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
+	udtString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
 	udtVMArrayWithAlloc<u32> _inGameStateFileOffsets;
 	udtVMArrayWithAlloc<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
 	udtVMArrayWithAlloc<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.

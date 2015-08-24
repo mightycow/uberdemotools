@@ -92,11 +92,11 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
-		if(cs != NULL)
+		const udtString& cs = parser.GetConfigString(csFirstPlayerIdx + i);
+		if(!udtString::IsNullOrEmpty(cs))
 		{
 			udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs->String);
+			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs.String);
 		}
 	}
 }
@@ -123,12 +123,12 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIndex);
-	if(cs == NULL)
+	const udtString& cs = parser.GetConfigString(csIndex);
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return;
 	}
 
 	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs->String);
+	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs.String);
 }

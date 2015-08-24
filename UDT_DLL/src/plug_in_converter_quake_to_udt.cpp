@@ -66,7 +66,7 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 	s32 configStringCount = 0;
 	for(u32 i = 0; i < 2*MAX_CONFIGSTRINGS; ++i)
 	{
-		if(parser._inConfigStrings[i].StringLength > 0)
+		if(!udtString::IsNullOrEmpty(parser._inConfigStrings[i]))
 		{
 			++configStringCount;
 		}
@@ -74,12 +74,12 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 	_outputFile->Write(&configStringCount, 4, 1);
 	for(u32 i = 0; i < 2 * MAX_CONFIGSTRINGS; ++i)
 	{
-		const udtBaseParser::udtConfigString& cs = parser._inConfigStrings[i];
-		if(cs.StringLength > 0)
+		const udtString& cs = parser._inConfigStrings[i];
+		if(!udtString::IsNullOrEmpty(cs))
 		{
 			_outputFile->Write(&i, 4, 1);
-			_outputFile->Write(&cs.StringLength, 4, 1);
-			_outputFile->Write(cs.String, cs.StringLength, 1);
+			_outputFile->Write(&cs.Length, 4, 1);
+			_outputFile->Write(cs.String, cs.Length, 1);
 		}
 	}
 

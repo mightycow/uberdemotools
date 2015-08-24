@@ -87,10 +87,8 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	_currentGameState.KeyValuePairs = _keyValuePairs.GetEndAddress();
 	_currentGameState.Players = _players.GetEndAddress();
 
-	const udtBaseParser::udtConfigString& systemInfoCs = parser._inConfigStrings[CS_SYSTEMINFO];
-	const udtBaseParser::udtConfigString& serverInfoCs = parser._inConfigStrings[CS_SERVERINFO];
-	const udtString systemInfoString = udtString::NewConstRef(systemInfoCs.String, systemInfoCs.StringLength);
-	const udtString serverInfoString = udtString::NewConstRef(serverInfoCs.String, serverInfoCs.StringLength);
+	const udtString systemInfoString = parser.GetConfigString(CS_SYSTEMINFO);
+	const udtString serverInfoString = parser.GetConfigString(CS_SERVERINFO);
 	const udtString backslashString = udtString::NewConstRef("\\");
 	const udtString* systemAndServerStringParts[3] = { &systemInfoString, &serverInfoString, &backslashString };
 	const udtString systemAndServerString = udtString::NewFromConcatenatingMultiple(_stringAllocator, systemAndServerStringParts, (u32)UDT_COUNT_OF(systemAndServerStringParts));
@@ -215,7 +213,7 @@ void udtParserPlugInGameState::AddCurrentGameState()
 	ClearPlayerInfos();
 }
 
-void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings, udtProtocol::Id protocol)
+void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol)
 {
 	_currentGameState.DemoTakerPlayerIndex = playerIndex;
 	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
@@ -226,8 +224,8 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtBa
 	}
 
 	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(protocol);
-	const udtBaseParser::udtConfigString cs = configStrings[firstPlayerCsIndex + playerIndex];
-	if(cs.String == NULL || cs.StringLength == 0)
+	const udtString& cs = configStrings[firstPlayerCsIndex + playerIndex];
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return;
 	}
@@ -281,12 +279,12 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& confi
 	_currentGameState.KeyValuePairCount = _keyValuePairs.GetSize() - previousCount;
 }
 
-void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString)
+void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtString& configString)
 {
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 
 	// Player connected?
-	if(_playerInfos[playerIndex].Index != playerIndex && configString.String != NULL && configString.StringLength > 0)
+	if(_playerInfos[playerIndex].Index != playerIndex && !udtString::IsNullOrEmpty(configString))
 	{
 		udtString clan, name, finalName;
 		bool hasClan;
@@ -310,7 +308,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtBaseP
 		_playerInfos[playerIndex].FirstTeam = team;
 	}
 	// Player disconnected?
-	else if(_playerInfos[playerIndex].Index == playerIndex && (configString.String == NULL || configString.StringLength == 0))
+	else if(_playerInfos[playerIndex].Index == playerIndex && udtString::IsNullOrEmpty(configString))
 	{
 		_players.Add(_playerInfos[playerIndex]);
 		++_currentGameState.PlayerCount;
