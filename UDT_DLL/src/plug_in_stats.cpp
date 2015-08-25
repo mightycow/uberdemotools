@@ -108,6 +108,7 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_followedClientNumber = -1;
 	_maxAllowedStats = UDT_MAX_STATS;
 	_gameEnded = false;
+	_disableStatsOverrides = false;
 	ClearStats();
 }
 
@@ -137,6 +138,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_gameEnded = false;
+	_disableStatsOverrides = false;
 	ClearStats();
 }
 
@@ -1819,7 +1821,9 @@ void udtParserPlugInStats::ParseCPMAPrint()
 
 	if(_cpmaPrintStatsReader.ExpectingStats)
 	{
+		_disableStatsOverrides = true;
 		ParseCPMAPrintStats(cleanMessage);
+		_disableStatsOverrides = false;
 	}
 	else if(udtString::StartsWith(cleanMessage, "TEAM Player") ||
 			udtString::StartsWith(cleanMessage, "Player") ||
@@ -1967,11 +1971,16 @@ void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtS
 	for(s32 i = 0; i < fieldCount; ++i)
 	{
 		const s32 fieldIndex = fields[i].Index;
-		s32* const field = destFields + fieldIndex;
-		*field = GetValue(fields[i].TokenIndex + tokenOffset);
-		
 		const s32 byteIndex = fieldIndex >> 3;
 		const s32 bitIndex = fieldIndex & 7;
+		if(_disableStatsOverrides &&
+		   (destMask[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		{
+			continue;
+		}
+
+		s32* const field = destFields + fieldIndex;
+		*field = GetValue(fields[i].TokenIndex + tokenOffset);
 		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
 	}
 }
@@ -1981,11 +1990,16 @@ void udtParserPlugInStats::SetFields(u8* destMask, s32* destFields, const udtSta
 	for(s32 i = 0; i < fieldCount; ++i)
 	{
 		const s32 fieldIndex = fields[i].Index;
-		s32* const field = destFields + fieldIndex;
-		*field = fields[i].Value;
-
 		const s32 byteIndex = fieldIndex >> 3;
 		const s32 bitIndex = fieldIndex & 7;
+		if(_disableStatsOverrides &&
+		   (destMask[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		{
+			continue;
+		}
+
+		s32* const field = destFields + fieldIndex;
+		*field = fields[i].Value;
 		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
 	}
 }

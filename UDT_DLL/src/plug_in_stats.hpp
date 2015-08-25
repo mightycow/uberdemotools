@@ -147,4 +147,5 @@ private:
 	s32 _firstPlaceScore;
 	s32 _secondPlaceScore;
 	bool _gameEnded;
+	bool _disableStatsOverrides;
 };
