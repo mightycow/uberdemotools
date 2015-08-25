@@ -66,6 +66,10 @@ struct udtString
 	// Strips Quake color codes and keeps printable codes only depending on the protocol version.
 	static void CleanUp(udtString& result, udtProtocol::Id protocol);
 
+	static void RemoveCharacter(udtString& result, char toRemove);
+
+	static void TrimTrailingCharacter(udtString& result, char toRemove);
+
 	char* String;
 	u32 Length;
 	u32 ReservedBytes; // 0 when read-only.

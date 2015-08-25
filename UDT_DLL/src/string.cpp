@@ -623,7 +623,7 @@ static bool IsLongOSPColorString(const udtString& string)
 
 void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 {
-	if(result.String == NULL)
+	if(IsNullOrEmpty(result))
 	{
 		return;
 	}
@@ -658,4 +658,57 @@ void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 	*dest = '\0';
 
 	result.Length = newLength;
+}
+
+void udtString::RemoveCharacter(udtString& result, char toRemove)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	u32 newLength = 0;
+	char* dest = result.String;
+	char* source = result.String;
+	char c;
+	while((c = *source) != 0)
+	{
+		if(c != toRemove)
+		{
+			*dest++ = c;
+			newLength++;
+		}
+		++source;
+	}
+	*dest = '\0';
+
+	result.Length = newLength;
+}
+
+void udtString::TrimTrailingCharacter(udtString& result, char toRemove)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	char* it = result.String;
+	char* lastChar = result.String;
+	while(*it != 0)
+	{
+		if(*it != toRemove)
+		{
+			lastChar = it;
+		}
+		++it;
+	}
+
+	lastChar[1] = '\0';
+	result.Length = (u32)(lastChar + 1 - result.String);
 }
