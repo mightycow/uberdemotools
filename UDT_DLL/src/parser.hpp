@@ -38,7 +38,7 @@ public:
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
-	const udtString&      GetConfigString(s32 csIndex) const;
+	const udtString       GetConfigString(s32 csIndex) const;
 
 private:
 	bool                  ParseServerMessage(); // Returns true if should continue parsing.

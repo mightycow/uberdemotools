@@ -1083,7 +1083,7 @@ void udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 	frame->numEntities++;
 }
 
-const udtString& udtBaseParser::GetConfigString(s32 csIndex) const
+const udtString udtBaseParser::GetConfigString(s32 csIndex) const
 {
 	if(csIndex < 0 || csIndex >= (s32)UDT_COUNT_OF(_inConfigStrings))
 	{
