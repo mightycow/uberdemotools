@@ -38,6 +38,16 @@ u32 CommandLineTokenizer::GetArgLength(u32 arg) const
 	return _argLengths[arg];
 }
 
+u32 CommandLineTokenizer::GetArgOffset(u32 arg) const
+{
+	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
+	{
+		return 0;
+	}
+
+	return _argOffsets[arg];
+}
+
 udtString CommandLineTokenizer::GetArg(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
@@ -58,6 +68,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 
 	Q_strncpyz(_originalCommand, text, sizeof(_originalCommand));
 
+	const char* const in = text;
 	char* out = _tokenizedCommand;
 
 	for(;;)
@@ -108,6 +119,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 		if(!ignoreQuotes && *text == '"')
 		{
 			_argStrings[_argCount] = out;
+			_argOffsets[_argCount] = (u32)(text - in);
 			_argCount++;
 			text++;
 			while(*text && *text != '"')
@@ -125,6 +137,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 
 		// regular token
 		_argStrings[_argCount] = out;
+		_argOffsets[_argCount] = (u32)(text - in);
 		_argCount++;
 
 		// skip until whitespace, quote, or command
