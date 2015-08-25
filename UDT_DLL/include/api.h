@@ -420,11 +420,13 @@ struct udtStatsCompMode
 	N(Suicides, "suicides", SmallerWins) \
 	N(DamageGiven, "damage given", BiggerWins) \
 	N(DamageReceived, "damage received", SmallerWins) \
+	N(TeamDamage, "team damage", SmallerWins) \
 	N(ArmorTaken, "armor taken", BiggerWins) \
 	N(HealthTaken, "health taken", BiggerWins) \
 	N(Captures, "captures", BiggerWins) \
 	N(Defends, "defends", BiggerWins) \
 	N(Assists, "assists", BiggerWins) \
+	N(Returns, "returns", BiggerWins) \
 	N(RedArmorPickups, "red armor pickups", BiggerWins) \
 	N(YellowArmorPickups, "yellow armor pickups", BiggerWins) \
 	N(GreenArmorPickups, "green armor pickups", BiggerWins) \
@@ -434,11 +436,12 @@ struct udtStatsCompMode
 	N(RedArmorPickupTime, "red armor time", NeitherWins) \
 	N(YellowArmorPickupTime, "yellow armor time", NeitherWins) \
 	N(GreenArmorPickupTime, "green armor time", NeitherWins) \
-	N(MegaHealthPickupTime, "mega health armor time", NeitherWins) \
+	N(MegaHealthPickupTime, "mega health time", NeitherWins) \
 	N(RegenPickups, "regeneration pickups", BiggerWins) \
 	N(HastePickups, "haste pickups", BiggerWins) \
 	N(InvisPickups, "invisibility pickups", BiggerWins) \
 	N(FlagPickups, "flag pickups", BiggerWins) \
+	N(FlagTime, "flag possession time", BiggerWins) \
 	N(MedkitPickups, "medkit pickups", BiggerWins) \
 	N(GauntletKills, "gauntlet kills", BiggerWins) \
 	N(GauntletAccuracy, "gauntlet accuracy", BiggerWins) \
@@ -568,13 +571,13 @@ struct udtPlayerStatsField
 	N(HastePickups, "haste pickups", BiggerWins) \
 	N(InvisPickups, "invisibility pickups", BiggerWins) \
 	N(FlagPickups, "flag pickups", BiggerWins) \
+	N(FlagTime, "flag possession time", BiggerWins) \
 	N(MedkitPickups, "medkit pickups", BiggerWins) \
 	N(QuadDamageTime, "quad damage possession time", BiggerWins) \
 	N(BattleSuitTime, "battle suit possession time", BiggerWins) \
 	N(RegenTime, "regeneration possession time", BiggerWins) \
 	N(HasteTime, "haste possession time", BiggerWins) \
-	N(InvisTime, "invisibility possession time", BiggerWins) \
-	N(FlagTime, "flag possession time", BiggerWins) \
+	N(InvisTime, "invisibility possession time", BiggerWins)
 
 #define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) Enum,
 struct udtTeamStatsField

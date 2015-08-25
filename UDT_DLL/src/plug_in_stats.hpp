@@ -69,6 +69,11 @@ private:
 	void ParseQLScoresCTFOld();
 	void ParseQLScoresCAOld();
 	void ParseQLStatsCA();
+	void ParsePrint();
+	void ParseCPMAPrint();
+	void ParseCPMAPrintHeader(const udtString& message);
+	void ParseCPMAPrintStats(const udtString& message);
+	void ResetCPMAPrintStatsReader();
 	void ComputePlayerAccuracies(s32 clientNumber);
 	void ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots);
 
@@ -103,10 +108,25 @@ private:
 		SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), &field, 1);
 	}
 
+	struct udtCPMAPrintStatsReader
+	{
+		struct PlayerFieldHeader
+		{
+			u16 StringStart;
+			u16 StringLength;
+			s32 StatType;
+		};
+
+		PlayerFieldHeader PlayerHeaders[64];
+		u32 PlayerHeaderCount;
+		bool ExpectingStats; // If false, expecting a new header.
+	};
+
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;
+	udtCPMAPrintStatsReader _cpmaPrintStatsReader;
 	udtPlayerStats _playerStats[64];
 	s32 _playerTeamIndices[64];
 	s32 _playerFields[64][udtPlayerStatsField::Count];
