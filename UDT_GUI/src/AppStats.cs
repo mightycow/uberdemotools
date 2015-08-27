@@ -166,7 +166,7 @@ namespace Uber.DemoTools
                 // The annoyance we have to deal with is that we don't necessarily have the same fields
                 // defined for both teams. Also, the order isn't guaranteed.
                 var teamItems = new ObservableCollection<TeamStatsDisplayInfo>();
-                for(var i = 0; i < UDT_DLL.UDT_TEAM_STATS_FIELD_COUNT; ++i)
+                for(var i = 0; i < UDT_DLL.StatsConstants.TeamFieldCount; ++i)
                 {
                     var field0 = stats.TeamStats[0].Fields.Find(f => f.FieldBitIndex == i);
                     var field1 = stats.TeamStats[1].Fields.Find(f => f.FieldBitIndex == i);
@@ -208,7 +208,7 @@ namespace Uber.DemoTools
             // defined for all players. Also, the order isn't guaranteed.
             var playerCount = stats.PlayerStats.Count;
             var playerItems = new ObservableCollection<PlayerStatsDisplayInfo>();
-            for(var i = 0; i < UDT_DLL.UDT_PLAYER_STATS_FIELD_COUNT; ++i)
+            for(var i = 0; i < UDT_DLL.StatsConstants.PlayerFieldCount; ++i)
             {
                 DemoStatsField field = null;
                 for(var j = 0; j < playerCount; ++j)

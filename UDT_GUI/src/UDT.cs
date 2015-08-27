@@ -472,11 +472,6 @@ namespace Uber.DemoTools
             public Int32 Reserved1;
         };
 
-        public const int UDT_TEAM_STATS_MASK_BYTE_COUNT = 8;
-        public const int UDT_PLAYER_STATS_MASK_BYTE_COUNT = 32;
-        public const int UDT_TEAM_STATS_FIELD_COUNT = 35;
-        public const int UDT_PLAYER_STATS_FIELD_COUNT = 145;
-
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
@@ -503,6 +498,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtGetByteArray(udtByteArray arrayId, ref IntPtr array, ref UInt32 elementCount);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtGetStatsConstants(ref UInt32 playerMaskByteCount, ref UInt32 teamMaskByteCount, ref UInt32 playerFieldCount, ref UInt32 teamFieldCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtSetCrashHandler(IntPtr crashHandler);
@@ -554,6 +552,29 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtTimeShiftDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtTimeShiftArg timeShiftArg);
+
+        public class StatsConstantsGrabber
+        {
+            public StatsConstantsGrabber()
+            {
+                UInt32 playerMaskByteCount = 0;
+                UInt32 teamMaskByteCount = 0;
+                UInt32 playerFieldCount = 0;
+                UInt32 teamFieldCount = 0;
+                udtGetStatsConstants(ref playerMaskByteCount, ref teamMaskByteCount, ref playerFieldCount, ref teamFieldCount);
+                PlayerMaskByteCount = (int)playerMaskByteCount;
+                TeamMaskByteCount = (int)teamMaskByteCount;
+                PlayerFieldCount = (int)playerFieldCount;
+                TeamFieldCount = (int)teamFieldCount;
+            }
+
+            public int PlayerMaskByteCount { private set; get; }
+            public int TeamMaskByteCount { private set; get; }
+            public int PlayerFieldCount { private set; get; }
+            public int TeamFieldCount { private set; get; }
+        }
+
+        public static readonly StatsConstantsGrabber StatsConstants = new StatsConstantsGrabber();
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -1681,7 +1702,7 @@ namespace Uber.DemoTools
                     teamStats.Fields.Add(customNameField);
                 }
 
-                for(int j = 0; j < UDT_TEAM_STATS_FIELD_COUNT; ++j)
+                for(int j = 0; j < StatsConstants.TeamFieldCount; ++j)
                 {
                     var byteIndex = j / 8;
                     var bitIndex = j % 8;
@@ -1704,7 +1725,7 @@ namespace Uber.DemoTools
 
                 stats.TeamStats.Add(teamStats);
 
-                flagsByteOffset += UDT_TEAM_STATS_MASK_BYTE_COUNT;
+                flagsByteOffset += StatsConstants.TeamMaskByteCount;
             }
         }
 
@@ -1739,7 +1760,7 @@ namespace Uber.DemoTools
                 var playerStats = new StatsInfoGroup();
                 var extraInfo = (udtPlayerStats)Marshal.PtrToStructure(new IntPtr(extraInfoAddress), typeof(udtPlayerStats));
                 playerStats.Name = SafeGetUTF8String(extraInfo.CleanName);
-                for(int j = 0; j < UDT_PLAYER_STATS_FIELD_COUNT; ++j)
+                for(int j = 0; j < StatsConstants.PlayerFieldCount; ++j)
                 {
                     var byteIndex = j / 8;
                     var bitIndex = j % 8;
@@ -1789,7 +1810,7 @@ namespace Uber.DemoTools
                 }
 
                 extraInfoAddress += extraInfoItemSize;
-                flagsByteOffset += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
+                flagsByteOffset += StatsConstants.PlayerMaskByteCount;
             }
             
             var highestFieldCount = 0;

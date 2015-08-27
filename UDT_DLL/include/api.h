@@ -1403,6 +1403,9 @@ extern "C"
 	// Retrieve the byte array for the given array identifier.
 	UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32* elementCount);
 
+	// Get the magic constants needed to parse stats properly.
+	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount);
+
 	//
 	// The configurable API for fine-grained task selection.
 	// All functions returning a s32 value return an error code of type udtErrorCode::Id.

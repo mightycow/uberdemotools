@@ -405,6 +405,24 @@ UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32*
 	return (s32)udtErrorCode::None;
 }
 
+UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount)
+{
+	if(playerMaskByteCount == NULL ||
+	   teamMaskByteCount == NULL ||
+	   playerFieldCount == NULL ||
+	   teamFieldCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*playerMaskByteCount = UDT_PLAYER_STATS_MASK_BYTE_COUNT;
+	*teamMaskByteCount = UDT_TEAM_STATS_MASK_BYTE_COUNT;
+	*playerFieldCount = (u32)udtPlayerStatsField::Count;
+	*teamFieldCount = (u32)udtTeamStatsField::Count;
+
+	return (s32)udtErrorCode::None;
+}
+
 UDT_API(s32) udtSetCrashHandler(udtCrashCallback crashHandler)
 {
 	SetCrashHandler(crashHandler);
