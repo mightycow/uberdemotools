@@ -140,7 +140,7 @@ static const char* OverTimeTypes[] =
 };
 #undef UDT_OVERTIME_TYPE_ITEM
 
-#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp) Desc,
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
 static const char* PlayerStatsFieldNames[]
 {
 	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
@@ -148,7 +148,7 @@ static const char* PlayerStatsFieldNames[]
 };
 #undef UDT_PLAYER_STATS_ITEM
 
-#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) Desc,
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
 static const char* TeamStatsFieldNames[]
 {
 	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
@@ -156,7 +156,7 @@ static const char* TeamStatsFieldNames[]
 };
 #undef UDT_TEAM_STATS_ITEM
 
-#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp) (u8)udtStatsCompMode::Comp,
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
 static const u8 PlayerStatsCompModesArray[]
 {
 	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
@@ -164,8 +164,24 @@ static const u8 PlayerStatsCompModesArray[]
 };
 #undef UDT_PLAYER_STATS_ITEM
 
-#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) (u8)udtStatsCompMode::Comp,
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
 static const u8 TeamStatsCompModesArray[]
+{
+	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+	0
+};
+#undef UDT_TEAM_STATS_ITEM
+
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsDataType::Type,
+static const u8 PlayerStatsDataTypesArray[]
+{
+	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+	0
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsDataType::Type,
+static const u8 TeamStatsDataTypesArray[]
 {
 	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
 	0
@@ -396,6 +412,16 @@ UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32*
 		case udtByteArray::PlayerStatsCompModes:
 			*elements = PlayerStatsCompModesArray;
 			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsCompModesArray) - 1);
+			break;
+
+		case udtByteArray::TeamStatsDataTypes:
+			*elements = TeamStatsDataTypesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsDataTypesArray) - 1);
+			break;
+
+		case udtByteArray::PlayerStatsDataTypes:
+			*elements = PlayerStatsDataTypesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsDataTypesArray) - 1);
 			break;
 
 		default:
