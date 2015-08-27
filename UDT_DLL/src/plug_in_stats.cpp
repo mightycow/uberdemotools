@@ -1813,88 +1813,131 @@ void udtParserPlugInStats::ParseCPMAPrint()
 	udtString::CleanUp(cleanMessage, _protocol);
 	udtString::RemoveCharacter(cleanMessage, '\n');
 
-	if(udtString::StartsWith(cleanMessage, "----"))
+	if(udtString::IsNullOrEmpty(cleanMessage) ||
+	   udtString::StartsWith(cleanMessage, "----") ||
+	   udtString::StartsWith(cleanMessage, "RED Totals") ||
+	   udtString::StartsWith(cleanMessage, "BLUE Totals"))
 	{
-		_cpmaPrintStatsReader.ExpectingStats = !_cpmaPrintStatsReader.ExpectingStats;
 		return;
 	}
 
-	if(_cpmaPrintStatsReader.ExpectingStats)
+	if(udtString::StartsWith(cleanMessage, "TEAM") ||
+	   udtString::StartsWith(cleanMessage, "Player"))
+	{
+		ParseCPMAPrintHeader(cleanMessage);
+	}
+	else
 	{
 		_disableStatsOverrides = true;
 		ParseCPMAPrintStats(cleanMessage);
 		_disableStatsOverrides = false;
 	}
-	else if(udtString::StartsWith(cleanMessage, "TEAM Player") ||
-			udtString::StartsWith(cleanMessage, "Player") ||
-			udtString::StartsWith(cleanMessage, "TEAM"))
-	{
-		ParseCPMAPrintHeader(cleanMessage);
-	}
 }
 
 void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 {
-	// @TODO: "TEAM Player" and "TEAM"
-	if(!udtString::StartsWith(message, "Player"))
-	{
-		return;
-	}
+	const bool teamStats = 
+		udtString::StartsWith(message, "TEAM") &&
+		!udtString::Contains(message, "Player");
+	_cpmaPrintStats.TeamStats = teamStats;
 
-	struct PlayerField
+	struct CPMAField
 	{
 		const char* Name;
-		s32 FieldId;
+		s16 PlayerField1;
+		s16 TeamField1;
+		s16 TeamField2;
 	};
 	
-#define CPMA_PLAYER_FIELD(Name, Type) { Name, (s32)udtPlayerStatsField::Type }
-#define CPMA_PLAYER_FIELD_CUSTOM(Name, Type) { Name, (s32)Type }
-	static const PlayerField playerFields[] =
+#define CPMA_FIELD(Name, Type)                  { Name, (s16)udtPlayerStatsField::Type, (s16)udtTeamStatsField::Type, (s16)-666 }
+#define CPMA_FIELD_CUSTOM(Name, Type)           { Name, (s16)Type, (s16)Type, (s16)-666 }
+#define CPMA_PLAYER_FIELD(Name, Type)           { Name, (s16)udtPlayerStatsField::Type, (s16)-666, (s16)-666 }
+#define CPMA_TEAM_FIELD_EX(Name, Type, Type2)   { Name, (s16)-666, (s16)udtTeamStatsField::Type, (s16)udtTeamStatsField::Type2 }
+	static const CPMAField fields[] =
 	{
-		CPMA_PLAYER_FIELD_CUSTOM("Player", -1),
-		CPMA_PLAYER_FIELD_CUSTOM("TEAM", -2),
-		CPMA_PLAYER_FIELD("Kll", Kills),
-		CPMA_PLAYER_FIELD("Dth", Deaths),
-		CPMA_PLAYER_FIELD("Sui", Suicides),
+		// Special fields:
+		CPMA_FIELD_CUSTOM("Player", -1),
+		CPMA_FIELD_CUSTOM("TEAM", -2),
+		// Player only:
 		CPMA_PLAYER_FIELD("Time", Time),
-		CPMA_PLAYER_FIELD("DG", DamageGiven),
-		CPMA_PLAYER_FIELD("DR", DamageReceived),
-		CPMA_PLAYER_FIELD("Score", Score),
-		CPMA_PLAYER_FIELD("TK", TeamKills),
-		CPMA_PLAYER_FIELD("TD", TeamDamage),
-		CPMA_PLAYER_FIELD("Run", FlagPickups),
-		CPMA_PLAYER_FIELD("Held", FlagTime),
-		CPMA_PLAYER_FIELD("Cap", Captures),
-		CPMA_PLAYER_FIELD("Ast", Assists),
-		CPMA_PLAYER_FIELD("Def", Defends),
-		CPMA_PLAYER_FIELD("Rtn", Returns)
+		// Team only:
+		CPMA_TEAM_FIELD_EX("QuadDmg", QuadDamagePickups, QuadDamageTime),
+		CPMA_TEAM_FIELD_EX("BatSuit", BattleSuitPickups, BattleSuitTime),
+		CPMA_TEAM_FIELD_EX("Invis", InvisPickups, InvisTime),
+		// Team + player:
+		CPMA_FIELD("Kll", Kills),
+		CPMA_FIELD("Dth", Deaths),
+		CPMA_FIELD("Sui", Suicides),
+		CPMA_FIELD("DG", DamageGiven),
+		CPMA_FIELD("DR", DamageReceived),
+		CPMA_FIELD("Score", Score),
+		CPMA_FIELD("TK", TeamKills),
+		CPMA_FIELD("TD", TeamDamage),
+		CPMA_FIELD("Run", FlagPickups),
+		CPMA_FIELD("Held", FlagTime),
+		CPMA_FIELD("Cap", Captures),
+		CPMA_FIELD("Ast", Assists),
+		CPMA_FIELD("Def", Defends),
+		CPMA_FIELD("Rtn", Returns),
+		CPMA_FIELD("FC", Captures),
+		CPMA_FIELD("FR", Returns),
+		CPMA_FIELD("SG", ShotgunPickups),
+		CPMA_FIELD("GL", GrenadeLauncherPickups),
+		CPMA_FIELD("RL", RocketLauncherPickups),
+		CPMA_FIELD("LG", LightningGunPickups),
+		CPMA_FIELD("RG", RailgunPickups),
+		CPMA_FIELD("PG", PlasmaGunPickups),
+		CPMA_FIELD("MH", MegaHealthPickups),
+		CPMA_FIELD("RA", RedArmorPickups),
+		CPMA_FIELD("YA", YellowArmorPickups),
+		CPMA_FIELD("GA", GreenArmorPickups)
 	};
+#undef CPMA_FIELD
+#undef CPMA_FIELD_CUSTOM
 #undef CPMA_PLAYER_FIELD
-#undef CPMA_PLAYER_FIELD_CUSTOM
+#undef CPMA_TEAM_FIELD_EX
 
 	_tokenizer->Tokenize(message.String);
 
 	const u32 tokenCount = _tokenizer->GetArgCount();
-	const u32 fieldCount = (u32)UDT_COUNT_OF(playerFields);
-	u32& headerCount = _cpmaPrintStatsReader.PlayerHeaderCount;
+	const u32 fieldCount = (u32)UDT_COUNT_OF(fields);
+	u32& headerCount = _cpmaPrintStats.HeaderCount;
+	headerCount = 0;
+	bool previousLeftAligned = false;
 	for(u32 i = 0; i < tokenCount; ++i)
 	{
 		const udtString token = _tokenizer->GetArg(i);
 		for(u32 j = 0; j < fieldCount; ++j)
 		{
-			if(udtString::Equals(token, playerFields[j].Name))
+			if(udtString::Equals(token, fields[j].Name))
 			{
-				udtCPMAPrintStatsReader::PlayerFieldHeader* const header = &_cpmaPrintStatsReader.PlayerHeaders[headerCount++];
-				u16 startOffset = i == 0 ? (u16)0 : (u16)(_tokenizer->GetArgOffset(i - 1) + _tokenizer->GetArgLength(i - 1) + 1);
-				if(i == 1)
+				udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[headerCount++];
+				header.Field1 = teamStats ? fields[j].TeamField1 : fields[j].PlayerField1;
+				header.Field2 = teamStats ? fields[j].TeamField2 : (s16)-666;
+
+				const bool leftAligned = header.Field1 < 0;
+				u16 startOffset = 0;
+				u16 length = 0;
+				if(i > 0)
 				{
-					startOffset = (u16)_tokenizer->GetArgOffset(i);
+					startOffset = previousLeftAligned ? 
+						(s16)_tokenizer->GetArgOffset(i) :
+						(u16)(_tokenizer->GetArgOffset(i - 1) + _tokenizer->GetArgLength(i - 1) + 1);
+					const u16 endOffset = (leftAligned && i + 1 < tokenCount) ?
+						(u16)_tokenizer->GetArgOffset(i + 1) : 
+						(u16)(_tokenizer->GetArgOffset(i) + _tokenizer->GetArgLength(i));
+					length = endOffset - startOffset;
 				}
-				u16 endOffset = (u16)(_tokenizer->GetArgOffset(i) + _tokenizer->GetArgLength(i));
-				u16 length = i == 0 ? (u16)_tokenizer->GetArgOffset(i + 1) : (endOffset - startOffset);
-				header->StringStart = startOffset;
-				header->StringLength = length;
-				header->StatType = playerFields[j].FieldId;
+				else
+				{
+					length = (u16)_tokenizer->GetArgOffset(i + 1);
+				}
+
+				header.StringStart = startOffset;
+				header.StringLength = length;
+
+				previousLeftAligned = leftAligned;
+
 				break;
 			}
 		}
@@ -1903,7 +1946,19 @@ void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 
 void udtParserPlugInStats::ParseCPMAPrintStats(const udtString& message)
 {
-	const u32 headerCount = _cpmaPrintStatsReader.PlayerHeaderCount;
+	if(_cpmaPrintStats.TeamStats)
+	{
+		ParseCPMAPrintStatsTeam(message);
+	}
+	else
+	{
+		ParseCPMAPrintStatsPlayer(message);
+	}
+}
+
+void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
+{
+	const u32 headerCount = _cpmaPrintStats.HeaderCount;
 	if(headerCount < 2)
 	{
 		return;
@@ -1914,8 +1969,8 @@ void udtParserPlugInStats::ParseCPMAPrintStats(const udtString& message)
 	udtString playerName;
 	for(u32 i = 0; i < headerCount; ++i)
 	{
-		const udtCPMAPrintStatsReader::PlayerFieldHeader& header = _cpmaPrintStatsReader.PlayerHeaders[i];
-		if(header.StatType == -1)
+		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
+		if(header.Field1 == -1)
 		{
 			playerName = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
 			udtString::CleanUp(playerName, _protocol);
@@ -1927,7 +1982,7 @@ void udtParserPlugInStats::ParseCPMAPrintStats(const udtString& message)
 	s32 clientNumber = -1;
 	for(u32 i = 0; i < 64; ++i)
 	{
-		if(_playerStats[i].CleanName != NULL && 
+		if(_playerStats[i].CleanName != NULL &&
 		   udtString::Equals(playerName, _playerStats[i].CleanName))
 		{
 			clientNumber = (s32)i;
@@ -1942,28 +1997,109 @@ void udtParserPlugInStats::ParseCPMAPrintStats(const udtString& message)
 
 	for(u32 i = 0; i < headerCount; ++i)
 	{
-		const udtCPMAPrintStatsReader::PlayerFieldHeader& header = _cpmaPrintStatsReader.PlayerHeaders[i];
-		if(header.StatType < 0)
+		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
+		if(header.Field1 == -2)
+		{
+			udtString teamName = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+			udtString::CleanUp(playerName, _protocol);
+			if(udtString::StartsWith(teamName, "RED"))
+			{
+				SetPlayerField(clientNumber, udtPlayerStatsField::TeamIndex, (s32)udtTeam::Red);
+			}
+			else if(udtString::StartsWith(teamName, "BLUE"))
+			{
+				SetPlayerField(clientNumber, udtPlayerStatsField::TeamIndex, (s32)udtTeam::Blue);
+			}
+			break;
+		}
+	}
+
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
+		if(header.Field1 < 0)
 		{
 			continue;
 		}
 
-		s32 value = -1;
+		s32 value = 0;
 		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
 		_tokenizer->Tokenize(section.String);
-		if(_tokenizer->GetArgCount() < 1 ||
-		   !StringParseInt(value, _tokenizer->GetArgString(0)))
+		if(_tokenizer->GetArgCount() >= 1)
 		{
-			continue;
+			StringParseInt(value, _tokenizer->GetArgString(0));
 		}
-
-		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.StatType, value);
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.Field1, value);
 	}
 }
 
-void udtParserPlugInStats::ResetCPMAPrintStatsReader()
+void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 {
-	memset(&_cpmaPrintStatsReader, 0, sizeof(_cpmaPrintStatsReader));
+	const u32 headerCount = _cpmaPrintStats.HeaderCount;
+	if(headerCount < 2)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	s32 teamIndex = -1;
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
+		if(header.Field1 == -2)
+		{
+			udtString teamName = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+			udtString::CleanUp(teamName, _protocol);
+			if(udtString::StartsWith(teamName, "RED"))
+			{
+				teamIndex = 0;
+			}
+			else if(udtString::StartsWith(teamName, "BLUE"))
+			{
+				teamIndex = 1;
+			}
+			break;
+		}
+	}
+
+	if(teamIndex == -1)
+	{
+		return;
+	}
+
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
+		if(header.Field1 < 0)
+		{
+			continue;
+		}
+
+		s32 value = 0;
+		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+		_tokenizer->Tokenize(section.String);
+		if(_tokenizer->GetArgCount() >= 1)
+		{
+			StringParseInt(value, _tokenizer->GetArgString(0));
+		}
+		SetTeamField(teamIndex, (udtTeamStatsField::Id)header.Field1, value);
+
+		s32 duration = 0;
+		if(_tokenizer->GetArgCount() >= 2)
+		{
+			StringParseSeconds(duration, _tokenizer->GetArgString(1));
+		}
+		if(header.Field2 >= 0)
+		{
+			SetTeamField(teamIndex, (udtTeamStatsField::Id)header.Field2, duration);
+		}
+	}
+}
+
+void udtParserPlugInStats::ResetCPMAPrintStats()
+{
+	memset(&_cpmaPrintStats, 0, sizeof(_cpmaPrintStats));
 }
 
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
@@ -2071,7 +2207,6 @@ void udtParserPlugInStats::AddCurrentStats()
 		if(bestWeapon == -1)
 		{
 			bestWeapon = (s32)udtWeapon::Gauntlet;
-		
 		}
 		
 		// Fix the team index when needed and possible.
@@ -2371,7 +2506,7 @@ void udtParserPlugInStats::ClearStats(bool newGameState)
 	memset(_playerFlags, 0, sizeof(_playerFlags));
 	memset(_teamFields, 0, sizeof(_teamFields));
 	memset(_teamFlags, 0, sizeof(_teamFlags));
-	ResetCPMAPrintStatsReader();
+	ResetCPMAPrintStats();
 
 	if(newGameState)
 	{

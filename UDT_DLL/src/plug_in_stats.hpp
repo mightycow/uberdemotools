@@ -73,7 +73,9 @@ private:
 	void ParseCPMAPrint();
 	void ParseCPMAPrintHeader(const udtString& message);
 	void ParseCPMAPrintStats(const udtString& message);
-	void ResetCPMAPrintStatsReader();
+	void ParseCPMAPrintStatsPlayer(const udtString& message);
+	void ParseCPMAPrintStatsTeam(const udtString& message);
+	void ResetCPMAPrintStats();
 	void ComputePlayerAccuracies(s32 clientNumber);
 	void ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots);
 
@@ -108,25 +110,32 @@ private:
 		SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), &field, 1);
 	}
 
-	struct udtCPMAPrintStatsReader
+	void SetTeamField(s32 teamIndex, udtTeamStatsField::Id fieldId, s32 value)
 	{
-		struct PlayerFieldHeader
+		const udtStatsFieldValue field = { (s32)fieldId, value };
+		SetFields(GetTeamFlags(teamIndex), GetTeamFields(teamIndex), &field, 1);
+	}
+
+	struct udtCPMAPrintStats
+	{
+		struct Header
 		{
 			u16 StringStart;
 			u16 StringLength;
-			s32 StatType;
+			s16 Field1;
+			s16 Field2;
 		};
 
-		PlayerFieldHeader PlayerHeaders[64];
-		u32 PlayerHeaderCount;
-		bool ExpectingStats; // If false, expecting a new header.
+		Header Headers[64];
+		u32 HeaderCount;
+		bool TeamStats;
 	};
 
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
 	udtVMArray<udtParseDataStats> _statsArray; // The final array.
 	udtParseDataStats _stats;
-	udtCPMAPrintStatsReader _cpmaPrintStatsReader;
+	udtCPMAPrintStats _cpmaPrintStats;
 	udtPlayerStats _playerStats[64];
 	s32 _playerTeamIndices[64];
 	s32 _playerFields[64][udtPlayerStatsField::Count];

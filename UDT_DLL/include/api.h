@@ -577,7 +577,24 @@ struct udtPlayerStatsField
 	N(BattleSuitTime, "battle suit possession time", BiggerWins) \
 	N(RegenTime, "regeneration possession time", BiggerWins) \
 	N(HasteTime, "haste possession time", BiggerWins) \
-	N(InvisTime, "invisibility possession time", BiggerWins)
+	N(InvisTime, "invisibility possession time", BiggerWins) \
+	N(Kills, "kills", BiggerWins) \
+	N(Deaths, "deaths", SmallerWins) \
+	N(Suicides, "suicides", SmallerWins) \
+	N(DamageGiven, "damage given", BiggerWins) \
+	N(DamageReceived, "damage received", SmallerWins) \
+	N(TeamKills, "team kills", SmallerWins) \
+	N(TeamDamage, "team damage", SmallerWins) \
+	N(Captures, "captures", BiggerWins) \
+	N(Defends, "defends", BiggerWins) \
+	N(Assists, "assists", BiggerWins) \
+	N(Returns, "returns", BiggerWins) \
+	N(ShotgunPickups, "shotgun pickups", BiggerWins) \
+	N(GrenadeLauncherPickups, "grenade launcher pickups", BiggerWins) \
+	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins) \
+	N(PlasmaGunPickups, "plasma gun pickups", BiggerWins) \
+	N(RailgunPickups, "railgun pickups", BiggerWins) \
+	N(LightningGunPickups, "lightning gun pickups", BiggerWins)
 
 #define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) Enum,
 struct udtTeamStatsField
