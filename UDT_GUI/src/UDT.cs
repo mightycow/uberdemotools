@@ -474,8 +474,8 @@ namespace Uber.DemoTools
 
         public const int UDT_TEAM_STATS_MASK_BYTE_COUNT = 8;
         public const int UDT_PLAYER_STATS_MASK_BYTE_COUNT = 32;
-        public const int UDT_TEAM_STATS_FIELD_COUNT = 18;
-        public const int UDT_PLAYER_STATS_FIELD_COUNT = 142;
+        public const int UDT_TEAM_STATS_FIELD_COUNT = 35;
+        public const int UDT_PLAYER_STATS_FIELD_COUNT = 145;
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
@@ -1640,8 +1640,8 @@ namespace Uber.DemoTools
 
         private static void ExtractTeamStats(udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)
         {
-            if((data.ValidTeams & (ulong)3) != (ulong)3 ||
-                Marshal.ReadInt64(data.TeamFlags) != Marshal.ReadInt64(data.TeamFlags, 8))
+            // For the GUI, we'll be picky and only bother if both teams have stats.
+            if((data.ValidTeams & (ulong)3) != (ulong)3)
             {
                 return;
             }
@@ -1662,6 +1662,7 @@ namespace Uber.DemoTools
             }
 
             var fieldIdx = 0;
+            var flagsByteOffset = 0;
             for(int i = 0; i < 2; ++i)
             {
                 var teamStats = new StatsInfoGroup();
@@ -1684,7 +1685,7 @@ namespace Uber.DemoTools
                 {
                     var byteIndex = j / 8;
                     var bitIndex = j % 8;
-                    var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex);
+                    var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
                         var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
@@ -1702,6 +1703,8 @@ namespace Uber.DemoTools
                 }
 
                 stats.TeamStats.Add(teamStats);
+
+                flagsByteOffset += UDT_TEAM_STATS_MASK_BYTE_COUNT;
             }
         }
 

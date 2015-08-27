@@ -152,7 +152,7 @@ namespace Uber.DemoTools
         private void PopulateViews(DemoStatsInfo stats)
         {
             ShowMatchInfo(stats.GenericFields.Count > 0);
-            ShowTeamStats(stats.TeamStats.Count > 0);
+            ShowTeamStats(stats.TeamStats.Count == 2);
             ShowPlayerStats(stats.PlayerStats.Count > 0);
 
             _matchInfoListView.Items.Clear();
@@ -160,39 +160,48 @@ namespace Uber.DemoTools
             {
                 _matchInfoListView.Items.Add(new string[] { field.Key, field.Value });
             }
-
-            if(stats.TeamStats.Count == 2 &&
-               stats.TeamStats[0].Fields.Count == stats.TeamStats[1].Fields.Count)
+            
+            if(stats.TeamStats.Count == 2)
             {
-                var items = new ObservableCollection<TeamStatsDisplayInfo>();
-                var fieldCount = stats.TeamStats[0].Fields.Count;
-                for(var i = 0; i < fieldCount; ++i)
+                // The annoyance we have to deal with is that we don't necessarily have the same fields
+                // defined for both teams. Also, the order isn't guaranteed.
+                var teamItems = new ObservableCollection<TeamStatsDisplayInfo>();
+                for(var i = 0; i < UDT_DLL.UDT_TEAM_STATS_FIELD_COUNT; ++i)
                 {
-                    var field0 = stats.TeamStats[0].Fields[i];
-                    var field1 = stats.TeamStats[1].Fields[i];
-
-                    var index = -1;
-                    if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins)
+                    var field0 = stats.TeamStats[0].Fields.Find(f => f.FieldBitIndex == i);
+                    var field1 = stats.TeamStats[1].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field0 == null && field1 == null)
                     {
-                        index = field0.IntegerValue > field1.IntegerValue ? 0 : index;
-                        index = field0.IntegerValue < field1.IntegerValue ? 1 : index;
-                    }
-                    else if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins)
-                    {
-                        index = field0.IntegerValue < field1.IntegerValue ? 0 : index;
-                        index = field0.IntegerValue > field1.IntegerValue ? 1 : index;
+                        continue;
                     }
 
-                    var info = new TeamStatsDisplayInfo(field0.Key, field0.Value, field1.Value);
-                    if(index != -1)
+                    var field = field0 ?? field1;
+                    var info = new TeamStatsDisplayInfo(field.Key, field0 != null ? field0.Value : "", field1 != null ? field1.Value : "");
+
+                    if(field0 != null && field1 != null)
                     {
-                        info.Bold[index] = true;
+                        var index = -1;
+                        if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins)
+                        {
+                            index = field0.IntegerValue > field1.IntegerValue ? 0 : index;
+                            index = field0.IntegerValue < field1.IntegerValue ? 1 : index;
+                        }
+                        else if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins)
+                        {
+                            index = field0.IntegerValue < field1.IntegerValue ? 0 : index;
+                            index = field0.IntegerValue > field1.IntegerValue ? 1 : index;
+                        }
+
+                        if(index != -1)
+                        {
+                            info.Bold[index] = true;
+                        }
                     }
 
-                    items.Add(info);
+                    teamItems.Add(info);
                 }
 
-                _teamStatsListView.ItemsSource = items;
+                _teamStatsListView.ItemsSource = teamItems;
             }
 
             // The annoyance we have to deal with is that we don't necessarily have the same fields
@@ -393,7 +402,7 @@ namespace Uber.DemoTools
         {
             var columnKey = new GridViewColumn();
             var headerKey = new GridViewColumnHeader();
-            headerKey.Content = "Key";
+            headerKey.Content = "";
             headerKey.Tag = "Key";
             columnKey.Header = headerKey;
             columnKey.Width = KeyColumnWidth;
@@ -437,7 +446,7 @@ namespace Uber.DemoTools
         {
             var columnKey = new GridViewColumn();
             var headerKey = new GridViewColumnHeader();
-            headerKey.Content = "Key";
+            headerKey.Content = "";
             headerKey.Tag = "Key";
             columnKey.Header = headerKey;
             columnKey.Width = KeyColumnWidth;
@@ -479,7 +488,7 @@ namespace Uber.DemoTools
         {
             var columnKey = new GridViewColumn();
             var headerKey = new GridViewColumnHeader();
-            headerKey.Content = "Key";
+            headerKey.Content = "";
             headerKey.Tag = "Key";
             columnKey.Header = headerKey;
             columnKey.Width = KeyColumnWidth;
