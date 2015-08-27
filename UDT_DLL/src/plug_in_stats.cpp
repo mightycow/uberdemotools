@@ -55,6 +55,19 @@ static bool IsTeamMode(udtGameType::Id gameType)
 	return gameType >= udtGameType::FirstTeamMode;
 }
 
+static bool IsRoundBasedMode(udtGameType::Id gameType)
+{
+	switch(gameType)
+	{
+		case udtGameType::CA:
+		case udtGameType::CTFS:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
 static u32 PopCount(u32 bitMask)
 {
 	u32 count = 0;
@@ -2383,8 +2396,9 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		else if(_analyzer.Mod() == udtMod::CPMA)
 		{
-			redScore = _cpmaScoreRed;
-			blueScore = _cpmaScoreBlue;
+			const bool roundBased = IsRoundBasedMode(_analyzer.GameType());
+			redScore = roundBased ? _cpmaScoreRed : _cpmaRoundScoreRed;
+			blueScore = roundBased ? _cpmaScoreBlue : _cpmaRoundScoreBlue;
 			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
 			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
 			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
