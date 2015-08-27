@@ -413,6 +413,7 @@ struct udtStatsDataType
 		Seconds,    // Duration in seconds, use the UDT format instead.
 		Percentage, // Append a percentage sign at the end.
 		Weapon,     // The integer is of type udtWeapon::Id.
+		Ping,       // The ping in milli-seconds.
 		Count
 	};
 };
@@ -420,7 +421,7 @@ struct udtStatsDataType
 #define UDT_PLAYER_STATS_LIST(N) \
 	N(TeamIndex, "team index", NeitherWins, Team) \
 	N(Score, "score", BiggerWins, Generic) \
-	N(Ping, "ping", SmallerWins, Generic) \
+	N(Ping, "ping", SmallerWins, Ping) \
 	N(Time, "play time", BiggerWins, Minutes) \
 	N(Kills, "kills", BiggerWins, Generic) \
 	N(Deaths, "deaths", SmallerWins, Generic) \

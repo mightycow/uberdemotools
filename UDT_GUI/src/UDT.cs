@@ -125,6 +125,8 @@ namespace Uber.DemoTools
         {
             TeamStatsCompModes,
             PlayerStatsCompModes,
+            TeamStatsDataTypes,
+            PlayerStatsDataTypes,
             Count
         }
 
@@ -144,6 +146,18 @@ namespace Uber.DemoTools
             NeitherWins,
             BiggerWins,
             SmallerWins,
+            Count
+        };
+
+        public enum udtStatsDataType : uint
+        {
+            Generic,
+            Team,
+            Minutes,
+            Seconds,
+            Percentage,
+            Weapon,
+            Ping,
             Count
         };
 
@@ -1682,6 +1696,13 @@ namespace Uber.DemoTools
                 return;
             }
 
+            IntPtr fieldDataTypes = IntPtr.Zero;
+            UInt32 fieldDataTypeCount = 0;
+            if(udtGetByteArray(udtByteArray.TeamStatsDataTypes, ref fieldDataTypes, ref fieldDataTypeCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
             var fieldIdx = 0;
             var flagsByteOffset = 0;
             for(int i = 0; i < 2; ++i)
@@ -1709,13 +1730,16 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
-                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
-                        var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
+                        var dataType = (udtStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
                         var field = new DemoStatsField();
-                        var fieldValue = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4);
-                        field.Key = ProcessStatsFieldName(fieldName);
-                        field.Value = fieldValue.ToString();
-                        field.IntegerValue = fieldValue;
+                        var fieldName = "";
+                        var fieldValue = "";
+                        var fieldIntegerValue = Marshal.ReadInt32(data.TeamFields, fieldIdx * 4);
+                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
+                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, fieldNameAddress);
+                        field.Key = fieldName;
+                        field.Value = fieldValue;
+                        field.IntegerValue = fieldIntegerValue;
                         field.FieldBitIndex = j;
                         field.ComparisonMode = (udtStatsCompMode)Marshal.ReadByte(fieldCompModes, j);
                         teamStats.Fields.Add(field);
@@ -1746,6 +1770,13 @@ namespace Uber.DemoTools
                 return;
             }
 
+            IntPtr fieldDataTypes = IntPtr.Zero;
+            UInt32 fieldDataTypeCount = 0;
+            if(udtGetByteArray(udtByteArray.PlayerStatsDataTypes, ref fieldDataTypes, ref fieldDataTypeCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
             var extraInfoAddress = data.PlayerStats.ToInt64();
             var extraInfoItemSize = Marshal.SizeOf(typeof(udtPlayerStats));
             var fieldIdx = 0;
@@ -1767,28 +1798,13 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
+                        var dataType = (udtStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
                         var field = new DemoStatsField();
                         var fieldName = "";
                         var fieldValue = "";
                         var fieldIntegerValue = Marshal.ReadInt32(data.PlayerFields, fieldIdx * 4);
-                        if(j == 0) // team index
-                        {
-                            fieldName = "Team";
-                            fieldValue = GetUDTStringForValueOrNull(udtStringArray.Teams, (uint)fieldIntegerValue) ?? "N/A";
-                        }
-                        else if(j == 7) // best weapon
-                        {
-                            fieldName = "Best weapon";
-                            fieldValue = GetUDTStringForValueOrNull(udtStringArray.Weapons, (uint)fieldIntegerValue) ?? "N/A";
-                        }
-                        else
-                        {
-                            var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
-                            fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
-                            fieldName = ProcessStatsFieldName(fieldName);
-                            fieldValue = fieldIntegerValue.ToString();
-                        }
-
+                        var fieldNameAddress = Marshal.ReadIntPtr(fieldNames, j * pointerSize);
+                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, fieldNameAddress);
                         field.Key = fieldName;
                         field.Value = fieldValue;
                         field.IntegerValue = fieldIntegerValue;
@@ -1856,6 +1872,59 @@ namespace Uber.DemoTools
             {
                 stats.PlayerStats.StableSort((a, b) => a.TeamIndex - b.TeamIndex);
             }
+        }
+
+        private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtStatsDataType dataType, IntPtr fieldNameAddress)
+        {
+            fieldName = dataType == udtStatsDataType.Team ? "Team" : GetStatFieldNameFromAddress(fieldNameAddress);
+
+            switch(dataType)
+            {
+                case udtStatsDataType.Team:
+                    fieldValue = GetUDTStringForValueOrNull(udtStringArray.Teams, (uint)fieldIntegerValue) ?? "N/A";
+                    break;
+
+                case udtStatsDataType.Weapon:
+                    fieldValue = GetUDTStringForValueOrNull(udtStringArray.Weapons, (uint)fieldIntegerValue) ?? "N/A";
+                    break;
+
+                case udtStatsDataType.Percentage:
+                    fieldValue = fieldIntegerValue.ToString() + "%";
+                    break;
+
+                case udtStatsDataType.Minutes:
+                    fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 0 ? " minutes" : "minute");
+                    break;
+
+                case udtStatsDataType.Seconds:
+                    fieldValue = FormatStatsSeconds(fieldIntegerValue);
+                    break;
+
+                case udtStatsDataType.Ping:
+                    fieldValue = fieldIntegerValue.ToString() + " ms";
+                    break;
+
+                default:
+                    fieldValue = fieldIntegerValue.ToString();
+                    break;
+            }
+        }
+
+        private static string FormatStatsSeconds(int seconds)
+        {
+            if(seconds <= 0)
+            {
+                return "0";
+            }
+
+            return FormatMinutesSecondsFromMs(seconds * 1000);
+        }
+
+        private static string GetStatFieldNameFromAddress(IntPtr fieldNameAddress)
+        {
+            var fieldName = Marshal.PtrToStringAnsi(fieldNameAddress) ?? "???";
+
+            return ProcessStatsFieldName(fieldName);
         }
 
         private static string CapitalizeString(string s)
