@@ -315,6 +315,13 @@ bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const udt
 	return false;
 }
 
+bool udtString::ContainsNoCase(const udtString& input, const udtString& pattern)
+{
+	u32 charIndex = 0;
+
+	return ContainsNoCase(charIndex, input, pattern);
+}
+
 bool udtString::StartsWithNoCase(const udtString& input, const udtString& pattern)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
@@ -397,6 +404,13 @@ bool udtString::Contains(u32& charIndex, const udtString& input, const udtString
 	return found;
 }
 
+bool udtString::Contains(const udtString& input, const udtString& pattern)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+
+	return strstr(input.String, pattern.String) != NULL;
+}
+
 bool udtString::StartsWith(const udtString& input, const udtString& pattern)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
@@ -464,6 +478,13 @@ bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const cha
 	return ContainsNoCase(charIndex, input, udtString::NewConstRef(pattern));
 }
 
+bool udtString::ContainsNoCase(const udtString& input, const char* pattern)
+{
+	u32 charIndex = 0;
+
+	return ContainsNoCase(charIndex, input, udtString::NewConstRef(pattern));
+}
+
 bool udtString::StartsWithNoCase(const udtString& input, const char* pattern)
 { 
 	return StartsWithNoCase(input, udtString::NewConstRef(pattern));
@@ -481,6 +502,13 @@ bool udtString::EqualsNoCase(const udtString& a, const char* b)
 
 bool udtString::Contains(u32& charIndex, const udtString& input, const char* pattern)
 { 
+	return Contains(charIndex, input, udtString::NewConstRef(pattern));
+}
+
+bool udtString::Contains(const udtString& input, const char* pattern)
+{
+	u32 charIndex = 0;
+
 	return Contains(charIndex, input, udtString::NewConstRef(pattern));
 }
 
