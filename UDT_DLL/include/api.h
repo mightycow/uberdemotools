@@ -101,13 +101,13 @@ struct udtCrashType
 // 2. plug-in class type (internal)
 // 3. plug-in output class type (for reading back the results of Analyzer plug-ins)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,        udtParserPlugInChat,        udtParseDataChat) \
-	N(GameState,   udtParserPlugInGameState,   udtParseDataGameState) \
-	N(Obituaries,  udtParserPlugInObituaries,  udtParseDataObituary) \
-	N(Stats,       udtParserPlugInStats,       udtParseDataStats) \
-	N(RawCommands, udtParserPlugInRawCommands, udtParseDataRawCommand)
+	N(Chat,        "chat messages", udtParserPlugInChat,        udtParseDataChat) \
+	N(GameState,   "game states",   udtParserPlugInGameState,   udtParseDataGameState) \
+	N(Obituaries,  "obituaries",    udtParserPlugInObituaries,  udtParseDataObituary) \
+	N(Stats,       "match stats",   udtParserPlugInStats,       udtParseDataStats) \
+	N(RawCommands, "raw commands",  udtParserPlugInRawCommands, udtParseDataRawCommand)
 
-#define UDT_PLUG_IN_ITEM(Enum, Type, OutputType) Enum,
+#define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
 {
 	enum Id
@@ -357,6 +357,7 @@ struct udtStringArray
 		OverTimeTypes,
 		TeamStatsNames,
 		PlayerStatsNames,
+		PlugInNames,
 		Count
 	};
 };

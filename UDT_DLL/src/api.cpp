@@ -144,7 +144,7 @@ static const char* OverTimeTypes[] =
 static const char* PlayerStatsFieldNames[]
 {
 	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
-		""
+	"after last player stats field"
 };
 #undef UDT_PLAYER_STATS_ITEM
 
@@ -152,9 +152,17 @@ static const char* PlayerStatsFieldNames[]
 static const char* TeamStatsFieldNames[]
 {
 	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
-		""
+	"after last team stats field"
 };
 #undef UDT_TEAM_STATS_ITEM
+
+#define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Desc,
+static const char* PlugInNamesArray[]
+{
+	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	"after last plug-in"
+};
+#undef UDT_PLUG_IN_ITEM
 
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
 static const u8 PlayerStatsCompModesArray[]
@@ -386,6 +394,11 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 		case udtStringArray::PlayerStatsNames:
 			*elements = PlayerStatsFieldNames;
 			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsFieldNames) - 1);
+			break;
+
+		case udtStringArray::PlugInNames:
+			*elements = PlugInNamesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PlugInNamesArray) - 1);
 			break;
 
 		default:

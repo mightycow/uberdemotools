@@ -22,7 +22,7 @@ void ConstructPlugInT(udtBaseParserPlugIn* address)
 }
 
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) (u32)sizeof(Type),
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) (u32)sizeof(Type),
 const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
@@ -30,7 +30,7 @@ const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 };
 #undef UDT_PRIVATE_PLUG_IN_ITEM
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) &ConstructPlugInT<Type>,
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) &ConstructPlugInT<Type>,
 const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)

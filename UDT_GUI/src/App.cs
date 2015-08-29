@@ -63,6 +63,18 @@ namespace Uber.DemoTools
         public int FlickRailMinAngleDeltaSnaps = 2;
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
+        public bool[] JSONPlugInsEnabled = CreateTrueBoolArray((int)UDT_DLL.udtParserPlugIn.Count);
+
+        private static bool[] CreateTrueBoolArray(int size)
+        {
+            var array = new bool[size];
+            for(var i = 0; i < size; ++i)
+            {
+                array[i] = true;
+            }
+
+            return array;
+        }
     }
 
     public class MapConversionRule

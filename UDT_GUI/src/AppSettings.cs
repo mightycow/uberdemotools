@@ -61,6 +61,7 @@ namespace Uber.DemoTools
         private CheckBox _printAllocStatsCheckBox = null;
         private CheckBox _printExecutionTimeCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
+        private readonly List<CheckBox> _jsonEnabledPlugInsCheckBoxes = new List<CheckBox>();
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -97,6 +98,11 @@ namespace Uber.DemoTools
             config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
+
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                _app.Config.JSONPlugInsEnabled[i] = _jsonEnabledPlugInsCheckBoxes[i].IsChecked ?? false;
+            }
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -241,6 +247,29 @@ namespace Uber.DemoTools
             colorLogMessagesCheckBox.Unchecked += (obj, args) => _app.Config.ColorLogWarningsAndErrors = false;
             colorLogMessagesCheckBox.ToolTip = "The option is disabled by default because it might not integrate well with your current theme.";
 
+            var plugInNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PlugInNames);
+            var jsonPlugInsStackPanel = new StackPanel();
+            jsonPlugInsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            jsonPlugInsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            jsonPlugInsStackPanel.Margin = new Thickness(5);
+            jsonPlugInsStackPanel.Children.Add(new TextBlock { Text = "Select which analyzers are enabled" });
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + plugInNames[i].Capitalize();
+                checkBox.IsChecked = _app.Config.JSONPlugInsEnabled[i];
+                _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
+                jsonPlugInsStackPanel.Children.Add(checkBox);
+            }
+
+            var jsonPlugInsGroupBox = new GroupBox();
+            jsonPlugInsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            jsonPlugInsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            jsonPlugInsGroupBox.Margin = new Thickness(5);
+            jsonPlugInsGroupBox.Header = "JSON export";
+            jsonPlugInsGroupBox.Content = jsonPlugInsStackPanel;
+
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             const int InputFolderIndex = 8;
@@ -274,6 +303,7 @@ namespace Uber.DemoTools
             SetActive(_skipRecursiveDialog, _app.Config.SkipScanFoldersRecursivelyDialog);
             _inputFolderRow = settingStackPanel.Children[InputFolderIndex] as FrameworkElement;
             UpdateInputFolderActive();
+            settingStackPanel.Children.Add(jsonPlugInsGroupBox);
 
             var settingsGroupBox = new GroupBox();
             settingsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -282,7 +312,15 @@ namespace Uber.DemoTools
             settingsGroupBox.Header = "Settings";
             settingsGroupBox.Content = settingsPanel;
 
-            return settingsGroupBox;
+            var scrollViewer = new ScrollViewer();
+            scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
+            scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
+            scrollViewer.Margin = new Thickness(5);
+            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scrollViewer.Content = settingsGroupBox;
+
+            return scrollViewer; 
         }
 
         private FrameworkElement CreateFolderRow(ref TextBox textBox, string defaultValue, string browseDesc)

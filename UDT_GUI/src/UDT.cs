@@ -11,6 +11,25 @@ using udtParserContextGroupRef = System.IntPtr;
 
 namespace Uber.DemoTools
 {
+    // @TODO: Move this...
+    public static class StringHelper
+    {
+        public static string Capitalize(this string s)
+        {
+            if(s.Length == 0)
+            {
+                return s;
+            }
+
+            if(s.Length == 1)
+            {
+                return s.ToUpper();
+            }
+
+            return s.Substring(0, 1).ToUpper() + s.Substring(1);
+        }
+    }
+
     public unsafe class UDT_DLL
     {
 #if (UDT_X86)
@@ -118,6 +137,7 @@ namespace Uber.DemoTools
             OverTimeTypes,
             TeamStatsNames,
             PlayerStatsNames,
+            PlugInNames,
             Count
         }
 
@@ -1927,24 +1947,9 @@ namespace Uber.DemoTools
             return ProcessStatsFieldName(fieldName);
         }
 
-        private static string CapitalizeString(string s)
-        {
-            if(s.Length == 0)
-            {
-                return s;
-            }
-
-            if(s.Length == 1)
-            {
-                return s.ToUpper();
-            }
-
-            return s.Substring(0, 1).ToUpper() + s.Substring(1);
-        }
-
         private static string ProcessStatsFieldName(string name)
         {
-            return CapitalizeString(name.Replace("bfg", "BFG").Replace("possession", "poss."));
+            return name.Replace("bfg", "BFG").Replace("possession", "poss.").Capitalize();
         }
 
         private static void PrintExecutionTime(Stopwatch timer)
