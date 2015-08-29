@@ -430,16 +430,8 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 		return false;
 	}
 
-	// @TODO: Move this to the context.
-	udtVMMemoryStream memoryStream;
-	if(!memoryStream.Open(1 << 24))
-	{
-		return false;
-	}
-
-	// @TODO: Move this to the context.
-	udtJSONWriter jsonWriter;
-	jsonWriter.SetOutputStream(&memoryStream);
+	context->JSONWriterContext.ResetForNextDemo();
+	udtJSONWriter& jsonWriter = context->JSONWriterContext.Writer;
 	jsonWriter.StartFile();
 
 	void* gameStatesPointer = NULL;
@@ -489,11 +481,14 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 
 	jsonWriter.EndFile();
 
+	udtVMMemoryStream& memoryStream = context->JSONWriterContext.MemoryStream;
 	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
 	{
 		context->Context.LogError("Failed to write to JSON file '%s'", jsonPath);
 		return false;
 	}
+
+	context->Context.LogInfo("Successfully wrote to file '%s'.", jsonPath);
 
 	return true;
 }

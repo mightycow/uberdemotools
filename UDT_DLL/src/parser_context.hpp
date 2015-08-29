@@ -6,6 +6,7 @@
 #include "parser_plug_in.hpp"
 #include "array.hpp"
 #include "modifier_context.hpp"
+#include "json_writer_context.hpp"
 
 
 #define UDT_PRIVATE_PLUG_IN_LIST(N) \
@@ -52,6 +53,7 @@ public:
 	udtContext Context;
 	udtBaseParser Parser;
 	udtModifierContext ModifierContext;
+	udtJSONWriterContext JSONWriterContext;
 	udtVMLinearAllocator PlugInAllocator;
 	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
 	udtVMArrayWithAlloc<u32> InputIndices;
