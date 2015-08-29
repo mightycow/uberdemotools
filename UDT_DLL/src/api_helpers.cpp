@@ -396,7 +396,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
 }
 
-static bool ExportToJSON(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
+static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath)
 {
 	if(!ParseDemoFile(context, info, demoFilePath, false))
 	{
@@ -414,10 +414,8 @@ static bool ExportToJSON(udtParserContext* context, const udtParseArg* info, con
 		return false;
 	}
 
-	// @TODO: Pass in the correct demo index.
-
 	const udtString jsonFilePath = udtString::NewFromConcatenating(tempAllocator, filePathNoExt, udtString::NewConstRef(".json"));
-	if(!ExportPlugInsDataToJSON(context, 0, jsonFilePath.String))
+	if(!ExportPlugInsDataToJSON(context, demoIndex, jsonFilePath.String))
 	{
 		return false;
 	}
@@ -425,7 +423,7 @@ static bool ExportToJSON(udtParserContext* context, const udtParseArg* info, con
 	return true;
 }
 
-bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
+bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
 {
 	switch(jobType)
 	{
@@ -442,7 +440,7 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
 
 		case udtParsingJobType::ExportToJSON:
-			return ExportToJSON(context, info, demoFilePath);
+			return ExportToJSON(context, demoIndex, info, demoFilePath);
 
 		default:
 			return false;
@@ -542,7 +540,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const bool success = ProcessSingleDemoFile(jobType, context, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
+		const bool success = ProcessSingleDemoFile(jobType, context, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
