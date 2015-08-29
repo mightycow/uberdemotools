@@ -10,25 +10,6 @@
 #include "parser_context.hpp"
 
 
-// @TODO: Use the API function to get those pointers.
-#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
-static const char* PlayerStatsFieldNames[udtPlayerStatsField::Count + 1]
-{
-	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
-	""
-};
-#undef UDT_PLAYER_STATS_ITEM
-
-// @TODO: Use the API function to get those pointers.
-#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
-static const char* TeamStatsFieldNames[udtPlayerStatsField::Count + 1]
-{
-	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
-	""
-};
-#undef UDT_TEAM_STATS_ITEM
-
-
 static bool HasValidTeamStats(const udtParseDataStats& stats)
 {
 	return stats.ValidTeams != 0;
@@ -106,7 +87,7 @@ static void WriteUDTOverTimeType(udtJSONWriter& writer, u32 udtOverTimeType)
 	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
 }
 
-static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* flags, const s32* fields, s32 teamIndex)
+static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* flags, const s32* fields, s32 teamIndex, const char** fieldNames)
 {
 	writer.StartObject();
 
@@ -119,7 +100,7 @@ static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* fla
 		const s32 bitIndex = i & 7;
 		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
 		{
-			writer.WriteIntValue(TeamStatsFieldNames[i], fields[fieldIdx++]);
+			writer.WriteIntValue(fieldNames[i], fields[fieldIdx++]);
 		}
 	}
 
@@ -128,7 +109,7 @@ static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* fla
 	writer.EndObject();
 }
 
-static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber)
+static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber, const char** fieldNames)
 {
 	writer.StartObject();
 
@@ -155,7 +136,7 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPl
 					break;
 
 				default:
-					writer.WriteIntValue(PlayerStatsFieldNames[i], field);
+					writer.WriteIntValue(fieldNames[i], field);
 					break;
 			}
 		}
@@ -166,9 +147,11 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPl
 	writer.EndObject();
 }
 
-static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArray, u32 count)
+static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArray, u32 count, const char** playerStatsFieldNames, const char** teamStatsFieldNames)
 {
-	if(count == 0)
+	if(count == 0 ||
+	   playerStatsFieldNames == NULL ||
+	   teamStatsFieldNames == NULL)
 	{
 		return;
 	}
@@ -237,7 +220,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 				if((stats.ValidTeams & ((u64)1 << (u64)i)) != 0)
 				{
 					s32 fieldsRead;
-					WriteTeamStats(fieldsRead, writer, flags, fields, i);
+					WriteTeamStats(fieldsRead, writer, flags, fields, i, teamStatsFieldNames);
 					flags += UDT_TEAM_STATS_MASK_BYTE_COUNT;
 					fields += fieldsRead;
 				}
@@ -259,7 +242,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 				if((stats.ValidPlayers & ((u64)1 << (u64)i)) != 0)
 				{
 					s32 fieldsRead;
-					WritePlayerStats(fieldsRead, writer, *extraStats, flags, fields, i);
+					WritePlayerStats(fieldsRead, writer, *extraStats, flags, fields, i, playerStatsFieldNames);
 					flags += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
 					fields += fieldsRead;
 					extraStats += 1;
@@ -488,7 +471,12 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Stats, &statsPointer, &statsCount) == (s32)udtErrorCode::None &&
 	   statsPointer != NULL)
 	{
-		WriteStats(jsonWriter, (const udtParseDataStats*)statsPointer, statsCount);
+		u32 dummy = 0;
+		const char** playerStatsFieldNames = NULL;
+		const char** teamStatsFieldNames = NULL;
+		udtGetStringArray(udtStringArray::PlayerStatsNames, &playerStatsFieldNames, &dummy);
+		udtGetStringArray(udtStringArray::TeamStatsNames, &teamStatsFieldNames, &dummy);
+		WriteStats(jsonWriter, (const udtParseDataStats*)statsPointer, statsCount, playerStatsFieldNames, teamStatsFieldNames);
 	}
 
 	void* rawEventsPointer = NULL;
