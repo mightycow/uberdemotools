@@ -15,4 +15,4 @@ To do:
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Converters: dm3/dm_48 -> dm_68 and dm_73/dm_90 -> dm_91
 - Gamestate analyzer: game mode (short + long)
-- Move JSON export to the library and add the option to the GUI
+- Add the JSON export option to the GUI

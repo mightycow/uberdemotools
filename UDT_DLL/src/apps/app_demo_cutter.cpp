@@ -406,10 +406,7 @@ int main(int argc, char** argv)
 		{
 			fileMode = true;
 		}
-		else if(IsValidDirectory(argv[1]))
-		{
-		}
-		else
+		else if(!IsValidDirectory(argv[1]))
 		{
 			printf("Invalid file/folder path.\n");
 			PrintHelp();

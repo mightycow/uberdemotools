@@ -1489,6 +1489,9 @@ extern "C"
 	// Creates, for each demo, a new demo where non-first-person player entities are shifted back in time by the specified amount of snapshots.
 	UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg);
 
+	// Creates, for each demo, a .JSON file with the data from all the selected plug-ins.
+	UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo);
+
 #ifdef __cplusplus
 }
 #endif

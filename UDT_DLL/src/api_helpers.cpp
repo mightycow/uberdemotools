@@ -11,11 +11,13 @@
 #include "converter_entity_timer_shifter.hpp"
 #include "path.hpp"
 #include "memory_stream.hpp"
+#include "json_export.hpp"
 
 
 bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo)
 {
-	if(jobType == udtParsingJobType::General)
+	if(jobType == udtParsingJobType::General ||
+	   jobType == udtParsingJobType::ExportToJSON)
 	{
 		for(u32 i = 0; i < info.PlugInCount; ++i)
 		{
@@ -394,6 +396,35 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
 }
 
+static bool ExportToJSON(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
+{
+	if(!ParseDemoFile(context, info, demoFilePath, false))
+	{
+		return false;
+	}
+
+	udtVMLinearAllocator& tempAllocator = context->PlugInTempAllocator;
+	tempAllocator.Clear();
+
+	udtVMScopedStackAllocator allocatorScope(tempAllocator);
+
+	udtString filePathNoExt;
+	if(!udtPath::GetFilePathWithoutExtension(filePathNoExt, tempAllocator, udtString::NewConstRef(demoFilePath)))
+	{
+		return false;
+	}
+
+	// @TODO: Pass in the correct demo index.
+
+	const udtString jsonFilePath = udtString::NewFromConcatenating(tempAllocator, filePathNoExt, udtString::NewConstRef(".json"));
+	if(!ExportPlugInsDataToJSON(context, 0, jsonFilePath.String))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
 {
 	switch(jobType)
@@ -409,6 +440,9 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 
 		case udtParsingJobType::TimeShift:
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
+
+		case udtParsingJobType::ExportToJSON:
+			return ExportToJSON(context, info, demoFilePath);
 
 		default:
 			return false;

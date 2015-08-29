@@ -146,8 +146,6 @@ solution "UDT"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_json.cpp" }
 		files { path_src_apps.."/shared.cpp" }
-		files { path_src_apps.."/json_writer.cpp" }
-		files { path_src_apps.."/json_writer.hpp" }
 		ApplyProjectSettings()
 			
 			

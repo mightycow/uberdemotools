@@ -12,6 +12,7 @@ struct udtParsingJobType
 		CutByPattern, // Parse the demo to create a cut list, then apply the cuts and discard all the data.
 		Conversion,   // Convert the demo to the selected protocol or leave it untouched if it already is good.
 		TimeShift,    // Shift non-first-person living player entities back in time to act as an anti-lag.
+		ExportToJSON, // Write a .JSON file with the data from the selected plug-ins.
 		Count
 	};
 };

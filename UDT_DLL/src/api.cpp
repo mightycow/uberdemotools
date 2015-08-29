@@ -897,13 +897,24 @@ UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg
 
 UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg)
 {
-	if(info == NULL || extraInfo == NULL ||
+	if(info == NULL || extraInfo == NULL || timeShiftArg == NULL ||
 	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
 	return RunJobWithLocalContextGroup(udtParsingJobType::TimeShift, info, extraInfo, timeShiftArg);
+}
+
+UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo)
+{
+	if(info == NULL || extraInfo == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info) || !HasValidPlugInOptions(*info))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	return RunJobWithLocalContextGroup(udtParsingJobType::ExportToJSON, info, extraInfo, NULL);
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)

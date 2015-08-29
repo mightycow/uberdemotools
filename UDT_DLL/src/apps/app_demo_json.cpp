@@ -1,31 +1,11 @@
-#include "parser.hpp"
 #include "shared.hpp"
 #include "stack_trace.hpp"
-#include "utils.hpp"
 #include "path.hpp"
-#include "memory_stream.hpp"
-#include "file_stream.hpp"
-#include "json_writer.hpp"
+#include "file_system.hpp"
+#include "utils.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-
-#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp) Desc,
-static const char* PlayerStatsFieldNames[udtPlayerStatsField::Count + 1]
-{
-	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
-	""
-};
-#undef UDT_PLAYER_STATS_ITEM
-
-#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp) Desc,
-static const char* TeamStatsFieldNames[udtPlayerStatsField::Count + 1]
-{
-	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
-	""
-};
-#undef UDT_TEAM_STATS_ITEM
 
 
 static void CrashHandler(const char* message)
@@ -41,577 +21,92 @@ static void CrashHandler(const char* message)
 
 static void PrintHelp()
 {
-	printf("\n");
-	printf("UDT_json demo_path [json_path]\n");
-	printf("If the output path isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
+	printf("???? help for UDT_json ????\n");
+	printf("UDT_json demo_file   [options] [-o=output_folder]\n");
+	printf("UDT_json demo_folder [options] [-o=output_folder]\n");
+	printf("If the output_folder isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
+	printf("Options: \n");
+	printf("-r        : enable recursive demo file search (default: off)\n");
+	printf("-t=max_t  : maximum number of threads         (default: 4)\n");
+	printf("-a=<flags>: select analyzers                  (default: all enabled)\n");
+	printf("            g: game states\n");
+	printf("            c: chat\n");
+	printf("            d: deaths\n");
+	printf("            s: stats\n");
+	printf("            r: raw commands\n");
 }
 
-static bool HasValidTeamStats(const udtParseDataStats& stats)
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 {
-	return stats.ValidTeams != 0;
+	return udtPath::HasValidDemoFileExtension(name);
 }
 
-static bool HasValidPlayerStats(const udtParseDataStats& stats)
+static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn::Id analyzerId)
 {
-	return stats.ValidPlayers != 0;
-}
-
-static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
-{
-	const char** strings = NULL;
-	u32 stringCount = 0;
-	if(udtGetStringArray(stringId, &strings, &stringCount) != (s32)udtErrorCode::None)
+	for(u32 i = 0; i < analyzerCount; ++i)
 	{
-		return NULL;
-	}
-
-	if(value >= stringCount)
-	{
-		return NULL;
-	}
-
-	return strings[value];
-}
-
-static void WriteUDTWeapon(udtJSONWriter& writer, s32 udtWeaponIndex, const char* keyName = "weapon")
-{
-	if(keyName == NULL)
-	{
-		return;
-	}
-
-	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Weapons, (u32)udtWeaponIndex));
-}
-
-static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const char* keyName = "team")
-{
-	if(keyName == NULL)
-	{
-		return;
-	}
-
-	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Teams, (u32)udtTeamIndex));
-}
-
-static void WriteUDTGameTypeShort(udtJSONWriter& writer, u32 udtGameType)
-{
-	writer.WriteStringValue("game type short", GetUDTStringForValue(udtStringArray::ShortGameTypes, udtGameType));
-}
-
-static void WriteUDTGameTypeLong(udtJSONWriter& writer, u32 udtGameType)
-{
-	writer.WriteStringValue("game type", GetUDTStringForValue(udtStringArray::GameTypes, udtGameType));
-}
-
-static void WriteUDTMod(udtJSONWriter& writer, u32 udtMod)
-{
-	writer.WriteStringValue("mod", GetUDTStringForValue(udtStringArray::ModNames, udtMod));
-}
-
-static void WriteUDTGamePlayShort(udtJSONWriter& writer, u32 udtGamePlay)
-{
-	writer.WriteStringValue("gameplay short", GetUDTStringForValue(udtStringArray::ShortGamePlayNames, udtGamePlay));
-}
-
-static void WriteUDTGamePlayLong(udtJSONWriter& writer, u32 udtGamePlay)
-{
-	writer.WriteStringValue("gameplay", GetUDTStringForValue(udtStringArray::GamePlayNames, udtGamePlay));
-}
-
-static void WriteUDTOverTimeType(udtJSONWriter& writer, u32 udtOverTimeType)
-{
-	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
-}
-
-static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* flags, const s32* fields, s32 teamIndex)
-{
-	writer.StartObject();
-
-	writer.WriteStringValue("team", teamIndex == (s32)udtTeam::Red ? "red" : "blue");
-
-	s32 fieldIdx = 0;
-	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
-	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if(analyzers[i] == (u32)analyzerId)
 		{
-			writer.WriteIntValue(TeamStatsFieldNames[i], fields[fieldIdx++]);
+			// We already have this registered.
+			return;
 		}
 	}
 
-	fieldsRead = fieldIdx;
-
-	writer.EndObject();
+	analyzers[analyzerCount++] = (u32)analyzerId;
 }
 
-static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber)
+static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
 {
-	writer.StartObject();
-
-	writer.WriteIntValue("client number", clientNumber);
-	writer.WriteStringValue("name", stats.Name);
-	writer.WriteStringValue("clean name", stats.CleanName);
-
-	s32 fieldIdx = 0;
-	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
+	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
+	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
+	filePaths.Resize(fileCount);
+	errorCodes.Resize(fileCount);
+	for(u32 i = 0; i < fileCount; ++i)
 	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
-		{
-			const s32 field = fields[fieldIdx++];
-			switch((udtPlayerStatsField::Id)i)
-			{
-				case udtPlayerStatsField::BestWeapon: 
-					WriteUDTWeapon(writer, field, "best weapon"); 
-					break;
-
-				case udtPlayerStatsField::TeamIndex: 
-					WriteUDTTeamIndex(writer, field); 
-					break;
-
-				default: 
-					writer.WriteIntValue(PlayerStatsFieldNames[i], field); 
-					break;
-			}
-		}
+		filePaths[i] = files[i].Path;
 	}
-
-	fieldsRead = fieldIdx;
-
-	writer.EndObject();
-}
-
-static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArray, u32 count)
-{
-	if(count == 0)
-	{
-		return;
-	}
-
-	writer.StartArray("match stats");
-
-	for(u32 matchIdx = 0; matchIdx < count; ++matchIdx)
-	{
-		const udtParseDataStats& stats = statsArray[matchIdx];
-
-		const bool hasTeamStats = HasValidTeamStats(stats);
-		const bool hasPlayerStats = HasValidPlayerStats(stats);
-		if(!hasTeamStats && !hasPlayerStats)
-		{
-			continue;
-		}
-
-		const s32 MaxMatchDurationDeltaMs = 1000;
-		s32 durationMs = (s32)stats.MatchDurationMs;
-		const s32 durationMinuteModuloMs = durationMs % 60000;
-		const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-		if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) &&
-		   stats.Forfeited == 0 &&
-		   absMinuteDiffMs < MaxMatchDurationDeltaMs)
-		{
-			s32 minutes = (durationMs + 60000 - 1) / 60000;
-			if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
-			{
-				--minutes;
-			}
-			durationMs = 60000 * minutes;
-		}
-
-		writer.StartObject();
-
-		WriteUDTMod(writer, stats.Mod);
-		writer.WriteStringValue("mod version", stats.ModVersion);
-		WriteUDTGameTypeShort(writer, stats.GameType);
-		WriteUDTGameTypeLong(writer, stats.GameType);
-		writer.WriteStringValue("map", stats.Map);
-		writer.WriteIntValue("duration", (s32)durationMs);
-		writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
-		if(stats.OverTimeCount > 0)
-		{
-			WriteUDTOverTimeType(writer, stats.OverTimeType);
-		}
-		writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
-		writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
-		WriteUDTGamePlayShort(writer, stats.GamePlay);
-		WriteUDTGamePlayLong(writer, stats.GamePlay);
-		writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);
-		if(stats.TimeOutCount > 0)
-		{
-			writer.WriteIntValue("total time-out duration", (s32)stats.TotalTimeOutDurationMs);
-		}
-
-		if(hasTeamStats)
-		{
-			const u8* flags = stats.TeamFlags;
-			const s32* fields = stats.TeamFields;
-
-			writer.StartArray("team stats");
-
-			for(s32 i = 0; i < 2; ++i)
-			{
-				if((stats.ValidTeams & ((u64)1 << (u64)i)) != 0)
-				{
-					s32 fieldsRead;
-					WriteTeamStats(fieldsRead, writer, flags, fields, i);
-					flags += UDT_TEAM_STATS_MASK_BYTE_COUNT;
-					fields += fieldsRead;
-				}
-			}
-
-			writer.EndArray();
-		}
-		
-		if(hasPlayerStats)
-		{
-			const u8* flags = stats.PlayerFlags;
-			const s32* fields = stats.PlayerFields;
-			const udtPlayerStats* extraStats = stats.PlayerStats;
-
-			writer.StartArray("player stats");
-
-			for(s32 i = 0; i < 64; ++i)
-			{
-				if((stats.ValidPlayers & ((u64)1 << (u64)i)) != 0)
-				{
-					s32 fieldsRead;
-					WritePlayerStats(fieldsRead, writer, *extraStats, flags, fields, i);
-					flags += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
-					fields += fieldsRead;
-					extraStats += 1;
-				}
-			}
-
-			writer.EndArray();
-		}
-		
-		writer.EndObject();
-	}
-
-	writer.EndArray();
-}
-
-static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatEvents, u32 count) 
-{
-	if(count == 0)
-	{ 
-		return;
-	}
-
-	writer.StartArray("chat");
-
-	for(u32 i = 0; i < count; ++i)
-	{
-		const udtParseDataChat& info = chatEvents[i];
-
-		writer.StartObject();
-
-		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
-		writer.WriteIntValue("server time", info.ServerTimeMs);
-		writer.WriteBoolValue("team chat", info.TeamMessage != 0);
-		if(info.PlayerIndex >= 0 && info.PlayerIndex < 64)
-		{
-			writer.WriteIntValue("client number", info.PlayerIndex);
-		}
-		writer.WriteStringValue("player name", info.Strings[0].PlayerName);
-		writer.WriteStringValue("player clan name", info.Strings[0].ClanName);
-		writer.WriteStringValue("message", info.Strings[0].Message);
-		writer.WriteStringValue("location", info.Strings[0].Location);
-		writer.WriteStringValue("command", info.Strings[0].OriginalCommand);
-		writer.WriteStringValue("clean player name", info.Strings[1].PlayerName);
-		writer.WriteStringValue("clean player clan name", info.Strings[1].ClanName);
-		writer.WriteStringValue("clean message", info.Strings[1].Message);
-		writer.WriteStringValue("clean location", info.Strings[1].Location);
-		writer.WriteStringValue("clean command", info.Strings[1].OriginalCommand);
-
-		writer.EndObject();
-	}
-
-	writer.EndArray();
-}
-
-static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* deathEvents, u32 count)
-{
-	if(count == 0)
-	{
-		return;
-	}
-
-	writer.StartArray("obituaries");
-
-	for(u32 i = 0; i < count; ++i)
-	{
-		const udtParseDataObituary& info = deathEvents[i];
-
-		writer.StartObject();
-
-		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
-		writer.WriteIntValue("server time", info.ServerTimeMs);
-		if(info.AttackerIdx >= 0 && info.AttackerIdx < 64)
-		{
-			writer.WriteIntValue("attacker client number", info.AttackerIdx);
-			writer.WriteStringValue("attacker clean name", info.AttackerName);
-			WriteUDTTeamIndex(writer, info.AttackerTeamIdx, "attacker team");
-		}
-		if(info.TargetIdx >= 0 && info.TargetIdx < 64)
-		{
-			writer.WriteIntValue("target client number", info.TargetIdx);
-			writer.WriteStringValue("target clean name", info.TargetName);
-			WriteUDTTeamIndex(writer, info.TargetTeamIdx, "target team");
-		}
-		writer.WriteStringValue("cause of death", info.MeanOfDeathName);
-		
-		writer.EndObject();
-	}
-
-	writer.EndArray();
-}
-
-void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* commands, u32 count)
-{
-	if(count == 0)
-	{
-		return;
-	}
-
-	writer.StartArray("raw commands");
-
-	for(u32 i = 0; i < count; ++i)
-	{
-		const udtParseDataRawCommand& info = commands[i];
-
-		writer.StartObject();
-
-		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
-		writer.WriteIntValue("server time", info.ServerTimeMs);
-		writer.WriteStringValue("raw command", info.RawCommand);
-		writer.WriteStringValue("clean command", info.CleanCommand);
-
-		writer.EndObject();
-	}
-
-	writer.EndArray();
-}
-
-static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* gameStates, u32 count)
-{
-	if(count == 0)
-	{
-		return;
-	}
-
-	writer.StartArray("game states");
-
-	for(u32 i = 0; i < count; ++i)
-	{
-		const udtParseDataGameState& info = gameStates[i];
-
-		writer.StartObject();
-
-		if(info.DemoTakerPlayerIndex >= 0 && info.DemoTakerPlayerIndex < 64)
-		{
-			writer.WriteIntValue("demo taker client number", info.DemoTakerPlayerIndex);
-			writer.WriteStringValue("demo taker clean name", info.DemoTakerName);
-		}
-
-		writer.WriteIntValue("file offset", (s32)info.FileOffset);
-		writer.WriteIntValue("start time", info.FirstSnapshotTimeMs);
-		writer.WriteIntValue("end time", info.LastSnapshotTimeMs);
-
-		writer.StartArray("matches");
-		for(u32 j = 0; j < info.MatchCount; ++j)
-		{
-			writer.StartObject();
-			writer.WriteIntValue("start time", info.Matches[j].MatchStartTimeMs);
-			writer.WriteIntValue("end time", info.Matches[j].MatchEndTimeMs);
-			writer.EndObject();
-		}
-		writer.EndArray();
-
-		writer.StartArray("players");
-		for(u32 j = 0; j < info.PlayerCount; ++j)
-		{
-			writer.StartObject();
-			writer.WriteIntValue("client number", info.Players[j].Index);
-			writer.WriteStringValue("clean name", info.Players[j].FirstName);
-			WriteUDTTeamIndex(writer, info.Players[j].FirstTeam);
-			writer.WriteIntValue("start time", info.Players[j].FirstSnapshotTimeMs);
-			writer.WriteIntValue("end time", info.Players[j].LastSnapshotTimeMs);
-			writer.EndObject();
-		}
-		writer.EndArray();
-		
-		writer.StartObject("config string values");
-		for(u32 j = 0; j < info.KeyValuePairCount; ++j)
-		{
-			writer.WriteStringValue(info.KeyValuePairs[j].Name, info.KeyValuePairs[j].Value);
-		}
-		writer.EndObject();
-
-		writer.EndObject();
-	}
-
-	writer.EndArray();
-}
-
-static int ProcessDemo(const char* demoPath, const char* jsonPath)
-{
-	s32 cancel = 0;
-	s32 errorCode = 0;
-
-	const u32 plugInIds[] = 
-	{
-		(u32)udtParserPlugIn::Stats,
-		(u32)udtParserPlugIn::Chat,
-		(u32)udtParserPlugIn::Obituaries,
-		(u32)udtParserPlugIn::GameState,
-		(u32)udtParserPlugIn::RawCommands
-	};
 
 	udtParseArg info;
 	memset(&info, 0, sizeof(info));
-	info.CancelOperation = &cancel;
+	s32 cancelOperation = 0;
+	info.CancelOperation = &cancelOperation;
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = &CallbackConsoleProgress;
+	info.OutputFolderPath = customOutputFolder;
 	info.PlugIns = plugInIds;
-	info.PlugInCount = (u32)UDT_COUNT_OF(plugInIds);
+	info.PlugInCount = plugInCount;
 
-	udtMultiParseArg extraInfo;
-	memset(&extraInfo, 0, sizeof(extraInfo));
-	extraInfo.FileCount = 1;
-	extraInfo.FilePaths = &demoPath;
-	extraInfo.MaxThreadCount = 1;
-	extraInfo.OutputErrorCodes = &errorCode;
+	udtMultiParseArg threadInfo;
+	memset(&threadInfo, 0, sizeof(threadInfo));
+	threadInfo.FilePaths = filePaths.GetStartAddress();
+	threadInfo.OutputErrorCodes = errorCodes.GetStartAddress();
+	threadInfo.FileCount = fileCount;
+	threadInfo.MaxThreadCount = maxThreadCount;
 
-	udtParserContextGroup* contextGroup = NULL;
-	if(udtParseDemoFiles(&contextGroup, &info, &extraInfo) != (s32)udtErrorCode::None)
-	{
-		return __LINE__;
-	}
+	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo);
 
-	u32 contextCount = 0;
-	if(udtGetContextCountFromGroup(contextGroup, &contextCount) != (s32)udtErrorCode::None)
+	udtVMLinearAllocator tempAllocator;
+	tempAllocator.Init(1 << 16);
+	for(u32 i = 0; i < fileCount; ++i)
 	{
-		return __LINE__;
-	}
-
-	if(contextCount != 1)
-	{
-		return __LINE__;
-	}
-
-	udtParserContext* context = NULL;
-	if(udtGetContextFromGroup(contextGroup, 0, &context) != (s32)udtErrorCode::None)
-	{
-		return __LINE__;
-	}
-
-	u32 demoCount = 0;
-	if(udtGetDemoCountFromContext(context, &demoCount) != (s32)udtErrorCode::None)
-	{
-		return __LINE__;
-	}
-
-	if(demoCount != 1)
-	{
-		return __LINE__;
-	}
-
-	void* statsPointer = NULL;
-	u32 statsCount = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::Stats, &statsPointer, &statsCount) != (s32)udtErrorCode::None ||
-	   statsPointer == NULL)
-	{
-		return __LINE__;
-	}
-
-	void* chatEventPointer = NULL;
-	u32 chatEventCount = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::Chat, &chatEventPointer, &chatEventCount) != (s32)udtErrorCode::None ||
-	   chatEventPointer == NULL)
-	{
-		return __LINE__;
-	}
-
-	void* deathEventPointer = NULL;
-	u32 deathEventCount = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::Obituaries, &deathEventPointer, &deathEventCount) != (s32)udtErrorCode::None ||
-	   deathEventPointer == NULL)
-	{
-		return __LINE__;
-	}
-
-	void* gameStatesPointer = NULL;
-	u32 gameStateCount = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::GameState, &gameStatesPointer, &gameStateCount) != (s32)udtErrorCode::None ||
-	   gameStatesPointer == NULL)
-	{
-		return __LINE__;
-	}
-	void* rawEventsPointer = NULL;
-	u32 rawEventCount = 0;
-	if(udtGetDemoDataInfo(context, 0, (u32)udtParserPlugIn::RawCommands, &rawEventsPointer, &rawEventCount) != (s32)udtErrorCode::None ||
-	   rawEventsPointer == NULL)
-	{
-		return __LINE__;
-	}
-
-	udtVMLinearAllocator outputPathAllocator;
-	if(jsonPath == NULL)
-	{
-		if(!outputPathAllocator.Init(1 << 16))
+		if(errorCodes[i] != (s32)udtErrorCode::None)
 		{
-			return __LINE__;
+			udtString fileName;
+			tempAllocator.Clear();
+			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
+
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
 		}
-
-		udtString filePathNoExt;
-		if(!udtPath::GetFilePathWithoutExtension(filePathNoExt, outputPathAllocator, udtString::NewConstRef(demoPath)))
-		{
-			return __LINE__;
-		}
-
-		const udtString filePath = udtString::NewFromConcatenating(outputPathAllocator, filePathNoExt, udtString::NewConstRef(".json"));
-		jsonPath = filePath.String;
 	}
 
-	udtVMMemoryStream memoryStream;
-	if(!memoryStream.Open(1 << 24))
+	if(result == udtErrorCode::None)
 	{
-		return __LINE__;
+		return true;
 	}
 
-	const udtParseDataStats* const stats = (const udtParseDataStats*)statsPointer;
-	const udtParseDataChat* const chatEvents = (const udtParseDataChat*)chatEventPointer;
-	const udtParseDataObituary* const deathEvents = (const udtParseDataObituary*)deathEventPointer;
-	const udtParseDataGameState* const gameStates = (const udtParseDataGameState*)gameStatesPointer;
-	const udtParseDataRawCommand* const rawEvents = (const udtParseDataRawCommand*)rawEventsPointer;
-	udtJSONWriter jsonWriter;
-	jsonWriter.SetOutputStream(&memoryStream);
-	jsonWriter.StartFile();
-	WriteGameStates(jsonWriter, gameStates, gameStateCount);
-	WriteChatEvents(jsonWriter, chatEvents, chatEventCount);
-	WriteDeathEvents(jsonWriter, deathEvents, deathEventCount);
-	WriteStats(jsonWriter, stats, statsCount);
-	WriteRawCommands(jsonWriter, rawEvents, rawEventCount);
-	jsonWriter.EndFile();
+	fprintf(stderr, "udtSaveDemoFilesAnalysisDataToJSON failed with error: %s\n", udtGetErrorCodeString(result));
 
-	udtFileStream jsonFile;
-	if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
-	{
-		fprintf(stderr, "ERROR: Failed to open file '%s' for writing.\n", jsonPath);
-		return __LINE__;
-	}
-
-	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
-	{
-		fprintf(stderr, "ERROR: Failed to write to file '%s'.\n", jsonPath);
-		return __LINE__;
-	}
-
-	fprintf(stdout, "Done writing to file '%s'.\n", jsonPath);
-
-	return 0;
+	return false;
 }
 
 int main(int argc, char** argv)
@@ -619,7 +114,7 @@ int main(int argc, char** argv)
 	if(argc < 2)
 	{
 		PrintHelp();
-		return 1;
+		return __LINE__;
 	}
 
 	printf("UDT library version: %s\n", udtGetVersionString());
@@ -627,5 +122,103 @@ int main(int argc, char** argv)
 	ResetCurrentDirectory(argv[0]);
 	udtSetCrashHandler(&CrashHandler);
 
-	return ProcessDemo(argv[1], argv[2]);
+	bool fileMode = false;
+	if(udtFileStream::Exists(argv[1]) && udtPath::HasValidDemoFileExtension(argv[1]))
+	{
+		fileMode = true;
+	}
+	else if(!IsValidDirectory(argv[1]))
+	{
+		fprintf(stderr, "Invalid file/folder path.\n");
+		PrintHelp();
+		return __LINE__;
+	}
+
+	const char* customOutputPath = NULL;
+	u32 maxThreadCount = 4;
+	u32 analyzerCount = (u32)udtParserPlugIn::Count;
+	u32 analyzers[udtParserPlugIn::Count];
+	bool recursive = false;
+
+	for(u32 i = 0; i < (u32)udtParserPlugIn::Count; ++i)
+	{
+		analyzers[i] = i;
+	}
+
+	for(int i = 2; i < argc; ++i)
+	{
+		s32 localMaxThreads = 4;
+
+		const udtString arg = udtString::NewConstRef(argv[i]);
+		if(udtString::Equals(arg, "-r"))
+		{
+			recursive = true;
+		}
+		else if(udtString::StartsWith(arg, "-o=") && 
+				arg.Length >= 4 &&
+				IsValidDirectory(argv[i] + 3))
+		{
+			customOutputPath = argv[i] + 3;
+		}
+		else if(udtString::StartsWith(arg, "-t=") && 
+				arg.Length >= 4 && 
+				StringParseInt(localMaxThreads, arg.String + 3) &&
+				localMaxThreads >= 1 &&
+				localMaxThreads <= 16)
+		{
+			maxThreadCount = (u32)localMaxThreads;
+		}
+		else if(udtString::StartsWith(arg, "-a=") &&
+				arg.Length >= 4)
+		{
+			analyzerCount = 0;
+			const char* s = argv[i] + 3;
+			while(*s)
+			{
+				switch(*s)
+				{
+					case 'g': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::GameState); break;
+					case 'c': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Chat); break;
+					case 'd': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Obituaries); break;
+					case 's': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Stats); break;
+					case 'r': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawCommands); break;
+				}
+
+				++s;
+			}
+		}
+	}
+
+	if(fileMode)
+	{
+		udtFileInfo fileInfo;
+		fileInfo.Name = NULL;
+		fileInfo.Size = 0;
+		fileInfo.Path = argv[1];
+
+		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
+	}
+
+	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
+	udtVMLinearAllocator persistAlloc;
+	udtVMLinearAllocator tempAlloc;
+	persistAlloc.Init(1 << 24);
+	tempAlloc.Init(1 << 24);
+
+	udtFileListQuery query;
+	memset(&query, 0, sizeof(query));
+	query.FileFilter = &KeepOnlyDemoFiles;
+	query.Files = &files;
+	query.FolderPath = argv[1];
+	query.PersistAllocator = &persistAlloc;
+	query.Recursive = recursive;
+	query.TempAllocator = &tempAlloc;
+	GetDirectoryFileList(query);
+
+	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, maxThreadCount, analyzers, analyzerCount))
+	{
+		return __LINE__;
+	}
+
+	return 0;
 }
