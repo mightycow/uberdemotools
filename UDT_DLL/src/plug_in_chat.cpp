@@ -60,6 +60,60 @@ static void StringRemoveEmCharacter(udtString& string)
 	string.Length = (u32)(d - string.String);
 }
 
+static void ProcessQ3GlobalChat(udtParseDataChat& chatEvent, udtVMLinearAllocator& allocator, const udtString* argument1)
+{
+	//
+	// If we have a name of the form "A: B", the name will be considered to be "A" and the message will start with "B: ".
+	// The Q3 chat command format allows those kinds of ambiguities to exist. :-(
+	// @TODO: Check against the current active player names to get the right name from the clean message.
+	//
+
+	char* const colonPtr1 = strstr(argument1[1].String, ": ");
+	const u32 colon1 = (u32)(colonPtr1 - argument1[1].String);
+	if(colonPtr1 == NULL || colon1 + 2 >= argument1[1].Length)
+	{
+		return;
+	}
+
+	chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(allocator, argument1[1], 0, colon1).String;
+	chatEvent.Strings[1].Message = udtString::NewSubstringClone(allocator, argument1[1], colon1 + 2).String;
+
+	//
+	// It's probably not guaranteed that the player name ends with ":" and without a trailing color code
+	// in the raw message.
+	// Therefore, we count the number of colons in the clean message that lead up to the player name 
+	// to locate the name's end in the raw message.
+	//
+
+	u32 colonCount = 1;
+	for(u32 i = 0; i < colon1; ++i)
+	{
+		if(argument1[1].String[i] == ':')
+		{
+			++colonCount;
+		}
+	}
+
+	char* colonPtr0 = argument1[0].String - 1;
+	for(u32 i = 0; i < colonCount; ++i)
+	{
+		colonPtr0 = strchr(colonPtr0 + 1, ':');
+		if(colonPtr0 == NULL)
+		{
+			return;
+		}
+	}
+
+	const u32 colon0 = (u32)(colonPtr0 - argument1[0].String);
+	if(colon0 + 2 >= argument1[0].Length)
+	{
+		return;
+	}
+
+	chatEvent.Strings[0].PlayerName = udtString::NewSubstringClone(allocator, argument1[0], 0, colon0).String;
+	chatEvent.Strings[0].Message = udtString::NewSubstringClone(allocator, argument1[0], colon0 + 2).String;
+}
+
 
 udtParserPlugInChat::udtParserPlugInChat()
 {
@@ -151,18 +205,7 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	}
 	else
 	{
-		for(u32 i = 0; i < 2; ++i)
-		{
-			u32 colon;
-			if(!udtString::FindFirstCharacterMatch(colon, argument1[i], ':') ||
-			   colon + 2 >= argument1[i].Length)
-			{
-				continue;
-			}
-
-			chatEvent.Strings[i].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], 0, colon).String;
-			chatEvent.Strings[i].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], colon + 2).String;
-		}
+		ProcessQ3GlobalChat(chatEvent, _chatStringAllocator, argument1);
 	}
 
 	ChatEvents.Add(chatEvent);
