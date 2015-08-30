@@ -187,6 +187,13 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 
 		writer.StartObject();
 
+		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
+		writer.WriteStringValue("first place name", stats.FirstPlaceName);
+		writer.WriteStringValue("second place name", stats.SecondPlaceName);
+		writer.WriteIntValue("first place score", (s32)stats.FirstPlaceScore);
+		writer.WriteIntValue("second place score", (s32)stats.SecondPlaceScore);
+		writer.WriteStringValue("custom red name", stats.CustomRedName);
+		writer.WriteStringValue("custom blue name", stats.CustomBlueName);
 		WriteUDTMod(writer, stats.Mod);
 		writer.WriteStringValue("mod version", stats.ModVersion);
 		WriteUDTGameTypeShort(writer, stats.GameType);
@@ -199,6 +206,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 			WriteUDTOverTimeType(writer, stats.OverTimeType);
 		}
 		writer.WriteBoolValue("forfeited", stats.Forfeited != 0);
+		writer.WriteBoolValue("leader forfeited", stats.SecondPlaceWon != 0);
 		writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
 		WriteUDTGamePlayShort(writer, stats.GamePlay);
 		WriteUDTGamePlayLong(writer, stats.GamePlay);
