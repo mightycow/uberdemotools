@@ -34,9 +34,6 @@ can sometimes be a '.' instead of ' '...
 */
 
 
-static const char* nullString = "";
-
-
 static void StringRemoveEmCharacter(udtString& string)
 {
 	if(string.ReservedBytes == 0)
@@ -58,60 +55,6 @@ static void StringRemoveEmCharacter(udtString& string)
 	}
 	*d = '\0';
 	string.Length = (u32)(d - string.String);
-}
-
-static void ProcessQ3GlobalChat(udtParseDataChat& chatEvent, udtVMLinearAllocator& allocator, const udtString* argument1)
-{
-	//
-	// If we have a name of the form "A: B", the name will be considered to be "A" and the message will start with "B: ".
-	// The Q3 chat command format allows those kinds of ambiguities to exist. :-(
-	// @TODO: Check against the current active player names to get the right name from the clean message.
-	//
-
-	char* const colonPtr1 = strstr(argument1[1].String, ": ");
-	const u32 colon1 = (u32)(colonPtr1 - argument1[1].String);
-	if(colonPtr1 == NULL || colon1 + 2 >= argument1[1].Length)
-	{
-		return;
-	}
-
-	chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(allocator, argument1[1], 0, colon1).String;
-	chatEvent.Strings[1].Message = udtString::NewSubstringClone(allocator, argument1[1], colon1 + 2).String;
-
-	//
-	// It's probably not guaranteed that the player name ends with ":" and without a trailing color code
-	// in the raw message.
-	// Therefore, we count the number of colons in the clean message that lead up to the player name 
-	// to locate the name's end in the raw message.
-	//
-
-	u32 colonCount = 1;
-	for(u32 i = 0; i < colon1; ++i)
-	{
-		if(argument1[1].String[i] == ':')
-		{
-			++colonCount;
-		}
-	}
-
-	char* colonPtr0 = argument1[0].String - 1;
-	for(u32 i = 0; i < colonCount; ++i)
-	{
-		colonPtr0 = strchr(colonPtr0 + 1, ':');
-		if(colonPtr0 == NULL)
-		{
-			return;
-		}
-	}
-
-	const u32 colon0 = (u32)(colonPtr0 - argument1[0].String);
-	if(colon0 + 2 >= argument1[0].Length)
-	{
-		return;
-	}
-
-	chatEvent.Strings[0].PlayerName = udtString::NewSubstringClone(allocator, argument1[0], 0, colon0).String;
-	chatEvent.Strings[0].Message = udtString::NewSubstringClone(allocator, argument1[0], colon0 + 2).String;
 }
 
 
@@ -145,23 +88,70 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	}
 
 	const udtString command = tokenizer.GetArg(0);
-	if(tokenizer.GetArgCount() == 2 && udtString::Equals(command, "chat"))
+
+	
+	if(parser._inProtocol <= udtProtocol::Dm68 &&
+	   tokenizer.GetArgCount() == 3 &&
+	   udtString::Equals(command, "cs"))
+	{
+		s32 csIndex = -1;
+		const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) &&
+		   csIndex >= firstPlayerCsIndex &&
+		   csIndex < firstPlayerCsIndex + 64)
+		{
+			ProcessPlayerConfigString(parser, tokenizer.GetArg(2), csIndex - firstPlayerCsIndex);
+		}
+	}
+	else if(tokenizer.GetArgCount() == 2 && 
+			udtString::Equals(command, "chat"))
 	{
 		ProcessChatCommand(parser);
 	}
-	else if(tokenizer.GetArgCount() == 2 && udtString::Equals(command, "tchat"))
+	else if(tokenizer.GetArgCount() == 2 && 
+			udtString::Equals(command, "tchat"))
 	{
 		ProcessTeamChatCommand(parser);
 	}
-	else if(tokenizer.GetArgCount() == 4 && udtString::Equals(command, "mm2"))
+	else if(tokenizer.GetArgCount() == 4 && 
+			udtString::Equals(command, "mm2"))
 	{
 		ProcessCPMATeamChatCommand(parser);
 	}
 }
 
-void udtParserPlugInChat::ProcessGamestateMessage(const udtGamestateCallbackArg&, udtBaseParser&)
+void udtParserPlugInChat::ProcessGamestateMessage(const udtGamestateCallbackArg&, udtBaseParser& parser)
 {
 	++_gameStateIndex;
+
+	if(parser._inProtocol <= udtProtocol::Dm68)
+	{
+		const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		for(s32 i = 0; i < 64; ++i)
+		{
+			ProcessPlayerConfigString(parser, parser.GetConfigString(firstPlayerCsIndex + i), i);
+		}
+	}
+}
+
+void udtParserPlugInChat::ProcessPlayerConfigString(udtBaseParser& parser, const udtString& cs, s32 playerIndex)
+{
+	if(udtString::IsNullOrEmpty(cs))
+	{
+		_cleanPlayerNames[playerIndex] = udtString::NewEmptyConstant();
+		return;
+	}
+
+	udtVMScopedStackAllocator allocScope(*TempAllocator);
+
+	udtString playerName;
+	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs.String))
+	{
+		_cleanPlayerNames[playerIndex] = udtString::NewEmptyConstant();
+		return;
+	}
+
+	_cleanPlayerNames[playerIndex] = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, playerName);
 }
 
 void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
@@ -205,7 +195,7 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	}
 	else
 	{
-		ProcessQ3GlobalChat(chatEvent, _chatStringAllocator, argument1);
+		ProcessQ3GlobalChat(chatEvent, argument1);
 	}
 
 	ChatEvents.Add(chatEvent);
@@ -387,3 +377,91 @@ void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEv
 	}
 }
 
+void udtParserPlugInChat::ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const udtString* argument1)
+{
+	//
+	// If we have a message of the form: "A: B: C", there is an ambiguity.
+	// We could have name="A" message="B: C" or name="A: B" message="C".
+	// To try to resolve that, we'll check against current player names.
+	// If not possible: name="A" message="B: C" will be the default.
+	//
+
+	char* firstColonPtr1 = strstr(argument1[1].String, ": ");
+	u32 firstColon1 = (u32)(firstColonPtr1 - argument1[1].String);
+	if(firstColonPtr1 == NULL || firstColon1 + 2 >= argument1[1].Length)
+	{
+		return;
+	}
+
+	char* colonPtr1 = firstColonPtr1;
+	u32 colon1 = firstColon1;
+	for(;;)
+	{
+		const udtString name = udtString::NewSubstringClone(*TempAllocator, argument1[1], 0, colon1);
+		if(IsPlayerCleanName(name))
+		{
+			chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], 0, colon1).String;
+			chatEvent.Strings[1].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], colon1 + 2).String;
+			break;
+		}
+
+		colonPtr1 = strstr(colonPtr1 + 2, ": ");
+		colon1 = (u32)(colonPtr1 - argument1[1].String);
+		if(colonPtr1 == NULL || colon1 + 2 >= argument1[1].Length)
+		{
+			// The search ended unsuccessfully, so roll back to the default scenario.
+			chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], 0, firstColon1).String;
+			chatEvent.Strings[1].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], firstColon1 + 2).String;
+			colon1 = firstColon1;
+			break;
+		}
+	}
+
+	//
+	// It's probably not guaranteed that the player name ends with ":" and without a trailing color code
+	// in the raw message.
+	// Therefore, we count the number of colons in the clean message that lead up to the player name 
+	// to locate the name's end in the raw message.
+	//
+
+	u32 colonCount = 1;
+	for(u32 i = 0; i < colon1; ++i)
+	{
+		if(argument1[1].String[i] == ':')
+		{
+			++colonCount;
+		}
+	}
+
+	char* colonPtr0 = argument1[0].String - 1;
+	for(u32 i = 0; i < colonCount; ++i)
+	{
+		colonPtr0 = strchr(colonPtr0 + 1, ':');
+		if(colonPtr0 == NULL)
+		{
+			return;
+		}
+	}
+
+	const u32 colon0 = (u32)(colonPtr0 - argument1[0].String);
+	if(colon0 + 2 >= argument1[0].Length)
+	{
+		return;
+	}
+
+	chatEvent.Strings[0].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[0], 0, colon0).String;
+	chatEvent.Strings[0].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[0], colon0 + 2).String;
+}
+
+bool udtParserPlugInChat::IsPlayerCleanName(const udtString& cleanName)
+{
+	for(s32 i = 0; i < 64; ++i)
+	{
+		if(udtString::Equals(cleanName, _cleanPlayerNames[i]))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
