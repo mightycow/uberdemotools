@@ -259,6 +259,10 @@ namespace Uber.DemoTools
                 checkBox.Margin = new Thickness(5, 5, 0, 0);
                 checkBox.Content = " " + plugInNames[i].Capitalize();
                 checkBox.IsChecked = _app.Config.JSONPlugInsEnabled[i];
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => _app.Config.JSONPlugInsEnabled[iCopy] = true;
+                checkBox.Unchecked += (obj, args) => _app.Config.JSONPlugInsEnabled[iCopy] = false;
+
                 _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
                 jsonPlugInsStackPanel.Children.Add(checkBox);
             }

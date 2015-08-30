@@ -247,6 +247,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _convertDemo68Command = new RoutedCommand();
         private static RoutedCommand _convertDemo90Command = new RoutedCommand();
         private static RoutedCommand _mergeDemosCommand = new RoutedCommand();
+        private static RoutedCommand _JSONExportCommand = new RoutedCommand();
         private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
@@ -590,6 +591,7 @@ namespace Uber.DemoTools
             InitDemoListConversion68Command();
             InitDemoListConversion90Command();
             InitDemoListMergeCommand();
+            InitDemoListJSONExportCommand();
             InitDemoListSelectAllCommand();
             InitDemoListContextMenu();
             
@@ -779,6 +781,11 @@ namespace Uber.DemoTools
             mergeDemosItem.Command = _mergeDemosCommand;
             mergeDemosItem.Click += (obj, args) => OnMergeDemosClicked();
 
+            var jsonExportItem = new MenuItem();
+            jsonExportItem.Header = "Save Analysis to .JSON";
+            jsonExportItem.Command = _JSONExportCommand;
+            jsonExportItem.Click += (obj, args) => OnExportDemosToJSONClicked();
+
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
             selectAllDemosItem.Command = _selectAllDemosCommand;
@@ -789,6 +796,7 @@ namespace Uber.DemoTools
             demosContextMenu.Items.Add(convertDemo68Item);
             demosContextMenu.Items.Add(convertDemo90Item);
             demosContextMenu.Items.Add(mergeDemosItem);
+            demosContextMenu.Items.Add(jsonExportItem);
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
@@ -957,6 +965,14 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _mergeDemosCommand;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteMergeCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private void InitDemoListJSONExportCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _JSONExportCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -1377,6 +1393,14 @@ namespace Uber.DemoTools
             mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo\nThis is for demos of the same match only";
             mergeDemosButton.Click += (obj, args) => OnMergeDemosClicked();
 
+            var jsonExportButton = new Button();
+            jsonExportButton.Content = "=> .JSON";
+            jsonExportButton.Width = 75;
+            jsonExportButton.Height = 25;
+            jsonExportButton.Margin = new Thickness(5);
+            jsonExportButton.ToolTip = "Export demo analysis data to .JSON files\nYou can enable/disable analyzers in the Settings tab";
+            jsonExportButton.Click += (obj, args) => OnExportDemosToJSONClicked();
+
             var multiDemoActionButtonsPanel = new StackPanel();
             multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
             multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
@@ -1386,6 +1410,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
             multiDemoActionButtonsPanel.Children.Add(convert90Button);
             multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
+            multiDemoActionButtonsPanel.Children.Add(jsonExportButton);
 
             var multiDemoActionButtonsGroupBox = new GroupBox();
             multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1700,6 +1725,38 @@ namespace Uber.DemoTools
             StartJobThread(DemoMergeThread, demos);
         }
 
+        private void OnExportDemosToJSONClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count == 0)
+            {
+                LogError("No demo selected. Please select at least one to proceed.");
+                return;
+            }
+
+            bool hasAtLeastOne = false;
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                if(Config.JSONPlugInsEnabled[i])
+                {
+                    hasAtLeastOne = true;
+                    break;
+                }
+            }
+
+            if(!hasAtLeastOne)
+            {
+                LogError("No analyzer selected. Please select at least one to proceed.");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+            SaveBothConfigs();
+
+            JoinJobThread();
+            StartJobThread(JSONDemoExportThread, demos);
+        }
+
         public delegate void VoidDelegate();
 
         private void AddDemoToListView(DemoDisplayInfo info)
@@ -1893,6 +1950,47 @@ namespace Uber.DemoTools
             catch(Exception exception)
             {
                 LogError("Caught an exception while merging demos: {0}", exception.Message);
+            }
+
+            Marshal.FreeHGlobal(outputFolderPtr);
+        }
+
+        private void JSONDemoExportThread(object arg)
+        {
+            var demos = arg as List<DemoInfo>;
+            if(demos == null)
+            {
+                LogError("Invalid thread argument type");
+                return;
+            }
+
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
+            {
+                filePaths.Add(demo.FilePath);
+            }
+
+            var outputFolder = GetOutputFolder();
+            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            InitParseArg();
+            ParseArg.OutputFolderPath = outputFolderPtr;
+
+            var plugIns = new List<UInt32>();
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                if(Config.JSONPlugInsEnabled[i])
+                {
+                    plugIns.Add((UInt32)i);
+                }
+            }
+
+            try
+            {
+                UDT_DLL.ExportDemosDataToJSON(ref ParseArg, filePaths, Config.MaxThreadCount, plugIns.ToArray());
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while exporting demo analysis data to .JSON files: {0}", exception.Message);
             }
 
             Marshal.FreeHGlobal(outputFolderPtr);

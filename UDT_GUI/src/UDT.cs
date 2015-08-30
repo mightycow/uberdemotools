@@ -34,11 +34,13 @@ namespace Uber.DemoTools
     {
 #if (UDT_X86)
         private const int MaxBatchSizeParsing = 128;
+        private const int MaxBatchSizeJSONExport = 128;
         private const int MaxBatchSizeCutting = 512;
         private const int MaxBatchSizeConverting = 512;
         private const int MaxBatchSizeTimeShifting = 512;
 #else
         private const int MaxBatchSizeParsing = 512;
+        private const int MaxBatchSizeJSONExport = 512;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
         private const int MaxBatchSizeTimeShifting = 2048;
@@ -586,6 +588,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtTimeShiftDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtTimeShiftArg timeShiftArg);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtSaveDemoFilesAnalysisDataToJSON(ref udtParseArg info, ref udtMultiParseArg extraInfo);
 
         public class StatsConstantsGrabber
         {
@@ -1271,6 +1276,66 @@ namespace Uber.DemoTools
             try
             {
                 result = udtTimeShiftDemoFiles(ref parseArg, ref multiParseArg, ref timeShiftArg);
+            }
+            finally
+            {
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
+        }
+
+        public static bool ExportDemosDataToJSON(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, UInt32[] plugIns)
+        {
+            var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeJSONExport);
+            var newParseArg = runner.NewParseArg;
+
+            var batchCount = runner.BatchCount;
+            for(var i = 0; i < batchCount; ++i)
+            {
+                ExportDemosDataToJSONImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, plugIns);
+                if(runner.IsCanceled(parseArg.CancelOperation))
+                {
+                    break;
+                }
+            }
+
+            PrintExecutionTime(runner.Timer);
+
+            return true;
+        }
+
+        private static bool ExportDemosDataToJSONImpl(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, UInt32[] plugIns)
+        {
+            var resources = new ArgumentResources();
+            var errorCodeArray = new Int32[filePaths.Count];
+            var filePathArray = new IntPtr[filePaths.Count];
+            for(var i = 0; i < filePaths.Count; ++i)
+            {
+                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = filePath;
+                resources.GlobalAllocationHandles.Add(filePath);
+            }
+
+            var pinnedPlugIns = new PinnedObject(plugIns);
+            parseArg.PlugInCount = (UInt32)plugIns.Length;
+            parseArg.PlugIns = pinnedPlugIns.Address;
+
+            var pinnedFilePaths = new PinnedObject(filePathArray);
+            var pinnedErrorCodes = new PinnedObject(errorCodeArray);
+            resources.PinnedObjects.Add(pinnedPlugIns);
+            resources.PinnedObjects.Add(pinnedFilePaths);
+            resources.PinnedObjects.Add(pinnedErrorCodes);
+            var multiParseArg = new udtMultiParseArg();
+            multiParseArg.FileCount = (UInt32)filePathArray.Length;
+            multiParseArg.FilePaths = pinnedFilePaths.Address;
+            multiParseArg.OutputErrorCodes = pinnedErrorCodes.Address;
+            multiParseArg.MaxThreadCount = (UInt32)maxThreadCount;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtSaveDemoFilesAnalysisDataToJSON(ref parseArg, ref multiParseArg);
             }
             finally
             {

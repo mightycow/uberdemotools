@@ -396,6 +396,28 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
 }
 
+static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& allocator, const udtString& inputFilePath, const char* outputFolderPath)
+{
+	udtString inputFileName;
+	if(udtString::IsNullOrEmpty(inputFilePath) ||
+	   !udtPath::GetFileNameWithoutExtension(inputFileName, allocator, inputFilePath))
+	{
+		inputFileName = udtString::NewConstRef("UNKNOWN_UDT_DEMO");
+	}
+
+	udtString outputFilePathStart; // The full output path without the extension.
+	if(outputFolderPath != NULL)
+	{
+		udtPath::Combine(outputFilePathStart, allocator, udtString::NewConstRef(outputFolderPath), inputFileName);
+	}
+	else
+	{
+		udtPath::GetFilePathWithoutExtension(outputFilePathStart, allocator, inputFilePath);
+	}
+
+	outputFilePath = udtString::NewFromConcatenating(allocator, outputFilePathStart, udtString::NewConstRef(".json"));
+}
+
 static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath)
 {
 	if(!ParseDemoFile(context, info, demoFilePath, false))
@@ -408,13 +430,8 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 
 	udtVMScopedStackAllocator allocatorScope(tempAllocator);
 
-	udtString filePathNoExt;
-	if(!udtPath::GetFilePathWithoutExtension(filePathNoExt, tempAllocator, udtString::NewConstRef(demoFilePath)))
-	{
-		return false;
-	}
-
-	const udtString jsonFilePath = udtString::NewFromConcatenating(tempAllocator, filePathNoExt, udtString::NewConstRef(".json"));
+	udtString jsonFilePath;
+	CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
 	if(!ExportPlugInsDataToJSON(context, demoIndex, jsonFilePath.String))
 	{
 		return false;
