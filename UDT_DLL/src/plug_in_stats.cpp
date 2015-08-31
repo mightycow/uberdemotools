@@ -273,12 +273,14 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("cascores", ParseQLScoresCAOld),
 		HANDLER("castats", ParseQLStatsCA),
 		HANDLER("xstats1", ParseOSPXStats1),
-		HANDLER("print", ParsePrint)
+		HANDLER("adscores", ParseQLScoresAD),
+		HANDLER("scores_ad", ParseQLScoresAD),
+		HANDLER("print", ParsePrint),
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : adscores scores_ad rrscores scores_ft scores_race scores_rr
+	QL  : rrscores scores_rr scores_ft scores_race
 	OSP : bstats
 	*/
 
@@ -730,7 +732,11 @@ void udtParserPlugInStats::ParseQLScoresDuel()
 
 void udtParserPlugInStats::ParseQLScoresCTF()
 {
-	_stats.GameType = (u32)udtGameType::CTF;
+	// CTFS games use the CTF scores/stats commands too.
+	if(_stats.GameType != (u32)udtGameType::CTFS)
+	{
+		_stats.GameType = (u32)udtGameType::CTF;
+	}
 
 	s32 baseOffset = 38;
 	if(_tokenizer->GetArgCount() < 38)
@@ -850,7 +856,11 @@ void udtParserPlugInStats::ParseQLScoresCTF()
 
 void udtParserPlugInStats::ParseQLStatsCTF()
 {
-	_stats.GameType = (u32)udtGameType::CTF;
+	// CTFS games use the CTF scores/stats commands too.
+	if(_stats.GameType != (u32)udtGameType::CTFS)
+	{
+		_stats.GameType = (u32)udtGameType::CTF;
+	}
 
 	if(_tokenizer->GetArgCount() != 14)
 	{
@@ -1677,7 +1687,11 @@ void udtParserPlugInStats::ParseQLScoresCA()
 
 void udtParserPlugInStats::ParseQLScoresCTFOld()
 {
-	_stats.GameType = (u32)udtGameType::CTF;
+	// CTFS games use the CTF scores/stats commands too.
+	if(_stats.GameType != (u32)udtGameType::CTFS)
+	{
+		_stats.GameType = (u32)udtGameType::CTF;
+	}
 
 	const s32 baseOffset = 35;
 	if(_tokenizer->GetArgCount() < (u32)baseOffset)
@@ -1803,6 +1817,24 @@ void udtParserPlugInStats::ParseQLStatsCA()
 	}
 
 	ParsePlayerFields(clientNumber, fields, (s32)UDT_COUNT_OF(fields), 2);
+}
+
+void udtParserPlugInStats::ParseQLScoresAD()
+{
+	_stats.GameType = (u32)udtGameType::CTFS;
+
+	if(_tokenizer->GetArgCount() != 23)
+	{
+		return;
+	}
+
+	static const udtStatsField fields[] =
+	{
+		PLAYER_FIELD(TeamIndex, 0)
+	};
+
+	ParseTeamFields(0, fields, (s32)UDT_COUNT_OF(fields), 21);
+	ParseTeamFields(1, fields, (s32)UDT_COUNT_OF(fields), 22);
 }
 
 void udtParserPlugInStats::ParsePrint()
