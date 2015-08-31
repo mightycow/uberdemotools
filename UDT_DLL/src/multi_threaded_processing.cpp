@@ -260,7 +260,7 @@ static void ThreadFunction(void* userData)
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
 		const udtParsingJobType::Id jobType = (udtParsingJobType::Id)shared->JobType;
-		const bool success = ProcessSingleDemoFile(jobType, data->Context, i, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
+		const bool success = ProcessSingleDemoFile(jobType, data->Context, i - startIdx, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
