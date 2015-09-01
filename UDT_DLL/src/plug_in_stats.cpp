@@ -484,7 +484,7 @@ void udtParserPlugInStats::ParseQLScoresTDM()
 	_stats.GameType = (u32)udtGameType::TDM;
 
 	s32 baseOffset = 32;
-	if(_tokenizer->GetArgCount() < 32)
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -1331,7 +1331,8 @@ void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 {
 	_stats.GameType = (u32)udtGameType::TDM;
 
-	if(_tokenizer->GetArgCount() < 17)
+	const s32 baseOffset = 17;
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -1359,9 +1360,10 @@ void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 8);
 
-	const s32 playerScores = ((s32)_tokenizer->GetArgCount() - 17) / 5;
+	const s32 statsPerPlayer = 5;
+	const s32 playerScores = ((s32)_tokenizer->GetArgCount() - baseOffset) / statsPerPlayer;
 
-	s32 offset = 17;
+	s32 offset = baseOffset;
 	for(s32 i = 0; i < playerScores; ++i)
 	{
 		const s32 clientNumber = GetValue(offset);
@@ -1371,7 +1373,7 @@ void udtParserPlugInStats::ParseQLScoresTDMVeryOld()
 			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
 		}
 
-		offset += 1 + (s32)UDT_COUNT_OF(playerFields);
+		offset += statsPerPlayer;
 	}
 }
 
@@ -1379,7 +1381,8 @@ void udtParserPlugInStats::ParseQLScoresTDMOld()
 {
 	_stats.GameType = (u32)udtGameType::TDM;
 
-	if(_tokenizer->GetArgCount() < 29)
+	const s32 baseOffset = 29;
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -1414,9 +1417,10 @@ void udtParserPlugInStats::ParseQLScoresTDMOld()
 	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields));
 	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 14);
 
-	const s32 playerScores = ((s32)_tokenizer->GetArgCount() - 29) / 6;
+	const s32 statsPerPlayer = 6;
+	const s32 playerScores = ((s32)_tokenizer->GetArgCount() - baseOffset) / statsPerPlayer;
 
-	s32 offset = 29;
+	s32 offset = baseOffset;
 	for(s32 i = 0; i < playerScores; ++i)
 	{
 		const s32 clientNumber = GetValue(offset);
@@ -1426,16 +1430,17 @@ void udtParserPlugInStats::ParseQLScoresTDMOld()
 			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset);
 		}
 
-		offset += 6;
+		offset += statsPerPlayer;
 	}
 }
 
 void udtParserPlugInStats::ParseOSPStatsInfo()
 {
 	// 22 fields including the weapon mask.
+	const s32 baseOffset = 23;
 	if(_followedClientNumber < 0 || 
 	   _followedClientNumber >= 64 ||
-	   _tokenizer->GetArgCount() < 23)
+	   _tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -1461,10 +1466,11 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 	SetPlayerField(_followedClientNumber, udtPlayerStatsField::ArmorTaken, armorTaken);
 	SetPlayerField(_followedClientNumber, udtPlayerStatsField::HealthTaken, healthTaken);
 
+	const s32 statsPerWeapon = 4;
 	const s32 weaponMask = GetValue(22);
 	const s32 weaponCount = (s32)PopCount((u32)weaponMask);
 
-	if(_tokenizer->GetArgCount() < (u32)(23 + 4 * weaponCount))
+	if(_tokenizer->GetArgCount() < (u32)(baseOffset + weaponCount * statsPerWeapon))
 	{
 		return;
 	}
@@ -1496,7 +1502,7 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 
 #undef WEAPON_FIELDS
 
-	s32 offset = 23;
+	s32 offset = baseOffset;
 	for(s32 i = 1; i < 11; ++i)
 	{
 		if((weaponMask & (1 << i)) == 0)
@@ -1509,10 +1515,10 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 		}
 
 		const s32* const indices = weaponFieldIndices[i];
-		const s32 hitsAndDrops = GetValue(offset++);
-		const s32 shotsAndPickups = GetValue(offset++);
-		const s32 kills = GetValue(offset++);
-		const s32 deaths = GetValue(offset++);
+		const s32 hitsAndDrops = GetValue(offset);
+		const s32 shotsAndPickups = GetValue(offset + 1);
+		const s32 kills = GetValue(offset + 2);
+		const s32 deaths = GetValue(offset + 3);
 		const s32 hits = hitsAndDrops & 0xFFFF;
 		const s32 drops = (hitsAndDrops >> 16) & 0xFFFF;
 		const s32 shots = shotsAndPickups & 0xFFFF;
@@ -1523,6 +1529,8 @@ void udtParserPlugInStats::ParseOSPStatsInfo()
 		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[3], pickups);
 		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[4], kills);
 		SetPlayerField(_followedClientNumber, (udtPlayerStatsField::Id)indices[5], deaths);
+
+		offset += statsPerWeapon;
 	}
 }
 
@@ -1628,7 +1636,7 @@ void udtParserPlugInStats::ParseQLScoresCA()
 	_stats.GameType = (u32)udtGameType::CA;
 
 	const s32 baseOffset = 4;
-	if(_tokenizer->GetArgCount() < baseOffset)
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -1962,7 +1970,7 @@ void udtParserPlugInStats::ParseQLScoresRROld()
 	_stats.GameType = (u32)udtGameType::RedRover;
 
 	const s32 baseOffset = 4;
-	if(_tokenizer->GetArgCount() < baseOffset)
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
@@ -2018,7 +2026,7 @@ void udtParserPlugInStats::ParseQLScoresRR()
 	_stats.GameType = (u32)udtGameType::RedRover;
 
 	const s32 baseOffset = 4;
-	if(_tokenizer->GetArgCount() < baseOffset)
+	if(_tokenizer->GetArgCount() < (u32)baseOffset)
 	{
 		return;
 	}
