@@ -2190,7 +2190,7 @@ void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 		CPMA_FIELD("Def", Defends),
 		CPMA_FIELD("Rtn", Returns),
 		CPMA_FIELD("FC", Captures),
-		CPMA_FIELD("FR", Returns),
+		CPMA_FIELD("FR", FlagPickups), // "Flag Runs" seems more probable than "Flag Returns" in CTFS.
 		CPMA_FIELD("SG", ShotgunPickups),
 		CPMA_FIELD("GL", GrenadeLauncherPickups),
 		CPMA_FIELD("RL", RocketLauncherPickups),

@@ -445,6 +445,8 @@ struct udtStatsDataType
 	N(Defends, "defends", BiggerWins, Generic) \
 	N(Assists, "assists", BiggerWins, Generic) \
 	N(Returns, "returns", BiggerWins, Generic) \
+	N(FlagPickups, "flag pickups", BiggerWins, Generic) \
+	N(FlagTime, "flag possession time", BiggerWins, Seconds) \
 	N(Thaws, "thaws", BiggerWins, Generic) \
 	N(RedArmorPickups, "red armor pickups", BiggerWins, Generic) \
 	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Generic) \
@@ -459,8 +461,6 @@ struct udtStatsDataType
 	N(RegenPickups, "regeneration pickups", BiggerWins, Generic) \
 	N(HastePickups, "haste pickups", BiggerWins, Generic) \
 	N(InvisPickups, "invisibility pickups", BiggerWins, Generic) \
-	N(FlagPickups, "flag pickups", BiggerWins, Generic) \
-	N(FlagTime, "flag possession time", BiggerWins, Seconds) \
 	N(MedkitPickups, "medkit pickups", BiggerWins, Generic) \
 	N(GauntletKills, "gauntlet kills", BiggerWins, Generic) \
 	N(GauntletAccuracy, "gauntlet accuracy", BiggerWins, Percentage) \
