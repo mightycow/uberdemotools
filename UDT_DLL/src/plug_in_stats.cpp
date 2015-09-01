@@ -61,6 +61,7 @@ static bool IsRoundBasedMode(udtGameType::Id gameType)
 	{
 		case udtGameType::CA:
 		case udtGameType::CTFS:
+		case udtGameType::RedRover:
 			return true;
 
 		default:
@@ -2632,7 +2633,7 @@ void udtParserPlugInStats::AddCurrentStats()
 			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
 			{
 				if(IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
-				   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == (s32)udtTeam::Free)
+				   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] != (s32)udtTeam::Spectators)
 				{
 					const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
 					if(score > firstPlaceScore)
@@ -2714,6 +2715,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.TimeOutCount = _analyzer.TimeOutCount();
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
+	_stats.TeamMode = IsTeamMode((udtGameType::Id)_stats.GameType) ? 1 : 0;
 	_statsArray.Add(_stats);
 
 	// Clear the stats for the next match.

@@ -632,6 +632,7 @@ struct udtTeamStatsField
 	N(Duel, "1v1", "Duel") \
 	N(Race, "race", "Race") \
 	N(HM, "HM", "HoonyMode") \
+	N(RedRover, "RR", "Red Rover") \
 	N(TDM, "TDM", "Team DeathMatch") \
 	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch") \
 	N(CA, "CA", "Clan Arena") \
@@ -641,7 +642,6 @@ struct udtTeamStatsField
 	N(Harvester, "HAR", "Harvester") \
 	N(Domination, "DOM", "Domination") \
 	N(CTFS, "CTFS", "Capture Strike") \
-	N(RedRover, "RR", "Red Rover") \
 	N(NTF, "NTF", "Not Team Fortress") \
 	N(TwoVsTwo, "2v2", "2v2 TDM") \
 	N(FT, "FT", "Freeze Tag")
@@ -1352,8 +1352,8 @@ extern "C"
 		// Non-zero if the player/team with the lowest score won by forfeit, zero otherwise.
 		u32 SecondPlaceWon;
 
-		// Ignore this.
-		s32 Reserved2;
+		// Non-zero if the game type is a team mode, zero otherwise.
+		u32 TeamMode;
 	};
 
 	struct udtParseDataRawCommand
