@@ -1985,7 +1985,7 @@ namespace Uber.DemoTools
                     break;
 
                 case udtStatsDataType.Minutes:
-                    fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 0 ? " minutes" : "minute");
+                    fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 1 ? " minutes" : "minute");
                     break;
 
                 case udtStatsDataType.Seconds:
