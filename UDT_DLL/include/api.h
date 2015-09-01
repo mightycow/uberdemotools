@@ -445,6 +445,7 @@ struct udtStatsDataType
 	N(Defends, "defends", BiggerWins, Generic) \
 	N(Assists, "assists", BiggerWins, Generic) \
 	N(Returns, "returns", BiggerWins, Generic) \
+	N(Thaws, "thaws", BiggerWins, Generic) \
 	N(RedArmorPickups, "red armor pickups", BiggerWins, Generic) \
 	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Generic) \
 	N(GreenArmorPickups, "green armor pickups", BiggerWins, Generic) \
