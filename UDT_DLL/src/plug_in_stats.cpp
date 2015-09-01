@@ -279,7 +279,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores_ft", ParseQLScoresFT),
 		HANDLER("rrscores", ParseQLScoresRROld),
 		HANDLER("scores_rr", ParseQLScoresRR),
-		HANDLER("print", ParsePrint),
+		HANDLER("print", ParsePrint)
 	};
 #undef HANDLER
 	/*
@@ -1216,7 +1216,10 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 		PLAYER_FIELD(Score, 0),
 		PLAYER_FIELD(Kills, 1),
 		PLAYER_FIELD(Deaths, 2),
-		PLAYER_FIELD(Suicides, 3)
+		PLAYER_FIELD(Suicides, 3),
+		// We skip some stuff...
+		PLAYER_FIELD(RocketLauncherDamage, 7),
+		PLAYER_FIELD(RocketLauncherDirectHits, 8)
 		// We ignore more stuff that follows.
 	};
 
@@ -2527,6 +2530,7 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		
 		ComputePlayerAccuracies(i);
+		ComputePlayerRocketSkill(i);
 	}
 
 	// Make sure damage given and damage received are defined for both players in a duel.
@@ -2884,4 +2888,25 @@ void udtParserPlugInStats::ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 
 	const s32 shotCount = fields[shots];
 	fields[acc] = shotCount == 0 ? 0 : (((100 * hitCount) + (shotCount / 2)) / shotCount);
 	SetBit(flags, acc);
+}
+
+void udtParserPlugInStats::ComputePlayerRocketSkill(s32 clientNumber)
+{
+	const s32 skillIdx = (s32)udtPlayerStatsField::RocketLauncherSkill;
+	const s32 dmgIdx = (s32)udtPlayerStatsField::RocketLauncherDamage;
+	const s32 hitsIdx = (s32)udtPlayerStatsField::RocketLauncherHits;
+
+	u8* const flags = GetPlayerFlags(clientNumber);
+	if(IsBitSet(flags, skillIdx) ||
+	   !IsBitSet(flags, dmgIdx) ||
+	   !IsBitSet(flags, hitsIdx))
+	{
+		return;
+	}
+	
+	s32* const fields = GetPlayerFields(clientNumber);
+	const s32 damage = fields[dmgIdx];
+	const s32 hits = fields[hitsIdx];
+	fields[skillIdx] = hits == 0 ? 0 : ((damage + (hits / 2)) / hits);
+	SetBit(flags, skillIdx);
 }

@@ -502,6 +502,8 @@ struct udtStatsDataType
 	N(RocketLauncherDrops, "rocket launcher drops", SmallerWins, Generic) \
 	N(RocketLauncherDeaths, "rocket launcher deaths", SmallerWins, Generic) \
 	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins, Generic) \
+	N(RocketLauncherDirectHits, "rocket launcher direct hits", BiggerWins, Generic) \
+	N(RocketLauncherSkill, "rocket launcher skill", BiggerWins, Generic) \
 	N(PlasmaGunKills, "plasma gun kills", BiggerWins, Generic) \
 	N(PlasmaGunAccuracy, "plasma gun accuracy", BiggerWins, Percentage) \
 	N(PlasmaGunShots, "plasma gun shots", BiggerWins, Generic) \

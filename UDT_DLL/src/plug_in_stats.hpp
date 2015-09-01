@@ -82,6 +82,7 @@ private:
 	void ResetCPMAPrintStats();
 	void ComputePlayerAccuracies(s32 clientNumber);
 	void ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots);
+	void ComputePlayerRocketSkill(s32 clientNumber);
 
 	u8*  GetTeamFlags(s32 idx) { return _teamFlags[idx]; }
 	u8*  GetPlayerFlags(s32 idx) { return _playerFlags[idx]; }
