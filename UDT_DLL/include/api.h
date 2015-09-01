@@ -633,6 +633,7 @@ struct udtTeamStatsField
 	N(Race, "race", "Race") \
 	N(HM, "HM", "HoonyMode") \
 	N(TDM, "TDM", "Team DeathMatch") \
+	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch") \
 	N(CA, "CA", "Clan Arena") \
 	N(CTF, "CTF", "Capture The Flag") \
 	N(OneFlagCTF, "1FCTF", "One Flag CTF") \

@@ -671,6 +671,14 @@ s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id g
 		return -1;
 	}
 
+	if(protocol <= udtProtocol::Dm68 &&
+	   game == udtGame::OSP && 
+	   gt == 2)
+	{
+		// OSP replaced "Single Player" with "ClanBase TDM".
+		return (s32)udtGameType::CBTDM;
+	}
+
 	if(protocol == udtProtocol::Dm3)
 	{
 		switch((idGameType3::Id)gt)
