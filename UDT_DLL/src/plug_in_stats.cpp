@@ -278,12 +278,13 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores_ad", ParseQLScoresAD),
 		HANDLER("scores_ft", ParseQLScoresFT),
 		HANDLER("rrscores", ParseQLScoresRROld),
+		HANDLER("scores_rr", ParseQLScoresRR),
 		HANDLER("print", ParsePrint),
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : scores_rr scores_race
+	QL  : scores_race
 	OSP : bstats
 	*/
 
@@ -2009,6 +2010,87 @@ void udtParserPlugInStats::ParseQLScoresRROld()
 		}
 
 		offset += playerFieldCount;
+	}
+}
+
+void udtParserPlugInStats::ParseQLScoresRR()
+{
+	_stats.GameType = (u32)udtGameType::RedRover;
+
+	const s32 baseOffset = 4;
+	if(_tokenizer->GetArgCount() < baseOffset)
+	{
+		return;
+	}
+
+	static const udtStatsField teamScoreFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	const s32 scoreCount = GetValue(1);
+	ParseTeamFields(0, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 2);
+	ParseTeamFields(1, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 3);
+
+	const s32 statsPerPlayer = _protocol <= udtProtocol::Dm90 ? 19 : 18;
+	if(_tokenizer->GetArgCount() < (u32)(baseOffset + scoreCount * statsPerPlayer))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields90[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		// We skip the round score field.
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		// We skip the power-ups field.
+		PLAYER_FIELD(Accuracy, 7),
+		PLAYER_FIELD(BestWeapon, 8),
+		PLAYER_FIELD(BestWeaponAccuracy, 9),
+		PLAYER_FIELD(Impressives, 10),
+		PLAYER_FIELD(Excellents, 11),
+		PLAYER_FIELD(Gauntlets, 12),
+		PLAYER_FIELD(Defends, 13),
+		PLAYER_FIELD(Assists, 14)
+		// We skip the perfect, captures and alive fields.
+	};
+
+	static const udtStatsField playerFields91[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		// We skip the round score field.
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Kills, 4),
+		PLAYER_FIELD(Deaths, 5),
+		PLAYER_FIELD(Accuracy, 6),
+		PLAYER_FIELD(BestWeapon, 7),
+		PLAYER_FIELD(BestWeaponAccuracy, 8),
+		PLAYER_FIELD(Impressives, 9),
+		PLAYER_FIELD(Excellents, 10),
+		PLAYER_FIELD(Gauntlets, 11),
+		PLAYER_FIELD(Defends, 12),
+		PLAYER_FIELD(Assists, 13)
+		// We skip the perfect, captures and alive fields.
+	};
+
+	const udtStatsField* const playerFields = _protocol <= udtProtocol::Dm90 ? playerFields90 : playerFields91;
+	const s32 playerFieldCount = _protocol <= udtProtocol::Dm90 ? (s32)UDT_COUNT_OF(playerFields90) : (s32)UDT_COUNT_OF(playerFields91);
+
+	s32 offset = baseOffset;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, playerFieldCount, offset + 1);
+		}
+
+		offset += statsPerPlayer;
 	}
 }
 
