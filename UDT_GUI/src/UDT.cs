@@ -498,7 +498,7 @@ namespace Uber.DemoTools
             public Int32 FirstPlaceScore;
             public Int32 SecondPlaceScore;
             public UInt32 SecondPlaceWon;
-            public Int32 Reserved2;
+            public UInt32 TeamMode;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1944,11 +1944,8 @@ namespace Uber.DemoTools
                 stats.PlayerStats[b] = temp;
             }
             
-            //
             // Sort the players by team index.
             // Red comes first unless a blue player has more stats than the others.
-            //
-
             if(highestFieldCountTeam == 2)
             {
                 stats.PlayerStats.StableSort((a, b) => b.TeamIndex - a.TeamIndex);
@@ -1956,6 +1953,16 @@ namespace Uber.DemoTools
             else
             {
                 stats.PlayerStats.StableSort((a, b) => a.TeamIndex - b.TeamIndex);
+            }
+
+            // Skip the team index field for non team game types.
+            foreach(var player in stats.PlayerStats)
+            {
+                var teamIdx = player.Fields.FindIndex(f => f.FieldBitIndex == 0);
+                if(teamIdx >= 0)
+                {
+                    player.Fields.RemoveAt(teamIdx);
+                }
             }
         }
 
