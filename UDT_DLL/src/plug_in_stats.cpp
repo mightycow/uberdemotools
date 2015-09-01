@@ -276,12 +276,13 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("adscores", ParseQLScoresAD),
 		HANDLER("scores_ad", ParseQLScoresAD),
 		HANDLER("scores_ft", ParseQLScoresFT),
+		HANDLER("rrscores", ParseQLScoresRROld),
 		HANDLER("print", ParsePrint),
 	};
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : rrscores scores_rr scores_ft scores_race
+	QL  : scores_rr scores_race
 	OSP : bstats
 	*/
 
@@ -1951,6 +1952,62 @@ void udtParserPlugInStats::ParseQLScoresFT()
 		}
 
 		offset += statsPerPlayer;
+	}
+}
+
+void udtParserPlugInStats::ParseQLScoresRROld()
+{
+	_stats.GameType = (u32)udtGameType::RedRover;
+
+	const s32 baseOffset = 4;
+	if(_tokenizer->GetArgCount() < baseOffset)
+	{
+		return;
+	}
+
+	static const udtStatsField teamScoreFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	const s32 scoreCount = GetValue(1);
+	ParseTeamFields(0, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 2);
+	ParseTeamFields(1, teamScoreFields, (s32)UDT_COUNT_OF(teamScoreFields), 3);
+
+	const s32 playerFieldCount = 19;
+	if(_tokenizer->GetArgCount() < (u32)(baseOffset + scoreCount * playerFieldCount))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields[] =
+	{
+		// We skip a lot of irrelevant fields.
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 2),
+		PLAYER_FIELD(Time, 3),
+		PLAYER_FIELD(Accuracy, 6),
+		PLAYER_FIELD(Impressives, 7),
+		PLAYER_FIELD(Excellents, 8),
+		PLAYER_FIELD(Gauntlets, 9),
+		PLAYER_FIELD(Defends, 10),
+		PLAYER_FIELD(Assists, 11),
+		PLAYER_FIELD(Kills, 15),
+		PLAYER_FIELD(Deaths, 16),
+		PLAYER_FIELD(BestWeapon, 17)
+	};
+
+	s32 offset = baseOffset;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+		}
+
+		offset += playerFieldCount;
 	}
 }
 

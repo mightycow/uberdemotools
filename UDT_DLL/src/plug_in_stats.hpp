@@ -71,6 +71,7 @@ private:
 	void ParseQLStatsCA();
 	void ParseQLScoresAD();
 	void ParseQLScoresFT();
+	void ParseQLScoresRROld();
 	void ParsePrint();
 	void ParseCPMAPrint();
 	void ParseCPMAPrintHeader(const udtString& message);
