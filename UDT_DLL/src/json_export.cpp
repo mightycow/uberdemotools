@@ -8,6 +8,116 @@
 #include "file_stream.hpp"
 #include "json_writer.hpp"
 #include "parser_context.hpp"
+#include "scoped_stack_allocator.hpp"
+
+#include <ctype.h>
+
+
+static udtString NewCamelCaseString(udtVMLinearAllocator& allocator, const udtString& name)
+{
+	if(udtString::IsNullOrEmpty(name))
+	{
+		return name;
+	}
+
+	udtString fixed = udtString::NewCloneFromRef(allocator, name);
+	char* dest = fixed.String;
+	const char* src = fixed.String;
+	*dest++ = (char)::tolower((int)*src++);
+	while(*src)
+	{
+		if(src[0] != ' ')
+		{
+			*dest++ = *src++;
+			continue;
+		}
+
+		if(src[1] == '\0')
+		{
+			break;
+		}
+
+		*dest++ = (char)::toupper((int)src[1]);
+		src += 2;
+	}
+
+	*dest = '\0';
+	fixed.Length = (u32)(dest - name.String);
+
+	return fixed;
+}
+
+struct udtJSONExporter
+{
+public:
+	udtJSONExporter(udtJSONWriter& writer, udtVMLinearAllocator& tempAllocator)
+		: Writer(writer)
+		, TempAllocator(tempAllocator)
+	{
+	}
+
+	void StartObject()
+	{
+		Writer.StartObject();
+	}
+
+	void StartObject(const char* name)
+	{
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.StartObject(GetFixedName(name).String);
+	}
+
+	void EndObject()
+	{
+		Writer.EndObject();
+	}
+
+	void StartArray()
+	{
+		Writer.StartArray();
+	}
+
+	void StartArray(const char* name)
+	{
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.StartArray(GetFixedName(name).String);
+	}
+
+	void EndArray()
+	{
+		Writer.EndArray();
+	}
+
+	void WriteBoolValue(const char* name, bool value)
+	{
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.WriteBoolValue(GetFixedName(name).String, value);
+	}
+
+	void WriteIntValue(const char* name, s32 number)
+	{
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.WriteIntValue(GetFixedName(name).String, number);
+	}
+
+	void WriteStringValue(const char* name, const char* string)
+	{
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.WriteStringValue(GetFixedName(name).String, string);
+	}
+
+private:
+	UDT_NO_COPY_SEMANTICS(udtJSONExporter);
+
+private:
+	udtString GetFixedName(const char* name)
+	{
+		return NewCamelCaseString(TempAllocator, udtString::NewConstRef(name));
+	}
+
+	udtJSONWriter& Writer;
+	udtVMLinearAllocator& TempAllocator;
+};
 
 
 static bool HasValidTeamStats(const udtParseDataStats& stats)
@@ -37,7 +147,7 @@ static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
 	return strings[value];
 }
 
-static void WriteUDTWeapon(udtJSONWriter& writer, s32 udtWeaponIndex, const char* keyName = "weapon")
+static void WriteUDTWeapon(udtJSONExporter& writer, s32 udtWeaponIndex, const char* keyName = "weapon")
 {
 	if(keyName == NULL)
 	{
@@ -47,7 +157,7 @@ static void WriteUDTWeapon(udtJSONWriter& writer, s32 udtWeaponIndex, const char
 	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Weapons, (u32)udtWeaponIndex));
 }
 
-static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const char* keyName = "team")
+static void WriteUDTTeamIndex(udtJSONExporter& writer, s32 udtTeamIndex, const char* keyName = "team")
 {
 	if(keyName == NULL)
 	{
@@ -57,37 +167,37 @@ static void WriteUDTTeamIndex(udtJSONWriter& writer, s32 udtTeamIndex, const cha
 	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Teams, (u32)udtTeamIndex));
 }
 
-static void WriteUDTGameTypeShort(udtJSONWriter& writer, u32 udtGameType)
+static void WriteUDTGameTypeShort(udtJSONExporter& writer, u32 udtGameType)
 {
 	writer.WriteStringValue("game type short", GetUDTStringForValue(udtStringArray::ShortGameTypes, udtGameType));
 }
 
-static void WriteUDTGameTypeLong(udtJSONWriter& writer, u32 udtGameType)
+static void WriteUDTGameTypeLong(udtJSONExporter& writer, u32 udtGameType)
 {
 	writer.WriteStringValue("game type", GetUDTStringForValue(udtStringArray::GameTypes, udtGameType));
 }
 
-static void WriteUDTMod(udtJSONWriter& writer, u32 udtMod)
+static void WriteUDTMod(udtJSONExporter& writer, u32 udtMod)
 {
 	writer.WriteStringValue("mod", GetUDTStringForValue(udtStringArray::ModNames, udtMod));
 }
 
-static void WriteUDTGamePlayShort(udtJSONWriter& writer, u32 udtGamePlay)
+static void WriteUDTGamePlayShort(udtJSONExporter& writer, u32 udtGamePlay)
 {
 	writer.WriteStringValue("gameplay short", GetUDTStringForValue(udtStringArray::ShortGamePlayNames, udtGamePlay));
 }
 
-static void WriteUDTGamePlayLong(udtJSONWriter& writer, u32 udtGamePlay)
+static void WriteUDTGamePlayLong(udtJSONExporter& writer, u32 udtGamePlay)
 {
 	writer.WriteStringValue("gameplay", GetUDTStringForValue(udtStringArray::GamePlayNames, udtGamePlay));
 }
 
-static void WriteUDTOverTimeType(udtJSONWriter& writer, u32 udtOverTimeType)
+static void WriteUDTOverTimeType(udtJSONExporter& writer, u32 udtOverTimeType)
 {
 	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
 }
 
-static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* flags, const s32* fields, s32 teamIndex, const char** fieldNames)
+static void WriteTeamStats(s32& fieldsRead, udtJSONExporter& writer, const u8* flags, const s32* fields, s32 teamIndex, const char** fieldNames)
 {
 	writer.StartObject();
 
@@ -109,7 +219,7 @@ static void WriteTeamStats(s32& fieldsRead, udtJSONWriter& writer, const u8* fla
 	writer.EndObject();
 }
 
-static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber, const char** fieldNames)
+static void WritePlayerStats(s32& fieldsRead, udtJSONExporter& writer, const udtPlayerStats& stats, const u8* flags, const s32* fields, s32 clientNumber, const char** fieldNames)
 {
 	writer.StartObject();
 
@@ -147,7 +257,7 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONWriter& writer, const udtPl
 	writer.EndObject();
 }
 
-static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArray, u32 count, const char** playerStatsFieldNames, const char** teamStatsFieldNames)
+static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsArray, u32 count, const char** playerStatsFieldNames, const char** teamStatsFieldNames)
 {
 	if(count == 0 ||
 	   playerStatsFieldNames == NULL ||
@@ -266,7 +376,7 @@ static void WriteStats(udtJSONWriter& writer, const udtParseDataStats* statsArra
 	writer.EndArray();
 }
 
-static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatEvents, u32 count)
+static void WriteChatEvents(udtJSONExporter& writer, const udtParseDataChat* chatEvents, u32 count)
 {
 	if(count == 0)
 	{
@@ -305,7 +415,7 @@ static void WriteChatEvents(udtJSONWriter& writer, const udtParseDataChat* chatE
 	writer.EndArray();
 }
 
-static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* deathEvents, u32 count)
+static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituary* deathEvents, u32 count)
 {
 	if(count == 0)
 	{
@@ -342,7 +452,7 @@ static void WriteDeathEvents(udtJSONWriter& writer, const udtParseDataObituary* 
 	writer.EndArray();
 }
 
-void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* commands, u32 count)
+void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommand* commands, u32 count)
 {
 	if(count == 0)
 	{
@@ -368,7 +478,7 @@ void WriteRawCommands(udtJSONWriter& writer, const udtParseDataRawCommand* comma
 	writer.EndArray();
 }
 
-static void WriteGameStates(udtJSONWriter& writer, const udtParseDataGameState* gameStates, u32 count)
+static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState* gameStates, u32 count)
 {
 	if(count == 0)
 	{
@@ -439,8 +549,11 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	}
 
 	context->JSONWriterContext.ResetForNextDemo();
-	udtJSONWriter& jsonWriter = context->JSONWriterContext.Writer;
-	jsonWriter.StartFile();
+	udtJSONWriter& writer = context->JSONWriterContext.Writer;
+	udtVMLinearAllocator& tempAllocator = context->Parser._tempAllocator;
+	udtJSONExporter jsonWriter(writer, tempAllocator);
+
+	writer.StartFile();
 
 	void* gameStatesPointer = NULL;
 	u32 gameStateCount = 0;
@@ -487,7 +600,7 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 		WriteRawCommands(jsonWriter, (const udtParseDataRawCommand*)rawEventsPointer, rawEventCount);
 	}
 
-	jsonWriter.EndFile();
+	writer.EndFile();
 
 	udtVMMemoryStream& memoryStream = context->JSONWriterContext.MemoryStream;
 	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
