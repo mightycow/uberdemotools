@@ -2,6 +2,7 @@
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "path.hpp"
+#include "thread_local_allocators.hpp"
 
 
 #if defined(_WIN32)
@@ -12,9 +13,8 @@
 
 bool IsValidDirectory(const char* folderPath)
 {
-	// @FIXME: This is a job for a thread-local allocator.
-	udtVMLinearAllocator allocator;
-	allocator.Init(UDT_MEMORY_PAGE_SIZE);
+	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocatorScope(allocator);
 
 	wchar_t* const wideFolderPath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(folderPath));
 	const DWORD attribs = GetFileAttributesW(wideFolderPath);

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-static void CrashHandler(const char* message)
+void CrashHandler(const char* message)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, message);
@@ -44,11 +44,6 @@ int udt_main(int argc, char** argv)
 		PrintHelp();
 		return 1;
 	}
-
-	printf("UDT library version: %s\n", udtGetVersionString());
-
-	ResetCurrentDirectory(argv[0]);
-	udtSetCrashHandler(&CrashHandler);
 
 	return MergeDemos(argv + 1, argc - 1);
 }

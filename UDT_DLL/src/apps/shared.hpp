@@ -1,4 +1,4 @@
 #pragma once
 
 
-extern void ResetCurrentDirectory(const char* exeFilePath);
+// Nothing for now.

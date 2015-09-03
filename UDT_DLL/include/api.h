@@ -1429,6 +1429,16 @@ extern "C"
 	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount);
 
 	//
+	// Init and shut down functions.
+	//
+
+	// Should be called and waited for before calling any other function except for udtSetCrashHandler.
+	UDT_API(s32) udtInitLibrary();
+
+	// Should only be called after every call to other functions has terminated.
+	UDT_API(s32) udtShutDownLibrary();
+
+	//
 	// The configurable API for fine-grained task selection.
 	// All functions returning a s32 value return an error code of type udtErrorCode::Id.
 	//

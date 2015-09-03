@@ -12,6 +12,18 @@
 #include <stdlib.h>
 
 
+void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_cutter");
+
+	exit(666);
+}
+
+
 static const char* ConfigFilePath = "udt_cutter.cfg";
 
 static const char* DefaultConfig = 
@@ -353,25 +365,9 @@ static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 	return udtPath::HasValidDemoFileExtension(name);
 }
 
-static void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_cutter");
-
-	exit(666);
-}
-
 int udt_main(int argc, char** argv)
 {
-	printf("UDT library version: %s\n", udtGetVersionString());
-
-	ResetCurrentDirectory(argv[0]);
 	EnsureConfigExists(ConfigFilePath);
-
-	udtSetCrashHandler(&CrashHandler);
 
 	udtParserContext* const context = udtCreateContext();
 	if(context == NULL)

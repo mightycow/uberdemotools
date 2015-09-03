@@ -338,6 +338,7 @@ namespace Uber.DemoTools
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
+            UDT_DLL.InitLibrary();
 
             LoadConfig();
 

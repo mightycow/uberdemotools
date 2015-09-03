@@ -11,6 +11,7 @@
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
 #include "path.hpp"
+#include "thread_local_allocators.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -458,6 +459,20 @@ UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCou
 	*teamMaskByteCount = UDT_TEAM_STATS_MASK_BYTE_COUNT;
 	*playerFieldCount = (u32)udtPlayerStatsField::Count;
 	*teamFieldCount = (u32)udtTeamStatsField::Count;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtInitLibrary()
+{
+	udtThreadLocalAllocators::Init();
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtShutDownLibrary()
+{
+	udtThreadLocalAllocators::Destroy();
 
 	return (s32)udtErrorCode::None;
 }

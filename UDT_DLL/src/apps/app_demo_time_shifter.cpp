@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-static void CrashHandler(const char* message)
+void CrashHandler(const char* message)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, message);
@@ -66,10 +66,6 @@ int udt_main(int argc, char** argv)
 		PrintHelp();
 		return __LINE__;
 	}
-
-	printf("UDT library version: %s\n", udtGetVersionString());
-	ResetCurrentDirectory(argv[0]);
-	udtSetCrashHandler(&CrashHandler);
 
 	s32 snapshotCount = -1;
 	if(!StringParseSeconds(snapshotCount, argv[1]) || snapshotCount <= 0 || snapshotCount > 8)

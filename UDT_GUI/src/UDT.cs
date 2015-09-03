@@ -668,6 +668,16 @@ namespace Uber.DemoTools
             return udtCrash(crashType) == udtErrorCode.None;
         }
 
+        public static void InitLibrary()
+        {
+            udtInitLibrary();
+        }
+
+        public static void ShutDownLibrary()
+        {
+            udtShutDownLibrary();
+        }
+
         public static bool SetFatalErrorHandler(udtCrashCallback handler)
         {
             GCHandle.Alloc(handler);

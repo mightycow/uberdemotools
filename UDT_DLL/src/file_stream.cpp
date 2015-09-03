@@ -5,6 +5,7 @@
 
 #include "string.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "thread_local_allocators.hpp"
 
 static const wchar_t* const stdioFileOpenModes[udtFileOpenMode::Count] =
 {
@@ -62,10 +63,7 @@ bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 		return false;
 	}
 
-	// @FIXME: This is a job for a thread-local allocator.
-	udtVMLinearAllocator allocator;
-	allocator.Init(UDT_MEMORY_PAGE_SIZE);
-
+	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
 	udtVMScopedStackAllocator allocatorScope(allocator);
 	wchar_t* const wideFilePath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(filePath));
 	
