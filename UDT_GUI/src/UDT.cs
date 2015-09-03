@@ -524,7 +524,7 @@ namespace Uber.DemoTools
 	    extern static private IntPtr udtGetFileExtensionByProtocol(udtProtocol protocol);
 
 	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-	    extern static private udtProtocol udtGetProtocolByFilePath(string filePath);
+	    extern static private udtProtocol udtGetProtocolByFilePath(IntPtr filePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCrash(udtCrashType crashType);
@@ -539,6 +539,12 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtGetStatsConstants(ref UInt32 playerMaskByteCount, ref UInt32 teamMaskByteCount, ref UInt32 playerFieldCount, ref UInt32 teamFieldCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtInitLibrary();
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtShutDownLibrary();
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtSetCrashHandler(IntPtr crashHandler);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -548,10 +554,10 @@ namespace Uber.DemoTools
 	    extern static private udtErrorCode udtDestroyContext(udtParserContextRef context);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-	    extern static private udtErrorCode udtSplitDemoFile(udtParserContextRef context, ref udtParseArg info, string demoFilePath);
+        extern static private udtErrorCode udtSplitDemoFile(udtParserContextRef context, ref udtParseArg info, IntPtr demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, string demoFilePath);
+        extern static private udtErrorCode udtCutDemoFileByTime(udtParserContextRef context, ref udtParseArg info, ref udtCutByTimeArg cutInfo, IntPtr demoFilePath);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtMergeDemoFiles(ref udtParseArg info, IntPtr filePaths, UInt32 fileCount);
@@ -685,7 +691,11 @@ namespace Uber.DemoTools
 
         public static udtProtocol GetProtocolFromFilePath(string filePath)
         {
-            return udtGetProtocolByFilePath(filePath);
+            var filePathPtr = StringToHGlobalUTF8(filePath);
+            var protocol = udtGetProtocolByFilePath(filePathPtr);
+            Marshal.FreeHGlobal(filePathPtr);
+
+            return protocol;
         }
 
         public static udtCutByFragArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
@@ -797,7 +807,11 @@ namespace Uber.DemoTools
             parseArg.PlugInCount = 0;
             parseArg.PlugIns = IntPtr.Zero;
 
-            return udtSplitDemoFile(context, ref parseArg, filePath) == udtErrorCode.None;
+            var filePathPtr = StringToHGlobalUTF8(filePath);
+            var success = udtSplitDemoFile(context, ref parseArg, filePathPtr) == udtErrorCode.None;
+            Marshal.FreeHGlobal(filePathPtr);
+
+            return success;
         }
 
         public static bool CutDemoByTime(udtParserContextRef context, ref udtParseArg parseArg, string filePath, int startTimeSec, int endTimeSec)
@@ -819,7 +833,9 @@ namespace Uber.DemoTools
             cutInfo.Cuts = pinnedCut.Address;
             cutInfo.CutCount = 1;
 
-            var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePath) == udtErrorCode.None;
+            var filePathPtr = StringToHGlobalUTF8(filePath);
+            var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePathPtr) == udtErrorCode.None;
+            Marshal.FreeHGlobal(filePathPtr);
             pinnedCut.Free();
 
             return success;
@@ -1452,13 +1468,13 @@ namespace Uber.DemoTools
                     }
 
                     var filePath = filePaths[(int)inputIdx];
-                    var protocol = udtGetProtocolByFilePath(filePath);
+                    var protocol = GetProtocolFromFilePath(filePath);
                     var info = new DemoInfo();
                     info.Analyzed = true;
                     info.InputIndex = inputIndexBase + (int)inputIdx;
                     info.FilePath = Path.GetFullPath(filePath);
                     info.Protocol = UDT_DLL.GetProtocolAsString(protocol);
-                    info.ProtocolNumber = UDT_DLL.udtGetProtocolByFilePath(info.FilePath);
+                    info.ProtocolNumber = protocol;
                     
                     ExtractDemoInfo(context, j, info);
                     infoList.Add(info);
