@@ -155,7 +155,7 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             _app.InitParseArg();
             _app.ParseArg.OutputFolderPath = outputFolderPtr;
 

@@ -2148,7 +2148,7 @@ namespace Uber.DemoTools
             return stats.MatchDurationMs;
         }
 
-        private static IntPtr StringToHGlobalUTF8(string s)
+        public static IntPtr StringToHGlobalUTF8(string s)
         {
             var bytes = Encoding.UTF8.GetByteCount(s);
             var buffer = new byte[bytes + 1];

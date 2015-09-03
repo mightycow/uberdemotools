@@ -1840,7 +1840,7 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
@@ -1901,7 +1901,7 @@ namespace Uber.DemoTools
             var demos = threadData.Demos;
 
             var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
@@ -1933,7 +1933,7 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
@@ -1971,7 +1971,7 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
@@ -2208,7 +2208,7 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
+            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
             ParseArg.OutputFolderPath = outputFolderPtr;
 
