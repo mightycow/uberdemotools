@@ -2502,12 +2502,12 @@ namespace Uber.DemoTools
 
         public void LogWarningNoColor(string message, params object[] args)
         {
-            LogMessageNoColor("WARNING: " + string.Format(message, args));
+            LogMessageNoColor("WARNING: " + SafeStringFormat(message, args));
         }
 
         public void LogErrorNoColor(string message, params object[] args)
         {
-            LogMessageNoColor("ERROR: " + string.Format(message, args));
+            LogMessageNoColor("ERROR: " + SafeStringFormat(message, args));
         }
 
         private void LogMessageWithColor(string message, Color color)
@@ -2526,17 +2526,17 @@ namespace Uber.DemoTools
 
         public void LogWarningWithColor(string message, params object[] args)
         {
-            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            LogMessageWithColor(SafeStringFormat(message, args), Color.FromRgb(255, 127, 0));
         }
 
         public void LogErrorWithColor(string message, params object[] args)
         {
-            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            LogMessageWithColor(SafeStringFormat(message, args), Color.FromRgb(255, 0, 0));
         }
 
         public void LogInfo(string message, params object[] args)
         {
-            LogMessageNoColor(string.Format(message, args));
+            LogMessageNoColor(SafeStringFormat(message, args));
         }
 
         public void LogWarning(string message, params object[] args)
@@ -2561,6 +2561,16 @@ namespace Uber.DemoTools
             {
                 LogErrorNoColor(message, args);
             }
+        }
+
+        static private string SafeStringFormat(string format, params object[] args)
+        {
+            if(args == null || args.Length == 0)
+            {
+                return format;
+            }
+
+            return string.Format(format, args);
         }
 
         static public void GlobalLogInfo(string message, params object[] args)
@@ -2606,13 +2616,33 @@ namespace Uber.DemoTools
             SetProgressThreadSafe(100.0 * (double)progress);
         }
 
+        static private string GetTextFromLogItem(object item)
+        {
+            if(item == null)
+            {
+                return null;
+            }
+
+            if(item is string)
+            {
+                return item as string;
+            }
+
+            if(item is TextBlock)
+            {
+                return (item as TextBlock).Text;
+            }
+
+            return null;
+        }
+
         private string GetLog()
         {
             var stringBuilder = new StringBuilder();
 
             foreach(var item in _logListBox.Items)
             {
-                var line = item as string;
+                var line = GetTextFromLogItem(item);
                 if(line == null)
                 {
                     continue;
@@ -2641,7 +2671,7 @@ namespace Uber.DemoTools
             var items = _logListBox.SelectedItems;
             foreach(var item in items)
             {
-                var line = item as string;
+                var line = GetTextFromLogItem(item);
                 if(line == null)
                 {
                     continue;
