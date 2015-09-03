@@ -4,6 +4,10 @@
 #include "linear_allocator.hpp"
 #include "api.h"
 
+#if defined(UDT_WINDOWS)
+#	include <Windows.h>
+#endif
+
 
 struct udtString
 {
@@ -73,6 +77,11 @@ struct udtString
 	static void RemoveCharacter(udtString& result, char toRemove);
 
 	static void TrimTrailingCharacter(udtString& result, char toRemove);
+
+#if defined(UDT_WINDOWS)
+	static udtString NewFromUTF16(udtVMLinearAllocator& allocator, const wchar_t* inputUTF16);
+	static wchar_t*  ConvertToUTF16(udtVMLinearAllocator& allocator, const udtString& inputUTF8);
+#endif
 
 	char* String;
 	u32 Length;

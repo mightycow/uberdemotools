@@ -37,7 +37,7 @@ static int MergeDemos(char** filePaths, int fileCount)
 	return (udtMergeDemoFiles(&info, (const char**)filePaths, (u32)fileCount) == (s32)udtErrorCode::None) ? 0 : __LINE__;
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{

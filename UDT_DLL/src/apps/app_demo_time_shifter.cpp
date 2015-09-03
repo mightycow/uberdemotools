@@ -59,7 +59,7 @@ static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 	return 0;
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	if(argc < 3)
 	{

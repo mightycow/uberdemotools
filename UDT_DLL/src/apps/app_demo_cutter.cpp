@@ -364,7 +364,7 @@ static void CrashHandler(const char* message)
 	exit(666);
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	printf("UDT library version: %s\n", udtGetVersionString());
 

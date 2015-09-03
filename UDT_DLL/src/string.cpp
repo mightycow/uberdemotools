@@ -740,3 +740,75 @@ void udtString::TrimTrailingCharacter(udtString& result, char toRemove)
 	lastChar[1] = '\0';
 	result.Length = (u32)(lastChar + 1 - result.String);
 }
+
+#if defined(UDT_WINDOWS)
+
+#include <Windows.h>
+
+// Includes the terminating character in the count.
+static u32 UTF8toUTF16_GetCharCount(const char* utf8String)
+{
+	return (u32)MultiByteToWideChar(CP_UTF8, 0, utf8String, -1, nullptr, 0);
+}
+
+static bool UTF8toUTF16_Convert(wchar_t* utf16String, u32 utf16StringMaxChars, const char* utf8String)
+{
+	return MultiByteToWideChar(CP_UTF8, 0, utf8String, -1, utf16String, (int)utf16StringMaxChars) != 0;
+}
+
+// Includes the terminating character in the count.
+static u32 UTF16toUTF8_GetCharCount(const wchar_t* utf16String)
+{
+	return (u32)WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
+}
+
+static u32 UTF16toUTF8_Convert(char* utf8String, u32 utf8StringMaxChars, const wchar_t* utf16String)
+{
+	return (u32)WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, utf8String, (int)utf8StringMaxChars, nullptr, nullptr);
+}
+
+udtString udtString::NewFromUTF16(udtVMLinearAllocator& allocator, const wchar_t* utf16String)
+{
+	if(utf16String == NULL)
+	{
+		return udtString::NewEmptyConstant();
+	}
+
+	const uptr allocatorOffset = allocator.GetCurrentByteCount();
+	const u32 charCount = UTF16toUTF8_GetCharCount(utf16String);
+	char* const utf8String = (char*)allocator.Allocate((uptr)charCount);
+	if(!UTF16toUTF8_Convert(utf8String, charCount, utf16String))
+	{
+		allocator.SetCurrentByteCount(allocatorOffset);
+		return udtString::NewEmptyConstant();
+	}
+
+	udtString string;
+	string.String = utf8String;
+	string.Length = charCount - 1;
+	string.ReservedBytes = charCount;
+
+	return string;
+}
+
+wchar_t* udtString::ConvertToUTF16(udtVMLinearAllocator& allocator, const udtString& utf8String)
+{
+	if(IsNull(utf8String))
+	{
+		return NULL;
+	}
+
+	const uptr allocatorOffset = allocator.GetCurrentByteCount();
+	const u32 charCount = UTF8toUTF16_GetCharCount(utf8String.String);
+	const u32 allocCharCount = charCount;
+	wchar_t* const utf16String = (wchar_t*)allocator.Allocate((uptr)allocCharCount * (uptr)sizeof(wchar_t));
+	if(!UTF8toUTF16_Convert(utf16String, charCount, utf8String.String))
+	{
+		allocator.SetCurrentByteCount(allocatorOffset);
+		return NULL;
+	}
+
+	return utf16String;
+}
+
+#endif

@@ -1,6 +1,20 @@
 #include "file_stream.hpp"
 
 
+#if defined(UDT_WINDOWS)
+
+#include "string.hpp"
+#include "scoped_stack_allocator.hpp"
+
+static const wchar_t* const stdioFileOpenModes[udtFileOpenMode::Count] =
+{
+	L"rb", // Read binary, file must exist.
+	L"wb", // Write binary, file created or emptied if exists.
+	L"r+b" // Read/write binary, file must exist.
+};
+
+#else
+
 static const char* const stdioFileOpenModes[udtFileOpenMode::Count] =
 {
 	"rb", // Read binary, file must exist.
@@ -8,18 +22,14 @@ static const char* const stdioFileOpenModes[udtFileOpenMode::Count] =
 	"r+b" // Read/write binary, file must exist.
 };
 
+#endif
+
 
 bool udtFileStream::Exists(const char* filePath)
 {
-	FILE* const file = fopen(filePath, "rb");
-	if(file == NULL)
-	{
-		return false;
-	}
-
-	fclose(file);
-
-	return true;
+	udtFileStream file;
+	
+	return file.Open(filePath, udtFileOpenMode::Read);
 }
 
 u64 udtFileStream::GetFileLength(const char* filePath)
@@ -43,15 +53,38 @@ udtFileStream::~udtFileStream()
 	Destroy(); 
 }
 
+#if defined(UDT_WINDOWS)
+
 bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 {
 	if(mode < 0 || mode >= udtFileOpenMode::Count)
 	{
 		return false;
 	}
+
+	// @FIXME: This is a job for a thread-local allocator.
+	udtVMLinearAllocator allocator;
+	allocator.Init(UDT_MEMORY_PAGE_SIZE);
+
+	udtVMScopedStackAllocator allocatorScope(allocator);
+	wchar_t* const wideFilePath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(filePath));
 	
+	return (_file = _wfopen(wideFilePath, stdioFileOpenModes[mode])) != NULL;
+}
+
+#else
+
+bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
+{
+	if(mode < 0 || mode >= udtFileOpenMode::Count)
+	{
+		return false;
+	}
+
 	return (_file = fopen(filePath, stdioFileOpenModes[mode])) != NULL;
 }
+
+#endif
 
 u32 udtFileStream::Read(void* dstBuff, u32 elementSize, u32 count)
 {

@@ -109,7 +109,7 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	return false;
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{
