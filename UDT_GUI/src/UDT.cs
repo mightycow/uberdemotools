@@ -831,7 +831,7 @@ namespace Uber.DemoTools
             var filePathsArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                filePathsArray[i] = Marshal.StringToHGlobalAnsi(filePaths[i]);
+                filePathsArray[i] = StringToHGlobalUTF8(filePaths[i]);
                 resources.GlobalAllocationHandles.Add(filePathsArray[i]);
             }
             var pinnedFilePaths = new PinnedObject(filePathsArray);
@@ -889,7 +889,7 @@ namespace Uber.DemoTools
                 rulesArray[i].CaseSensitive = (UInt32)(rules[i].CaseSensitive ? 1 : 0);
                 rulesArray[i].ChatOperator = GetOperatorFromString(rules[i].Operator);
                 rulesArray[i].IgnoreColorCodes = (UInt32)(rules[i].IgnoreColors ? 1 : 0);
-                rulesArray[i].Pattern = Marshal.StringToHGlobalAnsi(rules[i].Value);
+                rulesArray[i].Pattern = StringToHGlobalUTF8(rules[i].Value);
                 rulesArray[i].SearchTeamChat = (UInt32)(rules[i].SearchTeamMessages ? 1 : 0);
                 resources.GlobalAllocationHandles.Add(rulesArray[i].Pattern);
             }
@@ -1094,7 +1094,7 @@ namespace Uber.DemoTools
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = StringToHGlobalUTF8(Path.GetFullPath(filePaths[i]));
                 resources.GlobalAllocationHandles.Add(filePathArray[i]);
             }
 
@@ -1112,7 +1112,7 @@ namespace Uber.DemoTools
             var playerNameUnmanaged = IntPtr.Zero;
             if(!string.IsNullOrEmpty(options.PlayerName))
             {
-                playerNameUnmanaged = Marshal.StringToHGlobalAnsi(options.PlayerName);
+                playerNameUnmanaged = StringToHGlobalUTF8(options.PlayerName);
                 resources.GlobalAllocationHandles.Add(playerNameUnmanaged);
             }
 
@@ -1174,7 +1174,7 @@ namespace Uber.DemoTools
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                var filePath = StringToHGlobalUTF8(Path.GetFullPath(filePaths[i]));
                 filePathArray[i] = filePath;
                 resources.GlobalAllocationHandles.Add(filePath);
             }
@@ -1198,8 +1198,8 @@ namespace Uber.DemoTools
                 var mapRuleArray = new udtMapConversionRule[mapRules.Count];
                 for(var i = 0; i < mapRules.Count; ++i)
                 {
-                    var inputName = Marshal.StringToHGlobalAnsi(mapRules[i].InputName);
-                    var outputName = Marshal.StringToHGlobalAnsi(mapRules[i].OutputName);
+                    var inputName = StringToHGlobalUTF8(mapRules[i].InputName);
+                    var outputName = StringToHGlobalUTF8(mapRules[i].OutputName);
                     mapRuleArray[i].InputName = inputName;
                     mapRuleArray[i].OutputName = outputName;
                     mapRuleArray[i].PositionOffsetX = mapRules[i].OffsetX;
@@ -1254,7 +1254,7 @@ namespace Uber.DemoTools
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                var filePath = StringToHGlobalUTF8(Path.GetFullPath(filePaths[i]));
                 filePathArray[i] = filePath;
                 resources.GlobalAllocationHandles.Add(filePath);
             }
@@ -1312,7 +1312,7 @@ namespace Uber.DemoTools
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                var filePath = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                var filePath = StringToHGlobalUTF8(Path.GetFullPath(filePaths[i]));
                 filePathArray[i] = filePath;
                 resources.GlobalAllocationHandles.Add(filePath);
             }
@@ -1375,7 +1375,7 @@ namespace Uber.DemoTools
             var filePathArray = new IntPtr[filePaths.Count];
             for(var i = 0; i < filePaths.Count; ++i)
             {
-                filePathArray[i] = Marshal.StringToHGlobalAnsi(Path.GetFullPath(filePaths[i]));
+                filePathArray[i] = StringToHGlobalUTF8(Path.GetFullPath(filePaths[i]));
             }
 
             var pinnedPlugIns = new PinnedObject(PlugInArray);
@@ -2146,6 +2146,18 @@ namespace Uber.DemoTools
             }
 
             return stats.MatchDurationMs;
+        }
+
+        private static IntPtr StringToHGlobalUTF8(string s)
+        {
+            var bytes = Encoding.UTF8.GetByteCount(s);
+            var buffer = new byte[bytes + 1];
+            Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
+            var ptr = Marshal.AllocHGlobal(bytes + 1);
+            Marshal.Copy(buffer, 0, ptr, bytes);
+            buffer[bytes] = 0;
+
+            return ptr;
         }
     }
 }
