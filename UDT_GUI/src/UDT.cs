@@ -2150,6 +2150,11 @@ namespace Uber.DemoTools
 
         public static IntPtr StringToHGlobalUTF8(string nativeString)
         {
+            if(nativeString == null)
+            {
+                return IntPtr.Zero;
+            }
+
             // @NOTE:
             // C# initializes arrays to 0, so the last byte of the byte array
             // we create already is a NULL terminating character.

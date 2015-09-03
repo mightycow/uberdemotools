@@ -331,16 +331,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
-
-            var resources = threadArg.Resources;
-            resources.GlobalAllocationHandles.Add(outputFolderPtr);
 
             try
             {
+                var resources = threadArg.Resources;
                 var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
                 UDT_DLL.CutDemosByPattern(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
             }

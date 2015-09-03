@@ -217,10 +217,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
 
             try
             {
@@ -231,8 +228,6 @@ namespace Uber.DemoTools
             {
                 _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void OnAddChatRuleClicked()

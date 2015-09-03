@@ -1813,6 +1813,12 @@ namespace Uber.DemoTools
 
         public void InitParseArg()
         {
+            if(ParseArg.OutputFolderPath != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(ParseArg.OutputFolderPath);
+            }
+
+            var outputFolder = GetOutputFolder();
             Marshal.WriteInt32(CancelOperation, 0);
             ParseArg.CancelOperation = CancelOperation;
             ParseArg.MessageCb = DemoLoggingCallback;
@@ -1828,6 +1834,10 @@ namespace Uber.DemoTools
             {
                 ParseArg.Flags |= (uint)UDT_DLL.udtParseArgFlags.PrintAllocStats;
             }
+            if(outputFolder != null)
+            {
+                ParseArg.OutputFolderPath = UDT_DLL.StringToHGlobalUTF8(outputFolder);
+            }
         }
 
         private void DemoAnalyzeThread(object arg)
@@ -1839,10 +1849,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1863,7 +1870,6 @@ namespace Uber.DemoTools
 
             if(newDemos == null || newDemos.Count == 0)
             {
-                Marshal.FreeHGlobal(outputFolderPtr);
                 return;
             }
 
@@ -1883,8 +1889,6 @@ namespace Uber.DemoTools
                 demos[i].MatchStats = newDemo.MatchStats;
             }
 
-            Marshal.FreeHGlobal(outputFolderPtr);
-
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
             _window.Dispatcher.Invoke(infoUpdater);
         }
@@ -1900,10 +1904,7 @@ namespace Uber.DemoTools
 
             var demos = threadData.Demos;
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1919,8 +1920,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while converting demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void DemoMergeThread(object arg)
@@ -1932,10 +1931,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1951,8 +1947,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while merging demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void JSONDemoExportThread(object arg)
@@ -1970,10 +1964,7 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var plugIns = new List<UInt32>();
             for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
@@ -1992,8 +1983,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while exporting demo analysis data to .JSON files: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         public static string FormatPerformanceTime(Stopwatch timer)
@@ -2207,10 +2196,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             try
             {
@@ -2221,8 +2207,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while splitting a demo: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void OnSplitDemoClicked()
