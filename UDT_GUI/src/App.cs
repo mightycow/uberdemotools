@@ -2569,8 +2569,26 @@ namespace Uber.DemoTools
             {
                 return format;
             }
+            
+            try
+            {
+                return string.Format(format, args);
+            }
+            catch
+            {
+                var builder = new StringBuilder();
+                builder.Append("string.Format of this failed: ");
+                builder.Append(format);
+                for(var i = 0; i < args.Length; ++i)
+                {
+                    builder.Append(", arg");
+                    builder.Append(i.ToString());
+                    builder.Append("=");
+                    builder.Append(args[i]);
+                }
 
-            return string.Format(format, args);
+                return builder.ToString();
+            }
         }
 
         static public void GlobalLogInfo(string message, params object[] args)
