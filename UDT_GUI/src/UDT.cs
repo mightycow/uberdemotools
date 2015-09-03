@@ -2148,16 +2148,18 @@ namespace Uber.DemoTools
             return stats.MatchDurationMs;
         }
 
-        public static IntPtr StringToHGlobalUTF8(string s)
+        public static IntPtr StringToHGlobalUTF8(string nativeString)
         {
-            var bytes = Encoding.UTF8.GetByteCount(s);
-            var buffer = new byte[bytes + 1];
-            Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
-            var ptr = Marshal.AllocHGlobal(bytes + 1);
-            Marshal.Copy(buffer, 0, ptr, bytes);
-            buffer[bytes] = 0;
+            // @NOTE:
+            // C# initializes arrays to 0, so the last byte of the byte array
+            // we create already is a NULL terminating character.
+            var byteCount = Encoding.UTF8.GetByteCount(nativeString) + 1;
+            var bytes = new byte[byteCount]; 
+            Encoding.UTF8.GetBytes(nativeString, 0, nativeString.Length, bytes, 0);
+            var stringAddress = Marshal.AllocHGlobal(byteCount);
+            Marshal.Copy(bytes, 0, stringAddress, byteCount);
 
-            return ptr;
+            return stringAddress;
         }
     }
 }
