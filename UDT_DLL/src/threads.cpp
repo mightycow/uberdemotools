@@ -1,4 +1,5 @@
 #include "threads.hpp"
+#include "thread_local_allocators.hpp"
 
 
 #if defined(UDT_WINDOWS)
@@ -22,6 +23,8 @@ DWORD WINAPI GlobalThreadCallback(LPVOID lpThreadParameter)
 
 	thread->InvokeUserFunction();
 
+	udtThreadLocalAllocators::ReleaseThreadLocalAllocators();
+
 	return 0;
 }
 
@@ -36,6 +39,8 @@ void* GlobalThreadCallback(void* threadParameter)
 	}
 
 	thread->InvokeUserFunction();
+
+	udtThreadLocalAllocators::ReleaseThreadLocalAllocators();
 
 	return (void*)0;
 }
