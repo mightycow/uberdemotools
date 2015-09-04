@@ -5,7 +5,7 @@
 #include "cut_section.hpp"
 
 
-static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const CommandLineTokenizer& tokenizer)
+static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idTokenizer& tokenizer)
 {
 	bool hasCPMASyntax = false;
 
@@ -58,11 +58,9 @@ udtCutByChatAnalyzer::~udtCutByChatAnalyzer()
 {
 }
 
-void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& commandInfo, udtBaseParser& parser)
+void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*commandInfo*/, udtBaseParser& parser)
 {
-	udtContext& context = *parser._context;
-	CommandLineTokenizer& tokenizer = context.Tokenizer;
-	tokenizer.Tokenize(commandInfo.String);
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	if(tokenizer.GetArgCount() < 2)
 	{
 		return;

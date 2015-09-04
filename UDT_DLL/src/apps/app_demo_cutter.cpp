@@ -142,7 +142,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 	const u32 fileLength = (u32)file.Length();
 	file.Close();
 
-	CommandLineTokenizer& tokenizer = context.Tokenizer;
+	idTokenizer& tokenizer = context.Tokenizer;
 
 	udtVMArrayWithAlloc<udtString> lines(1 << 16);
 	udtString fileString = udtString::NewRef(fileData, fileLength, fileLength + 1);

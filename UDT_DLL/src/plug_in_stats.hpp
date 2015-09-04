@@ -148,7 +148,8 @@ private:
 	u8 _playerFlags[64][UDT_PLAYER_STATS_MASK_BYTE_COUNT];
 	u8 _teamFlags[2][UDT_TEAM_STATS_MASK_BYTE_COUNT];
 	udtVMLinearAllocator _allocator;
-	CommandLineTokenizer* _tokenizer;
+	const idTokenizer* _tokenizer;
+	idTokenizer* _plugInTokenizer;
 	udtProtocol::Id _protocol;
 	s32 _followedClientNumber;
 	u32 _maxAllowedStats;

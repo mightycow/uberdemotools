@@ -390,7 +390,7 @@ bool udtBaseParser::ParseCommandString()
 	_inServerCommandSequence = commandSequence;
 
 tokenize:	
-	CommandLineTokenizer& tokenizer = _context->Tokenizer;
+	idTokenizer& tokenizer = _tokenizer;
 	tokenizer.Tokenize(commandString);
 	const int tokenCount = tokenizer.GetArgCount();
 	const udtString commandName = (tokenCount > 0) ? tokenizer.GetArg(0) : udtString::NewEmptyConstant();

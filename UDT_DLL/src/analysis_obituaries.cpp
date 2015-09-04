@@ -103,9 +103,9 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 
 void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	const int tokenCount = tokenizer.GetArgCount();
-	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || tokenCount != 3)
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || 
+	   tokenizer.GetArgCount() != 3)
 	{
 		return;
 	}

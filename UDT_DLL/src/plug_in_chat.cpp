@@ -81,15 +81,13 @@ void udtParserPlugInChat::StartDemoAnalysis()
 
 void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*info*/, udtBaseParser& parser)
 {
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	if(tokenizer.GetArgCount() < 2)
 	{
 		return;
 	}
 
 	const udtString command = tokenizer.GetArg(0);
-
-	
 	if(parser._inProtocol <= udtProtocol::Dm68 &&
 	   tokenizer.GetArgCount() == 3 &&
 	   udtString::Equals(command, "cs"))
@@ -164,7 +162,7 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	chatEvent.ServerTimeMs = parser._inServerTime;
 	chatEvent.PlayerIndex = -1;
 
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	const udtString originalCommand = udtString::NewClone(_chatStringAllocator, tokenizer.GetOriginalCommand());
 	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, originalCommand);
 	chatEvent.Strings[0].OriginalCommand = originalCommand.String;
@@ -212,7 +210,7 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 	chatEvent.PlayerIndex = -1;
 	chatEvent.TeamMessage = 1;
 
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	const udtString originalCommand = udtString::NewClone(_chatStringAllocator, tokenizer.GetOriginalCommand());
 	udtString cleanedUpCommand = udtString::NewCloneFromRef(_chatStringAllocator, originalCommand);
 	udtString::CleanUp(cleanedUpCommand, parser._inProtocol);
@@ -289,7 +287,7 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 {
 	s32 clientNumber = -1;
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	if(!StringParseInt(clientNumber, tokenizer.GetArgString(1)) ||
 	   clientNumber < 0 ||
 	   clientNumber >= 64)

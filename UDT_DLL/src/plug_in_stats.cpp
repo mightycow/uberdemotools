@@ -118,6 +118,7 @@ static u32 PopCount(const u8* flags, u32 byteCount)
 udtParserPlugInStats::udtParserPlugInStats()
 {
 	_tokenizer = NULL;
+	_plugInTokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_maxAllowedStats = UDT_MAX_STATS;
@@ -149,6 +150,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_analyzer.ResetForNextDemo();
 
 	_tokenizer = NULL;
+	_plugInTokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_gameEnded = false;
@@ -175,7 +177,8 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	}
 	_analyzer.ProcessGamestateMessage(arg, parser);
 
-	_tokenizer = &parser._context->Tokenizer;
+	_tokenizer = &parser.GetTokenizer();
+	_plugInTokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
 	_followedClientNumber = -1;
 
@@ -2210,16 +2213,17 @@ void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 #undef CPMA_PLAYER_FIELD
 #undef CPMA_TEAM_FIELD_EX
 
-	_tokenizer->Tokenize(message.String);
+	idTokenizer* const tokenizer = _plugInTokenizer;
+	tokenizer->Tokenize(message.String);
 
-	const u32 tokenCount = _tokenizer->GetArgCount();
+	const u32 tokenCount = tokenizer->GetArgCount();
 	const u32 fieldCount = (u32)UDT_COUNT_OF(fields);
 	u32& headerCount = _cpmaPrintStats.HeaderCount;
 	headerCount = 0;
 	bool previousLeftAligned = false;
 	for(u32 i = 0; i < tokenCount; ++i)
 	{
-		const udtString token = _tokenizer->GetArg(i);
+		const udtString token = tokenizer->GetArg(i);
 		for(u32 j = 0; j < fieldCount; ++j)
 		{
 			if(udtString::Equals(token, fields[j].Name))
@@ -2234,16 +2238,16 @@ void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 				if(i > 0)
 				{
 					startOffset = previousLeftAligned ? 
-						(s16)_tokenizer->GetArgOffset(i) :
-						(u16)(_tokenizer->GetArgOffset(i - 1) + _tokenizer->GetArgLength(i - 1) + 1);
+						(s16)tokenizer->GetArgOffset(i) :
+						(u16)(tokenizer->GetArgOffset(i - 1) + tokenizer->GetArgLength(i - 1) + 1);
 					const u16 endOffset = (leftAligned && i + 1 < tokenCount) ?
-						(u16)_tokenizer->GetArgOffset(i + 1) : 
-						(u16)(_tokenizer->GetArgOffset(i) + _tokenizer->GetArgLength(i));
+						(u16)tokenizer->GetArgOffset(i + 1) :
+						(u16)(tokenizer->GetArgOffset(i) + tokenizer->GetArgLength(i));
 					length = endOffset - startOffset;
 				}
 				else
 				{
-					length = (u16)_tokenizer->GetArgOffset(i + 1);
+					length = (u16)tokenizer->GetArgOffset(i + 1);
 				}
 
 				header.StringStart = startOffset;
@@ -2327,6 +2331,7 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 		}
 	}
 
+	idTokenizer* const tokenizer = _plugInTokenizer;
 	for(u32 i = 0; i < headerCount; ++i)
 	{
 		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
@@ -2337,10 +2342,10 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 
 		s32 value = 0;
 		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
-		_tokenizer->Tokenize(section.String);
-		if(_tokenizer->GetArgCount() >= 1)
+		tokenizer->Tokenize(section.String);
+		if(tokenizer->GetArgCount() >= 1)
 		{
-			StringParseInt(value, _tokenizer->GetArgString(0));
+			StringParseInt(value, tokenizer->GetArgString(0));
 		}
 		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.Field1, value);
 	}
@@ -2381,6 +2386,7 @@ void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 		return;
 	}
 
+	idTokenizer* const tokenizer = _plugInTokenizer;
 	for(u32 i = 0; i < headerCount; ++i)
 	{
 		const udtCPMAPrintStats::Header& header = _cpmaPrintStats.Headers[i];
@@ -2391,17 +2397,17 @@ void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 
 		s32 value = 0;
 		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
-		_tokenizer->Tokenize(section.String);
-		if(_tokenizer->GetArgCount() >= 1)
+		tokenizer->Tokenize(section.String);
+		if(tokenizer->GetArgCount() >= 1)
 		{
-			StringParseInt(value, _tokenizer->GetArgString(0));
+			StringParseInt(value, tokenizer->GetArgString(0));
 		}
 		SetTeamField(teamIndex, (udtTeamStatsField::Id)header.Field1, value);
 
 		s32 duration = 0;
-		if(_tokenizer->GetArgCount() >= 2)
+		if(tokenizer->GetArgCount() >= 2)
 		{
-			StringParseSeconds(duration, _tokenizer->GetArgString(1));
+			StringParseSeconds(duration, tokenizer->GetArgString(1));
 		}
 		if(header.Field2 >= 0)
 		{

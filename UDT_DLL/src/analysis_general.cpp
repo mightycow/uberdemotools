@@ -169,10 +169,9 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	_processingGameState = false;
 }
 
-void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	tokenizer.Tokenize(arg.String);
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	if(tokenizer.GetArgCount() == 0)
 	{
 		return;

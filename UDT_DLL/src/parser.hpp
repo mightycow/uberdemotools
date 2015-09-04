@@ -61,6 +61,7 @@ public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
 	idEntityStateBase*    GetBaseline(s32 idx) const { return (idEntityStateBase*)&_inEntityBaselines[idx * _inProtocolSizeOfEntityState]; }
 	idClientSnapshotBase* GetClientSnapshot(s32 idx) const { return (idClientSnapshotBase*)&_inSnapshots[idx * _inProtocolSizeOfClientSnapshot]; }
+	const idTokenizer&    GetTokenizer() { return _tokenizer; }
 	
 	// You don't have to deallocate the object, but you will have to call the destructor manually yourself.
 	template<class T>
@@ -132,4 +133,7 @@ public:
 	s32 _outSnapshotsWritten;
 	bool _outWriteFirstMessage;
 	bool _outWriteMessage;
+
+private:
+	idTokenizer _tokenizer; // Make sure plug-ins don't get write access to this.
 };

@@ -121,8 +121,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	_analyzer.ProcessCommandMessage(info, parser);
 	AddCurrentMatchIfValid();
 
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	tokenizer.Tokenize(info.String);
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	s32 csIndex = 0;
 	if(tokenizer.GetArgCount() != 3 || 
 	   !udtString::Equals(tokenizer.GetArg(0), "cs") || 

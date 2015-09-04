@@ -8,17 +8,17 @@
 static const char* EmptyString = "";
 
 
-const char* CommandLineTokenizer::GetOriginalCommand() const
+const char* idTokenizer::GetOriginalCommand() const
 {
 	return _originalCommand;
 }
 
-u32	CommandLineTokenizer::GetArgCount() const
+u32	idTokenizer::GetArgCount() const
 {
 	return _argCount;
 }
 
-const char* CommandLineTokenizer::GetArgString(u32 arg) const
+const char* idTokenizer::GetArgString(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -28,7 +28,7 @@ const char* CommandLineTokenizer::GetArgString(u32 arg) const
 	return _argStrings[arg];	
 }
 
-u32 CommandLineTokenizer::GetArgLength(u32 arg) const
+u32 idTokenizer::GetArgLength(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -38,7 +38,7 @@ u32 CommandLineTokenizer::GetArgLength(u32 arg) const
 	return _argLengths[arg];
 }
 
-u32 CommandLineTokenizer::GetArgOffset(u32 arg) const
+u32 idTokenizer::GetArgOffset(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -48,7 +48,7 @@ u32 CommandLineTokenizer::GetArgOffset(u32 arg) const
 	return _argOffsets[arg];
 }
 
-udtString CommandLineTokenizer::GetArg(u32 arg) const
+udtString idTokenizer::GetArg(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -58,7 +58,7 @@ udtString CommandLineTokenizer::GetArg(u32 arg) const
 	return udtString::NewConstRef(_argStrings[arg], _argLengths[arg]);
 }
 
-void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
+void idTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 {
 	// clear previous args
 	_argCount = 0;
@@ -171,7 +171,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 	}
 }
 
-void CommandLineTokenizer::RegisterArgLengths()
+void idTokenizer::RegisterArgLengths()
 {
 	if(_argCount == 0)
 	{
@@ -188,7 +188,7 @@ void CommandLineTokenizer::RegisterArgLengths()
 	_argLengths[lastIndex] = (u32)strlen(_argStrings[lastIndex]);
 }
 
-void CommandLineTokenizer::Tokenize(const char* text, bool ignoreQuotes)
+void idTokenizer::Tokenize(const char* text, bool ignoreQuotes)
 {
 	TokenizeImpl(text, ignoreQuotes);
 	RegisterArgLengths();

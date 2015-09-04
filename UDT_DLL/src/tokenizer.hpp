@@ -5,7 +5,7 @@
 #include "string.hpp"
 
 
-struct CommandLineTokenizer
+struct idTokenizer
 {
 public:
 	const char* GetOriginalCommand() const;

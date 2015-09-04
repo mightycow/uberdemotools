@@ -180,7 +180,7 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 		return;
 	}
 
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
 	const int tokenCount = tokenizer.GetArgCount();
 	if(tokenCount != 3 || !udtString::Equals(tokenizer.GetArg(0), "cs"))
 	{

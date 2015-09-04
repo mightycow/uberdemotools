@@ -37,7 +37,7 @@ public:
 	char	ReadBigStringBuffer[BIG_INFO_STRING];
 	char	ReadStringLineBuffer[MAX_STRING_CHARS];
 
-	CommandLineTokenizer    Tokenizer;
+	idTokenizer    Tokenizer;
 
 private:
 	udtMessageCallback      _messageCallback;  // Can be NULL.
