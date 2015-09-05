@@ -102,6 +102,7 @@ namespace Uber.DemoTools
             Obituaries,
             Stats,
             RawCommands,
+            RawConfigStrings,
             Count
         }
 
@@ -502,6 +503,24 @@ namespace Uber.DemoTools
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtParseDataRawCommand
+        {
+            public IntPtr RawCommand; // const char*
+            public IntPtr CleanCommand; // const char*
+            public Int32 ServerTimeMs;
+            public Int32 GameStateIndex;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtParseDataRawConfigString
+        {
+            public IntPtr RawConfigString; // const char*
+            public IntPtr CleanConfigString; // const char*
+            public UInt32 ConfigStringIndex;
+            public Int32 GameStateIndex;
+        };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtTimeShiftArg
         {
             public Int32 SnapshotCount;
@@ -627,7 +646,9 @@ namespace Uber.DemoTools
             (UInt32)udtParserPlugIn.Chat, 
             (UInt32)udtParserPlugIn.GameState,
             (UInt32)udtParserPlugIn.Obituaries,
-            (UInt32)udtParserPlugIn.Stats
+            (UInt32)udtParserPlugIn.Stats,
+            (UInt32)udtParserPlugIn.RawCommands,
+            (UInt32)udtParserPlugIn.RawConfigStrings
         };
 
         public static List<string> GetStringArray(udtStringArray array)
@@ -1505,6 +1526,7 @@ namespace Uber.DemoTools
             ExtractGameStateEvents(context, demoIdx, info);
             ExtractObituaries(context, demoIdx, info);
             ExtractStats(context, demoIdx, info);
+            ExtractCommands(context, demoIdx, info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, DemoInfo info)
@@ -1704,6 +1726,73 @@ namespace Uber.DemoTools
                 var mod = SafeGetUTF8String(data.MeanOfDeathName, "N/A");
                 var item = new FragEventDisplayInfo(data.GameStateIndex, time, attacker, target, mod);
                 info.FragEvents.Add(item);
+            }
+        }
+
+        private static void ExtractCommands(udtParserContextRef context, uint demoIdx, DemoInfo info)
+        {
+            uint commandCount = 0;
+            uint configStringsCount = 0;
+            IntPtr commands = IntPtr.Zero;
+            IntPtr configStrings = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.RawCommands, ref commands, ref commandCount) != udtErrorCode.None ||
+               udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.RawConfigStrings, ref configStrings, ref configStringsCount) != udtErrorCode.None)
+            {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for commands and config strings failed");
+                return;
+            }
+
+            var commandList = new List<CommandDisplayInfo>();
+            for(uint i = 0; i < commandCount; ++i)
+            {
+                var address = new IntPtr(commands.ToInt64() + i * sizeof(udtParseDataRawCommand));
+                var data = (udtParseDataRawCommand)Marshal.PtrToStructure(address, typeof(udtParseDataRawCommand));
+                var gs = data.GameStateIndex.ToString();
+                var time = FormatMinutesSecondsFromMs(data.ServerTimeMs);
+                var rawCmd = SafeGetUTF8String(data.RawCommand).Replace("\n", "\\n");
+                var cmd = "";
+                var val = "";
+                if(rawCmd.StartsWith("cs "))
+                {
+                    var firstQuote = rawCmd.IndexOf('"');
+                    var lastQuote = rawCmd.LastIndexOf('"');
+                    cmd = rawCmd.Substring(0, firstQuote - 1);
+                    val = rawCmd.Substring(firstQuote + 1, lastQuote - firstQuote - 1);
+                }
+                else
+                {
+                    var firstSpace = rawCmd.IndexOf(' ');
+                    if(firstSpace < 0)
+                    {
+                        cmd = rawCmd;
+                    }
+                    else
+                    {
+                        cmd = rawCmd.Substring(0, firstSpace);
+                        val = rawCmd.Substring(firstSpace + 1);
+                    }
+                }
+
+                commandList.Add(new CommandDisplayInfo(data.GameStateIndex, gs, time, cmd, val));
+            }
+
+            var configStringList = new List<CommandDisplayInfo>();
+            for(uint i = 0; i < configStringsCount; ++i)
+            {
+                var address = new IntPtr(configStrings.ToInt64() + i * sizeof(udtParseDataRawConfigString));
+                var data = (udtParseDataRawConfigString)Marshal.PtrToStructure(address, typeof(udtParseDataRawConfigString));
+                var gs = data.GameStateIndex.ToString();
+                var cmd = "cs " + data.ConfigStringIndex.ToString();
+                var val = SafeGetUTF8String(data.RawConfigString).Replace("\n", "\\n");
+                configStringList.Add(new CommandDisplayInfo(data.GameStateIndex, gs, "", cmd, val));
+            }
+
+            var lastGameStateIndex = configStringList.Count == 0 ? 0 : configStringList[configStringList.Count - 1].GameStateIndex;
+            var gameStateCount = lastGameStateIndex + 1;
+            for(var i = 0; i < gameStateCount; ++i)
+            {
+                info.Commands.AddRange(configStringList.FindAll(cs => cs.GameStateIndex == i));
+                info.Commands.AddRange(commandList.FindAll(cmd => cmd.GameStateIndex == i));
             }
         }
 

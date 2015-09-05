@@ -121,6 +121,7 @@ namespace Uber.DemoTools
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
         public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
+        public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -1265,6 +1266,12 @@ namespace Uber.DemoTools
             statsTab.Header = "Scores and Stats";
             statsTab.Content = stats.RootControl;
 
+            var commands = new CommandsComponent(this);
+            _appComponents.Add(commands);
+            var commandsTab = new TabItem();
+            commandsTab.Header = "Commands";
+            commandsTab.Content = commands.RootControl;
+
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
@@ -1273,6 +1280,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(chatTab);
             tabControl.Items.Add(deathsTab);
             tabControl.Items.Add(statsTab);
+            tabControl.Items.Add(commandsTab);
 
             return tabControl;
         }
@@ -1888,6 +1896,7 @@ namespace Uber.DemoTools
                 demos[i].ProtocolNumber = newDemo.ProtocolNumber;
                 demos[i].FilePath = newDemo.FilePath;
                 demos[i].MatchStats = newDemo.MatchStats;
+                demos[i].Commands = newDemo.Commands;
             }
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
@@ -2053,6 +2062,16 @@ namespace Uber.DemoTools
         private void LoadConfig()
         {
             Serializer.FromXml("Config.xml", out _config);
+            if(_config.JSONPlugInsEnabled.Length != (int)UDT_DLL.udtParserPlugIn.Count)
+            {
+                var array = new bool[(int)UDT_DLL.udtParserPlugIn.Count];
+                var toCopy = Math.Min(_config.JSONPlugInsEnabled.Length, (int)UDT_DLL.udtParserPlugIn.Count);
+                for(var i = 0; i < toCopy; ++i)
+                {
+                    array[i] = _config.JSONPlugInsEnabled[i];
+                }
+                _config.JSONPlugInsEnabled = array;
+            }
         }
 
         public void SaveConfig()
