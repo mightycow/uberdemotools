@@ -29,11 +29,12 @@ static void PrintHelp()
 	printf("-r        : enable recursive demo file search (default: off)\n");
 	printf("-t=max_t  : maximum number of threads         (default: 4)\n");
 	printf("-a=<flags>: select analyzers                  (default: all enabled)\n");
-	printf("            g: game states\n");
-	printf("            c: chat\n");
-	printf("            d: deaths\n");
-	printf("            s: stats\n");
-	printf("            r: raw commands\n");
+	printf("            g: Game states\n");
+	printf("            m: chat Messages\n");
+	printf("            d: Deaths\n");
+	printf("            s: Stats\n");
+	printf("            r: Raw commands\n");
+	printf("            c: raw Config strings\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
@@ -173,10 +174,11 @@ int udt_main(int argc, char** argv)
 				switch(*s)
 				{
 					case 'g': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::GameState); break;
-					case 'c': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Chat); break;
+					case 'm': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Chat); break;
 					case 'd': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Obituaries); break;
 					case 's': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Stats); break;
 					case 'r': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawCommands); break;
+					case 'c': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawConfigStrings); break;
 				}
 
 				++s;

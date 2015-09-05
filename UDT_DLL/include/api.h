@@ -98,14 +98,16 @@ struct udtCrashType
 
 // Macro arguments:
 // 1. enum name 
-// 2. plug-in class type (internal)
-// 3. plug-in output class type (for reading back the results of Analyzer plug-ins)
+// 2. string description
+// 3. plug-in class type (internal)
+// 4. plug-in output class type (for reading back the results of Analyzer plug-ins)
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,        "chat messages", udtParserPlugInChat,        udtParseDataChat) \
-	N(GameState,   "game states",   udtParserPlugInGameState,   udtParseDataGameState) \
-	N(Obituaries,  "obituaries",    udtParserPlugInObituaries,  udtParseDataObituary) \
-	N(Stats,       "match stats",   udtParserPlugInStats,       udtParseDataStats) \
-	N(RawCommands, "raw commands",  udtParserPlugInRawCommands, udtParseDataRawCommand)
+	N(Chat,             "chat messages",      udtParserPlugInChat,             udtParseDataChat) \
+	N(GameState,        "game states",        udtParserPlugInGameState,        udtParseDataGameState) \
+	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituary) \
+	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStats) \
+	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommand) \
+	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawCommand)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -1366,10 +1368,26 @@ extern "C"
 		// The command with no color codes etc.
 		const char* CleanCommand;
 
-		// The time at which the chat message was sent from the client.
+		// The time at which the server command was sent from the client.
 		s32 ServerTimeMs;
 
-		// The index of the last gamestate message after which this chat event occurred.
+		// The index of the last gamestate message after which this server command was sent.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
+	};
+
+	struct udtParseDataRawConfigString
+	{
+		// The raw config string, as it was sent from the server.
+		const char* RawConfigString;
+
+		// The config string with no color codes etc.
+		const char* CleanConfigString;
+
+		// The index of the config string.
+		u32 ConfigStringIndex;
+
+		// The index of the gamestate message this config string was in.
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
 	};

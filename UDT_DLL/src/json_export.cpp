@@ -452,7 +452,7 @@ static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituary
 	writer.EndArray();
 }
 
-void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommand* commands, u32 count)
+static void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommand* commands, u32 count)
 {
 	if(count == 0)
 	{
@@ -471,6 +471,32 @@ void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommand* com
 		writer.WriteIntValue("server time", info.ServerTimeMs);
 		writer.WriteStringValue("raw command", info.RawCommand);
 		writer.WriteStringValue("clean command", info.CleanCommand);
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+
+static void WriteRawConfigStrings(udtJSONExporter& writer, const udtParseDataRawConfigString* configString, u32 count)
+{
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("raw config strings");
+
+	for(u32 i = 0; i < count; ++i)
+	{
+		const udtParseDataRawConfigString& info = configString[i];
+
+		writer.StartObject();
+
+		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
+		writer.WriteIntValue("index", info.ConfigStringIndex);
+		writer.WriteStringValue("raw string", info.RawConfigString);
+		writer.WriteStringValue("clean string", info.CleanConfigString);
 
 		writer.EndObject();
 	}
@@ -598,6 +624,14 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	   rawEventsPointer != NULL)
 	{
 		WriteRawCommands(jsonWriter, (const udtParseDataRawCommand*)rawEventsPointer, rawEventCount);
+	}
+
+	void* rawConfigStringsPointer = NULL;
+	u32 rawConfigStringCount = 0;
+	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::RawConfigStrings, &rawConfigStringsPointer, &rawConfigStringCount) == (s32)udtErrorCode::None &&
+	   rawConfigStringsPointer != NULL)
+	{
+		WriteRawConfigStrings(jsonWriter, (const udtParseDataRawConfigString*)rawConfigStringsPointer, rawConfigStringCount);
 	}
 
 	writer.EndFile();
