@@ -24,7 +24,12 @@ namespace Uber.DemoTools
 
         public override string ToString()
         {
-            return string.Format("[{0}] ({1}) <{2}> {3}", GameState, Time, Command, Value);
+            if(string.IsNullOrEmpty(Time))
+            {
+                return string.Format("(gs {0}) {1} {2}", GameState, Command, Value);
+            }
+
+            return string.Format("[{0}] (gs {1}) {2} {3}", Time, GameState, Command, Value);
         }
 
         public int GameStateIndex { get; private set; }
@@ -57,10 +62,22 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var commands = new ObservableCollection<CommandDisplayInfo>();
+            var copyItem = new MenuItem();
+            copyItem.Header = "Copy to Clipboard (Ctrl+C)";
+            copyItem.Command = _copyCommand;
+            copyItem.Click += (obj, args) => OnCopyContextClicked();
+            App.AddKeyBinding(_commandsListView, Key.C, _copyCommand, (obj, args) => OnCopyContextClicked());
+
+            var commandsContextMenu = new ContextMenu();
+            commandsContextMenu.Items.Add(copyItem);
+
+            var commands = new ObservableCollection<ListViewItem>();
             foreach(var command in demoInfo.Commands)
             {
-                commands.Add(command);
+                var item = new ListViewItem();
+                item.Content = command;
+                item.ContextMenu = commandsContextMenu;
+                commands.Add(item);
             }
 
             _commandsListView.ItemsSource = commands;
@@ -82,6 +99,7 @@ namespace Uber.DemoTools
 
         private App _app;
         private DemoInfoListView _commandsListView = null;
+        private static RoutedCommand _copyCommand = new RoutedCommand();
 
         private FrameworkElement CreateTab()
         {
@@ -141,6 +159,11 @@ namespace Uber.DemoTools
             infoPanelGroupBox.Content = commandsListView;
 
             return infoPanelGroupBox;
+        }
+
+        private void OnCopyContextClicked()
+        {
+            App.CopyListViewRowsToClipboard(_commandsListView);
         }
     }
 }
