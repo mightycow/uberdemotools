@@ -181,6 +181,8 @@ namespace Uber.DemoTools
             Percentage,
             Weapon,
             Ping,
+            Positive,
+            Boolean,
             Count
         };
 
@@ -2081,9 +2083,42 @@ namespace Uber.DemoTools
             }
         }
 
+        private static bool IsStatsValueValid(udtStatsDataType type, int value)
+        {
+            switch(type)
+            {
+                case udtStatsDataType.Team:
+                    return value >= 0 && value <= 3;
+
+                case udtStatsDataType.Weapon:
+                    return true;
+
+                case udtStatsDataType.Percentage:
+                    return value >= 0 && value <= 100;
+
+                case udtStatsDataType.Minutes:
+                case udtStatsDataType.Seconds:
+                case udtStatsDataType.Ping:
+                case udtStatsDataType.Positive:
+                    return value >= 0;
+
+                case udtStatsDataType.Boolean:
+                    return value == 0 || value == 1;
+
+                case udtStatsDataType.Generic:
+                default:
+                    return value != int.MinValue;
+            }
+        }
+
         private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtStatsDataType dataType, IntPtr fieldNameAddress)
         {
             fieldName = dataType == udtStatsDataType.Team ? "Team" : GetStatFieldNameFromAddress(fieldNameAddress);
+            if(!IsStatsValueValid(dataType, fieldIntegerValue))
+            {
+                fieldValue = "<invalid>";
+                return;
+            }
 
             switch(dataType)
             {
@@ -2111,6 +2146,12 @@ namespace Uber.DemoTools
                     fieldValue = fieldIntegerValue.ToString() + " ms";
                     break;
 
+                case udtStatsDataType.Boolean:
+                    fieldValue = fieldIntegerValue == 0 ? "no" : "yes";
+                    break;
+
+                case udtStatsDataType.Generic:
+                case udtStatsDataType.Positive:
                 default:
                     fieldValue = fieldIntegerValue.ToString();
                     break;

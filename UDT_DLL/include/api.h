@@ -417,6 +417,8 @@ struct udtStatsDataType
 		Percentage, // Append a percentage sign at the end.
 		Weapon,     // The integer is of type udtWeapon::Id.
 		Ping,       // The ping in milli-seconds.
+		Positive,   // The value must be positive or zero.
+		Boolean,    // The value must be 0 or 1.
 		Count
 	};
 };
@@ -426,150 +428,150 @@ struct udtStatsDataType
 	N(Score, "score", BiggerWins, Generic) \
 	N(Ping, "ping", SmallerWins, Ping) \
 	N(Time, "play time", BiggerWins, Minutes) \
-	N(Kills, "kills", BiggerWins, Generic) \
-	N(Deaths, "deaths", SmallerWins, Generic) \
+	N(Kills, "kills", BiggerWins, Positive) \
+	N(Deaths, "deaths", SmallerWins, Positive) \
 	N(Accuracy, "accuracy", BiggerWins, Percentage) \
 	N(BestWeapon, "best weapon", NeitherWins, Weapon) \
 	N(BestWeaponAccuracy, "best weapon accuracy", BiggerWins, Percentage) \
-	N(Perfect, "perfect", BiggerWins, Generic) \
-	N(Impressives, "impressives", BiggerWins, Generic) \
-	N(Excellents, "excellents", BiggerWins, Generic) \
-	N(Gauntlets, "gauntlets", BiggerWins, Generic) \
-	N(TeamKills, "team kills", SmallerWins, Generic) \
-	N(TeamKilled, "team killed", NeitherWins, Generic) \
-	N(Suicides, "suicides", SmallerWins, Generic) \
-	N(DamageGiven, "damage given", BiggerWins, Generic) \
-	N(DamageReceived, "damage received", SmallerWins, Generic) \
-	N(TeamDamage, "team damage", SmallerWins, Generic) \
-	N(ArmorTaken, "armor taken", BiggerWins, Generic) \
-	N(HealthTaken, "health taken", BiggerWins, Generic) \
-	N(Captures, "captures", BiggerWins, Generic) \
-	N(Defends, "defends", BiggerWins, Generic) \
-	N(Assists, "assists", BiggerWins, Generic) \
-	N(Returns, "returns", BiggerWins, Generic) \
-	N(FlagPickups, "flag pickups", BiggerWins, Generic) \
+	N(Perfect, "perfect", BiggerWins, Boolean) \
+	N(Impressives, "impressives", BiggerWins, Positive) \
+	N(Excellents, "excellents", BiggerWins, Positive) \
+	N(Gauntlets, "gauntlets", BiggerWins, Positive) \
+	N(TeamKills, "team kills", SmallerWins, Positive) \
+	N(TeamKilled, "team killed", NeitherWins, Positive) \
+	N(Suicides, "suicides", SmallerWins, Positive) \
+	N(DamageGiven, "damage given", BiggerWins, Positive) \
+	N(DamageReceived, "damage received", SmallerWins, Positive) \
+	N(TeamDamage, "team damage", SmallerWins, Positive) \
+	N(ArmorTaken, "armor taken", BiggerWins, Positive) \
+	N(HealthTaken, "health taken", BiggerWins, Positive) \
+	N(Captures, "captures", BiggerWins, Positive) \
+	N(Defends, "defends", BiggerWins, Positive) \
+	N(Assists, "assists", BiggerWins, Positive) \
+	N(Returns, "returns", BiggerWins, Positive) \
+	N(FlagPickups, "flag pickups", BiggerWins, Positive) \
 	N(FlagTime, "flag possession time", BiggerWins, Seconds) \
-	N(Thaws, "thaws", BiggerWins, Generic) \
-	N(RedArmorPickups, "red armor pickups", BiggerWins, Generic) \
-	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Generic) \
-	N(GreenArmorPickups, "green armor pickups", BiggerWins, Generic) \
-	N(MegaHealthPickups, "mega health pickups", BiggerWins, Generic) \
-	N(QuadDamagePickups, "quad damage pickups", BiggerWins, Generic) \
-	N(BattleSuitPickups, "battle suit pickups", BiggerWins, Generic) \
+	N(Thaws, "thaws", BiggerWins, Positive) \
+	N(RedArmorPickups, "red armor pickups", BiggerWins, Positive) \
+	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Positive) \
+	N(GreenArmorPickups, "green armor pickups", BiggerWins, Positive) \
+	N(MegaHealthPickups, "mega health pickups", BiggerWins, Positive) \
+	N(QuadDamagePickups, "quad damage pickups", BiggerWins, Positive) \
+	N(BattleSuitPickups, "battle suit pickups", BiggerWins, Positive) \
 	N(RedArmorPickupTime, "red armor time", NeitherWins, Generic) \
 	N(YellowArmorPickupTime, "yellow armor time", NeitherWins, Generic) \
 	N(GreenArmorPickupTime, "green armor time", NeitherWins, Generic) \
 	N(MegaHealthPickupTime, "mega health time", NeitherWins, Generic) \
-	N(RegenPickups, "regeneration pickups", BiggerWins, Generic) \
-	N(HastePickups, "haste pickups", BiggerWins, Generic) \
-	N(InvisPickups, "invisibility pickups", BiggerWins, Generic) \
-	N(MedkitPickups, "medkit pickups", BiggerWins, Generic) \
-	N(GauntletKills, "gauntlet kills", BiggerWins, Generic) \
+	N(RegenPickups, "regeneration pickups", BiggerWins, Positive) \
+	N(HastePickups, "haste pickups", BiggerWins, Positive) \
+	N(InvisPickups, "invisibility pickups", BiggerWins, Positive) \
+	N(MedkitPickups, "medkit pickups", BiggerWins, Positive) \
+	N(GauntletKills, "gauntlet kills", BiggerWins, Positive) \
 	N(GauntletAccuracy, "gauntlet accuracy", BiggerWins, Percentage) \
-	N(GauntletShots, "gauntlet shots", BiggerWins, Generic) \
-	N(GauntletHits, "gauntlet hits", BiggerWins, Generic) \
-	N(GauntletDamage, "gauntlet damage", BiggerWins, Generic) \
-	N(GauntletDrops, "gauntlet drops", SmallerWins, Generic) \
-	N(GauntletDeaths, "gauntlet deaths", SmallerWins, Generic) \
-	N(GauntletPickups, "gauntlet pickups", BiggerWins, Generic) \
-	N(MachineGunKills, "machinegun kills", BiggerWins, Generic) \
+	N(GauntletShots, "gauntlet shots", BiggerWins, Positive) \
+	N(GauntletHits, "gauntlet hits", BiggerWins, Positive) \
+	N(GauntletDamage, "gauntlet damage", BiggerWins, Positive) \
+	N(GauntletDrops, "gauntlet drops", SmallerWins, Positive) \
+	N(GauntletDeaths, "gauntlet deaths", SmallerWins, Positive) \
+	N(GauntletPickups, "gauntlet pickups", BiggerWins, Positive) \
+	N(MachineGunKills, "machinegun kills", BiggerWins, Positive) \
 	N(MachineGunAccuracy, "machinegun accuracy", BiggerWins, Percentage) \
-	N(MachineGunShots, "machinegun shots", BiggerWins, Generic) \
-	N(MachineGunHits, "machinegun hits", BiggerWins, Generic) \
-	N(MachineGunDamage, "machinegun damage", BiggerWins, Generic) \
-	N(MachineGunDrops, "machinegun drops", SmallerWins, Generic) \
-	N(MachineGunDeaths, "machinegun deaths", SmallerWins, Generic) \
-	N(MachineGunPickups, "machinegun pickups", BiggerWins, Generic) \
-	N(ShotgunKills, "shotgun kills", BiggerWins, Generic) \
+	N(MachineGunShots, "machinegun shots", BiggerWins, Positive) \
+	N(MachineGunHits, "machinegun hits", BiggerWins, Positive) \
+	N(MachineGunDamage, "machinegun damage", BiggerWins, Positive) \
+	N(MachineGunDrops, "machinegun drops", SmallerWins, Positive) \
+	N(MachineGunDeaths, "machinegun deaths", SmallerWins, Positive) \
+	N(MachineGunPickups, "machinegun pickups", BiggerWins, Positive) \
+	N(ShotgunKills, "shotgun kills", BiggerWins, Positive) \
 	N(ShotgunAccuracy, "shotgun accuracy", BiggerWins, Percentage) \
-	N(ShotgunShots, "shotgun shots", BiggerWins, Generic) \
-	N(ShotgunHits, "shotgun hits", BiggerWins, Generic) \
-	N(ShotgunDamage, "shotgun damage", BiggerWins, Generic) \
-	N(ShotgunDrops, "shotgun drops", SmallerWins, Generic) \
-	N(ShotgunDeaths, "shotgun deaths", SmallerWins, Generic) \
-	N(ShotgunPickups, "shotgun pickups", BiggerWins, Generic) \
-	N(GrenadeLauncherKills, "grenade launcher kills", BiggerWins, Generic) \
+	N(ShotgunShots, "shotgun shots", BiggerWins, Positive) \
+	N(ShotgunHits, "shotgun hits", BiggerWins, Positive) \
+	N(ShotgunDamage, "shotgun damage", BiggerWins, Positive) \
+	N(ShotgunDrops, "shotgun drops", SmallerWins, Positive) \
+	N(ShotgunDeaths, "shotgun deaths", SmallerWins, Positive) \
+	N(ShotgunPickups, "shotgun pickups", BiggerWins, Positive) \
+	N(GrenadeLauncherKills, "grenade launcher kills", BiggerWins, Positive) \
 	N(GrenadeLauncherAccuracy, "grenade launcher accuracy", BiggerWins, Percentage) \
-	N(GrenadeLauncherShots, "grenade launcher shots", BiggerWins, Generic) \
-	N(GrenadeLauncherHits, "grenade launcher hits", BiggerWins, Generic) \
-	N(GrenadeLauncherDamage, "grenade launcher damage", BiggerWins, Generic) \
-	N(GrenadeLauncherDrops, "grenade launcher drops", SmallerWins, Generic) \
-	N(GrenadeLauncherDeaths, "grenade launcher deaths", SmallerWins, Generic) \
-	N(GrenadeLauncherPickups, "grenade launcher pickups", BiggerWins, Generic) \
-	N(RocketLauncherKills, "rocket launcher kills", BiggerWins, Generic) \
+	N(GrenadeLauncherShots, "grenade launcher shots", BiggerWins, Positive) \
+	N(GrenadeLauncherHits, "grenade launcher hits", BiggerWins, Positive) \
+	N(GrenadeLauncherDamage, "grenade launcher damage", BiggerWins, Positive) \
+	N(GrenadeLauncherDrops, "grenade launcher drops", SmallerWins, Positive) \
+	N(GrenadeLauncherDeaths, "grenade launcher deaths", SmallerWins, Positive) \
+	N(GrenadeLauncherPickups, "grenade launcher pickups", BiggerWins, Positive) \
+	N(RocketLauncherKills, "rocket launcher kills", BiggerWins, Positive) \
 	N(RocketLauncherAccuracy, "rocket launcher accuracy", BiggerWins, Percentage) \
 	N(RocketLauncherSkill, "rocket launcher skill", BiggerWins, Percentage) \
-	N(RocketLauncherShots, "rocket launcher shots", BiggerWins, Generic) \
-	N(RocketLauncherHits, "rocket launcher hits", BiggerWins, Generic) \
-	N(RocketLauncherDirectHits, "rocket launcher direct hits", BiggerWins, Generic) \
-	N(RocketLauncherDamage, "rocket launcher damage", BiggerWins, Generic) \
-	N(RocketLauncherDrops, "rocket launcher drops", SmallerWins, Generic) \
-	N(RocketLauncherDeaths, "rocket launcher deaths", SmallerWins, Generic) \
-	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins, Generic) \
-	N(PlasmaGunKills, "plasma gun kills", BiggerWins, Generic) \
+	N(RocketLauncherShots, "rocket launcher shots", BiggerWins, Positive) \
+	N(RocketLauncherHits, "rocket launcher hits", BiggerWins, Positive) \
+	N(RocketLauncherDirectHits, "rocket launcher direct hits", BiggerWins, Positive) \
+	N(RocketLauncherDamage, "rocket launcher damage", BiggerWins, Positive) \
+	N(RocketLauncherDrops, "rocket launcher drops", SmallerWins, Positive) \
+	N(RocketLauncherDeaths, "rocket launcher deaths", SmallerWins, Positive) \
+	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins, Positive) \
+	N(PlasmaGunKills, "plasma gun kills", BiggerWins, Positive) \
 	N(PlasmaGunAccuracy, "plasma gun accuracy", BiggerWins, Percentage) \
-	N(PlasmaGunShots, "plasma gun shots", BiggerWins, Generic) \
-	N(PlasmaGunHits, "plasma gun hits", BiggerWins, Generic) \
-	N(PlasmaGunDamage, "plasma gun damage", BiggerWins, Generic) \
-	N(PlasmaGunDrops, "plasma gun drops", SmallerWins, Generic) \
-	N(PlasmaGunDeaths, "plasma gun deaths", SmallerWins, Generic) \
-	N(PlasmaGunPickups, "plasma gun pickups", BiggerWins, Generic) \
-	N(RailgunKills, "railgun kills", BiggerWins, Generic) \
+	N(PlasmaGunShots, "plasma gun shots", BiggerWins, Positive) \
+	N(PlasmaGunHits, "plasma gun hits", BiggerWins, Positive) \
+	N(PlasmaGunDamage, "plasma gun damage", BiggerWins, Positive) \
+	N(PlasmaGunDrops, "plasma gun drops", SmallerWins, Positive) \
+	N(PlasmaGunDeaths, "plasma gun deaths", SmallerWins, Positive) \
+	N(PlasmaGunPickups, "plasma gun pickups", BiggerWins, Positive) \
+	N(RailgunKills, "railgun kills", BiggerWins, Positive) \
 	N(RailgunAccuracy, "railgun accuracy", BiggerWins, Percentage) \
-	N(RailgunShots, "railgun shots", BiggerWins, Generic) \
-	N(RailgunHits, "railgun hits", BiggerWins, Generic) \
-	N(RailgunDamage, "railgun damage", BiggerWins, Generic) \
-	N(RailgunDrops, "railgun drops", SmallerWins, Generic) \
-	N(RailgunDeaths, "railgun deaths", SmallerWins, Generic) \
-	N(RailgunPickups, "railgun pickups", BiggerWins, Generic) \
-	N(LightningGunKills, "lightning gun kills", BiggerWins, Generic) \
+	N(RailgunShots, "railgun shots", BiggerWins, Positive) \
+	N(RailgunHits, "railgun hits", BiggerWins, Positive) \
+	N(RailgunDamage, "railgun damage", BiggerWins, Positive) \
+	N(RailgunDrops, "railgun drops", SmallerWins, Positive) \
+	N(RailgunDeaths, "railgun deaths", SmallerWins, Positive) \
+	N(RailgunPickups, "railgun pickups", BiggerWins, Positive) \
+	N(LightningGunKills, "lightning gun kills", BiggerWins, Positive) \
 	N(LightningGunAccuracy, "lightning gun accuracy", BiggerWins, Percentage) \
-	N(LightningGunShots, "lightning gun shots", BiggerWins, Generic) \
-	N(LightningGunHits, "lightning gun hits", BiggerWins, Generic) \
-	N(LightningGunDamage, "lightning gun damage", BiggerWins, Generic) \
-	N(LightningGunDrops, "lightning gun drops", SmallerWins, Generic) \
-	N(LightningGunDeaths, "lightning gun deaths", SmallerWins, Generic) \
-	N(LightningGunPickups, "lightning gun pickups", BiggerWins, Generic) \
-	N(BFGKills, "bfg kills", BiggerWins, Generic) \
+	N(LightningGunShots, "lightning gun shots", BiggerWins, Positive) \
+	N(LightningGunHits, "lightning gun hits", BiggerWins, Positive) \
+	N(LightningGunDamage, "lightning gun damage", BiggerWins, Positive) \
+	N(LightningGunDrops, "lightning gun drops", SmallerWins, Positive) \
+	N(LightningGunDeaths, "lightning gun deaths", SmallerWins, Positive) \
+	N(LightningGunPickups, "lightning gun pickups", BiggerWins, Positive) \
+	N(BFGKills, "bfg kills", BiggerWins, Positive) \
 	N(BFGAccuracy, "bfg accuracy", BiggerWins, Percentage) \
-	N(BFGShots, "bfg shots", BiggerWins, Generic) \
-	N(BFGHits, "bfg hits", BiggerWins, Generic) \
-	N(BFGDamage, "bfg damage", BiggerWins, Generic) \
-	N(BFGDrops, "bfg drops", SmallerWins, Generic) \
-	N(BFGDeaths, "bfg deaths", SmallerWins, Generic) \
-	N(BFGPickups, "bfg pickups", BiggerWins, Generic) \
-	N(GrapplingHookKills, "grappling hook kills", BiggerWins, Generic) \
+	N(BFGShots, "bfg shots", BiggerWins, Positive) \
+	N(BFGHits, "bfg hits", BiggerWins, Positive) \
+	N(BFGDamage, "bfg damage", BiggerWins, Positive) \
+	N(BFGDrops, "bfg drops", SmallerWins, Positive) \
+	N(BFGDeaths, "bfg deaths", SmallerWins, Positive) \
+	N(BFGPickups, "bfg pickups", BiggerWins, Positive) \
+	N(GrapplingHookKills, "grappling hook kills", BiggerWins, Positive) \
 	N(GrapplingHookAccuracy, "grappling hook accuracy", BiggerWins, Percentage) \
-	N(GrapplingHookShots, "grappling hook shots", BiggerWins, Generic) \
-	N(GrapplingHookHits, "grappling hook hits", BiggerWins, Generic) \
-	N(GrapplingHookDamage, "grappling hook damage", BiggerWins, Generic) \
-	N(GrapplingHookDrops, "grappling hook drops", SmallerWins, Generic) \
-	N(GrapplingHookDeaths, "grappling hook deaths", SmallerWins, Generic) \
-	N(GrapplingHookPickups, "grappling hook pickups", BiggerWins, Generic) \
-	N(NailGunKills, "nailgun kills", BiggerWins, Generic) \
+	N(GrapplingHookShots, "grappling hook shots", BiggerWins, Positive) \
+	N(GrapplingHookHits, "grappling hook hits", BiggerWins, Positive) \
+	N(GrapplingHookDamage, "grappling hook damage", BiggerWins, Positive) \
+	N(GrapplingHookDrops, "grappling hook drops", SmallerWins, Positive) \
+	N(GrapplingHookDeaths, "grappling hook deaths", SmallerWins, Positive) \
+	N(GrapplingHookPickups, "grappling hook pickups", BiggerWins, Positive) \
+	N(NailGunKills, "nailgun kills", BiggerWins, Positive) \
 	N(NailGunAccuracy, "nailgun accuracy", BiggerWins, Percentage) \
-	N(NailGunShots, "nailgun shots", BiggerWins, Generic) \
-	N(NailGunHits, "nailgun hits", BiggerWins, Generic) \
-	N(NailGunDamage, "nailgun damage", BiggerWins, Generic) \
-	N(NailGunDrops, "nailgun drops", SmallerWins, Generic) \
-	N(ChainGunKills, "chaingun kills", BiggerWins, Generic) \
+	N(NailGunShots, "nailgun shots", BiggerWins, Positive) \
+	N(NailGunHits, "nailgun hits", BiggerWins, Positive) \
+	N(NailGunDamage, "nailgun damage", BiggerWins, Positive) \
+	N(NailGunDrops, "nailgun drops", SmallerWins, Positive) \
+	N(ChainGunKills, "chaingun kills", BiggerWins, Positive) \
 	N(ChainGunAccuracy, "chaingun accuracy", BiggerWins, Percentage) \
-	N(ChainGunShots, "chaingun shots", BiggerWins, Generic) \
-	N(ChainGunHits, "chaingun hits", BiggerWins, Generic) \
-	N(ChainGunDamage, "chaingun damage", BiggerWins, Generic) \
-	N(ChainGunDrops, "chaingun drops", SmallerWins, Generic) \
-	N(ProximityMineLauncherKills, "proximity mine kills", BiggerWins, Generic) \
+	N(ChainGunShots, "chaingun shots", BiggerWins, Positive) \
+	N(ChainGunHits, "chaingun hits", BiggerWins, Positive) \
+	N(ChainGunDamage, "chaingun damage", BiggerWins, Positive) \
+	N(ChainGunDrops, "chaingun drops", SmallerWins, Positive) \
+	N(ProximityMineLauncherKills, "proximity mine kills", BiggerWins, Positive) \
 	N(ProximityMineLauncherAccuracy, "proximity mine accuracy", BiggerWins, Percentage) \
-	N(ProximityMineLauncherShots, "proximity mine shots", BiggerWins, Generic) \
-	N(ProximityMineLauncherHits, "proximity mine hits", BiggerWins, Generic) \
-	N(ProximityMineLauncherDamage, "proximity mine damage", BiggerWins, Generic) \
-	N(ProximityMineLauncherDrops, "proximity mine drops", SmallerWins, Generic) \
-	N(HeavyMachineGunKills, "heavy machinegun kills", BiggerWins, Generic) \
+	N(ProximityMineLauncherShots, "proximity mine shots", BiggerWins, Positive) \
+	N(ProximityMineLauncherHits, "proximity mine hits", BiggerWins, Positive) \
+	N(ProximityMineLauncherDamage, "proximity mine damage", BiggerWins, Positive) \
+	N(ProximityMineLauncherDrops, "proximity mine drops", SmallerWins, Positive) \
+	N(HeavyMachineGunKills, "heavy machinegun kills", BiggerWins, Positive) \
 	N(HeavyMachineGunAccuracy, "heavy machinegun accuracy", BiggerWins, Percentage) \
-	N(HeavyMachineGunShots, "heavy machinegun shots", BiggerWins, Generic) \
-	N(HeavyMachineGunHits, "heavy machinegun hits", BiggerWins, Generic) \
-	N(HeavyMachineGunDamage, "heavy machinegun damage", BiggerWins, Generic) \
-	N(HeavyMachineGunDrops, "heavy machinegun drops", SmallerWins, Generic)
+	N(HeavyMachineGunShots, "heavy machinegun shots", BiggerWins, Positive) \
+	N(HeavyMachineGunHits, "heavy machinegun hits", BiggerWins, Positive) \
+	N(HeavyMachineGunDamage, "heavy machinegun damage", BiggerWins, Positive) \
+	N(HeavyMachineGunDrops, "heavy machinegun drops", SmallerWins, Positive)
 
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) Enum,
 struct udtPlayerStatsField
@@ -584,40 +586,40 @@ struct udtPlayerStatsField
 
 #define UDT_TEAM_STATS_LIST(N) \
 	N(Score, "score", BiggerWins, Generic) \
-	N(RedArmorPickups, "red armor pickups", BiggerWins, Generic) \
-	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Generic) \
-	N(GreenArmorPickups, "green armor pickups", BiggerWins, Generic) \
-	N(MegaHealthPickups, "mega health pickups", BiggerWins, Generic) \
-	N(QuadDamagePickups, "quad damage pickups", BiggerWins, Generic) \
-	N(BattleSuitPickups, "battle suit pickups", BiggerWins, Generic) \
-	N(RegenPickups, "regeneration pickups", BiggerWins, Generic) \
-	N(HastePickups, "haste pickups", BiggerWins, Generic) \
-	N(InvisPickups, "invisibility pickups", BiggerWins, Generic) \
-	N(FlagPickups, "flag pickups", BiggerWins, Generic) \
+	N(RedArmorPickups, "red armor pickups", BiggerWins, Positive) \
+	N(YellowArmorPickups, "yellow armor pickups", BiggerWins, Positive) \
+	N(GreenArmorPickups, "green armor pickups", BiggerWins, Positive) \
+	N(MegaHealthPickups, "mega health pickups", BiggerWins, Positive) \
+	N(QuadDamagePickups, "quad damage pickups", BiggerWins, Positive) \
+	N(BattleSuitPickups, "battle suit pickups", BiggerWins, Positive) \
+	N(RegenPickups, "regeneration pickups", BiggerWins, Positive) \
+	N(HastePickups, "haste pickups", BiggerWins, Positive) \
+	N(InvisPickups, "invisibility pickups", BiggerWins, Positive) \
+	N(FlagPickups, "flag pickups", BiggerWins, Positive) \
 	N(FlagTime, "flag possession time", BiggerWins, Seconds) \
-	N(MedkitPickups, "medkit pickups", BiggerWins, Generic) \
+	N(MedkitPickups, "medkit pickups", BiggerWins, Positive) \
 	N(QuadDamageTime, "quad damage possession time", BiggerWins, Seconds) \
 	N(BattleSuitTime, "battle suit possession time", BiggerWins, Seconds) \
 	N(RegenTime, "regeneration possession time", BiggerWins, Seconds) \
 	N(HasteTime, "haste possession time", BiggerWins, Seconds) \
 	N(InvisTime, "invisibility possession time", BiggerWins, Seconds) \
-	N(Kills, "kills", BiggerWins, Generic) \
-	N(Deaths, "deaths", SmallerWins, Generic) \
-	N(Suicides, "suicides", SmallerWins, Generic) \
-	N(DamageGiven, "damage given", BiggerWins, Generic) \
-	N(DamageReceived, "damage received", SmallerWins, Generic) \
-	N(TeamKills, "team kills", SmallerWins, Generic) \
-	N(TeamDamage, "team damage", SmallerWins, Generic) \
-	N(Captures, "captures", BiggerWins, Generic) \
-	N(Defends, "defends", BiggerWins, Generic) \
-	N(Assists, "assists", BiggerWins, Generic) \
-	N(Returns, "returns", BiggerWins, Generic) \
-	N(ShotgunPickups, "shotgun pickups", BiggerWins, Generic) \
-	N(GrenadeLauncherPickups, "grenade launcher pickups", BiggerWins, Generic) \
-	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins, Generic) \
-	N(PlasmaGunPickups, "plasma gun pickups", BiggerWins, Generic) \
-	N(RailgunPickups, "railgun pickups", BiggerWins, Generic) \
-	N(LightningGunPickups, "lightning gun pickups", BiggerWins, Generic)
+	N(Kills, "kills", BiggerWins, Positive) \
+	N(Deaths, "deaths", SmallerWins, Positive) \
+	N(Suicides, "suicides", SmallerWins, Positive) \
+	N(DamageGiven, "damage given", BiggerWins, Positive) \
+	N(DamageReceived, "damage received", SmallerWins, Positive) \
+	N(TeamKills, "team kills", SmallerWins, Positive) \
+	N(TeamDamage, "team damage", SmallerWins, Positive) \
+	N(Captures, "captures", BiggerWins, Positive) \
+	N(Defends, "defends", BiggerWins, Positive) \
+	N(Assists, "assists", BiggerWins, Positive) \
+	N(Returns, "returns", BiggerWins, Positive) \
+	N(ShotgunPickups, "shotgun pickups", BiggerWins, Positive) \
+	N(GrenadeLauncherPickups, "grenade launcher pickups", BiggerWins, Positive) \
+	N(RocketLauncherPickups, "rocket launcher pickups", BiggerWins, Positive) \
+	N(PlasmaGunPickups, "plasma gun pickups", BiggerWins, Positive) \
+	N(RailgunPickups, "railgun pickups", BiggerWins, Positive) \
+	N(LightningGunPickups, "lightning gun pickups", BiggerWins, Positive)
 
 #define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) Enum,
 struct udtTeamStatsField
