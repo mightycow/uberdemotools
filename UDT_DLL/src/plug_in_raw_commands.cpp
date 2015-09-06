@@ -11,8 +11,8 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16));
-	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 20));
+	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawCommands::CommandsArray");
+	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 20), "ParserPlugInRawCommands::Strings");
 	_commands.SetAllocator(FinalAllocator);
 }
 

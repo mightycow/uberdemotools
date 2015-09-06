@@ -65,7 +65,7 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		ArraysAllocator.Init((uptr)demoCount * (uptr)sizeof(ArrayInfo));
+		ArraysAllocator.Init((uptr)demoCount * (uptr)sizeof(ArrayInfo), "ParserPlugIn::ArraysArray");
 		Arrays.SetAllocator(ArraysAllocator);
 		Arrays.Resize(demoCount);
 		InitAllocators(demoCount);

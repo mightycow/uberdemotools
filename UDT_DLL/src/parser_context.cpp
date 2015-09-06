@@ -44,10 +44,10 @@ udtParserContext::udtParserContext()
 {
 	DemoCount = 0;
 
-	PlugIns.Init(1 << 16);
-	InputIndices.Init(1 << 20);
-	PlugInAllocator.Init(1 << 16);
-	PlugInTempAllocator.Init(1 << 20);
+	PlugIns.Init(1 << 16, "ParserContext::PlugInsArray");
+	InputIndices.Init(1 << 20, "ParserContext::InputIndicesArray");
+	PlugInAllocator.Init(1 << 16, "ParserContext::PlugIn");
+	PlugInTempAllocator.Init(1 << 20, "ParserContext::PlugInTemp");
 
 	Parser.InitAllocators();
 }

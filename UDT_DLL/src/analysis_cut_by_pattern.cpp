@@ -52,7 +52,7 @@ static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSec
 
 
 udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase() 
-	: CutSections((uptr)(1 << 16))
+	: CutSections((uptr)(1 << 16), "CutByPatternAnalyzerBase::CutSectionsArray")
 {
 }
 
@@ -60,15 +60,15 @@ udtCutByPatternPlugIn::udtCutByPatternPlugIn()
 	: _info(NULL)
 	, _trackedPlayerIndex(S32_MIN)
 {
-	_analyzers.Init(1 << 12);
-	_analyzerTypes.Init(1 << 12);
-	_analyzerAllocator.Init(1 << 16);
+	_analyzers.Init(1 << 12, "CutByPatternPlugIn::AnalyzersArray");
+	_analyzerTypes.Init(1 << 12, "CutByPatternPlugIn::AnalyzerTypesArray");
+	_analyzerAllocator.Init(1 << 16, "CutByPatternPlugIn::AnalyzerData");
 	_analyzerAllocatorScope.SetAllocator(_analyzerAllocator);
 }
 
 void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByPatternPlugIn::CutSectionsArray");
 	CutSections.SetAllocator(FinalAllocator);
 }
 
@@ -292,7 +292,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	if((GetInfo().Flags & (u32)udtCutByPatternArgFlags::MergeCutSections) != 0)
 	{
-		udtVMArrayWithAlloc<udtCutSection> cutSections(1 << 16);
+		udtVMArrayWithAlloc<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
 		AppendCutSections(cutSections, tempCutSections);
 		MergeRanges(CutSections, cutSections);
 	}

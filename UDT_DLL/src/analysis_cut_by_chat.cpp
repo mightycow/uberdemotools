@@ -50,7 +50,7 @@ static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idT
 
 
 udtCutByChatAnalyzer::udtCutByChatAnalyzer() 
-	: _cutSections(1 << 16)
+	: _cutSections(1 << 16, "CutByChatAnalyzer::CutSections")
 {
 }
 

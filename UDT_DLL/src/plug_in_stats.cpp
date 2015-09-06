@@ -133,8 +133,8 @@ udtParserPlugInStats::~udtParserPlugInStats()
 
 void udtParserPlugInStats::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount);
-	_allocator.Init((uptr)(1 << 20) * (uptr)demoCount);
+	FinalAllocator.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
+	_allocator.Init((uptr)(1 << 20) * (uptr)demoCount, "ParserPlugInStats::Stats");
 	_statsArray.SetAllocator(FinalAllocator);
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
 	_maxAllowedStats = demoCount * (u32)UDT_MAX_STATS;

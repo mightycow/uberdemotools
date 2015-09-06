@@ -37,6 +37,29 @@ void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 	}
 }
 
+void udtVMLinearAllocator::GetThreadAllocators(u32& allocatorCount, udtVMLinearAllocator** allocatorArray)
+{
+	udtIntrusiveList* allocatorList = NULL;
+	AllocatorTracker.GetAllocatorList(allocatorList);
+	if(allocatorList == NULL)
+	{
+		allocatorCount = 0;
+		return;
+	}
+
+	udtIntrusiveListNode* node = allocatorList->Root.Next;
+	u32 realAllocatorCount = 0;
+	while(node != &allocatorList->Root && realAllocatorCount < allocatorCount)
+	{
+		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
+		*allocatorArray++ = allocator;
+		++realAllocatorCount;
+		node = node->Next;
+	}
+
+	allocatorCount = realAllocatorCount;
+}
+
 
 udtVMLinearAllocator::udtVMLinearAllocator()
 {
@@ -46,6 +69,7 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
 	_peakUsedByteCount = 0;
+	_name = NULL;
 
 	AllocatorTracker.RegisterAllocator(_listNode);
 }
@@ -57,13 +81,14 @@ udtVMLinearAllocator::~udtVMLinearAllocator()
 	Destroy();
 }
 
-bool udtVMLinearAllocator::Init(uptr reservedByteCount, uptr commitByteCountGranularity, bool commitFirstBlock)
+bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 {
 	if(_addressSpaceStart != NULL)
 	{
 		return false;
 	}
 	
+	const uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE;
 	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % (uptr)UDT_MEMORY_PAGE_SIZE) == 0);
 
 	// Ensure the reserve size is a multiple of the commit granularity.
@@ -84,22 +109,13 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, uptr commitByteCountGran
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed");
 		return false;
 	}
-
-	if(commitFirstBlock)
-	{
-		if(!VirtualMemoryCommit(data, commitByteCountGranularity))
-		{
-			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
-			VirtualMemoryDecommitAndRelease(data, reservedByteCount);
-			return false;
-		}
-	}
 	
 	_addressSpaceStart = data;
 	_firstFreeByteIndex = 0;
 	_reservedByteCount = reservedByteCount;
-	_committedByteCount = commitFirstBlock ? commitByteCountGranularity : 0;
+	_committedByteCount = 0;
 	_commitByteCountGranularity = commitByteCountGranularity;
+	_name = name;
 
 	return true;
 }
@@ -182,6 +198,16 @@ uptr udtVMLinearAllocator::GetCommittedByteCount() const
 	return _committedByteCount;
 }
 
+uptr udtVMLinearAllocator::GetPeakUsedByteCount() const
+{
+	return _peakUsedByteCount;
+}
+
+uptr udtVMLinearAllocator::GetReservedByteCount() const
+{
+	return _reservedByteCount;
+}
+
 u8* udtVMLinearAllocator::GetStartAddress() const
 {
 	return _addressSpaceStart;
@@ -190,6 +216,11 @@ u8* udtVMLinearAllocator::GetStartAddress() const
 u8* udtVMLinearAllocator::GetCurrentAddress() const
 {
 	return _addressSpaceStart + _firstFreeByteIndex;
+}
+
+const char* udtVMLinearAllocator::GetName() const
+{
+	return _name;
 }
 
 void udtVMLinearAllocator::Destroy()

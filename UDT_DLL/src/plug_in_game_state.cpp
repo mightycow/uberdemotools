@@ -45,11 +45,11 @@ void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 	// - 2 config strings
 	// - the demo taker's name
 	// - player names for everyone who connects during the game
-	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
-	_matches.Init((uptr)(1 << 16) * (uptr)demoCount);
-	_keyValuePairs.Init((uptr)(1 << 16) * (uptr)demoCount);
-	_players.Init((uptr)(1 << 16) * (uptr)demoCount);
-	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::GameStatesArray");
+	_matches.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Matches");
+	_keyValuePairs.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::KeyValuePairs");
+	_players.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Players");
+	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Strings");
 	_gameStates.SetAllocator(FinalAllocator);
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
 }

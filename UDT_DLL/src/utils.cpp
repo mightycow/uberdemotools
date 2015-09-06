@@ -764,6 +764,41 @@ void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context
 	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
 }
 
+void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tempAllocator)
+{
+	u32 allocatorCount = 256;
+	udtVMLinearAllocator** const allocators = (udtVMLinearAllocator**)tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * allocatorCount);
+	udtVMLinearAllocator::GetThreadAllocators(allocatorCount, allocators);
+
+	char* unusedMemory = NULL;
+	char* reservedMemory = NULL;
+	uptr totalUnused = 0;
+	uptr totalReserved = 0;
+	context.LogInfo("Thread allocator count: %u", allocatorCount);
+	for(u32 i = 0; i < allocatorCount; ++i)
+	{
+		udtVMLinearAllocator& allocator = *allocators[i];
+		const char* name = allocator.GetName();
+		if(name == NULL)
+		{
+			name = "noname";
+		}
+
+		const uptr lowestUnusedByteCount = allocator.GetReservedByteCount() - allocator.GetPeakUsedByteCount();
+		totalUnused += lowestUnusedByteCount;
+		totalReserved += allocator.GetReservedByteCount();
+		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
+		FormatBytes(unusedMemory, tempAllocator, (u64)lowestUnusedByteCount);
+		FormatBytes(reservedMemory, tempAllocator, (u64)allocator.GetReservedByteCount());
+		context.LogInfo("- %s: reserved %s - unused %s", name, reservedMemory, unusedMemory);
+	}
+
+	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
+	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
+	context.LogInfo("Thread unused byte count: %s", unusedMemory);
+	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
+}
+
 bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
 {
 	const s32 obituaryEvtId = idEntityEvent::Obituary(protocol);

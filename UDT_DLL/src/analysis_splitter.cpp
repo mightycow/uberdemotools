@@ -3,7 +3,7 @@
 
 void udtParserPlugInSplitter::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)(64 * sizeof(u32)) * (uptr)demoCount);
+	FinalAllocator.Init((uptr)(64 * sizeof(u32)) * (uptr)demoCount, "ParserPlugInSplitter::GamestateFileOffsetsArray");
 	GamestateFileOffsets.SetAllocator(FinalAllocator);
 }
 

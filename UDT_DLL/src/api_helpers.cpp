@@ -175,7 +175,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	}
 
 	// Save the cut sections in a temporary array.
-	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16);
+	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
 	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
 		sections.Add(plugIn.CutSections[i]);
@@ -517,7 +517,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	udtTimer timer;
 	timer.Start();
 
-	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount);
+	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
 	fileSizes.Resize(extraInfo->FileCount);
 
 	u64 totalByteCount = 0;
@@ -573,6 +573,11 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		context->Parser._tempAllocator.Clear();
 		LogLinearAllocatorStats(1, extraInfo->FileCount, context->Context, context->Parser._tempAllocator, allocStats);
 	}
+
+#if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
+	context->Parser._tempAllocator.Clear();
+	LogLinearAllocatorDebugStats(context->Context, context->Parser._tempAllocator);
+#endif
 
 	if(customContext)
 	{
@@ -653,7 +658,7 @@ struct DemoMerger
 		_fileCount = fileCount;
 
 		udtVMLinearAllocator tempAllocator;
-		if(!tempAllocator.Init(1 << 16))
+		if(!tempAllocator.Init(1 << 16, "DemoMerger::MergeDemos::Temp"))
 		{
 			return false;
 		}
@@ -846,7 +851,7 @@ struct DemoMerger
 bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32 fileCount, udtProtocol::Id protocol)
 {
 	udtVMLinearAllocator allocator;
-	allocator.Init(1 << 24);
+	allocator.Init(1 << 24, "MergeDemosNoInputCheck::Temp");
 	udtVMScopedStackAllocator allocatorScope(allocator);
 	DemoMerger* const merger = allocatorScope.NewObject<DemoMerger>();
 

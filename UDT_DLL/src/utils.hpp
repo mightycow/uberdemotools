@@ -66,6 +66,7 @@ extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protoc
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
 extern s32         GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id game);
 extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
+extern void        LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& allocator);
 extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol);
 extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol);
 extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // Returns -1 if unknown or invalid.

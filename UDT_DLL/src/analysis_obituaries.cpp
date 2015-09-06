@@ -7,10 +7,10 @@ void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& 
 {
 	if(_enableNameAllocation)
 	{
-		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::PlayerNames");
 	}
 
-	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::ObituariesArray");
 	_tempAllocator = &tempAllocator;
 	Obituaries.SetAllocator(finalAllocator);
 }
