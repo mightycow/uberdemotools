@@ -69,8 +69,8 @@ udtParserPlugInChat::~udtParserPlugInChat()
 
 void udtParserPlugInChat::InitAllocators(u32 demoCount)
 {
-	_chatStringAllocator.Init((uptr)(1 << 20) * (uptr)demoCount, "ParserPlugInChat::Strings");
-	FinalAllocator.Init((uptr)(1 << 20) * (uptr)demoCount, "ParserPlugInChat::ChatMessagesArray");
+	_chatStringAllocator.Init(ComputeReservedByteCount(1 << 15, 1 << 17, 16, demoCount), "ParserPlugInChat::Strings");
+	FinalAllocator.Init(ComputeReservedByteCount(1 << 15, 1 << 17, 16, demoCount), "ParserPlugInChat::ChatMessagesArray");
 	ChatEvents.SetAllocator(FinalAllocator);
 }
 

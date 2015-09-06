@@ -1,4 +1,5 @@
 #include "plug_in_raw_config_strings.hpp"
+#include "utils.hpp"
 
 
 udtParserPlugInRawConfigStrings::udtParserPlugInRawConfigStrings()
@@ -12,7 +13,7 @@ udtParserPlugInRawConfigStrings::~udtParserPlugInRawConfigStrings()
 void udtParserPlugInRawConfigStrings::InitAllocators(u32 demoCount)
 {
 	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawConfigStrings::ConfigStringsArray");
-	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 20), "ParserPlugInRawConfigStrings::Strings");
+	_stringAllocator.Init(ComputeReservedByteCount(1 << 16, 1 << 18, 16, demoCount), "ParserPlugInRawConfigStrings::Strings");
 	_configStrings.SetAllocator(FinalAllocator);
 }
 

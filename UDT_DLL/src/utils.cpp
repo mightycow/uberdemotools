@@ -774,10 +774,16 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 	char* reservedMemory = NULL;
 	uptr totalUnused = 0;
 	uptr totalReserved = 0;
+	uptr unusedPc = 0;
 	context.LogInfo("Thread allocator count: %u", allocatorCount);
 	for(u32 i = 0; i < allocatorCount; ++i)
 	{
 		udtVMLinearAllocator& allocator = *allocators[i];
+		if(allocator.GetReservedByteCount() == 0)
+		{
+			continue;
+		}
+
 		const char* name = allocator.GetName();
 		if(name == NULL)
 		{
@@ -787,15 +793,18 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 		const uptr lowestUnusedByteCount = allocator.GetReservedByteCount() - allocator.GetPeakUsedByteCount();
 		totalUnused += lowestUnusedByteCount;
 		totalReserved += allocator.GetReservedByteCount();
+		unusedPc = (100 * lowestUnusedByteCount) / allocator.GetReservedByteCount();
+
 		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
 		FormatBytes(unusedMemory, tempAllocator, (u64)lowestUnusedByteCount);
 		FormatBytes(reservedMemory, tempAllocator, (u64)allocator.GetReservedByteCount());
-		context.LogInfo("- %s: reserved %s - unused %s", name, reservedMemory, unusedMemory);
+		context.LogInfo("- %s: reserved %s - unused %s (%u%%)", name, reservedMemory, unusedMemory, (u32)unusedPc);
 	}
 
+	unusedPc = (100 * totalUnused) / totalReserved;
 	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
 	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
-	context.LogInfo("Thread unused byte count: %s", unusedMemory);
+	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, unusedPc);
 	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
 }
 
@@ -962,6 +971,20 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	player = udtString::NewSubstringClone(allocator, clanAndPlayer, lastSeparatorIdx + 1);
 
 	return true;
+}
+
+uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount)
+{
+	if(demoCount < demoCountThreshold)
+	{
+		return bigByteCount * (uptr)demoCount;
+	}
+
+	const uptr byteCount1 = bigByteCount * (uptr)demoCountThreshold;
+	const uptr byteCount2 = smallByteCount * (uptr)demoCount;
+	const uptr byteCount = udt_max(byteCount1, byteCount2);
+
+	return byteCount;
 }
 
 namespace idEntityEvent

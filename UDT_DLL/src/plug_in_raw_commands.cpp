@@ -1,4 +1,5 @@
 #include "plug_in_raw_commands.hpp"
+#include "utils.hpp"
 
 
 udtParserPlugInRawCommands::udtParserPlugInRawCommands()
@@ -11,8 +12,9 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
+	const uptr smallByteCount = 192 * 1024;
 	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawCommands::CommandsArray");
-	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 20), "ParserPlugInRawCommands::Strings");
+	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInRawCommands::Strings");
 	_commands.SetAllocator(FinalAllocator);
 }
 
