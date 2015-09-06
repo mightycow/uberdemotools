@@ -432,6 +432,7 @@ tokenize:
 		strcat(_inBigConfigString, tokenizer.GetArgString(2));
 		strcat(_inBigConfigString, "\"");
 		commandString = _inBigConfigString;
+		commandStringLength = (s32)strlen(_inBigConfigString);
 		goto tokenize;
 	}
 
