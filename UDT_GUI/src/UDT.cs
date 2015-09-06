@@ -1758,8 +1758,16 @@ namespace Uber.DemoTools
                 {
                     var firstQuote = rawCmd.IndexOf('"');
                     var lastQuote = rawCmd.LastIndexOf('"');
-                    cmd = rawCmd.Substring(0, firstQuote - 1);
-                    val = rawCmd.Substring(firstQuote + 1, lastQuote - firstQuote - 1);
+                    if(firstQuote > 0 && lastQuote > firstQuote)
+                    {
+                        cmd = rawCmd.Substring(0, firstQuote - 1);
+                        val = rawCmd.Substring(firstQuote + 1, lastQuote - firstQuote - 1);
+                    }
+                    else
+                    {
+                        cmd = "cs";
+                        val = rawCmd.Substring(3);
+                    }
                 }
                 else
                 {
