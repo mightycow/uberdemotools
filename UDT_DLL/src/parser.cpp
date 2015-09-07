@@ -40,9 +40,9 @@ udtBaseParser::~udtBaseParser()
 
 void udtBaseParser::InitAllocators()
 {
-	_persistentAllocator.Init(1 << 20, "Parser::Persistent");
-	_configStringAllocator.Init(1 << 24, "Parser::ConfigStrings");
-	_tempAllocator.Init(1 << 20, "Parser::Temp");
+	_persistentAllocator.Init(1 << 18, "Parser::Persistent");
+	_configStringAllocator.Init(1 << 20, "Parser::ConfigStrings");
+	_tempAllocator.Init(1 << 18, "Parser::Temp");
 	_privateTempAllocator.Init(1 << 16, "Parser::PrivateTemp");
 	PlugIns.Init(1 << 16, "Parser::PlugInsArray");
 	_inGameStateFileOffsets.Init(1 << 16, "Parser::GameStateFileOffsetsArray");

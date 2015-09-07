@@ -32,18 +32,18 @@ namespace Uber.DemoTools
 
     public unsafe class UDT_DLL
     {
-#if (UDT_X86)
-        private const int MaxBatchSizeParsing = 128;
-        private const int MaxBatchSizeJSONExport = 128;
-        private const int MaxBatchSizeCutting = 512;
-        private const int MaxBatchSizeConverting = 512;
-        private const int MaxBatchSizeTimeShifting = 512;
-#else
+#if UDT_X64
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeJSONExport = 512;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
         private const int MaxBatchSizeTimeShifting = 2048;
+#else
+        private const int MaxBatchSizeParsing = 32;
+        private const int MaxBatchSizeJSONExport = 32;
+        private const int MaxBatchSizeCutting = 128;
+        private const int MaxBatchSizeConverting = 128;
+        private const int MaxBatchSizeTimeShifting = 128;
 #endif
 
         private const string _dllPath = "UDT.dll";

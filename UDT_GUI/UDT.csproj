@@ -36,7 +36,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>.bin\x86\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;UDT_X86</DefineConstants>
+    <DefineConstants>UDT_X86</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -104,7 +104,7 @@
     <Compile Include="src\UDT.cs" />
     <Compile Include="src\WpfHelper.cs" />
     <Compile Include="src\Tuple.cs" />
-	<Compile Include="src\ListHelper.cs" />
+    <Compile Include="src\ListHelper.cs" />
     <Compile Include="src\PinnedObject.cs" />
     <Compile Include="src\AppChatEvents.cs" />
     <Compile Include="src\AppTimeCut.cs" />
@@ -115,12 +115,12 @@
     <Compile Include="src\AppPatterns.cs" />
     <Compile Include="src\AppMidAirCut.cs" />
     <Compile Include="src\AppMultiRailCut.cs" />
-	<Compile Include="src\AppFlagCaptureCut.cs" />
-	<Compile Include="src\AppFlickRailCut.cs" />
-	<Compile Include="src\AppModifiers.cs" />
-	<Compile Include="src\AppTimeShiftMod.cs" />
-	<Compile Include="src\AppStats.cs" />
-	<Compile Include="src\AppCommands.cs" />
+    <Compile Include="src\AppFlagCaptureCut.cs" />
+    <Compile Include="src\AppFlickRailCut.cs" />
+    <Compile Include="src\AppModifiers.cs" />
+    <Compile Include="src\AppTimeShiftMod.cs" />
+    <Compile Include="src\AppStats.cs" />
+    <Compile Include="src\AppCommands.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
