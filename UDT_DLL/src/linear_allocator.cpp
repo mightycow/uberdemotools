@@ -27,7 +27,7 @@ void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 	udtIntrusiveListNode* node = allocators->Root.Next;
 	while(node != &allocators->Root)
 	{
-		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
+		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node - offsetof(udtVMLinearAllocator, _listNode));
 		
 		++stats.AllocatorCount;
 		stats.CommittedByteCount += allocator->_committedByteCount;
@@ -51,7 +51,7 @@ void udtVMLinearAllocator::GetThreadAllocators(u32& allocatorCount, udtVMLinearA
 	u32 realAllocatorCount = 0;
 	while(node != &allocatorList->Root && realAllocatorCount < allocatorCount)
 	{
-		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node + offsetof(udtVMLinearAllocator, _listNode));
+		udtVMLinearAllocator* const allocator = (udtVMLinearAllocator*)((u8*)node - offsetof(udtVMLinearAllocator, _listNode));
 		*allocatorArray++ = allocator;
 		++realAllocatorCount;
 		node = node->Next;
