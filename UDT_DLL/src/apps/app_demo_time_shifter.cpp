@@ -28,7 +28,7 @@ static void PrintHelp()
 static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 {
 	udtVMArrayWithAlloc<s32> errorCodes;
-	errorCodes.Init((uptr)sizeof(s32) * (uptr)fileCount);
+	errorCodes.Init((uptr)sizeof(s32) * (uptr)fileCount, "TimeShiftDemos::ErrorCodesArray");
 	errorCodes.Resize((u32)fileCount);
 
 	s32 cancel = 0;

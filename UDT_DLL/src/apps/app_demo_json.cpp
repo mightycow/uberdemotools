@@ -58,8 +58,8 @@ static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn
 
 static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
+	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
+	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -87,7 +87,7 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo);
 
 	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16);
+	tempAllocator.Init(1 << 16, "ProcessMultipleDemos::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -196,11 +196,11 @@ int udt_main(int argc, char** argv)
 		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
 	}
 
-	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
+	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
 	udtVMLinearAllocator persistAlloc;
 	udtVMLinearAllocator tempAlloc;
-	persistAlloc.Init(1 << 24);
-	tempAlloc.Init(1 << 24);
+	persistAlloc.Init(1 << 24, "udt_main::Persistent");
+	tempAlloc.Init(1 << 24, "udt_main::Temp");
 
 	udtFileListQuery query;
 	memset(&query, 0, sizeof(query));

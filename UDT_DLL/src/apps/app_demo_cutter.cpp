@@ -62,7 +62,7 @@ struct CutByChatConfig
 		RecursiveSearch = false;
 		UseCustomOutputFolder = false;
 		CustomOutputFolder = NULL;
-		ChatRules.Init(1 << 16);
+		ChatRules.Init(1 << 16, "CutByChatConfig::ChatRulesArray");
 	}
 
 	int MaxThreadCount;
@@ -144,7 +144,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 
 	idTokenizer& tokenizer = context.Tokenizer;
 
-	udtVMArrayWithAlloc<udtString> lines(1 << 16);
+	udtVMArrayWithAlloc<udtString> lines(1 << 16, "ReadConfig::LinesArray");
 	udtString fileString = udtString::NewRef(fileData, fileLength, fileLength + 1);
 	if(!StringSplitLines(lines, fileString))
 	{
@@ -272,8 +272,8 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 
 static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, const CutByChatConfig& config)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
+	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
+	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -315,7 +315,7 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	const s32 result = udtCutDemoFilesByPattern(&info, &threadInfo, &patternArg);
 	
 	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16);
+	tempAllocator.Init(1 << 16, "CutByChatMultiple::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -378,8 +378,8 @@ int udt_main(int argc, char** argv)
 	CutByChatConfig config;
 	udtVMLinearAllocator configAllocator;
 	udtVMLinearAllocator fileAllocator;
-	configAllocator.Init(1 << 24);
-	fileAllocator.Init(1 << 16);
+	configAllocator.Init(1 << 24, "udt_main::Config");
+	fileAllocator.Init(1 << 16, "udt_main::File");
 	if(!ReadConfig(config, context->Context, configAllocator, fileAllocator, ConfigFilePath))
 	{
 		printf("Could not load config file.\n");
@@ -415,11 +415,11 @@ int udt_main(int argc, char** argv)
 			return CutByChat(argv[1], config) ? 0 : 666;
 		}
 
-		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
+		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
 		udtVMLinearAllocator persistAlloc;
 		udtVMLinearAllocator tempAlloc;
-		persistAlloc.Init(1 << 24);
-		tempAlloc.Init(1 << 24);
+		persistAlloc.Init(1 << 24, "udt_main::Persistent");
+		tempAlloc.Init(1 << 24, "udt_main::Temp");
 
 		udtFileListQuery query;
 		memset(&query, 0, sizeof(query));
