@@ -778,7 +778,7 @@ extern "C"
 
 		// May be NULL.
 		// Zero to proceed, non-zero to cancel the current operation.
-		s32* CancelOperation;
+		const s32* CancelOperation;
 
 		// Number of elements in the array pointed to by the PlugIns pointer.
 		// May be 0.
