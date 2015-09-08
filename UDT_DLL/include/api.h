@@ -360,6 +360,7 @@ struct udtStringArray
 		TeamStatsNames,
 		PlayerStatsNames,
 		PlugInNames,
+		PerfStatsNames,
 		Count
 	};
 };
@@ -372,6 +373,7 @@ struct udtByteArray
 		PlayerStatsCompModes,
 		TeamStatsDataTypes,
 		PlayerStatsDataTypes,
+		PerfStatsDataTypes,
 		Count
 	};
 };
@@ -406,7 +408,7 @@ struct udtStatsCompMode
 	};
 };
 
-struct udtStatsDataType
+struct udtMatchStatsDataType
 {
 	enum Id
 	{
@@ -720,6 +722,41 @@ struct udtOvertimeType
 };
 #undef UDT_OVERTIME_TYPE_ITEM
 
+struct udtPerfStatsDataType
+{
+	enum Id
+	{
+		Generic,    // Format as a normal unsigned integer.
+		Bytes,      // Data size, in bytes.
+		Throughput, // Data throughput, in bytes/second.
+		Duration,   // Duration in milli-seconds.
+		Percentage, // Percentage multiplied by 10.
+		Count
+	};
+};
+
+#define UDT_PERF_STATS_LIST(N) \
+	N(Duration, "duration", Duration) \
+	N(DataProcessed, "data processed", Bytes) \
+	N(DataThroughput, "data throughput", Throughput) \
+	N(ThreadCount, "thread count", Generic) \
+	N(AllocatorCount, "allocator count", Generic) \
+	N(MemoryReserved, "memory reserved", Bytes) \
+	N(MemoryCommitted, "memory committed", Bytes) \
+	N(MemoryUsed, "memory used", Bytes) \
+	N(MemoryEfficiency, "memory usage efficiency", Percentage)
+
+#define UDT_PERF_STATS_ITEM(Enum, Desc, Type) Enum,
+struct udtPerfStatsField
+{
+	enum Id
+	{
+		UDT_PERF_STATS_LIST(UDT_PERF_STATS_ITEM)
+		Count
+	};
+};
+#undef UDT_PERF_STATS_ITEM
+
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
 #define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
@@ -748,7 +785,6 @@ extern "C"
 	{
 		enum Id
 		{
-			PrintAllocStats = UDT_BIT(0)
 		};
 	};
 	
@@ -779,6 +815,13 @@ extern "C"
 		// May be NULL.
 		// Zero to proceed, non-zero to cancel the current operation.
 		const s32* CancelOperation;
+
+		// May be NULL.
+		// The array size should be udtPerfStatsField::Count.
+		u64* PerformanceStats;
+
+		// Ignore this.
+		void* Reserved1;
 
 		// Number of elements in the array pointed to by the PlugIns pointer.
 		// May be 0.
@@ -1446,7 +1489,7 @@ extern "C"
 	UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32* elementCount);
 
 	// Get the magic constants needed to parse stats properly.
-	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount);
+	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount, u32* perfFieldCount);
 
 	//
 	// Init and shut down functions.

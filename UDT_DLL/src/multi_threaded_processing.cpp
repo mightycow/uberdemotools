@@ -87,7 +87,6 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)
 	{
-		Threads[i].AllocStats = udtVMLinearAllocator::Stats();
 		Threads[i].Finished = false;
 		Threads[i].Stop = false;
 		Threads[i].Result = false;
@@ -249,8 +248,11 @@ static void ThreadFunction(void* userData)
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
 	}
-
-	udtVMLinearAllocator::GetThreadStats(data->AllocStats);
+	
+	if(data->Shared->ParseInfo->PerformanceStats != NULL)
+	{
+		PerfStatsAddCurrentThread(data->Shared->ParseInfo->PerformanceStats, data->TotalByteCount);
+	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
 	data->Context->Parser._tempAllocator.Clear();
@@ -261,7 +263,8 @@ static void ThreadFunction(void* userData)
 	data->Finished = true;
 }
 
-bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
+bool udtMultiThreadedParsing::Process(udtTimer& jobTimer, 
+									  udtParserContext* contexts,
 									  udtDemoThreadAllocator& threadInfo,
 									  const udtParseArg* parseInfo,
 									  const udtMultiParseArg* multiParseInfo,
@@ -272,6 +275,11 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 	assert(parseInfo != NULL);
 	assert(multiParseInfo != NULL);
 	assert(jobType < (u32)udtParsingJobType::Count);
+
+	if(parseInfo->PerformanceStats != NULL)
+	{
+		PerfStatsInit(parseInfo->PerformanceStats);
+	}
 
 	const u32 threadCount = threadInfo.Threads.GetSize();
 
@@ -289,8 +297,8 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 		multiParseInfo->OutputErrorCodes[i] = (s32)udtErrorCode::Unprocessed;
 	}
 
-	udtTimer timer;
-	timer.Start();
+	udtTimer progressTimer;
+	progressTimer.Start();
 
 	bool success = true;
 	udtVMArrayWithAlloc<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
@@ -341,12 +349,12 @@ bool udtMultiThreadedParsing::Process(udtParserContext* contexts,
 			data.Finished = true;
 		}
 
-		if(timer.GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+		if(progressTimer.GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
 		{
 			continue;
 		}
 
-		timer.Restart();
+		progressTimer.Restart();
 
 		// The actual progress is that of the slowest thread.
 		f32 progress = 2.0f;
@@ -370,23 +378,10 @@ thread_clean_up:
 		threads[i].Release();
 	}
 
-	if(success && (parseInfo->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
+	if(success && parseInfo->PerformanceStats != NULL)
 	{
-		udtVMLinearAllocator::Stats allocStats = udtVMLinearAllocator::Stats();
-		udtVMLinearAllocator::GetThreadStats(allocStats);
-		for(u32 i = 0; i < threadCount; ++i)
-		{
-			const udtVMLinearAllocator::Stats& threadStats = threadInfo.Threads[i].AllocStats;
-			allocStats.AllocatorCount += threadStats.AllocatorCount;
-			allocStats.ReservedByteCount += threadStats.ReservedByteCount;
-			allocStats.CommittedByteCount += threadStats.CommittedByteCount;
-			allocStats.UsedByteCount += threadStats.UsedByteCount;
-		}
-		const uptr extraByteCount = (uptr)sizeof(udtParserContext) * (uptr)threadCount;
-		allocStats.CommittedByteCount += extraByteCount;
-		allocStats.UsedByteCount += extraByteCount;
-		contexts[0].Parser._tempAllocator.Clear();
-		LogLinearAllocatorStats(threadCount, multiParseInfo->FileCount, contexts[0].Context, contexts[0].Parser._tempAllocator, allocStats);
+		PerfStatsAddCurrentThread(parseInfo->PerformanceStats, 0);
+		PerfStatsFinalize(parseInfo->PerformanceStats, threadCount, jobTimer.GetElapsedMs());
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)

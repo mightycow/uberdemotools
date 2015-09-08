@@ -498,6 +498,13 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 
 s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo)
 {
+	udtTimer jobTimer;
+	jobTimer.Start();
+	if(info->PerformanceStats != NULL)
+	{
+		PerfStatsInit(info->PerformanceStats);
+	}
+
 	bool customContext = false;
 	if(context == NULL)
 	{
@@ -514,8 +521,8 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	udtTimer timer;
-	timer.Start();
+	udtTimer progressTimer;
+	progressTimer.Start();
 
 	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
 	fileSizes.Resize(extraInfo->FileCount);
@@ -536,7 +543,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	}
 
 	SingleThreadProgressContext progressContext;
-	progressContext.Timer = &timer;
+	progressContext.Timer = &progressTimer;
 	progressContext.UserCallback = info->ProgressCb;
 	progressContext.UserData = info->ProgressContext;
 	progressContext.CurrentJobByteCount = 0;
@@ -563,15 +570,10 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
-	if((info->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
+	if(info->PerformanceStats != NULL)
 	{
-		udtVMLinearAllocator::Stats allocStats;
-		udtVMLinearAllocator::GetThreadStats(allocStats);
-		const uptr extraByteCount = (uptr)sizeof(udtParserContext);
-		allocStats.CommittedByteCount += extraByteCount;
-		allocStats.UsedByteCount += extraByteCount;
-		context->Parser._tempAllocator.Clear();
-		LogLinearAllocatorStats(1, extraInfo->FileCount, context->Context, context->Parser._tempAllocator, allocStats);
+		PerfStatsAddCurrentThread(info->PerformanceStats, totalByteCount);
+		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedMs());
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)

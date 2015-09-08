@@ -748,22 +748,6 @@ s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id g
 	return -1;
 }
 
-void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
-{
-	char* bytes;
-	context.LogInfo("File count: %u", fileCount);
-	context.LogInfo("Thread count: %u", threadCount);
-	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
-	FormatBytes(bytes, allocator, stats.ReservedByteCount);
-	context.LogInfo("Reserved memory: %s", bytes);
-	FormatBytes(bytes, allocator, stats.CommittedByteCount);
-	context.LogInfo("Committed memory: %s", bytes);
-	FormatBytes(bytes, allocator, stats.UsedByteCount);
-	context.LogInfo("Used memory: %s", bytes);
-	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
-	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
-}
-
 void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tempAllocator)
 {
 	u32 allocatorCount = 256;
@@ -985,6 +969,31 @@ uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCo
 	const uptr byteCount = udt_max(byteCount1, byteCount2);
 
 	return byteCount;
+}
+
+void PerfStatsInit(u64* perfStats)
+{
+	memset(perfStats, 0, sizeof(u64) * (size_t)udtPerfStatsField::Count);
+}
+
+void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
+{
+	udtVMLinearAllocator::Stats allocStats;
+	udtVMLinearAllocator::GetThreadStats(allocStats);
+	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
+	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
+	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
+}
+
+void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
+{
+	perfStats[udtPerfStatsField::Duration] = durationMs;
+	perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
+	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
+	perfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted];
 }
 
 namespace idEntityEvent

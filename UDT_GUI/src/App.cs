@@ -52,8 +52,6 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
-        public bool PrintAllocationStats = true;
-        public bool PrintExecutionTime = true;
         public bool ColorLogWarningsAndErrors = false;
         public int FlagCaptureMinCarryTimeMs = 0;
         public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
@@ -255,9 +253,9 @@ namespace Uber.DemoTools
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
+        private IntPtr _cancelOperation = IntPtr.Zero;
 
         public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
-        public IntPtr CancelOperation = IntPtr.Zero;
 
         static public App Instance { get; private set; }
 
@@ -333,13 +331,13 @@ namespace Uber.DemoTools
         {
             Instance = this;
 
-            CancelOperation = Marshal.AllocHGlobal(4);
-            Marshal.WriteInt32(CancelOperation, 0);
-
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
             UDT_DLL.InitLibrary();
+
+            _cancelOperation = Marshal.AllocHGlobal(4);
+            Marshal.WriteInt32(_cancelOperation, 0);
 
             LoadConfig();
 
@@ -1078,7 +1076,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            Marshal.WriteInt32(CancelOperation, 1);
+            Marshal.WriteInt32(_cancelOperation, 1);
             SaveConfig();
             _application.Shutdown();
         }
@@ -1828,8 +1826,9 @@ namespace Uber.DemoTools
             }
 
             var outputFolder = GetOutputFolder();
-            Marshal.WriteInt32(CancelOperation, 0);
-            ParseArg.CancelOperation = CancelOperation;
+            Marshal.WriteInt32(_cancelOperation, 0);
+            ParseArg.CancelOperation = _cancelOperation;
+            ParseArg.PerformanceStats = UDT_DLL.PerfStats;
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
@@ -1839,10 +1838,6 @@ namespace Uber.DemoTools
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
             ParseArg.Flags = 0;
-            if(Config.PrintAllocationStats)
-            {
-                ParseArg.Flags |= (uint)UDT_DLL.udtParseArgFlags.PrintAllocStats;
-            }
             if(outputFolder != null)
             {
                 ParseArg.OutputFolderPath = UDT_DLL.StringToHGlobalUTF8(outputFolder);
@@ -1995,9 +1990,9 @@ namespace Uber.DemoTools
             }
         }
 
-        public static string FormatPerformanceTime(Stopwatch timer)
+        public static string FormatPerformanceTime(long elapsedMs)
         {
-            var msecTotal = timer.ElapsedMilliseconds;
+            var msecTotal = elapsedMs;
             if(msecTotal < 1000)
             {
                 return msecTotal.ToString() + "ms";
@@ -2431,7 +2426,7 @@ namespace Uber.DemoTools
 
         private void OnCancelJobClicked()
         {
-            Marshal.WriteInt32(CancelOperation, 1);
+            Marshal.WriteInt32(_cancelOperation, 1);
             LogWarning("Job canceled!");
         }
 

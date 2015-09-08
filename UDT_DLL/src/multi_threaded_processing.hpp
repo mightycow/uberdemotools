@@ -4,6 +4,7 @@
 #include "api.h"
 #include "array.hpp"
 #include "api_helpers.hpp"
+#include "timer.hpp"
 
 
 struct udtParsingSharedData
@@ -18,7 +19,6 @@ struct udtParsingSharedData
 
 struct udtParsingThreadData
 {
-	udtVMLinearAllocator::Stats AllocStats;
 	u64 TotalByteCount;
 	udtParsingSharedData* Shared;
 	udtParserContext* Context;
@@ -45,7 +45,8 @@ struct udtDemoThreadAllocator
 
 struct udtMultiThreadedParsing
 {
-	bool Process(udtParserContext* contexts, 
+	bool Process(udtTimer& jobTimer,
+				 udtParserContext* contexts, 
                  udtDemoThreadAllocator& threadInfo, 
 				 const udtParseArg* parseInfo, 
 				 const udtMultiParseArg* multiParseInfo,

@@ -141,6 +141,7 @@ namespace Uber.DemoTools
             TeamStatsNames,
             PlayerStatsNames,
             PlugInNames,
+            PerfStatsNames,
             Count
         }
 
@@ -150,6 +151,7 @@ namespace Uber.DemoTools
             PlayerStatsCompModes,
             TeamStatsDataTypes,
             PlayerStatsDataTypes,
+            PerfStatsDataTypes,
             Count
         }
 
@@ -172,7 +174,7 @@ namespace Uber.DemoTools
             Count
         };
 
-        public enum udtStatsDataType : uint
+        public enum udtMatchStatsDataType : uint
         {
             Generic,
             Team,
@@ -215,10 +217,19 @@ namespace Uber.DemoTools
             SuddenDeath
         }
 
+        private enum udtPerfStatsDataType : uint
+        {
+            Generic,
+            Bytes,
+            Throughput,
+            Duration,
+            Percentage,
+            Count
+        };
+
         [Flags]
         public enum udtParseArgFlags : uint
         {
-            PrintAllocStats = 1 << 0
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -230,6 +241,8 @@ namespace Uber.DemoTools
             public udtProgressCallback ProgressCb;
             public IntPtr ProgressContext; // void*
             public IntPtr CancelOperation; // s32*
+            public IntPtr PerformanceStats; // u64*
+            public IntPtr Reserved1;
             public UInt32 PlugInCount;
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
@@ -557,7 +570,7 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtGetByteArray(udtByteArray arrayId, ref IntPtr array, ref UInt32 elementCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtGetStatsConstants(ref UInt32 playerMaskByteCount, ref UInt32 teamMaskByteCount, ref UInt32 playerFieldCount, ref UInt32 teamFieldCount);
+        extern static private udtErrorCode udtGetStatsConstants(ref UInt32 playerMaskByteCount, ref UInt32 teamMaskByteCount, ref UInt32 playerFieldCount, ref UInt32 teamFieldCount, ref UInt32 perfFieldCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtInitLibrary();
@@ -627,20 +640,25 @@ namespace Uber.DemoTools
                 UInt32 teamMaskByteCount = 0;
                 UInt32 playerFieldCount = 0;
                 UInt32 teamFieldCount = 0;
-                udtGetStatsConstants(ref playerMaskByteCount, ref teamMaskByteCount, ref playerFieldCount, ref teamFieldCount);
+                UInt32 perfFieldCount = 0;
+                udtGetStatsConstants(ref playerMaskByteCount, ref teamMaskByteCount, ref playerFieldCount, ref teamFieldCount, ref perfFieldCount);
                 PlayerMaskByteCount = (int)playerMaskByteCount;
                 TeamMaskByteCount = (int)teamMaskByteCount;
                 PlayerFieldCount = (int)playerFieldCount;
                 TeamFieldCount = (int)teamFieldCount;
+                PerfFieldCount = (int)perfFieldCount;
             }
 
             public int PlayerMaskByteCount { private set; get; }
             public int TeamMaskByteCount { private set; get; }
             public int PlayerFieldCount { private set; get; }
             public int TeamFieldCount { private set; get; }
+            public int PerfFieldCount { private set; get; }
         }
 
         public static readonly StatsConstantsGrabber StatsConstants = new StatsConstantsGrabber();
+
+        public static IntPtr PerfStats = IntPtr.Zero;
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -694,6 +712,8 @@ namespace Uber.DemoTools
         public static void InitLibrary()
         {
             udtInitLibrary();
+
+            PerfStats = Marshal.AllocHGlobal(UDT_DLL.StatsConstants.PerfFieldCount * 8);
         }
 
         public static void ShutDownLibrary()
@@ -1132,7 +1152,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            PrintExecutionTime(runner.Timer);
+            PrintPerfStats(runner.Timer, filePaths.Count);
 
             return true;
         }
@@ -1211,7 +1231,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            PrintExecutionTime(runner.Timer);
+            PrintPerfStats(runner.Timer, filePaths.Count);
 
             return true;
         }
@@ -1291,7 +1311,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            PrintExecutionTime(runner.Timer);
+            PrintPerfStats(runner.Timer, filePaths.Count);
 
             return true;
         }
@@ -1349,7 +1369,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            PrintExecutionTime(runner.Timer);
+            PrintPerfStats(runner.Timer, filePaths.Count);
 
             return true;
         }
@@ -1413,7 +1433,7 @@ namespace Uber.DemoTools
                 }
             }
 
-            PrintExecutionTime(runner.Timer);
+            PrintPerfStats(runner.Timer, filePaths.Count);
 
             return demos;
         }
@@ -1562,9 +1582,33 @@ namespace Uber.DemoTools
             return totalMs == Int32.MinValue ? "?" : App.FormatMinutesSeconds(totalMs / 1000);
         }
 
-        private static string FormatBytes(uint bytes)
+        private static string FormatFileOffset(uint bytes)
         {
             return bytes.ToString() + (bytes == 0 ? " byte" : " bytes");
+        }
+
+        private static string FormatBytes(ulong byteCount)
+        {
+            if(byteCount == 0)
+	        {
+		        return "0 byte";
+	        }
+
+	        var units = new[] { "bytes", "KB", "MB", "GB", "TB" };
+
+	        var unitIndex = 0;
+            ulong prev = 0;
+            ulong temp = byteCount;
+	        while(temp >= 1024)
+	        {
+		        ++unitIndex;
+		        prev = temp;
+		        temp >>= 10;
+	        }
+
+            var number = (double)prev / 1024.0;
+
+            return number.ToString("F3") + " " + units[unitIndex];
         }
 
         public static string SafeGetUTF8String(IntPtr address, string onError)
@@ -1695,7 +1739,7 @@ namespace Uber.DemoTools
                 var lastSnapTime = App.FormatMinutesSeconds(data.LastSnapshotTimeMs / 1000);
                 info.GameStateSnapshotTimesMs.Add(Tuple.Create(data.FirstSnapshotTimeMs, data.LastSnapshotTimeMs));
                 info.Generic.Add(Tuple.Create("GameState #" + (i + 1).ToString(), ""));
-                info.Generic.Add(Tuple.Create(space + "File Offset", FormatBytes(data.FileOffset)));
+                info.Generic.Add(Tuple.Create(space + "File Offset", FormatFileOffset(data.FileOffset)));
                 info.Generic.Add(Tuple.Create(space + "Server Time Range", firstSnapTime + " - " + lastSnapTime));
                 info.Generic.Add(Tuple.Create(space + "Demo Taker", FormatDemoTaker(data)));
                 AddMatches(info, data, space);
@@ -1940,7 +1984,7 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.TeamFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
-                        var dataType = (udtStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
+                        var dataType = (udtMatchStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
                         var field = new DemoStatsField();
                         var fieldName = "";
                         var fieldValue = "";
@@ -2008,7 +2052,7 @@ namespace Uber.DemoTools
                     var byteValue = Marshal.ReadByte(data.PlayerFlags, byteIndex + flagsByteOffset);
                     if((byteValue & (byte)(1 << bitIndex)) != 0)
                     {
-                        var dataType = (udtStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
+                        var dataType = (udtMatchStatsDataType)Marshal.ReadByte(fieldDataTypes, j);
                         var field = new DemoStatsField();
                         var fieldName = "";
                         var fieldValue = "";
@@ -2091,37 +2135,37 @@ namespace Uber.DemoTools
             }
         }
 
-        private static bool IsStatsValueValid(udtStatsDataType type, int value)
+        private static bool IsStatsValueValid(udtMatchStatsDataType type, int value)
         {
             switch(type)
             {
-                case udtStatsDataType.Team:
+                case udtMatchStatsDataType.Team:
                     return value >= 0 && value <= 3;
 
-                case udtStatsDataType.Weapon:
+                case udtMatchStatsDataType.Weapon:
                     return true;
 
-                case udtStatsDataType.Percentage:
+                case udtMatchStatsDataType.Percentage:
                     return value >= 0 && value <= 100;
 
-                case udtStatsDataType.Minutes:
-                case udtStatsDataType.Seconds:
-                case udtStatsDataType.Ping:
-                case udtStatsDataType.Positive:
+                case udtMatchStatsDataType.Minutes:
+                case udtMatchStatsDataType.Seconds:
+                case udtMatchStatsDataType.Ping:
+                case udtMatchStatsDataType.Positive:
                     return value >= 0;
 
-                case udtStatsDataType.Boolean:
+                case udtMatchStatsDataType.Boolean:
                     return value == 0 || value == 1;
 
-                case udtStatsDataType.Generic:
+                case udtMatchStatsDataType.Generic:
                 default:
                     return value != int.MinValue;
             }
         }
 
-        private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtStatsDataType dataType, IntPtr fieldNameAddress)
+        private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtMatchStatsDataType dataType, IntPtr fieldNameAddress)
         {
-            fieldName = dataType == udtStatsDataType.Team ? "Team" : GetStatFieldNameFromAddress(fieldNameAddress);
+            fieldName = dataType == udtMatchStatsDataType.Team ? "Team" : GetStatFieldNameFromAddress(fieldNameAddress);
             if(!IsStatsValueValid(dataType, fieldIntegerValue))
             {
                 fieldValue = "<invalid>";
@@ -2130,36 +2174,36 @@ namespace Uber.DemoTools
 
             switch(dataType)
             {
-                case udtStatsDataType.Team:
+                case udtMatchStatsDataType.Team:
                     fieldValue = GetUDTStringForValueOrNull(udtStringArray.Teams, (uint)fieldIntegerValue) ?? "N/A";
                     break;
 
-                case udtStatsDataType.Weapon:
+                case udtMatchStatsDataType.Weapon:
                     fieldValue = GetUDTStringForValueOrNull(udtStringArray.Weapons, (uint)fieldIntegerValue) ?? "N/A";
                     break;
 
-                case udtStatsDataType.Percentage:
+                case udtMatchStatsDataType.Percentage:
                     fieldValue = fieldIntegerValue.ToString() + "%";
                     break;
 
-                case udtStatsDataType.Minutes:
+                case udtMatchStatsDataType.Minutes:
                     fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 1 ? " minutes" : "minute");
                     break;
 
-                case udtStatsDataType.Seconds:
+                case udtMatchStatsDataType.Seconds:
                     fieldValue = FormatStatsSeconds(fieldIntegerValue);
                     break;
 
-                case udtStatsDataType.Ping:
+                case udtMatchStatsDataType.Ping:
                     fieldValue = fieldIntegerValue.ToString() + " ms";
                     break;
 
-                case udtStatsDataType.Boolean:
+                case udtMatchStatsDataType.Boolean:
                     fieldValue = fieldIntegerValue == 0 ? "no" : "yes";
                     break;
 
-                case udtStatsDataType.Generic:
-                case udtStatsDataType.Positive:
+                case udtMatchStatsDataType.Generic:
+                case udtMatchStatsDataType.Positive:
                 default:
                     fieldValue = fieldIntegerValue.ToString();
                     break;
@@ -2188,15 +2232,70 @@ namespace Uber.DemoTools
             return name.Replace("bfg", "BFG").Replace("possession", "poss.").Capitalize();
         }
 
-        private static void PrintExecutionTime(Stopwatch timer)
+        private static void PrintPerfStats(Stopwatch timer, int fileCount)
         {
-            if(!App.Instance.Config.PrintExecutionTime)
+            timer.Stop();
+            App.GlobalLogInfo("Performance stats:");
+            PrintCSharpPerfStats(timer, fileCount);
+            PrintLibraryPerfStats();
+        }
+
+        private static void PrintLibraryPerfStats()
+        {
+            IntPtr fieldNames = IntPtr.Zero;
+            UInt32 fieldNameCount = 0;
+            if(udtGetStringArray(udtStringArray.PerfStatsNames, ref fieldNames, ref fieldNameCount) != udtErrorCode.None)
             {
                 return;
             }
 
-            timer.Stop();
-            App.GlobalLogInfo("Job execution time: " + App.FormatPerformanceTime(timer));
+            IntPtr fieldTypes = IntPtr.Zero;
+            UInt32 fieldTypeCount = 0;
+            if(udtGetByteArray(udtByteArray.PerfStatsDataTypes, ref fieldTypes, ref fieldTypeCount) != udtErrorCode.None)
+            {
+                return;
+            }
+
+            if((int)fieldNameCount < StatsConstants.PerfFieldCount || (int)fieldTypeCount < StatsConstants.PerfFieldCount)
+            {
+                return;
+            }
+
+            for(var i = 0; i < StatsConstants.PerfFieldCount; ++i)
+            {
+                var name = SafeGetUTF8String(Marshal.ReadIntPtr(fieldNames, i * IntPtr.Size));
+                var type = (udtPerfStatsDataType)Marshal.ReadByte(fieldTypes, i);
+                var value = (ulong)Marshal.ReadInt64(PerfStats, i * 8);
+                App.GlobalLogInfo("- {0}: {1}", name.Capitalize(), FormatPerfStatsField(type, value));
+            }
+        }
+
+        private static void PrintCSharpPerfStats(Stopwatch timer, int fileCount)
+        {
+            App.GlobalLogInfo("- File count: " + fileCount);
+            App.GlobalLogInfo("- Duration (C#): " + App.FormatPerformanceTime(timer.ElapsedMilliseconds));
+        }
+
+        private static string FormatPerfStatsField(udtPerfStatsDataType type, ulong value)
+        {
+            switch(type)
+            {
+                case udtPerfStatsDataType.Duration:
+                    return App.FormatPerformanceTime((long)value);
+
+                case udtPerfStatsDataType.Bytes:
+                    return FormatBytes(value);
+
+                case udtPerfStatsDataType.Throughput:
+                    return FormatBytes(value) + "/s";
+
+                case udtPerfStatsDataType.Percentage:
+                    return ((float)value / 10.0f).ToString() + @"%";
+
+                case udtPerfStatsDataType.Generic:
+                default:
+                    return value.ToString();
+            }
         }
 
         private class BatchJobRunner

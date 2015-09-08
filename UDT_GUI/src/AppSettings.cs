@@ -59,8 +59,6 @@ namespace Uber.DemoTools
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
         private CheckBox _mergeCutSectionsCheckBox = null;
-        private CheckBox _printAllocStatsCheckBox = null;
-        private CheckBox _printExecutionTimeCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
         private readonly List<CheckBox> _jsonEnabledPlugInsCheckBoxes = new List<CheckBox>();
 
@@ -95,8 +93,6 @@ namespace Uber.DemoTools
             config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
             config.MergeCutSectionsFromDifferentPatterns = _mergeCutSectionsCheckBox.IsChecked ?? false;
-            config.PrintAllocationStats = _printAllocStatsCheckBox.IsChecked ?? false;
-            config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
 
@@ -220,24 +216,6 @@ namespace Uber.DemoTools
             mergeCutSectionsCheckBox.Checked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = true;
             mergeCutSectionsCheckBox.Unchecked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = false;
 
-            var printAllocStatsCheckBox = new CheckBox();
-            _printAllocStatsCheckBox = printAllocStatsCheckBox;
-            printAllocStatsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            printAllocStatsCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            printAllocStatsCheckBox.IsChecked = _app.Config.PrintAllocationStats;
-            printAllocStatsCheckBox.Content = " Print memory allocations stats when job processing is finished?";
-            printAllocStatsCheckBox.Checked += (obj, args) => _app.Config.PrintAllocationStats = true;
-            printAllocStatsCheckBox.Unchecked += (obj, args) => _app.Config.PrintAllocationStats = false;
-
-            var printExecutionTimeCheckBox = new CheckBox();
-            _printExecutionTimeCheckBox = printExecutionTimeCheckBox;
-            printExecutionTimeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            printExecutionTimeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            printExecutionTimeCheckBox.IsChecked = _app.Config.PrintExecutionTime;
-            printExecutionTimeCheckBox.Content = " Print execution time when job processing is finished?";
-            printExecutionTimeCheckBox.Checked += (obj, args) => _app.Config.PrintExecutionTime = true;
-            printExecutionTimeCheckBox.Unchecked += (obj, args) => _app.Config.PrintExecutionTime = false;
-
             var colorLogMessagesCheckBox = new CheckBox();
             _colorLogMessagesCheckBox = colorLogMessagesCheckBox;
             colorLogMessagesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -292,8 +270,6 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Start Time Offset [s]", startTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("Merge Cut Sections", mergeCutSectionsCheckBox));
-            panelList.Add(App.CreateTuple("Print Alloc Stats", printAllocStatsCheckBox));
-            panelList.Add(App.CreateTuple("Print Execution Time", printExecutionTimeCheckBox));
             panelList.Add(App.CreateTuple("Color Log Messages", colorLogMessagesCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
