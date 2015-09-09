@@ -1491,6 +1491,9 @@ extern "C"
 	// Get the magic constants needed to parse stats properly.
 	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount, u32* perfFieldCount);
 
+	// Merges/add/replaces the stats of both arrays and writes the result to destPerfStats.
+	UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats);
+
 	//
 	// Init and shut down functions.
 	//

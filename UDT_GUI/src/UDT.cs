@@ -573,6 +573,9 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtGetStatsConstants(ref UInt32 playerMaskByteCount, ref UInt32 teamMaskByteCount, ref UInt32 playerFieldCount, ref UInt32 teamFieldCount, ref UInt32 perfFieldCount);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtMergeBatchPerfStats(IntPtr destPerfStats, IntPtr sourcePerfStats);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtInitLibrary();
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
@@ -658,7 +661,8 @@ namespace Uber.DemoTools
 
         public static readonly StatsConstantsGrabber StatsConstants = new StatsConstantsGrabber();
 
-        public static IntPtr PerfStats = IntPtr.Zero;
+        public static IntPtr BatchPerfStats = IntPtr.Zero;
+        public static IntPtr JobPerfStats = IntPtr.Zero;
 
         // The list of plug-ins activated when loading demos.
         private static UInt32[] PlugInArray = new UInt32[] 
@@ -713,7 +717,8 @@ namespace Uber.DemoTools
         {
             udtInitLibrary();
 
-            PerfStats = Marshal.AllocHGlobal(UDT_DLL.StatsConstants.PerfFieldCount * 8);
+            BatchPerfStats = Marshal.AllocHGlobal(UDT_DLL.StatsConstants.PerfFieldCount * 8);
+            JobPerfStats = Marshal.AllocHGlobal(UDT_DLL.StatsConstants.PerfFieldCount * 8);
         }
 
         public static void ShutDownLibrary()
@@ -1138,6 +1143,7 @@ namespace Uber.DemoTools
 
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
+            InitJobPerfStats();
             var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeCutting);
             var newParseArg = runner.NewParseArg;
 
@@ -1146,6 +1152,7 @@ namespace Uber.DemoTools
             {
                 CutDemosByPatternImpl(resources, ref newParseArg, runner.GetNextFiles(i), patterns, options);
                 resources.Free();
+                MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
@@ -1218,6 +1225,7 @@ namespace Uber.DemoTools
 
         public static bool ConvertDemos(ref udtParseArg parseArg, udtProtocol outProtocol, List<MapConversionRule> mapRules, List<string> filePaths, int maxThreadCount)
         {
+            InitJobPerfStats();
             var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeConverting);
             var newParseArg = runner.NewParseArg;
 
@@ -1225,6 +1233,7 @@ namespace Uber.DemoTools
             for(var i = 0; i < batchCount; ++i)
             {
                 ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, runner.GetNextFiles(i), maxThreadCount);
+                MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
@@ -1298,6 +1307,7 @@ namespace Uber.DemoTools
 
         public static bool TimeShiftDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int snapshotCount)
         {
+            InitJobPerfStats();
             var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeTimeShifting);
             var newParseArg = runner.NewParseArg;
 
@@ -1305,6 +1315,7 @@ namespace Uber.DemoTools
             for(var i = 0; i < batchCount; ++i)
             {
                 TimeShiftDemosImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, snapshotCount);
+                MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
@@ -1356,6 +1367,7 @@ namespace Uber.DemoTools
 
         public static bool ExportDemosDataToJSON(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount, UInt32[] plugIns)
         {
+            InitJobPerfStats();
             var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeJSONExport);
             var newParseArg = runner.NewParseArg;
 
@@ -1363,6 +1375,7 @@ namespace Uber.DemoTools
             for(var i = 0; i < batchCount; ++i)
             {
                 ExportDemosDataToJSONImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, plugIns);
+                MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
@@ -1416,6 +1429,7 @@ namespace Uber.DemoTools
 
         public static List<DemoInfo> ParseDemos(ref udtParseArg parseArg, List<string> filePaths, int maxThreadCount)
         {
+            InitJobPerfStats();
             var runner = new BatchJobRunner(parseArg, filePaths, MaxBatchSizeParsing);
             var newParseArg = runner.NewParseArg;
 
@@ -1427,6 +1441,7 @@ namespace Uber.DemoTools
                 var files = runner.GetNextFiles(i);
                 var currentResults = ParseDemosImpl(ref newParseArg, files, maxThreadCount, fileIndex);
                 demos.AddRange(currentResults);
+                MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
                     break;
@@ -2265,7 +2280,7 @@ namespace Uber.DemoTools
             {
                 var name = SafeGetUTF8String(Marshal.ReadIntPtr(fieldNames, i * IntPtr.Size));
                 var type = (udtPerfStatsDataType)Marshal.ReadByte(fieldTypes, i);
-                var value = (ulong)Marshal.ReadInt64(PerfStats, i * 8);
+                var value = (ulong)Marshal.ReadInt64(JobPerfStats, i * 8);
                 App.GlobalLogInfo("- {0}: {1}", name.Capitalize(), FormatPerfStatsField(type, value));
             }
         }
@@ -2428,6 +2443,19 @@ namespace Uber.DemoTools
             Marshal.Copy(bytes, 0, stringAddress, byteCount);
 
             return stringAddress;
+        }
+
+        [DllImport("msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false)]
+        private static extern IntPtr MemSet(IntPtr dest, int c, int count);
+
+        private static void InitJobPerfStats()
+        {
+            MemSet(JobPerfStats, 0, StatsConstants.PerfFieldCount * 8);
+        }
+
+        private static void MergeBatchPerfStats()
+        {
+            udtMergeBatchPerfStats(JobPerfStats, BatchPerfStats);
         }
     }
 }

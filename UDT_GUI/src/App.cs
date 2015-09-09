@@ -1828,7 +1828,7 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             Marshal.WriteInt32(_cancelOperation, 0);
             ParseArg.CancelOperation = _cancelOperation;
-            ParseArg.PerformanceStats = UDT_DLL.PerfStats;
+            ParseArg.PerformanceStats = UDT_DLL.BatchPerfStats;
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
