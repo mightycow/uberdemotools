@@ -457,7 +457,7 @@ namespace Uber.DemoTools
             headerRed.Content = "Red";
             headerRed.Tag = "Red";
             columnRed.Header = headerRed;
-            columnRed.Width = 200;
+            columnRed.Width = 150;
             columnRed.CellTemplate = CreateCellTemplate("Red", "RedFontWeight");
 
             var columnBlue = new GridViewColumn();
@@ -465,7 +465,7 @@ namespace Uber.DemoTools
             headerBlue.Content = "Blue";
             headerBlue.Tag = "Blue";
             columnBlue.Header = headerBlue;
-            columnBlue.Width = 200;
+            columnBlue.Width = 150;
             columnBlue.CellTemplate = CreateCellTemplate("Blue", "BlueFontWeight");
 
             var gridView = new GridView();

@@ -500,7 +500,7 @@ namespace Uber.DemoTools
             public IntPtr SecondPlaceName; // const char*
             public IntPtr CustomRedName; // const char*
             public IntPtr CustomBlueName; // const char*
-            public IntPtr Reserved1;
+            public IntPtr TimeOutStartAndEndTimes; // const s32*
 		    public UInt32 GameType;
 		    public UInt32 MatchDurationMs;
 		    public UInt32 Mod;
@@ -1934,6 +1934,15 @@ namespace Uber.DemoTools
             if(data.TimeOutCount > 0)
             {
                 stats.AddGenericField("Total time-out duration", App.FormatMinutesSeconds((int)data.TotalTimeOutDurationMs / 1000));
+            }
+
+            for(var i = 0; i < (int)data.TimeOutCount; ++i)
+            {
+                var startTime = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4*(2 * i));
+                var endTime = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4*(2 * i + 1));
+                var startTimeString = App.FormatMinutesSeconds(startTime / 1000);
+                var endTimeString = App.FormatMinutesSeconds(endTime / 1000);
+                stats.AddGenericField("Time-out #" + (i + 1).ToString(), startTimeString + " - " + endTimeString);
             }
 
             ExtractTeamStats(data, info, ref stats);
