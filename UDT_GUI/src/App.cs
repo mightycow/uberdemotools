@@ -61,18 +61,7 @@ namespace Uber.DemoTools
         public int FlickRailMinAngleDeltaSnaps = 2;
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
-        public bool[] JSONPlugInsEnabled = CreateTrueBoolArray((int)UDT_DLL.udtParserPlugIn.Count);
-
-        private static bool[] CreateTrueBoolArray(int size)
-        {
-            var array = new bool[size];
-            for(var i = 0; i < size; ++i)
-            {
-                array[i] = true;
-            }
-
-            return array;
-        }
+        public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
     }
 
     public class MapConversionRule
@@ -1741,17 +1730,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            bool hasAtLeastOne = false;
-            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
-            {
-                if(Config.JSONPlugInsEnabled[i])
-                {
-                    hasAtLeastOne = true;
-                    break;
-                }
-            }
-
-            if(!hasAtLeastOne)
+            if(Config.JSONPlugInsEnabled == 0)
             {
                 LogError("No analyzer selected. Please select at least one to proceed.");
                 return;
@@ -1974,7 +1953,7 @@ namespace Uber.DemoTools
             var plugIns = new List<UInt32>();
             for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
             {
-                if(Config.JSONPlugInsEnabled[i])
+                if(BitManip.IsBitSet(Config.JSONPlugInsEnabled, i))
                 {
                     plugIns.Add((UInt32)i);
                 }
@@ -2057,16 +2036,6 @@ namespace Uber.DemoTools
         private void LoadConfig()
         {
             Serializer.FromXml("Config.xml", out _config);
-            if(_config.JSONPlugInsEnabled.Length != (int)UDT_DLL.udtParserPlugIn.Count)
-            {
-                var array = new bool[(int)UDT_DLL.udtParserPlugIn.Count];
-                var toCopy = Math.Min(_config.JSONPlugInsEnabled.Length, (int)UDT_DLL.udtParserPlugIn.Count);
-                for(var i = 0; i < toCopy; ++i)
-                {
-                    array[i] = _config.JSONPlugInsEnabled[i];
-                }
-                _config.JSONPlugInsEnabled = array;
-            }
         }
 
         public void SaveConfig()

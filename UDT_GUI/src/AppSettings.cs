@@ -8,6 +8,39 @@ using System.Windows.Controls;
 
 namespace Uber.DemoTools
 {
+    // @TODO: Move this...
+    public static class BitManip
+    {
+        public static bool IsBitSet(uint mask, int bitIndex)
+        {
+            return (mask & ((uint)1 << bitIndex)) != 0;
+        }
+
+        public static void SetBit(ref uint mask, int bitIndex)
+        {
+            mask |= (uint)1 << bitIndex;
+        }
+
+        public static void ClearBit(ref uint mask, int bitIndex)
+        {
+            mask &= ~((uint)1 << bitIndex);
+        }
+
+        public static int PopCnt(uint mask)
+        {
+            var count = 0;
+            for(var i = 0; i < 32; ++i)
+            {
+                if(IsBitSet(mask, i))
+                {
+                    ++count;
+                }
+            }
+
+            return count;
+        }
+    }
+
     public enum ComponentType
     {
         Settings,
@@ -96,10 +129,15 @@ namespace Uber.DemoTools
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
 
+            uint jsonPlugInsEnabled = 0;
             for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
             {
-                _app.Config.JSONPlugInsEnabled[i] = _jsonEnabledPlugInsCheckBoxes[i].IsChecked ?? false;
+                if(_jsonEnabledPlugInsCheckBoxes[i].IsChecked ?? false)
+                {
+                    jsonPlugInsEnabled |= (uint)1 << i;
+                }
             }
+            _app.Config.JSONPlugInsEnabled = jsonPlugInsEnabled;
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -237,10 +275,10 @@ namespace Uber.DemoTools
                 var checkBox = new CheckBox();
                 checkBox.Margin = new Thickness(5, 5, 0, 0);
                 checkBox.Content = " " + plugInNames[i].Capitalize();
-                checkBox.IsChecked = _app.Config.JSONPlugInsEnabled[i];
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.JSONPlugInsEnabled, i);
                 var iCopy = i; // Make sure we capture a local copy in the lambda.
-                checkBox.Checked += (obj, args) => _app.Config.JSONPlugInsEnabled[iCopy] = true;
-                checkBox.Unchecked += (obj, args) => _app.Config.JSONPlugInsEnabled[iCopy] = false;
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
 
                 _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
                 jsonPlugInsStackPanel.Children.Add(checkBox);
