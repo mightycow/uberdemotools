@@ -2214,7 +2214,7 @@ namespace Uber.DemoTools
                     break;
 
                 case udtMatchStatsDataType.Minutes:
-                    fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 1 ? " minutes" : "minute");
+                    fieldValue = fieldIntegerValue.ToString() + (fieldIntegerValue > 1 ? " minutes" : " minute");
                     break;
 
                 case udtMatchStatsDataType.Seconds:
