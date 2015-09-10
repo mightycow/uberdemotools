@@ -389,7 +389,9 @@ bool udtBaseParser::ParseCommandString()
 	// We haven't, so let's store the last sequence number received.
 	_inServerCommandSequence = commandSequence;
 
-tokenize:	
+	bool plugInSkipsThisCommand = false;
+
+tokenize:
 	idTokenizer& tokenizer = _tokenizer;
 	tokenizer.Tokenize(commandString);
 	const int tokenCount = tokenizer.GetArgCount();
@@ -420,11 +422,13 @@ tokenize:
 	{
 		// Start a new big config string.
 		sprintf(_inBigConfigString, "cs %s \"%s", tokenizer.GetArgString(1), tokenizer.GetArgString(2));
+		plugInSkipsThisCommand = true;
 	}
 	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs1"))
 	{
 		// Append to current big config string.
 		strcat(_inBigConfigString, tokenizer.GetArgString(2));
+		plugInSkipsThisCommand = true;
 	}
 	else if(tokenCount == 3 && udtString::Equals(commandName, "bcs2"))
 	{
@@ -436,7 +440,7 @@ tokenize:
 		goto tokenize;
 	}
 
-	if(EnablePlugIns && !PlugIns.IsEmpty())
+	if(EnablePlugIns && !PlugIns.IsEmpty() && !plugInSkipsThisCommand)
 	{
 		udtCommandCallbackArg info;
 		info.CommandSequence = commandSequence;

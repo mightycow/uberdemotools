@@ -287,8 +287,8 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 #undef HANDLER
 	/*
 	@TODO:
-	QL  : scores_race
-	OSP : bstats
+	QL  : scores_race ? (there is no such thing as a race match I believe...)
+	OSP : bstats - can't find a demo with "bstats" anymore :-(
 	*/
 
 	for(s32 i = 0; i < (s32)UDT_COUNT_OF(handlers); ++i)
