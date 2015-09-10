@@ -82,7 +82,8 @@ static bool UTF8_NeedsEscaping(u32& newLength, u32 codePoint)
 		}
 	}
 
-	if(codePoint >= 0x0000 && codePoint <= 0x001F)
+	// Range: 0x0000 - 0x001F
+	if(codePoint <= 0x001F)
 	{
 		newLength = 6; // Of form: "\uABCD".
 		return true;
