@@ -62,6 +62,8 @@ namespace Uber.DemoTools
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
         public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
+        public uint PerfStatsEnabled = 0; // All disabled by default.
+        public uint CSharpPerfStatsEnabled = 0; // All disabled by default.
     }
 
     public class MapConversionRule

@@ -9,6 +9,23 @@ using System.Windows.Controls;
 namespace Uber.DemoTools
 {
     // @TODO: Move this...
+    public enum CSharpPerfStats
+    {
+        Duration,
+        FileCount,
+        Count
+    }
+
+    public static class CSharpPerfStatsConstants
+    {
+        public static readonly string[] Strings = new string[(int)CSharpPerfStats.Count]
+        {
+            "duration with C# overhead",
+            "file count"
+        };
+    }
+
+    // @TODO: Move this...
     public static class BitManip
     {
         public static bool IsBitSet(uint mask, int bitIndex)
@@ -94,6 +111,8 @@ namespace Uber.DemoTools
         private CheckBox _mergeCutSectionsCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
         private readonly List<CheckBox> _jsonEnabledPlugInsCheckBoxes = new List<CheckBox>();
+        private readonly List<CheckBox> _enabledPerfStatsCheckBoxes = new List<CheckBox>();
+        private readonly List<CheckBox> _enabledCSharpPerfStatsCheckBoxes = new List<CheckBox>();
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -128,16 +147,9 @@ namespace Uber.DemoTools
             config.MergeCutSectionsFromDifferentPatterns = _mergeCutSectionsCheckBox.IsChecked ?? false;
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
-
-            uint jsonPlugInsEnabled = 0;
-            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
-            {
-                if(_jsonEnabledPlugInsCheckBoxes[i].IsChecked ?? false)
-                {
-                    jsonPlugInsEnabled |= (uint)1 << i;
-                }
-            }
-            _app.Config.JSONPlugInsEnabled = jsonPlugInsEnabled;
+            config.JSONPlugInsEnabled = CreateBitMask(_jsonEnabledPlugInsCheckBoxes);
+            config.PerfStatsEnabled = CreateBitMask(_enabledPerfStatsCheckBoxes);
+            config.CSharpPerfStatsEnabled = CreateBitMask(_enabledCSharpPerfStatsCheckBoxes);
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -264,33 +276,6 @@ namespace Uber.DemoTools
             colorLogMessagesCheckBox.Unchecked += (obj, args) => _app.Config.ColorLogWarningsAndErrors = false;
             colorLogMessagesCheckBox.ToolTip = "The option is disabled by default because it might not integrate well with your current theme.";
 
-            var plugInNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PlugInNames);
-            var jsonPlugInsStackPanel = new StackPanel();
-            jsonPlugInsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            jsonPlugInsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            jsonPlugInsStackPanel.Margin = new Thickness(5);
-            jsonPlugInsStackPanel.Children.Add(new TextBlock { Text = "Select which analyzers are enabled" });
-            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
-            {
-                var checkBox = new CheckBox();
-                checkBox.Margin = new Thickness(5, 5, 0, 0);
-                checkBox.Content = " " + plugInNames[i].Capitalize();
-                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.JSONPlugInsEnabled, i);
-                var iCopy = i; // Make sure we capture a local copy in the lambda.
-                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
-                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
-
-                _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
-                jsonPlugInsStackPanel.Children.Add(checkBox);
-            }
-
-            var jsonPlugInsGroupBox = new GroupBox();
-            jsonPlugInsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            jsonPlugInsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            jsonPlugInsGroupBox.Margin = new Thickness(5);
-            jsonPlugInsGroupBox.Header = "JSON export";
-            jsonPlugInsGroupBox.Content = jsonPlugInsStackPanel;
-
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             const int InputFolderIndex = 8;
@@ -322,7 +307,6 @@ namespace Uber.DemoTools
             SetActive(_skipRecursiveDialog, _app.Config.SkipScanFoldersRecursivelyDialog);
             _inputFolderRow = settingStackPanel.Children[InputFolderIndex] as FrameworkElement;
             UpdateInputFolderActive();
-            settingStackPanel.Children.Add(jsonPlugInsGroupBox);
 
             var settingsGroupBox = new GroupBox();
             settingsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -331,13 +315,87 @@ namespace Uber.DemoTools
             settingsGroupBox.Header = "Settings";
             settingsGroupBox.Content = settingsPanel;
 
+            var plugInNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PlugInNames);
+            var jsonPlugInsStackPanel = new StackPanel();
+            jsonPlugInsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            jsonPlugInsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            jsonPlugInsStackPanel.Margin = new Thickness(5);
+            jsonPlugInsStackPanel.Children.Add(new TextBlock { Text = "Select which analyzers are enabled" });
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + plugInNames[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.JSONPlugInsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
+
+                _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
+                jsonPlugInsStackPanel.Children.Add(checkBox);
+            }
+
+            var jsonPlugInsGroupBox = new GroupBox();
+            jsonPlugInsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            jsonPlugInsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            jsonPlugInsGroupBox.Margin = new Thickness(5);
+            jsonPlugInsGroupBox.Header = "JSON Export";
+            jsonPlugInsGroupBox.Content = jsonPlugInsStackPanel;
+
+            var perfStatsNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PerfStatsNames);
+            var perfStatsStackPanel = new StackPanel();
+            perfStatsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            perfStatsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            perfStatsStackPanel.Margin = new Thickness(5);
+            perfStatsStackPanel.Children.Add(new TextBlock { Text = "Select which job stats are printed in the log window" });
+            for(int i = 0; i < (int)CSharpPerfStats.Count; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + CSharpPerfStatsConstants.Strings[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.CSharpPerfStatsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.CSharpPerfStatsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.CSharpPerfStatsEnabled, iCopy);
+
+                _enabledCSharpPerfStatsCheckBoxes.Add(checkBox);
+                perfStatsStackPanel.Children.Add(checkBox);
+            }
+            for(int i = 0; i < (int)UDT_DLL.StatsConstants.PerfFieldCount; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + perfStatsNames[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.PerfStatsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.PerfStatsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.PerfStatsEnabled, iCopy);
+
+                _enabledPerfStatsCheckBoxes.Add(checkBox);
+                perfStatsStackPanel.Children.Add(checkBox);
+            }
+
+            var perfStatsGroupBox = new GroupBox();
+            perfStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            perfStatsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            perfStatsGroupBox.Margin = new Thickness(5);
+            perfStatsGroupBox.Header = "Performance Logging";
+            perfStatsGroupBox.Content = perfStatsStackPanel;
+
+            var rootPanel = new WrapPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            rootPanel.Children.Add(settingsGroupBox);
+            rootPanel.Children.Add(perfStatsGroupBox);
+            rootPanel.Children.Add(jsonPlugInsGroupBox);
+
             var scrollViewer = new ScrollViewer();
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
             scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
             scrollViewer.Margin = new Thickness(5);
             scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
-            scrollViewer.Content = settingsGroupBox;
+            scrollViewer.Content = rootPanel;
 
             return scrollViewer; 
         }
@@ -508,6 +566,20 @@ namespace Uber.DemoTools
         private void SetActive(FrameworkElement element, bool active)
         {
             element.Opacity = active ? 1.0 : 0.5;
+        }
+
+        private static uint CreateBitMask(List<CheckBox> checkBoxes)
+        {
+            uint mask = 0;
+            for(var i = 0; i < checkBoxes.Count; ++i)
+            {
+                if(checkBoxes[i].IsChecked ?? false)
+                {
+                    BitManip.SetBit(ref mask, i);
+                }
+            }
+
+            return mask;
         }
     }
 }

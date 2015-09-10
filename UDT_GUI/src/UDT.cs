@@ -2250,6 +2250,14 @@ namespace Uber.DemoTools
         private static void PrintPerfStats(Stopwatch timer, int fileCount)
         {
             timer.Stop();
+
+            var config = App.Instance.Config;
+            var enabledStatsCount = BitManip.PopCnt(config.PerfStatsEnabled) + BitManip.PopCnt(config.CSharpPerfStatsEnabled);
+            if(enabledStatsCount == 0)
+            {
+                return;
+            }
+
             App.GlobalLogInfo("Performance stats:");
             PrintCSharpPerfStats(timer, fileCount);
             PrintLibraryPerfStats();
@@ -2278,6 +2286,11 @@ namespace Uber.DemoTools
 
             for(var i = 0; i < StatsConstants.PerfFieldCount; ++i)
             {
+                if(!BitManip.IsBitSet(App.Instance.Config.PerfStatsEnabled, i))
+                {
+                    continue;
+                }
+
                 var name = SafeGetUTF8String(Marshal.ReadIntPtr(fieldNames, i * IntPtr.Size));
                 var type = (udtPerfStatsDataType)Marshal.ReadByte(fieldTypes, i);
                 var value = (ulong)Marshal.ReadInt64(JobPerfStats, i * 8);
@@ -2287,8 +2300,16 @@ namespace Uber.DemoTools
 
         private static void PrintCSharpPerfStats(Stopwatch timer, int fileCount)
         {
-            App.GlobalLogInfo("- File count: " + fileCount);
-            App.GlobalLogInfo("- Duration (C#): " + App.FormatPerformanceTime(timer.ElapsedMilliseconds));
+            var config = App.Instance.Config;
+            if(BitManip.IsBitSet(config.CSharpPerfStatsEnabled, (int)CSharpPerfStats.FileCount))
+            {
+                App.GlobalLogInfo("- File count: " + fileCount);
+            }
+
+            if(BitManip.IsBitSet(config.CSharpPerfStatsEnabled, (int)CSharpPerfStats.Duration))
+            {
+                App.GlobalLogInfo("- Duration (C#): " + App.FormatPerformanceTime(timer.ElapsedMilliseconds));
+            }
         }
 
         private static string FormatPerfStatsField(udtPerfStatsDataType type, ulong value)
