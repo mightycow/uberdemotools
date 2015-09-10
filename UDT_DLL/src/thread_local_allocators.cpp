@@ -2,6 +2,7 @@
 #include "thread_local_storage.hpp"
 #include "crash.hpp"
 
+#include <stdlib.h>
 #include <new>
 
 
