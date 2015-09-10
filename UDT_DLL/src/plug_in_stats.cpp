@@ -124,6 +124,7 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_maxAllowedStats = UDT_MAX_STATS;
 	_gameEnded = false;
 	_disableStatsOverrides = false;
+	_lastMatchEndTime = S32_MIN;
 	ClearStats();
 }
 
@@ -155,6 +156,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_followedClientNumber = -1;
 	_gameEnded = false;
 	_disableStatsOverrides = false;
+	_lastMatchEndTime = S32_MIN;
 	ClearStats();
 }
 
@@ -190,6 +192,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_cpmaRoundScoreBlue = 0;
 	_firstPlaceScore = 0;
 	_secondPlaceScore = 0;
+	_lastMatchEndTime = S32_MIN;
 
 	ClearStats(true);
 
@@ -2509,6 +2512,12 @@ void udtParserPlugInStats::AddCurrentStats()
 		return;
 	}
 
+	if(_statsArray.GetSize() >= 1 &&
+	   _lastMatchEndTime > _analyzer.MatchStartTime())
+	{
+		return;
+	}
+
 	//
 	// Fix up the stats and save them.
 	//
@@ -2829,6 +2838,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.MercyLimited = _analyzer.MercyLimited();
 	_stats.TeamMode = IsTeamMode((udtGameType::Id)_stats.GameType) ? 1 : 0;
 	_statsArray.Add(_stats);
+
+	_lastMatchEndTime = _analyzer.MatchEndTime();
 
 	// Clear the stats for the next match.
 	ClearStats();
