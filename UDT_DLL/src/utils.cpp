@@ -788,7 +788,7 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 	unusedPc = (100 * totalUnused) / totalReserved;
 	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
 	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
-	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, unusedPc);
+	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, (u32)unusedPc);
 	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
 }
 
