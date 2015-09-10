@@ -105,7 +105,8 @@ static void UTF8_WriteCodePoint(u32& newLength, char* output, u32 codePoint, con
 		}
 	}
 
-	if(codePoint >= 0x0000 && codePoint <= 0x001F)
+	// Range: 0x0000 - 0x001F
+	if(codePoint <= 0x001F)
 	{
 		newLength = 6;
 		output[0] = '\\';
