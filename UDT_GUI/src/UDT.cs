@@ -34,13 +34,13 @@ namespace Uber.DemoTools
     {
 #if UDT_X64
         private const int MaxBatchSizeParsing = 512;
-        private const int MaxBatchSizeJSONExport = 512;
+        private const int MaxBatchSizeJSONExport = 256;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
         private const int MaxBatchSizeTimeShifting = 2048;
 #else
         private const int MaxBatchSizeParsing = 32;
-        private const int MaxBatchSizeJSONExport = 32;
+        private const int MaxBatchSizeJSONExport = 16;
         private const int MaxBatchSizeCutting = 128;
         private const int MaxBatchSizeConverting = 128;
         private const int MaxBatchSizeTimeShifting = 128;
