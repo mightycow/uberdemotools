@@ -2140,12 +2140,15 @@ namespace Uber.DemoTools
             }
 
             // Skip the team index field for non team game types.
-            foreach(var player in stats.PlayerStats)
+            if(data.TeamMode == 0)
             {
-                var teamIdx = player.Fields.FindIndex(f => f.FieldBitIndex == 0);
-                if(teamIdx >= 0)
+                foreach(var player in stats.PlayerStats)
                 {
-                    player.Fields.RemoveAt(teamIdx);
+                    var teamFieldIdx = player.Fields.FindIndex(f => f.FieldBitIndex == 0);
+                    if(teamFieldIdx >= 0)
+                    {
+                        player.Fields.RemoveAt(teamFieldIdx);
+                    }
                 }
             }
         }
