@@ -32,6 +32,8 @@ public:
 	bool MercyLimited() const;
 	void SetInWarmUp();
 	void SetInProgress();
+	s32  GetTimeOutStartTime(u32 index) const;
+	s32  GetTimeOutEndTime(u32 index) const;
 
 	udtGameType::Id     GameType() const;
 	udtMod::Id          Mod() const;
@@ -54,6 +56,20 @@ private:
 		};
 	};
 
+	struct Constants
+	{
+		enum Id
+		{
+			MaxTimeOutCount = 64
+		};
+	};
+
+	struct udtTimeOut
+	{
+		s32 StartTime;
+		s32 EndTime;
+	};
+
 	// Functions with the "Once" suffix only need to be called from ProcessGamestateMessage.
 	void UpdateGameState(udtGameState::Id gameState);
 	void ProcessModNameAndVersionOnce();
@@ -74,7 +90,11 @@ private:
 	bool IsIntermission();
 	void UpdateMatchStartTime();
 	void ResetForNextGameState();
+	void SetTimeOutStartTime(s32 startTime);
+	void SetTimeOutEndTime(s32 startTime);
+	s32  GetTimeOutStartTime() const;
 
+	udtTimeOut _timeOutStartAndEndTimes[Constants::MaxTimeOutCount];
 	udtVMLinearAllocator _stringAllocator;
 	udtBaseParser* _parser;
 	udtVMLinearAllocator* _tempAllocator;

@@ -87,6 +87,11 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_timeOut = false;
 	_mercyLimited = false;
 	_serverPause = false;
+	for(u32 i = 0; i < (u32)Constants::MaxTimeOutCount; ++i)
+	{
+		_timeOutStartAndEndTimes[i].StartTime = S32_MIN;
+		_timeOutStartAndEndTimes[i].EndTime = S32_MIN;
+	}
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
@@ -335,6 +340,11 @@ void udtGeneralAnalyzer::ResetForNextMatch()
 	_timeOut = false;
 	_mercyLimited = false;
 	_serverPause = false;
+	for(u32 i = 0; i < (u32)Constants::MaxTimeOutCount; ++i)
+	{
+		_timeOutStartAndEndTimes[i].StartTime = S32_MIN;
+		_timeOutStartAndEndTimes[i].EndTime = S32_MIN;
+	}
 }
 
 bool udtGeneralAnalyzer::HasMatchJustStarted() const
@@ -437,6 +447,26 @@ void udtGeneralAnalyzer::SetInProgress()
 	_gameState = udtGameState::InProgress;
 }
 
+s32 udtGeneralAnalyzer::GetTimeOutStartTime(u32 index) const
+{
+	if(index >= (u32)Constants::MaxTimeOutCount)
+	{
+		return S32_MIN;
+	}
+
+	return _timeOutStartAndEndTimes[index].StartTime;
+}
+
+s32 udtGeneralAnalyzer::GetTimeOutEndTime(u32 index) const
+{
+	if(index >= (u32)Constants::MaxTimeOutCount)
+	{
+		return S32_MIN;
+	}
+
+	return _timeOutStartAndEndTimes[index].EndTime;
+}
+
 void udtGeneralAnalyzer::UpdateGameState(udtGameState::Id gameState)
 {
 	if(_processingGameState)
@@ -511,8 +541,14 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		_timeOut = te != 0;
 		if(oldTimeOut && !_timeOut)
 		{
+			const s32 startTime = GetTimeOutStartTime();
+			SetTimeOutEndTime(startTime + td);
 			++_timeOutCount;
 			_totalTimeOutDuration += td;
+		}
+		else if(_timeOut)
+		{
+			SetTimeOutStartTime(te);
 		}
 	}
 
@@ -733,6 +769,7 @@ void udtGeneralAnalyzer::ProcessQLPauseStartConfigString(const char* configStrin
 	{
 		if(_timeOut)
 		{
+			SetTimeOutEndTime(_parser->_inServerTime);
 			++_timeOutCount;
 		}
 		_timeOut = false;
@@ -742,6 +779,7 @@ void udtGeneralAnalyzer::ProcessQLPauseStartConfigString(const char* configStrin
 			startTime > 0)
 	{
 		_timeOut = true;
+		SetTimeOutStartTime(startTime);
 	}
 }
 
@@ -757,6 +795,7 @@ void udtGeneralAnalyzer::ProcessQLPauseEndConfigString(const char* configString)
 	   StringParseInt(endTime, configString) &&
 	   endTime == 0)
 	{
+		SetTimeOutEndTime(endTime);
 		_serverPause = true;
 	}
 }
@@ -930,4 +969,34 @@ void udtGeneralAnalyzer::ResetForNextGameState()
 	_prevMatchStartTime = S32_MIN;
 	_gameState = udtGameState::WarmUp;
 	_lastGameState = udtGameState::WarmUp;
+}
+
+void udtGeneralAnalyzer::SetTimeOutStartTime(s32 startTime)
+{
+	if(_timeOutCount < (u32)Constants::MaxTimeOutCount)
+	{
+		_timeOutStartAndEndTimes[_timeOutCount].StartTime = startTime;
+	}
+}
+
+void udtGeneralAnalyzer::SetTimeOutEndTime(s32 endTime)
+{
+	if(_timeOutCount < (u32)Constants::MaxTimeOutCount)
+	{
+		s32& endTimeRef = _timeOutStartAndEndTimes[_timeOutCount].EndTime;
+		if(endTimeRef == S32_MIN && endTime != 0)
+		{
+			endTimeRef = endTime;
+		}
+	}
+}
+
+s32 udtGeneralAnalyzer::GetTimeOutStartTime() const
+{
+	if(_timeOutCount < (u32)Constants::MaxTimeOutCount)
+	{
+		return _timeOutStartAndEndTimes[_timeOutCount].StartTime;
+	}
+
+	return S32_MIN;
 }

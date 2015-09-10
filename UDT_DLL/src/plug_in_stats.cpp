@@ -2610,6 +2610,7 @@ void udtParserPlugInStats::AddCurrentStats()
 		_stats.ValidTeams = 0;
 	}
 
+	const u32 timeOutCount = _analyzer.TimeOutCount();
 	const u32 teamCount = PopCount(_stats.ValidTeams);
 	const u32 playerCount = PopCount(_stats.ValidPlayers);
 	u32 teamFieldCount = 0;
@@ -2628,12 +2629,14 @@ void udtParserPlugInStats::AddCurrentStats()
 	s32* teamFields = teamFieldCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)teamFieldCount * 4);
 	s32* playerFields = playerFieldCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)playerFieldCount * 4);
 	udtPlayerStats* playerStats = playerCount == 0 ? NULL : (udtPlayerStats*)_allocator.Allocate((uptr)playerCount * (uptr)sizeof(udtPlayerStats));
+	s32* const timeOutTimes = timeOutCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)timeOutCount * 8);
 
 	_stats.TeamFlags = teamFlags;
 	_stats.PlayerFlags = playerFlags;
 	_stats.TeamFields = teamFields;
 	_stats.PlayerFields = playerFields;
 	_stats.PlayerStats = playerStats;
+	_stats.TimeOutStartAndEndTimes = timeOutTimes;
 
 	for(s32 i = 0; i < 2; ++i)
 	{
@@ -2676,6 +2679,12 @@ void udtParserPlugInStats::AddCurrentStats()
 
 		playerFlags += UDT_PLAYER_STATS_MASK_BYTE_COUNT;
 		*playerStats++ = _playerStats[i];
+	}
+
+	for(u32 i = 0; i < timeOutCount; ++i)
+	{
+		timeOutTimes[2 * i + 0] = _analyzer.GetTimeOutStartTime(i);
+		timeOutTimes[2 * i + 1] = _analyzer.GetTimeOutEndTime(i);
 	}
 
 	if(IsTeamMode((udtGameType::Id)_stats.GameType))
@@ -2815,7 +2824,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.Mod = _analyzer.Mod();
 	_stats.ModVersion = _analyzer.ModVersion();
 	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
-	_stats.TimeOutCount = _analyzer.TimeOutCount();
+	_stats.TimeOutCount = timeOutCount;
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
 	_stats.TeamMode = IsTeamMode((udtGameType::Id)_stats.GameType) ? 1 : 0;

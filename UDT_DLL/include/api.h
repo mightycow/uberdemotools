@@ -1358,8 +1358,9 @@ extern "C"
 		// Custom blue team name or NULL if not available.
 		const char* CustomBlueName;
 
-		// Ignore this.
-		const u8* Reserved1;
+		// Start and end times for each time-out.
+		// Order: start0, end0, start1, end1, etc.
+		const s32* TimeOutStartAndEndTimes;
 
 		// Of type udtGameType::Id.
 		// Defaults to (u32)-1 when invalid or uninitialized.

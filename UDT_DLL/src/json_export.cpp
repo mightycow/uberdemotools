@@ -320,10 +320,25 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		writer.WriteBoolValue("mercy limited", stats.MercyLimited != 0);
 		WriteUDTGamePlayShort(writer, stats.GamePlay);
 		WriteUDTGamePlayLong(writer, stats.GamePlay);
-		writer.WriteIntValue("time-out count", (s32)stats.TimeOutCount);
+		writer.WriteIntValue("time out count", (s32)stats.TimeOutCount);
 		if(stats.TimeOutCount > 0)
 		{
-			writer.WriteIntValue("total time-out duration", (s32)stats.TotalTimeOutDurationMs);
+			writer.WriteIntValue("total time out duration", (s32)stats.TotalTimeOutDurationMs);
+		}
+
+		if(stats.TimeOutCount > 0)
+		{
+			writer.StartArray("time outs");
+
+			for(u32 i = 0; i < stats.TimeOutCount; ++i)
+			{
+				writer.StartObject();
+				writer.WriteIntValue("start time", stats.TimeOutStartAndEndTimes[2 * i]);
+				writer.WriteIntValue("end time", stats.TimeOutStartAndEndTimes[2 * i + 1]);
+				writer.EndObject();
+			}
+
+			writer.EndArray();
 		}
 
 		if(hasTeamStats)
