@@ -2461,7 +2461,10 @@ void udtParserPlugInStats::SetFields(u8* destMask, s32* destFields, const udtSta
 
 s32 udtParserPlugInStats::GetValue(s32 index)
 {
-	return (s32)atoi(_tokenizer->GetArgString((u32)index));
+	s32 result = 0;
+	const bool success = StringParseInt(result, _tokenizer->GetArgString((u32)index));
+
+	return success ? result : S32_MIN;
 }
 
 bool udtParserPlugInStats::AreStatsValid()
