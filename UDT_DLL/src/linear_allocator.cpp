@@ -89,7 +89,6 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	}
 	
 	const uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE;
-	UDT_ASSERT_OR_FATAL((commitByteCountGranularity % (uptr)UDT_MEMORY_PAGE_SIZE) == 0);
 
 	// Ensure the reserve size is a multiple of the commit granularity.
 	// If it is, leave it as is. If it's not, bump it up to the next multiple.
