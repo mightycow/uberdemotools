@@ -1,3 +1,19 @@
+0.5.0 (17.09.2015)
+ADD: Analysis data export to JSON (can select the list of analyzers enabled for JSON export in the "Settings" tab)
+ADD: "Chat" now displays team messages too and has a "Scope" (global or team) column
+ADD: "Cut by Chat" can now be configured to search team chat messages
+ADD: "Reveal in File Explorer" context menu entry of the "Demo List" list view: opens the file explorer with the file pre-selected
+ADD: "Scores and Stats" tab for displaying the most detailed possible information per match
+ADD: "Commands" tab for displaying both commands and config strings (in gamestate messages and command messages)
+ADD: Unicode file and directory paths support
+CHG: All data analysis information tabs are now found under the "Info" tab
+CHG: Performance stats now get printed once per job instead of once per batch (jobs can be split into several batches)
+CHG: The printing of performance stats can be enabled/disabled individually in the "Settings" tab
+FIX: Colored log lines couldn't be copied to the clipboard or saved to a file
+FIX: Now handling string.Format failing in log functions
+FIX: Clicking any column of the "Chat" list view was crashing when the list was empty
+FIX: "Cut by Chat" now searches the messages themselves, not the raw commands
+
 0.4.7 (30.07.2015)
 ADD: The file and folder browsing dialogs now open the last used directory by default when it's valid
 ADD: Full parse/write support of demo protocols 66, 67 (Quake 3) and 91 (Quake Live)
