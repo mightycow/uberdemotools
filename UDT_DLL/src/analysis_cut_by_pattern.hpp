@@ -73,7 +73,7 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
 
 	void TrackPlayerFromCommandMessage(udtBaseParser& parser);
-	bool GetPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx);
+	bool GetTempPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx); // Valid until TempAllocator calls Allocate again.
 
 	udtVMArrayWithAlloc<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArrayWithAlloc<udtPatternType::Id> _analyzerTypes;

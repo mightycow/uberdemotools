@@ -5,6 +5,9 @@
 #include "analysis_obituaries.hpp"
 #include "analysis_cut_by_pattern.hpp"
 #include "plug_in_converter_quake_to_udt.hpp"
+#include "plug_in_stats.hpp"
+#include "plug_in_raw_commands.hpp"
+#include "plug_in_raw_config_strings.hpp"
 
 // For the placement new operator.
 #include <new>
@@ -20,7 +23,7 @@ void ConstructPlugInT(udtBaseParserPlugIn* address)
 }
 
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) (u32)sizeof(Type),
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) (u32)sizeof(Type),
 const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
@@ -28,7 +31,7 @@ const u32 PlugInByteSizes[udtPrivateParserPlugIn::Count + 1] =
 };
 #undef UDT_PRIVATE_PLUG_IN_ITEM
 
-#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Type, OutputType) &ConstructPlugInT<Type>,
+#define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) &ConstructPlugInT<Type>,
 const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 1] =
 {
 	UDT_PRIVATE_PLUG_IN_LIST(UDT_PRIVATE_PLUG_IN_ITEM)
@@ -41,10 +44,10 @@ udtParserContext::udtParserContext()
 {
 	DemoCount = 0;
 
-	PlugIns.Init(1 << 16);
-	InputIndices.Init(1 << 20);
-	PlugInAllocator.Init(1 << 16);
-	PlugInTempAllocator.Init(1 << 20);
+	PlugIns.Init(1 << 16, "ParserContext::PlugInsArray");
+	InputIndices.Init(1 << 20, "ParserContext::InputIndicesArray");
+	PlugInAllocator.Init(1 << 16, "ParserContext::PlugIn");
+	PlugInTempAllocator.Init(1 << 20, "ParserContext::PlugInTemp");
 
 	Parser.InitAllocators();
 }

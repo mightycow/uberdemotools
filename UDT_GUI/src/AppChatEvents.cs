@@ -13,21 +13,25 @@ namespace Uber.DemoTools
 {
     public class ChatEventDisplayInfo : CuttabbleByTimeDisplayInfo
     {
-        public ChatEventDisplayInfo(int gsIndex, string time, string player, string message)
+        public ChatEventDisplayInfo(int gsIndex, string time, string player, string message, bool teamMessage)
         {
             GameStateIndex = gsIndex;
             Time = time;
             Player = player;
             Message = message;
+            _teamMessage = teamMessage;
         }
 
         public override string ToString()
         {
-            return string.Format("[{0}] <{1}> {2}", Time, Player, Message);
+            return string.Format("[{0}] ({1}) <{2}> {3}", Time, TeamMessage, Player, Message);
         }
 
         public string Player { get; set; }
         public string Message { get; set; }
+        public string TeamMessage { get { return _teamMessage ? "team" : "global"; } }
+
+        private bool _teamMessage;
     }
 
     public class ChatEventsComponent : AppComponent
@@ -136,6 +140,9 @@ namespace Uber.DemoTools
                         case "Time":
                             return App.CompareTimeStrings(y.Time, x.Time);
 
+                        case "TeamMessage":
+                            return x.TeamMessage.CompareTo(y.TeamMessage);
+
                         case "Player":
                             return y.Player.CompareTo(x.Player);
 
@@ -155,7 +162,7 @@ namespace Uber.DemoTools
 
         private void OnChatEventColumnClicked(GridViewColumnHeader column)
         {
-            if(column == null)
+            if(column == null || _chatEventsListView.Items.Count == 0)
             {
                 return;
             }
@@ -198,13 +205,22 @@ namespace Uber.DemoTools
             columnTime.Width = 75;
             columnTime.DisplayMemberBinding = new Binding("Time");
 
+            var columnType = new GridViewColumn();
+            var headerType = new GridViewColumnHeader();
+            headerType.Content = "Scope";
+            headerType.Tag = "TeamMessage";
+            headerType.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnType.Header = headerType;
+            columnType.Width = 50;
+            columnType.DisplayMemberBinding = new Binding("TeamMessage");
+
             var columnName = new GridViewColumn();
-            var headername = new GridViewColumnHeader();
-            headername.Content = "Player Name";
-            headername.Tag = "Player";
-            headername.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
-            columnName.Header = headername;
-            columnName.Width = 175;
+            var headerName = new GridViewColumnHeader();
+            headerName.Content = "Player Name";
+            headerName.Tag = "Player";
+            headerName.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
+            columnName.Header = headerName;
+            columnName.Width = 125;
             columnName.DisplayMemberBinding = new Binding("Player");
 
             var columnMessage = new GridViewColumn();
@@ -220,6 +236,7 @@ namespace Uber.DemoTools
             demoEventsGridView.AllowsColumnReorder = false;
             demoEventsGridView.Columns.Add(columnGS);
             demoEventsGridView.Columns.Add(columnTime);
+            demoEventsGridView.Columns.Add(columnType);
             demoEventsGridView.Columns.Add(columnName);
             demoEventsGridView.Columns.Add(columnMessage);
 

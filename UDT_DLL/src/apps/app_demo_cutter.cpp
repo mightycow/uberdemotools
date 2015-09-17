@@ -12,6 +12,18 @@
 #include <stdlib.h>
 
 
+void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_cutter");
+
+	exit(666);
+}
+
+
 static const char* ConfigFilePath = "udt_cutter.cfg";
 
 static const char* DefaultConfig = 
@@ -50,7 +62,7 @@ struct CutByChatConfig
 		RecursiveSearch = false;
 		UseCustomOutputFolder = false;
 		CustomOutputFolder = NULL;
-		ChatRules.Init(1 << 16);
+		ChatRules.Init(1 << 16, "CutByChatConfig::ChatRulesArray");
 	}
 
 	int MaxThreadCount;
@@ -65,10 +77,12 @@ struct CutByChatConfig
 
 static void InitRule(udtCutByChatRule& rule)
 {
-	rule.CaseSensitive = true;
+	memset(&rule, 0, sizeof(rule));
+	rule.CaseSensitive = 1;
 	rule.ChatOperator = (u32)udtChatOperator::Contains;
-	rule.IgnoreColorCodes = true;
+	rule.IgnoreColorCodes = 1;
 	rule.Pattern = "WAXEDDD";
+	rule.SearchTeamChat = 0;
 }
 
 static bool CreateConfig(const char* filePath)
@@ -128,9 +142,9 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 	const u32 fileLength = (u32)file.Length();
 	file.Close();
 
-	CommandLineTokenizer& tokenizer = context.Tokenizer;
+	idTokenizer& tokenizer = context.Tokenizer;
 
-	udtVMArrayWithAlloc<udtString> lines(1 << 16);
+	udtVMArrayWithAlloc<udtString> lines(1 << 16, "ReadConfig::LinesArray");
 	udtString fileString = udtString::NewRef(fileData, fileLength, fileLength + 1);
 	if(!StringSplitLines(lines, fileString))
 	{
@@ -258,8 +272,8 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 
 static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, const CutByChatConfig& config)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16);
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16);
+	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
+	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -287,7 +301,7 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
 	udtPatternInfo patternInfo;
-	patternInfo.Type = (u32)udtPatternType::GlobalChat;
+	patternInfo.Type = (u32)udtPatternType::Chat;
 	patternInfo.TypeSpecificInfo = &chatInfo;
 
 	udtCutByPatternArg patternArg;
@@ -301,7 +315,7 @@ static bool CutByChatMultiple(const udtFileInfo* files, const u32 fileCount, con
 	const s32 result = udtCutDemoFilesByPattern(&info, &threadInfo, &patternArg);
 	
 	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16);
+	tempAllocator.Init(1 << 16, "CutByChatMultiple::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -351,25 +365,9 @@ static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
 	return udtPath::HasValidDemoFileExtension(name);
 }
 
-static void CrashHandler(const char* message)
+int udt_main(int argc, char** argv)
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_cutter");
-
-	exit(666);
-}
-
-int main(int argc, char** argv)
-{
-	printf("UDT library version: %s\n", udtGetVersionString());
-
-	ResetCurrentDirectory(argv[0]);
 	EnsureConfigExists(ConfigFilePath);
-
-	udtSetCrashHandler(&CrashHandler);
 
 	udtParserContext* const context = udtCreateContext();
 	if(context == NULL)
@@ -380,8 +378,8 @@ int main(int argc, char** argv)
 	CutByChatConfig config;
 	udtVMLinearAllocator configAllocator;
 	udtVMLinearAllocator fileAllocator;
-	configAllocator.Init(1 << 24);
-	fileAllocator.Init(1 << 16);
+	configAllocator.Init(1 << 24, "udt_main::Config");
+	fileAllocator.Init(1 << 16, "udt_main::File");
 	if(!ReadConfig(config, context->Context, configAllocator, fileAllocator, ConfigFilePath))
 	{
 		printf("Could not load config file.\n");
@@ -404,10 +402,7 @@ int main(int argc, char** argv)
 		{
 			fileMode = true;
 		}
-		else if(IsValidDirectory(argv[1]))
-		{
-		}
-		else
+		else if(!IsValidDirectory(argv[1]))
 		{
 			printf("Invalid file/folder path.\n");
 			PrintHelp();
@@ -420,11 +415,11 @@ int main(int argc, char** argv)
 			return CutByChat(argv[1], config) ? 0 : 666;
 		}
 
-		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16);
+		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
 		udtVMLinearAllocator persistAlloc;
 		udtVMLinearAllocator tempAlloc;
-		persistAlloc.Init(1 << 24);
-		tempAlloc.Init(1 << 24);
+		persistAlloc.Init(1 << 24, "udt_main::Persistent");
+		tempAlloc.Init(1 << 24, "udt_main::Temp");
 
 		udtFileListQuery query;
 		memset(&query, 0, sizeof(query));

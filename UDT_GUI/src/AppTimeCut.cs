@@ -370,10 +370,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
             _app.ParseArg.FileOffset = info.FileOffset;
             _app.ParseArg.GameStateIndex = info.GameStateIndex;
 
@@ -387,8 +384,6 @@ namespace Uber.DemoTools
                 var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
                 _app.LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
     }
 }

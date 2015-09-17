@@ -261,7 +261,7 @@ namespace Uber.DemoTools
             var patterns = new List<UDT_DLL.udtPatternInfo>();
             var resources = new UDT_DLL.ArgumentResources();
 
-            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.GlobalChat))
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Chat))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
                 UDT_DLL.CreateChatPatternInfo(ref pattern, resources, config.ChatRules);
@@ -331,16 +331,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
-
-            var resources = threadArg.Resources;
-            resources.GlobalAllocationHandles.Add(outputFolderPtr);
 
             try
             {
+                var resources = threadArg.Resources;
                 var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
                 UDT_DLL.CutDemosByPattern(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
             }

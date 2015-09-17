@@ -252,9 +252,8 @@ typedef enum {
 #define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
 #define	CS_MODELS_68			32
 #define CS_WARMUP_END           13
-#define CS_INTERMISSION_73      14
-#define CS_PAUSE_START          669
-#define CS_PAUSE_COUNTDOWN      670
+#define CS_PAUSE_START_73p		669		// if this is non-zero, the game is paused
+#define CS_PAUSE_COUNTDOWN_73p	670		// 0 = pause, !0 = timeout
 #define CS_CA_ROUND_INFO        661
 #define CS_CA_ROUND_START       662
 #define	CS_PLAYERS_68           544
@@ -280,10 +279,20 @@ typedef enum {
 #define CS_FLAGSTATUS_73p		658
 #define CS_SHADERSTATE_73p		665
 #define CS_PARTICLES_73p		(CS_LOCATIONS_73p + MAX_LOCATIONS)
-// Quake Live 688 689 ???
+
+#define CS_LEVEL_START_TIME_3   13
+#define CS_INTERMISSION_3       14
+
+// Doesn't seem to exist in dm_73. Don't know about dm_90.
+#define CS_SCORES1PLAYER_91p    659 // 1st place player's name
+#define CS_SCORES2PLAYER_91p    660 // 2nd place player's name
+
 // CPMA
 #define CS_CPMA_GAME_INFO       672
 #define CS_CPMA_ROUND_INFO      710
+
+// OSP
+#define CS_OSP_GAMEPLAY         806
 
 #define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
 
@@ -1312,5 +1321,85 @@ struct idItem90
 		AmmoHMG,
 		AmmoPack,
 		Count
+	};
+};
+
+struct idGameType3
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		SP,
+		TDM,
+		CTF,
+		Count
+	};
+};
+
+struct idGameType48p
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		SP,
+		TDM,
+		CTF,
+		OneFlagCTF,
+		Obelisk,
+		Harvester,
+		Count
+	};
+};
+
+struct idGameType68_CPMA
+{
+	enum Id
+	{
+		HM = -1,
+		FFA = 0,
+		Duel = 1,
+		SP = 2,
+		TDM = 3,
+		CTF = 4,
+		CA = 5,
+		FT = 6,
+		CTFS = 7,
+		NTF = 8,
+		TwoVsTwo = 9,
+		Count
+	};
+};
+
+struct idGameType73p
+{
+	enum Id
+	{
+		FFA,
+		Duel,
+		Race,
+		TDM,
+		CA,
+		CTF,
+		OneFlagCTF,
+		Obelisk,
+		Harvester,
+		FT,
+		Domination,
+		CTFS,
+		RedRover,
+		Count
+	};
+};
+
+struct udtGame
+{
+	enum Id
+	{
+		Q3,
+		QL,
+		CPMA,
+		OSP
 	};
 };

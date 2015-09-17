@@ -64,11 +64,17 @@ extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protoc
 extern s32         GetUDTPlayerMODBitFromUDTMod(s32 udtMod); // Returns -1 if unknown or invalid.
 extern s32         GetUDTWeaponFromIdWeapon(s32 idWeapon, udtProtocol::Id protocol);
 extern s32         GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol);
-extern void        LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats);
+extern s32         GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id game);
+extern void        LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& allocator);
 extern bool        StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol);
 extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol);
 extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // Returns -1 if unknown or invalid.
 extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.
+extern bool        GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString);
+extern uptr        ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount);
+extern void        PerfStatsInit(u64* perfStats);
+extern void        PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount);
+extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs);
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.
@@ -92,6 +98,13 @@ namespace idEntityType
 namespace idConfigStringIndex
 {
 	extern s32 FirstPlayer(udtProtocol::Id protocol);
+	extern s32 Intermission(udtProtocol::Id protocol);
+	extern s32 LevelStartTime(udtProtocol::Id protocol);
+	extern s32 WarmUpEndTime(udtProtocol::Id protocol);
+	extern s32 FirstPlacePlayerName(udtProtocol::Id protocol);
+	extern s32 SecondPlacePlayerName(udtProtocol::Id protocol);
+	extern s32 PauseStart(udtProtocol::Id protocol);
+	extern s32 PauseEnd(udtProtocol::Id protocol);
 }
 
 namespace idPowerUpIndex

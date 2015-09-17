@@ -21,6 +21,7 @@ namespace Uber.DemoTools
         public string Value = "";
         public bool CaseSensitive = false;
         public bool IgnoreColors = true;
+        public bool SearchTeamMessages = false;
     }
 
     public class UdtConfig
@@ -51,8 +52,6 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
-        public bool PrintAllocationStats = true;
-        public bool PrintExecutionTime = true;
         public bool ColorLogWarningsAndErrors = false;
         public int FlagCaptureMinCarryTimeMs = 0;
         public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
@@ -62,6 +61,9 @@ namespace Uber.DemoTools
         public int FlickRailMinAngleDeltaSnaps = 2;
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
+        public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
+        public uint PerfStatsEnabled = 0; // All disabled by default.
+        public uint CSharpPerfStatsEnabled = 0; // All disabled by default.
     }
 
     public class MapConversionRule
@@ -107,6 +109,8 @@ namespace Uber.DemoTools
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
+        public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
+        public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -228,19 +232,21 @@ namespace Uber.DemoTools
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
+        private static RoutedCommand _revealDemoCommand = new RoutedCommand();
         private static RoutedCommand _analyzeDemoCommand = new RoutedCommand();
         private static RoutedCommand _convertDemo68Command = new RoutedCommand();
         private static RoutedCommand _convertDemo90Command = new RoutedCommand();
         private static RoutedCommand _mergeDemosCommand = new RoutedCommand();
+        private static RoutedCommand _JSONExportCommand = new RoutedCommand();
         private static RoutedCommand _selectAllDemosCommand = new RoutedCommand();
         private static RoutedCommand _showDemoInfoCommand = new RoutedCommand();
         private static RoutedCommand _clearLogCommand = new RoutedCommand();
         private static RoutedCommand _copyLogCommand = new RoutedCommand();
         private static RoutedCommand _copyChatCommand = new RoutedCommand();
         private static RoutedCommand _copyFragCommand = new RoutedCommand();
+        private IntPtr _cancelOperation = IntPtr.Zero;
 
         public UDT_DLL.udtParseArg ParseArg = new UDT_DLL.udtParseArg();
-        public IntPtr CancelOperation = IntPtr.Zero;
 
         static public App Instance { get; private set; }
 
@@ -316,12 +322,13 @@ namespace Uber.DemoTools
         {
             Instance = this;
 
-            CancelOperation = Marshal.AllocHGlobal(4);
-            Marshal.WriteInt32(CancelOperation, 0);
-
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
+            UDT_DLL.InitLibrary();
+
+            _cancelOperation = Marshal.AllocHGlobal(4);
+            Marshal.WriteInt32(_cancelOperation, 0);
 
             LoadConfig();
 
@@ -350,16 +357,10 @@ namespace Uber.DemoTools
             var manageDemosTab = new TabItem();
             manageDemosTab.Header = "Manage";
             manageDemosTab.Content = CreateManageDemosTab();
-
-            var demosTab = new TabItem();
-            demosTab.Header = "Info";
-            demosTab.Content = CreateDemoInfoTab();
-
-            var chatEvents = new ChatEventsComponent(this);
-            _appComponents.Add(chatEvents);
-            var demoChatTab = new TabItem();
-            demoChatTab.Header = "Chat";
-            demoChatTab.Content = chatEvents.RootControl;
+            
+            var infoTab = new TabItem();
+            infoTab.Header = "Info";
+            infoTab.Content = CreateInfoTab();
 
             _cutByTimeComponent = new CutByTimeComponent(this);
             _appComponents.Add(_cutByTimeComponent);
@@ -372,12 +373,6 @@ namespace Uber.DemoTools
             var cutByPatternTab = new TabItem();
             cutByPatternTab.Header = "Cut by Patterns";
             cutByPatternTab.Content = cutByPattern.RootControl;
-
-            var fragEvents = new FragEventsComponent(this);
-            _appComponents.Add(fragEvents);
-            var demoFragsTab = new TabItem();
-            demoFragsTab.Header = "Deaths";
-            demoFragsTab.Content = fragEvents.RootControl;
 
             var modifiers = new ModifierComponent(this);
             _appComponents.Add(modifiers);
@@ -403,9 +398,7 @@ namespace Uber.DemoTools
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
             tabControl.Margin = new Thickness(5);
             tabControl.Items.Add(manageDemosTab);
-            tabControl.Items.Add(demosTab);
-            tabControl.Items.Add(demoChatTab);
-            tabControl.Items.Add(demoFragsTab);
+            tabControl.Items.Add(infoTab);
             tabControl.Items.Add(cutByTimeTab);
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
@@ -584,10 +577,12 @@ namespace Uber.DemoTools
             demoListView.Initialized += (obj, arg) => { _demoListViewBackground = _demoListView.Background; };
             InitDemoListDeleteCommand();
             InitDemoListSplitCommand();
+            InitDemoListRevealCommand();
             InitDemoListAnalyzeCommand();
             InitDemoListConversion68Command();
             InitDemoListConversion90Command();
             InitDemoListMergeCommand();
+            InitDemoListJSONExportCommand();
             InitDemoListSelectAllCommand();
             InitDemoListContextMenu();
             
@@ -752,6 +747,11 @@ namespace Uber.DemoTools
             splitDemoItem.Command = _splitDemoCommand;
             splitDemoItem.Click += (obj, args) => OnSplitDemoClicked();
 
+            var revealDemoItem = new MenuItem();
+            revealDemoItem.Header = "Reveal in File Explorer";
+            revealDemoItem.Command = _revealDemoCommand;
+            revealDemoItem.Click += (obj, args) => OnRevealDemoClicked();
+
             var analyzeDemoItem = new MenuItem();
             analyzeDemoItem.Header = "Analyze Selected";
             analyzeDemoItem.Command = _analyzeDemoCommand;
@@ -772,6 +772,11 @@ namespace Uber.DemoTools
             mergeDemosItem.Command = _mergeDemosCommand;
             mergeDemosItem.Click += (obj, args) => OnMergeDemosClicked();
 
+            var jsonExportItem = new MenuItem();
+            jsonExportItem.Header = "Save Analysis to .JSON";
+            jsonExportItem.Command = _JSONExportCommand;
+            jsonExportItem.Click += (obj, args) => OnExportDemosToJSONClicked();
+
             var selectAllDemosItem = new MenuItem();
             selectAllDemosItem.Header = CreateContextMenuHeader("Select All", "(Ctrl+A)");
             selectAllDemosItem.Command = _selectAllDemosCommand;
@@ -782,9 +787,12 @@ namespace Uber.DemoTools
             demosContextMenu.Items.Add(convertDemo68Item);
             demosContextMenu.Items.Add(convertDemo90Item);
             demosContextMenu.Items.Add(mergeDemosItem);
+            demosContextMenu.Items.Add(jsonExportItem);
             demosContextMenu.Items.Add(removeDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(splitDemoItem);
+            demosContextMenu.Items.Add(new Separator());
+            demosContextMenu.Items.Add(revealDemoItem);
             demosContextMenu.Items.Add(new Separator());
             demosContextMenu.Items.Add(selectAllDemosItem);
 
@@ -951,6 +959,14 @@ namespace Uber.DemoTools
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
+        private void InitDemoListJSONExportCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _JSONExportCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = true; };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
         private bool CanExecuteSplitCommand()
         {
             var demos = SelectedDemos;
@@ -968,6 +984,21 @@ namespace Uber.DemoTools
             var commandBinding = new CommandBinding();
             commandBinding.Command = _splitDemoCommand;
             commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteSplitCommand(); };
+            _demoListView.CommandBindings.Add(commandBinding);
+        }
+
+        private bool CanExecuteRevealCommand()
+        {
+            var demos = SelectedDemos;
+
+            return demos != null && demos.Count == 1;
+        }
+
+        private void InitDemoListRevealCommand()
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _revealDemoCommand;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = CanExecuteRevealCommand(); };
             _demoListView.CommandBindings.Add(commandBinding);
         }
 
@@ -1036,7 +1067,7 @@ namespace Uber.DemoTools
 
         private void OnQuit()
         {
-            Marshal.WriteInt32(CancelOperation, 1);
+            Marshal.WriteInt32(_cancelOperation, 1);
             SaveConfig();
             _application.Shutdown();
         }
@@ -1200,7 +1231,50 @@ namespace Uber.DemoTools
             return new Tuple<FrameworkElement, FrameworkElement>(new Label { Content = a }, new Label { Content = b });
         }
 
-        private FrameworkElement CreateDemoInfoTab()
+        private FrameworkElement CreateInfoTab()
+        {
+            var generalInfoTab = new TabItem();
+            generalInfoTab.Header = "Info";
+            generalInfoTab.Content = CreateGeneralInfoTab();
+
+            var chatEvents = new ChatEventsComponent(this);
+            _appComponents.Add(chatEvents);
+            var chatTab = new TabItem();
+            chatTab.Header = "Chat";
+            chatTab.Content = chatEvents.RootControl;
+
+            var deathEvents = new FragEventsComponent(this);
+            _appComponents.Add(deathEvents);
+            var deathsTab = new TabItem();
+            deathsTab.Header = "Obituaries";
+            deathsTab.Content = deathEvents.RootControl;
+
+            var stats = new StatsComponent(this);
+            _appComponents.Add(stats);
+            var statsTab = new TabItem();
+            statsTab.Header = "Scores and Stats";
+            statsTab.Content = stats.RootControl;
+
+            var commands = new CommandsComponent(this);
+            _appComponents.Add(commands);
+            var commandsTab = new TabItem();
+            commandsTab.Header = "Commands";
+            commandsTab.Content = commands.RootControl;
+
+            var tabControl = new TabControl();
+            tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
+            tabControl.VerticalAlignment = VerticalAlignment.Stretch;
+            tabControl.Margin = new Thickness(5);
+            tabControl.Items.Add(generalInfoTab);
+            tabControl.Items.Add(chatTab);
+            tabControl.Items.Add(deathsTab);
+            tabControl.Items.Add(statsTab);
+            tabControl.Items.Add(commandsTab);
+
+            return tabControl;
+        }
+
+        private FrameworkElement CreateGeneralInfoTab()
         {
             var configStringGridView = new GridView();
             configStringGridView.AllowsColumnReorder = false;
@@ -1317,6 +1391,14 @@ namespace Uber.DemoTools
             mergeDemosButton.ToolTip = "Merge multiple demos into a single output demo\nThis is for demos of the same match only";
             mergeDemosButton.Click += (obj, args) => OnMergeDemosClicked();
 
+            var jsonExportButton = new Button();
+            jsonExportButton.Content = "=> .JSON";
+            jsonExportButton.Width = 75;
+            jsonExportButton.Height = 25;
+            jsonExportButton.Margin = new Thickness(5);
+            jsonExportButton.ToolTip = "Export demo analysis data to .JSON files\nYou can enable/disable analyzers in the Settings tab";
+            jsonExportButton.Click += (obj, args) => OnExportDemosToJSONClicked();
+
             var multiDemoActionButtonsPanel = new StackPanel();
             multiDemoActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
             multiDemoActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
@@ -1326,6 +1408,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
             multiDemoActionButtonsPanel.Children.Add(convert90Button);
             multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
+            multiDemoActionButtonsPanel.Children.Add(jsonExportButton);
 
             var multiDemoActionButtonsGroupBox = new GroupBox();
             multiDemoActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1640,6 +1723,28 @@ namespace Uber.DemoTools
             StartJobThread(DemoMergeThread, demos);
         }
 
+        private void OnExportDemosToJSONClicked()
+        {
+            var demos = SelectedDemos;
+            if(demos == null || demos.Count == 0)
+            {
+                LogError("No demo selected. Please select at least one to proceed.");
+                return;
+            }
+
+            if(Config.JSONPlugInsEnabled == 0)
+            {
+                LogError("No analyzer selected. Please select at least one to proceed.");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+            SaveBothConfigs();
+
+            JoinJobThread();
+            StartJobThread(JSONDemoExportThread, demos);
+        }
+
         public delegate void VoidDelegate();
 
         private void AddDemoToListView(DemoDisplayInfo info)
@@ -1696,8 +1801,15 @@ namespace Uber.DemoTools
 
         public void InitParseArg()
         {
-            Marshal.WriteInt32(CancelOperation, 0);
-            ParseArg.CancelOperation = CancelOperation;
+            if(ParseArg.OutputFolderPath != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(ParseArg.OutputFolderPath);
+            }
+
+            var outputFolder = GetOutputFolder();
+            Marshal.WriteInt32(_cancelOperation, 0);
+            ParseArg.CancelOperation = _cancelOperation;
+            ParseArg.PerformanceStats = UDT_DLL.BatchPerfStats;
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
@@ -1707,9 +1819,9 @@ namespace Uber.DemoTools
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
             ParseArg.Flags = 0;
-            if(Config.PrintAllocationStats)
+            if(outputFolder != null)
             {
-                ParseArg.Flags |= (uint)UDT_DLL.udtParseArgFlags.PrintAllocStats;
+                ParseArg.OutputFolderPath = UDT_DLL.StringToHGlobalUTF8(outputFolder);
             }
         }
 
@@ -1722,10 +1834,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1746,7 +1855,6 @@ namespace Uber.DemoTools
 
             if(newDemos == null || newDemos.Count == 0)
             {
-                Marshal.FreeHGlobal(outputFolderPtr);
                 return;
             }
 
@@ -1761,10 +1869,11 @@ namespace Uber.DemoTools
                 demos[i].Generic = newDemo.Generic;
                 demos[i].InputIndex = newDemo.InputIndex;
                 demos[i].Protocol = newDemo.Protocol;
+                demos[i].ProtocolNumber = newDemo.ProtocolNumber;
                 demos[i].FilePath = newDemo.FilePath;
+                demos[i].MatchStats = newDemo.MatchStats;
+                demos[i].Commands = newDemo.Commands;
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
             _window.Dispatcher.Invoke(infoUpdater);
@@ -1781,10 +1890,7 @@ namespace Uber.DemoTools
 
             var demos = threadData.Demos;
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1800,8 +1906,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while converting demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void DemoMergeThread(object arg)
@@ -1813,10 +1917,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -1832,13 +1933,47 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while merging demos: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
-        public static string FormatPerformanceTime(Stopwatch timer)
+        private void JSONDemoExportThread(object arg)
         {
-            var msecTotal = timer.ElapsedMilliseconds;
+            var demos = arg as List<DemoInfo>;
+            if(demos == null)
+            {
+                LogError("Invalid thread argument type");
+                return;
+            }
+
+            var filePaths = new List<string>();
+            foreach(var demo in demos)
+            {
+                filePaths.Add(demo.FilePath);
+            }
+
+            InitParseArg();
+
+            var plugIns = new List<UInt32>();
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                if(BitManip.IsBitSet(Config.JSONPlugInsEnabled, i))
+                {
+                    plugIns.Add((UInt32)i);
+                }
+            }
+
+            try
+            {
+                UDT_DLL.ExportDemosDataToJSON(ref ParseArg, filePaths, Config.MaxThreadCount, plugIns.ToArray());
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while exporting demo analysis data to .JSON files: {0}", exception.Message);
+            }
+        }
+
+        public static string FormatPerformanceTime(long elapsedMs)
+        {
+            var msecTotal = elapsedMs;
             if(msecTotal < 1000)
             {
                 return msecTotal.ToString() + "ms";
@@ -2047,10 +2182,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             InitParseArg();
-            ParseArg.OutputFolderPath = outputFolderPtr;
 
             try
             {
@@ -2061,8 +2193,6 @@ namespace Uber.DemoTools
             {
                 LogError("Caught an exception while splitting a demo: {0}", exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
 
         private void OnSplitDemoClicked()
@@ -2085,6 +2215,25 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private void OnRevealDemoClicked()
+        {
+            var demo = SelectedDemo;
+            if(demo == null)
+            {
+                LogError("No demo selected. Please select one to proceed.");
+                return;
+            }
+
+            try
+            {
+                Process.Start("explorer.exe", "/select," + demo.FilePath);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open demo in the file explorer: " + exception.Message);
+            }
         }
 
         private void OnAnalyzeDemoClicked()
@@ -2248,7 +2397,7 @@ namespace Uber.DemoTools
 
         private void OnCancelJobClicked()
         {
-            Marshal.WriteInt32(CancelOperation, 1);
+            Marshal.WriteInt32(_cancelOperation, 1);
             LogWarning("Job canceled!");
         }
 
@@ -2323,12 +2472,12 @@ namespace Uber.DemoTools
 
         public void LogWarningNoColor(string message, params object[] args)
         {
-            LogMessageNoColor("WARNING: " + string.Format(message, args));
+            LogMessageNoColor("WARNING: " + SafeStringFormat(message, args));
         }
 
         public void LogErrorNoColor(string message, params object[] args)
         {
-            LogMessageNoColor("ERROR: " + string.Format(message, args));
+            LogMessageNoColor("ERROR: " + SafeStringFormat(message, args));
         }
 
         private void LogMessageWithColor(string message, Color color)
@@ -2347,17 +2496,17 @@ namespace Uber.DemoTools
 
         public void LogWarningWithColor(string message, params object[] args)
         {
-            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 127, 0));
+            LogMessageWithColor(SafeStringFormat(message, args), Color.FromRgb(255, 127, 0));
         }
 
         public void LogErrorWithColor(string message, params object[] args)
         {
-            LogMessageWithColor(string.Format(message, args), Color.FromRgb(255, 0, 0));
+            LogMessageWithColor(SafeStringFormat(message, args), Color.FromRgb(255, 0, 0));
         }
 
         public void LogInfo(string message, params object[] args)
         {
-            LogMessageNoColor(string.Format(message, args));
+            LogMessageNoColor(SafeStringFormat(message, args));
         }
 
         public void LogWarning(string message, params object[] args)
@@ -2381,6 +2530,34 @@ namespace Uber.DemoTools
             else
             {
                 LogErrorNoColor(message, args);
+            }
+        }
+
+        static private string SafeStringFormat(string format, params object[] args)
+        {
+            if(args == null || args.Length == 0)
+            {
+                return format;
+            }
+            
+            try
+            {
+                return string.Format(format, args);
+            }
+            catch
+            {
+                var builder = new StringBuilder();
+                builder.Append("string.Format of this failed: ");
+                builder.Append(format);
+                for(var i = 0; i < args.Length; ++i)
+                {
+                    builder.Append(", arg");
+                    builder.Append(i.ToString());
+                    builder.Append("=");
+                    builder.Append(args[i]);
+                }
+
+                return builder.ToString();
             }
         }
 
@@ -2427,13 +2604,33 @@ namespace Uber.DemoTools
             SetProgressThreadSafe(100.0 * (double)progress);
         }
 
+        static private string GetTextFromLogItem(object item)
+        {
+            if(item == null)
+            {
+                return null;
+            }
+
+            if(item is string)
+            {
+                return item as string;
+            }
+
+            if(item is TextBlock)
+            {
+                return (item as TextBlock).Text;
+            }
+
+            return null;
+        }
+
         private string GetLog()
         {
             var stringBuilder = new StringBuilder();
 
             foreach(var item in _logListBox.Items)
             {
-                var line = item as string;
+                var line = GetTextFromLogItem(item);
                 if(line == null)
                 {
                     continue;
@@ -2462,7 +2659,7 @@ namespace Uber.DemoTools
             var items = _logListBox.SelectedItems;
             foreach(var item in items)
             {
-                var line = item as string;
+                var line = GetTextFromLogItem(item);
                 if(line == null)
                 {
                     continue;

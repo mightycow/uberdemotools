@@ -8,12 +8,17 @@
 static const char* EmptyString = "";
 
 
-u32	CommandLineTokenizer::GetArgCount() const
+const char* idTokenizer::GetOriginalCommand() const
+{
+	return _originalCommand;
+}
+
+u32	idTokenizer::GetArgCount() const
 {
 	return _argCount;
 }
 
-const char* CommandLineTokenizer::GetArgString(u32 arg) const
+const char* idTokenizer::GetArgString(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -23,7 +28,7 @@ const char* CommandLineTokenizer::GetArgString(u32 arg) const
 	return _argStrings[arg];	
 }
 
-u32 CommandLineTokenizer::GetArgLength(u32 arg) const
+u32 idTokenizer::GetArgLength(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -33,7 +38,17 @@ u32 CommandLineTokenizer::GetArgLength(u32 arg) const
 	return _argLengths[arg];
 }
 
-udtString CommandLineTokenizer::GetArg(u32 arg) const
+u32 idTokenizer::GetArgOffset(u32 arg) const
+{
+	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
+	{
+		return 0;
+	}
+
+	return _argOffsets[arg];
+}
+
+udtString idTokenizer::GetArg(u32 arg) const
 {
 	if(arg >= _argCount || arg >= MAX_STRING_TOKENS)
 	{
@@ -43,7 +58,7 @@ udtString CommandLineTokenizer::GetArg(u32 arg) const
 	return udtString::NewConstRef(_argStrings[arg], _argLengths[arg]);
 }
 
-void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
+void idTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 {
 	// clear previous args
 	_argCount = 0;
@@ -53,6 +68,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 
 	Q_strncpyz(_originalCommand, text, sizeof(_originalCommand));
 
+	const char* const in = text;
 	char* out = _tokenizedCommand;
 
 	for(;;)
@@ -103,6 +119,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 		if(!ignoreQuotes && *text == '"')
 		{
 			_argStrings[_argCount] = out;
+			_argOffsets[_argCount] = (u32)(text - in);
 			_argCount++;
 			text++;
 			while(*text && *text != '"')
@@ -120,6 +137,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 
 		// regular token
 		_argStrings[_argCount] = out;
+		_argOffsets[_argCount] = (u32)(text - in);
 		_argCount++;
 
 		// skip until whitespace, quote, or command
@@ -153,7 +171,7 @@ void CommandLineTokenizer::TokenizeImpl(const char* text, bool ignoreQuotes)
 	}
 }
 
-void CommandLineTokenizer::RegisterArgLengths()
+void idTokenizer::RegisterArgLengths()
 {
 	if(_argCount == 0)
 	{
@@ -170,7 +188,7 @@ void CommandLineTokenizer::RegisterArgLengths()
 	_argLengths[lastIndex] = (u32)strlen(_argStrings[lastIndex]);
 }
 
-void CommandLineTokenizer::Tokenize(const char* text, bool ignoreQuotes)
+void idTokenizer::Tokenize(const char* text, bool ignoreQuotes)
 {
 	TokenizeImpl(text, ignoreQuotes);
 	RegisterArgLengths();

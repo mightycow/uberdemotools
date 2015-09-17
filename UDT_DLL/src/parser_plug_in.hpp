@@ -65,7 +65,7 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		ArraysAllocator.Init((uptr)demoCount * (uptr)sizeof(ArrayInfo));
+		ArraysAllocator.Init((uptr)demoCount * (uptr)sizeof(ArrayInfo), "ParserPlugIn::ArraysArray");
 		Arrays.SetAllocator(ArraysAllocator);
 		Arrays.Resize(demoCount);
 		InitAllocators(demoCount);
@@ -128,7 +128,7 @@ protected:
 	virtual void FinishDemoAnalysis() {}
 
 	udtVMLinearAllocator FinalAllocator; // The allocator that will allocate the final array.
-	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this once.
+	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
 	
 private:
 	struct ArrayInfo

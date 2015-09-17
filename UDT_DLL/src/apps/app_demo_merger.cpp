@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-static void CrashHandler(const char* message)
+void CrashHandler(const char* message)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, message);
@@ -37,18 +37,13 @@ static int MergeDemos(char** filePaths, int fileCount)
 	return (udtMergeDemoFiles(&info, (const char**)filePaths, (u32)fileCount) == (s32)udtErrorCode::None) ? 0 : __LINE__;
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{
 		PrintHelp();
 		return 1;
 	}
-
-	printf("UDT library version: %s\n", udtGetVersionString());
-
-	ResetCurrentDirectory(argv[0]);
-	udtSetCrashHandler(&CrashHandler);
 
 	return MergeDemos(argv + 1, argc - 1);
 }

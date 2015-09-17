@@ -664,20 +664,132 @@ s32 GetUDTWeaponFromIdMod(s32 idMod, udtProtocol::Id protocol)
 	return -1;
 }
 
-void LogLinearAllocatorStats(u32 threadCount, u32 fileCount, udtContext& context, udtVMLinearAllocator& allocator, const udtVMLinearAllocator::Stats& stats)
+s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id game)
 {
-	char* bytes;
-	context.LogInfo("File count: %u", fileCount);
-	context.LogInfo("Thread count: %u", threadCount);
-	context.LogInfo("Allocator count: %u", stats.AllocatorCount);
-	FormatBytes(bytes, allocator, stats.ReservedByteCount);
-	context.LogInfo("Reserved memory: %s", bytes);
-	FormatBytes(bytes, allocator, stats.CommittedByteCount);
-	context.LogInfo("Committed memory: %s", bytes);
-	FormatBytes(bytes, allocator, stats.UsedByteCount);
-	context.LogInfo("Used memory: %s", bytes);
-	const f64 efficiency = 100.0 * ((f64)stats.UsedByteCount / (f64)stats.CommittedByteCount);
-	context.LogInfo("Physical memory pages usage: %.1f%%", (f32)efficiency);
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	if(protocol <= udtProtocol::Dm68 &&
+	   game == udtGame::OSP && 
+	   gt == 2)
+	{
+		// OSP replaced "Single Player" with "ClanBase TDM".
+		return (s32)udtGameType::CBTDM;
+	}
+
+	if(protocol == udtProtocol::Dm3)
+	{
+		switch((idGameType3::Id)gt)
+		{
+			case idGameType3::FFA: return (s32)udtGameType::FFA;
+			case idGameType3::Duel: return (s32)udtGameType::Duel;
+			case idGameType3::SP: return (s32)udtGameType::SP;
+			case idGameType3::TDM: return (s32)udtGameType::TDM;
+			case idGameType3::CTF: return (s32)udtGameType::CTF;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68 && game != udtGame::CPMA)
+	{
+		switch((idGameType48p::Id)gt)
+		{
+			case idGameType48p::FFA: return (s32)udtGameType::FFA;
+			case idGameType48p::Duel: return (s32)udtGameType::Duel;
+			case idGameType48p::SP: return (s32)udtGameType::SP;
+			case idGameType48p::TDM: return (s32)udtGameType::TDM;
+			case idGameType48p::CTF: return (s32)udtGameType::CTF;
+			case idGameType48p::OneFlagCTF: return (s32)udtGameType::OneFlagCTF;
+			case idGameType48p::Obelisk: return (s32)udtGameType::Obelisk;
+			case idGameType48p::Harvester: return (s32)udtGameType::Harvester;
+			default: return -1;
+		}
+	}
+	else if(protocol >= udtProtocol::Dm73)
+	{
+		switch((idGameType73p::Id)gt)
+		{
+			case idGameType73p::FFA: return (s32)udtGameType::FFA;
+			case idGameType73p::Duel: return (s32)udtGameType::Duel;
+			case idGameType73p::Race: return (s32)udtGameType::Race;
+			case idGameType73p::TDM: return (s32)udtGameType::TDM;
+			case idGameType73p::CA: return (s32)udtGameType::CA;
+			case idGameType73p::CTF: return (s32)udtGameType::CTF;
+			case idGameType73p::OneFlagCTF: return (s32)udtGameType::OneFlagCTF;
+			case idGameType73p::Obelisk: return (s32)udtGameType::Obelisk;
+			case idGameType73p::Harvester: return (s32)udtGameType::Harvester;
+			case idGameType73p::FT: return (s32)udtGameType::FT;
+			case idGameType73p::Domination: return (s32)udtGameType::Domination;
+			case idGameType73p::CTFS: return (s32)udtGameType::CTFS;
+			case idGameType73p::RedRover: return (s32)udtGameType::RedRover;
+			default: return -1;
+		}
+	}
+	else if(protocol <= udtProtocol::Dm68 && game == udtGame::CPMA)
+	{
+		switch((idGameType68_CPMA::Id)gt)
+		{
+			case idGameType68_CPMA::HM: return (s32)udtGameType::HM;
+			case idGameType68_CPMA::FFA: return (s32)udtGameType::FFA;
+			case idGameType68_CPMA::Duel: return (s32)udtGameType::Duel;
+			case idGameType68_CPMA::SP: return (s32)udtGameType::SP;
+			case idGameType68_CPMA::TDM: return (s32)udtGameType::TDM;
+			case idGameType68_CPMA::CTF: return (s32)udtGameType::CTF;
+			case idGameType68_CPMA::CA: return (s32)udtGameType::CA;
+			case idGameType68_CPMA::FT: return (s32)udtGameType::FT;
+			case idGameType68_CPMA::CTFS: return (s32)udtGameType::CTFS;
+			case idGameType68_CPMA::NTF: return (s32)udtGameType::NTF;
+			case idGameType68_CPMA::TwoVsTwo: return (s32)udtGameType::TwoVsTwo;
+			default: return -1;
+		}
+	}
+
+	return -1;
+}
+
+void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tempAllocator)
+{
+	u32 allocatorCount = 256;
+	udtVMLinearAllocator** const allocators = (udtVMLinearAllocator**)tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * allocatorCount);
+	udtVMLinearAllocator::GetThreadAllocators(allocatorCount, allocators);
+
+	char* unusedMemory = NULL;
+	char* reservedMemory = NULL;
+	uptr totalUnused = 0;
+	uptr totalReserved = 0;
+	uptr unusedPc = 0;
+	context.LogInfo("Thread allocator count: %u", allocatorCount);
+	for(u32 i = 0; i < allocatorCount; ++i)
+	{
+		udtVMLinearAllocator& allocator = *allocators[i];
+		if(allocator.GetReservedByteCount() == 0)
+		{
+			continue;
+		}
+
+		const char* name = allocator.GetName();
+		if(name == NULL)
+		{
+			name = "noname";
+		}
+
+		const uptr lowestUnusedByteCount = allocator.GetReservedByteCount() - allocator.GetPeakUsedByteCount();
+		totalUnused += lowestUnusedByteCount;
+		totalReserved += allocator.GetReservedByteCount();
+		unusedPc = (100 * lowestUnusedByteCount) / allocator.GetReservedByteCount();
+
+		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
+		FormatBytes(unusedMemory, tempAllocator, (u64)lowestUnusedByteCount);
+		FormatBytes(reservedMemory, tempAllocator, (u64)allocator.GetReservedByteCount());
+		context.LogInfo("- %s: reserved %s - unused %s (%u%%)", name, reservedMemory, unusedMemory, (u32)unusedPc);
+	}
+
+	unusedPc = (100 * totalUnused) / totalReserved;
+	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
+	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
+	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, (u32)unusedPc);
+	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
 }
 
 bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
@@ -800,6 +912,90 @@ const char* GetUDTModName(s32 mod)
 	return MeansOfDeathNames[mod];
 }
 
+bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString)
+{
+	if(configString == NULL)
+	{
+		return false;
+	}
+
+	hasClan = false;
+
+	udtString clanAndPlayer;
+	if(!ParseConfigStringValueString(clanAndPlayer, allocator, "n", configString))
+	{
+		return false;
+	}
+
+	// "xcn" was for the full clan name, "c" for the country.
+	if(protocol <= udtProtocol::Dm90 &&
+	   ParseConfigStringValueString(clan, allocator, "cn", configString))
+	{
+		hasClan = true;
+		player = clanAndPlayer;
+		return true;
+	}
+
+	// Some QuakeCon 2015 demos have a '.' between the clan tag and player name.
+	// Some of them have no separator at all and I don't see how the ambiguity can be resolved. :-(
+	u32 firstSeparatorIdx = 0;
+	if(protocol <= udtProtocol::Dm90 ||
+	   !udtString::FindFirstCharacterListMatch(firstSeparatorIdx, clanAndPlayer, udtString::NewConstRef(" .")))
+	{
+		player = clanAndPlayer;
+		return true;
+	}
+
+	// There can be multiple spaces...
+	u32 lastSeparatorIdx = 0;
+	udtString::FindLastCharacterListMatch(lastSeparatorIdx, clanAndPlayer, udtString::NewConstRef(" ."));
+
+	hasClan = true;
+	clan = udtString::NewSubstringClone(allocator, clanAndPlayer, 0, firstSeparatorIdx);
+	player = udtString::NewSubstringClone(allocator, clanAndPlayer, lastSeparatorIdx + 1);
+
+	return true;
+}
+
+uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount)
+{
+	if(demoCount < demoCountThreshold)
+	{
+		return bigByteCount * (uptr)demoCount;
+	}
+
+	const uptr byteCount1 = bigByteCount * (uptr)demoCountThreshold;
+	const uptr byteCount2 = smallByteCount * (uptr)demoCount;
+	const uptr byteCount = udt_max(byteCount1, byteCount2);
+
+	return byteCount;
+}
+
+void PerfStatsInit(u64* perfStats)
+{
+	memset(perfStats, 0, sizeof(u64) * (size_t)udtPerfStatsField::Count);
+}
+
+void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
+{
+	udtVMLinearAllocator::Stats allocStats;
+	udtVMLinearAllocator::GetThreadStats(allocStats);
+	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
+	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
+	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
+}
+
+void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
+{
+	perfStats[udtPerfStatsField::Duration] = durationMs;
+	perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
+	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
+	perfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted];
+}
+
 namespace idEntityEvent
 {
 	s32 Obituary(udtProtocol::Id protocol)
@@ -837,6 +1033,63 @@ namespace idConfigStringIndex
 	s32 FirstPlayer(udtProtocol::Id protocol)
 	{
 		return (protocol <= udtProtocol::Dm68) ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
+	}
+
+	s32 Intermission(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return (s32)CS_INTERMISSION_3;
+			case udtProtocol::Dm48:
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)CS_INTERMISSION_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)CS_INTERMISSION_73p;
+			default: return -1;
+		}
+	}
+
+	s32 LevelStartTime(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return (s32)CS_LEVEL_START_TIME_3;
+			case udtProtocol::Dm48:
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return (s32)CS_LEVEL_START_TIME_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return (s32)CS_LEVEL_START_TIME_73p;
+			default: return -1;
+		}
+	}
+
+	s32 WarmUpEndTime(udtProtocol::Id /*protocol*/)
+	{
+		return (s32)CS_WARMUP;
+	}
+
+	s32 FirstPlacePlayerName(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES1PLAYER_91p : -1;
+	}
+
+	s32 SecondPlacePlayerName(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES2PLAYER_91p : -1;
+	}
+
+	s32 PauseStart(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm73 ? (s32)CS_PAUSE_START_73p : -1;
+	}
+
+	s32 PauseEnd(udtProtocol::Id protocol)
+	{
+		return protocol >= udtProtocol::Dm73 ? (s32)CS_PAUSE_COUNTDOWN_73p : -1;
 	}
 }
 

@@ -11,11 +11,13 @@
 #include "converter_entity_timer_shifter.hpp"
 #include "path.hpp"
 #include "memory_stream.hpp"
+#include "json_export.hpp"
 
 
 bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo)
 {
-	if(jobType == udtParsingJobType::General)
+	if(jobType == udtParsingJobType::General ||
+	   jobType == udtParsingJobType::ExportToJSON)
 	{
 		for(u32 i = 0; i < info.PlugInCount; ++i)
 		{
@@ -173,7 +175,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	}
 
 	// Save the cut sections in a temporary array.
-	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16);
+	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
 	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
 		sections.Add(plugIn.CutSections[i]);
@@ -394,7 +396,51 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
 }
 
-bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
+static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& allocator, const udtString& inputFilePath, const char* outputFolderPath)
+{
+	udtString inputFileName;
+	if(udtString::IsNullOrEmpty(inputFilePath) ||
+	   !udtPath::GetFileNameWithoutExtension(inputFileName, allocator, inputFilePath))
+	{
+		inputFileName = udtString::NewConstRef("UNKNOWN_UDT_DEMO");
+	}
+
+	udtString outputFilePathStart; // The full output path without the extension.
+	if(outputFolderPath != NULL)
+	{
+		udtPath::Combine(outputFilePathStart, allocator, udtString::NewConstRef(outputFolderPath), inputFileName);
+	}
+	else
+	{
+		udtPath::GetFilePathWithoutExtension(outputFilePathStart, allocator, inputFilePath);
+	}
+
+	outputFilePath = udtString::NewFromConcatenating(allocator, outputFilePathStart, udtString::NewConstRef(".json"));
+}
+
+static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath)
+{
+	if(!ParseDemoFile(context, info, demoFilePath, false))
+	{
+		return false;
+	}
+
+	udtVMLinearAllocator& tempAllocator = context->PlugInTempAllocator;
+	tempAllocator.Clear();
+
+	udtVMScopedStackAllocator allocatorScope(tempAllocator);
+
+	udtString jsonFilePath;
+	CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
+	if(!ExportPlugInsDataToJSON(context, demoIndex, jsonFilePath.String))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
 {
 	switch(jobType)
 	{
@@ -409,6 +455,9 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 
 		case udtParsingJobType::TimeShift:
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
+
+		case udtParsingJobType::ExportToJSON:
+			return ExportToJSON(context, demoIndex, info, demoFilePath);
 
 		default:
 			return false;
@@ -449,6 +498,13 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 
 s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo)
 {
+	udtTimer jobTimer;
+	jobTimer.Start();
+	if(info->PerformanceStats != NULL)
+	{
+		PerfStatsInit(info->PerformanceStats);
+	}
+
 	bool customContext = false;
 	if(context == NULL)
 	{
@@ -465,10 +521,10 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	udtTimer timer;
-	timer.Start();
+	udtTimer progressTimer;
+	progressTimer.Start();
 
-	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount);
+	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
 	fileSizes.Resize(extraInfo->FileCount);
 
 	u64 totalByteCount = 0;
@@ -487,7 +543,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	}
 
 	SingleThreadProgressContext progressContext;
-	progressContext.Timer = &timer;
+	progressContext.Timer = &progressTimer;
 	progressContext.UserCallback = info->ProgressCb;
 	progressContext.UserData = info->ProgressContext;
 	progressContext.CurrentJobByteCount = 0;
@@ -508,22 +564,22 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const bool success = ProcessSingleDemoFile(jobType, context, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
+		const bool success = ProcessSingleDemoFile(jobType, context, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
 	}
 
-	if((info->Flags & (u32)udtParseArgFlags::PrintAllocStats) != 0)
+	if(info->PerformanceStats != NULL)
 	{
-		udtVMLinearAllocator::Stats allocStats;
-		udtVMLinearAllocator::GetThreadStats(allocStats);
-		const uptr extraByteCount = (uptr)sizeof(udtParserContext);
-		allocStats.CommittedByteCount += extraByteCount;
-		allocStats.UsedByteCount += extraByteCount;
-		context->Parser._tempAllocator.Clear();
-		LogLinearAllocatorStats(1, extraInfo->FileCount, context->Context, context->Parser._tempAllocator, allocStats);
+		PerfStatsAddCurrentThread(info->PerformanceStats, totalByteCount);
+		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedMs());
 	}
+
+#if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
+	context->Parser._tempAllocator.Clear();
+	LogLinearAllocatorDebugStats(context->Context, context->Parser._tempAllocator);
+#endif
 
 	if(customContext)
 	{
@@ -604,7 +660,7 @@ struct DemoMerger
 		_fileCount = fileCount;
 
 		udtVMLinearAllocator tempAllocator;
-		if(!tempAllocator.Init(1 << 16))
+		if(!tempAllocator.Init(1 << 16, "DemoMerger::MergeDemos::Temp"))
 		{
 			return false;
 		}
@@ -797,7 +853,7 @@ struct DemoMerger
 bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32 fileCount, udtProtocol::Id protocol)
 {
 	udtVMLinearAllocator allocator;
-	allocator.Init(1 << 24);
+	allocator.Init(1 << 24, "MergeDemosNoInputCheck::Temp");
 	udtVMScopedStackAllocator allocatorScope(allocator);
 	DemoMerger* const merger = allocatorScope.NewObject<DemoMerger>();
 

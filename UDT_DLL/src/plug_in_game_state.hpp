@@ -5,6 +5,7 @@
 #include "parser_plug_in.hpp"
 #include "array.hpp"
 #include "string.hpp"
+#include "analysis_general.hpp"
 #include "api.h"
 
 
@@ -33,51 +34,19 @@ private:
 	void AddCurrentMatchIfValid();
 	void AddCurrentPlayersIfValid();
 	void AddCurrentGameState();
-	void ProcessCpmaGameInfo(const char* commandString, udtBaseParser& parser);
-	void ProcessCpmaTwTs(s32 tw, s32 ts, s32 serverTimeMs);
-	void ProcessQlServerInfo(const char* commandString, udtBaseParser& parser);
-	void ProcessDemoTakerName(s32 playerIndex, const udtBaseParser::udtConfigString* configStrings, udtProtocol::Id protocol);
+	void ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol);
 	void ProcessSystemAndServerInfo(const udtString& configStrings);
-	void ProcessPlayerInfo(s32 playerIndex, const udtBaseParser::udtConfigString& configString);
+	void ProcessPlayerInfo(s32 playerIndex, const udtString& configString);
 
 private:
-	// "gamename" in cs 0.
-	struct udtGameType
-	{
-		enum Id
-		{
-			BaseQ3, // baseq3, osp, etc
-			CPMA,
-			QL
-		};
-	};
-
-	// "g_gameState" in cs 0.
-	struct udtGameStateQL
-	{
-		enum Id
-		{
-			Invalid,
-			PreGame,
-			CountDown,
-			InProgress
-		};
-	};
-
+	udtGeneralAnalyzer _analyzer;
 	udtGameStatePlayerInfo _playerInfos[64];
 	udtVMArray<udtParseDataGameState> _gameStates; // The final array.
 	udtVMArrayWithAlloc<udtMatchInfo> _matches;
 	udtVMArrayWithAlloc<udtGameStateKeyValuePair> _keyValuePairs; // Key/value pairs from config strings 0 and 1.
 	udtVMArrayWithAlloc<udtGameStatePlayerInfo> _players;
 	udtVMLinearAllocator _stringAllocator; // For the key/value pairs and the demo taker's name.
-
 	udtParseDataGameState _currentGameState;
 	udtMatchInfo _currentMatch;
-
-	udtGameType::Id _gameType;
-	udtGameStateQL::Id _gameStateQL;
 	udtProtocol::Id _protocol;
-
-	bool _firstGameState;
-	bool _nextSnapshotIsWarmUpEnd;
 };

@@ -96,6 +96,20 @@ bool udtPath::GetFileNameWithoutExtension(udtString& fileNameNoExt, udtVMLinearA
 	return true;
 }
 
+bool udtPath::GetFilePathWithoutExtension(udtString& filePathNoExt, udtVMLinearAllocator& allocator, const udtString& filePath)
+{
+	u32 dotIndex = 0;
+	if(!udtString::FindLastCharacterMatch(dotIndex, filePath, '.'))
+	{
+		filePathNoExt = udtString::NewSubstringClone(allocator, filePath, 0);
+		return true;
+	}
+
+	filePathNoExt = udtString::NewSubstringClone(allocator, filePath, 0, dotIndex);
+
+	return true;
+}
+
 bool udtPath::GetFolderPath(udtString& folderPath, udtVMLinearAllocator& allocator, const udtString& filePath)
 {
 	u32 lastSeparatorIndex = (u32)-1;

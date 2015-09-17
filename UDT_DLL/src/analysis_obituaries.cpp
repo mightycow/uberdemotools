@@ -7,10 +7,10 @@ void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& 
 {
 	if(_enableNameAllocation)
 	{
-		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::PlayerNames");
 	}
 
-	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::ObituariesArray");
 	_tempAllocator = &tempAllocator;
 	Obituaries.SetAllocator(finalAllocator);
 }
@@ -73,22 +73,18 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	}
 
 	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
-	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(firstPlayerCsIdx + playerIdx);
-	if(cs == NULL)
-	{
-		return NULL;
-	}
+	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].String;
 
-	udtString playerName;
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", cs->String))
+
+	udtString clan, player;
+	bool hasClan;
+	if(!GetClanAndPlayerName(clan, player, hasClan, *_tempAllocator, parser._inProtocol, cs))
 	{
 		return NULL;
 	}
 
-	udtString::CleanUp(playerName, parser._inProtocol);
-
-	return AllocateString(_playerNamesAllocator, playerName.String);
+	return udtString::NewCleanCloneFromRef(_playerNamesAllocator, parser._inProtocol, player).String;
 }
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
@@ -96,20 +92,20 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csFirstPlayerIdx + i);
-		if(cs != NULL)
+		const udtString& cs = parser.GetConfigString(csFirstPlayerIdx + i);
+		if(!udtString::IsNullOrEmpty(cs))
 		{
 			udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs->String);
+			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs.String);
 		}
 	}
 }
 
 void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	CommandLineTokenizer& tokenizer = parser._context->Tokenizer;
-	const int tokenCount = tokenizer.GetArgCount();
-	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || tokenCount != 3)
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	if(strcmp(tokenizer.GetArgString(0), "cs") != 0 || 
+	   tokenizer.GetArgCount() != 3)
 	{
 		return;
 	}
@@ -127,12 +123,12 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	udtBaseParser::udtConfigString* const cs = parser.FindConfigStringByIndex(csIndex);
-	if(cs == NULL)
+	const udtString& cs = parser.GetConfigString(csIndex);
+	if(udtString::IsNullOrEmpty(cs))
 	{
 		return;
 	}
 
 	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs->String);
+	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs.String);
 }

@@ -5,8 +5,52 @@
 #include "cut_section.hpp"
 
 
+static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idTokenizer& tokenizer)
+{
+	bool hasCPMASyntax = false;
+
+	const udtString command = tokenizer.GetArg(0);
+	if(udtString::Equals(command, "chat"))
+	{
+		isTeamMessage = false;
+	}
+	else if(udtString::Equals(command, "tchat"))
+	{
+		isTeamMessage = true;
+	}
+	else if(udtString::Equals(command, "mm2"))
+	{
+		isTeamMessage = true;
+		hasCPMASyntax = true;
+	}
+	else
+	{
+		return false;
+	}
+
+	if(hasCPMASyntax && 
+	   tokenizer.GetArgCount() == 4)
+	{
+		message = tokenizer.GetArg(3);
+		return true;
+	}
+
+	u32 colonIdx = 0;
+	if(!hasCPMASyntax && 
+	   tokenizer.GetArgCount() == 2 &&
+	   udtString::FindFirstCharacterMatch(colonIdx, tokenizer.GetArg(1), ':') &&
+	   colonIdx + 2 < tokenizer.GetArgLength(1))
+	{
+		message = udtString::NewSubstringRef(tokenizer.GetArg(1), colonIdx + 2);
+		return true;
+	}
+
+	return false;
+}
+
+
 udtCutByChatAnalyzer::udtCutByChatAnalyzer() 
-	: _cutSections(1 << 16)
+	: _cutSections(1 << 16, "CutByChatAnalyzer::CutSections")
 {
 }
 
@@ -14,23 +58,32 @@ udtCutByChatAnalyzer::~udtCutByChatAnalyzer()
 {
 }
 
-void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& commandInfo, udtBaseParser& parser)
+void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*commandInfo*/, udtBaseParser& parser)
 {
-	udtContext& context = *parser._context;
-	CommandLineTokenizer& tokenizer = context.Tokenizer;
-	tokenizer.Tokenize(commandInfo.String);
-	if(tokenizer.GetArgCount() != 2 || !udtString::Equals(tokenizer.GetArg(0), "chat"))
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	if(tokenizer.GetArgCount() < 2)
+	{
+		return;
+	}
+
+	udtString message;
+	bool isTeamMessage;
+	if(!GetMessageAndType(message, isTeamMessage, tokenizer))
 	{
 		return;
 	}
 
 	const udtCutByChatArg& extraInfo = GetExtraInfo<udtCutByChatArg>();
-
 	bool match = false;
 	for(u32 i = 0; i < extraInfo.RuleCount; ++i)
 	{
+		if(isTeamMessage && extraInfo.Rules[i].SearchTeamChat == 0)
+		{
+			continue;
+		}
+
 		udtVMScopedStackAllocator tempAllocatorScopeGuard(parser._tempAllocator);
-		if(StringMatchesCutByChatRule(tokenizer.GetArg(1), extraInfo.Rules[i], parser._tempAllocator, parser._inProtocol))
+		if(StringMatchesCutByChatRule(message, extraInfo.Rules[i], parser._tempAllocator, parser._inProtocol))
 		{
 			match = true;
 			break;

@@ -1,299 +1,566 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Media;
+using System.Windows.Input;
 
 
 namespace Uber.DemoTools
 {
-    public partial class App
+    public class DemoStatsField
     {
-        private class WeaponStatsDisplayInfo
+        public string Key = "";
+        public string Value = "";
+        public UDT_DLL.udtStatsCompMode ComparisonMode = UDT_DLL.udtStatsCompMode.NeitherWins;
+        public int FieldBitIndex = 0;
+        public int IntegerValue = 0;
+    }
+
+    public class StatsInfoGroup
+    {
+        public string Name = "N/A"; // What should be used as a column header.
+        public readonly List<DemoStatsField> Fields = new List<DemoStatsField>();
+        public int TeamIndex = -1; // Only relevant to players for sorting.
+    }
+
+    public class DemoStatsInfo
+    {
+        public void AddGenericField(string key, string value)
         {
-            public string Weapon { get; set; }
-            public string Acc { get; set; }
-            public string Hits { get; set; }
-            public string Atts { get; set; }
-            public string Kills { get; set; }
-            public string Deaths { get; set; }
-            public string Take { get; set; }
-            public string Drop { get; set; }
+            if(value != null)
+            {
+                GenericFields.Add(new DemoStatsField { Key = key, Value = value });
+            }
         }
 
-        private class WeaponStatsColumnInfo
+        public void AddGenericField(string key, IntPtr stringValue)
         {
-            public WeaponStatsColumnInfo(string name, int width)
+            if(stringValue != IntPtr.Zero)
             {
-                Name = name;
-                Width = width;
+                GenericFields.Add(new DemoStatsField { Key = key, Value = UDT_DLL.SafeGetUTF8String(stringValue) });
+            }
+        }
+
+        public readonly List<DemoStatsField> GenericFields = new List<DemoStatsField>();
+        public readonly List<StatsInfoGroup> TeamStats = new List<StatsInfoGroup>();
+        public readonly List<StatsInfoGroup> PlayerStats = new List<StatsInfoGroup>();
+    }
+
+    public class StatsComponent : AppComponent
+    {
+        private DemoInfoListView _matchInfoListView;
+        private DemoInfoListView _teamStatsListView;
+        private DemoInfoListView _playerStatsListView;
+        private FrameworkElement _noStatsPanel;
+        private FrameworkElement _statsPanel;
+        private FrameworkElement _matchInfoPanel;
+        private FrameworkElement _teamStatsPanel;
+        private FrameworkElement _playerStatsPanel;
+        private FrameworkElement _matchSelectionPanel;
+        private ComboBox _matchSelectionComboBox;
+        private ScrollViewer _scrollViewer;
+        private App _app;
+
+        private class TeamStatsDisplayInfo
+        {
+            public TeamStatsDisplayInfo(string key, string red, string blue)
+            {
+                Key = key;
+                Red = red;
+                Blue = blue;
+                Bold = new bool[] { false, false };
             }
 
-            public string Name;
-            public int Width;
+            public string Key { get; set; }
+            public string Red { get; set; }
+            public string Blue { get; set; }
+            public bool[] Bold { get; set; }
+            public FontWeight RedFontWeight { get { return Bold[0] ? FontWeights.Bold : FontWeights.Normal; } }
+            public FontWeight BlueFontWeight { get { return Bold[1] ? FontWeights.Bold : FontWeights.Normal; } }
         }
 
-        private static WeaponStatsColumnInfo[] _weaponStatsColumns = new WeaponStatsColumnInfo[]
+        private class PlayerStatsDisplayInfo
         {
-            new WeaponStatsColumnInfo("Weapon", 165),
-            new WeaponStatsColumnInfo("Acc", 60),
-            new WeaponStatsColumnInfo("Hits", 60),
-            new WeaponStatsColumnInfo("Atts", 60),
-            new WeaponStatsColumnInfo("Kills", 60),
-            new WeaponStatsColumnInfo("Deaths", 60),
-            new WeaponStatsColumnInfo("Take", 60),
-            new WeaponStatsColumnInfo("Drop", 60)
-        };
-
-        /*
-        xstats2 weapon bits
-        ga -   2
-        mg -   4
-        sg -   8
-        gl -  16
-        rl -  32
-        lg -  64
-        rg - 128
-        pg - 256
-        bf - 512
-        */
-
-        [Flags]
-        private enum WeaponStatsFlags
-        {
-            Gauntlet = 1 << 1, // OK
-            MachingeGun = 1 << 2, // OK
-            Shotgun = 1 << 3, // OK
-            GrenadeLauncher = 1 << 4, // OK
-            RocketLauncher = 1 << 5, // OK
-            LightningGun = 1 << 6, // OK
-            Railgun = 1 << 7, // OK
-            PlasmaGun = 1 << 8, // OK
-            BFG = 1 << 9 // OK
-        }
-
-        private class WeaponStatsSearchInfo
-        {
-            public WeaponStatsSearchInfo(string weapon, WeaponStatsFlags flagMask)
+            public PlayerStatsDisplayInfo(string key, int playerCount)
             {
-                WeaponName = weapon;
-                FlagMask = (int)flagMask;
-            }
-
-            public string WeaponName;
-            public int FlagMask;
-        }
-
-        private static WeaponStatsSearchInfo[] WeaponStatsInfos = new WeaponStatsSearchInfo[]
-        {
-            new WeaponStatsSearchInfo("Gauntlet", WeaponStatsFlags.Gauntlet),
-            new WeaponStatsSearchInfo("MachineGun", WeaponStatsFlags.MachingeGun),
-            new WeaponStatsSearchInfo("Shotgun", WeaponStatsFlags.Shotgun),
-            new WeaponStatsSearchInfo("G.Launcher", WeaponStatsFlags.GrenadeLauncher),
-            new WeaponStatsSearchInfo("R.Launcher", WeaponStatsFlags.RocketLauncher),
-            new WeaponStatsSearchInfo("LightningGun", WeaponStatsFlags.LightningGun),
-            new WeaponStatsSearchInfo("Railgun", WeaponStatsFlags.Railgun),
-            new WeaponStatsSearchInfo("Plasma", WeaponStatsFlags.PlasmaGun),
-            new WeaponStatsSearchInfo("BFG", WeaponStatsFlags.BFG)
-        };
-
-        private static string[] xstats2EndStatsInfos = new string[]
-        {
-            "Damage Given",
-            "Damage Received",
-            "Armor Taken",
-            "Health Taken",
-            "MHs taken",
-            "RAs taken",
-            "YAs taken",
-            "GAs taken"
-        };
-
-        private class StatDisplayInfo
-        {
-            public StatDisplayInfo(string name, string value)
-            {
-                Name = name;
-                Value = value;
-            }
-
-            public string Name { get; set; }
-            public string Value { get; set; }
-        }
-
-        private class Xstats2WidgetInfo
-        {
-            public GroupBox WeaponStatsGroupBox = null;
-            public ListView WeaponStatsListView = null;
-            public GroupBox DamageStatsGroupBox = null;
-            public ListView DamageStatsListView = null;
-        }
-
-        private List<Xstats2WidgetInfo> _xstats2WidgetInfos = new List<Xstats2WidgetInfo>();
-        private FrameworkElement _xstats2SorryNothingFound = null;
-        private WrapPanel _statsRootPanel = null;
-
-        private const int MaxXstats2Displayed = 4;
-
-        private FrameworkElement CreateStatsTab()
-        {
-            var xstats2SorryNothingFound = new Label();
-            _xstats2SorryNothingFound = xstats2SorryNothingFound;
-            xstats2SorryNothingFound.HorizontalAlignment = HorizontalAlignment.Center;
-            xstats2SorryNothingFound.VerticalAlignment = VerticalAlignment.Center;
-            xstats2SorryNothingFound.Margin = new Thickness(10);
-            xstats2SorryNothingFound.Content = "Didn't find any readable end-game stats server command in this demo (e.g. xstats2).";
-            xstats2SorryNothingFound.Visibility = Visibility.Collapsed;
-
-            for(int i = 0; i < MaxXstats2Displayed; ++i)
-            {
-                var weaponStatsWidth = 10;
-                var weaponStatsGridView = new GridView();
-                weaponStatsGridView.AllowsColumnReorder = false;
-                foreach(var columnInfo in _weaponStatsColumns)
+                Key = key;
+                Values = new string[playerCount];
+                ValueFontWeights = new FontWeight[playerCount];
+                for(var i = 0; i < playerCount; ++i)
                 {
-                    weaponStatsGridView.Columns.Add(new GridViewColumn { Header = columnInfo.Name, Width = columnInfo.Width, DisplayMemberBinding = new Binding(columnInfo.Name) });
-                    weaponStatsWidth += columnInfo.Width;
+                    Values[i] = "";
+                    ValueFontWeights[i] = FontWeights.Normal;
+                }
+            }
+
+            public string Key { get; set; }
+            public string[] Values { get; set; }
+            public FontWeight[] ValueFontWeights { get; set; }
+        }
+
+        private const int KeyColumnWidth = 150;
+
+        public FrameworkElement RootControl { get; private set; }
+        public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _matchInfoListView, _teamStatsListView, _playerStatsListView }; } }
+        public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _matchInfoListView, _teamStatsListView, _playerStatsListView }; } }
+        public ComponentType Type { get { return ComponentType.Stats; } }
+        public bool MultiDemoMode { get { return false; } }
+
+        public StatsComponent(App app)
+        {
+            _app = app;
+            RootControl = CreateTab();
+        }
+
+        public void PopulateViews(DemoInfo demoInfo)
+        {
+            var showStats = demoInfo.Analyzed;
+            _statsPanel.Visibility = showStats ? Visibility.Visible : Visibility.Collapsed;
+            _noStatsPanel.Visibility = showStats ? Visibility.Collapsed : Visibility.Visible;
+            if(!showStats)
+            {
+                ShowMatchInfo(false);
+                ShowTeamStats(false);
+                ShowPlayerStats(false);
+                ShowMatchSelector(false);
+                return;
+            }
+
+            if(demoInfo.MatchStats.Count == 0)
+            {
+                ShowMatchInfo(false);
+                ShowTeamStats(false);
+                ShowPlayerStats(false);
+                ShowMatchSelector(false);
+                return;
+            }
+
+            _matchSelectionComboBox.Items.Clear();
+            for(var i = 0; i < demoInfo.MatchStats.Count; ++i)
+            {
+                _matchSelectionComboBox.Items.Add("Match #" + (i + 1).ToString());
+            }
+            _matchSelectionComboBox.SelectedIndex = 0;
+
+            ShowMatchSelector(demoInfo.MatchStats.Count > 1);
+            PopulateViews(demoInfo.MatchStats[0]);
+        }
+
+        private void PopulateViews(DemoStatsInfo stats)
+        {
+            ShowMatchInfo(stats.GenericFields.Count > 0);
+            ShowTeamStats(stats.TeamStats.Count == 2);
+            ShowPlayerStats(stats.PlayerStats.Count > 0);
+
+            _matchInfoListView.Items.Clear();
+            foreach(var field in stats.GenericFields)
+            {
+                _matchInfoListView.Items.Add(new string[] { field.Key, field.Value });
+            }
+            
+            if(stats.TeamStats.Count == 2)
+            {
+                // The annoyance we have to deal with is that we don't necessarily have the same fields
+                // defined for both teams. Also, the order isn't guaranteed.
+                var teamItems = new ObservableCollection<TeamStatsDisplayInfo>();
+                for(var i = 0; i < UDT_DLL.StatsConstants.TeamFieldCount; ++i)
+                {
+                    var field0 = stats.TeamStats[0].Fields.Find(f => f.FieldBitIndex == i);
+                    var field1 = stats.TeamStats[1].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field0 == null && field1 == null)
+                    {
+                        continue;
+                    }
+
+                    var field = field0 ?? field1;
+                    var info = new TeamStatsDisplayInfo(field.Key, field0 != null ? field0.Value : "", field1 != null ? field1.Value : "");
+
+                    if(field0 != null && field1 != null)
+                    {
+                        var index = -1;
+                        if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins)
+                        {
+                            index = field0.IntegerValue > field1.IntegerValue ? 0 : index;
+                            index = field0.IntegerValue < field1.IntegerValue ? 1 : index;
+                        }
+                        else if(field0.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins)
+                        {
+                            index = field0.IntegerValue < field1.IntegerValue ? 0 : index;
+                            index = field0.IntegerValue > field1.IntegerValue ? 1 : index;
+                        }
+
+                        if(index != -1)
+                        {
+                            info.Bold[index] = true;
+                        }
+                    }
+
+                    teamItems.Add(info);
                 }
 
-                var weaponStatsListView = new ListView();
-                weaponStatsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
-                weaponStatsListView.VerticalAlignment = VerticalAlignment.Stretch;
-                weaponStatsListView.Margin = new Thickness(5);
-                weaponStatsListView.Width = weaponStatsWidth;
-                weaponStatsListView.View = weaponStatsGridView;
-                weaponStatsListView.SelectionMode = SelectionMode.Single;
-                weaponStatsListView.Foreground = new SolidColorBrush(Colors.Black);
-
-                var weaponStatsGroupBox = new GroupBox();
-                weaponStatsGroupBox.Header = "Weapon Stats for N/A";
-                weaponStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-                weaponStatsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
-                weaponStatsGroupBox.Margin = new Thickness(5);
-                weaponStatsGroupBox.Content = weaponStatsListView;
-                weaponStatsGroupBox.Visibility = Visibility.Collapsed;
-
-                var damageStatsGridView = new GridView();
-                damageStatsGridView.AllowsColumnReorder = false;
-                damageStatsGridView.Columns.Add(new GridViewColumn { Header = "Name", Width = 200, DisplayMemberBinding = new Binding("Name") });
-                damageStatsGridView.Columns.Add(new GridViewColumn { Header = "Value", Width = 100, DisplayMemberBinding = new Binding("Value") });
-
-                var damageStatsListView = new ListView();
-                damageStatsListView.HorizontalAlignment = HorizontalAlignment.Stretch;
-                damageStatsListView.VerticalAlignment = VerticalAlignment.Stretch;
-                damageStatsListView.Margin = new Thickness(5);
-                damageStatsListView.Width = 310;
-                damageStatsListView.View = damageStatsGridView;
-                damageStatsListView.SelectionMode = SelectionMode.Single;
-                damageStatsListView.Foreground = new SolidColorBrush(Colors.Black);
-
-                var damageStatsGroupBox = new GroupBox();
-                damageStatsGroupBox.Header = "Additional Stats for N/A";
-                damageStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-                damageStatsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
-                damageStatsGroupBox.Margin = new Thickness(5);
-                damageStatsGroupBox.Content = damageStatsListView;
-                damageStatsGroupBox.Visibility = Visibility.Collapsed;
-
-                var info = new Xstats2WidgetInfo();
-                info.DamageStatsGroupBox = damageStatsGroupBox;
-                info.DamageStatsListView = damageStatsListView;
-                info.WeaponStatsGroupBox = weaponStatsGroupBox;
-                info.WeaponStatsListView = weaponStatsListView;
-                _xstats2WidgetInfos.Add(info);
+                _teamStatsListView.ItemsSource = teamItems;
             }
 
-            var rootPanel = new WrapPanel();
-            _statsRootPanel = rootPanel;
+            // The annoyance we have to deal with is that we don't necessarily have the same fields
+            // defined for all players. Also, the order isn't guaranteed.
+            var playerCount = stats.PlayerStats.Count;
+            var playerItems = new ObservableCollection<PlayerStatsDisplayInfo>();
+            for(var i = 0; i < UDT_DLL.StatsConstants.PlayerFieldCount; ++i)
+            {
+                DemoStatsField field = null;
+                for(var j = 0; j < playerCount; ++j)
+                {
+                    field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field != null)
+                    {
+                        break;
+                    }
+                }
+                if(field == null)
+                {
+                    continue;
+                }
+
+                var info = new PlayerStatsDisplayInfo(field.Key, playerCount);
+
+                var boldIndex = -1;
+                var extremeValue = field.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins ? int.MinValue : int.MaxValue;
+                var playerCountWithThatField = 0;
+                for(var j = 0; j < playerCount; ++j)
+                {
+                    field = stats.PlayerStats[j].Fields.Find(f => f.FieldBitIndex == i);
+                    if(field == null)
+                    {
+                        continue;
+                    }
+
+                    ++playerCountWithThatField;
+
+                    info.Values[j] = field.Value;
+
+                    var currValue = field.IntegerValue;
+                    if(field.ComparisonMode != UDT_DLL.udtStatsCompMode.NeitherWins && currValue == extremeValue && j > 0)
+                    {
+                        boldIndex = -1;
+                    }
+                    else if(field.ComparisonMode == UDT_DLL.udtStatsCompMode.BiggerWins && (currValue > extremeValue || j == 0))
+                    {
+                        extremeValue = currValue;
+                        boldIndex = j;
+                    }
+                    else if(field.ComparisonMode == UDT_DLL.udtStatsCompMode.SmallerWins && (currValue < extremeValue || j == 0))
+                    {
+                        extremeValue = currValue;
+                        boldIndex = j;
+                    }
+                }
+
+                if(playerCountWithThatField > 1 && boldIndex != -1)
+                {
+                    info.ValueFontWeights[boldIndex] = FontWeights.Bold;
+                }
+
+                playerItems.Add(info);
+            }
+            _playerStatsListView.ItemsSource = playerItems;
+
+            // Update the player columns while preserving the key column.
+            var gridView = _playerStatsListView.View as GridView;
+            var column0 = gridView.Columns[0];
+            gridView.Columns.Clear();
+            gridView.Columns.Add(column0);
+            for(var i = 0; i < playerCount; ++i)
+            {
+                var template = new DataTemplate();
+                var factory = new FrameworkElementFactory(typeof(TextBlock));
+                factory.SetBinding(TextBlock.TextProperty, new Binding(string.Format("Values[{0}]", i)));
+                factory.SetBinding(TextBlock.FontWeightProperty, new Binding(string.Format("ValueFontWeights[{0}]", i)));
+                template.VisualTree = factory;
+                var column = new GridViewColumn();
+                var header = new GridViewColumnHeader();
+                header.Content = stats.PlayerStats[i].Name;
+                header.Tag = "Value";
+                column.Header = header;
+                column.Width = KeyColumnWidth;
+                column.CellTemplate = template;
+                gridView.Columns.Add(column);
+            }
+        }
+
+        public void SaveToConfigObject(UdtConfig config)
+        {
+            // Nothing to do.
+        }
+
+        public void SaveToConfigObject(UdtPrivateConfig config)
+        {
+            // Nothing to do.
+        }
+
+        private FrameworkElement CreateTab()
+        {
+            var noDataTextBlock = new TextBlock();
+            _noStatsPanel = noDataTextBlock;
+            noDataTextBlock.HorizontalAlignment = HorizontalAlignment.Center;
+            noDataTextBlock.VerticalAlignment = VerticalAlignment.Center;
+            noDataTextBlock.Text = "This demo was not analyzed.";
+            noDataTextBlock.Visibility = Visibility.Collapsed;
+
+            var matchInfoListView = CreateMatchInfoListView();
+            var teamStatsListView = CreateTeamStatsListView();
+            var playerStatsListView = CreatePlayerStatsListView();
+            FixListViewMouseWheelHandling(matchInfoListView);
+            FixListViewMouseWheelHandling(teamStatsListView);
+            FixListViewMouseWheelHandling(playerStatsListView);
+            _matchInfoListView = matchInfoListView;
+            _teamStatsListView = teamStatsListView;
+            _playerStatsListView = playerStatsListView;
+
+            var matchInfoGroupBox = new GroupBox();
+            _matchInfoPanel = matchInfoGroupBox;
+            matchInfoGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            matchInfoGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            matchInfoGroupBox.Margin = new Thickness(5);
+            matchInfoGroupBox.Header = "Match Info";
+            matchInfoGroupBox.Content = matchInfoListView;
+
+            var teamStatsGroupBox = new GroupBox();
+            _teamStatsPanel = teamStatsGroupBox;
+            teamStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            teamStatsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            teamStatsGroupBox.Margin = new Thickness(5);
+            teamStatsGroupBox.Header = "Team Scores and Stats";
+            teamStatsGroupBox.Content = teamStatsListView;
+
+            var playerStatsGroupBox = new GroupBox();
+            _playerStatsPanel = playerStatsGroupBox;
+            playerStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            playerStatsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            playerStatsGroupBox.Margin = new Thickness(5);
+            playerStatsGroupBox.Header = "Player Scores and Stats";
+            playerStatsGroupBox.Content = playerStatsListView;
+
+            var matchSelectionTextBlock = new TextBlock();
+            matchSelectionTextBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            matchSelectionTextBlock.VerticalAlignment = VerticalAlignment.Center;
+            matchSelectionTextBlock.Text = "Selected Match:  ";
+
+            var matchSelectionComboBox = new ComboBox();
+            _matchSelectionComboBox = matchSelectionComboBox;
+            matchSelectionComboBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+            matchSelectionComboBox.VerticalAlignment = VerticalAlignment.Center;
+            matchSelectionComboBox.SelectionChanged += (obj, args) => OnMatchSelectionChanged();
+
+            var matchSelectionPanel = new StackPanel();
+            _matchSelectionPanel = matchSelectionPanel;
+            matchSelectionPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            matchSelectionPanel.VerticalAlignment = VerticalAlignment.Top;
+            matchSelectionPanel.Margin = new Thickness(5, 2, 5, 2);
+            matchSelectionPanel.Orientation = Orientation.Horizontal;
+            matchSelectionPanel.Children.Add(matchSelectionTextBlock);
+            matchSelectionPanel.Children.Add(matchSelectionComboBox);
+
+            var statsPanel = new StackPanel();
+            statsPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            statsPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            statsPanel.Margin = new Thickness(5);
+            statsPanel.Orientation = Orientation.Vertical;
+            statsPanel.Children.Add(matchSelectionPanel);
+            statsPanel.Children.Add(matchInfoGroupBox);
+            statsPanel.Children.Add(teamStatsGroupBox);
+            statsPanel.Children.Add(playerStatsGroupBox);
+
+            var rootPanel = new StackPanel();
+            _statsPanel = statsPanel;
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
             rootPanel.Margin = new Thickness(5);
-            rootPanel.Orientation = Orientation.Horizontal;
-            rootPanel.Children.Add(xstats2SorryNothingFound);
-            foreach(var info in _xstats2WidgetInfos)
-            {
-                rootPanel.Children.Add(info.WeaponStatsGroupBox);
-                rootPanel.Children.Add(info.DamageStatsGroupBox);
-            }
+            rootPanel.Orientation = Orientation.Vertical;
+            rootPanel.Children.Add(_noStatsPanel);
+            rootPanel.Children.Add(_statsPanel);
 
             var scrollViewer = new ScrollViewer();
+            _scrollViewer = scrollViewer;
             scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
             scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
-            scrollViewer.Margin = new Thickness(5);
-            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.Content = rootPanel;
 
-            return scrollViewer;
+            ShowMatchInfo(false);
+            ShowTeamStats(false);
+            ShowPlayerStats(false);
+            ShowMatchSelector(false);
+
+            return scrollViewer; 
         }
 
-        private void PopulateStats(DemoInfo demoInfo)
+        private DemoInfoListView CreateMatchInfoListView()
         {
-            for(int i = 0; i < MaxXstats2Displayed; ++i)
-            {
-                var info2 = _xstats2WidgetInfos[i];
-                var visibility = Visibility.Collapsed;
-                info2.WeaponStatsGroupBox.Visibility = visibility;
-                info2.DamageStatsGroupBox.Visibility = visibility;
-            }
+            var columnKey = new GridViewColumn();
+            var headerKey = new GridViewColumnHeader();
+            headerKey.Content = "";
+            headerKey.Tag = "Key";
+            columnKey.Header = headerKey;
+            columnKey.Width = KeyColumnWidth;
+            columnKey.DisplayMemberBinding = new Binding("[0]");
 
-            _xstats2SorryNothingFound.Visibility = demoInfo.Xstats2Infos.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+            var columnValue = new GridViewColumn();
+            var headerValue = new GridViewColumnHeader();
+            headerValue.Content = "Value";
+            headerValue.Tag = "Value";
+            columnValue.Header = headerValue;
+            columnValue.Width = 400;
+            columnValue.DisplayMemberBinding = new Binding("[1]");
 
-            int statsCount = Math.Min(demoInfo.Xstats2Infos.Count, MaxXstats2Displayed);
-            for(int i = 0; i < statsCount; ++i)
-            {
-                var info = demoInfo.Xstats2Infos[i];
-                var info2 = _xstats2WidgetInfos[i];
+            var gridView = new GridView();
+            gridView.AllowsColumnReorder = false;
+            gridView.Columns.Add(columnKey);
+            gridView.Columns.Add(columnValue);
 
-                var visibility = info.WeaponStats.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-                info2.WeaponStatsGroupBox.Visibility = visibility;
-                info2.WeaponStatsGroupBox.Header = "Weapon Stats for Player " + info.WeaponStatsPlayerName;
-                info2.WeaponStatsListView.Items.Clear();
-                foreach(var weaponStat in info.WeaponStats)
-                {
-                    info2.WeaponStatsListView.Items.Add(weaponStat);
-                }
+            var listView = new DemoInfoListView();
+            listView.HorizontalAlignment = HorizontalAlignment.Stretch;
+            listView.VerticalAlignment = VerticalAlignment.Stretch;
+            listView.Margin = new Thickness(5);
+            listView.View = gridView;
+            listView.SelectionMode = SelectionMode.Extended;
 
-                info2.DamageStatsGroupBox.Visibility = visibility;
-                info2.DamageStatsGroupBox.Header = "Additional Stats for Player " + info.WeaponStatsPlayerName;
-                info2.DamageStatsListView.Items.Clear();
-                foreach(var extraStats in info.DamageAndArmorStats)
-                {
-                    info2.DamageStatsListView.Items.Add(extraStats);
-                }
-            }
+            return listView;
         }
 
-        private static string ComputeAccuracy(string hits, string shots)
+        private static DataTemplate CreateCellTemplate(string textBinding, string fontWeightBinding)
         {
-            int h = 0;
-            if(!int.TryParse(hits, out h))
-            {
-                return "";
-            }
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBlock));
+            factory.SetBinding(TextBlock.TextProperty, new Binding(textBinding));
+            factory.SetBinding(TextBlock.FontWeightProperty, new Binding(fontWeightBinding));
+            template.VisualTree = factory;
 
-            int s = 0;
-            if(!int.TryParse(shots, out s))
-            {
-                return "";
-            }
-
-            if(s == 0)
-            {
-                return "";
-            }
-
-            int x = (1000 * h) / s;
-            int a = x / 10;
-            int b = x % 10;
-
-            return a.ToString() + "." + b.ToString();
+            return template;
         }
 
-        private static string FormatWeaponStat(string number)
+        private DemoInfoListView CreateTeamStatsListView()
         {
-            return number == "0" ? "" : number;
+            var columnKey = new GridViewColumn();
+            var headerKey = new GridViewColumnHeader();
+            headerKey.Content = "";
+            headerKey.Tag = "Key";
+            columnKey.Header = headerKey;
+            columnKey.Width = KeyColumnWidth;
+            columnKey.DisplayMemberBinding = new Binding("Key");
+
+            var columnRed = new GridViewColumn();
+            var headerRed = new GridViewColumnHeader();
+            headerRed.Content = "Red";
+            headerRed.Tag = "Red";
+            columnRed.Header = headerRed;
+            columnRed.Width = 150;
+            columnRed.CellTemplate = CreateCellTemplate("Red", "RedFontWeight");
+
+            var columnBlue = new GridViewColumn();
+            var headerBlue = new GridViewColumnHeader();
+            headerBlue.Content = "Blue";
+            headerBlue.Tag = "Blue";
+            columnBlue.Header = headerBlue;
+            columnBlue.Width = 150;
+            columnBlue.CellTemplate = CreateCellTemplate("Blue", "BlueFontWeight");
+
+            var gridView = new GridView();
+            gridView.AllowsColumnReorder = false;
+            gridView.Columns.Add(columnKey);
+            gridView.Columns.Add(columnRed);
+            gridView.Columns.Add(columnBlue);
+
+            var listView = new DemoInfoListView();
+            listView.HorizontalAlignment = HorizontalAlignment.Stretch;
+            listView.VerticalAlignment = VerticalAlignment.Stretch;
+            listView.Margin = new Thickness(5);
+            listView.View = gridView;
+            listView.SelectionMode = SelectionMode.Extended;
+
+            return listView;
+        }
+
+        private DemoInfoListView CreatePlayerStatsListView()
+        {
+            var columnKey = new GridViewColumn();
+            var headerKey = new GridViewColumnHeader();
+            headerKey.Content = "";
+            headerKey.Tag = "Key";
+            columnKey.Header = headerKey;
+            columnKey.Width = KeyColumnWidth;
+            columnKey.DisplayMemberBinding = new Binding("Key");
+
+            var gridView = new GridView();
+            gridView.AllowsColumnReorder = true;
+            gridView.Columns.Add(columnKey);
+
+            var listView = new DemoInfoListView();
+            listView.HorizontalAlignment = HorizontalAlignment.Stretch;
+            listView.VerticalAlignment = VerticalAlignment.Stretch;
+            listView.Margin = new Thickness(5);
+            listView.View = gridView;
+            listView.SelectionMode = SelectionMode.Extended;
+
+            return listView;
+        }
+        
+        private void FixListViewMouseWheelHandling(ListView listView)
+        {
+            listView.AddHandler(ListView.MouseWheelEvent, new RoutedEventHandler(MouseWheelHandler), true);
+        }
+
+        private void MouseWheelHandler(object sender, RoutedEventArgs args)
+        {
+            if(_scrollViewer == null)
+            {
+                return;
+            }
+
+            var info = args as MouseWheelEventArgs;
+            var posDelta = (double)info.Delta;
+            var curPos = _scrollViewer.VerticalOffset;
+            _scrollViewer.ScrollToVerticalOffset(curPos - posDelta);
+        }
+
+        private void OnMatchSelectionChanged()
+        {
+            var currentDemo = App.Instance.SelectedDemo;
+            if(currentDemo == null)
+            {
+                return;
+            }
+
+            var matchIndex = _matchSelectionComboBox.SelectedIndex;
+            if(matchIndex < 0 || matchIndex >= currentDemo.MatchStats.Count)
+            {
+                return;
+            }
+
+            PopulateViews(currentDemo.MatchStats[matchIndex]);
+        }
+        
+        private void ShowMatchInfo(bool show)
+        {
+            _matchInfoPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ShowTeamStats(bool show)
+        {
+            _teamStatsPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ShowPlayerStats(bool show)
+        {
+            _playerStatsPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ShowMatchSelector(bool show)
+        {
+            _matchSelectionPanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }

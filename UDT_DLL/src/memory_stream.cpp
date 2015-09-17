@@ -94,7 +94,7 @@ udtVMMemoryStream::~udtVMMemoryStream()
 
 bool udtVMMemoryStream::Open(uptr reservedByteCount)
 {
-	_buffer.Init(reservedByteCount);
+	_buffer.Init(reservedByteCount, "VMMemoryStream::Buffer");
 
 	return true;
 }

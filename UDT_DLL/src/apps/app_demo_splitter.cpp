@@ -9,6 +9,17 @@
 #include <stdlib.h>
 
 
+void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+	PrintStackTrace(3, "UDT_splitter");
+
+	exit(666);
+}
+
 static bool RunDemoSplitter(const char* filePath)
 {
 	udtParseArg info;
@@ -34,23 +45,8 @@ static void PrintHelp()
 	printf("Syntax: UDT_splitter demo_path\n");
 }
 
-static void CrashHandler(const char* message)
+int udt_main(int argc, char** argv)
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_splitter");
-
-	exit(666);
-}
-
-int main(int argc, char** argv)
-{
-	printf("UDT library version: %s\n", udtGetVersionString());
-
-	ResetCurrentDirectory(argv[0]);
-
 	if(argc < 2)
 	{
 		printf("Not enough arguments.\n");
@@ -64,8 +60,6 @@ int main(int argc, char** argv)
 		PrintHelp();
 		return 2;
 	}
-
-	udtSetCrashHandler(&CrashHandler);
 
 	const bool success = RunDemoSplitter(argv[1]);
 
