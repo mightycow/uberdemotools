@@ -22,7 +22,7 @@ What's in the project?
 The project is currently comprised of 3 parts:
 
 1. A shared library, `UDT_DLL`, with a C interface, written in C++. Supported OSes: Windows, Linux
-2. A set of command-line tools, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter` and `UDT_merger`, written in C++. Supported OSes: Windows, Linux
+2. A set of command-line tools, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter`, `UDT_merger` and `UDT_json`, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
 
 Overview of the binaries
@@ -34,6 +34,7 @@ Overview of the binaries
 | UDT_splitter    | Application<br>C++ | Windows Linux |  | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
 | UDT_timeshifter | Application<br>C++ | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
 | UDT_merger      | Application<br>C++ | Windows Linux |  | Command-line application for merging multiple demos into one |
+| UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
 
 Supported demo formats
@@ -57,7 +58,7 @@ Installation
 ------------
 
 No installation is required for any of the binaries.  
-`UDT_DLL`, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter` and `UDT_merger` have no third-party dependencies.
+`UDT_DLL`, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter`, `UDT_merger` and `UDT_json`` have no third-party dependencies.
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
@@ -79,12 +80,12 @@ The typical day-to-day usage scenario for UDT is the one for which the interface
 It supposes the following:
 
 1. You have a chat bind you use when you make cool frags or something funny/unusual/movie-worthy happens. Example: you have `bind space "say HAHA! YOU ARE DEAD!"` in your Quake config and you press space when something cool happens.
-2. You have configured UDT's `Global Chat` rules under the `Patterns` tab and the general stuff under the `Settings` tab.
+2. You have configured UDT's `Chat` rules under the `Patterns` tab and the general stuff under the `Settings` tab.
 
 After your gaming session...
 
 1. Drag'n'drop the new demos onto UDT.
-2. Select `Patterns`, then `Global Chat`.
+2. Select `Patterns`, then `Chat`.
 3. Select all demos (can click the `Demo List` list box and press Ctrl+A), then click click `Cut!`.
 4. You now have a cut demo for each cool thing that happened in the folder you specified.
 5. Review the cut demos to decide what you keep, rename and move those you wish to keep to the appropriate folder.
@@ -108,7 +109,7 @@ Here are the patterns you can look for in demos:
 
 | Pattern          | Player<sup>[1]</sup>   | Description |
 |:-----------------|:-----------------------|:------------|
-| Global Chat      | All                    | String patterns in global chat messages |
+| Chat             | All                    | String patterns in chat messages |
 | Frag sequences   | Selected               | Sequences of frags happening within a certain duration |
 | Mid-air frags    | Selected               | Rocket and BFG frags where the victim was airborne |
 | Multi-frag rails | Selected               | Railgun frags killing 2 or more players |
