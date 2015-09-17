@@ -1234,7 +1234,7 @@ namespace Uber.DemoTools
         private FrameworkElement CreateInfoTab()
         {
             var generalInfoTab = new TabItem();
-            generalInfoTab.Header = "Info";
+            generalInfoTab.Header = "General";
             generalInfoTab.Content = CreateGeneralInfoTab();
 
             var chatEvents = new ChatEventsComponent(this);

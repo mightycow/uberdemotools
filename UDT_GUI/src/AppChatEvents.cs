@@ -250,7 +250,7 @@ namespace Uber.DemoTools
             InitChatEventsListViewCutBinding();
 
             var infoPanelGroupBox = new GroupBox();
-            infoPanelGroupBox.Header = "Chat Events";
+            infoPanelGroupBox.Header = "Chat Messages";
             infoPanelGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             infoPanelGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
             infoPanelGroupBox.Margin = new Thickness(5);
