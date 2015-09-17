@@ -121,7 +121,7 @@ namespace Uber.DemoTools
             headerAtt.Content = "Attacker";
             headerAtt.Tag = "Attacker";
             columnAtt.Header = headerAtt;
-            columnAtt.Width = 165;
+            columnAtt.Width = 155;
             columnAtt.DisplayMemberBinding = new Binding("Attacker");
 
             var columnTarget = new GridViewColumn();
@@ -129,7 +129,7 @@ namespace Uber.DemoTools
             headerTarget.Content = "Target";
             headerTarget.Tag = "Target";
             columnTarget.Header = headerTarget;
-            columnTarget.Width = 165;
+            columnTarget.Width = 155;
             columnTarget.DisplayMemberBinding = new Binding("Target");
 
             var columnMOD = new GridViewColumn();
@@ -137,7 +137,7 @@ namespace Uber.DemoTools
             headerMOD.Content = "Cause of Death"; // Mean of death in id terminology.
             headerMOD.Tag = "Mod";
             columnMOD.Header = headerMOD;
-            columnMOD.Width = 165;
+            columnMOD.Width = 155;
             columnMOD.DisplayMemberBinding = new Binding("Mod");
 
             var demoEventsGridView = new GridView();

@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 
-static void CrashHandler(const char* message)
+void CrashHandler(const char* message)
 {
 	fprintf(stderr, "\n");
 	fprintf(stderr, message);
@@ -28,7 +28,7 @@ static void PrintHelp()
 static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 {
 	udtVMArrayWithAlloc<s32> errorCodes;
-	errorCodes.Init((uptr)sizeof(s32) * (uptr)fileCount);
+	errorCodes.Init((uptr)sizeof(s32) * (uptr)fileCount, "TimeShiftDemos::ErrorCodesArray");
 	errorCodes.Resize((u32)fileCount);
 
 	s32 cancel = 0;
@@ -59,17 +59,13 @@ static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 	return 0;
 }
 
-int main(int argc, char** argv)
+int udt_main(int argc, char** argv)
 {
 	if(argc < 3)
 	{
 		PrintHelp();
 		return __LINE__;
 	}
-
-	printf("UDT library version: %s\n", udtGetVersionString());
-	ResetCurrentDirectory(argv[0]);
-	udtSetCrashHandler(&CrashHandler);
 
 	s32 snapshotCount = -1;
 	if(!StringParseSeconds(snapshotCount, argv[1]) || snapshotCount <= 0 || snapshotCount > 8)

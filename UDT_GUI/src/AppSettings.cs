@@ -8,11 +8,63 @@ using System.Windows.Controls;
 
 namespace Uber.DemoTools
 {
+    // @TODO: Move this...
+    public enum CSharpPerfStats
+    {
+        Duration,
+        FileCount,
+        Count
+    }
+
+    public static class CSharpPerfStatsConstants
+    {
+        public static readonly string[] Strings = new string[(int)CSharpPerfStats.Count]
+        {
+            "duration with C# overhead",
+            "file count"
+        };
+    }
+
+    // @TODO: Move this...
+    public static class BitManip
+    {
+        public static bool IsBitSet(uint mask, int bitIndex)
+        {
+            return (mask & ((uint)1 << bitIndex)) != 0;
+        }
+
+        public static void SetBit(ref uint mask, int bitIndex)
+        {
+            mask |= (uint)1 << bitIndex;
+        }
+
+        public static void ClearBit(ref uint mask, int bitIndex)
+        {
+            mask &= ~((uint)1 << bitIndex);
+        }
+
+        public static int PopCnt(uint mask)
+        {
+            var count = 0;
+            for(var i = 0; i < 32; ++i)
+            {
+                if(IsBitSet(mask, i))
+                {
+                    ++count;
+                }
+            }
+
+            return count;
+        }
+    }
+
     public enum ComponentType
     {
         Settings,
         ChatEvents,
         FragEvents,
+        Stats,
+        Commands,
         Patterns,
         CutByTime,
         CutByPattern,
@@ -57,9 +109,10 @@ namespace Uber.DemoTools
         private TextBox _startTimeOffsetEditBox = null;
         private TextBox _endTimeOffsetEditBox = null;
         private CheckBox _mergeCutSectionsCheckBox = null;
-        private CheckBox _printAllocStatsCheckBox = null;
-        private CheckBox _printExecutionTimeCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
+        private readonly List<CheckBox> _jsonEnabledPlugInsCheckBoxes = new List<CheckBox>();
+        private readonly List<CheckBox> _enabledPerfStatsCheckBoxes = new List<CheckBox>();
+        private readonly List<CheckBox> _enabledCSharpPerfStatsCheckBoxes = new List<CheckBox>();
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return null; } }
@@ -92,10 +145,11 @@ namespace Uber.DemoTools
             config.OpenDemosFromInputFolderOnStartUp = _useInputFolderOnStartUpCheckBox.IsChecked ?? false;
             config.AnalyzeOnLoad = _analyzeOnLoadCheckBox.IsChecked ?? false;
             config.MergeCutSectionsFromDifferentPatterns = _mergeCutSectionsCheckBox.IsChecked ?? false;
-            config.PrintAllocationStats = _printAllocStatsCheckBox.IsChecked ?? false;
-            config.PrintExecutionTime = _printExecutionTimeCheckBox.IsChecked ?? false;
             config.ColorLogWarningsAndErrors = _colorLogMessagesCheckBox.IsChecked ?? false;
             GetMaxThreadCount(ref config.MaxThreadCount);
+            config.JSONPlugInsEnabled = CreateBitMask(_jsonEnabledPlugInsCheckBoxes);
+            config.PerfStatsEnabled = CreateBitMask(_enabledPerfStatsCheckBoxes);
+            config.CSharpPerfStatsEnabled = CreateBitMask(_enabledCSharpPerfStatsCheckBoxes);
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -212,24 +266,6 @@ namespace Uber.DemoTools
             mergeCutSectionsCheckBox.Checked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = true;
             mergeCutSectionsCheckBox.Unchecked += (obj, args) => _app.Config.MergeCutSectionsFromDifferentPatterns = false;
 
-            var printAllocStatsCheckBox = new CheckBox();
-            _printAllocStatsCheckBox = printAllocStatsCheckBox;
-            printAllocStatsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            printAllocStatsCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            printAllocStatsCheckBox.IsChecked = _app.Config.PrintAllocationStats;
-            printAllocStatsCheckBox.Content = " Print memory allocations stats when job processing is finished?";
-            printAllocStatsCheckBox.Checked += (obj, args) => _app.Config.PrintAllocationStats = true;
-            printAllocStatsCheckBox.Unchecked += (obj, args) => _app.Config.PrintAllocationStats = false;
-
-            var printExecutionTimeCheckBox = new CheckBox();
-            _printExecutionTimeCheckBox = printExecutionTimeCheckBox;
-            printExecutionTimeCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            printExecutionTimeCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            printExecutionTimeCheckBox.IsChecked = _app.Config.PrintExecutionTime;
-            printExecutionTimeCheckBox.Content = " Print execution time when job processing is finished?";
-            printExecutionTimeCheckBox.Checked += (obj, args) => _app.Config.PrintExecutionTime = true;
-            printExecutionTimeCheckBox.Unchecked += (obj, args) => _app.Config.PrintExecutionTime = false;
-
             var colorLogMessagesCheckBox = new CheckBox();
             _colorLogMessagesCheckBox = colorLogMessagesCheckBox;
             colorLogMessagesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -257,8 +293,6 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("Start Time Offset [s]", startTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("Merge Cut Sections", mergeCutSectionsCheckBox));
-            panelList.Add(App.CreateTuple("Print Alloc Stats", printAllocStatsCheckBox));
-            panelList.Add(App.CreateTuple("Print Execution Time", printExecutionTimeCheckBox));
             panelList.Add(App.CreateTuple("Color Log Messages", colorLogMessagesCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
@@ -281,7 +315,89 @@ namespace Uber.DemoTools
             settingsGroupBox.Header = "Settings";
             settingsGroupBox.Content = settingsPanel;
 
-            return settingsGroupBox;
+            var plugInNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PlugInNames);
+            var jsonPlugInsStackPanel = new StackPanel();
+            jsonPlugInsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            jsonPlugInsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            jsonPlugInsStackPanel.Margin = new Thickness(5);
+            jsonPlugInsStackPanel.Children.Add(new TextBlock { Text = "Select which analyzers are enabled" });
+            for(int i = 0; i < (int)UDT_DLL.udtParserPlugIn.Count; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + plugInNames[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.JSONPlugInsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.JSONPlugInsEnabled, iCopy);
+
+                _jsonEnabledPlugInsCheckBoxes.Add(checkBox);
+                jsonPlugInsStackPanel.Children.Add(checkBox);
+            }
+
+            var jsonPlugInsGroupBox = new GroupBox();
+            jsonPlugInsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            jsonPlugInsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            jsonPlugInsGroupBox.Margin = new Thickness(5);
+            jsonPlugInsGroupBox.Header = "JSON Export";
+            jsonPlugInsGroupBox.Content = jsonPlugInsStackPanel;
+
+            var perfStatsNames = UDT_DLL.GetStringArray(UDT_DLL.udtStringArray.PerfStatsNames);
+            var perfStatsStackPanel = new StackPanel();
+            perfStatsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            perfStatsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            perfStatsStackPanel.Margin = new Thickness(5);
+            perfStatsStackPanel.Children.Add(new TextBlock { Text = "Select which job stats are printed in the log window" });
+            for(int i = 0; i < (int)CSharpPerfStats.Count; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + CSharpPerfStatsConstants.Strings[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.CSharpPerfStatsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.CSharpPerfStatsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.CSharpPerfStatsEnabled, iCopy);
+
+                _enabledCSharpPerfStatsCheckBoxes.Add(checkBox);
+                perfStatsStackPanel.Children.Add(checkBox);
+            }
+            for(int i = 0; i < (int)UDT_DLL.StatsConstants.PerfFieldCount; ++i)
+            {
+                var checkBox = new CheckBox();
+                checkBox.Margin = new Thickness(5, 5, 0, 0);
+                checkBox.Content = " " + perfStatsNames[i].Capitalize();
+                checkBox.IsChecked = BitManip.IsBitSet(_app.Config.PerfStatsEnabled, i);
+                var iCopy = i; // Make sure we capture a local copy in the lambda.
+                checkBox.Checked += (obj, args) => BitManip.SetBit(ref _app.Config.PerfStatsEnabled, iCopy);
+                checkBox.Unchecked += (obj, args) => BitManip.ClearBit(ref _app.Config.PerfStatsEnabled, iCopy);
+
+                _enabledPerfStatsCheckBoxes.Add(checkBox);
+                perfStatsStackPanel.Children.Add(checkBox);
+            }
+
+            var perfStatsGroupBox = new GroupBox();
+            perfStatsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            perfStatsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            perfStatsGroupBox.Margin = new Thickness(5);
+            perfStatsGroupBox.Header = "Performance Logging";
+            perfStatsGroupBox.Content = perfStatsStackPanel;
+
+            var rootPanel = new WrapPanel();
+            rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
+            rootPanel.Children.Add(settingsGroupBox);
+            rootPanel.Children.Add(perfStatsGroupBox);
+            rootPanel.Children.Add(jsonPlugInsGroupBox);
+
+            var scrollViewer = new ScrollViewer();
+            scrollViewer.HorizontalAlignment = HorizontalAlignment.Stretch;
+            scrollViewer.VerticalAlignment = VerticalAlignment.Stretch;
+            scrollViewer.Margin = new Thickness(5);
+            scrollViewer.HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled;
+            scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
+            scrollViewer.Content = rootPanel;
+
+            return scrollViewer; 
         }
 
         private FrameworkElement CreateFolderRow(ref TextBox textBox, string defaultValue, string browseDesc)
@@ -450,6 +566,20 @@ namespace Uber.DemoTools
         private void SetActive(FrameworkElement element, bool active)
         {
             element.Opacity = active ? 1.0 : 0.5;
+        }
+
+        private static uint CreateBitMask(List<CheckBox> checkBoxes)
+        {
+            uint mask = 0;
+            for(var i = 0; i < checkBoxes.Count; ++i)
+            {
+                if(checkBoxes[i].IsChecked ?? false)
+                {
+                    BitManip.SetBit(ref mask, i);
+                }
+            }
+
+            return mask;
         }
     }
 }

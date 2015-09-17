@@ -11,6 +11,7 @@
 #include "multi_threaded_processing.hpp"
 #include "analysis_splitter.hpp"
 #include "path.hpp"
+#include "thread_local_allocators.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -25,7 +26,7 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "0.8.0a";
+static const char* VersionString = "0.9.0";
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -91,6 +92,126 @@ static const char* CutPatternNames[] =
 	"after last cut pattern"
 };
 #undef UDT_CUT_PATTERN_ITEM
+
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) Desc,
+static const char* GameTypeNames[] =
+{
+	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+	"after last game type"
+};
+#undef UDT_GAME_TYPE_ITEM
+
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) ShortDesc,
+static const char* ShortGameTypeNames[] =
+{
+	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+	"after last game type"
+};
+#undef UDT_GAME_TYPE_ITEM
+
+#define UDT_MOD_NAME_ITEM(Enum, Name) Name,
+static const char* ModNames[] =
+{
+	UDT_MOD_NAME_LIST(UDT_MOD_NAME_ITEM)
+	"after last mod"
+};
+#undef UDT_MOD_NAME_ITEM
+
+#define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) LongName,
+static const char* GamePlayNames[] =
+{
+	UDT_GAMEPLAY_LIST(UDT_GAMEPLAY_ITEM)
+	"after last long gameplay name"
+};
+#undef UDT_GAMEPLAY_ITEM
+
+#define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) ShortName,
+static const char* ShortGamePlayNames[] =
+{
+	UDT_GAMEPLAY_LIST(UDT_GAMEPLAY_ITEM)
+	"after last short gameplay name"
+};
+#undef UDT_GAMEPLAY_ITEM
+
+#define UDT_OVERTIME_TYPE_ITEM(Enum, Name) Name,
+static const char* OverTimeTypes[] =
+{
+	UDT_OVERTIME_TYPE_LIST(UDT_OVERTIME_TYPE_ITEM)
+	"after last overtime type"
+};
+#undef UDT_OVERTIME_TYPE_ITEM
+
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
+static const char* PlayerStatsFieldNames[]
+{
+	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+	"after last player stats field"
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) Desc,
+static const char* TeamStatsFieldNames[]
+{
+	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+	"after last team stats field"
+};
+#undef UDT_TEAM_STATS_ITEM
+
+#define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Desc,
+static const char* PlugInNamesArray[]
+{
+	UDT_PLUG_IN_LIST(UDT_PLUG_IN_ITEM)
+	"after last plug-in"
+};
+#undef UDT_PLUG_IN_ITEM
+
+#define UDT_PERF_STATS_ITEM(Enum, Desc, Type) Desc,
+static const char* PerfStatsFieldNames[]
+{
+	UDT_PERF_STATS_LIST(UDT_PERF_STATS_ITEM)
+	"after last perf stats field"
+};
+#undef UDT_PERF_STATS_ITEM
+
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
+static const u8 PlayerStatsCompModesArray[]
+{
+	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+	0
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
+static const u8 TeamStatsCompModesArray[]
+{
+	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+	0
+};
+#undef UDT_TEAM_STATS_ITEM
+
+#define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtMatchStatsDataType::Type,
+static const u8 PlayerStatsDataTypesArray[]
+{
+	UDT_PLAYER_STATS_LIST(UDT_PLAYER_STATS_ITEM)
+	0
+};
+#undef UDT_PLAYER_STATS_ITEM
+
+#define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtMatchStatsDataType::Type,
+static const u8 TeamStatsDataTypesArray[]
+{
+	UDT_TEAM_STATS_LIST(UDT_TEAM_STATS_ITEM)
+	0
+};
+#undef UDT_TEAM_STATS_ITEM
+
+#define UDT_PERF_STATS_ITEM(Enum, Desc, Type) (u8)udtPerfStatsDataType::Type,
+static const u8 PerfStatsDataTypesArray[]
+{
+	UDT_PERF_STATS_LIST(UDT_PERF_STATS_ITEM)
+	0
+};
+#undef UDT_PERF_STATS_ITEM
 
 
 UDT_API(const char*) udtGetVersionString()
@@ -252,9 +373,154 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 			*elementCount = (u32)(UDT_COUNT_OF(CutPatternNames) - 1);
 			break;
 
+		case udtStringArray::GameTypes:
+			*elements = GameTypeNames;
+			*elementCount = (u32)(UDT_COUNT_OF(GameTypeNames) - 1);
+			break;
+
+		case udtStringArray::ShortGameTypes:
+			*elements = ShortGameTypeNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ShortGameTypeNames) - 1);
+			break;
+
+		case udtStringArray::ModNames:
+			*elements = ModNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ModNames) - 1);
+			break;
+
+		case udtStringArray::GamePlayNames:
+			*elements = GamePlayNames;
+			*elementCount = (u32)(UDT_COUNT_OF(GamePlayNames) - 1);
+			break;
+
+		case udtStringArray::ShortGamePlayNames:
+			*elements = ShortGamePlayNames;
+			*elementCount = (u32)(UDT_COUNT_OF(ShortGamePlayNames) - 1);
+			break;
+
+		case udtStringArray::OverTimeTypes:
+			*elements = OverTimeTypes;
+			*elementCount = (u32)(UDT_COUNT_OF(OverTimeTypes) - 1);
+			break;
+
+		case udtStringArray::TeamStatsNames:
+			*elements = TeamStatsFieldNames;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsFieldNames) - 1);
+			break;
+
+		case udtStringArray::PlayerStatsNames:
+			*elements = PlayerStatsFieldNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsFieldNames) - 1);
+			break;
+
+		case udtStringArray::PlugInNames:
+			*elements = PlugInNamesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PlugInNamesArray) - 1);
+			break;
+
+		case udtStringArray::PerfStatsNames:
+			*elements = PerfStatsFieldNames;
+			*elementCount = (u32)(UDT_COUNT_OF(PerfStatsFieldNames) - 1);
+			break;
+
 		default:
 			return (s32)udtErrorCode::InvalidArgument;
 	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32* elementCount)
+{
+	if(elements == NULL || elementCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	switch(arrayId)
+	{
+		case udtByteArray::TeamStatsCompModes:
+			*elements = TeamStatsCompModesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsCompModesArray) - 1);
+			break;
+
+		case udtByteArray::PlayerStatsCompModes:
+			*elements = PlayerStatsCompModesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsCompModesArray) - 1);
+			break;
+
+		case udtByteArray::TeamStatsDataTypes:
+			*elements = TeamStatsDataTypesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(TeamStatsDataTypesArray) - 1);
+			break;
+
+		case udtByteArray::PlayerStatsDataTypes:
+			*elements = PlayerStatsDataTypesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PlayerStatsDataTypesArray) - 1);
+			break;
+
+		case udtByteArray::PerfStatsDataTypes:
+			*elements = PerfStatsDataTypesArray;
+			*elementCount = (u32)(UDT_COUNT_OF(PerfStatsDataTypesArray) - 1);
+			break;
+
+		default:
+			return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount, u32* perfFieldCount)
+{
+	if(playerMaskByteCount == NULL ||
+	   teamMaskByteCount == NULL ||
+	   playerFieldCount == NULL ||
+	   teamFieldCount == NULL ||
+	   perfFieldCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	*playerMaskByteCount = UDT_PLAYER_STATS_MASK_BYTE_COUNT;
+	*teamMaskByteCount = UDT_TEAM_STATS_MASK_BYTE_COUNT;
+	*playerFieldCount = (u32)udtPlayerStatsField::Count;
+	*teamFieldCount = (u32)udtTeamStatsField::Count;
+	*perfFieldCount = (u32)udtPerfStatsField::Count;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
+{
+	destPerfStats[udtPerfStatsField::ThreadCount] = sourcePerfStats[udtPerfStatsField::ThreadCount];
+	destPerfStats[udtPerfStatsField::AllocatorCount] = sourcePerfStats[udtPerfStatsField::AllocatorCount];
+
+	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
+	destPerfStats[udtPerfStatsField::Duration] += sourcePerfStats[udtPerfStatsField::Duration];
+	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+
+	if(sourcePerfStats[udtPerfStatsField::MemoryReserved] > destPerfStats[udtPerfStatsField::MemoryReserved])
+	{
+		destPerfStats[udtPerfStatsField::MemoryReserved] = sourcePerfStats[udtPerfStatsField::MemoryReserved];
+		destPerfStats[udtPerfStatsField::MemoryCommitted] = sourcePerfStats[udtPerfStatsField::MemoryCommitted];
+		destPerfStats[udtPerfStatsField::MemoryUsed] = sourcePerfStats[udtPerfStatsField::MemoryUsed];
+		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtInitLibrary()
+{
+	udtThreadLocalAllocators::Init();
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtShutDownLibrary()
+{
+	udtThreadLocalAllocators::Destroy();
 
 	return (s32)udtErrorCode::None;
 }
@@ -622,6 +888,9 @@ static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 
 static s32 RunJobWithLocalContextGroup(udtParsingJobType::Id jobType, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificArg)
 {
+	udtTimer jobTimer;
+	jobTimer.Start();
+
 	udtDemoThreadAllocator threadAllocator;
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	if(!threadJob)
@@ -636,7 +905,7 @@ static s32 RunJobWithLocalContextGroup(udtParsingJobType::Id jobType, const udtP
 	}
 
 	udtMultiThreadedParsing parser;
-	const bool success = parser.Process(contextGroup->Contexts, threadAllocator, info, extraInfo, jobType, jobSpecificArg);
+	const bool success = parser.Process(jobTimer, contextGroup->Contexts, threadAllocator, info, extraInfo, jobType, jobSpecificArg);
 
 	DestroyContextGroup(contextGroup);
 
@@ -663,6 +932,9 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
+	udtTimer jobTimer;
+	jobTimer.Start();
+
 	udtDemoThreadAllocator threadAllocator;
 	const bool threadJob = threadAllocator.Process(extraInfo->FilePaths, extraInfo->FileCount, extraInfo->MaxThreadCount);
 	const u32 threadCount = threadJob ? threadAllocator.Threads.GetSize() : 1;
@@ -678,7 +950,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	}
 	
 	udtMultiThreadedParsing parser;
-	const bool success = parser.Process((*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
+	const bool success = parser.Process(jobTimer, (*contextGroup)->Contexts, threadAllocator, info, extraInfo, udtParsingJobType::General, NULL);
 
 	return GetErrorCode(success, info->CancelOperation);
 }
@@ -707,13 +979,24 @@ UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg
 
 UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg)
 {
-	if(info == NULL || extraInfo == NULL ||
+	if(info == NULL || extraInfo == NULL || timeShiftArg == NULL ||
 	   !IsValid(*extraInfo) || !HasValidOutputOption(*info))
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
 	return RunJobWithLocalContextGroup(udtParsingJobType::TimeShift, info, extraInfo, timeShiftArg);
+}
+
+UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo)
+{
+	if(info == NULL || extraInfo == NULL ||
+	   !IsValid(*extraInfo) || !HasValidOutputOption(*info) || !HasValidPlugInOptions(*info))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	return RunJobWithLocalContextGroup(udtParsingJobType::ExportToJSON, info, extraInfo, NULL);
 }
 
 UDT_API(s32) udtGetContextCountFromGroup(udtParserContextGroup* contextGroup, u32* count)

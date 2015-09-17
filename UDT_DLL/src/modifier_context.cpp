@@ -25,6 +25,6 @@ void udtModifierContext::InitIfNeeded()
 	}
 	_initialized = true;
 
-	TempAllocator.Init(1 << 16);
+	TempAllocator.Init(1 << 16, "ModifierContext::Temp");
 	WriteStream.Open(1 << 20);
 }

@@ -43,6 +43,22 @@ udtString udtString::NewCloneFromRef(udtVMLinearAllocator& allocator, const udtS
 	return NewClone(allocator, input.String, input.Length);
 }
 
+udtString udtString::NewCleanClone(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* input, u32 inputLength)
+{
+	udtString clone = NewClone(allocator, input, inputLength);
+	udtString::CleanUp(clone, protocol);
+
+	return clone;
+}
+
+udtString udtString::NewCleanCloneFromRef(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const udtString& input)
+{
+	udtString clone = NewCloneFromRef(allocator, input);
+	udtString::CleanUp(clone, protocol);
+
+	return clone;
+}
+
 udtString udtString::NewEmptyConstant()
 {
 	udtString string;
@@ -299,6 +315,13 @@ bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const udt
 	return false;
 }
 
+bool udtString::ContainsNoCase(const udtString& input, const udtString& pattern)
+{
+	u32 charIndex = 0;
+
+	return ContainsNoCase(charIndex, input, pattern);
+}
+
 bool udtString::StartsWithNoCase(const udtString& input, const udtString& pattern)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
@@ -381,6 +404,13 @@ bool udtString::Contains(u32& charIndex, const udtString& input, const udtString
 	return found;
 }
 
+bool udtString::Contains(const udtString& input, const udtString& pattern)
+{
+	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+
+	return strstr(input.String, pattern.String) != NULL;
+}
+
 bool udtString::StartsWith(const udtString& input, const udtString& pattern)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
@@ -448,6 +478,13 @@ bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const cha
 	return ContainsNoCase(charIndex, input, udtString::NewConstRef(pattern));
 }
 
+bool udtString::ContainsNoCase(const udtString& input, const char* pattern)
+{
+	u32 charIndex = 0;
+
+	return ContainsNoCase(charIndex, input, udtString::NewConstRef(pattern));
+}
+
 bool udtString::StartsWithNoCase(const udtString& input, const char* pattern)
 { 
 	return StartsWithNoCase(input, udtString::NewConstRef(pattern));
@@ -468,6 +505,13 @@ bool udtString::Contains(u32& charIndex, const udtString& input, const char* pat
 	return Contains(charIndex, input, udtString::NewConstRef(pattern));
 }
 
+bool udtString::Contains(const udtString& input, const char* pattern)
+{
+	u32 charIndex = 0;
+
+	return Contains(charIndex, input, udtString::NewConstRef(pattern));
+}
+
 bool udtString::StartsWith(const udtString& input, const char* pattern)
 { 
 	return StartsWith(input, udtString::NewConstRef(pattern));
@@ -483,11 +527,11 @@ bool udtString::Equals(const udtString& a, const char* b)
 	return Equals(a, udtString::NewConstRef(b));
 }
 
-bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList)
+bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList, u32 offset)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && charList.String != NULL, false);
 
-	for(u32 i = 0; i < input.Length; ++i)
+	for(u32 i = offset; i < input.Length; ++i)
 	{
 		for(u32 j = 0; j < charList.Length; ++j)
 		{
@@ -521,11 +565,11 @@ bool udtString::FindLastCharacterListMatch(u32& index, const udtString& input, c
 	return false;
 }
 
-bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern)
+bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern, u32 offset)
 {
 	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
 
-	for(u32 i = 0; i < input.Length; ++i)
+	for(u32 i = offset; i < input.Length; ++i)
 	{
 		if(input.String[i] == pattern)
 		{
@@ -563,6 +607,16 @@ bool udtString::IsNullOrEmpty(const char* string)
 	return string == NULL || *string == '\0';
 }
 
+bool udtString::IsNull(const udtString& string)
+{
+	return string.String == NULL;
+}
+
+bool udtString::IsEmpty(const udtString& string)
+{
+	return string.String != NULL && *string.String == '\0';
+}
+
 static UDT_FORCE_INLINE bool IsColorString(const char* s)
 {
 	return (s != NULL) && (s[0] == '^') && (s[1] != '\0') && (s[1] != '^');
@@ -597,7 +651,7 @@ static bool IsLongOSPColorString(const udtString& string)
 
 void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 {
-	if(result.String == NULL)
+	if(IsNullOrEmpty(result))
 	{
 		return;
 	}
@@ -633,3 +687,128 @@ void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 
 	result.Length = newLength;
 }
+
+void udtString::RemoveCharacter(udtString& result, char toRemove)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	u32 newLength = 0;
+	char* dest = result.String;
+	char* source = result.String;
+	char c;
+	while((c = *source) != 0)
+	{
+		if(c != toRemove)
+		{
+			*dest++ = c;
+			newLength++;
+		}
+		++source;
+	}
+	*dest = '\0';
+
+	result.Length = newLength;
+}
+
+void udtString::TrimTrailingCharacter(udtString& result, char toRemove)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	char* it = result.String;
+	char* lastChar = result.String;
+	while(*it != 0)
+	{
+		if(*it != toRemove)
+		{
+			lastChar = it;
+		}
+		++it;
+	}
+
+	lastChar[1] = '\0';
+	result.Length = (u32)(lastChar + 1 - result.String);
+}
+
+#if defined(UDT_WINDOWS)
+
+#include <Windows.h>
+
+// Includes the terminating character in the count.
+static u32 UTF8toUTF16_GetCharCount(const char* utf8String)
+{
+	return (u32)MultiByteToWideChar(CP_UTF8, 0, utf8String, -1, nullptr, 0);
+}
+
+static bool UTF8toUTF16_Convert(wchar_t* utf16String, u32 utf16StringMaxChars, const char* utf8String)
+{
+	return MultiByteToWideChar(CP_UTF8, 0, utf8String, -1, utf16String, (int)utf16StringMaxChars) != 0;
+}
+
+// Includes the terminating character in the count.
+static u32 UTF16toUTF8_GetCharCount(const wchar_t* utf16String)
+{
+	return (u32)WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, nullptr, 0, nullptr, nullptr);
+}
+
+static u32 UTF16toUTF8_Convert(char* utf8String, u32 utf8StringMaxChars, const wchar_t* utf16String)
+{
+	return (u32)WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, utf8String, (int)utf8StringMaxChars, nullptr, nullptr);
+}
+
+udtString udtString::NewFromUTF16(udtVMLinearAllocator& allocator, const wchar_t* utf16String)
+{
+	if(utf16String == NULL)
+	{
+		return udtString::NewEmptyConstant();
+	}
+
+	const uptr allocatorOffset = allocator.GetCurrentByteCount();
+	const u32 charCount = UTF16toUTF8_GetCharCount(utf16String);
+	char* const utf8String = (char*)allocator.Allocate((uptr)charCount);
+	if(!UTF16toUTF8_Convert(utf8String, charCount, utf16String))
+	{
+		allocator.SetCurrentByteCount(allocatorOffset);
+		return udtString::NewEmptyConstant();
+	}
+
+	udtString string;
+	string.String = utf8String;
+	string.Length = charCount - 1;
+	string.ReservedBytes = charCount;
+
+	return string;
+}
+
+wchar_t* udtString::ConvertToUTF16(udtVMLinearAllocator& allocator, const udtString& utf8String)
+{
+	if(IsNull(utf8String))
+	{
+		return NULL;
+	}
+
+	const uptr allocatorOffset = allocator.GetCurrentByteCount();
+	const u32 charCount = UTF8toUTF16_GetCharCount(utf8String.String);
+	const u32 allocCharCount = charCount;
+	wchar_t* const utf16String = (wchar_t*)allocator.Allocate((uptr)allocCharCount * (uptr)sizeof(wchar_t));
+	if(!UTF8toUTF16_Convert(utf16String, charCount, utf8String.String))
+	{
+		allocator.SetCurrentByteCount(allocatorOffset);
+		return NULL;
+	}
+
+	return utf16String;
+}
+
+#endif

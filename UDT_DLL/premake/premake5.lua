@@ -19,7 +19,7 @@ local function ApplyProjectSettings()
 	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_inc.."/*.hpp" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
-	flags { "Symbols", "NoNativeWChar", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings", "NoExceptions" }
+	flags { "Unicode", "Symbols", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings", "NoExceptions" }
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -68,6 +68,9 @@ local function ApplyProjectSettings()
 	
 	filter "action:vs*"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		
+	filter { "action:vs*", "kind:ConsoleApp" }
+		linkoptions { "/ENTRY:wmainCRTStartup" } -- Directly passed to the linker.
 	
 	filter { "action:vs*", "configurations:Debug" }
 		buildoptions { "" } -- Directly passed to the compiler.
@@ -140,7 +143,13 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
 
-		
+	project "UDT_json"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_json.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
 			
 			
 	

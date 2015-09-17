@@ -9,7 +9,7 @@ udtdConverter::udtdConverter()
 	_protocolSizeOfEntityState = 0;
 	_protocolSizeOfPlayerState = 0;
 	_firstMessage = true;
-	_plugIns.Init(UDT_MEMORY_PAGE_SIZE);
+	_plugIns.Init(UDT_MEMORY_PAGE_SIZE, "UDTDemoConverter::PlugIns");
 }
 
 udtdConverter::~udtdConverter()
@@ -197,9 +197,9 @@ bool udtdConverter::ProcessGameState()
 
 		_inStringData[length] = '\0';
 
-		for(u32 i = 0, count = _plugIns.GetSize(); i < count; ++i)
+		for(u32 j = 0, count = _plugIns.GetSize(); j < count; ++j)
 		{
-			_plugIns[i]->AnalyzeConfigString(index, _inStringData, (u32)length);
+			_plugIns[j]->AnalyzeConfigString(index, _inStringData, (u32)length);
 		}
 
 		_outMsg.WriteByte(svc_configstring);

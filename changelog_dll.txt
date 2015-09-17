@@ -1,3 +1,18 @@
+0.9.0 (17.09.2015)
+ADD: UDT_json command-line tool to export analysis data to JSON files
+ADD: New stats parser plug-in: udtParserPlugInStats
+ADD: The parser now reads "big config string" commands ("bcs0", "bcs1" and "bcs2")
+ADD: The chat analyzer now stores team chat messages as well
+ADD: New raw commands parser plug-in: udtParserPlugInRawCommands
+ADD: "Cut by Chat" can now search team chat messages
+ADD: Unicode file and directory paths support for the library and all the command-line tools on Windows
+ADD: New raw config strings parser plug-in: udtParserPlugInRawConfigStrings
+CHG: Performance stats are returned through the API and the library no longer invokes the user-supplied Log function to print them
+FIX: "Cut by Chat" now searches the messages themselves, not the raw commands
+FIX: Potential crash in multi-threaded batch jobs
+FIX: Player names extraction from Quake 3 chat messages
+FIX: Incorrect pointer arithmetic when iterating the thread's allocators
+
 0.8.0a (30.07.2015)
 FIX: Cut by Flag Captures now works with dm_91 demos
 

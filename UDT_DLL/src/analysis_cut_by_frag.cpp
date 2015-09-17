@@ -20,7 +20,7 @@ static bool IsAllowedUDTMeanOfDeath(s32 udtMod, u32 udtPlayerMODFlags)
 
 
 udtCutByFragAnalyzer::udtCutByFragAnalyzer() 
-	: _frags(1 << 16)
+	: _frags(1 << 16, "CutByFragAnalyzer::FragsArray")
 {
 	_analyzer.SetNameAllocationEnabled(false);
 }
@@ -118,7 +118,8 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 
 void udtCutByFragAnalyzer::InitAllocators(u32 demoCount)
 {
-	_analyzerFinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount);
+	// @FIXME: The following line is redundant?
+	_analyzerFinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByFragAnalyzer::Final");
 	_analyzer.InitAllocators(demoCount, _analyzerFinalAllocator, PlugIn->GetTempAllocator());
 }
 

@@ -1,13 +1,25 @@
-#include "shared.hpp"
+#include "api.h"
 
-#if defined(_WIN32)
+
+#if defined(UDT_WINDOWS)
+#	include "string.hpp"
+#	include "thread_local_allocators.hpp"
+#	include "scoped_stack_allocator.hpp"
 #	include <Windows.h>
 #endif
 
+#include <stdio.h>
 
-#if defined(_WIN32)
 
-void ResetCurrentDirectory(const char* exeFilePath)
+extern int udt_main(int argc, char** argv);
+extern void CrashHandler(const char* message);
+
+
+#if defined(UDT_WINDOWS)
+
+#define UDT_MAX_ARG_COUNT 16
+
+static void ResetCurrentDirectory(const char* exeFilePath)
 {
 	const char* const match = strrchr(exeFilePath, '\\');
 	if(match == NULL)
@@ -15,27 +27,49 @@ void ResetCurrentDirectory(const char* exeFilePath)
 		return;
 	}
 
-	const size_t cdLength = match - exeFilePath;
-	char directoryPath[MAX_PATH];
-	strncpy(directoryPath, exeFilePath, cdLength);
-	directoryPath[cdLength] = '\0';
+	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocatorScope(allocator);
 
-	SetCurrentDirectoryA(directoryPath);
+	const udtString filePath = udtString::NewConstRef(exeFilePath);
+	const udtString directoryPath = udtString::NewSubstringClone(allocator, filePath, 0, (u32)(match - exeFilePath));
+	wchar_t* const wideDirectoryPath = udtString::ConvertToUTF16(allocator, directoryPath);
+	SetCurrentDirectoryW(wideDirectoryPath);
 }
 
-void PauseConsoleApp()
+int wmain(int argc, wchar_t** argvWide)
 {
-	system("pause");
+	printf("UDT library version: %s\n", udtGetVersionString());
+	udtSetCrashHandler(&CrashHandler);
+	udtInitLibrary();
+
+	if(argc > UDT_MAX_ARG_COUNT)
+	{
+		argc = UDT_MAX_ARG_COUNT;
+	}
+
+	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocatorScope(allocator);
+
+	char* argv[UDT_MAX_ARG_COUNT];
+	for(int i = 0; i < argc; ++i)
+	{
+		argv[i] = udtString::NewFromUTF16(allocator, argvWide[i]).String;
+	}
+
+	ResetCurrentDirectory(argv[0]);
+
+	return udt_main(argc, argv);
 }
 
 #else
 
-void ResetCurrentDirectory(const char*)
+int main(int argc, char** argv)
 {
-}
+	printf("UDT library version: %s\n", udtGetVersionString());
+	udtSetCrashHandler(&CrashHandler);
+	udtInitLibrary();
 
-void PauseConsoleApp()
-{
+	return udt_main(argc, argv);
 }
 
 #endif

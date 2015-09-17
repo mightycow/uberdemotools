@@ -235,7 +235,7 @@ namespace Uber.DemoTools
                 "The times are server times, not match times." +
                 "\nTime format is either (seconds) or (minutes:seconds)." +
                 "\n\nThe GameState index is the 0-based index of the last GameState message that comes before the content you want to cut." +
-                "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"Info\" tab.";
+                "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"General\" tab under \"Info\".";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);
@@ -370,10 +370,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
             _app.ParseArg.FileOffset = info.FileOffset;
             _app.ParseArg.GameStateIndex = info.GameStateIndex;
 
@@ -387,8 +384,6 @@ namespace Uber.DemoTools
                 var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
                 _app.LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
             }
-
-            Marshal.FreeHGlobal(outputFolderPtr);
         }
     }
 }

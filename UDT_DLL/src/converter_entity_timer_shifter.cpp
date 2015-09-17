@@ -5,7 +5,7 @@
 
 udtdEntityTimeShifterPlugIn::udtdEntityTimeShifterPlugIn()
 {
-	_tempAllocator.Init(1 << 16);
+	_tempAllocator.Init(1 << 16, "UDTDemoEntityTimeShifterPlugIn::Temp");
 }
 
 udtdEntityTimeShifterPlugIn::~udtdEntityTimeShifterPlugIn()

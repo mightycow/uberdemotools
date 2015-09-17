@@ -153,9 +153,9 @@ template<typename T>
 struct udtVMArrayWithAlloc : public udtVMArray<T>
 {
 public:
-	explicit udtVMArrayWithAlloc(uptr reservedByteCount)
+	explicit udtVMArrayWithAlloc(uptr reservedByteCount, const char* allocatorName)
 	{
-		_allocator.Init(reservedByteCount);
+		_allocator.Init(reservedByteCount, allocatorName);
 		udtVMArray<T>::SetAllocator(_allocator);
 	}
 
@@ -163,9 +163,9 @@ public:
 	{
 	}
 
-	void Init(uptr reservedByteCount)
+	void Init(uptr reservedByteCount, const char* allocatorName)
 	{
-		_allocator.Init(reservedByteCount);
+		_allocator.Init(reservedByteCount, allocatorName);
 		udtVMArray<T>::SetAllocator(_allocator);
 	}
 

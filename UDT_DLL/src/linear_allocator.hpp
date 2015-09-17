@@ -25,21 +25,25 @@ public:
 	};
 	
 	static void GetThreadStats(Stats& stats);
+	static void GetThreadAllocators(u32& allocatorCount, udtVMLinearAllocator** allocators);
 
 public:
 	udtVMLinearAllocator();
 	~udtVMLinearAllocator();
 
-	bool    Init(uptr reservedByteCount, uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE, bool commitFirstBlock = false);
-	u8*     Allocate(uptr byteCount);
-	void    Pop(uptr byteCount);
-	void    Clear(); // Only resets the index to the first free byte.
-	void    Purge(); // De-commit all unused memory pages.
-	void    SetCurrentByteCount(uptr byteCount); // Has to be less or equal to the currently committed byte count.
-	uptr    GetCurrentByteCount() const;
-	uptr    GetCommittedByteCount() const;
-	u8*     GetStartAddress() const;
-	u8*     GetCurrentAddress() const;
+	bool        Init(uptr reservedByteCount, const char* name);
+	u8*         Allocate(uptr byteCount);
+	void        Pop(uptr byteCount);
+	void        Clear(); // Only resets the index to the first free byte.
+	void        Purge(); // De-commit all unused memory pages.
+	void        SetCurrentByteCount(uptr byteCount); // Has to be less or equal to the currently committed byte count.
+	uptr        GetCurrentByteCount() const;
+	uptr        GetCommittedByteCount() const;
+	uptr        GetPeakUsedByteCount() const;
+	uptr        GetReservedByteCount() const;
+	u8*         GetStartAddress() const;
+	u8*         GetCurrentAddress() const;
+	const char* GetName() const;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMLinearAllocator);
@@ -53,4 +57,5 @@ private:
 	uptr _commitByteCountGranularity;
 	uptr _committedByteCount;
 	uptr _peakUsedByteCount;
+	const char* _name;
 };

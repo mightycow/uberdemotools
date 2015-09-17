@@ -174,8 +174,8 @@ namespace Uber.DemoTools
             helpTextBlock.Text =
                 "UDT will create a cut section for each pattern match during parsing." + 
                 "When parsing is done, overlapping cut sections get merged together and a new parsing pass is applied to do the actual cutting." +
-                "\n\nNote: The \"Player Selection\" settings are respected by all filters except the \"Global Chat\" one." + 
-                "That is, it matches chat from anyone." +
+                "\n\nNote: The \"Player Selection\" settings are respected by all filters except \"Chat\". " + 
+                "In other words, it will use every chat message to look for matches." +
                 "\n\nExample of cut section merging: suppose we have 2 matches, the first at 1:27 and the second at 1:30 with " +
                 "start and end time offsets 10 and 8." +
                 "UDT will create 2 cut sections: 1:17-1:35 and 1:20-1:38, which then get merged into 1: 1:17-1:38.";
@@ -261,7 +261,7 @@ namespace Uber.DemoTools
             var patterns = new List<UDT_DLL.udtPatternInfo>();
             var resources = new UDT_DLL.ArgumentResources();
 
-            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.GlobalChat))
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Chat))
             {
                 var pattern = new UDT_DLL.udtPatternInfo();
                 UDT_DLL.CreateChatPatternInfo(ref pattern, resources, config.ChatRules);
@@ -331,16 +331,11 @@ namespace Uber.DemoTools
                 return;
             }
 
-            var outputFolder = _app.GetOutputFolder();
-            var outputFolderPtr = Marshal.StringToHGlobalAnsi(outputFolder);
             _app.InitParseArg();
-            _app.ParseArg.OutputFolderPath = outputFolderPtr;
-
-            var resources = threadArg.Resources;
-            resources.GlobalAllocationHandles.Add(outputFolderPtr);
 
             try
             {
+                var resources = threadArg.Resources;
                 var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
                 UDT_DLL.CutDemosByPattern(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
             }
