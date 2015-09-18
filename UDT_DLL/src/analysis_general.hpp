@@ -34,6 +34,7 @@ public:
 	void SetInProgress();
 	s32  GetTimeOutStartTime(u32 index) const;
 	s32  GetTimeOutEndTime(u32 index) const;
+	u32  GetMatchStartDateEpoch() const;
 
 	udtGameType::Id     GameType() const;
 	udtMod::Id          Mod() const;
@@ -107,6 +108,7 @@ private:
 	u32 _overTimeCount;
 	u32 _timeOutCount;
 	s32 _totalTimeOutDuration;
+	u32 _matchStartDateEpoch;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;

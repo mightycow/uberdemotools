@@ -515,6 +515,8 @@ namespace Uber.DemoTools
             public Int32 SecondPlaceScore;
             public UInt32 SecondPlaceWon;
             public UInt32 TeamMode;
+            public UInt32 StartDateEpoch;
+            public Int32 Reserved1;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1898,6 +1900,28 @@ namespace Uber.DemoTools
             else
             {
                 stats.AddGenericField("Final score", finalScore);
+            }
+
+            if(data.StartDateEpoch != 0)
+            {
+                var date = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                date = date.AddSeconds(data.StartDateEpoch);
+
+                var dateString = new StringBuilder();
+                dateString.Append(date.Year.ToString("0000"));
+                dateString.Append(".");
+                dateString.Append(date.Month.ToString("00"));
+                dateString.Append(".");
+                dateString.Append(date.Day.ToString("00"));
+                dateString.Append(" ");
+                dateString.Append(date.Hour.ToString("00"));
+                dateString.Append(":");
+                dateString.Append(date.Minute.ToString("00"));
+                dateString.Append(":");
+                dateString.Append(date.Second.ToString("00"));
+                dateString.Append(" UTC");
+
+                stats.AddGenericField("Start date", dateString.ToString());
             }
 
             var redTeamName = data.CustomRedName != IntPtr.Zero ? Marshal.PtrToStringAnsi(data.CustomRedName) : null;
