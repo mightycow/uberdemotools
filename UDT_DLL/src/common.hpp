@@ -282,6 +282,7 @@ typedef enum {
 
 #define CS_LEVEL_START_TIME_3   13
 #define CS_INTERMISSION_3       14
+#define CS_LOCATIONS_3          672
 
 // Doesn't seem to exist in dm_73. Don't know about dm_90.
 #define CS_SCORES1PLAYER_91p    659 // 1st place player's name

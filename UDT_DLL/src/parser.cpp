@@ -335,7 +335,7 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoS
 
 bool udtBaseParser::ShouldWriteMessage() const
 {
-	return _outWriteMessage && _inProtocol >= udtProtocol::Dm66;
+	return _outWriteMessage && _outProtocol >= udtProtocol::Dm66;
 }
 
 void udtBaseParser::WriteFirstMessage()
@@ -373,7 +373,7 @@ bool udtBaseParser::ParseCommandString()
 {
 	s32 commandStringLength = 0;
 	const s32 commandSequence = _inMsg.ReadLong();
-	const char* const commandStringTemp = _inMsg.ReadString(commandStringLength);
+	const char* const commandStringTemp = _inMsg.ReadBigString(commandStringLength);
 
 	// Do we have it already?
 	if(_inServerCommandSequence >= commandSequence) 
@@ -457,7 +457,7 @@ tokenize:
 	{
 		_outMsg.WriteByte(svc_serverCommand);
 		_outMsg.WriteLong(_outServerCommandSequence);
-		_outMsg.WriteString(commandString, commandStringLength);
+		_outMsg.WriteBigString(commandString, commandStringLength);
 		++_outServerCommandSequence;
 	}
 
@@ -783,12 +783,7 @@ void udtBaseParser::WriteGameState()
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inConfigStrings); ++i)
 	{
 		const udtString& cs = _inConfigStrings[i];
-		if(udtString::IsNullOrEmpty(cs))
-		{
-			continue;
-		}
-
-		if(_outProtocol == _inProtocol)
+		if(_outProtocol == _inProtocol && !udtString::IsNullOrEmpty(cs))
 		{
 			_outMsg.WriteByte(svc_configstring);
 			_outMsg.WriteShort((s32)i);
@@ -800,7 +795,7 @@ void udtBaseParser::WriteGameState()
 		
 		udtConfigStringConversion outCs;
 		_protocolConverter->ConvertConfigString(outCs, _tempAllocator, (s32)i, cs.String, cs.Length);
-		if(outCs.Index >= 0)
+		if(outCs.Index >= 0 && outCs.StringLength > 0)
 		{
 			_outMsg.WriteByte(svc_configstring);
 			_outMsg.WriteShort(outCs.Index);

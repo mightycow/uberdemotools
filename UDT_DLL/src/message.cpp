@@ -1082,9 +1082,9 @@ s32 udtMessage::ReadBits(s32 bits)
 				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits (more than 32)\n", bits);
 			}
 
-			u32 readBits = *(u32*)&Buffer.data[Buffer.readcount];
-			const u32 bitPosition = (u32)Buffer.bit % 8;
-			const u32 diff = 32 - (u32)bits;
+			u64 readBits = *(u64*)&Buffer.data[Buffer.readcount];
+			const u64 bitPosition = (u64)Buffer.bit & 7;
+			const u64 diff = 64 - (u64)bits;
 			readBits >>= bitPosition;
 			readBits <<= diff;
 			readBits >>= diff;

@@ -1,6 +1,7 @@
 #include "protocol_conversion.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "string.hpp"
+#include "utils.hpp"
 
 
 static int ConvertWeapon90to68(int weapon)
@@ -74,6 +75,21 @@ static s32 ConvertEntityEventNumber90to68(s32 eventId)
 	const s32 newEventId = udt_private::ConvertEntityEventNumber90to68_helper(eventId & (~EV_EVENT_BITS));
 	
 	return newEventId | eventSequenceBits;
+}
+
+static s32 ConvertEntityType90to68(s32 index)
+{
+	if(index >= 0 && index < ET_EVENTS)
+	{
+		return index;
+	}
+
+	if(index >= ET_EVENTS)
+	{
+		return ET_EVENTS + udt_private::ConvertEntityEventNumber90to68_helper(index - ET_EVENTS);
+	}
+
+	return ET_GENERAL;
 }
 
 static s32 ConvertEntityModelIndex90to68_CPMA(s32 modelIndex)
@@ -501,6 +517,7 @@ void udtProtocolConverter90to68_CPMA::ConvertEntityState(idLargestEntityState& o
 	memcpy(&outEntityState, &inEntityState, sizeof(idEntityState68));
 	outEntityState.weapon = ConvertWeapon90to68(inEntityState.weapon);
 	outEntityState.event = ConvertEntityEventNumber90to68(inEntityState.event);
+	outEntityState.eType = ConvertEntityType90to68(inEntityState.eType);
 
 	Float3::Increment(outEntityState.pos.trBase, Offsets);
 	Float3::Increment(outEntityState.origin, Offsets);
@@ -593,6 +610,204 @@ void udtProtocolConverter90to68_CPMA::ConvertConfigString(udtConfigStringConvers
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue90to68, this);
+		result.NewString = true;
+		result.String = newString.String;
+		result.StringLength = newString.Length;
+	}
+}
+
+static s32 ConvertConfigStringIndex48to68(s32 index, s32 protocolNumber)
+{
+	if(protocolNumber >= 48)
+	{
+		return index;
+	}
+
+	// @TODO: Is the rest also like dm3?
+	if(index >= CS_LOCATIONS_3 && index < CS_LOCATIONS_3 + MAX_LOCATIONS)
+	{
+		return index - 64;
+	}
+
+	return index;
+}
+
+static bool ConvertConfigStringValue3or48to68(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value, void*)
+{
+	newValue = udtString::Equals(key, "protocol") ? udtString::NewConstRef("68") : value;
+
+	return true;
+}
+
+void udtProtocolConverter48to68::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm48);
+}
+
+void udtProtocolConverter48to68::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	(idEntityStateBase&)outEntityState = inEntityState;
+}
+
+void udtProtocolConverter48to68::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.NewString = false;
+	result.Index = ConvertConfigStringIndex48to68(inIndex, _protocolNumber);
+	result.String = configString;
+	result.StringLength = configStringLength;
+	
+	if(inIndex == CS_SERVERINFO)
+	{
+		udtString newString;
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
+		result.NewString = true;
+		result.String = newString.String;
+		result.StringLength = newString.Length;
+
+		s32 protocol;
+		if(ParseConfigStringValueInt(protocol, allocator, "protocol", configString))
+		{
+			_protocolNumber = protocol;
+		}
+	}
+}
+
+static s32 ConvertConfigStringIndex3to68(s32 index)
+{
+	if(index <= 11 || (index >= 27 && index < CS_LOCATIONS_3 - 64))
+	{
+		return index;
+	}
+
+	if(index >= 12 && index <= 15)
+	{
+		return index + 8;
+	}
+
+	// dm3 had MAX_CLIENTS set as 128!
+	if(index >= CS_LOCATIONS_3 && index < CS_LOCATIONS_3 + MAX_LOCATIONS)
+	{
+		return index - 64;
+	}
+
+	return -1;
+}
+
+static s32 ConvertPersistIndex3to68(s32 index)
+{
+	if(index <= 4 ||
+	   (index >= 8 && index <= 10))
+	{
+		return index;
+	}
+
+	if(index == 7)
+	{
+		return 6;
+	}
+
+	if(index == 11)
+	{
+		return 13;
+	}
+
+	return -1;
+}
+
+namespace udt_private
+{
+	static s32 ConvertEntityEventNumber3to68_helper(s32 index)
+	{
+		if(index <= 46)
+		{
+			return index;
+		}
+
+		if(index >= 47 && index <= 50)
+		{
+			return index + 1;
+		}
+
+		if(index >= 51 && index <= 62)
+		{
+			return index + 2;
+		}
+
+		if(index == 63)
+		{
+			return 74;
+		}
+
+		if(index == 64)
+		{
+			return 76;
+		}
+
+		return EV_NONE;
+	}
+}
+
+static s32 ConvertEntityEventNumber3to68(s32 eventId)
+{
+	const s32 eventSequenceBits = eventId & EV_EVENT_BITS;
+	const s32 newEventId = udt_private::ConvertEntityEventNumber3to68_helper(eventId & (~EV_EVENT_BITS));
+
+	return newEventId | eventSequenceBits;
+}
+
+static s32 ConvertEntityType3to68(s32 index)
+{
+	if(index >= 0 && index <= 11)
+	{
+		return index;
+	}
+
+	if(index >= ET_EVENTS_3)
+	{
+		return ET_EVENTS + udt_private::ConvertEntityEventNumber3to68_helper(index - ET_EVENTS_3);
+	}
+
+	return ET_GENERAL;
+}
+
+void udtProtocolConverter3to68::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm3);
+	const idPlayerStateBase& psIn = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm3);
+	idPlayerStateBase& psOut = *GetPlayerState((idClientSnapshotBase*)&outSnapshot, udtProtocol::Dm68);
+	psOut = psIn;
+
+	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	{
+		const s32 newIndex = ConvertPersistIndex3to68(i);
+		psOut.persistant[i] = newIndex >= 0 ? psIn.persistant[newIndex] : 0;
+	}
+
+	psOut.events[0] = ConvertEntityEventNumber3to68(psIn.events[0]);
+	psOut.events[1] = ConvertEntityEventNumber3to68(psIn.events[1]);
+	psOut.externalEvent = ConvertEntityEventNumber3to68(psIn.externalEvent);
+}
+
+void udtProtocolConverter3to68::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	(idEntityStateBase&)outEntityState = inEntityState;
+	outEntityState.event = ConvertEntityEventNumber3to68(inEntityState.event);
+	outEntityState.eType = ConvertEntityType3to68(inEntityState.eType);
+}
+
+void udtProtocolConverter3to68::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.NewString = false;
+	result.Index = ConvertConfigStringIndex3to68(inIndex);
+	result.String = configString;
+	result.StringLength = configStringLength;
+
+	if(inIndex == CS_SERVERINFO)
+	{
+		udtString newString;
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
