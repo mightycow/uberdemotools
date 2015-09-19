@@ -134,7 +134,7 @@ namespace Uber.DemoTools
             headerValue.Tag = "Value";
             columnValue.Header = headerValue;
             columnValue.Width = 400;
-            columnValue.DisplayMemberBinding = new Binding("Value");
+            MakeColumnMultiRowEnabled(columnValue, "Value");
 
             var commandsGridView = new GridView();
             commandsGridView.AllowsColumnReorder = false;
@@ -164,6 +164,16 @@ namespace Uber.DemoTools
         private void OnCopyContextClicked()
         {
             App.CopyListViewRowsToClipboard(_commandsListView);
+        }
+
+        private static void MakeColumnMultiRowEnabled(GridViewColumn column, string textBinding)
+        {
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBlock));
+            factory.SetBinding(TextBlock.TextProperty, new Binding(textBinding));
+            factory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+            template.VisualTree = factory;
+            column.CellTemplate = template;
         }
     }
 }
