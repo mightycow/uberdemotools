@@ -373,7 +373,7 @@ bool udtBaseParser::ParseCommandString()
 {
 	s32 commandStringLength = 0;
 	const s32 commandSequence = _inMsg.ReadLong();
-	const char* const commandStringTemp = _inMsg.ReadBigString(commandStringLength);
+	const char* const commandStringTemp = _inMsg.ReadString(commandStringLength);
 
 	// Do we have it already?
 	if(_inServerCommandSequence >= commandSequence) 
@@ -396,9 +396,9 @@ tokenize:
 	tokenizer.Tokenize(commandString);
 	const int tokenCount = tokenizer.GetArgCount();
 	const udtString commandName = (tokenCount > 0) ? tokenizer.GetArg(0) : udtString::NewEmptyConstant();
+	s32 csIndex = -1;
 	if(tokenCount == 3 && udtString::Equals(commandName, "cs"))
 	{
-		s32 csIndex = -1;
 		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
 		{
 			const char* const csStringTemp = tokenizer.GetArgString(2);
@@ -455,12 +455,23 @@ tokenize:
 
 	if(ShouldWriteMessage())
 	{
-		_outMsg.WriteByte(svc_serverCommand);
-		_outMsg.WriteLong(_outServerCommandSequence);
-		_outMsg.WriteBigString(commandString, commandStringLength);
-		++_outServerCommandSequence;
+		if(csIndex >= 0 && commandStringLength >= MAX_STRING_CHARS)
+		{
+			WriteBigConfigStringCommand(tokenizer.GetArg(1), tokenizer.GetArg(2));
+		}
+		else if(commandStringLength < MAX_STRING_CHARS)
+		{
+			_outMsg.WriteByte(svc_serverCommand);
+			_outMsg.WriteLong(_outServerCommandSequence);
+			_outMsg.WriteString(commandString, commandStringLength);
+			++_outServerCommandSequence;
+		}
+		else
+		{
+			_outMsg.WriteByte(svc_nop);
+		}
 	}
-
+	
 	_privateTempAllocator.Clear();
 
 	return true;
@@ -830,6 +841,62 @@ void udtBaseParser::WriteGameState()
 	_outMsg.WriteLong(_inChecksumFeed);
 
 	_outMsg.WriteByte(svc_EOF);
+}
+
+void udtBaseParser::WriteBigConfigStringCommand(const udtString& csIndex, const udtString& csData)
+{
+	// Simple example:
+	// cs idx "name0\value0\name1\value1\name2\value2\name3\value3"
+	// becomes:
+	// bcs0 idx "name0\value0\"
+	// bcs1 idx "name1\value1\"
+	// bcs1 idx "name2\value2\"
+	// bcs2 idx "name3\value3"
+	const u32 maxLengthPerCmd = MAX_STRING_CHARS - 2;
+	const u32 perCmdOverhead = 8 + csIndex.Length;
+	const u32 maxDataLength = maxLengthPerCmd - perCmdOverhead;
+	u32 outputChunks = 0;
+	for(u32 i = 2;; ++i)
+	{
+		const u32 perCmdData = (csData.Length + i - 1) / i;
+		if(perCmdData + perCmdOverhead <= maxLengthPerCmd)
+		{
+			outputChunks = i;
+			break;
+		}
+	}
+
+	u32 dataOffset = 0;
+	for(u32 i = 0; i < outputChunks; ++i)
+	{
+		const char* bcsIdxRaw = i == 0 ? "0" : (i == outputChunks - 1 ? "2" : "1");
+		const udtString data = udtString::NewSubstringRef(csData, dataOffset, bcsIdxRaw[0] == '2' ? (u32)~0 : maxDataLength);
+		const udtString bcs = udtString::NewConstRef("bcs");
+		const udtString bcsIdx = udtString::NewConstRef(bcsIdxRaw);
+		const udtString space = udtString::NewConstRef(" ");
+		const udtString quote = udtString::NewConstRef("\"");
+		udtString command = udtString::NewEmpty(_tempAllocator, MAX_STRING_CHARS);
+		const udtString* cmdPieces[] =
+		{
+			&bcs,
+			&bcsIdx,
+			&space,
+			&csIndex,
+			&space,
+			&quote,
+			&data,
+			&quote
+		};
+		udtString::AppendMultiple(command, cmdPieces, (u32)UDT_COUNT_OF(cmdPieces));
+
+		_outMsg.WriteByte(svc_serverCommand);
+		_outMsg.WriteLong(_outServerCommandSequence);
+		_outMsg.WriteString(command.String, (s32)command.Length);
+
+		++_outServerCommandSequence;
+		dataOffset += maxDataLength;
+	}
+
 }
 
 bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)

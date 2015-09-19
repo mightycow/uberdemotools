@@ -47,6 +47,7 @@ private:
 	void                  WriteNextMessage();
 	void                  WriteLastMessage();
 	void                  WriteGameState();
+	void                  WriteBigConfigStringCommand(const udtString& csIndex, const udtString& csData);
 	bool                  ParseCommandString();
 	bool                  ParseGamestate();
 	bool                  ParseSnapshot();
