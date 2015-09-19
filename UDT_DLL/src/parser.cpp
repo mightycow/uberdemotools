@@ -157,11 +157,21 @@ bool udtBaseParser::ParseServerMessage()
 	_outMsg.SetHuffman(_outProtocol >= udtProtocol::Dm66);
 	_inMsg.SetHuffman(_inProtocol >= udtProtocol::Dm66);
 
+	//
+	// Using the message sequence number as acknowledge number will help avoid 
+	// the command overflow playback error for dm3 and dm_48 demos converted to dm_68.
+	// For reference in the Q3 source code: "Client command overflow".
+	//
+	s32 reliableSequenceAcknowledge = _inServerMessageSequence;
 	if(_inProtocol > udtProtocol::Dm3)
 	{
-		_inReliableSequenceAcknowledge = _inMsg.ReadLong();	
+		const s32 sequAck = _inMsg.ReadLong(); // Reliable sequence acknowledge.
+		if(_inProtocol >= udtProtocol::Dm68)
+		{
+			reliableSequenceAcknowledge = sequAck;
+		}
 	}
-
+	_inReliableSequenceAcknowledge = reliableSequenceAcknowledge;
 	_outMsg.WriteLong(_inReliableSequenceAcknowledge);
 
 	for(;;)
