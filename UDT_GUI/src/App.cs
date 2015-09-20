@@ -2298,20 +2298,6 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.CutStartOffset;
-            int endOffset = _config.CutEndOffset;
-            if(!_config.SkipChatOffsetsDialog)
-            {
-                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
-                if(!dialog.Valid)
-                {
-                    return;
-                }
-
-                startOffset = dialog.StartOffset;
-                endOffset = dialog.EndOffset;
-            }
-
             int gsIndex = 0;
             int startTime = int.MaxValue;
             int endTime = int.MinValue;
@@ -2343,6 +2329,20 @@ namespace Uber.DemoTools
             if(startTime == int.MaxValue && endTime == int.MinValue)
             {
                 return;
+            }
+
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
+            if(!_config.SkipChatOffsetsDialog)
+            {
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
+                if(!dialog.Valid)
+                {
+                    return;
+                }
+
+                startOffset = dialog.StartOffset;
+                endOffset = dialog.EndOffset;
             }
 
             startTime -= startOffset;
