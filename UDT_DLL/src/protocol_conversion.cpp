@@ -623,7 +623,8 @@ static s32 ConvertConfigStringIndex48to68(s32 index, s32 protocolNumber)
 		return index;
 	}
 
-	// @TODO: Is the rest also like dm3?
+	// It seems that the only thing that dm_48 with real protocol 43 has in common with dm3
+	// is that MAX_CLIENTS is 128 and there's nothing above or at index 736+.
 	if(index >= CS_LOCATIONS_3 && index < CS_LOCATIONS_3 + MAX_LOCATIONS)
 	{
 		return index - 64;
