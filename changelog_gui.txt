@@ -1,3 +1,10 @@
+0.5.1 (21.09.2015)
+ADD: dm3 to dm_68 and dm_48 to dm_68 demo converters
+ADD: Tracking match start dates in QL demos
+ADD: "Cut by Time" context menu item in the "Commands" list view
+CHG: The "Value" column of the "Commands" list view will now display its content on multiple rows if one isn't enough to fit everything
+FIX: Config string commands that are too large get written as split bcs0/bcs1/bcs2 commands
+
 0.5.0 (17.09.2015)
 ADD: Analysis data export to JSON (can select the list of analyzers enabled for JSON export in the "Settings" tab)
 ADD: "Chat" now displays team messages too and has a "Scope" (global or team) column

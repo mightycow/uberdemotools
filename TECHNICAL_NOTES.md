@@ -41,7 +41,7 @@ Observations about *id*'s Huffman code:
 - The maximum code length is 11 bits: long enough that a single look-up table would be too large for proper cache use but short enough that you can make a decoder that requires a maximum of 2 look-ups.
 - Their code did things the naïve way: literally traversing a binary tree (probably because they were in a hurry). This is really bad decoder-wise because the amount of memory reads and cache misses is high.
 - The tree is non-canonical, which prevents some decoder optimizations.
-- The tree used doesn't seem that well suited to their demo data in general: 72% of all encoded symbols use codes of length <= 8 bits (data gathered on 1 GB of real demos). But since that tree is implicitly defined, that's not something we can improve on.
+- The tree used doesn't seem that well suited to their demo data in general: 72% of all encoded symbols use codes of length <= 8 bits (data gathered on 1 GB of real demos). Since the Huffman tree is implicitly defined, we can't improve the compression rate.
 
 ###### The new encoder
 Since the symbol length is 8 bits, all you need for the encoder is a single look-up table with 256 entries (the symbol is the index) where each entry contains the code word and its bit length. The new implementation is thus trivial and substanitally faster.
@@ -96,7 +96,7 @@ This command tells the client to replace the config string at index N with what 
 There are many specifics for things such as message and command sequence numbers, how there are entity events and event entities, the way Huffman compression is used, the per-field delta-encoding of player states and entity states, etc.
 I will not cover those things because this is not a primer nor a guide about Quake demo parsing. I'll just say that if the devil's in the details, then that protocol is definitely from hell.
 
-However, I want to make clear the following 2 points:
+However, I want to insist on the following 2 points:
 
 1. Cutting a demo isn't just copying the sequence of messages with the timestamps you care about. Because the data is delta-encoded, it would simply not work. Now you know why *demo cutting* isn't almost instant.
 2. The data the client receives isn't enough to *fully* simulate the game on the client: it's only enough to display it properly.
@@ -121,7 +121,7 @@ Here are a few things UDT does to reduce memory address space consumption as wel
 
 * When running batch jobs, the GUI application will split the file list in smaller file lists for the library to process.
 * Only one parser instance is used per thread.
-* Only one analyzer instance is used per thread (the output data from analysis gets stored in the same array, not matter how many demos are processed).
+* Only one analyzer instance is used per thread (the output data from analysis gets stored in the same array, no matter how many demos are processed).
 
 Unlike standard array implementations, an array backed by virtual memory where enough memory is reserved offers highly interesting properties:
 
@@ -137,9 +137,9 @@ The amount of physical memory wasted is:
 Multi-threading
 ---------------
 
-When it came to threading for improving batch processing performance, I was confronted with the 2 choices:
+When it came to threading for improving batch processing performance, I was confronted with the following 2 choices:
 
-1. Let the library's user create handle thread creation and clean-up, distribute work across the threads etc.
+1. Let the library's user handle thread creation and clean-up, distribute work across the threads etc.
 2. Have the library handle all those things so that both the GUI and command-line tools could leverage the same logic and so could other users.
 
 The important thing is that option #2 doesn't really have to preclude option #1 from being available. If the user wants its own logic for creating and releasing thread resources, assigning demos to threads etc, they can by simply calling the same functions and setting the maximum thread argument to 1.
@@ -153,7 +153,7 @@ Here's how it works in UDT:
   * The amount of demos to process
   * The amount of data (demo file sizes) to process
 * If the final thread count decided is 1, all the work is done in the thread of the original function call.
-* If the final thread count decided is greater than 1, all the work is done in new threads and the thread of the original function call will join on those new threads.
+* If the final thread count decided is greater than 1, all the work is done in new threads and the thread of the original function call will join (i.e. wait for) the new threads.
 
 Note that for crash handling in C#, there is an annoying problem when using unmanaged code that creates its own threads: you can't catch exceptions of unmanaged threads.  
 So in practise, if there is a crash in `UDT.dll`:
@@ -166,12 +166,12 @@ Memory allocation tracking
 
 The UDT code base has a pretty simple way of tracking memory allocators without using any synchronization primitive and with only 1 extra memory allocation per thread:
 
-* Every memory allocator contains a node of an intrusive doubly linked list data structure (the node contains 2 pointers only).
-* There's a doubly linked list of memory allocators per thread.
+* Every memory allocator contains a node of an intrusive linked list data structure.
+* There's a linked list of memory allocators per thread.
 * Accessing that list is done through TLS (thread-local storage).
 * Every time a memory allocator is constructed, it is added to the thread's list.
 * Every time a memory allocator is destructed, it is removed from the thread's list.
-* The doubly linked list is lazily allocated and created on first access (1 *malloc* call per thread).
-* The doubly linked list is freed once per thread (1 *free* call per thread when the API function is done).
+* The linked list is lazily allocated and created on first access (1 *malloc* call per thread).
+* The linked list is freed once per thread (1 *free* call per thread when the API function is done).
 * When each job thread is done, it traverses its own allocator list and sums up the stats in its data return slot.
 * When the API function is done waiting on the job threads, it sums up all the stats from the other threads with those of its own thread.

@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace Uber.DemoTools
 {
-    public class CommandDisplayInfo
+    public class CommandDisplayInfo : CuttabbleByTimeDisplayInfo
     {
         public CommandDisplayInfo(int gameStateIndex, string gameState, string time, string command, string value)
         {
@@ -32,9 +32,7 @@ namespace Uber.DemoTools
             return string.Format("[{0}] (gs {1}) {2} {3}", Time, GameState, Command, Value);
         }
 
-        public int GameStateIndex { get; private set; }
         public string GameState { get; set; }
-        public string Time { get; set; }
         public string Command { get; set; }
         public string Value { get; set; }
     }
@@ -62,13 +60,20 @@ namespace Uber.DemoTools
                 return;
             }
 
+            var cutByTimeItem = new MenuItem();
+            cutByTimeItem.Header = "Cut by Time (Ctrl+T)";
+            cutByTimeItem.Command = _cutByCommandCommand;
+            cutByTimeItem.Click += (obj, args) => OnCutByTimeFromCommandContextClicked();
+
             var copyItem = new MenuItem();
             copyItem.Header = "Copy to Clipboard (Ctrl+C)";
             copyItem.Command = _copyCommand;
             copyItem.Click += (obj, args) => OnCopyContextClicked();
+            App.AddKeyBinding(_commandsListView, Key.T, _cutByCommandCommand, (obj, args) => OnCutByTimeFromCommandContextClicked());
             App.AddKeyBinding(_commandsListView, Key.C, _copyCommand, (obj, args) => OnCopyContextClicked());
 
             var commandsContextMenu = new ContextMenu();
+            commandsContextMenu.Items.Add(cutByTimeItem);
             commandsContextMenu.Items.Add(copyItem);
 
             var commands = new ObservableCollection<ListViewItem>();
@@ -99,6 +104,7 @@ namespace Uber.DemoTools
 
         private App _app;
         private DemoInfoListView _commandsListView = null;
+        private static RoutedCommand _cutByCommandCommand = new RoutedCommand();
         private static RoutedCommand _copyCommand = new RoutedCommand();
 
         private FrameworkElement CreateTab()
@@ -134,7 +140,7 @@ namespace Uber.DemoTools
             headerValue.Tag = "Value";
             columnValue.Header = headerValue;
             columnValue.Width = 400;
-            columnValue.DisplayMemberBinding = new Binding("Value");
+            MakeColumnMultiRowEnabled(columnValue, "Value");
 
             var commandsGridView = new GridView();
             commandsGridView.AllowsColumnReorder = false;
@@ -161,9 +167,24 @@ namespace Uber.DemoTools
             return infoPanelGroupBox;
         }
 
+        private void OnCutByTimeFromCommandContextClicked()
+        {
+            _app.OnCutByTimeContextClicked(_commandsListView);
+        }
+
         private void OnCopyContextClicked()
         {
             App.CopyListViewRowsToClipboard(_commandsListView);
+        }
+
+        private static void MakeColumnMultiRowEnabled(GridViewColumn column, string textBinding)
+        {
+            var template = new DataTemplate();
+            var factory = new FrameworkElementFactory(typeof(TextBlock));
+            factory.SetBinding(TextBlock.TextProperty, new Binding(textBinding));
+            factory.SetValue(TextBlock.TextWrappingProperty, TextWrapping.Wrap);
+            template.VisualTree = factory;
+            column.CellTemplate = template;
         }
     }
 }

@@ -75,6 +75,7 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_overTimeCount = 0;
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
+	_matchStartDateEpoch = 0;
 	_game = udtGame::Q3;
 	_gameType = udtGameType::Invalid;
 	_gameState = udtGameState::WarmUp;
@@ -335,6 +336,7 @@ void udtGeneralAnalyzer::ResetForNextMatch()
 	_overTimeCount = 0;
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
+	_matchStartDateEpoch = 0;
 	_overTimeType = udtOvertimeType::Timed;
 	_forfeited = false;
 	_timeOut = false;
@@ -465,6 +467,11 @@ s32 udtGeneralAnalyzer::GetTimeOutEndTime(u32 index) const
 	}
 
 	return _timeOutStartAndEndTimes[index].EndTime;
+}
+
+u32 udtGeneralAnalyzer::GetMatchStartDateEpoch() const
+{
+	return _matchStartDateEpoch;
 }
 
 void udtGeneralAnalyzer::UpdateGameState(udtGameState::Id gameState)
@@ -621,6 +628,12 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 	}
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	s32 matchStartDate;
+	if(ParseConfigStringValueInt(matchStartDate, *_tempAllocator, "g_levelStartTime", configString))
+	{
+		_matchStartDateEpoch = (u32)matchStartDate;
+	}
 
 	s32 gamePlay = 0;
 	if(ParseConfigStringValueInt(gamePlay, *_tempAllocator, "ruleset", configString))

@@ -2825,7 +2825,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.SecondPlaceName = NULL;
 		}
 	}
-	
+
+	_stats.StartDateEpoch = _analyzer.GetMatchStartDateEpoch();
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();
 	_stats.OverTimeCount = _analyzer.OvertimeCount();

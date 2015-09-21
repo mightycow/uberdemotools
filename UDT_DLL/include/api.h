@@ -1404,6 +1404,12 @@ extern "C"
 
 		// Non-zero if the game type is a team mode, zero otherwise.
 		u32 TeamMode;
+
+		// Zero when invalid, a UNIX/POSIX timestamp otherwise.
+		u32 StartDateEpoch;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtParseDataRawCommand

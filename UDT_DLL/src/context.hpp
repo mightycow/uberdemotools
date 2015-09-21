@@ -44,6 +44,8 @@ private:
 	udtProgressCallback     _progressCallback; // Can be NULL.
 	void*                   _progressContext;  // Can be NULL.
 
+	udtProtocolConverter3to68       _converter3to68;
+	udtProtocolConverter48to68      _converter48to68;
 	udtProtocolConverter90to68_CPMA _converter90to68;
 	udtProtocolConverter73to90      _converter73to90;
 	udtProtocolConverterIdentity    _converterIdentity;

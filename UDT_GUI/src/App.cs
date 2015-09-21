@@ -144,7 +144,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.5.0";
+        private const string GuiVersion = "0.5.1";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -1364,7 +1364,7 @@ namespace Uber.DemoTools
             analyzeButton.Width = 75;
             analyzeButton.Height = 25;
             analyzeButton.Margin = new Thickness(5);
-            analyzeButton.ToolTip = "Read the demos for information used to populate the Info, Chat & Deaths tabs";
+            analyzeButton.ToolTip = "Read the demos for information used to populate the Info tab";
             analyzeButton.Click += (obj, args) => OnAnalyzeDemoClicked();
 
             var convert68Button = new Button();
@@ -1372,7 +1372,10 @@ namespace Uber.DemoTools
             convert68Button.Width = 75;
             convert68Button.Height = 25;
             convert68Button.Margin = new Thickness(5);
-            convert68Button.ToolTip = "Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)\nPlease refer to ConversionRules90to68.xml for known issues";
+            convert68Button.ToolTip =
+                "a) Convert *.dm_3 and *.dm_48 Q3 demos to Q3 *.dm_68 demos\n" +
+                "b) Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)\n" +
+                "     Please refer to ConversionRules90to68.xml for known issues";
             convert68Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
 
             var convert90Button = new Button();
@@ -1635,12 +1638,10 @@ namespace Uber.DemoTools
 
         private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
         {
-            if(outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73)
-            {
-                return true;
-            }
-
-            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm90)
+            if((outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm90) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48))
             {
                 return true;
             }
@@ -2297,20 +2298,6 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.CutStartOffset;
-            int endOffset = _config.CutEndOffset;
-            if(!_config.SkipChatOffsetsDialog)
-            {
-                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
-                if(!dialog.Valid)
-                {
-                    return;
-                }
-
-                startOffset = dialog.StartOffset;
-                endOffset = dialog.EndOffset;
-            }
-
             int gsIndex = 0;
             int startTime = int.MaxValue;
             int endTime = int.MinValue;
@@ -2342,6 +2329,20 @@ namespace Uber.DemoTools
             if(startTime == int.MaxValue && endTime == int.MinValue)
             {
                 return;
+            }
+
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
+            if(!_config.SkipChatOffsetsDialog)
+            {
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
+                if(!dialog.Valid)
+                {
+                    return;
+                }
+
+                startOffset = dialog.StartOffset;
+                endOffset = dialog.EndOffset;
             }
 
             startTime -= startOffset;

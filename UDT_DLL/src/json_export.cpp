@@ -11,6 +11,7 @@
 #include "scoped_stack_allocator.hpp"
 
 #include <ctype.h>
+#include <time.h>
 
 
 static udtString NewCamelCaseString(udtVMLinearAllocator& allocator, const udtString& name)
@@ -145,6 +146,28 @@ static const char* GetUDTStringForValue(udtStringArray::Id stringId, u32 value)
 	}
 
 	return strings[value];
+}
+
+static void WriteStartDate(udtJSONExporter& writer, u32 date)
+{
+	if(date == 0)
+	{
+		return;
+	}
+
+	time_t timeStamp = (time_t)date;
+	tm* const t = gmtime(&timeStamp);
+	if(t == NULL)
+	{
+		return;
+	}
+
+	char dateString[256];
+	sprintf(dateString, "%04d.%02d.%02d %02d:%02d:%02d UTC", 
+			t->tm_year + 1900, t->tm_mon + 1, t->tm_mday, t->tm_hour, t->tm_min, t->tm_sec);
+
+	writer.WriteStringValue("start date", dateString);
+	writer.WriteIntValue("start date unix", (s32)date);
 }
 
 static void WriteUDTWeapon(udtJSONExporter& writer, s32 udtWeaponIndex, const char* keyName = "weapon")
@@ -302,6 +325,7 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		writer.WriteStringValue("second place name", stats.SecondPlaceName);
 		writer.WriteIntValue("first place score", (s32)stats.FirstPlaceScore);
 		writer.WriteIntValue("second place score", (s32)stats.SecondPlaceScore);
+		WriteStartDate(writer, stats.StartDateEpoch);
 		writer.WriteStringValue("custom red name", stats.CustomRedName);
 		writer.WriteStringValue("custom blue name", stats.CustomBlueName);
 		WriteUDTMod(writer, stats.Mod);
