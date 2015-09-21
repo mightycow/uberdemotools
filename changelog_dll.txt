@@ -1,3 +1,8 @@
+0.9.1 (21.09.2015)
+ADD: dm3 to dm_68 and dm_48 to dm_68 demo converters
+ADD: Tracking match start dates in QL demos
+FIX: Config string commands that are too large get written as split bcs0/bcs1/bcs2 commands
+
 0.9.0 (17.09.2015)
 ADD: UDT_json command-line tool to export analysis data to JSON files
 ADD: New stats parser plug-in: udtParserPlugInStats
