@@ -516,7 +516,11 @@ namespace Uber.DemoTools
             public UInt32 SecondPlaceWon;
             public UInt32 TeamMode;
             public UInt32 StartDateEpoch;
-            public Int32 Reserved1;
+            public UInt32 TimeLimit;
+            public UInt32 ScoreLimit;
+            public UInt32 FragLimit;
+            public UInt32 CaptureLimit;
+            public UInt32 RoundLimit;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1943,7 +1947,29 @@ namespace Uber.DemoTools
             stats.AddGenericField("Game type", GetUDTStringForValueOrNull(udtStringArray.GameTypes, data.GameType));
             stats.AddGenericField("Game play", GetUDTStringForValueOrNull(udtStringArray.GamePlayNames, data.GamePlay));
             stats.AddGenericField("Map name", data.Map);
-            stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)GetFixedMatchDuration(data) / 1000));
+
+            if(data.TimeLimit != 0)
+            {
+                stats.AddGenericField("Time limit", data.TimeLimit.ToString());
+            }
+            if(data.ScoreLimit != 0)
+            {
+                stats.AddGenericField("Score limit", data.ScoreLimit.ToString());
+            }
+            if(data.FragLimit != 0)
+            {
+                stats.AddGenericField("Frag limit", data.FragLimit.ToString());
+            }
+            if(data.CaptureLimit != 0)
+            {
+                stats.AddGenericField("Capture limit", data.CaptureLimit.ToString());
+            }
+            if(data.RoundLimit != 0)
+            {
+                stats.AddGenericField("Round limit", data.RoundLimit.ToString());
+            }
+
+            stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)data.MatchDurationMs / 1000));
             if(info.ProtocolNumber >= udtProtocol.Dm73 && data.GameType == (uint)udtGameType.TDM)
             {
                 stats.AddGenericField("Mercy limit hit?", data.MercyLimited != 0 ? "yes" : "no");
@@ -2459,28 +2485,6 @@ namespace Uber.DemoTools
             }
 
             return strings[(int)value];
-        }
-
-        private static uint GetFixedMatchDuration(udtParseDataStats stats)
-        {
-            var MaxMatchDurationDeltaMs = 1000;
-            var durationMs = (int)stats.MatchDurationMs;
-            var durationMinuteModuloMs = durationMs % 60000;
-            var absMinuteDiffMs = Math.Min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-            if((stats.OverTimeCount == 0 || stats.OverTimeType == (uint)udtOvertimeType.Timed) &&
-               stats.Forfeited == 0 &&
-               absMinuteDiffMs < MaxMatchDurationDeltaMs)
-            {
-                var minutes = (durationMs + 60000 - 1) / 60000;
-                if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
-                {
-                    --minutes;
-                }
-
-                return (uint)(60000 * minutes);
-            }
-
-            return stats.MatchDurationMs;
         }
 
         public static IntPtr StringToHGlobalUTF8(string nativeString)

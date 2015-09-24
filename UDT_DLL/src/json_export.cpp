@@ -302,22 +302,6 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 			continue;
 		}
 
-		const s32 MaxMatchDurationDeltaMs = 1000;
-		s32 durationMs = (s32)stats.MatchDurationMs;
-		const s32 durationMinuteModuloMs = durationMs % 60000;
-		const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-		if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) &&
-		   stats.Forfeited == 0 &&
-		   absMinuteDiffMs < MaxMatchDurationDeltaMs)
-		{
-			s32 minutes = (durationMs + 60000 - 1) / 60000;
-			if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
-			{
-				--minutes;
-			}
-			durationMs = 60000 * minutes;
-		}
-
 		writer.StartObject();
 
 		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
@@ -333,7 +317,27 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		WriteUDTGameTypeShort(writer, stats.GameType);
 		WriteUDTGameTypeLong(writer, stats.GameType);
 		writer.WriteStringValue("map", stats.Map);
-		writer.WriteIntValue("duration", (s32)durationMs);
+		if(stats.TimeLimit != 0)
+		{
+			writer.WriteIntValue("time limit", (s32)stats.TimeLimit);
+		}
+		if(stats.ScoreLimit != 0)
+		{
+			writer.WriteIntValue("score limit", (s32)stats.ScoreLimit);
+		}
+		if(stats.FragLimit != 0)
+		{
+			writer.WriteIntValue("frag limit", (s32)stats.FragLimit);
+		}
+		if(stats.CaptureLimit != 0)
+		{
+			writer.WriteIntValue("capture limit", (s32)stats.CaptureLimit);
+		}
+		if(stats.RoundLimit != 0)
+		{
+			writer.WriteIntValue("round limit", (s32)stats.RoundLimit);
+		}
+		writer.WriteIntValue("duration", (s32)stats.MatchDurationMs);
 		writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
 		if(stats.OverTimeCount > 0)
 		{

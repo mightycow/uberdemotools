@@ -34,6 +34,11 @@ public:
 	s32  GetTimeOutStartTime(u32 index) const;
 	s32  GetTimeOutEndTime(u32 index) const;
 	u32  GetMatchStartDateEpoch() const;
+	u32  GetTimeLimit() const { return _timeLimit; }
+	u32  GetScoreLimit() const { return _scoreLimit; }
+	u32  GetFragLimit() const { return _fragLimit; }
+	u32  GetCaptureLimit() const { return _captureLimit; }
+	u32  GetRoundLimit() const { return _roundLimit; }
 
 	udtGameType::Id     GameType() const;
 	udtMod::Id          Mod() const;
@@ -82,6 +87,7 @@ private:
 	void ProcessIntermissionConfigString(const udtString& configString);
 	void ProcessGameTypeFromServerInfo(const char* configString);
 	void ProcessOSPGamePlayConfigString(const char* configString);
+	void ProcessQ3AndQLServerInfoConfigString(const char* configString);
 	void ProcessScores2(const char* configString);
 	void ProcessScores2Player(const char* configString);
 	void ProcessQLPauseStartConfigString(const char* configString);
@@ -109,6 +115,11 @@ private:
 	u32 _timeOutCount;
 	s32 _totalTimeOutDuration;
 	u32 _matchStartDateEpoch;
+	u32 _timeLimit;
+	u32 _scoreLimit;
+	u32 _fragLimit;
+	u32 _captureLimit;
+	u32 _roundLimit;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;

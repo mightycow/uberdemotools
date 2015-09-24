@@ -76,6 +76,11 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
 	_matchStartDateEpoch = 0;
+	_timeLimit = 0;
+	_scoreLimit = 0;
+	_fragLimit = 0;
+	_captureLimit = 0;
+	_roundLimit = 0;
 	_game = udtGame::Q3;
 	_gameType = udtGameType::Invalid;
 	_gameState = udtGameState::WarmUp;
@@ -144,6 +149,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 	else if(_game == udtGame::QL)
 	{
+		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
 		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
 		const s32 startIdx = idConfigStringIndex::PauseStart(_protocol);
 		const s32 endIdx = idConfigStringIndex::PauseEnd(_protocol);
@@ -155,6 +161,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
+		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
 		UpdateMatchStartTime();
 		const s32 warmUpEndTime = GetWarmUpEndTime();
 		const bool noIntermission = !IsIntermission();
@@ -275,6 +282,11 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 		ProcessGameTypeFromServerInfo(configString);
 	}
 
+	if(csIndex == CS_SERVERINFO && _game != udtGame::CPMA)
+	{
+		ProcessQ3AndQLServerInfoConfigString(configString);
+	}
+
 	if(_game == udtGame::QL && csIndex == CS_SERVERINFO)
 	{
 		ProcessQLServerInfoConfigString(configString);
@@ -336,6 +348,11 @@ void udtGeneralAnalyzer::ResetForNextMatch()
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
 	_matchStartDateEpoch = 0;
+	_timeLimit = 0;
+	_scoreLimit = 0;
+	_fragLimit = 0;
+	_captureLimit = 0;
+	_roundLimit = 0;
 	_overTimeType = udtOvertimeType::Timed;
 	_forfeited = false;
 	_timeOut = false;
@@ -527,6 +544,44 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 			case 3: _gamePlay = udtGamePlay::CQ3; break;
 			case 4: _gamePlay = udtGamePlay::PMD; break;
 			default: break;
+		}
+	}
+
+	s32 tl = 0;
+	if(ParseConfigStringValueInt(tl, *_tempAllocator, "tl", configString))
+	{
+		_timeLimit = tl;
+	}
+
+	s32 sl = 0;
+	if(ParseConfigStringValueInt(sl, *_tempAllocator, "sl", configString))
+	{
+		const u8* gameTypeFlags = NULL;
+		u32 gameTypeCount = 0;
+		if(udtGetByteArray(udtByteArray::GameTypeFlags, &gameTypeFlags, &gameTypeCount) == (s32)udtErrorCode::None &&
+		   (u32)_gameType < gameTypeCount)
+		{
+			const u8 flags = gameTypeFlags[_gameType];
+			if(flags & (u8)udtGameTypeFlags::HasCaptureLimit)
+			{
+				_captureLimit = sl;
+			}
+			else if(flags & (u8)udtGameTypeFlags::HasFragLimit)
+			{
+				_fragLimit = sl;
+			}
+			else if(flags & (u8)udtGameTypeFlags::HasRoundLimit)
+			{
+				_roundLimit = sl;
+			}
+			else
+			{
+				_scoreLimit = sl;
+			}
+		}
+		else
+		{
+			_scoreLimit = sl;
 		}
 	}
 
@@ -723,6 +778,46 @@ void udtGeneralAnalyzer::ProcessOSPGamePlayConfigString(const char* configString
 			case 2: _gamePlay = udtGamePlay::CQ3; break;
 			default: break;
 		}
+	}
+}
+
+void udtGeneralAnalyzer::ProcessQ3AndQLServerInfoConfigString(const char* configString)
+{
+	if(configString == NULL)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
+
+	s32 timeLimit;
+	if(ParseConfigStringValueInt(timeLimit, *_tempAllocator, "timelimit", configString))
+	{
+		_timeLimit = timeLimit;
+	}
+
+	s32 scoreLimit;
+	if(ParseConfigStringValueInt(scoreLimit, *_tempAllocator, "scorelimit", configString))
+	{
+		_scoreLimit = scoreLimit;
+	}
+
+	s32 fragLimit;
+	if(ParseConfigStringValueInt(fragLimit, *_tempAllocator, "fraglimit", configString))
+	{
+		_fragLimit = fragLimit;
+	}
+
+	s32 captureLimit;
+	if(ParseConfigStringValueInt(captureLimit, *_tempAllocator, "capturelimit", configString))
+	{
+		_captureLimit = captureLimit;
+	}
+
+	s32 roundLimit;
+	if(ParseConfigStringValueInt(roundLimit, *_tempAllocator, "roundlimit", configString))
+	{
+		_roundLimit = roundLimit;
 	}
 }
 

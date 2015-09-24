@@ -50,25 +50,6 @@ static s32 CPMACharToInt(char c)
 	return 0;
 }
 
-static bool IsTeamMode(udtGameType::Id gameType)
-{
-	return gameType >= udtGameType::FirstTeamMode;
-}
-
-static bool IsRoundBasedMode(udtGameType::Id gameType)
-{
-	switch(gameType)
-	{
-		case udtGameType::CA:
-		case udtGameType::CTFS:
-		case udtGameType::RedRover:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 static u32 PopCount(u32 bitMask)
 {
 	u32 count = 0;
@@ -2521,6 +2502,23 @@ void udtParserPlugInStats::AddCurrentStats()
 		_stats.GameType = _analyzer.GameType();
 	}
 
+	if(!_analyzer.Forfeited() &&
+	   !IsRoundBasedMode((udtGameType::Id)_stats.GameType))
+	{
+		if(_analyzer.OvertimeCount() == 0 &&
+		   _analyzer.GetTimeLimit() != 0)
+		{
+			// Match ended by time limit.
+			_stats.MatchDurationMs = _analyzer.GetTimeLimit() * u32(60000);
+		}
+		else if(_analyzer.OvertimeCount() > 0 &&
+				_analyzer.OvertimeType() == udtOvertimeType::Timed)
+		{
+			// Match ended by time limit in overtime, so round to nearest minute.
+			_stats.MatchDurationMs = u32(60000) * ((_stats.MatchDurationMs + u32(59999)) / u32(60000));
+		}
+	}
+
 	for(s32 i = 0; i < 64; ++i)
 	{
 		// Fix the weapon index.
@@ -2817,6 +2815,35 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 	}
 
+	u32 scoreLimit = _analyzer.GetScoreLimit();
+	u32 fragLimit = _analyzer.GetFragLimit();
+	u32 captureLimit = _analyzer.GetCaptureLimit();
+	u32 roundLimit = _analyzer.GetRoundLimit();
+
+	const u8* gameTypeFlags = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetByteArray(udtByteArray::GameTypeFlags, &gameTypeFlags, &gameTypeCount) == udtErrorCode::None &&
+	   (u32)_stats.GameType < gameTypeCount)
+	{
+		const u8 flags = gameTypeFlags[_stats.GameType];
+		if((flags & (u8)udtGameTypeFlags::HasScoreLimit) == 0)
+		{
+			scoreLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasFragLimit) == 0)
+		{
+			fragLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasCaptureLimit) == 0)
+		{
+			captureLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasRoundLimit) == 0)
+		{
+			roundLimit = 0;
+		}
+	}
+
 	_stats.StartDateEpoch = _analyzer.GetMatchStartDateEpoch();
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();
@@ -2829,6 +2856,11 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
 	_stats.TeamMode = IsTeamMode((udtGameType::Id)_stats.GameType) ? 1 : 0;
+	_stats.TimeLimit = _analyzer.GetTimeLimit();
+	_stats.ScoreLimit = scoreLimit;
+	_stats.FragLimit = fragLimit;
+	_stats.CaptureLimit = captureLimit;
+	_stats.RoundLimit = roundLimit;
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();

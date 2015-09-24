@@ -93,7 +93,7 @@ static const char* CutPatternNames[] =
 };
 #undef UDT_CUT_PATTERN_ITEM
 
-#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) Desc,
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Desc,
 static const char* GameTypeNames[] =
 {
 	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
@@ -101,7 +101,7 @@ static const char* GameTypeNames[] =
 };
 #undef UDT_GAME_TYPE_ITEM
 
-#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) ShortDesc,
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) ShortDesc,
 static const char* ShortGameTypeNames[] =
 {
 	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
@@ -212,6 +212,14 @@ static const u8 PerfStatsDataTypesArray[]
 	0
 };
 #undef UDT_PERF_STATS_ITEM
+
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) (u8)(Flags),
+static const u8 GameTypeFlagsArray[] =
+{
+	UDT_GAME_TYPE_LIST(UDT_GAME_TYPE_ITEM)
+	0
+};
+#undef UDT_GAME_TYPE_ITEM
 
 
 UDT_API(const char*) udtGetVersionString()
@@ -462,6 +470,11 @@ UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32*
 		case udtByteArray::PerfStatsDataTypes:
 			*elements = PerfStatsDataTypesArray;
 			*elementCount = (u32)(UDT_COUNT_OF(PerfStatsDataTypesArray) - 1);
+			break;
+
+		case udtByteArray::GameTypeFlags:
+			*elements = GameTypeFlagsArray;
+			*elementCount = (u32)(UDT_COUNT_OF(GameTypeFlagsArray) - 1);
 			break;
 
 		default:

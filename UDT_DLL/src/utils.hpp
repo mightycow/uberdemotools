@@ -72,6 +72,8 @@ extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // R
 extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.
 extern bool        GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString);
 extern uptr        ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount);
+extern bool        IsTeamMode(udtGameType::Id gameType);
+extern bool        IsRoundBasedMode(udtGameType::Id gameType);
 extern void        PerfStatsInit(u64* perfStats);
 extern void        PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount);
 extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs);

@@ -971,6 +971,32 @@ uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCo
 	return byteCount;
 }
 
+bool IsTeamMode(udtGameType::Id gameType)
+{
+	const u8* gameTypeFlags = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetByteArray(udtByteArray::GameTypeFlags, &gameTypeFlags, &gameTypeCount) != udtErrorCode::None ||
+	   (u32)gameType >= gameTypeCount)
+	{
+		return false;
+	}
+
+	return (gameTypeFlags[gameType] & (u8)udtGameTypeFlags::Team) != 0;
+}
+
+bool IsRoundBasedMode(udtGameType::Id gameType)
+{
+	const u8* gameTypeFlags = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetByteArray(udtByteArray::GameTypeFlags, &gameTypeFlags, &gameTypeCount) != udtErrorCode::None ||
+	   (u32)gameType >= gameTypeCount)
+	{
+		return false;
+	}
+
+	return (gameTypeFlags[gameType] & (u8)udtGameTypeFlags::RoundBased) != 0;
+}
+
 void PerfStatsInit(u64* perfStats)
 {
 	memset(perfStats, 0, sizeof(u64) * (size_t)udtPerfStatsField::Count);

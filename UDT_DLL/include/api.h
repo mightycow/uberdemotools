@@ -374,6 +374,7 @@ struct udtByteArray
 		TeamStatsDataTypes,
 		PlayerStatsDataTypes,
 		PerfStatsDataTypes,
+		GameTypeFlags,
 		Count
 	};
 };
@@ -634,27 +635,42 @@ struct udtTeamStatsField
 };
 #undef UDT_TEAM_STATS_ITEM
 
+struct udtGameTypeFlags
+{
+	enum Id
+	{
+		None = 0,
+		Team = UDT_BIT(0),
+		RoundBased = UDT_BIT(1),
+		HasCaptureLimit = UDT_BIT(2),
+		HasFragLimit = UDT_BIT(3),
+		HasScoreLimit = UDT_BIT(4),
+		HasRoundLimit = UDT_BIT(5)
+	};
+};
+
+// @TODO: investigate obelisk harvester domination
 #define UDT_GAME_TYPE_LIST(N) \
-	N(SP, "SP", "Single Player") \
-	N(FFA, "FFA", "Free for All") \
-	N(Duel, "1v1", "Duel") \
-	N(Race, "race", "Race") \
-	N(HM, "HM", "HoonyMode") \
-	N(RedRover, "RR", "Red Rover") \
-	N(TDM, "TDM", "Team DeathMatch") \
-	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch") \
-	N(CA, "CA", "Clan Arena") \
-	N(CTF, "CTF", "Capture The Flag") \
-	N(OneFlagCTF, "1FCTF", "One Flag CTF") \
-	N(Obelisk, "OB", "Obelisk") \
-	N(Harvester, "HAR", "Harvester") \
-	N(Domination, "DOM", "Domination") \
-	N(CTFS, "CTFS", "Capture Strike") \
-	N(NTF, "NTF", "Not Team Fortress") \
-	N(TwoVsTwo, "2v2", "2v2 TDM") \
-	N(FT, "FT", "Freeze Tag")
+	N(SP, "SP", "Single Player", udtGameTypeFlags::HasFragLimit) \
+	N(FFA, "FFA", "Free for All", udtGameTypeFlags::HasFragLimit) \
+	N(Duel, "1v1", "Duel", udtGameTypeFlags::HasFragLimit) \
+	N(Race, "race", "Race", udtGameTypeFlags::None) \
+	N(HM, "HM", "HoonyMode", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::RoundBased) \
+	N(RedRover, "RR", "Red Rover", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::RoundBased) \
+	N(TDM, "TDM", "Team DeathMatch", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
+	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
+	N(CA, "CA", "Clan Arena", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased) \
+	N(CTF, "CTF", "Capture The Flag", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
+	N(OneFlagCTF, "1FCTF", "One Flag CTF", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
+	N(Obelisk, "OB", "Obelisk", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
+	N(Harvester, "HAR", "Harvester", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
+	N(Domination, "DOM", "Domination", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
+	N(CTFS, "CTFS", "Capture Strike", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased) \
+	N(NTF, "NTF", "Not Team Fortress", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
+	N(TwoVsTwo, "2v2", "2v2 TDM", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
+	N(FT, "FT", "Freeze Tag", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased)
 	
-#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc) Enum,
+#define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Enum,
 struct udtGameType
 {
 	enum Id
@@ -1408,8 +1424,20 @@ extern "C"
 		// Zero when invalid, a UNIX/POSIX timestamp otherwise.
 		u32 StartDateEpoch;
 
-		// Ignore this.
-		s32 Reserved1;
+		// Zero when there isn't any.
+		u32 TimeLimit;
+
+		// Zero when there isn't any.
+		u32 ScoreLimit;
+
+		// Zero when there isn't any.
+		u32 FragLimit;
+
+		// Zero when there isn't any.
+		u32 CaptureLimit;
+
+		// Zero when there isn't any.
+		u32 RoundLimit;
 	};
 
 	struct udtParseDataRawCommand
