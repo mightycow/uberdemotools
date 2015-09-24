@@ -28,10 +28,9 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInGameState);
 
 private:
-	void ClearMatch();
 	void ClearPlayerInfos();
 	void ClearGameState();
-	void AddCurrentMatchIfValid();
+	void AddCurrentMatchIfValid(bool addIfInProgress = false);
 	void AddCurrentPlayersIfValid();
 	void AddCurrentGameState();
 	void ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol);
@@ -47,6 +46,5 @@ private:
 	udtVMArrayWithAlloc<udtGameStatePlayerInfo> _players;
 	udtVMLinearAllocator _stringAllocator; // For the key/value pairs and the demo taker's name.
 	udtParseDataGameState _currentGameState;
-	udtMatchInfo _currentMatch;
 	udtProtocol::Id _protocol;
 };

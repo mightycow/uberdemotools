@@ -162,6 +162,5 @@ private:
 	s32 _firstPlaceScore;
 	s32 _secondPlaceScore;
 	s32 _lastMatchEndTime;
-	bool _gameEnded;
 	bool _disableStatsOverrides;
 };

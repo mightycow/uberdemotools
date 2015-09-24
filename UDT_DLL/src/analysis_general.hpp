@@ -22,6 +22,7 @@ public:
 	bool HasMatchJustStarted() const;
 	bool HasMatchJustEnded() const;
 	bool IsMatchInProgress() const;
+	bool IsInIntermission() const;
 	s32  MatchStartTime() const;
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
@@ -30,8 +31,6 @@ public:
 	s32  TotalTimeOutDuration() const;
 	bool Forfeited() const;
 	bool MercyLimited() const;
-	void SetInWarmUp();
-	void SetInProgress();
 	s32  GetTimeOutStartTime(u32 index) const;
 	s32  GetTimeOutEndTime(u32 index) const;
 	u32  GetMatchStartDateEpoch() const;
@@ -50,9 +49,10 @@ private:
 	{
 		enum Id
 		{
-			WarmUp, // For our purposes, we consider intermission to be warm-up.
+			WarmUp,
 			CountDown,
 			InProgress,
+			Intermission,
 			Count
 		};
 	};

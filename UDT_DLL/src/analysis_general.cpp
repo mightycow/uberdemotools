@@ -99,8 +99,6 @@ void udtGeneralAnalyzer::FinishDemoAnalysis()
 {
 	if(_gameState == udtGameState::InProgress && _matchStartTime != S32_MIN)
 	{
-		_lastGameState = udtGameState::InProgress;
-		_gameState = udtGameState::WarmUp;
 		_matchEndTime = _parser->_inServerTime;
 	}
 }
@@ -193,9 +191,10 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 		const udtString printMessage = tokenizer.GetArg(1);
 		if(udtString::ContainsNoCase(index, printMessage, "match complete") || 
 		   udtString::ContainsNoCase(index, printMessage, "match over") ||
-		   udtString::ContainsNoCase(index, printMessage, "timelimit hit"))
+		   udtString::ContainsNoCase(index, printMessage, "limit hit") || 
+		   udtString::ContainsNoCase(index, printMessage, "has won the match")) 
 		{
-			UpdateGameState(udtGameState::WarmUp);
+			UpdateGameState(udtGameState::Intermission);
 			if(HasMatchJustEnded())
 			{
 				_matchEndTime = parser._inServerTime;
@@ -356,13 +355,19 @@ bool udtGeneralAnalyzer::HasMatchJustStarted() const
 
 bool udtGeneralAnalyzer::HasMatchJustEnded() const
 {
-	// The stricter rule is to avoid CPMA round endings to look like match endings.
-	return _lastGameState == udtGameState::InProgress && _gameState == udtGameState::WarmUp;
+	// In CPMA forfeits, we go from InProgress to WarmUp.
+	return _lastGameState == udtGameState::InProgress && 
+		(_gameState == udtGameState::WarmUp || _gameState == udtGameState::Intermission);
 }
 
 bool udtGeneralAnalyzer::IsMatchInProgress() const
 {
 	return _gameState == udtGameState::InProgress;
+}
+
+bool udtGeneralAnalyzer::IsInIntermission() const
+{
+	return _gameState == udtGameState::Intermission;
 }
 
 s32 udtGeneralAnalyzer::MatchStartTime() const
@@ -372,7 +377,7 @@ s32 udtGeneralAnalyzer::MatchStartTime() const
 
 s32 udtGeneralAnalyzer::MatchEndTime() const
 {
-	return _matchEndTime;
+	return _matchEndTime != S32_MIN ? _matchEndTime : _parser->_inServerTime;
 }
 
 s32 udtGeneralAnalyzer::GameStateIndex() const
@@ -433,20 +438,6 @@ bool udtGeneralAnalyzer::Forfeited() const
 bool udtGeneralAnalyzer::MercyLimited() const
 {
 	return _mercyLimited;
-}
-
-void udtGeneralAnalyzer::SetInWarmUp()
-{
-	_lastGameState = udtGameState::WarmUp;
-	_gameState = udtGameState::WarmUp;
-	_matchStartTime = S32_MIN;
-	_matchEndTime = S32_MIN;
-}
-
-void udtGeneralAnalyzer::SetInProgress()
-{
-	_lastGameState = udtGameState::InProgress;
-	_gameState = udtGameState::InProgress;
 }
 
 s32 udtGeneralAnalyzer::GetTimeOutStartTime(u32 index) const
@@ -653,7 +644,11 @@ void udtGeneralAnalyzer::ProcessQLServerInfoConfigString(const char* configStrin
 		return;
 	}
 
-	if(udtString::Equals(gameStateString, "PRE_GAME"))
+	if(IsIntermission())
+	{
+		UpdateGameState(udtGameState::Intermission);
+	}
+	else if(udtString::Equals(gameStateString, "PRE_GAME"))
 	{
 		UpdateGameState(udtGameState::WarmUp);
 	}
@@ -677,7 +672,7 @@ void udtGeneralAnalyzer::ProcessIntermissionConfigString(const udtString& config
 	if(udtString::EqualsNoCase(configString, "1") || 
 	   udtString::EqualsNoCase(configString, "qtrue"))
 	{
-		UpdateGameState(udtGameState::WarmUp);
+		UpdateGameState(udtGameState::Intermission);
 		if(HasMatchJustEnded())
 		{
 			_matchEndTime = _parser->_inServerTime;

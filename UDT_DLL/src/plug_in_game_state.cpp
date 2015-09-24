@@ -32,7 +32,6 @@ udtParserPlugInGameState::udtParserPlugInGameState()
 
 	ClearGameState();
 	ClearPlayerInfos();
-	ClearMatch();
 }
 
 udtParserPlugInGameState::~udtParserPlugInGameState()
@@ -61,7 +60,6 @@ void udtParserPlugInGameState::StartDemoAnalysis()
 	_analyzer.ResetForNextDemo();
 
 	ClearGameState();
-	ClearMatch();
 	ClearPlayerInfos();
 }
 
@@ -137,13 +135,6 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	}
 }
 
-void udtParserPlugInGameState::ClearMatch()
-{
-	_currentMatch.WarmUpEndTimeMs = S32_MIN;
-	_currentMatch.MatchStartTimeMs = S32_MIN;
-	_currentMatch.MatchEndTimeMs = S32_MIN;
-}
-
 void udtParserPlugInGameState::ClearPlayerInfos()
 {
 	for(s32 i = 0; i < 64; ++i)
@@ -169,22 +160,28 @@ void udtParserPlugInGameState::ClearGameState()
 	_currentGameState.Players = NULL;
 }
 
-void udtParserPlugInGameState::AddCurrentMatchIfValid()
+void udtParserPlugInGameState::AddCurrentMatchIfValid(bool addIfInProgress)
 {
-	if(!_analyzer.HasMatchJustEnded())
+	const bool addMatch = _analyzer.HasMatchJustEnded() || 
+		(addIfInProgress && _analyzer.IsMatchInProgress());
+	if(!addMatch)
 	{
 		return;
 	}
 
-	_currentMatch.MatchStartTimeMs = _analyzer.MatchStartTime();
-	_currentMatch.MatchEndTimeMs = _analyzer.MatchEndTime();
-	_currentMatch.WarmUpEndTimeMs = S32_MIN;
-
-	_matches.Add(_currentMatch);
+	udtMatchInfo match;
+	match.MatchStartTimeMs = _analyzer.MatchStartTime();
+	match.MatchEndTimeMs = _analyzer.MatchEndTime();
+	match.WarmUpEndTimeMs = S32_MIN;
+	
+	if(_currentGameState.MatchCount > 0 &&
+	   _matches[_matches.GetSize() - 1].MatchEndTimeMs >= match.MatchStartTimeMs)
+	{
+		return;
+	}
+	
+	_matches.Add(match);
 	++_currentGameState.MatchCount;
-	ClearMatch();
-
-	_analyzer.SetInWarmUp();
 }
 
 void udtParserPlugInGameState::AddCurrentPlayersIfValid()
@@ -203,12 +200,11 @@ void udtParserPlugInGameState::AddCurrentPlayersIfValid()
 
 void udtParserPlugInGameState::AddCurrentGameState()
 {
-	AddCurrentMatchIfValid();
+	AddCurrentMatchIfValid(true);
 	AddCurrentPlayersIfValid();
 	_gameStates.Add(_currentGameState);
 
 	ClearGameState();
-	ClearMatch();
 	ClearPlayerInfos();
 }
 

@@ -122,7 +122,6 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_maxAllowedStats = UDT_MAX_STATS;
-	_gameEnded = false;
 	_disableStatsOverrides = false;
 	_lastMatchEndTime = S32_MIN;
 	ClearStats();
@@ -154,7 +153,6 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_plugInTokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
-	_gameEnded = false;
 	_disableStatsOverrides = false;
 	_lastMatchEndTime = S32_MIN;
 	ClearStats();
@@ -163,7 +161,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 void udtParserPlugInStats::FinishDemoAnalysis()
 {
 	_analyzer.FinishDemoAnalysis();
-	if(!_analyzer.IsMatchInProgress() && _gameEnded)
+	if(_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission())
 	{
 		AddCurrentStats();
 	}
@@ -171,9 +169,8 @@ void udtParserPlugInStats::FinishDemoAnalysis()
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
-	if(_analyzer.GameStateIndex() >= 0 &&
-	   !_analyzer.IsMatchInProgress() &&
-	   _gameEnded)
+	if(_analyzer.GameStateIndex() >= 0 && 
+	   (_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission()))
 	{
 		AddCurrentStats();
 	}
@@ -219,16 +216,10 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
 	// So we add stats when a match starts (that isn't the first one) or the demo ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
-	if(_analyzer.HasMatchJustStarted() && _gameEnded)
+	if(_analyzer.HasMatchJustEnded())
 	{
-		_gameEnded = false;
 		AddCurrentStats();
-		_analyzer.SetInProgress();
 		_analyzer.ResetForNextMatch();
-	}
-	else if(_analyzer.HasMatchJustEnded())
-	{
-		_gameEnded = true;
 	}
 
 	if(_tokenizer->GetArgCount() < 2)
@@ -245,11 +236,11 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		ProcessConfigString(csIndex, _tokenizer->GetArg(2));
 	}
 
-	// For some demos we don't have more commands when the match is over.
-	// That is always true for forfeited games in CPMA.
-	// We just decide that incomplete data is better than no data at all.
-	// If that changes, we can uncomment the following line again.
-	//if(_analyzer.IsMatchInProgress() || !_gameEnded) return;
+	if(!_analyzer.IsMatchInProgress() &&
+	   !_analyzer.IsInIntermission())
+	{
+		return;
+	}
 
 	struct CommandHandler
 	{
@@ -2114,7 +2105,7 @@ void udtParserPlugInStats::ParseQLScoresRR()
 void udtParserPlugInStats::ParsePrint()
 {
 	if(_analyzer.Mod() == udtMod::CPMA && 
-	   !_analyzer.IsMatchInProgress())
+	   _analyzer.IsInIntermission())
 	{
 		ParseCPMAPrint();
 	}
