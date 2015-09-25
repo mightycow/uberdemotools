@@ -2107,27 +2107,36 @@ namespace Uber.DemoTools
             return a2.CompareTo(b2);
         }
 
+        private static Regex MinutesSecondsRegEx = new Regex(@"(\d+):(\d+)", RegexOptions.Compiled);
+        private static Regex SecondsRegEx = new Regex(@"(\d+)", RegexOptions.Compiled);
+
         public static bool GetTimeSeconds(string text, out int time)
         {
             time = -1;
 
-            var minutesSecondsRegEx = new Regex(@"(\d+):(\d+)");
-            var match = minutesSecondsRegEx.Match(text);
+            foreach(var c in text)
+            {
+                if(!char.IsDigit(c) && 
+                    c != ':' &&
+                    !char.IsWhiteSpace(c))
+                {
+                    return false;
+                }
+            }
+
+            var match = MinutesSecondsRegEx.Match(text);
             if(match.Success)
             {
-                int m = int.Parse(match.Groups[1].Value);
-                int s = int.Parse(match.Groups[2].Value);
+                var m = int.Parse(match.Groups[1].Value);
+                var s = int.Parse(match.Groups[2].Value);
                 time = m * 60 + s;
-
                 return true;
             }
 
-            var secondsRegEx = new Regex(@"(\d+)");
-            match = secondsRegEx.Match(text);
-            if(secondsRegEx.IsMatch(text))
+            match = SecondsRegEx.Match(text);
+            if(match.Success)
             {
                 time = int.Parse(match.Groups[1].Value);
-
                 return true;
             }
 
