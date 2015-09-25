@@ -108,6 +108,7 @@ namespace Uber.DemoTools
 
     public class MatchTimeInfo
     {
+        public int GameStateIndex = 0;
         public int StartTimeMs = 0;
         public int EndTimeMs = 0;
         public int TimeLimit = 0; // In minutes, 0 when none is set.
@@ -2273,7 +2274,7 @@ namespace Uber.DemoTools
             AnalyzeDemos(demos);
         }
 
-        private bool ParseMinutesSeconds(string time, out int totalSeconds)
+        public bool ParseMinutesSeconds(string time, out int totalSeconds)
         {
             totalSeconds = -1;
 
@@ -2355,24 +2356,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.CutStartOffset;
-            int endOffset = _config.CutEndOffset;
-            if(!_config.SkipChatOffsetsDialog)
-            {
-                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
-                if(!dialog.Valid)
-                {
-                    return;
-                }
-
-                startOffset = dialog.StartOffset;
-                endOffset = dialog.EndOffset;
-            }
-
-            startTime -= startOffset;
-            endTime += endOffset;
-
-            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
+            SetCutByTimeFields(gsIndex, startTime, endTime);
 
             var tabIdx = 0;
             foreach(var item in _tabControl.Items)
@@ -2391,6 +2375,36 @@ namespace Uber.DemoTools
 
                 ++tabIdx;                
             }
+        }
+
+        public bool SetCutByTimeFields(int gsIndex, int firstTime, int lastTime)
+        {
+            var cutByTimeComponent = _cutByTimeComponent as CutByTimeComponent;
+            if(cutByTimeComponent == null)
+            {
+                return false;
+            }
+
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
+            if(!_config.SkipChatOffsetsDialog)
+            {
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
+                if(!dialog.Valid)
+                {
+                    return false;
+                }
+
+                startOffset = dialog.StartOffset;
+                endOffset = dialog.EndOffset;
+            }
+
+            var startTime = firstTime - startOffset;
+            var endTime = lastTime + endOffset;
+
+            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
+
+            return true;
         }
 
         public static void CopyListViewRowsToClipboard(ListView listView)

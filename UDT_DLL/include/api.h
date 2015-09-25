@@ -1444,6 +1444,12 @@ extern "C"
 
 		// Match end time (server time), in milli-seconds.
 		s32 EndTimeMs;
+
+		// The index of the gamestate message after which this match took place.
+		u32 GameStateIndex;
+
+		// Ignore this.
+		s32 Reserved1;
 	};
 
 	struct udtParseDataRawCommand

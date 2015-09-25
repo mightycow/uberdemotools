@@ -2863,6 +2863,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.RoundLimit = roundLimit;
 	_stats.StartTimeMs = _analyzer.MatchStartTime();
 	_stats.EndTimeMs = _analyzer.MatchEndTime();
+	_stats.GameStateIndex = (u32)_analyzer.GameStateIndex();
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();

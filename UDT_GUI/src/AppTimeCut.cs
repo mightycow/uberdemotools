@@ -144,7 +144,35 @@ namespace Uber.DemoTools
 
         public void PopulateViews(DemoInfo demoInfo)
         {
-            // Nothing to do.
+            var hideGameStateEditBox = demoInfo.Analyzed && demoInfo.GameStateFileOffsets.Count == 1;
+            _gameStateIndexRow.Visibility = hideGameStateEditBox ? Visibility.Collapsed : Visibility.Visible;
+
+            if(demoInfo.MatchTimes.Count == 0)
+            {
+                _calcGroupBox.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            _calcGroupBox.Visibility = Visibility.Visible;
+            _calcOvertimeRow.Visibility = demoInfo.MatchTimes[0].HadOvertime ? Visibility.Visible : Visibility.Collapsed;
+
+            var matchCount = demoInfo.MatchTimes.Count;
+            if(matchCount > 1)
+            {
+                _calcMatchSelectionRow.Visibility = Visibility.Visible;
+                _calcMatchSelectionComboBox.Items.Clear();
+                for(var i = 0; i < matchCount; ++i)
+                {
+                    _calcMatchSelectionComboBox.Items.Add("Match #" + (i + 1).ToString());
+                }
+                _calcMatchSelectionComboBox.SelectedIndex = 0;
+            }
+            else
+            {
+                _calcMatchSelectionRow.Visibility = Visibility.Collapsed;
+            }
+
+            UpdateCalcServerTime();
         }
 
         public void SaveToConfigObject(UdtConfig config)
@@ -173,9 +201,18 @@ namespace Uber.DemoTools
             public int EndTime = -1;
         }
 
-        private TextBox _startTimeEditBox = null;
-        private TextBox _endTimeEditBox = null;
-        private TextBox _gameStateIndexEditBox = null;
+        private TextBox _startTimeEditBox;
+        private TextBox _endTimeEditBox;
+        private TextBox _gameStateIndexEditBox;
+        private ComboBox _calcMatchSelectionComboBox;
+        private TextBox _calcTimeEditBox;
+        private CheckBox _calcClockDirCheckBox;
+        private CheckBox _calcOvertimeCheckBox;
+        private TextBox _calcOutputTimeEditBox;
+        private GroupBox _calcGroupBox;
+        private FrameworkElement _calcMatchSelectionRow;
+        private FrameworkElement _calcOvertimeRow;
+        private FrameworkElement _gameStateIndexRow;
 
         private FrameworkElement CreateCutByTimeTab()
         {
@@ -183,13 +220,13 @@ namespace Uber.DemoTools
             _startTimeEditBox = startTimeEditBox;
             startTimeEditBox.Width = 50;
             startTimeEditBox.Text = "00:00";
-            startTimeEditBox.ToolTip = "seconds OR minutes:seconds";
+            startTimeEditBox.ToolTip = "Format: seconds OR minutes:seconds";
 
             var endTimeEditBox = new TextBox();
             _endTimeEditBox = endTimeEditBox;
             endTimeEditBox.Width = 50;
             endTimeEditBox.Text = "00:20";
-            endTimeEditBox.ToolTip = "seconds OR minutes:seconds";
+            endTimeEditBox.ToolTip = "Format: seconds OR minutes:seconds";
 
             var gameStateIndexEditBox = new TextBox();
             _gameStateIndexEditBox = gameStateIndexEditBox;
@@ -204,6 +241,7 @@ namespace Uber.DemoTools
             var optionsPanel = WpfHelper.CreateDualColumnPanel(panelList, 100, 5);
             optionsPanel.HorizontalAlignment = HorizontalAlignment.Center;
             optionsPanel.VerticalAlignment = VerticalAlignment.Center;
+            _gameStateIndexRow = optionsPanel.Children[2] as FrameworkElement;
 
             var cutOptionsGroupBox = new GroupBox();
             cutOptionsGroupBox.Header = "Cut Configuration";
@@ -228,12 +266,83 @@ namespace Uber.DemoTools
             actionsGroupBox.Header = "Actions";
             actionsGroupBox.Content = cutButton;
 
+            var calcMatchSelectionComboBox = new ComboBox();
+            _calcMatchSelectionComboBox = calcMatchSelectionComboBox;
+            calcMatchSelectionComboBox.VerticalAlignment = VerticalAlignment.Center;
+            calcMatchSelectionComboBox.Width = 100;
+            calcMatchSelectionComboBox.Items.Add("Match #1");
+            calcMatchSelectionComboBox.SelectedIndex = 0;
+            calcMatchSelectionComboBox.SelectionChanged += (obj, args) => UpdateCalcServerTime();
+
+            var calcTimeEditBox = new TextBox();
+            _calcTimeEditBox = calcTimeEditBox;
+            calcTimeEditBox.VerticalAlignment = VerticalAlignment.Center;
+            calcTimeEditBox.Width = 50;
+            calcTimeEditBox.Text = "00:00";
+            calcTimeEditBox.ToolTip = "Format: seconds OR minutes:seconds";
+            calcTimeEditBox.TextChanged += (obj, args) => UpdateCalcServerTime();
+
+            var calcClockDirCheckBox = new CheckBox();
+            _calcClockDirCheckBox = calcClockDirCheckBox;
+            calcClockDirCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            calcClockDirCheckBox.Content = " Is the timestamp for the game clock going up?";
+            calcClockDirCheckBox.IsChecked = true;
+            calcClockDirCheckBox.Checked += (obj, args) => UpdateCalcServerTime();
+            calcClockDirCheckBox.Unchecked += (obj, args) => UpdateCalcServerTime();
+
+            var calcOvertimeCheckBox = new CheckBox();
+            _calcOvertimeCheckBox = calcOvertimeCheckBox;
+            calcOvertimeCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            calcOvertimeCheckBox.Content = " Was the game in overtime at that timestamp?";
+            calcOvertimeCheckBox.IsChecked = false;
+            calcOvertimeCheckBox.Checked += (obj, args) => UpdateCalcServerTime();
+            calcOvertimeCheckBox.Unchecked += (obj, args) => UpdateCalcServerTime();
+
+            var calcOutputTimeEditBox = new TextBox();
+            _calcOutputTimeEditBox = calcOutputTimeEditBox;
+            calcOutputTimeEditBox.VerticalAlignment = VerticalAlignment.Center;
+            calcOutputTimeEditBox.Width = 50;
+            calcOutputTimeEditBox.Text = "?";
+            calcOutputTimeEditBox.IsReadOnly = true;
+            calcOutputTimeEditBox.TextChanged += (obj, args) => UpdateCalcServerTime();
+
+            var calcFillValuesButton = new Button();
+            calcFillValuesButton.VerticalAlignment = VerticalAlignment.Center;
+            calcFillValuesButton.Width = 75;
+            calcFillValuesButton.Height = 25;
+            calcFillValuesButton.Content = "Fill Values";
+            calcFillValuesButton.ToolTip = "Fill in the fields of the Cut Configuration group box above using your settings?";
+            calcFillValuesButton.Click += (obj, args) => FillCutByTimeFields();
+
+            var calcList = new List<Tuple<FrameworkElement, FrameworkElement>>();
+            calcList.Add(App.CreateTuple("", "Round-based game types are not supported."));
+            calcList.Add(App.CreateTuple("", "Overtimes with the clock going down are not supported."));
+            calcList.Add(App.CreateTuple("Match", calcMatchSelectionComboBox));
+            calcList.Add(App.CreateTuple("Match Time", calcTimeEditBox));
+            calcList.Add(App.CreateTuple("Clock Goes Up?", calcClockDirCheckBox));
+            calcList.Add(App.CreateTuple("In Overtime?", calcOvertimeCheckBox));
+            calcList.Add(App.CreateTuple("Server Time", calcOutputTimeEditBox));
+            calcList.Add(App.CreateTuple("", calcFillValuesButton));
+            var calcPanel = WpfHelper.CreateDualColumnPanel(calcList, 100, 3);
+            calcPanel.HorizontalAlignment = HorizontalAlignment.Center;
+            calcPanel.VerticalAlignment = VerticalAlignment.Center;
+            _calcMatchSelectionRow = calcPanel.Children[2] as FrameworkElement;
+            _calcOvertimeRow = calcPanel.Children[5] as FrameworkElement;
+
+            var calcGroupBox = new GroupBox();
+            _calcGroupBox = calcGroupBox;
+            calcGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            calcGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            calcGroupBox.Margin = new Thickness(5);
+            calcGroupBox.Header = "Match Time to Server Time Converter";
+            calcGroupBox.Content = calcPanel;
+
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "The times are server times, not match times." +
-                "\nTime format is either (seconds) or (minutes:seconds)." +
+                "The times UDT uses are server times, not match times." +
+                "\nThe time format is either (seconds) or (minutes:seconds)." +
                 "\n\nThe GameState index is the 0-based index of the last GameState message that comes before the content you want to cut." +
                 "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"General\" tab under \"Info\".";
 
@@ -249,6 +358,7 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(cutOptionsGroupBox);
             rootPanel.Children.Add(actionsGroupBox);
+            rootPanel.Children.Add(calcGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
             var scrollViewer = new ScrollViewer();
@@ -384,6 +494,113 @@ namespace Uber.DemoTools
                 var endTimeDisplay = App.FormatMinutesSeconds(info.EndTime);
                 _app.LogError("Caught an exception while writing cut {0}-{1}: {2}", startTimeDisplay, endTimeDisplay, exception.Message);
             }
+        }
+
+        private void UpdateCalcServerTime()
+        {
+            var demo = _app.SelectedDemo;
+            if(demo == null)
+            {
+                SetUnknownServerTime();
+                return;
+            }
+
+            var matchIndex = _calcMatchSelectionComboBox.SelectedIndex;
+            if(matchIndex < 0 || matchIndex >= demo.MatchTimes.Count)
+            {
+                SetUnknownServerTime();
+                return;
+            }
+
+            var match = demo.MatchTimes[matchIndex];
+            if(match.RoundBasedMode)
+            {
+                SetUnknownServerTime();
+                return;
+            }
+
+            int matchTimeMs = 0;
+            if(!App.GetTimeSeconds(_calcTimeEditBox.Text, out matchTimeMs))
+            {
+                SetUnknownServerTime();
+                return;
+            }
+            matchTimeMs *= 1000;
+
+            var clockGoingUp = _calcClockDirCheckBox.IsChecked ?? false;
+            if(_calcOvertimeCheckBox.IsChecked ?? false)
+            {
+                // @NOTE: We don't have support for overtimes with the clock going down 
+                // like CPMA does in duels by default.
+                // For that we would need the length of a timed overtime and the overtime's index...
+                if(match.TimeLimit == 0 || !clockGoingUp)
+                {
+                    SetUnknownServerTime();
+                    return;
+                }
+
+                matchTimeMs += match.TimeLimit * 60000;
+            }
+
+            var serverTimeMs = 0;
+            if(clockGoingUp)
+            {
+                serverTimeMs = match.StartTimeMs + matchTimeMs;
+            }
+            else
+            {
+                if(match.TimeLimit == 0)
+                {
+                    SetUnknownServerTime();
+                    return;
+                }
+
+                var durationMs = match.TimeLimit * 60000;
+                serverTimeMs = match.StartTimeMs + durationMs - matchTimeMs;
+            }
+
+            foreach(var timeOut in match.TimeOuts)
+            {
+                if(timeOut.StartTimeMs >= serverTimeMs)
+                {
+                    break;
+                }
+
+                serverTimeMs += timeOut.EndTimeMs - timeOut.StartTimeMs;
+            }
+
+            _calcOutputTimeEditBox.Text = App.FormatMinutesSeconds(serverTimeMs / 1000);
+        }
+
+        private void SetUnknownServerTime()
+        {
+            _calcOutputTimeEditBox.Text = "?";
+        }
+
+        private void FillCutByTimeFields()
+        {
+            var app = App.Instance;
+            var demo = app.SelectedDemo;
+            if(demo == null)
+            {
+                return;
+            }
+
+            var matchIndex = _calcMatchSelectionComboBox.SelectedIndex;
+            var gsIndex = 0;
+            if(matchIndex != -1 && 
+                matchIndex < demo.MatchTimes.Count)
+            {
+                gsIndex = demo.MatchTimes[matchIndex].GameStateIndex;
+            }
+
+            var cutTime = 0;
+            if(!app.ParseMinutesSeconds(_calcOutputTimeEditBox.Text, out cutTime))
+            {
+                return;
+            }
+
+            app.SetCutByTimeFields(gsIndex, cutTime, cutTime);
         }
     }
 }

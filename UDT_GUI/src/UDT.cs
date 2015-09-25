@@ -536,6 +536,8 @@ namespace Uber.DemoTools
             public UInt32 RoundLimit;
             public Int32 StartTimeMs;
             public Int32 EndTimeMs;
+            public UInt32 GameStateIndex;
+            public Int32 Reserved1;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -2031,6 +2033,7 @@ namespace Uber.DemoTools
             }
 
             var match = new MatchTimeInfo();
+            match.GameStateIndex = (int)data.GameStateIndex;
             match.StartTimeMs = data.StartTimeMs;
             match.EndTimeMs = data.EndTimeMs;
             match.TimeLimit = (int)data.TimeLimit;
