@@ -163,7 +163,12 @@ namespace Uber.DemoTools
                 _calcMatchSelectionComboBox.Items.Clear();
                 for(var i = 0; i < matchCount; ++i)
                 {
-                    _calcMatchSelectionComboBox.Items.Add("Match #" + (i + 1).ToString());
+                    var name = string.Format("Match #{0} (GS {1}, {2} - {3})", 
+                        (i + 1).ToString(), 
+                        demoInfo.MatchTimes[i].GameStateIndex,
+                        App.FormatMinutesSeconds(demoInfo.MatchTimes[i].StartTimeMs / 1000),
+                        App.FormatMinutesSeconds(demoInfo.MatchTimes[i].EndTimeMs / 1000));
+                    _calcMatchSelectionComboBox.Items.Add(name);
                 }
                 _calcMatchSelectionComboBox.SelectedIndex = 0;
             }
@@ -268,8 +273,8 @@ namespace Uber.DemoTools
 
             var calcMatchSelectionComboBox = new ComboBox();
             _calcMatchSelectionComboBox = calcMatchSelectionComboBox;
+            calcMatchSelectionComboBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             calcMatchSelectionComboBox.VerticalAlignment = VerticalAlignment.Center;
-            calcMatchSelectionComboBox.Width = 100;
             calcMatchSelectionComboBox.Items.Add("Match #1");
             calcMatchSelectionComboBox.SelectedIndex = 0;
             calcMatchSelectionComboBox.SelectionChanged += (obj, args) => UpdateCalcServerTime();
@@ -567,6 +572,12 @@ namespace Uber.DemoTools
                 }
 
                 serverTimeMs += timeOut.EndTimeMs - timeOut.StartTimeMs;
+            }
+
+            if(serverTimeMs < match.StartTimeMs || serverTimeMs > match.EndTimeMs)
+            {
+                SetUnknownServerTime();
+                return;
             }
 
             _calcOutputTimeEditBox.Text = App.FormatMinutesSeconds(serverTimeMs / 1000);
