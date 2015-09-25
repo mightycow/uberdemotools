@@ -2861,6 +2861,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.FragLimit = fragLimit;
 	_stats.CaptureLimit = captureLimit;
 	_stats.RoundLimit = roundLimit;
+	_stats.StartTimeMs = _analyzer.MatchStartTime();
+	_stats.EndTimeMs = _analyzer.MatchEndTime();
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();

@@ -1438,6 +1438,12 @@ extern "C"
 
 		// Zero when there isn't any.
 		u32 RoundLimit;
+
+		// Match start time (server time), in milli-seconds.
+		s32 StartTimeMs;
+
+		// Match end time (server time), in milli-seconds.
+		s32 EndTimeMs;
 	};
 
 	struct udtParseDataRawCommand

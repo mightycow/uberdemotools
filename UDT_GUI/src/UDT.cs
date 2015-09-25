@@ -152,6 +152,7 @@ namespace Uber.DemoTools
             TeamStatsDataTypes,
             PlayerStatsDataTypes,
             PerfStatsDataTypes,
+            GameTypeFlags,
             Count
         }
 
@@ -188,6 +189,17 @@ namespace Uber.DemoTools
             Count
         };
 
+        enum udtGameTypeFlags : byte
+        {
+            None = 0,
+            Team = 1 << 0,
+            RoundBased = 1 << 1,
+            HasCaptureLimit = 1 << 2,
+            HasFragLimit = 1 << 3,
+            HasScoreLimit = 1 << 4,
+            HasRoundLimit = 1 << 5
+        };
+
         private enum udtGameType : uint
         {
             SP,
@@ -195,7 +207,9 @@ namespace Uber.DemoTools
             Duel,
             Race,
             HM,
+            RedRover,
             TDM,
+            CBTDM,
             CA,
             CTF,
             OneFlagCTF,
@@ -203,7 +217,6 @@ namespace Uber.DemoTools
             Harvester,
             Domination,
             CTFS,
-            RedRover,
             NTF,
             TwoVsTwo,
             FT,
@@ -521,6 +534,8 @@ namespace Uber.DemoTools
             public UInt32 FragLimit;
             public UInt32 CaptureLimit;
             public UInt32 RoundLimit;
+            public Int32 StartTimeMs;
+            public Int32 EndTimeMs;
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1999,6 +2014,36 @@ namespace Uber.DemoTools
             ExtractPlayerStats(data, info, ref stats);
 
             info.MatchStats.Add(stats);
+
+            ExtractTimeInfo(data, info);
+        }
+
+        private static void ExtractTimeInfo(udtParseDataStats data, DemoInfo info)
+        {
+            var roundBaseMode = false;
+            IntPtr gameTypeFlags = IntPtr.Zero;
+            UInt32 gameTypeCount = 0;
+            if(udtGetByteArray(udtByteArray.GameTypeFlags, ref gameTypeFlags, ref gameTypeCount) == udtErrorCode.None &&
+                data.GameType < gameTypeCount &&
+                (Marshal.ReadByte(gameTypeFlags, (int)data.GameType) & (byte)udtGameTypeFlags.RoundBased) != 0)
+            {
+                roundBaseMode = true;
+            }
+
+            var match = new MatchTimeInfo();
+            match.StartTimeMs = data.StartTimeMs;
+            match.EndTimeMs = data.EndTimeMs;
+            match.TimeLimit = (int)data.TimeLimit;
+            match.HadOvertime = data.OverTimeCount > 0;
+            match.RoundBasedMode = roundBaseMode;
+            for(var i = 0; i < (int)data.TimeOutCount; ++i)
+            {
+                var startTimeMs = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4 * (2 * i));
+                var endTimeMs = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4 * (2 * i + 1));
+                match.TimeOuts.Add(new Timeout(startTimeMs, endTimeMs));
+            }
+
+            info.MatchTimes.Add(match);
         }
 
         private static void ExtractTeamStats(udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)

@@ -94,6 +94,28 @@ namespace Uber.DemoTools
         public string Time { get; set; }
     }
 
+    public class Timeout
+    {
+        public Timeout(int startTimeMs, int endTimeMs)
+        {
+            StartTimeMs = startTimeMs;
+            EndTimeMs = endTimeMs;
+        }
+
+        public int StartTimeMs = 0;
+        public int EndTimeMs = 0;
+    }
+
+    public class MatchTimeInfo
+    {
+        public int StartTimeMs = 0;
+        public int EndTimeMs = 0;
+        public int TimeLimit = 0; // In minutes, 0 when none is set.
+        public bool HadOvertime = false;
+        public bool RoundBasedMode = false;
+        public readonly List<Timeout> TimeOuts = new List<Timeout>();
+    }
+
     public class DemoInfo
     {
         // Always set.
@@ -111,6 +133,7 @@ namespace Uber.DemoTools
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
         public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
         public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
+        public List<MatchTimeInfo> MatchTimes = new List<MatchTimeInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -1874,6 +1897,7 @@ namespace Uber.DemoTools
                 demos[i].FilePath = newDemo.FilePath;
                 demos[i].MatchStats = newDemo.MatchStats;
                 demos[i].Commands = newDemo.Commands;
+                demos[i].MatchTimes = newDemo.MatchTimes;
             }
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
