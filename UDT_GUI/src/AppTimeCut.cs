@@ -209,15 +209,17 @@ namespace Uber.DemoTools
         private TextBox _startTimeEditBox;
         private TextBox _endTimeEditBox;
         private TextBox _gameStateIndexEditBox;
+        private FrameworkElement _gameStateIndexRow;
         private ComboBox _calcMatchSelectionComboBox;
         private TextBox _calcTimeEditBox;
         private CheckBox _calcClockDirCheckBox;
         private CheckBox _calcOvertimeCheckBox;
         private TextBox _calcOutputTimeEditBox;
+        private TextBlock _calcErrorTextBlock;
         private GroupBox _calcGroupBox;
         private FrameworkElement _calcMatchSelectionRow;
         private FrameworkElement _calcOvertimeRow;
-        private FrameworkElement _gameStateIndexRow;
+        private FrameworkElement _calcErrorRow;
 
         private FrameworkElement CreateCutByTimeTab()
         {
@@ -319,6 +321,11 @@ namespace Uber.DemoTools
             calcFillValuesButton.ToolTip = "Fill in the fields of the Cut Configuration group box above using your settings?";
             calcFillValuesButton.Click += (obj, args) => FillCutByTimeFields();
 
+            var calcErrorTextBlock = new TextBlock();
+            _calcErrorTextBlock = calcErrorTextBlock;
+            calcErrorTextBlock.VerticalAlignment = VerticalAlignment.Center;
+            calcErrorTextBlock.Text = "none";
+
             var calcList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             calcList.Add(App.CreateTuple("", "Round-based game types are not supported."));
             calcList.Add(App.CreateTuple("", "Overtimes with the clock going down are not supported."));
@@ -327,12 +334,14 @@ namespace Uber.DemoTools
             calcList.Add(App.CreateTuple("Clock Goes Up?", calcClockDirCheckBox));
             calcList.Add(App.CreateTuple("In Overtime?", calcOvertimeCheckBox));
             calcList.Add(App.CreateTuple("Server Time", calcOutputTimeEditBox));
+            calcList.Add(App.CreateTuple("Error", calcErrorTextBlock));
             calcList.Add(App.CreateTuple("", calcFillValuesButton));
             var calcPanel = WpfHelper.CreateDualColumnPanel(calcList, 100, 3);
             calcPanel.HorizontalAlignment = HorizontalAlignment.Center;
             calcPanel.VerticalAlignment = VerticalAlignment.Center;
             _calcMatchSelectionRow = calcPanel.Children[2] as FrameworkElement;
             _calcOvertimeRow = calcPanel.Children[5] as FrameworkElement;
+            _calcErrorRow = calcPanel.Children[7] as FrameworkElement;
 
             var calcGroupBox = new GroupBox();
             _calcGroupBox = calcGroupBox;
@@ -506,28 +515,28 @@ namespace Uber.DemoTools
             var demo = _app.SelectedDemo;
             if(demo == null)
             {
-                SetUnknownServerTime();
+                SetUnknownServerTime("no demo selected");
                 return;
             }
 
             var matchIndex = _calcMatchSelectionComboBox.SelectedIndex;
             if(matchIndex < 0 || matchIndex >= demo.MatchTimes.Count)
             {
-                SetUnknownServerTime();
+                SetUnknownServerTime("invalid match index");
                 return;
             }
 
             var match = demo.MatchTimes[matchIndex];
             if(match.RoundBasedMode)
             {
-                SetUnknownServerTime();
+                SetUnknownServerTime("match has a round-based game type");
                 return;
             }
 
             int matchTimeMs = 0;
             if(!App.GetTimeSeconds(_calcTimeEditBox.Text, out matchTimeMs))
             {
-                SetUnknownServerTime();
+                SetUnknownServerTime("invalid match time format");
                 return;
             }
             matchTimeMs *= 1000;
@@ -540,7 +549,7 @@ namespace Uber.DemoTools
                 // For that we would need the length of a timed overtime and the overtime's index...
                 if(match.TimeLimit == 0 || !clockGoingUp)
                 {
-                    SetUnknownServerTime();
+                    SetUnknownServerTime("found no time limit for this match");
                     return;
                 }
 
@@ -556,7 +565,7 @@ namespace Uber.DemoTools
             {
                 if(match.TimeLimit == 0)
                 {
-                    SetUnknownServerTime();
+                    SetUnknownServerTime("found no time limit for this match");
                     return;
                 }
 
@@ -576,16 +585,25 @@ namespace Uber.DemoTools
 
             if(serverTimeMs < match.StartTimeMs || serverTimeMs > match.EndTimeMs)
             {
-                SetUnknownServerTime();
+                SetUnknownServerTime("match time out of range");
                 return;
             }
 
-            _calcOutputTimeEditBox.Text = App.FormatMinutesSeconds(serverTimeMs / 1000);
+            SetValidServerTime(serverTimeMs);
         }
 
-        private void SetUnknownServerTime()
+        private void SetUnknownServerTime(string error)
         {
             _calcOutputTimeEditBox.Text = "?";
+            _calcErrorRow.Visibility = Visibility.Visible;
+            _calcErrorTextBlock.Text = error;
+        }
+
+        private void SetValidServerTime(int serverTimeMs)
+        {
+            _calcOutputTimeEditBox.Text = App.FormatMinutesSeconds(serverTimeMs / 1000);
+            _calcErrorRow.Visibility = Visibility.Collapsed;
+            _calcErrorTextBlock.Text = "none";
         }
 
         private void FillCutByTimeFields()
