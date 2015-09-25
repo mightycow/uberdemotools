@@ -120,6 +120,7 @@ private:
 	u32 _fragLimit;
 	u32 _captureLimit;
 	u32 _roundLimit;
+	s32 _te;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;

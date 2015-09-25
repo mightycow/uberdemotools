@@ -32,8 +32,8 @@ Time-outs
 =========
 
 CPMA:
-- CS_CPMA_GAME_INFO: te    0 means not in time-out --> td last time-out's duration
-- CS_CPMA_GAME_INFO: te != 0 means in time-out     --> te time-out start time
+- CS_CPMA_GAME_INFO: te    0 means not in time-out --> td ?
+- CS_CPMA_GAME_INFO: te != 0 means in time-out     --> td ? te ?
 
 ======
 Scores
@@ -586,24 +586,26 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 	}
 
 	s32 te = -1;
-	s32 td = -1;
-	if(ParseConfigStringValueInt(te, *_tempAllocator, "te", configString) &&
-	   ParseConfigStringValueInt(td, *_tempAllocator, "td", configString))
+	if(ParseConfigStringValueInt(te, *_tempAllocator, "te", configString))
 	{
-		const bool oldTimeOut = _timeOut;
+		const bool timeOutStarted = te != 0 && _te == 0;
+		const bool timeOutEnded = te == 0 && _te != 0;
 		_timeOut = te != 0;
-		if(oldTimeOut && !_timeOut)
+		if(timeOutEnded)
 		{
 			const s32 startTime = GetTimeOutStartTime();
-			SetTimeOutEndTime(startTime + td);
+			const s32 endTime = _parser->_inServerTime;
+			const s32 duration = endTime - startTime;
+			SetTimeOutEndTime(endTime);
 			++_timeOutCount;
-			_totalTimeOutDuration += td;
+			_totalTimeOutDuration += duration;
 		}
-		else if(_timeOut)
+		else if(timeOutStarted)
 		{
-			SetTimeOutStartTime(te);
+			SetTimeOutStartTime(_parser->_inServerTime);
 		}
 	}
+	_te = te;
 
 	s32 tw = -1;
 	s32 ts = -1;
