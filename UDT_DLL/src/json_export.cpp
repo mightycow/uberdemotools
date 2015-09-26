@@ -304,6 +304,9 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 
 		writer.StartObject();
 
+		writer.WriteIntValue("game state index", stats.GameStateIndex);
+		writer.WriteIntValue("start time", stats.StartTimeMs);
+		writer.WriteIntValue("end time", stats.EndTimeMs);
 		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
 		writer.WriteStringValue("first place name", stats.FirstPlaceName);
 		writer.WriteStringValue("second place name", stats.SecondPlaceName);
