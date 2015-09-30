@@ -18,11 +18,13 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
+	void SetIntermissionEndTime();
 	void ResetForNextMatch();
 	bool HasMatchJustStarted() const;
 	bool HasMatchJustEnded() const;
 	bool IsMatchInProgress() const;
 	bool IsInIntermission() const;
+	bool CanMatchBeAdded() const;
 	s32  MatchStartTime() const;
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
@@ -39,6 +41,8 @@ public:
 	u32  GetFragLimit() const { return _fragLimit; }
 	u32  GetCaptureLimit() const { return _captureLimit; }
 	u32  GetRoundLimit() const { return _roundLimit; }
+	s32  CountDownStartTime() const { return _warmUpEndTime; }
+	s32  IntermissionEndTime() const { return _intermissionEndTime; }
 
 	udtGameType::Id     GameType() const;
 	udtMod::Id          Mod() const;
@@ -111,6 +115,8 @@ private:
 	s32 _matchStartTime;
 	s32 _matchEndTime;
 	s32 _prevMatchStartTime;
+	s32 _warmUpEndTime; // Count down start time or match start time.
+	s32 _intermissionEndTime; // Intermission end time or match end time.
 	u32 _overTimeCount;
 	u32 _timeOutCount;
 	s32 _totalTimeOutDuration;

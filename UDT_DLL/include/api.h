@@ -1448,6 +1448,14 @@ extern "C"
 		// The index of the gamestate message after which this match took place.
 		u32 GameStateIndex;
 
+		// Count down start time (server time), in milli-seconds.
+		// If there was no count-down, then this holds the match's start time.
+		s32 CountDownStartTimeMs;
+
+		// Post-match intermission end time (server time), in milli-seconds.
+		// If there was no intermission (e.g. CPMA forfeits), this holds the match's end time.
+		s32 IntermissionEndTimeMs;
+
 		// Ignore this.
 		s32 Reserved1;
 	};

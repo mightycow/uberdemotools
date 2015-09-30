@@ -144,6 +144,10 @@ void udtParserPlugInStats::FinishDemoAnalysis()
 	_analyzer.FinishDemoAnalysis();
 	if(_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission())
 	{
+		if(_analyzer.IsInIntermission())
+		{
+			_analyzer.SetIntermissionEndTime();
+		}
 		AddCurrentStats();
 	}
 }
@@ -153,6 +157,10 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	if(_analyzer.GameStateIndex() >= 0 && 
 	   (_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission()))
 	{
+		if(_analyzer.IsInIntermission())
+		{
+			_analyzer.SetIntermissionEndTime();
+		}
 		AddCurrentStats();
 	}
 	_analyzer.ProcessGamestateMessage(arg, parser);
@@ -197,7 +205,7 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
 	// So we add stats when a match starts (that isn't the first one) or the demo ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
-	if(_analyzer.HasMatchJustEnded())
+	if(_analyzer.CanMatchBeAdded())
 	{
 		AddCurrentStats();
 		_analyzer.ResetForNextMatch();
@@ -2844,6 +2852,9 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 	}
 
+	const s32 countDownStartTime = _analyzer.CountDownStartTime();
+	const s32 intermissionEndTime = _analyzer.IntermissionEndTime();
+
 	_stats.StartDateEpoch = _analyzer.GetMatchStartDateEpoch();
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();
@@ -2864,6 +2875,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.StartTimeMs = _analyzer.MatchStartTime();
 	_stats.EndTimeMs = _analyzer.MatchEndTime();
 	_stats.GameStateIndex = (u32)_analyzer.GameStateIndex();
+	_stats.CountDownStartTimeMs = countDownStartTime != S32_MIN ? countDownStartTime : _stats.StartTimeMs;
+	_stats.IntermissionEndTimeMs = intermissionEndTime != S32_MIN ? intermissionEndTime : _stats.EndTimeMs;
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();

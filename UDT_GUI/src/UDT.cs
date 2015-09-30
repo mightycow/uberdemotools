@@ -537,6 +537,8 @@ namespace Uber.DemoTools
             public Int32 StartTimeMs;
             public Int32 EndTimeMs;
             public UInt32 GameStateIndex;
+            public Int32 CountDownStartTimeMs;
+            public Int32 IntermissionEndTimeMs;
             public Int32 Reserved1;
 	    };
 
@@ -2010,6 +2012,19 @@ namespace Uber.DemoTools
                 var startTimeString = App.FormatMinutesSeconds(startTime / 1000);
                 var endTimeString = App.FormatMinutesSeconds(endTime / 1000);
                 stats.AddGenericField("Time-out #" + (i + 1).ToString(), startTimeString + " - " + endTimeString);
+            }
+
+            stats.AddGenericField("Game state index", data.GameStateIndex.ToString());
+            if(data.CountDownStartTimeMs < data.StartTimeMs)
+            {
+                stats.AddGenericField("Count-down start", App.FormatMinutesSeconds(data.CountDownStartTimeMs / 1000));
+            }
+            var startString = App.FormatMinutesSeconds(data.StartTimeMs / 1000);
+            var endString = App.FormatMinutesSeconds(data.EndTimeMs / 1000);
+            stats.AddGenericField("Match time range", startString + " - " + endString);
+            if(data.IntermissionEndTimeMs > data.EndTimeMs)
+            {
+                stats.AddGenericField("Post-match intermission end", App.FormatMinutesSeconds(data.IntermissionEndTimeMs / 1000));
             }
 
             ExtractTeamStats(data, info, ref stats);

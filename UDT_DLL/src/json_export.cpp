@@ -307,6 +307,14 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		writer.WriteIntValue("game state index", stats.GameStateIndex);
 		writer.WriteIntValue("start time", stats.StartTimeMs);
 		writer.WriteIntValue("end time", stats.EndTimeMs);
+		if(stats.CountDownStartTimeMs < stats.StartTimeMs)
+		{
+			writer.WriteIntValue("count down start time", stats.CountDownStartTimeMs);
+		}
+		if(stats.IntermissionEndTimeMs > stats.EndTimeMs)
+		{
+			writer.WriteIntValue("intermission end time", stats.IntermissionEndTimeMs);
+		}
 		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
 		writer.WriteStringValue("first place name", stats.FirstPlaceName);
 		writer.WriteStringValue("second place name", stats.SecondPlaceName);
