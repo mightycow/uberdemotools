@@ -1,3 +1,11 @@
+0.5.2 (01.10.2015)
+ADD: The "Matches" cut filter
+ADD: A match time to server time converter under the "Cut by Time" tab
+ADD: Stats analyzer: time/score/frag/capture/round limit
+ADD: Stats analyzer: game state index, match start/end time, count-down start time, intermission end time
+CHG: Improved match duration output
+FIX: The time-out server time ranges of CPMA demos were broken
+
 0.5.1 (21.09.2015)
 ADD: dm3 to dm_68 and dm_48 to dm_68 demo converters
 ADD: Tracking match start dates in QL demos

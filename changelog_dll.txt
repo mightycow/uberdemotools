@@ -1,3 +1,11 @@
+0.9.2 (01.10.2015)
+ADD: The "Matches" cut filter
+ADD: Stats analyzer: time/score/frag/capture/round limit, game state index
+ADD: Stats analyzer: server times for match start and end, count-down start and intermission end
+ADD: The option to print the JSON data to stdout in UDT_json
+CHG: Improved match duration output
+FIX: The time-out server time ranges of CPMA demos were broken
+
 0.9.1 (21.09.2015)
 ADD: dm3 to dm_68 and dm_48 to dm_68 demo converters
 ADD: Tracking match start dates in QL demos
