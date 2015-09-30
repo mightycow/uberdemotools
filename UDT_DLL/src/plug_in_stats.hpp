@@ -20,6 +20,7 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
+	void ClearMatchList();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInStats);

@@ -59,6 +59,8 @@ namespace Uber.DemoTools
         public int FlickRailMinSpeedSnaps = 2;
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
+        public int MatchCutStartTimeOffsetMs = 10 * 1000;
+        public int MatchCutEndTimeOffsetMs = 10 * 1000;
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
         public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.

@@ -164,6 +164,7 @@ namespace Uber.DemoTools
             MultiFragRails,
             FlagCaptures,
             FlickRails,
+            Matches,
             Count
         }
 
@@ -389,6 +390,13 @@ namespace Uber.DemoTools
             public float MinAngleDelta;
             public UInt32 MinAngleDeltaSnapshotCount;
         }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByMatchArg
+        {
+            public UInt32 MatchStartOffsetMs;
+            public UInt32 MatchEndOffsetMs;
+        };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMapConversionRule
@@ -848,6 +856,15 @@ namespace Uber.DemoTools
             return rules;
         }
 
+        public static udtCutByMatchArg CreateCutByMatchArg(UdtConfig config)
+        {
+            var rules = new udtCutByMatchArg();
+            rules.MatchStartOffsetMs = (UInt32)config.MatchCutStartTimeOffsetMs;
+            rules.MatchEndOffsetMs = (UInt32)config.MatchCutEndTimeOffsetMs;
+
+            return rules;
+        }
+
         public static udtCutByFlickRailArg CreateCutByFlickRailArg(UdtConfig config)
         {
             var rules = new udtCutByFlickRailArg();
@@ -1063,6 +1080,17 @@ namespace Uber.DemoTools
             return true;
         }
 
+        public static bool CreateMatchPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMatchArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.Matches;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
         public class CutByPatternOptions
         {
             public int StartOffset;
@@ -1159,6 +1187,18 @@ namespace Uber.DemoTools
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
             if(!CreateFlickRailPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
+        }
+
+        public static bool CutDemosByMatch(ref udtParseArg parseArg, List<string> filePaths, udtCutByMatchArg rules, CutByPatternOptions options)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateMatchPatternInfo(ref patterns[0], resources, rules))
             {
                 return false;
             }

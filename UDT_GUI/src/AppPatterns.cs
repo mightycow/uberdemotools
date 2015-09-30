@@ -84,6 +84,12 @@ namespace Uber.DemoTools
             flickRailTab.Header = "Flick Rails";
             flickRailTab.Content = flickRail.RootControl;
 
+            var match = new MatchFilterComponent(_app);
+            _components.Add(match);
+            var matchTab = new TabItem();
+            matchTab.Header = "Matches";
+            matchTab.Content = match.RootControl;
+
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
             tabControl.VerticalAlignment = VerticalAlignment.Stretch;
@@ -94,6 +100,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(multiRailTab);
             tabControl.Items.Add(flagCaptureTab);
             tabControl.Items.Add(flickRailTab);
+            tabControl.Items.Add(matchTab);
 
             return tabControl;
         }

@@ -295,6 +295,11 @@ void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	_analyzer.ProcessSnapshotMessage(arg, parser);
 }
 
+void udtParserPlugInStats::ClearMatchList()
+{
+	_statsArray.Clear();
+}
+
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
 {	
 	if(udtString::IsNull(configString))

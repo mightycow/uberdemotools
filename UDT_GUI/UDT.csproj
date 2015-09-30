@@ -121,6 +121,7 @@
     <Compile Include="src\AppTimeShiftMod.cs" />
     <Compile Include="src\AppStats.cs" />
     <Compile Include="src\AppCommands.cs" />
+	<Compile Include="src\AppMatchCut.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

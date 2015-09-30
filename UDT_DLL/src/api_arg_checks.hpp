@@ -57,6 +57,11 @@ static bool IsValid(const udtCutByFlickRailArg& arg)
 		(arg.MinAngleDeltaSnapshotCount - 2) <= 2;
 }
 
+static bool IsValid(const udtCutByMatchArg& /*arg*/)
+{
+	return true;
+}
+
 static bool IsValid(const udtCutByPatternArg& arg)
 {
 	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)

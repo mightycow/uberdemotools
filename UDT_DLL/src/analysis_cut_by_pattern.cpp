@@ -7,6 +7,7 @@
 #include "analysis_cut_by_multi_rail.hpp"
 #include "analysis_cut_by_flag.hpp"
 #include "analysis_cut_by_flick_rail.hpp"
+#include "analysis_cut_by_match.hpp"
 
 #include <stdlib.h>
 

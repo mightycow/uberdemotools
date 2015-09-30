@@ -385,7 +385,8 @@ struct udtByteArray
 	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
 	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
 	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer) \
-	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer)
+	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer) \
+	N(Matches, "matches", udtCutByMatchArg, udtCutByMatchAnalyzer)
 
 #define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
@@ -1096,6 +1097,19 @@ extern "C"
 		// How many snapshots to take into account for computing the top speed.
 		// Range: [2;4].
 		u32 MinAngleDeltaSnapshotCount;
+	};
+
+	// Used as udtPatternInfo::TypeSpecificInfo
+	// when udtPatternInfo::Type is udtPatternType::Matches.
+	struct udtCutByMatchArg
+	{
+		// If no match count-down was found, 
+		// start the cut this amount of time before the match's start.
+		u32 MatchStartOffsetMs;
+
+		// If no post-match intermission is found, 
+		// end the cut this amount of time after the match's end.
+		u32 MatchEndOffsetMs;
 	};
 
 	struct udtMapConversionRule
