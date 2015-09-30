@@ -1516,6 +1516,15 @@ extern "C"
 		s32 Reserved1;
 	};
 
+	struct udtJSONArg
+	{
+		// Output the data to stdout when non-zero.
+		u32 ConsoleOutput;
+
+		// Ignore this.
+		s32 Reserved1;
+	};
+
 #pragma pack(pop)
 
 	//
@@ -1640,7 +1649,7 @@ extern "C"
 	UDT_API(s32) udtTimeShiftDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtTimeShiftArg* timeShiftArg);
 
 	// Creates, for each demo, a .JSON file with the data from all the selected plug-ins.
-	UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo);
+	UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtJSONArg* jsonInfo);
 
 #ifdef __cplusplus
 }

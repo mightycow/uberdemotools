@@ -26,6 +26,7 @@ static void PrintHelp()
 	printf("UDT_json demo_folder [options] [-o=output_folder]\n");
 	printf("If the output_folder isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
 	printf("Options: \n");
+	printf("-c        : output to the console/terminal    (default: off)\n");
 	printf("-r        : enable recursive demo file search (default: off)\n");
 	printf("-t=max_t  : maximum number of threads         (default: 4)\n");
 	printf("-a=<flags>: select analyzers                  (default: all enabled)\n");
@@ -56,7 +57,7 @@ static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn
 	analyzers[analyzerCount++] = (u32)analyzerId;
 }
 
-static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
+static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, bool consoleOutput, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
 {
 	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
 	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
@@ -84,7 +85,11 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	threadInfo.FileCount = fileCount;
 	threadInfo.MaxThreadCount = maxThreadCount;
 
-	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo);
+	udtJSONArg jsonInfo;
+	memset(&jsonInfo, 0, sizeof(jsonInfo));
+	jsonInfo.ConsoleOutput = consoleOutput ? 1 : 0;
+
+	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo, &jsonInfo);
 
 	udtVMLinearAllocator tempAllocator;
 	tempAllocator.Init(1 << 16, "ProcessMultipleDemos::Temp");
@@ -135,6 +140,7 @@ int udt_main(int argc, char** argv)
 	u32 analyzerCount = (u32)udtParserPlugIn::Count;
 	u32 analyzers[udtParserPlugIn::Count];
 	bool recursive = false;
+	bool consoleOutput = false;
 
 	for(u32 i = 0; i < (u32)udtParserPlugIn::Count; ++i)
 	{
@@ -149,6 +155,10 @@ int udt_main(int argc, char** argv)
 		if(udtString::Equals(arg, "-r"))
 		{
 			recursive = true;
+		}
+		else if(udtString::Equals(arg, "-c"))
+		{
+			consoleOutput = true;
 		}
 		else if(udtString::StartsWith(arg, "-o=") && 
 				arg.Length >= 4 &&
@@ -193,7 +203,7 @@ int udt_main(int argc, char** argv)
 		fileInfo.Size = 0;
 		fileInfo.Path = argv[1];
 
-		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
+		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
 	}
 
 	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
@@ -212,7 +222,7 @@ int udt_main(int argc, char** argv)
 	query.TempAllocator = &tempAlloc;
 	GetDirectoryFileList(query);
 
-	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, maxThreadCount, analyzers, analyzerCount))
+	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, false, maxThreadCount, analyzers, analyzerCount))
 	{
 		return __LINE__;
 	}

@@ -622,10 +622,13 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const char* jsonPath)
 {
 	udtFileStream jsonFile;
-	if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
+	if(jsonPath != NULL)
 	{
-		context->Context.LogError("Failed to open file '%s' for writing", jsonPath);
-		return false;
+		if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
+		{
+			context->Context.LogError("Failed to open file '%s' for writing", jsonPath);
+			return false;
+		}
 	}
 
 	context->JSONWriterContext.ResetForNextDemo();
@@ -691,6 +694,11 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	writer.EndFile();
 
 	udtVMMemoryStream& memoryStream = context->JSONWriterContext.MemoryStream;
+	if(jsonPath == NULL)
+	{
+		return fwrite(memoryStream.GetBuffer(), (size_t)memoryStream.Length(), 1, stdout) == 1;
+	}
+
 	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
 	{
 		context->Context.LogError("Failed to write to JSON file '%s'", jsonPath);

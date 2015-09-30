@@ -418,7 +418,7 @@ static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& 
 	outputFilePath = udtString::NewFromConcatenating(allocator, outputFilePathStart, udtString::NewConstRef(".json"));
 }
 
-static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath)
+static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const udtJSONArg* jsonInfo)
 {
 	if(!ParseDemoFile(context, info, demoFilePath, false))
 	{
@@ -430,9 +430,15 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 
 	udtVMScopedStackAllocator allocatorScope(tempAllocator);
 
-	udtString jsonFilePath;
-	CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
-	if(!ExportPlugInsDataToJSON(context, demoIndex, jsonFilePath.String))
+	const char* outputFilePath = NULL;
+	if(jsonInfo->ConsoleOutput == 0)
+	{
+		udtString jsonFilePath;
+		CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
+		outputFilePath = jsonFilePath.String;
+	}
+	
+	if(!ExportPlugInsDataToJSON(context, demoIndex, outputFilePath))
 	{
 		return false;
 	}
@@ -457,7 +463,7 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
 
 		case udtParsingJobType::ExportToJSON:
-			return ExportToJSON(context, demoIndex, info, demoFilePath);
+			return ExportToJSON(context, demoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
 
 		default:
 			return false;
