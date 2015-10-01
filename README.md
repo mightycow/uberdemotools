@@ -115,6 +115,7 @@ Here are the patterns you can look for in demos:
 | Multi-frag rails | Selected               | Railgun frags killing 2 or more players |
 | Flag captures    | Selected               | Flag runs: the player picks up the flag and captures it |
 | Flick rails      | Selected               | Railgun frags where the attacker's view angles changed very fast right before the killing shot |
+| Matches          | None                   | Each match, from pre-match count-down start to post-match intermission (scoreboard screen) end |
 
 1. To which player(s) is the pattern matching applied to?
 2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
