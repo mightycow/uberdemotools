@@ -26,17 +26,33 @@ private:
 	// Teams: 0=red, 1=blue.
 
 	const char* GetPlayerName(s32 playerIndex, udtBaseParser& parser);
-	s32         GetPlayerTeam01(s32 playerIndex, udtBaseParser& parser);
+	bool        WasFlagPickedUpInBase(u32 teamIndex);
+
+	struct PlayerInfo
+	{
+		s32 CaptureCount;
+		s32 PickupTimeMs;
+		s32 PrevCaptureCount;
+		f32 PickupPosition[3];
+		f32 Position[3];
+		bool Capped;
+		bool PrevCapped;
+		bool BasePickup;
+		bool HasFlag;
+		bool PrevHasFlag;
+	};
+
+	struct TeamInfo
+	{
+		u8 PrevFlagState;
+		u8 FlagState;
+	};
 
 	udtVMLinearAllocator _stringAllocator;
 	udtVMArray<udtParseDataCapture> _captures; // The final array.
 	const char* _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
-	s32 _pickupTimeMs[2];
-	s32 _previousCaptureCount[2]; // For the first-person player only.
-	f32 _pickUpPosition[2][3];
-	u8 _prevFlagState[2]; 
-	u8 _flagState[2];
-	bool _previousCapped[2][64]; // For non-first-person players only.
+	PlayerInfo _players[64];
+	TeamInfo _teams[2];
 };

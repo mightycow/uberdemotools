@@ -29,15 +29,6 @@ void udtParserPlugInCaptures::StartDemoAnalysis()
 	_mapName = NULL;
 	_gameStateIndex = -1;
 	_demoTakerIndex = -1;
-	for(u32 i = 0; i < 2; ++i)
-	{
-		_pickupTimeMs[i] = S32_MIN;
-		_previousCaptureCount[i] = 0;
-		for(u32 j = 0; j < 64; ++j)
-		{
-			_previousCapped[i][j] = false;
-		}
-	}
 }
 
 void udtParserPlugInCaptures::FinishDemoAnalysis()
@@ -47,16 +38,24 @@ void udtParserPlugInCaptures::FinishDemoAnalysis()
 void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
 	++_gameStateIndex;
+
+	for(u32 i = 0; i < 64; ++i)
+	{
+		_players[i].BasePickup = false;
+		_players[i].Capped = false;
+		_players[i].PrevCapped = false;
+		_players[i].HasFlag = false;
+		_players[i].PrevHasFlag = false;
+		_players[i].PrevCaptureCount = 0;
+		_players[i].PickupTimeMs = S32_MIN;
+		Float3::Zero(_players[i].PickupPosition);
+		Float3::Zero(_players[i].Position);
+	}
+
 	for(u32 i = 0; i < 2; ++i)
 	{
-		_pickupTimeMs[i] = S32_MIN;
-		_previousCaptureCount[i] = 0;
-		for(u32 j = 0; j < 64; ++j)
-		{
-			_previousCapped[i][j] = false;
-		}
-		_prevFlagState[i] = (u8)idFlagStatus::InBase;
-		_flagState[i] = (u8)idFlagStatus::InBase;
+		_teams[i].FlagState = (u8)idFlagStatus::InBase;
+		_teams[i].PrevFlagState = (u8)idFlagStatus::InBase;
 	}
 
 	_demoTakerIndex = arg.ClientNum;
@@ -67,6 +66,10 @@ void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallback
 	{
 		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
 	}
+	else
+	{
+		_mapName = NULL;
+	}
 
 	const s32 flagStatusIdx = idConfigStringIndex::FlagStatus(parser._inProtocol);
 	if(flagStatusIdx >= 0)
@@ -74,8 +77,8 @@ void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallback
 		const udtString cs = parser.GetConfigString(flagStatusIdx);
 		if(cs.Length >= 2)
 		{
-			_flagState[0] = (u8)(cs.String[0] - '0');
-			_flagState[1] = (u8)(cs.String[1] - '0');
+			_teams[0].FlagState = (u8)(cs.String[0] - '0');
+			_teams[1].FlagState = (u8)(cs.String[1] - '0');
 		}
 	}
 }
@@ -87,10 +90,10 @@ void udtParserPlugInCaptures::ProcessCommandMessage(const udtCommandCallbackArg&
 		const udtString cs = parser.GetTokenizer().GetArg(2);
 		if(cs.Length >= 2)
 		{
-			_prevFlagState[0] = _flagState[0];
-			_prevFlagState[1] = _flagState[1];
-			_flagState[0] = (u8)(cs.String[0] - '0');
-			_flagState[1] = (u8)(cs.String[1] - '0');
+			_teams[0].PrevFlagState = _teams[0].FlagState;
+			_teams[1].PrevFlagState = _teams[1].FlagState;
+			_teams[0].FlagState = (u8)(cs.String[0] - '0');
+			_teams[1].FlagState = (u8)(cs.String[1] - '0');
 		}
 	}
 }
@@ -98,87 +101,81 @@ void udtParserPlugInCaptures::ProcessCommandMessage(const udtCommandCallbackArg&
 void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
-	idEntityStateBase* es = NULL;
-
 	const s32 redFlagIdx = idPowerUpIndex::RedFlag(parser._inProtocol);
 	const s32 blueFlagIdx = idPowerUpIndex::BlueFlag(parser._inProtocol);
 	const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
 
-	for(u32 i = 0; i < 2; ++i)
+	if(ps->clientNum >= 0 && ps->clientNum < 64)
 	{
-		const s32 flagIdx = i == 0 ? redFlagIdx : blueFlagIdx;
-		s32 captureCount = _previousCaptureCount[i];
-		s32 playerIndex = ps->clientNum;
-		bool justCapped = false;
-		bool flagTaken = false;
-
-		if(ps->powerups[flagIdx] == S32_MAX)
+		PlayerInfo& player = _players[ps->clientNum];
+		const bool hasFlag = ps->powerups[redFlagIdx] == S32_MAX || ps->powerups[blueFlagIdx] == S32_MAX;
+		const bool prevHasFlag = player.HasFlag;
+		player.HasFlag = hasFlag;
+		player.PrevHasFlag = prevHasFlag;
+		if(!prevHasFlag && hasFlag)
 		{
-			flagTaken = true;
+			player.PickupTimeMs = arg.ServerTime;
+			Float3::Copy(player.PickupPosition, ps->origin);
+			const u32 flagTeamIdx = ps->powerups[blueFlagIdx] == S32_MAX ? 1 : 0;
+			player.BasePickup = WasFlagPickedUpInBase(flagTeamIdx);
 		}
-		captureCount = ps->persistant[captureCountPersIdx];
-		justCapped = captureCount > _previousCaptureCount[i];
-		_previousCaptureCount[i] = captureCount;
+		player.PrevCaptureCount = player.CaptureCount;
+		player.CaptureCount = ps->persistant[captureCountPersIdx];
+		Float3::Copy(player.Position, ps->origin);
+	}
 
-		if(!flagTaken && !justCapped && parser._inProtocol >= udtProtocol::Dm48) // @NOTE: EF_AWARD_CAP doesn't exist in dm3.
-		{
-			for(u32 j = 0, count = arg.EntityCount; j < count; ++j)
+	if(parser._inProtocol >= udtProtocol::Dm48) // @NOTE: EF_AWARD_CAP doesn't exist in dm3.
+	{
+		for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+		{			
+			idEntityStateBase* const es = arg.Entities[i].Entity;
+			if(arg.Entities[i].IsNewEvent ||
+			   es == NULL ||
+			   es->eType != ET_PLAYER ||
+			   es->clientNum < 0 ||
+			   es->clientNum >= 64)
 			{
-				es = arg.Entities[j].Entity;
-				if(es == NULL || es->eType != ET_PLAYER)
-				{
-					continue;
-				}
+				continue;
+			}
 
-				const u32 team = (u32)GetPlayerTeam01(es->clientNum, parser);
-				if(team == i)
-				{
-					continue;
-				}
+			PlayerInfo& player = _players[es->clientNum];
 
-				const bool capped = (es->eFlags & EF_AWARD_CAP) != 0;
-				const bool cappedThisSnap = !_previousCapped[i][es->clientNum] && capped;
-				_previousCapped[i][es->clientNum] = capped;
+			const bool capped = (es->eFlags & EF_AWARD_CAP) != 0;
+			player.PrevCapped = player.Capped;
+			player.Capped = capped;
+			Float3::Copy(player.Position, es->pos.trBase);
 
-				//
-				// @NOTE:
-				// On the WTF maps, there can be 2 flags per side.
-				// That means that for each team, there can be a flag being held while another just got captured.
-				// Since this is pretty much only played in CTFS, we only really care about the flag that just got captured.
-				//
-
-				if(cappedThisSnap)
-				{
-					justCapped = true;
-					playerIndex = es->clientNum;
-				}
-
-				if(!justCapped && (es->powerups & (1 << flagIdx)) != 0)
-				{
-					flagTaken = true;
-					playerIndex = es->clientNum;
-				}
+			const bool hasRedFlag = (es->powerups & (1 << redFlagIdx)) != 0;
+			const bool hasBlueFlag = (es->powerups & (1 << blueFlagIdx)) != 0;
+			const bool hasFlag = hasRedFlag || hasBlueFlag;
+			const bool prevHasFlag = player.HasFlag;
+			player.HasFlag = hasFlag;
+			player.PrevHasFlag = prevHasFlag;
+			if(!prevHasFlag && hasFlag)
+			{
+				player.PickupTimeMs = arg.ServerTime;
+				Float3::Copy(player.PickupPosition, es->pos.trBase);
+				const u32 flagTeamIdx = hasBlueFlag ? 1 : 0;
+				player.BasePickup = WasFlagPickedUpInBase(flagTeamIdx);
 			}
 		}
-
+	}
+	
+	for(u32 i = 0; i < 64; ++i)
+	{
+		PlayerInfo& player = _players[i];
+		const bool justCappedFirstPerson = player.CaptureCount > player.PrevCaptureCount;
+		const bool justCappedThirdPerson = player.Capped && !player.PrevCapped;
+		const bool justCapped = justCappedFirstPerson || justCappedThirdPerson;
 		if(justCapped)
 		{
-			flagTaken = false;
-		}
-
-		if(_pickupTimeMs[i] == S32_MIN && flagTaken)
-		{
-			_pickupTimeMs[i] = arg.ServerTime;
-			Float3::Copy(_pickUpPosition[i], es != NULL ? es->pos.trBase : ps->origin);
-		}
-
-		if(_pickupTimeMs[i] != S32_MIN && justCapped)
-		{
+			const s32 pickupTimeMs = player.PickupTimeMs == S32_MIN ? arg.ServerTime : player.PickupTimeMs;
+			const s32 playerIndex = (s32)i;
 			udtParseDataCapture cap;
 			cap.GameStateIndex = _gameStateIndex;
-			cap.PickUpTimeMs = _pickupTimeMs[i];
+			cap.PickUpTimeMs = pickupTimeMs;
 			cap.CaptureTimeMs = arg.ServerTime;
-			cap.Distance = Float3::Dist(_pickUpPosition[i], es != NULL ? es->pos.trBase : ps->origin);
+			cap.Distance = Float3::Dist(player.PickupPosition, player.Position);
 			cap.PlayerIndex = playerIndex;
 			cap.PlayerName = GetPlayerName(playerIndex, parser);
 			cap.MapName = _mapName;
@@ -191,18 +188,25 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 			{
 				cap.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
 			}
-			if(_flagState[i] == (u8)idFlagStatus::InBase)
+			if(player.BasePickup)
 			{
 				cap.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
 			}
 			_captures.Add(cap);
 
-			_pickupTimeMs[i] = S32_MIN;
-		}
+			player.PickupTimeMs = S32_MIN;
 
-		if(!flagTaken)
+			// We don't break now because it might be possible to have 2 caps on the same snapshot.
+			// Not sure if the Q3 servers can actually handle that properly though.
+		}
+	}
+
+	for(u32 i = 0; i < 64; ++i)
+	{
+		PlayerInfo& player = _players[i];
+		if(!player.HasFlag)
 		{
-			_pickupTimeMs[i] = S32_MIN;
+			player.PickupTimeMs = S32_MIN;
 		}
 	}
 }
@@ -227,22 +231,18 @@ const char* udtParserPlugInCaptures::GetPlayerName(s32 playerIndex, udtBaseParse
 	return udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, playerName).String;
 }
 
-s32 udtParserPlugInCaptures::GetPlayerTeam01(s32 playerIndex, udtBaseParser& parser)
+bool udtParserPlugInCaptures::WasFlagPickedUpInBase(u32 teamIndex)
 {
-	if(playerIndex < 0 || playerIndex >= 64)
+	if(teamIndex > 1)
 	{
-		return 0;
+		return false;
 	}
 
-	udtVMScopedStackAllocator allocScope(*TempAllocator);
+	const TeamInfo& team = _teams[teamIndex];
+	const u8 prevFlagStatus = team.PrevFlagState;
+	const u8 currFlagStatus = team.FlagState;
+	const u8 flagStatus = currFlagStatus == (u8)idFlagStatus::Captured ? prevFlagStatus : currFlagStatus;
+	const bool inBase = flagStatus == (u8)idFlagStatus::InBase;
 
-	const s32 csIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex;
-
-	s32 team = 0;
-	if(!ParseConfigStringValueInt(team, *TempAllocator, "t", parser.GetConfigString(csIndex).String))
-	{
-		return 0;
-	}
-
-	return team == TEAM_BLUE ? 1 : 0;
+	return inBase;
 }
