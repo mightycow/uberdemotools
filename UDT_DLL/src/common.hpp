@@ -282,6 +282,7 @@ typedef enum {
 
 #define CS_LEVEL_START_TIME_3   13
 #define CS_INTERMISSION_3       14
+#define CS_FLAGSTATUS_3         15
 #define CS_LOCATIONS_3          672
 
 // Doesn't seem to exist in dm_73. Don't know about dm_90.
@@ -1402,5 +1403,15 @@ struct udtGame
 		QL,
 		CPMA,
 		OSP
+	};
+};
+
+struct idFlagStatus
+{
+	enum Id
+	{
+		InBase,   // In its spot in base.
+		Captured, // Being carried by an enemy player.
+		Missing,  // Not being carried by anyone but not in its spot either.
 	};
 };

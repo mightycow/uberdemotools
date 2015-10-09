@@ -407,10 +407,13 @@ tokenize:
 	const int tokenCount = tokenizer.GetArgCount();
 	const udtString commandName = (tokenCount > 0) ? tokenizer.GetArg(0) : udtString::NewEmptyConstant();
 	s32 csIndex = -1;
+	bool isConfigString = false;
 	if(tokenCount == 3 && udtString::Equals(commandName, "cs"))
 	{
 		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) && csIndex >= 0 && csIndex < (s32)UDT_COUNT_OF(_inConfigStrings))
 		{
+			isConfigString = true;
+
 			const char* const csStringTemp = tokenizer.GetArgString(2);
 			u32 csStringLength = (u32)strlen(csStringTemp);
 
@@ -456,6 +459,8 @@ tokenize:
 		info.CommandSequence = commandSequence;
 		info.String = commandString;
 		info.StringLength = commandStringLength;
+		info.ConfigStringIndex = csIndex;
+		info.IsConfigString = isConfigString;
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{

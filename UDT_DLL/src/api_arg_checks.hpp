@@ -45,7 +45,7 @@ static bool IsValid(const udtCutByMultiRailArg& arg)
 
 static bool IsValid(const udtCutByFlagCaptureArg& arg)
 {
-	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs;
+	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs && (arg.AllowBaseToBase | arg.AllowMissingToBase) != 0;
 }
 
 static bool IsValid(const udtCutByFlickRailArg& arg)

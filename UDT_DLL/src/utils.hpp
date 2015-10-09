@@ -107,6 +107,7 @@ namespace idConfigStringIndex
 	extern s32 SecondPlacePlayerName(udtProtocol::Id protocol);
 	extern s32 PauseStart(udtProtocol::Id protocol);
 	extern s32 PauseEnd(udtProtocol::Id protocol);
+	extern s32 FlagStatus(udtProtocol::Id protocol);
 }
 
 namespace idPowerUpIndex

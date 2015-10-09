@@ -1117,6 +1117,16 @@ namespace idConfigStringIndex
 	{
 		return protocol >= udtProtocol::Dm73 ? (s32)CS_PAUSE_COUNTDOWN_73p : -1;
 	}
+
+	s32 FlagStatus(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3)
+		{
+			return (s32)CS_FLAGSTATUS_3;
+		}
+
+		return protocol >= udtProtocol::Dm73 ? (s32)CS_FLAGSTATUS_73p : (s32)CS_FLAGSTATUS_68;
+	}
 }
 
 namespace idPowerUpIndex

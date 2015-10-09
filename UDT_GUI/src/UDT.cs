@@ -380,6 +380,8 @@ namespace Uber.DemoTools
         {
             public UInt32 MinCarryTimeMs;
             public UInt32 MaxCarryTimeMs;
+            public UInt32 AllowBaseToBase;
+            public UInt32 AllowMissingToBase;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -852,6 +854,8 @@ namespace Uber.DemoTools
             var rules = new udtCutByFlagCaptureArg();
             rules.MinCarryTimeMs = (UInt32)config.FlagCaptureMinCarryTimeMs;
             rules.MaxCarryTimeMs = (UInt32)config.FlagCaptureMaxCarryTimeMs;
+            rules.AllowBaseToBase = (UInt32)(config.FlagCaptureAllowBaseToBase ? 1 : 0);
+            rules.AllowMissingToBase = (UInt32)(config.FlagCaptureAllowMissingToBase ? 1 : 0);
 
             return rules;
         }

@@ -1078,6 +1078,12 @@ extern "C"
 
 		// Maximum allowed flag carry time, in milli-seconds.
 		u32 MaxCarryTimeMs;
+
+		// Non-zero to allow pick-ups from the original flag spot.
+		u32 AllowBaseToBase;
+
+		// Non-zero to allow pick-ups that are not from the original flag spot.
+		u32 AllowMissingToBase;
 	};
 	
 	// Used as udtPatternInfo::TypeSpecificInfo
