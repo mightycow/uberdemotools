@@ -169,6 +169,17 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 		const bool justCapped = justCappedFirstPerson || justCappedThirdPerson;
 		if(justCapped)
 		{
+			// @NOTE: It's possible to cap on the same snapshot that you pick up the flag.
+			// So when the pick up time is undefined, it can mean one of 2 things:
+			// 1. there was an instant cap, or
+			// 2. the pick-up happened before demo recording began.
+			// If the latter is true, we drop the cap because we don't know enough about it.
+			const bool instantCap = !player.PrevHasFlag;
+			if(player.PickupTimeMs == S32_MIN && !instantCap)
+			{
+				continue;
+			}
+
 			const s32 pickupTimeMs = player.PickupTimeMs == S32_MIN ? arg.ServerTime : player.PickupTimeMs;
 			const s32 playerIndex = (s32)i;
 			udtParseDataCapture cap;
