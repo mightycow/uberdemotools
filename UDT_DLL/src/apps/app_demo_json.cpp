@@ -36,6 +36,7 @@ static void PrintHelp()
 	printf("            s: Stats\n");
 	printf("            r: Raw commands\n");
 	printf("            c: raw Config strings\n");
+	printf("            f: Flag captures\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
@@ -189,6 +190,7 @@ int udt_main(int argc, char** argv)
 					case 's': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Stats); break;
 					case 'r': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawCommands); break;
 					case 'c': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawConfigStrings); break;
+					case 'f': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Captures); break;
 				}
 
 				++s;

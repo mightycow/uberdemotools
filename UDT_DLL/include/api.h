@@ -107,7 +107,8 @@ struct udtCrashType
 	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituary) \
 	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStats) \
 	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommand) \
-	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawCommand)
+	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigString) \
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCapture)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -1510,6 +1511,45 @@ extern "C"
 		// The index of the gamestate message this config string was in.
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
+	};
+
+	struct udtParseDataCaptureFlags
+	{
+		enum Id
+		{
+			BaseToBase = UDT_BIT(0),       // Flag picked up from its default return position.
+			DemoTaker = UDT_BIT(1),        // Flag captured by the player who recorded the demo.
+			FirstPersonPlayer = UDT_BIT(2) // Flag captured by a player being spectated by whoever recorded the demo.
+		};
+	};
+
+	struct udtParseDataCapture
+	{
+		// Name of the map. Can't be NULL.
+		const char* MapName;
+
+		// Name of the player who capped.
+		const char* PlayerName;
+
+		// The index of the gamestate message this config string was in.
+		// Negative if invalid or not available.
+		s32 GameStateIndex;
+
+		// Server time at which the flag was picked up, in milli-seconds.
+		s32 PickUpTimeMs;
+
+		// Server time at which the flag was captured, in milli-seconds.
+		s32 CaptureTimeMs;
+
+		// Distance between the pick-up spot and the capture spot, in Quake units.
+		// This is not the distance traveled by the capping player.
+		f32 Distance;
+
+		// Check the bits against values in .
+		u32 Flags;
+
+		// Index of the player who capped (the "client number").
+		s32 PlayerIndex;
 	};
 
 	struct udtTimeShiftArg

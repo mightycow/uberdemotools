@@ -619,6 +619,38 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 	writer.EndArray();
 }
 
+static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCapture* captures, u32 count)
+{
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("captures");
+
+	for(u32 i = 0; i < count; ++i)
+	{
+		const udtParseDataCapture& info = captures[i];
+
+		writer.StartObject();
+
+		writer.WriteStringValue("map", info.MapName);
+		writer.WriteStringValue("player name", info.PlayerName);
+		writer.WriteIntValue("player index", info.PlayerIndex);
+		writer.WriteIntValue("game state index", info.GameStateIndex);
+		writer.WriteIntValue("pick up time", info.PickUpTimeMs);
+		writer.WriteIntValue("capture time", info.CaptureTimeMs);
+		writer.WriteIntValue("distance", (s32)info.Distance);
+		writer.WriteBoolValue("base to base", (info.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0);
+		writer.WriteBoolValue("demo taker", (info.Flags & (u32)udtParseDataCaptureFlags::DemoTaker) != 0);
+		writer.WriteBoolValue("spectated player", (info.Flags & (u32)udtParseDataCaptureFlags::FirstPersonPlayer) != 0);
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+
 bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const char* jsonPath)
 {
 	udtFileStream jsonFile;
@@ -689,6 +721,14 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	   rawConfigStringsPointer != NULL)
 	{
 		WriteRawConfigStrings(jsonWriter, (const udtParseDataRawConfigString*)rawConfigStringsPointer, rawConfigStringCount);
+	}
+
+	void* capturesPointer = NULL;
+	u32 captureCount = 0;
+	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Captures, &capturesPointer, &captureCount) == (s32)udtErrorCode::None &&
+	   capturesPointer != NULL)
+	{
+		WriteCaptures(jsonWriter, (const udtParseDataCapture*)capturesPointer, captureCount);
 	}
 
 	writer.EndFile();

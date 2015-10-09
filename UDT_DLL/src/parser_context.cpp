@@ -8,6 +8,7 @@
 #include "plug_in_stats.hpp"
 #include "plug_in_raw_commands.hpp"
 #include "plug_in_raw_config_strings.hpp"
+#include "plug_in_captures.hpp"
 
 // For the placement new operator.
 #include <new>

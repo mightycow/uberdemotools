@@ -129,8 +129,8 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		const u8 prevEnemyFlagStatus = _prevFlagState[1 - playerTeamIdx];
 		const u8 currEnemyFlagStatus = _flagState[1 - playerTeamIdx];
 		const u8 enemyFlagStatus = currEnemyFlagStatus == (s32)idFlagStatus::Captured ? prevEnemyFlagStatus : currEnemyFlagStatus;
-		if((enemyFlagStatus == (s32)idFlagStatus::InBase && extraInfo.AllowBaseToBase) ||
-		   (enemyFlagStatus == (s32)idFlagStatus::Missing && extraInfo.AllowMissingToBase))
+		if((enemyFlagStatus == (u8)idFlagStatus::InBase && extraInfo.AllowBaseToBase) ||
+		   (enemyFlagStatus == (u8)idFlagStatus::Missing && extraInfo.AllowMissingToBase))
 		{
 			_pickupTimeMs = arg.ServerTime;
 		}
