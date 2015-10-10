@@ -150,6 +150,15 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_json.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		
+	project "UDT_captures"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_captures.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
+			
 			
 			
 	
