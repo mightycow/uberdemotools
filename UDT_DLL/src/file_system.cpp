@@ -32,6 +32,11 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		return false;
 	}
 
+	if(query.Recursive && query.FolderArrayAllocator == NULL)
+	{
+		return false;
+	}
+
 	const udtString folderPath = udtString::NewConstRef(query.FolderPath);
 
 	udtString queryPath;
@@ -49,6 +54,10 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 	}
 
 	udtVMArray<const char*> folders;
+	if(query.Recursive)
+	{
+		folders.SetAllocator(*query.FolderArrayAllocator);
+	}
 	do
 	{
 		udtString fileName = udtString::NewFromUTF16(*query.TempAllocator, findData.cFileName);
@@ -138,6 +147,11 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		return false;
 	}
 
+	if(query.Recursive && query.FolderArrayAllocator == NULL)
+	{
+		return false;
+	}
+
 	DIR* const dirHandle = opendir(query.FolderPath);
 	if(dirHandle == NULL)
 	{
@@ -145,6 +159,10 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 	}
 
 	udtVMArray<const char*> folders;
+	if(query.Recursive)
+	{
+		folders.SetAllocator(*query.FolderArrayAllocator);
+	}
 	const udtString folderPath = udtString::NewConstRef(query.FolderPath);
 	
 	struct dirent* dirEntry;

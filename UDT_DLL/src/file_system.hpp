@@ -20,6 +20,7 @@ struct udtFileListQuery
 	const char* FolderPath;
 	udtVMLinearAllocator* PersistAllocator;
 	udtVMLinearAllocator* TempAllocator;
+	udtVMLinearAllocator* FolderArrayAllocator;
 	KeepFileCallback FileFilter;
 	bool Recursive;
 };
