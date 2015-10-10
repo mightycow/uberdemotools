@@ -17,3 +17,5 @@ To do:
 - UDT_cutter: optional gamestate index argument (default: 0)
 - Track overtime start/end times to be able to translate all match times to server times
 - More reliable overtime detection?
+- Print the linear allocator's name whenever there is a fatal error in one
+- Pass the folder array allocator in all command-line apps using a folder input mode
