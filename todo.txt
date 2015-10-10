@@ -12,3 +12,8 @@ To do:
 - Merger: Find a way to deal with the "player entities event sequence problem"
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Converters: dm_73/dm_90 -> dm_91 once dm_91 becomes the new standard
+- UDT_json: split the work into smaller batches
+- UDT_cutter: split the work into smaller batches
+- UDT_cutter: optional gamestate index argument (default: 0)
+- Track overtime start/end times to be able to translate all match times to server times
+- More reliable overtime detection?
