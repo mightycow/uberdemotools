@@ -1,6 +1,3 @@
-// @TODO: Get rid of the STL code...
-#define _HAS_EXCEPTIONS 0
-
 #include "shared.hpp"
 #include "stack_trace.hpp"
 #include "path.hpp"
@@ -9,27 +6,67 @@
 #include "parser_context.hpp"
 #include "json_writer.hpp"
 
-#include <string>
-#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
+#include <float.h>
+
+
+#define    UDT_CAPTURES_BATCH_SIZE    256
 
 
 struct CaptureInfo
 {
-	// @TODO: Get rid of the STL code...
-	std::string FilePath;
-	std::string FileName;
-	std::string MapName;
+	const char* FilePath;
+	const char* FileName;
+	const char* MapName;
 	s32 GameStateIndex;
 	s32 PickUpTimeMs;
 	s32 CaptureTimeMs;
 	f32 Distance;
 	s32 DurationMs;
 	f32 Speed;
-	u32 Index; // Used for stable sorting.
+	s32 SortIndex; // Used for stable sorting.
 	bool BaseToBase;
 };
+
+
+typedef s32 (*CaptureCompareFunc)(const CaptureInfo& a, const CaptureInfo& b);
+
+template<CaptureCompareFunc CompareFunc>
+static int GenericStableCaptureSort(const void* aPtr, const void* bPtr)
+{
+	const CaptureInfo& a = *(CaptureInfo*)aPtr;
+	const CaptureInfo& b = *(CaptureInfo*)bPtr;
+
+	const s32 result = (*CompareFunc)(a, b);
+	if(result != 0)
+	{
+		return (int)result;
+	}
+
+	return (int)(a.SortIndex - b.SortIndex);
+}
+
+s32 SortByDurationAscending(const CaptureInfo& a, const CaptureInfo& b)
+{
+	return a.DurationMs - b.DurationMs;
+}
+
+s32 SortByMapNameAscending(const CaptureInfo& a, const CaptureInfo& b)
+{
+	return (s32)strcmp(a.MapName, b.MapName);
+}
+
+s32 SortByBaseToBaseTrueToFalse(const CaptureInfo& a, const CaptureInfo& b)
+{
+	return (s32)(!!b.BaseToBase - !!a.BaseToBase);
+}
+
+s32 SortBySpeedDescending(const CaptureInfo& a, const CaptureInfo& b)
+{
+	return (s32)(b.Speed - a.Speed);
+}
+
 
 struct Worker
 {
@@ -42,6 +79,13 @@ public:
 	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount)
 	{
 		_maxThreadCount = maxThreadCount;
+
+		// Max demo count: 64k
+		// Captures per demo: 64
+		// String data per demo: file path + file name + map name = 640 bytes max
+		const uptr maxDemoCount = uptr(1 << 16);
+		_captures.Init((uptr)(maxDemoCount * (64 * sizeof(CaptureInfo))), "Worker::CapturesArray");
+		_stringAllocator.Init((uptr)(maxDemoCount * 640), "Worker::String");
 
 		udtFileStream jsonFile;
 		if(!jsonFile.Open(outputFilePath, udtFileOpenMode::Write))
@@ -57,7 +101,7 @@ public:
 			return false;
 		}
 
-		const u32 batchSize = 256;
+		const u32 batchSize = UDT_CAPTURES_BATCH_SIZE;
 		const u32 batchCount = (fileCount + batchSize - 1) / batchSize;
 		u32 fileOffset = 0;
 		for(u32 i = 0; i < batchCount; ++i)
@@ -73,8 +117,15 @@ public:
 			fileOffset += batchFileCount;
 		}
 
+		if(_captures.IsEmpty())
+		{
+			fprintf(stderr, "Not a single capture was found.\n");
+			return false;
+		}
+
 		SortCaptures();
 
+		// @TODO: custom memory buffer size?
 		context->JSONWriterContext.ResetForNextDemo();
 		udtJSONWriter& writer = context->JSONWriterContext.Writer;
 		writer.StartFile();
@@ -179,51 +230,100 @@ private:
 
 			const s32 durationMs = capture.CaptureTimeMs - capture.PickUpTimeMs;
 
+			udtString mapName = udtString::NewClone(_stringAllocator, capture.MapName);
+			udtString::MakeLowerCase(mapName);
+
 			CaptureInfo cap;
 			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0;
 			cap.CaptureTimeMs = capture.CaptureTimeMs;
 			cap.Distance = capture.Distance;
 			cap.DurationMs = durationMs;
-			cap.FileName = fileName;
-			cap.FilePath = filePath;
+			cap.FileName = udtString::NewClone(_stringAllocator, fileName).String;
+			cap.FilePath = udtString::NewClone(_stringAllocator, filePath).String;
 			cap.GameStateIndex = capture.GameStateIndex;
-			cap.Index = (u32)_captures.size();
-			cap.MapName = capture.MapName;
+			cap.SortIndex = (s32)i;
+			cap.MapName = mapName.String;
 			cap.PickUpTimeMs = capture.PickUpTimeMs;
 			cap.Speed = durationMs == 0 ? FLT_MAX : capture.Distance / ((f32)durationMs / 1000.0f);
-			_captures.push_back(cap);
+			_captures.Add(cap);
 		}
 	}
 
 	void WriteCaptures(udtJSONWriter& writer)
 	{
-		writer.StartArray("captures");
+		writer.StartArray("allCaptures");
 
-		// @TODO: Print by map+type
-		// Example: oj5 base2base, oj5 missing2base, oj9 base2base, etc
+		const char* previousMap = "__invalid__";
+		bool previousBaseToBase = false;
 
-		for(u32 i = 0, count = (u32)_captures.size(); i < count; ++i)
+		const u32 captureCount = _captures.GetSize();
+		for(u32 i = 0; i < captureCount; ++i)
 		{
-			writer.StartObject();
-
 			const CaptureInfo& cap = _captures[i];
-			writer.WriteStringValue("filePath", cap.FilePath.c_str());
 
+			if(i == 0 || 
+			   cap.BaseToBase != previousBaseToBase ||
+			   strcmp(cap.MapName, previousMap) != 0)
+			{
+				if(i > 0)
+				{
+					writer.EndArray();
+					writer.EndObject();
+				}
+
+				writer.StartObject();
+				writer.WriteStringValue("map", cap.MapName);
+				writer.WriteBoolValue("baseToBase", cap.BaseToBase);
+				writer.StartArray("captures");
+
+				previousMap = cap.MapName;
+				previousBaseToBase = cap.BaseToBase;
+
+			}
+
+			writer.StartObject();
+			if(!cap.BaseToBase && cap.Speed != FLT_MAX)
+			{
+				writer.WriteIntValue("speed", (s32)cap.Speed);
+			}
+			writer.WriteIntValue("duration", cap.DurationMs);
+			writer.WriteStringValue("fileName", cap.FileName);
+			writer.WriteStringValue("filePath", cap.FilePath);
+			writer.WriteIntValue("gameStateIndex", cap.GameStateIndex);
+			writer.WriteIntValue("startTime", cap.PickUpTimeMs);
+			writer.WriteIntValue("endTime", cap.CaptureTimeMs);
 			writer.EndObject();
 		}
+
+		writer.EndArray();
+		writer.EndObject();
 
 		writer.EndArray();
 	}
 
 	void SortCaptures()
 	{
-		//@TODO:
+		SortCapturesPass<&SortBySpeedDescending>();
+		SortCapturesPass<&SortByDurationAscending>();
+		SortCapturesPass<&SortByBaseToBaseTrueToFalse>();
+		SortCapturesPass<&SortByMapNameAscending>();
 	}
 
+	template<CaptureCompareFunc compareFunc>
+	void SortCapturesPass()
+	{
+		const u32 captureCount = _captures.GetSize();
+		for(u32 i = 0; i < captureCount; ++i)
+		{
+			_captures[i].SortIndex = (s32)i;
+		}
+		qsort(_captures.GetStartAddress(), (size_t)captureCount, sizeof(CaptureInfo), &GenericStableCaptureSort<compareFunc>);
+	}
+
+	udtVMArrayWithAlloc<CaptureInfo> _captures;
+	udtVMLinearAllocator _stringAllocator;
 	u32 _maxThreadCount;
 	bool _ownDemosOnly;
-
-	std::vector<CaptureInfo> _captures;
 };
 
 
@@ -302,16 +402,20 @@ int udt_main(int argc, char** argv)
 		return 1;
 	}
 
-	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
+	// Should be able to handle over 10k demos.
+	udtVMArrayWithAlloc<udtFileInfo> files(1 << 24, "udt_main::FilesArray");
 	udtVMLinearAllocator persistAlloc;
+	udtVMLinearAllocator folderArrayAlloc;
 	udtVMLinearAllocator tempAlloc;
-	persistAlloc.Init(1 << 24, "udt_main::Persistent");
-	tempAlloc.Init(1 << 24, "udt_main::Temp");
+	persistAlloc.Init(1 << 26, "udt_main::Persistent");
+	folderArrayAlloc.Init(1 << 26, "udt_main::FolderArray");
+	tempAlloc.Init(1 << 20, "udt_main::Temp");
 
 	udtFileListQuery query;
 	memset(&query, 0, sizeof(query));
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.Files = &files;
+	query.FolderArrayAllocator = &folderArrayAlloc;
 	query.FolderPath = directoryPath;
 	query.PersistAllocator = &persistAlloc;
 	query.Recursive = recursive;
