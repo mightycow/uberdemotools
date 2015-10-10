@@ -56,10 +56,14 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 	udtVMArray<const char*> folders;
 	if(query.Recursive)
 	{
+		query.FolderArrayAllocator->Clear();
 		folders.SetAllocator(*query.FolderArrayAllocator);
 	}
 	do
 	{
+		// @NOTE: we can't create a temp alloc scope here because of
+		// allocations necessary for sub-folder paths.
+
 		udtString fileName = udtString::NewFromUTF16(*query.TempAllocator, findData.cFileName);
 		if((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
 		{
@@ -161,6 +165,7 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 	udtVMArray<const char*> folders;
 	if(query.Recursive)
 	{
+		query.FolderArrayAllocator->Clear();
 		folders.SetAllocator(*query.FolderArrayAllocator);
 	}
 	const udtString folderPath = udtString::NewConstRef(query.FolderPath);
