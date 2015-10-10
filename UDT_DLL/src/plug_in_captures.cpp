@@ -13,7 +13,7 @@ udtParserPlugInCaptures::~udtParserPlugInCaptures()
 
 void udtParserPlugInCaptures::InitAllocators(u32 demoCount)
 {
-	const uptr smallByteCount = 1024;
+	const uptr smallByteCount = 1 << 14;
 	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "udtParserPlugInCaptures::CapturesArray");
 	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "udtParserPlugInCaptures::Strings");
 	_captures.SetAllocator(FinalAllocator);
@@ -39,6 +39,7 @@ void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallback
 {
 	++_gameStateIndex;
 
+	memset(_players, 0, sizeof(_players));
 	for(u32 i = 0; i < 64; ++i)
 	{
 		_players[i].BasePickup = false;
@@ -47,11 +48,13 @@ void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallback
 		_players[i].HasFlag = false;
 		_players[i].PrevHasFlag = false;
 		_players[i].PrevCaptureCount = 0;
+		_players[i].CaptureCount = 0;
 		_players[i].PickupTimeMs = S32_MIN;
 		Float3::Zero(_players[i].PickupPosition);
 		Float3::Zero(_players[i].Position);
 	}
 
+	memset(_teams, 0, sizeof(_teams));
 	for(u32 i = 0; i < 2; ++i)
 	{
 		_teams[i].FlagState = (u8)idFlagStatus::InBase;
