@@ -382,6 +382,7 @@ private:
 		{
 			_captures[i].SortIndex = (s32)i;
 		}
+
 		qsort(_captures.GetStartAddress(), (size_t)captureCount, sizeof(CaptureInfo), &GenericStableCaptureSort<compareFunc>);
 	}
 
@@ -389,7 +390,6 @@ private:
 	udtVMLinearAllocator _stringAllocator;
 	u32 _maxThreadCount;
 	u32 _topBaseToBaseCapCount;
-	bool _ownDemosOnly;
 };
 
 
