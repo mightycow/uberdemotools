@@ -406,15 +406,19 @@ void CrashHandler(const char* message)
 
 static void PrintHelp()
 {
-	printf("???? help for UDT_captures ????\n");
-	printf("UDT_captures [options] -o=output_file demo_folder\n");
-	printf("Options:\n");
-	printf("-r  : enable recursive demo file search      (default: off)\n");
-	printf("-t=N: set the maximum number of threads to N (default: 4)\n");
-	printf("-b=N: top N base2base captures per map       (default: 3)\n");
-	printf("      The top base2base captures are a subset of the entire demo collection\n");
-	printf("      that is stored in the separate JSON array 'fastestBaseToBaseCaptures'.\n");
-	printf("      Setting -b=0 will disable the writing of that extra data entirely.\n");
+	printf("For a collection of demo files, extract and sort all the flag captures from\n");
+	printf("the demo taker and store the data to a single JSON output file.\n");
+	printf("\n");
+	printf("UDT_captures [-r] [-t=maxthreads] [-b=maxb2bcaps] -o=outputfile demofolder\n");
+	printf("\n");
+	printf("-r    enable recursive demo file search        (default: off)\n");
+	printf("-t=N  set the maximum number of threads to 'N' (default: 4)\n");
+	printf("-b=N  top 'N' base2base captures per map       (default: 3)\n");
+	printf("-o=p  output path 'p' of the JSON file with the sorted results\n");
+	printf("\n");
+	printf("The top base2base captures are a subset of the entire captures collection\n");
+	printf("that is stored in the separate JSON array 'fastestBaseToBaseCaptures'.\n");
+	printf("Setting -b=0 will disable the writing of that extra JSON array entirely.\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
