@@ -1,8 +1,6 @@
 #include "api.h"
-
-
+#include "string.hpp"
 #if defined(UDT_WINDOWS)
-#	include "string.hpp"
 #	include "thread_local_allocators.hpp"
 #	include "scoped_stack_allocator.hpp"
 #	include <Windows.h>
@@ -11,8 +9,26 @@
 #include <stdio.h>
 
 
+#if !defined(UDT_WINDOWS)
+static const char* ExecutableFileName = NULL;
+#endif
+
+
 extern int udt_main(int argc, char** argv);
-extern void CrashHandler(const char* message);
+
+
+static void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+#if !defined(UDT_WINDOWS)
+	PrintStackTrace(stderr, 3, ExecutableFileName);
+#endif
+
+	exit(666);
+}
 
 
 #if defined(UDT_WINDOWS)
@@ -62,8 +78,22 @@ int wmain(int argc, wchar_t** argvWide)
 
 #else
 
+static void FindExecutableFileName(const char* exeFilePath)
+{
+	ExecutableFileName = exeFilePath;
+
+	u32 slashIndex = 0;
+	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
+	if(udtString::FindLastCharacterMatch(slashIndex, exeFilePathString, '/') &&
+	   slashIndex + 1 < exeFilePathString.Length)
+	{
+		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+	}
+}
+
 int main(int argc, char** argv)
 {
+	FindExecutableFileName(argv[0]);
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
 

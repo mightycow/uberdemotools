@@ -393,17 +393,6 @@ private:
 };
 
 
-void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_captures");
-
-	exit(666);
-}
-
 static void PrintHelp()
 {
 	printf("For a collection of demo files, extract and sort all the flag captures from\n");

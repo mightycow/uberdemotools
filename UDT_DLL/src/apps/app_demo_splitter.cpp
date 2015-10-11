@@ -9,17 +9,6 @@
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_splitter");
-
-	exit(666);
-}
-
 static bool RunDemoSplitter(const char* filePath)
 {
 	udtParseArg info;

@@ -7,17 +7,6 @@
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_timeshifter");
-
-	exit(666);
-}
-
 static void PrintHelp()
 {
 	printf("\n");

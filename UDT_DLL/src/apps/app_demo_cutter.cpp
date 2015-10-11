@@ -12,18 +12,6 @@
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_cutter");
-
-	exit(666);
-}
-
-
 static const char* ConfigFilePath = "udt_cutter.cfg";
 
 static const char* DefaultConfig = 

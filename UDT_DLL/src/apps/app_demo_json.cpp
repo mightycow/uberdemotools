@@ -8,17 +8,6 @@
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
-{
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_json");
-
-	exit(666);
-}
-
 static void PrintHelp()
 {
 	printf("???? help for UDT_json ????\n");
