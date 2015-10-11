@@ -74,11 +74,13 @@ public:
 	Worker()
 	{
 		_maxThreadCount = 4;
+		_topBaseToBaseCapCount = 3;
 	}
 
-	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount)
+	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount, u32 topBaseToBaseCapCount)
 	{
 		_maxThreadCount = maxThreadCount;
+		_topBaseToBaseCapCount = topBaseToBaseCapCount;
 
 		// Max demo count: 64k
 		// Captures per demo: 64
@@ -129,7 +131,11 @@ public:
 		context->JSONWriterContext.ResetForNextDemo();
 		udtJSONWriter& writer = context->JSONWriterContext.Writer;
 		writer.StartFile();
-		WriteCaptures(writer);
+		if(topBaseToBaseCapCount > 0)
+		{
+			WriteFastestBaseToBaseCaptures(writer);
+		}
+		WriteAllCaptures(writer);
 		writer.EndFile();
 
 		udtVMMemoryStream& memoryStream = context->JSONWriterContext.MemoryStream;
@@ -249,7 +255,7 @@ private:
 		}
 	}
 
-	void WriteCaptures(udtJSONWriter& writer)
+	void WriteAllCaptures(udtJSONWriter& writer)
 	{
 		writer.StartArray("allCaptures");
 
@@ -301,6 +307,65 @@ private:
 		writer.EndArray();
 	}
 
+	void WriteFastestBaseToBaseCaptures(udtJSONWriter& writer)
+	{
+		writer.StartArray("fastestBaseToBaseCaptures");
+
+		const u32 topBaseToBaseCapCount = _topBaseToBaseCapCount;
+		const char* previousMap = "__invalid__";
+		bool previousBaseToBase = false;
+		u32 mapCaptureIndex = 0;
+		bool hasAtLeastOneObject = false;
+
+		const u32 captureCount = _captures.GetSize();
+		for(u32 i = 0; i < captureCount; ++i)
+		{
+			const CaptureInfo& cap = _captures[i];
+
+			if(i == 0 ||
+			   (cap.BaseToBase && !previousBaseToBase) ||
+			   strcmp(cap.MapName, previousMap) != 0)
+			{
+				if(cap.BaseToBase)
+				{
+					if(hasAtLeastOneObject)
+					{
+						writer.EndArray();
+						writer.EndObject();
+					}
+
+					hasAtLeastOneObject = true;
+					mapCaptureIndex = 0;
+					writer.StartObject();
+					writer.WriteStringValue("map", cap.MapName);
+					writer.StartArray("captures");
+				}
+
+				previousMap = cap.MapName;
+				previousBaseToBase = cap.BaseToBase;
+			}
+
+			if(mapCaptureIndex++ >= topBaseToBaseCapCount)
+			{
+				continue;
+			}
+
+			writer.StartObject();
+			writer.WriteIntValue("duration", cap.DurationMs);
+			writer.WriteStringValue("fileName", cap.FileName);
+			writer.WriteStringValue("filePath", cap.FilePath);
+			writer.WriteIntValue("gameStateIndex", cap.GameStateIndex);
+			writer.WriteIntValue("startTime", cap.PickUpTimeMs);
+			writer.WriteIntValue("endTime", cap.CaptureTimeMs);
+			writer.EndObject();
+		}
+
+		writer.EndArray();
+		writer.EndObject();
+
+		writer.EndArray();
+	}
+
 	void SortCaptures()
 	{
 		SortCapturesPass<&SortBySpeedDescending>();
@@ -323,6 +388,7 @@ private:
 	udtVMArrayWithAlloc<CaptureInfo> _captures;
 	udtVMLinearAllocator _stringAllocator;
 	u32 _maxThreadCount;
+	u32 _topBaseToBaseCapCount;
 	bool _ownDemosOnly;
 };
 
@@ -343,8 +409,12 @@ static void PrintHelp()
 	printf("???? help for UDT_captures ????\n");
 	printf("UDT_captures [options] -o=output_file demo_folder\n");
 	printf("Options:\n");
-	printf("-r      : recursive demo file search             (default: off)\n");
-	printf("-t=max_t: maximum number of threads              (default: 4)\n");
+	printf("-r  : enable recursive demo file search      (default: off)\n");
+	printf("-t=N: set the maximum number of threads to N (default: 4)\n");
+	printf("-b=N: top N base2base captures per map       (default: 3)\n");
+	printf("      The top base2base captures are a subset of the entire demo collection\n");
+	printf("      that is stored in the separate JSON array 'fastestBaseToBaseCaptures'.\n");
+	printf("      Setting -b=0 will disable the writing of that extra data entirely.\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
@@ -370,10 +440,12 @@ int udt_main(int argc, char** argv)
 
 	const char* outputFilePath = NULL;
 	u32 maxThreadCount = 4;
+	u32 topBaseToBaseCapCount = 3;
 	bool recursive = false;
 	for(int i = 1; i < argc - 1; ++i)
 	{
 		s32 localMaxThreads = 4;
+		s32 localCapCount = 3;
 
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::Equals(arg, "-r"))
@@ -393,6 +465,12 @@ int udt_main(int argc, char** argv)
 		{
 			maxThreadCount = (u32)localMaxThreads;
 		}
+		else if(udtString::StartsWith(arg, "-b=") &&
+				arg.Length >= 4 &&
+				StringParseInt(localCapCount, arg.String + 3))
+		{
+			topBaseToBaseCapCount = (u32)localCapCount;
+		}
 	}
 
 	if(outputFilePath == NULL)
@@ -409,7 +487,7 @@ int udt_main(int argc, char** argv)
 	udtVMLinearAllocator tempAlloc;
 	persistAlloc.Init(1 << 26, "udt_main::Persistent");
 	folderArrayAlloc.Init(1 << 26, "udt_main::FolderArray");
-	tempAlloc.Init(1 << 20, "udt_main::Temp");
+	tempAlloc.Init(1 << 22, "udt_main::Temp");
 
 	udtFileListQuery query;
 	memset(&query, 0, sizeof(query));
@@ -428,7 +506,7 @@ int udt_main(int argc, char** argv)
 	}
 
 	Worker worker;
-	if(!worker.ProcessDemos(files.GetStartAddress(), files.GetSize(), outputFilePath, maxThreadCount))
+	if(!worker.ProcessDemos(files.GetStartAddress(), files.GetSize(), outputFilePath, maxThreadCount, topBaseToBaseCapCount))
 	{
 		return 2;
 	}
