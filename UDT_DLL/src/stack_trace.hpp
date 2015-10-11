@@ -1,5 +1,7 @@
 #pragma once
 
 
-extern void PrintStackTrace(int skipCount, const char* executableName);
+#include <stdio.h>
 
+
+extern void PrintStackTrace(FILE* file, int skipCount, const char* executableName);
