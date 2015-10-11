@@ -177,18 +177,18 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 			// 1. there was an instant cap, or
 			// 2. the pick-up happened before demo recording began.
 			// If the latter is true, we drop the cap because we don't know enough about it.
-			const bool instantCap = !player.PrevHasFlag;
-			if(player.PickupTimeMs == S32_MIN && !instantCap)
+			if(player.PickupTimeMs == S32_MIN && player.PrevHasFlag)
 			{
 				continue;
 			}
 
 			const s32 pickupTimeMs = player.PickupTimeMs == S32_MIN ? arg.ServerTime : player.PickupTimeMs;
+			const s32 captureTimeMs = arg.ServerTime;
 			const s32 playerIndex = (s32)i;
 			udtParseDataCapture cap;
 			cap.GameStateIndex = _gameStateIndex;
 			cap.PickUpTimeMs = pickupTimeMs;
-			cap.CaptureTimeMs = arg.ServerTime;
+			cap.CaptureTimeMs = captureTimeMs;
 			cap.Distance = Float3::Dist(player.PickupPosition, player.Position);
 			cap.PlayerIndex = playerIndex;
 			cap.PlayerName = GetPlayerName(playerIndex, parser);
@@ -202,7 +202,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 			{
 				cap.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
 			}
-			if(player.BasePickup)
+			if(player.BasePickup && player.PrevHasFlag && captureTimeMs > pickupTimeMs)
 			{
 				cap.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
 			}
