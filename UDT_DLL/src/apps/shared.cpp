@@ -38,7 +38,6 @@ static void ResetCurrentDirectory(const char* exeFilePath)
 
 int wmain(int argc, wchar_t** argvWide)
 {
-	printf("UDT library version: %s\n", udtGetVersionString());
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
 
@@ -65,7 +64,6 @@ int wmain(int argc, wchar_t** argvWide)
 
 int main(int argc, char** argv)
 {
-	printf("UDT library version: %s\n", udtGetVersionString());
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
 
