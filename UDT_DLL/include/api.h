@@ -856,6 +856,12 @@ extern "C"
 
 		// Of type udtParseArgFlags::Id.
 		u32 Flags;
+
+		// Minimum duration, in milli-seconds, between 2 consecutive calls to ProgressCb.
+		u32 MinProgressTimeMs;
+
+		// Ignore this.
+		s32 Reserved2;
 	};
 
 	struct udtMultiParseArg

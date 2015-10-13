@@ -5,6 +5,7 @@
 #include "utils.hpp"
 #include "parser_context.hpp"
 #include "json_writer.hpp"
+#include "batch_runner.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,6 +76,8 @@ public:
 	{
 		_maxThreadCount = 4;
 		_topBaseToBaseCapCount = 3;
+
+		_parseArg.SetSinglePlugIn(udtParserPlugIn::Captures);
 	}
 
 	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount, u32 topBaseToBaseCapCount)
@@ -103,20 +106,13 @@ public:
 			return false;
 		}
 
-		const u32 batchSize = UDT_CAPTURES_BATCH_SIZE;
-		const u32 batchCount = (fileCount + batchSize - 1) / batchSize;
-		u32 fileOffset = 0;
+		BatchRunner runner(_parseArg.ParseArg, files, fileCount, UDT_CAPTURES_BATCH_SIZE);
+		const u32 batchCount = runner.GetBatchCount();
 		for(u32 i = 0; i < batchCount; ++i)
 		{
-			u32 batchFileCount = batchSize;
-			if(i == batchCount - 1)
-			{
-				batchFileCount = fileCount % batchSize;
-			}
-
-			ProcessBatch(files + fileOffset, batchFileCount);
-
-			fileOffset += batchFileCount;
+			runner.PrepareNextBatch();
+			const BatchRunner::BatchInfo& info = runner.GetBatchInfo(i);
+			ProcessBatch(files + info.FirstFileIndex, info.FileCount);
 		}
 
 		if(_captures.IsEmpty())
@@ -163,18 +159,6 @@ private:
 			filePaths[i] = files[i].Path;
 		}
 
-		const u32 plugInId = (u32)udtParserPlugIn::Captures;
-
-		udtParseArg info;
-		memset(&info, 0, sizeof(info));
-		s32 cancelOperation = 0;
-		info.CancelOperation = &cancelOperation;
-		info.MessageCb = &CallbackConsoleMessage;
-		info.ProgressCb = &CallbackConsoleProgress;
-		info.OutputFolderPath = NULL;
-		info.PlugIns = &plugInId;
-		info.PlugInCount = 1;
-
 		udtMultiParseArg threadInfo;
 		memset(&threadInfo, 0, sizeof(threadInfo));
 		threadInfo.FilePaths = filePaths.GetStartAddress();
@@ -183,7 +167,7 @@ private:
 		threadInfo.MaxThreadCount = _maxThreadCount;
 
 		udtParserContextGroup* contextGroup = NULL;
-		const s32 result = udtParseDemoFiles(&contextGroup, &info, &threadInfo);
+		const s32 result = udtParseDemoFiles(&contextGroup, &_parseArg.ParseArg, &threadInfo);
 		if(result != (s32)udtErrorCode::None)
 		{
 			fprintf(stderr, "udtParseDemoFiles failed with error: %s\n", udtGetErrorCodeString(result));
@@ -388,6 +372,7 @@ private:
 
 	udtVMArrayWithAlloc<CaptureInfo> _captures;
 	udtVMLinearAllocator _stringAllocator;
+	CmdLineParseArg _parseArg;
 	u32 _maxThreadCount;
 	u32 _topBaseToBaseCapCount;
 };

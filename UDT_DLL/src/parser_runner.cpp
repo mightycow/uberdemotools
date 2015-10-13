@@ -89,13 +89,9 @@ bool udtParserRunner::ParseNextMessage()
 		return false;
 	}
 
-	if(_timer.GetElapsedMs() >= UDT_MIN_PROGRESS_TIME_MS)
-	{
-		_timer.Restart();
-		const u64 currentByteCount = (u64)fileOffset - _fileStartOffset;
-		const f32 currentProgress = (f32)currentByteCount / (f32)_maxByteCount;
-		_parser->_context->NotifyProgress(currentProgress);
-	}
+	const u64 currentByteCount = (u64)fileOffset - _fileStartOffset;
+	const f32 currentProgress = (f32)currentByteCount / (f32)_maxByteCount;
+	_parser->_context->NotifyProgress(currentProgress);
 
 	SetSuccess(true);
 

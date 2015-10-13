@@ -11,14 +11,6 @@
 #include <cctype>
 
 
-static const char* LogLevels[4] =
-{
-	"",
-	"Warning: ",
-	"Error: ",
-	"Fatal: "
-};
-
 #define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc) Desc,
 static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 {
@@ -27,23 +19,6 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 };
 #undef UDT_MEAN_OF_DEATH_ITEM
 
-
-void CallbackConsoleMessage(s32 logLevel, const char* message)
-{
-	if(logLevel < 0 || logLevel >= 3)
-	{
-		logLevel = 3;
-	}
-
-	FILE* const file = (logLevel == 0 || logLevel == 1) ? stdout : stderr;
-	fprintf(file, LogLevels[logLevel]);
-	fprintf(file, message);
-	fprintf(file, "\n");
-}
-
-void CallbackConsoleProgress(f32, void*)
-{
-}
 
 udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData)
 {

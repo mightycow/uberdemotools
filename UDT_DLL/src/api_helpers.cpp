@@ -478,6 +478,7 @@ struct SingleThreadProgressContext
 	udtProgressCallback UserCallback;
 	void* UserData;
 	udtTimer* Timer;
+	u32 MinProgressTimeMs;
 };
 
 static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
@@ -488,7 +489,7 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 		return;
 	}
 
-	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	if(context->Timer->GetElapsedMs() < u64(context->MinProgressTimeMs))
 	{
 		return;
 	}
@@ -555,6 +556,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	progressContext.CurrentJobByteCount = 0;
 	progressContext.ProcessedByteCount = 0;
 	progressContext.TotalByteCount = totalByteCount;
+	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
 
 	udtParseArg newInfo = *info;
 	newInfo.ProgressCb = &SingleThreadProgressCallback;

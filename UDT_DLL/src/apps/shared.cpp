@@ -9,6 +9,14 @@
 #include <stdio.h>
 
 
+static const char* LogLevels[4] =
+{
+	"",
+	"Warning: ",
+	"Error: ",
+	"Fatal: "
+};
+
 #if !defined(UDT_WINDOWS)
 static const char* ExecutableFileName = NULL;
 #endif
@@ -30,10 +38,30 @@ static void CrashHandler(const char* message)
 	exit(666);
 }
 
+void CallbackConsoleMessage(s32 logLevel, const char* message)
+{
+	if(logLevel < 0 || logLevel >= 3)
+	{
+		logLevel = 3;
+	}
+
+	FILE* const file = (logLevel == 0 || logLevel == 1) ? stdout : stderr;
+	fprintf(file, LogLevels[logLevel]);
+	fprintf(file, message);
+	fprintf(file, "\n");
+}
+
 
 #if defined(UDT_WINDOWS)
 
 #define UDT_MAX_ARG_COUNT 16
+
+void CallbackConsoleProgress(f32 progress, void*)
+{
+	char title[256];
+	sprintf(title, "%.1f%% - UDT", 100.0f * progress);
+	SetConsoleTitleA(title);
+}
 
 static void ResetCurrentDirectory(const char* exeFilePath)
 {
@@ -77,6 +105,10 @@ int wmain(int argc, wchar_t** argvWide)
 }
 
 #else
+
+void CallbackConsoleProgress(f32, void*)
+{
+}
 
 static void FindExecutableFileName(const char* exeFilePath)
 {

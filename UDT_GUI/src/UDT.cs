@@ -261,6 +261,8 @@ namespace Uber.DemoTools
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
             public UInt32 Flags;
+            public UInt32 MinProgressTimeMs;
+            public Int32 Reserved2;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

@@ -10,8 +10,6 @@
 // On Windows, MAX_PATH is 260.
 #define UDT_MAX_PATH_LENGTH    320
 
-#define UDT_MIN_PROGRESS_TIME_MS    100
-
 
 template<typename T>
 T udt_min(const T a, const T b)
@@ -46,8 +44,6 @@ struct CallbackCutDemoFileStreamCreationInfo
 
 extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
 extern udtStream*  CallbackConvertedDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
-extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
-extern void	       CallbackConsoleProgress(f32 progress, void* userData);
 extern bool        StringParseInt(s32& output, const char* string);
 extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
 extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".

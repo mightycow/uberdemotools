@@ -1848,6 +1848,7 @@ namespace Uber.DemoTools
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
             ParseArg.Flags = 0;
+            ParseArg.MinProgressTimeMs = 100;
             if(outputFolder != null)
             {
                 ParseArg.OutputFolderPath = UDT_DLL.StringToHGlobalUTF8(outputFolder);
