@@ -297,6 +297,7 @@ private:
 
 		const u32 topBaseToBaseCapCount = _topBaseToBaseCapCount;
 		const char* previousMap = "__invalid__";
+		const char* currentSectionMap = "__invalid__";
 		bool previousBaseToBase = false;
 		u32 mapCaptureIndex = 0;
 		bool hasAtLeastOneObject = false;
@@ -306,9 +307,10 @@ private:
 		{
 			const CaptureInfo& cap = _captures[i];
 
+			const bool mapChanged = strcmp(cap.MapName, previousMap) != 0;
 			if(i == 0 ||
 			   (cap.BaseToBase && !previousBaseToBase) ||
-			   strcmp(cap.MapName, previousMap) != 0)
+			   mapChanged)
 			{
 				if(cap.BaseToBase)
 				{
@@ -323,10 +325,16 @@ private:
 					writer.StartObject();
 					writer.WriteStringValue("map", cap.MapName);
 					writer.StartArray("captures");
+					currentSectionMap = cap.MapName;
 				}
+			}
+			previousMap = cap.MapName;
+			previousBaseToBase = cap.BaseToBase;
 
-				previousMap = cap.MapName;
-				previousBaseToBase = cap.BaseToBase;
+			const bool correctMap = strcmp(cap.MapName, currentSectionMap) == 0;
+			if(!cap.BaseToBase || !correctMap)
+			{
+				continue;
 			}
 
 			if(mapCaptureIndex++ >= topBaseToBaseCapCount)
