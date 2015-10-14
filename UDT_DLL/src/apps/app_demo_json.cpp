@@ -3,12 +3,16 @@
 #include "path.hpp"
 #include "file_system.hpp"
 #include "utils.hpp"
+#include "batch_runner.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
 
 
-static void PrintHelp()
+#define    UDT_JSON_BATCH_SIZE    256
+
+
+void PrintHelp()
 {
 	printf("???? help for UDT_json ????\n");
 	printf("UDT_json demo_file   [options] [-o=output_folder]\n");
@@ -47,7 +51,7 @@ static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn
 	analyzers[analyzerCount++] = (u32)analyzerId;
 }
 
-static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, bool consoleOutput, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
+static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)
 {
 	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
 	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
@@ -57,16 +61,6 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	{
 		filePaths[i] = files[i].Path;
 	}
-
-	udtParseArg info;
-	memset(&info, 0, sizeof(info));
-	s32 cancelOperation = 0;
-	info.CancelOperation = &cancelOperation;
-	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = &CallbackConsoleProgress;
-	info.OutputFolderPath = customOutputFolder;
-	info.PlugIns = plugInIds;
-	info.PlugInCount = plugInCount;
 
 	udtMultiParseArg threadInfo;
 	memset(&threadInfo, 0, sizeof(threadInfo));
@@ -79,7 +73,7 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	memset(&jsonInfo, 0, sizeof(jsonInfo));
 	jsonInfo.ConsoleOutput = consoleOutput ? 1 : 0;
 
-	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo, &jsonInfo);
+	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&parseArg, &threadInfo, &jsonInfo);
 
 	udtVMLinearAllocator tempAllocator;
 	tempAllocator.Init(1 << 16, "ProcessMultipleDemos::Temp");
@@ -105,12 +99,35 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	return false;
 }
 
+static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, bool consoleOutput, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
+{
+	CmdLineParseArg cmdLineParseArg;
+	udtParseArg& parseArg = cmdLineParseArg.ParseArg;
+	parseArg.PlugIns = plugInIds;
+	parseArg.PlugInCount = plugInCount;
+	parseArg.OutputFolderPath = customOutputFolder;
+
+	BatchRunner runner(parseArg, files, fileCount, UDT_JSON_BATCH_SIZE);
+	const u32 batchCount = runner.GetBatchCount();
+	for(u32 i = 0; i < batchCount; ++i)
+	{
+		runner.PrepareNextBatch();
+		const BatchRunner::BatchInfo& info = runner.GetBatchInfo(i);
+		if(!ProcessBatch(parseArg, files + info.FirstFileIndex, info.FileCount, consoleOutput, maxThreadCount))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{
 		PrintHelp();
-		return __LINE__;
+		return 0;
 	}
 
 	bool fileMode = false;
@@ -121,8 +138,7 @@ int udt_main(int argc, char** argv)
 	else if(!IsValidDirectory(argv[1]))
 	{
 		fprintf(stderr, "Invalid file/folder path.\n");
-		PrintHelp();
-		return __LINE__;
+		return 1;
 	}
 
 	const char* customOutputPath = NULL;
@@ -194,28 +210,36 @@ int udt_main(int argc, char** argv)
 		fileInfo.Size = 0;
 		fileInfo.Path = argv[1];
 
-		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
+		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : 1;
 	}
 
 	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
 	udtVMLinearAllocator persistAlloc;
+	udtVMLinearAllocator folderArrayAlloc;
 	udtVMLinearAllocator tempAlloc;
 	persistAlloc.Init(1 << 24, "udt_main::Persistent");
-	tempAlloc.Init(1 << 24, "udt_main::Temp");
+	folderArrayAlloc.Init(1 << 24, "udt_main::FolderArray");
+	tempAlloc.Init(1 << 20, "udt_main::Temp");
 
 	udtFileListQuery query;
 	memset(&query, 0, sizeof(query));
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.Files = &files;
+	query.FolderArrayAllocator = &folderArrayAlloc;
 	query.FolderPath = argv[1];
 	query.PersistAllocator = &persistAlloc;
 	query.Recursive = recursive;
 	query.TempAllocator = &tempAlloc;
 	GetDirectoryFileList(query);
+	if(files.IsEmpty())
+	{
+		fprintf(stderr, "No demo file found.\n");
+		return 1;
+	}
 
 	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, false, maxThreadCount, analyzers, analyzerCount))
 	{
-		return __LINE__;
+		return 1;
 	}
 
 	return 0;

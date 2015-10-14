@@ -17,12 +17,11 @@ static const char* LogLevels[4] =
 	"Fatal: "
 };
 
-#if !defined(UDT_WINDOWS)
 static const char* ExecutableFileName = NULL;
-#endif
 
 
-extern int udt_main(int argc, char** argv);
+extern int  udt_main(int argc, char** argv);
+extern void PrintHelp();
 
 
 static void CrashHandler(const char* message)
@@ -59,7 +58,7 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 void CallbackConsoleProgress(f32 progress, void*)
 {
 	char title[256];
-	sprintf(title, "%.1f%% - UDT", 100.0f * progress);
+	sprintf(title, "%.1f%% - %s", 100.0f * progress, ExecutableFileName);
 	SetConsoleTitleA(title);
 }
 
@@ -78,6 +77,19 @@ static void ResetCurrentDirectory(const char* exeFilePath)
 	const udtString directoryPath = udtString::NewSubstringClone(allocator, filePath, 0, (u32)(match - exeFilePath));
 	wchar_t* const wideDirectoryPath = udtString::ConvertToUTF16(allocator, directoryPath);
 	SetCurrentDirectoryW(wideDirectoryPath);
+}
+
+static void FindExecutableFileName(const char* exeFilePath)
+{
+	ExecutableFileName = exeFilePath;
+
+	u32 slashIndex = 0;
+	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
+	if(udtString::FindLastCharacterListMatch(slashIndex, exeFilePathString, udtString::NewConstRef("/\\")) &&
+	   slashIndex + 1 < exeFilePathString.Length)
+	{
+		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+	}
 }
 
 int wmain(int argc, wchar_t** argvWide)
@@ -99,7 +111,15 @@ int wmain(int argc, wchar_t** argvWide)
 		argv[i] = udtString::NewFromUTF16(allocator, argvWide[i]).String;
 	}
 
+	if(argc == 2 && 
+	   udtString::Equals(udtString::NewConstRef(argv[1]), "/?"))
+	{
+		PrintHelp();
+		return 0;
+	}
+
 	ResetCurrentDirectory(argv[0]);
+	FindExecutableFileName(argv[0]);
 
 	return udt_main(argc, argv);
 }
@@ -125,6 +145,13 @@ static void FindExecutableFileName(const char* exeFilePath)
 
 int main(int argc, char** argv)
 {
+	if(argc == 2 && 
+	   udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+	{
+		PrintHelp();
+		return 0;
+	}
+
 	FindExecutableFileName(argv[0]);
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
