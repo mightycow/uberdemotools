@@ -2483,7 +2483,7 @@ namespace Uber.DemoTools
             if(elapsedTimeMs >= 200 && value > 0.0)
             {
                 var totalTimeSeconds = (elapsedTimeMs / 1000.0) * (100.0 / value);
-                var remainingTimeSeconds = totalTimeSeconds - (elapsedTimeMs / 1000);
+                var remainingTimeSeconds = totalTimeSeconds - (elapsedTimeMs / 1000.0);
                 remaining = remainingTimeSeconds < 1.0 ? 
                     "< 1s" : 
                     FormatProgressTimeFromSeconds((long)remainingTimeSeconds);
