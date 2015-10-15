@@ -19,38 +19,47 @@ static bool RunDemoSplitter(const char* filePath)
 	udtParserContext* const context = udtCreateContext();
 	if(context == NULL)
 	{
+		fprintf(stderr, "udtCreateContext failed.\n");
 		return false;
 	}
 
-	const bool result = udtSplitDemoFile(context, &info, filePath) == udtErrorCode::None;
+	const s32 errorCode = udtSplitDemoFile(context, &info, filePath);
+	const bool success = errorCode == udtErrorCode::None;
+	if(!success)
+	{
+		fprintf(stderr, "udtSplitDemoFile failed with error: '%s'.\n", udtGetErrorCodeString(errorCode));
+	}
 	udtDestroyContext(context);
 
-	return result;
+	return success;
 }
 
-static void PrintHelp()
+void PrintHelp()
 {
-	printf("???? help for UDT_splitter ????\n");
-	printf("Syntax: UDT_splitter demo_path\n");
+	printf("UDT_splitter creates one output demo per gamestate message for demos\n");
+	printf("with multiple gamestate messages.\n");
+	printf("\n");
+	printf("UDT_splitter inputpath\n");
 }
 
 int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{
-		printf("Not enough arguments.\n");
 		PrintHelp();
-		return 1;
+		return 0;
 	}
 
 	if(!udtFileStream::Exists(argv[1]))
 	{
-		printf("Invalid file path.\n");
-		PrintHelp();
-		return 2;
+		fprintf(stderr, "Invalid demo file path.\n");
+		return 1;
 	}
 
-	const bool success = RunDemoSplitter(argv[1]);
+	if(!RunDemoSplitter(argv[1]))
+	{
+		return 1;
+	}
 
-	return success ? 0 : 666;
+	return 0;
 }
