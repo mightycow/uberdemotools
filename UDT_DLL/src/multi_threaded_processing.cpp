@@ -302,6 +302,7 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 	udtTimer progressTimer;
 	progressTimer.Start();
 
+	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	bool success = true;
 	udtVMArrayWithAlloc<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
 	threads.Resize(threadCount);
@@ -327,7 +328,6 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 		}
 	}
 
-	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	for(;;)
 	{
 		// Find the first non-finished thread.
