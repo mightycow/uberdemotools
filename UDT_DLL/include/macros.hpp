@@ -192,6 +192,7 @@ Static analysis annotation macros.
 #if defined(UDT_MSVC)
 #	define UDT_PRINTF_FORMAT_ARG _Printf_format_string_
 #	define UDT_PRINTF_POST_FUNCTION(stringIndex, firstToCheck)
+#	include <sal.h>
 #elif defined(UDT_GCC)
 #	define UDT_PRINTF_FORMAT_ARG
 #	define UDT_PRINTF_POST_FUNCTION(stringIndex, firstToCheck) __attribute__ ((format (printf, stringIndex, firstToCheck)))
