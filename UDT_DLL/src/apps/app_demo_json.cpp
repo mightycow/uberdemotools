@@ -14,22 +14,22 @@
 
 void PrintHelp()
 {
-	printf("???? help for UDT_json ????\n");
-	printf("UDT_json demo_file   [options] [-o=output_folder]\n");
-	printf("UDT_json demo_folder [options] [-o=output_folder]\n");
-	printf("If the output_folder isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
-	printf("Options: \n");
-	printf("-c        : output to the console/terminal    (default: off)\n");
-	printf("-r        : enable recursive demo file search (default: off)\n");
-	printf("-t=max_t  : maximum number of threads         (default: 4)\n");
-	printf("-a=<flags>: select analyzers                  (default: all enabled)\n");
-	printf("            g: Game states\n");
-	printf("            m: chat Messages\n");
-	printf("            d: Deaths\n");
-	printf("            s: Stats\n");
-	printf("            r: Raw commands\n");
-	printf("            c: raw Config strings\n");
-	printf("            f: Flag captures\n");
+	printf("For each input demo, outputs JSON data with analysis results to one file per demo or optionally to the terminal.\n");
+	printf("\n");
+	printf("UDT_json [-c] [-r] [-t=maxthreads] [-a=analyzers] [-o=outputfolder] inputfile|inputfolder\n");
+	printf("\n");
+	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
+	printf("-c    output to the console/terminal          (default: off)\n");
+	printf("-r    enable recursive demo file search       (default: off)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-a=   select analyzers                        (default: all enabled)\n");
+	printf("        g: Game states         s: Stats\n");
+	printf("        m: chat Messages       r: Raw commands\n");
+	printf("        c: raw Config strings  f: Flag captures\n");
+	printf("        d: Deaths\n");
+	printf("\n");
+	printf("The terminal output option -c will only be in effect when you specify the input as a file path.\n");
+	printf("Example for selecting analyzers: -a=sd will select stats and deaths.\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
@@ -131,11 +131,12 @@ int udt_main(int argc, char** argv)
 	}
 
 	bool fileMode = false;
-	if(udtFileStream::Exists(argv[1]) && udtPath::HasValidDemoFileExtension(argv[1]))
+	const char* const inputPath = argv[argc - 1];
+	if(udtFileStream::Exists(inputPath) && udtPath::HasValidDemoFileExtension(inputPath))
 	{
 		fileMode = true;
 	}
-	else if(!IsValidDirectory(argv[1]))
+	else if(!IsValidDirectory(inputPath))
 	{
 		fprintf(stderr, "Invalid file/folder path.\n");
 		return 1;
@@ -153,7 +154,7 @@ int udt_main(int argc, char** argv)
 		analyzers[i] = i;
 	}
 
-	for(int i = 2; i < argc; ++i)
+	for(int i = 1; i < argc - 1; ++i)
 	{
 		s32 localMaxThreads = 4;
 
@@ -208,7 +209,7 @@ int udt_main(int argc, char** argv)
 		udtFileInfo fileInfo;
 		fileInfo.Name = NULL;
 		fileInfo.Size = 0;
-		fileInfo.Path = argv[1];
+		fileInfo.Path = inputPath;
 
 		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : 1;
 	}
@@ -226,7 +227,7 @@ int udt_main(int argc, char** argv)
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.Files = &files;
 	query.FolderArrayAllocator = &folderArrayAlloc;
-	query.FolderPath = argv[1];
+	query.FolderPath = inputPath;
 	query.PersistAllocator = &persistAlloc;
 	query.Recursive = recursive;
 	query.TempAllocator = &tempAlloc;
