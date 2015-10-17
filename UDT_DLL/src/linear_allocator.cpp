@@ -11,6 +11,9 @@
 #endif
 
 
+#define    SAFE_NAME    (_name != NULL ? _name : "?")
+
+
 static udtAllocatorTracker AllocatorTracker;
 
 void udtVMLinearAllocator::GetThreadStats(Stats& stats)
@@ -105,7 +108,7 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	u8* const data = (u8*)VirtualMemoryReserve(reservedByteCount);
 	if(data == NULL)
 	{
-		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed");
+		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
 		return false;
 	}
 	
@@ -121,10 +124,14 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 
 u8* udtVMLinearAllocator::Allocate(uptr byteCount)
 {
-	UDT_ASSERT_OR_FATAL(_addressSpaceStart != NULL);
+	UDT_ASSERT_OR_FATAL_MSG(_addressSpaceStart != NULL, "An allocator was not properly initialized.");
 
-	byteCount = (byteCount + 3) & (~3); // Will make sure the next alignment is 4-byte aligned, just like this one.
-	UDT_ASSERT_OR_FATAL(_firstFreeByteIndex + byteCount <= _reservedByteCount); // We didn't reserve enough address space!
+	// Make sure the next alignment is 4-byte aligned, just like this one.
+	byteCount = (byteCount + 3) & (~3);
+
+	// We didn't reserve enough address space?
+	UDT_ASSERT_OR_FATAL_MSG(_firstFreeByteIndex + byteCount <= _reservedByteCount, 
+							"Not enough address space was reserved in allocator '%s'.", SAFE_NAME);
 
 	if(_firstFreeByteIndex + byteCount > _committedByteCount)
 	{
@@ -134,7 +141,7 @@ u8* udtVMLinearAllocator::Allocate(uptr byteCount)
 		const uptr newByteCount = chunkCount * _commitByteCountGranularity;
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
-			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed");
+			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
 			return NULL;
 		}
 		_committedByteCount += newByteCount;
