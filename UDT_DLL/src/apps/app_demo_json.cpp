@@ -29,6 +29,9 @@ void PrintHelp()
 	printf("        d: Deaths\n");
 	printf("\n");
 	printf("The terminal output option -c will only be in effect when you specify the input as a file path.\n");
+	printf("When active, the option will disable all stdout output that isn't the JSON data itself but stderr output will ");
+	printf("still be active, so make sure you only read the stdout output from your programs and scripts.\n");
+	printf("\n");
 	printf("Example for selecting analyzers: -a=sd will select stats and deaths.\n");
 }
 
@@ -51,6 +54,18 @@ static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn
 	analyzers[analyzerCount++] = (u32)analyzerId;
 }
 
+static void CallbackConsoleMessageNoStdOut(s32 logLevel, const char* message)
+{
+	if(logLevel != 2 && logLevel != 3)
+	{
+		return;
+	}
+
+	fprintf(stderr, logLevel == 2 ? "Error: " : "Fatal: ");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+}
+
 static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)
 {
 	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
@@ -60,6 +75,11 @@ static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fi
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		filePaths[i] = files[i].Path;
+	}
+
+	if(consoleOutput)
+	{
+		parseArg.MessageCb = &CallbackConsoleMessageNoStdOut;
 	}
 
 	udtMultiParseArg threadInfo;
