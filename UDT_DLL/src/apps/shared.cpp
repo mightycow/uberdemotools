@@ -112,12 +112,21 @@ int wmain(int argc, wchar_t** argvWide)
 		argv[i] = udtString::NewFromUTF16(allocator, argvWide[i]).String;
 	}
 
-	if(argc == 2 && 
-	   udtString::Equals(udtString::NewConstRef(argv[1]), "/?"))
+	if(argc == 2)
 	{
-		PrintHelp();
-		return 0;
-	}
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "/?") ||
+		   udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+		{
+			PrintHelp();
+			return 0;
+		}
+
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--version"))
+		{
+			printf("UDT library version: %s\n", udtGetVersionString());
+			return 0;
+		}
+	}	   
 
 	ResetCurrentDirectory(argv[0]);
 	FindExecutableFileName(argv[0]);
@@ -146,11 +155,19 @@ static void FindExecutableFileName(const char* exeFilePath)
 
 int main(int argc, char** argv)
 {
-	if(argc == 2 && 
-	   udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+	if(argc == 2)
 	{
-		PrintHelp();
-		return 0;
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+		{
+			PrintHelp();
+			return 0;
+		}
+
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--version"))
+		{
+			printf("UDT library version: %s\n", udtGetVersionString());
+			return 0;
+		}
 	}
 
 	FindExecutableFileName(argv[0]);
