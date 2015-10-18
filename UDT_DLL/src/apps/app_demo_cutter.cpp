@@ -222,13 +222,13 @@ static bool LoadConfig(CutByChatConfig& config, const char* configPath)
 	fileAllocator.Init(1 << 16, "LoadConfig::File");
 	if(!ReadConfig(config, context->Context, fileAllocator, configPath))
 	{
-		fprintf(stderr, "Could not load config file '%s'.\n", configPath);
+		fprintf(stderr, "Could not load the specified config file.\n");
 		return false;
 	}
 
 	if(config.ChatRules.IsEmpty())
 	{
-		fprintf(stderr, "The specified config file doesn't define any chat rule.\n", configPath);
+		fprintf(stderr, "The specified config file doesn't define any chat rule.\n");
 		return false;
 	}
 
