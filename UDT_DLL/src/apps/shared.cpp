@@ -1,6 +1,7 @@
 #include "uberdemotools.h"
 #include "macros.hpp"
 #include "string.hpp"
+#include "stack_trace.hpp"
 #if defined(UDT_WINDOWS)
 #	include "thread_local_allocators.hpp"
 #	include "scoped_stack_allocator.hpp"
