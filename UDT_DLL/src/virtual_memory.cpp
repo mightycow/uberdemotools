@@ -1,4 +1,5 @@
 #include "virtual_memory.hpp"
+#include "macros.hpp"
 
 
 #if defined(_WIN32)
