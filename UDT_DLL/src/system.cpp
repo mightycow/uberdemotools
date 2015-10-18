@@ -1,4 +1,5 @@
 #include "system.hpp"
+#include "macros.hpp"
 
 
 #if defined(UDT_WINDOWS) && !(defined(__MINGW32__) || defined (__MINGW64__))

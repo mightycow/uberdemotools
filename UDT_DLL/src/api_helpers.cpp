@@ -124,7 +124,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 
 static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -135,7 +135,7 @@ static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, co
 
 static bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -211,7 +211,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -294,7 +294,7 @@ static void CreateTimeShiftDemoName(udtString& outputFilePath, udtVMLinearAlloca
 
 static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtTimeShiftArg* timeShiftArg)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;

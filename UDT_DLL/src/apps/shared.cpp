@@ -1,4 +1,5 @@
-#include "api.h"
+#include "uberdemotools.h"
+#include "macros.hpp"
 #include "string.hpp"
 #if defined(UDT_WINDOWS)
 #	include "thread_local_allocators.hpp"

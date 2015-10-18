@@ -1,8 +1,8 @@
 #pragma once
 
 
-#include "api.h"
-#include "types.hpp"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 #include <string.h>
 #include <stdio.h>

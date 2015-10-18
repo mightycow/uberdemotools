@@ -1,4 +1,4 @@
-#include "api.h"
+#include "uberdemotools.h"
 #include "api_helpers.hpp"
 #include "api_arg_checks.hpp"
 #include "parser_context.hpp"
@@ -237,14 +237,14 @@ UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
 	return ErrorCodeStrings[errorCode];
 }
 
-UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol)
+UDT_API(s32) udtIsValidProtocol(u32 protocol)
 {
-	return (protocol >= udtProtocol::AfterLastProtocol || (s32)protocol < (s32)1) ? 0 : 1;
+	return (protocol >= (u32)udtProtocol::AfterLastProtocol || protocol < 1) ? 0 : 1;
 }
 
-UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
+UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
 {
-	switch(protocol)
+	switch((udtProtocol::Id)protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idEntityState3);
 		case udtProtocol::Dm48: return (u32)sizeof(idEntityState48);
@@ -258,9 +258,9 @@ UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol)
 	}
 }
 
-UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
+UDT_API(u32) udtGetSizeOfIdPlayerState(u32 protocol)
 {
-	switch(protocol)
+	switch((udtProtocol::Id)protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idPlayerState3);
 		case udtProtocol::Dm48: return (u32)sizeof(idPlayerState48);
@@ -274,9 +274,9 @@ UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol)
 	}
 }
 
-UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
+UDT_API(u32) udtGetSizeOfidClientSnapshot(u32 protocol)
 {
-	switch(protocol)
+	switch((udtProtocol::Id)protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idClientSnapshot3);
 		case udtProtocol::Dm48: return (u32)sizeof(idClientSnapshot48);
@@ -290,7 +290,7 @@ UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol)
 	}
 }
 
-UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
+UDT_API(const char*) udtGetFileExtensionByProtocol(u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
@@ -300,28 +300,28 @@ UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol)
 	return DemoFileExtensions[protocol];
 }
 
-UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath)
+UDT_API(u32) udtGetProtocolByFilePath(const char* filePath)
 {
 	const udtString filePathString = udtString::NewConstRef(filePath);
-	for(s32 i = (s32)udtProtocol::Invalid + 1; i < (s32)udtProtocol::AfterLastProtocol; ++i)
+	for(u32 i = (u32)udtProtocol::Invalid + 1; i < (u32)udtProtocol::AfterLastProtocol; ++i)
 	{
 		if(udtString::EndsWithNoCase(filePathString, DemoFileExtensions[i]))
 		{
-			return (udtProtocol::Id)i;
+			return i;
 		}
 	}
 	
-	return udtProtocol::Invalid;
+	return (u32)udtProtocol::Invalid;
 }
 
-UDT_API(s32) udtCrash(udtCrashType::Id crashType)
+UDT_API(s32) udtCrash(u32 crashType)
 {
-	if((u32)crashType >= (u32)udtCrashType::Count)
+	if(crashType >= (u32)udtCrashType::Count)
 	{
 		return udtErrorCode::InvalidArgument;
 	}
 
-	switch(crashType)
+	switch((udtCrashType::Id)crashType)
 	{
 		case udtCrashType::FatalError:
 			FatalError(__FILE__, __LINE__, __FUNCTION__, "udtCrash test");
@@ -342,14 +342,14 @@ UDT_API(s32) udtCrash(udtCrashType::Id crashType)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** elements, u32* elementCount)
+UDT_API(s32) udtGetStringArray(u32 arrayId, const char*** elements, u32* elementCount)
 {
 	if(elements == NULL || elementCount == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	switch(arrayId)
+	switch((udtStringArray::Id)arrayId)
 	{
 		case udtStringArray::Weapons:
 			*elements = WeaponNames;
@@ -438,14 +438,14 @@ UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** element
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32* elementCount)
+UDT_API(s32) udtGetByteArray(u32 arrayId, const u8** elements, u32* elementCount)
 {
 	if(elements == NULL || elementCount == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	switch(arrayId)
+	switch((udtByteArray::Id)arrayId)
 	{
 		case udtByteArray::TeamStatsCompModes:
 			*elements = TeamStatsCompModesArray;
@@ -557,7 +557,7 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		return false;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(filePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -655,7 +655,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
@@ -713,7 +713,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -785,7 +785,7 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 		}
 	}
 
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(filePaths[0]);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePaths[0]);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -794,7 +794,7 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 	// Make sure we're not trying to merge demos with different protocols.
 	for(u32 i = 1; i < fileCount; ++i)
 	{
-		const udtProtocol::Id tempProtocol = udtGetProtocolByFilePath(filePaths[i]);
+		const udtProtocol::Id tempProtocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePaths[i]);
 		if(tempProtocol != protocol)
 		{
 			return (s32)udtErrorCode::InvalidArgument;
@@ -848,7 +848,7 @@ UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plug
 	return (s32)udtErrorCode::None;
 }
 
-struct udtParserContextGroup
+struct udtParserContextGroup_s
 {
 	udtParserContext* Contexts;
 	u32 ContextCount;

@@ -1,8 +1,81 @@
 #pragma once
 
 
-#include "types.hpp"
+#if defined(_MSC_VER)
+#	define UDT_MSVC
+#	define UDT_MSVC_VER _MSC_VER
+#endif
 
+#if defined(__GNUC__)
+#	define UDT_GCC
+#	define UDT_GCC_VER __GNUC__
+#endif
+
+#if defined(__ICC) || defined(__INTEL_COMPILER)
+#	define UDT_ICC
+#endif
+
+#if defined(__BORLANDC__) || defined(__BCPLUSPLUS__)
+#	define UDT_BORLAND
+#endif
+
+#if defined(__MINGW32__)
+#	define UDT_MINGWIN
+#endif
+
+#if defined(__CYGWIN32__)
+#	define UDT_CYGWIN
+#endif
+
+#if defined(_M_IX86) || defined(__i386__)
+#	define UDT_X86
+#endif
+
+#if defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64)
+#	define UDT_X64
+#endif
+
+#if defined(UDT_X86) || defined(UDT_X64)
+#	define UDT_ARCH_X86
+#endif
+
+#if defined(UDT_MSVC)
+	typedef __int8   s8;
+	typedef __int16 s16;
+	typedef __int32 s32;
+	typedef __int64 s64;
+	typedef unsigned __int8   u8;
+	typedef unsigned __int16 u16;
+	typedef unsigned __int32 u32;
+	typedef unsigned __int64 u64;
+#elif defined(UDT_GCC)
+#	include <stdint.h>
+	typedef int8_t    s8;
+	typedef int16_t  s16;
+	typedef int32_t  s32;
+	typedef int64_t  s64;
+	typedef uint8_t   u8;
+	typedef uint16_t u16;
+	typedef uint32_t u32;
+	typedef uint64_t u64;
+#else
+#	error Sorry, your compiler is not supported.
+#endif
+
+#if defined(UDT_X86)
+	typedef s32 sptr;
+	typedef u32 uptr;
+#else
+	typedef s64 sptr;
+	typedef u64 uptr;
+#endif
+
+typedef float  f32;
+typedef double f64;
+
+#define S32_MIN (-2147483647 - 1)
+#define S32_MAX (2147483647)
+#define U32_MAX (0xFFFFFFFF)
 
 #if defined(UDT_MSVC)
 #	if defined(UDT_CREATE_DLL)
@@ -22,14 +95,13 @@
 #	define UDT_API_DEF(ReturnType)     ReturnType UDT_EXPORT_DLL
 #endif
 
+#define UDT_API    UDT_API_DECL
 #define UDT_BIT(x) (1 << x)
 
+typedef struct udtParserContext_s udtParserContext;
+typedef struct udtParserContextGroup_s udtParserContextGroup;
 
-#define UDT_API UDT_API_DECL
-
-
-struct udtParserContext;
-struct udtParserContextGroup;
+#if defined(__cplusplus)
 
 #define UDT_ERROR_LIST(N) \
 	N(None, "no error") \
@@ -775,6 +847,8 @@ struct udtPerfStatsField
 };
 #undef UDT_PERF_STATS_ITEM
 
+#endif
+
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
 #define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
@@ -799,14 +873,16 @@ extern "C"
 
 #pragma pack(push, 1)
 
+#if defined(__cplusplus)
 	struct udtParseArgFlags
 	{
 		enum Id
 		{
 		};
 	};
+#endif
 	
-	struct udtParseArg
+	typedef struct udtParseArg_s
 	{
 		// Pointer to an array of plug-ins IDs.
 		// Of type udtParserPlugIn::Id.
@@ -862,9 +938,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved2;
-	};
+	}
+	udtParseArg;
 
-	struct udtMultiParseArg
+	typedef struct udtMultiParseArg_s
 	{
 		// Pointer to an array of file paths.
 		const char** FilePaths;
@@ -877,9 +954,10 @@ extern "C"
 
 		// The maximum amount of threads that should be used to process the demos.
 		u32 MaxThreadCount;
-	};
+	}
+	udtMultiParseArg;
 	
-	struct udtCut
+	typedef struct udtCut_s
 	{
 		// Cut start time in milli-seconds.
 		s32 StartTimeMs;
@@ -892,9 +970,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCut;
 
-	struct udtPatternInfo
+	typedef struct udtPatternInfo_s
 	{
 		// Pointer to the data structure describing the patterns/filters.
 		// May not be NULL.
@@ -905,8 +984,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtPatternInfo;
 
+#if defined(__cplusplus)
 	struct udtPlayerIndex
 	{
 		enum Id
@@ -923,8 +1004,9 @@ extern "C"
 			MergeCutSections = UDT_BIT(0) // Enable/disable merging cut sections from different patterns.
 		};
 	};
+#endif
 
-	struct udtCutByPatternArg
+	typedef struct udtCutByPatternArg_s
 	{
 		// Pointer to an array of filters.
 		// May not be NULL.
@@ -952,9 +1034,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCutByPatternArg;
 
-	struct udtCutByTimeArg
+	typedef struct udtCutByTimeArg_s
 	{
 		// Pointer to an array of cut times.
 		// May not be NULL.
@@ -965,9 +1048,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCutByTimeArg;
 
-	struct udtCutByChatRule
+	typedef struct udtCutByChatRule_s
 	{
 		// May not be NULL.
 		const char* Pattern;
@@ -983,11 +1067,12 @@ extern "C"
 
 		// Non-zero means we search team chat messages too.
 		u32 SearchTeamChat;
-	};
+	}
+	udtCutByChatRule;
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::GlobalChat.
-	struct udtCutByChatArg
+	typedef struct udtCutByChatArg_s
 	{
 		// Pointer to an array of chat cutting rules.
 		// Rules are OR'd together.
@@ -1000,8 +1085,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCutByChatArg;
 
+#if defined(__cplusplus)
 	struct udtCutByFragArgFlags
 	{
 		enum Id
@@ -1011,10 +1098,11 @@ extern "C"
 			AllowDeaths    = UDT_BIT(2)
 		};
 	};
+#endif
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::FragSequences.
-	struct udtCutByFragArg
+	typedef struct udtCutByFragArg_s
 	{
 		// The minimum amount of frags in a sequence.
 		u32 MinFragCount;
@@ -1043,11 +1131,12 @@ extern "C"
 
 		// @TODO:
 		//u32 AllowedPowerUps;
-	};
+	}
+	udtCutByFragArg;
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::MidAirFrags.
-	struct udtCutByMidAirArg
+	typedef struct udtCutByMidAirArg_s
 	{
 		// All the allowed weapons.
 		// See udtWeaponBits::Id.
@@ -1062,11 +1151,12 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCutByMidAirArg;
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::MultiRailFrags.
-	struct udtCutByMultiRailArg
+	typedef struct udtCutByMultiRailArg_s
 	{
 		// The minimum amount of kills with a single rail shot.
 		// Must be 2 or greater.
@@ -1074,11 +1164,12 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtCutByMultiRailArg;
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::FlagCaptures.
-	struct udtCutByFlagCaptureArg
+	typedef struct udtCutByFlagCaptureArg_s
 	{
 		// Minimum allowed flag carry time, in milli-seconds.
 		u32 MinCarryTimeMs;
@@ -1091,11 +1182,12 @@ extern "C"
 
 		// Non-zero to allow pick-ups that are not from the original flag spot.
 		u32 AllowMissingToBase;
-	};
+	}
+	udtCutByFlagCaptureArg;
 	
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::FlickRailFrags.
-	struct udtCutByFlickRailArg
+	typedef struct udtCutByFlickRailArg_s
 	{
 		// Minimum angular velocity, in radians/second.
 		f32 MinSpeed;
@@ -1110,11 +1202,12 @@ extern "C"
 		// How many snapshots to take into account for computing the top speed.
 		// Range: [2;4].
 		u32 MinAngleDeltaSnapshotCount;
-	};
+	}
+	udtCutByFlickRailArg;
 
 	// Used as udtPatternInfo::TypeSpecificInfo
 	// when udtPatternInfo::Type is udtPatternType::Matches.
-	struct udtCutByMatchArg
+	typedef struct udtCutByMatchArg_s
 	{
 		// If no match count-down was found, 
 		// start the cut this amount of time before the match's start.
@@ -1123,9 +1216,10 @@ extern "C"
 		// If no post-match intermission is found, 
 		// end the cut this amount of time after the match's end.
 		u32 MatchEndOffsetMs;
-	};
+	}
+	udtCutByMatchArg;
 
-	struct udtMapConversionRule
+	typedef struct udtMapConversionRule_s
 	{
 		// If the input name matches this...
 		const char* InputName;
@@ -1139,9 +1233,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtMapConversionRule;
 
-	struct udtProtocolConversionArg
+	typedef struct udtProtocolConversionArg_s
 	{
 		// Pointer to an array of map rules.
 		const udtMapConversionRule* MapRules;
@@ -1151,9 +1246,10 @@ extern "C"
 
 		// Of type udtProtocol::Id.
 		u32 OutputProtocol;
-	};
+	}
+	udtProtocolConversionArg;
 
-	struct udtChatEventData
+	typedef struct udtChatEventData_s
 	{
 		// All C string pointers can be NULL if extraction failed.
 
@@ -1177,9 +1273,10 @@ extern "C"
 
 		// Ignore this.
 		const char* Reserved1;
-	};
+	}
+	udtChatEventData;
 
-	struct udtParseDataChat
+	typedef struct udtParseDataChat_s
 	{
 		// String data for this chat message.
 		// Index 0 with color codes, 1 without.
@@ -1200,9 +1297,10 @@ extern "C"
 
 		// Non-zero if it's a team message.
 		u32 TeamMessage;
-	};
+	}
+	udtParseDataChat;
 
-	struct udtMatchInfo
+	typedef struct udtMatchInfo_s
 	{
 		// The time between the warm-up end and the match start is the countdown phase, 
 		// whose length might vary depending on the game, mod, mode, etc.
@@ -1221,18 +1319,20 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtMatchInfo;
 
-	struct udtGameStateKeyValuePair
+	typedef struct udtGameStateKeyValuePair_s
 	{
 		// The name of the config string variable.
 		const char* Name;
 
 		// The value of the config string variable.
 		const char* Value;
-	};
+	}
+	udtGameStateKeyValuePair;
 
-	struct udtGameStatePlayerInfo
+	typedef struct udtGameStatePlayerInfo_s
 	{
 		// The player's name without color codes.
 		// If QL, the only name.
@@ -1252,9 +1352,10 @@ extern "C"
 		// Index of the team the player started with.
 		// Of type udtTeam::Id.
 		u32 FirstTeam;
-	};
+	}
+	udtGameStatePlayerInfo;
 
-	struct udtParseDataGameState
+	typedef struct udtParseDataGameState_s
 	{
 		// Pointer to an array of match information.
 		const udtMatchInfo* Matches;
@@ -1289,9 +1390,10 @@ extern "C"
 
 		// Time of the last snapshot, in milli-seconds.
 		s32 LastSnapshotTimeMs;
-	};
+	}
+	udtParseDataGameState;
 
-	struct udtParseDataObituary
+	typedef struct udtParseDataObituary_s
 	{
 		// The name of the attacker or another string.
 		// Never NULL.
@@ -1339,9 +1441,10 @@ extern "C"
 		
 		// Ignore this.
 		s32 Reserved2;
-	};
+	}
+	udtParseDataObituary;
 
-	struct udtPlayerStats
+	typedef struct udtPlayerStats_s
 	{
 		// The player's name at the time the stats were given by the server.
 		// May be NULL.
@@ -1351,9 +1454,10 @@ extern "C"
 		// This version has color codes stripped out for clarity.
 		// May be NULL.
 		const char* CleanName;
-	};
+	}
+	udtPlayerStats;
 
-	struct udtParseDataStats
+	typedef struct udtParseDataStats_s
 	{
 		// A bit mask describing which teams are valid (1 is red, 2 is blue).
 		u64 ValidTeams;
@@ -1485,9 +1589,10 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtParseDataStats;
 
-	struct udtParseDataRawCommand
+	typedef struct udtParseDataRawCommand_s
 	{
 		// The raw command, as it was sent from the server.
 		const char* RawCommand;
@@ -1501,9 +1606,10 @@ extern "C"
 		// The index of the last gamestate message after which this server command was sent.
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
-	};
+	}
+	udtParseDataRawCommand;
 
-	struct udtParseDataRawConfigString
+	typedef struct udtParseDataRawConfigString_s
 	{
 		// The raw config string, as it was sent from the server.
 		const char* RawConfigString;
@@ -1517,8 +1623,10 @@ extern "C"
 		// The index of the gamestate message this config string was in.
 		// Negative if invalid or not available.
 		s32 GameStateIndex;
-	};
+	}
+	udtParseDataRawConfigString;
 
+#if defined(__cplusplus)
 	struct udtParseDataCaptureFlags
 	{
 		enum Id
@@ -1528,8 +1636,9 @@ extern "C"
 			FirstPersonPlayer = UDT_BIT(2) // Flag captured by a player being spectated by whoever recorded the demo.
 		};
 	};
+#endif
 
-	struct udtParseDataCapture
+	typedef struct udtParseDataCapture_s
 	{
 		// Name of the map. Can't be NULL.
 		const char* MapName;
@@ -1556,9 +1665,10 @@ extern "C"
 
 		// Index of the player who capped (the "client number").
 		s32 PlayerIndex;
-	};
+	}
+	udtParseDataCapture;
 
-	struct udtTimeShiftArg
+	typedef struct udtTimeShiftArg_s
 	{
 		// By how many snapshots do we shift the position of 
 		// non-first-person players back in time.
@@ -1566,16 +1676,18 @@ extern "C"
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtTimeShiftArg;
 
-	struct udtJSONArg
+	typedef struct udtJSONArg_s
 	{
 		// Output the data to stdout when non-zero.
 		u32 ConsoleOutput;
 
 		// Ignore this.
 		s32 Reserved1;
-	};
+	}
+	udtJSONArg;
 
 #pragma pack(pop)
 
@@ -1592,31 +1704,31 @@ extern "C"
 	UDT_API(const char*) udtGetErrorCodeString(s32 errorCode);
 
 	// Returns zero if not a valid protocol.
-	UDT_API(s32) udtIsValidProtocol(udtProtocol::Id protocol);
+	UDT_API(s32) udtIsValidProtocol(u32 protocol);
 
 	// Returns zero if not a valid protocol.
-	UDT_API(u32) udtGetSizeOfIdEntityState(udtProtocol::Id protocol);
+	UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol);
 
 	// Returns zero if not a valid protocol.
-	UDT_API(u32) udtGetSizeOfIdPlayerState(udtProtocol::Id protocol);
+	UDT_API(u32) udtGetSizeOfIdPlayerState(u32 protocol);
 
 	// Returns zero if not a valid protocol.
-	UDT_API(u32) udtGetSizeOfidClientSnapshot(udtProtocol::Id protocol);
+	UDT_API(u32) udtGetSizeOfidClientSnapshot(u32 protocol);
 
 	// Returns NULL if invalid.
-	UDT_API(const char*) udtGetFileExtensionByProtocol(udtProtocol::Id protocol);
+	UDT_API(const char*) udtGetFileExtensionByProtocol(u32 protocol);
 
 	// Returns Protocol::Invalid if invalid.
-	UDT_API(udtProtocol::Id) udtGetProtocolByFilePath(const char* filePath);
+	UDT_API(u32) udtGetProtocolByFilePath(const char* filePath);
 
 	// Raises the type of error asked for.
-	UDT_API(s32) udtCrash(udtCrashType::Id crashType);
+	UDT_API(s32) udtCrash(u32 crashType);
 
 	// Retrieve the string array for the given array identifier.
-	UDT_API(s32) udtGetStringArray(udtStringArray::Id arrayId, const char*** elements, u32* elementCount);
+	UDT_API(s32) udtGetStringArray(u32 arrayId, const char*** elements, u32* elementCount);
 
 	// Retrieve the byte array for the given array identifier.
-	UDT_API(s32) udtGetByteArray(udtByteArray::Id arrayId, const u8** elements, u32* elementCount);
+	UDT_API(s32) udtGetByteArray(u32 arrayId, const u8** elements, u32* elementCount);
 
 	// Get the magic constants needed to parse stats properly.
 	UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCount, u32* playerFieldCount, u32* teamFieldCount, u32* perfFieldCount);

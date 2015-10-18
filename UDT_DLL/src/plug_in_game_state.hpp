@@ -6,7 +6,6 @@
 #include "array.hpp"
 #include "string.hpp"
 #include "analysis_general.hpp"
-#include "api.h"
 
 
 struct udtParserPlugInGameState : udtBaseParserPlugIn

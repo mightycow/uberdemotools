@@ -1,7 +1,8 @@
 #pragma once
 
 
-#include "api.h"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 
 extern void SetCrashHandler(udtCrashCallback crashHandler);

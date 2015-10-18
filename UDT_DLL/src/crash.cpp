@@ -1,6 +1,5 @@
 #include "crash.hpp"
 #include "utils.hpp"
-#include "api.h"
 
 #include <stdio.h>
 #include <stdlib.h>

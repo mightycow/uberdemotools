@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "types.hpp"
+#include "uberdemotools.h"
 
 
 extern void CallbackConsoleMessage(s32 logLevel, const char* message);

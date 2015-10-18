@@ -2,50 +2,6 @@
 
 
 /*
-Compiler macros
-*/
-#if defined(_MSC_VER)
-#	define UDT_MSVC
-#	define UDT_MSVC_VER _MSC_VER
-#endif
-
-#if defined(__GNUC__)
-#	define UDT_GCC
-#	define UDT_GCC_VER __GNUC__
-#endif
-
-#if defined(__ICC) || defined(__INTEL_COMPILER)
-#	define UDT_ICC
-#endif
-
-#if defined(__BORLANDC__) || defined(__BCPLUSPLUS__)
-#	define UDT_BORLAND
-#endif
-
-#if defined(__MINGW32__)
-#	define UDT_MINGWIN
-#endif
-
-#if defined(__CYGWIN32__)
-#	define UDT_CYGWIN
-#endif
-
-/*
-Hardware target macros
-*/
-#if defined(_M_IX86) || defined(__i386__)
-#	define UDT_X86
-#endif
-
-#if defined(_M_X64) || defined(_M_AMD64) || defined(__x86_64)
-#	define UDT_X64
-#endif
-
-#if defined(UDT_X86) || defined(UDT_X64)
-#	define UDT_ARCH_X86
-#endif
-
-/*
 Software target macros
 */
 #if defined(_WIN32)

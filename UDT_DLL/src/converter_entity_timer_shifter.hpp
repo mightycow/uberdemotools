@@ -2,7 +2,6 @@
 
 
 #include "converter_udt_to_quake.hpp"
-#include "api.h"
 
 
 // Don't ever allocate an instance of this on the stack.

@@ -1,5 +1,6 @@
 #include "stack_trace.hpp"
-#include "types.hpp"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 
 #if defined(UDT_WINDOWS)

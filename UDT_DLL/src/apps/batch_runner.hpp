@@ -1,7 +1,8 @@
 #pragma once
 
 
-#include "api.h"
+#include "uberdemotools.h"
+#include "macros.hpp"
 #include "file_system.hpp"
 #include "array.hpp"
 #include "timer.hpp"
@@ -17,7 +18,7 @@ struct CmdLineParseArg
 		ParseArg.CancelOperation = &CancelOperation;
 		ParseArg.MessageCb = &CallbackConsoleMessage;
 		ParseArg.ProgressCb = &CallbackConsoleProgress;
-		ParseArg.MinProgressTimeMs = 1000;
+		ParseArg.MinProgressTimeMs = 250;
 		ParseArg.OutputFolderPath = NULL;
 	}
 

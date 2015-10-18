@@ -2,7 +2,6 @@
 
 
 #include "linear_allocator.hpp"
-#include "api.h"
 
 #if defined(UDT_WINDOWS)
 #	include <Windows.h>

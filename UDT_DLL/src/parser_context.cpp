@@ -1,5 +1,4 @@
 #include "parser_context.hpp"
-#include "api.h"
 #include "plug_in_chat.hpp"
 #include "plug_in_game_state.hpp"
 #include "analysis_obituaries.hpp"
@@ -41,7 +40,7 @@ const PlugInConstructionFunc PlugInConstructors[udtPrivateParserPlugIn::Count + 
 #undef UDT_PRIVATE_PLUG_IN_ITEM
 
 
-udtParserContext::udtParserContext()
+udtParserContext_s::udtParserContext_s()
 {
 	DemoCount = 0;
 
@@ -53,12 +52,12 @@ udtParserContext::udtParserContext()
 	Parser.InitAllocators();
 }
 
-udtParserContext::~udtParserContext()
+udtParserContext_s::~udtParserContext_s()
 {
 	DestroyPlugIns();
 }
 
-void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
+void udtParserContext_s::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
 {
 	DemoCount = demoCount;
 
@@ -79,7 +78,7 @@ void udtParserContext::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount
 	}
 }
 
-void udtParserContext::ResetForNextDemo(bool keepPlugInData)
+void udtParserContext_s::ResetForNextDemo(bool keepPlugInData)
 {
 	if(!keepPlugInData)
 	{
@@ -94,7 +93,7 @@ void udtParserContext::ResetForNextDemo(bool keepPlugInData)
 	PlugInTempAllocator.Clear();
 }
 
-bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)
+bool udtParserContext_s::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer, u32* itemCount)
 {
 	if(demoIdx >= DemoCount)
 	{
@@ -116,7 +115,7 @@ bool udtParserContext::GetDataInfo(u32 demoIdx, u32 plugInId, void** itemBuffer,
 	return false;
 }
 
-void udtParserContext::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId)
+void udtParserContext_s::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId)
 {
 	plugIn = NULL;
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
@@ -129,7 +128,7 @@ void udtParserContext::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId)
 	}
 }
 
-void udtParserContext::DestroyPlugIns()
+void udtParserContext_s::DestroyPlugIns()
 {
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 	{
