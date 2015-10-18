@@ -187,16 +187,6 @@ solution "UDT"
 		filter "configurations:Release"
 			defines { "NDEBUG" }
 		ApplyTargetAndLinkSettings()
-		--filter { "configurations:Debug", "platforms:x32" }
-			--targetdir ( path_bin.."/".._ACTION.."/x86/debug" )
-			--libdirs ( path_bin.."/".._ACTION.."/x86/debug" )
-		--filter { "configurations:Debug", "platforms:x64" }
-			--targetdir ( path_bin.."/".._ACTION.."/x64/debug" )
-			--libdirs ( path_bin.."/".._ACTION.."/x64/debug" )
-		--filter { "configurations:Release", "platforms:x32" }
-			--targetdir ( path_bin.."/".._ACTION.."/x86/release" )
-		--filter { "configurations:Release", "platforms:x64" }
-			--targetdir ( path_bin.."/".._ACTION.."/x64/release" )
 		filter "system:windows"
 			defines { "WIN32" }
 		filter "action:vs*"
@@ -205,54 +195,3 @@ solution "UDT"
 			linkoptions { "/ENTRY:mainCRTStartup" }
 		filter "action:gmake"
 			buildoptions { "-std=c89" } -- -ansi is used to force C89 mode in GCC
-			
-			
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
