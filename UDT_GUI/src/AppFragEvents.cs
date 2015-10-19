@@ -105,7 +105,7 @@ namespace Uber.DemoTools
             headerGS.Content = "GS";
             headerGS.Tag = "GameStateIndex";
             columnGS.Header = headerGS;
-            columnGS.Width = 25;
+            columnGS.Width = 35;
             columnGS.DisplayMemberBinding = new Binding("GameStateIndex");
 
             var columnTime = new GridViewColumn();

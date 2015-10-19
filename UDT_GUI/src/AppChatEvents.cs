@@ -193,7 +193,7 @@ namespace Uber.DemoTools
             headerGS.Tag = "GameStateIndex";
             headerGS.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
             columnGS.Header = headerGS;
-            columnGS.Width = 25;
+            columnGS.Width = 35;
             columnGS.DisplayMemberBinding = new Binding("GameStateIndex");
 
             var columnTime = new GridViewColumn();
@@ -220,7 +220,7 @@ namespace Uber.DemoTools
             headerName.Tag = "Player";
             headerName.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
             columnName.Header = headerName;
-            columnName.Width = 125;
+            columnName.Width = 120;
             columnName.DisplayMemberBinding = new Binding("Player");
 
             var columnMessage = new GridViewColumn();
@@ -229,7 +229,7 @@ namespace Uber.DemoTools
             headerMessage.Tag = "Message";
             headerMessage.Click += (obj, args) => OnChatEventColumnClicked(obj as GridViewColumnHeader);
             columnMessage.Header = headerMessage;
-            columnMessage.Width = 315;
+            columnMessage.Width = 300;
             columnMessage.DisplayMemberBinding = new Binding("Message");
 
             var demoEventsGridView = new GridView();

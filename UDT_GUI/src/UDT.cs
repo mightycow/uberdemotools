@@ -103,6 +103,7 @@ namespace Uber.DemoTools
             Stats,
             RawCommands,
             RawConfigStrings,
+            Captures,
             Count
         }
 
@@ -572,6 +573,27 @@ namespace Uber.DemoTools
             public Int32 GameStateIndex;
         };
 
+        [Flags]
+        enum udtParseDataCaptureFlags : uint
+	    {
+		    BaseToBase = 1 << 0,
+			DemoTaker = 1 << 1,
+			FirstPersonPlayer = 1 << 2
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtParseDataCapture
+        {
+            public IntPtr MapName; // const char*
+            public IntPtr PlayerName; // const char*
+            public Int32 GameStateIndex;
+            public Int32 PickUpTimeMs;
+            public Int32 CaptureTimeMs;
+            public float Distance;
+            public UInt32 Flags;
+            public Int32 PlayerIndex;
+        };
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtTimeShiftArg
         {
@@ -709,7 +731,8 @@ namespace Uber.DemoTools
             (UInt32)udtParserPlugIn.Obituaries,
             (UInt32)udtParserPlugIn.Stats,
             (UInt32)udtParserPlugIn.RawCommands,
-            (UInt32)udtParserPlugIn.RawConfigStrings
+            (UInt32)udtParserPlugIn.RawConfigStrings,
+            (UInt32)udtParserPlugIn.Captures
         };
 
         public static List<string> GetStringArray(udtStringArray array)
@@ -1640,6 +1663,7 @@ namespace Uber.DemoTools
             ExtractObituaries(context, demoIdx, info);
             ExtractStats(context, demoIdx, info);
             ExtractCommands(context, demoIdx, info);
+            ExtractCaptures(context, demoIdx, info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, DemoInfo info)
@@ -1938,6 +1962,32 @@ namespace Uber.DemoTools
             {
                 info.Commands.AddRange(configStringList.FindAll(cs => cs.GameStateIndex == i));
                 info.Commands.AddRange(commandList.FindAll(cmd => cmd.GameStateIndex == i));
+            }
+        }
+
+        private static void ExtractCaptures(udtParserContextRef context, uint demoIdx, DemoInfo info)
+        {
+            uint captureCount = 0;
+            IntPtr captures = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Captures, ref captures, ref captureCount) != udtErrorCode.None)
+            {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for captures failed");
+                return;
+            }
+
+            for(uint i = 0; i < captureCount; ++i)
+            {
+                var address = new IntPtr(captures.ToInt64() + i * sizeof(udtParseDataCapture));
+                var data = (udtParseDataCapture)Marshal.PtrToStructure(address, typeof(udtParseDataCapture));
+                var gs = data.GameStateIndex;
+                var start = data.PickUpTimeMs;
+                var end = data.CaptureTimeMs;
+                var dur = end - start;
+                var b2b = (data.Flags & (uint)udtParseDataCaptureFlags.BaseToBase) != 0;
+                var player = SafeGetUTF8String(data.PlayerName, "N/A");
+                var map = SafeGetUTF8String(data.MapName, "N/A");
+                var item = new FlagCaptureDisplayInfo(gs, start, end, dur, b2b, player, map);
+                info.FlagCaptures.Add(item);
             }
         }
 

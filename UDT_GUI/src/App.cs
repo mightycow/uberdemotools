@@ -96,6 +96,22 @@ namespace Uber.DemoTools
     {
         public int GameStateIndex { get; set; }
         public string Time { get; set; }
+
+        public virtual bool GetStartAndEndTimes(out int startTimeSec, out int endTimeSec)
+        {
+            startTimeSec = int.MaxValue;
+            endTimeSec = int.MinValue;
+            int timeSec = 0;
+            if(!App.ParseMinutesSeconds(Time, out timeSec))
+            {
+                return false;
+            }
+            
+            startTimeSec = timeSec;
+            endTimeSec = timeSec;
+
+            return true;
+        }
     }
 
     public class Timeout
@@ -139,6 +155,7 @@ namespace Uber.DemoTools
         public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
         public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
         public List<MatchTimeInfo> MatchTimes = new List<MatchTimeInfo>();
+        public List<FlagCaptureDisplayInfo> FlagCaptures = new List<FlagCaptureDisplayInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -1281,7 +1298,7 @@ namespace Uber.DemoTools
             var stats = new StatsComponent(this);
             _appComponents.Add(stats);
             var statsTab = new TabItem();
-            statsTab.Header = "Scores and Stats";
+            statsTab.Header = "Stats";
             statsTab.Content = stats.RootControl;
 
             var commands = new CommandsComponent(this);
@@ -1289,6 +1306,12 @@ namespace Uber.DemoTools
             var commandsTab = new TabItem();
             commandsTab.Header = "Commands";
             commandsTab.Content = commands.RootControl;
+
+            var captures = new FlagCapturesComponent(this);
+            _appComponents.Add(captures);
+            var capturesTab = new TabItem();
+            capturesTab.Header = "Captures";
+            capturesTab.Content = captures.RootControl;
 
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1299,6 +1322,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(deathsTab);
             tabControl.Items.Add(statsTab);
             tabControl.Items.Add(commandsTab);
+            tabControl.Items.Add(capturesTab);
 
             return tabControl;
         }
@@ -1905,6 +1929,7 @@ namespace Uber.DemoTools
                 demos[i].MatchStats = newDemo.MatchStats;
                 demos[i].Commands = newDemo.Commands;
                 demos[i].MatchTimes = newDemo.MatchTimes;
+                demos[i].FlagCaptures = newDemo.FlagCaptures;
             }
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
@@ -2289,7 +2314,7 @@ namespace Uber.DemoTools
             AnalyzeDemos(demos);
         }
 
-        public bool ParseMinutesSeconds(string time, out int totalSeconds)
+        public static bool ParseMinutesSeconds(string time, out int totalSeconds)
         {
             totalSeconds = -1;
 
@@ -2355,15 +2380,16 @@ namespace Uber.DemoTools
                     continue;
                 }
 
-                int time = 0;
-                if(!ParseMinutesSeconds(info.Time, out time))
+                int startTimeLocal = int.MaxValue;
+                int endTimeLocal = int.MinValue;
+                if(!info.GetStartAndEndTimes(out startTimeLocal, out endTimeLocal))
                 {
                     continue;
                 }
 
                 gsIndex = info.GameStateIndex;
-                startTime = Math.Min(startTime, time);
-                endTime = Math.Max(endTime, time);
+                startTime = Math.Min(startTime, startTimeLocal);
+                endTime = Math.Max(endTime, endTimeLocal);
             }
 
             if(startTime == int.MaxValue && endTime == int.MinValue)

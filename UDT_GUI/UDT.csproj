@@ -122,6 +122,7 @@
     <Compile Include="src\AppStats.cs" />
     <Compile Include="src\AppCommands.cs" />
 	<Compile Include="src\AppMatchCut.cs" />
+	<Compile Include="src\AppFlagCaptures.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

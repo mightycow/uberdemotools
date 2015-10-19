@@ -624,7 +624,7 @@ namespace Uber.DemoTools
             }
 
             var cutTime = 0;
-            if(!app.ParseMinutesSeconds(_calcOutputTimeEditBox.Text, out cutTime))
+            if(!App.ParseMinutesSeconds(_calcOutputTimeEditBox.Text, out cutTime))
             {
                 return;
             }
