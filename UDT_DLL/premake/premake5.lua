@@ -194,4 +194,4 @@ solution "UDT"
 		filter { "action:vs*", "kind:ConsoleApp" }
 			linkoptions { "/ENTRY:mainCRTStartup" }
 		filter "action:gmake"
-			buildoptions { "-std=c89" } -- -ansi is used to force C89 mode in GCC
+			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
