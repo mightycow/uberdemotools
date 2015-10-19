@@ -257,6 +257,7 @@ namespace Uber.DemoTools
         private IntPtr _mainThreadContext = IntPtr.Zero;
         private bool _usingDarkTheme = false;
         private Stopwatch _threadedJobTimer = new Stopwatch();
+        private Stopwatch _threadedJobTitleTimer = new Stopwatch();
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
@@ -2494,7 +2495,12 @@ namespace Uber.DemoTools
                 _progressTimeElapsedTextBlock.Text = "Time elapsed: " + elapsed;
                 _progressTimeRemainingTextBlock.Text = "Estimated time remaining: " + remaining;
                 _progressBar.Value = value; 
-                _progressBar.InvalidateVisual(); 
+                _progressBar.InvalidateVisual();
+                if(_threadedJobTitleTimer.ElapsedMilliseconds >= 200)
+                {
+                    _window.Title = value.ToString("F1") + "% - UDT";
+                    _threadedJobTitleTimer.Restart();
+                }
             };
             _window.Dispatcher.Invoke(valueSetter);
         }
@@ -2761,6 +2767,7 @@ namespace Uber.DemoTools
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
             _threadedJobTimer.Restart();
+            _threadedJobTitleTimer.Restart();
             var udtData = new JobThreadData();
             udtData.UserFunction = entryPoint;
             udtData.UserData = userData;
@@ -2788,8 +2795,12 @@ namespace Uber.DemoTools
             {
                 EnableUiThreadSafe();
 
-                VoidDelegate focusSetter = delegate { _demoListView.Focus(); };
-                _window.Dispatcher.Invoke(focusSetter);
+                VoidDelegate uiResetter = delegate 
+                {
+                    _window.Title = "UDT";
+                    _demoListView.Focus();
+                };
+                _window.Dispatcher.Invoke(uiResetter);
             }
         }
 
