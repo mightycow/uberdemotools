@@ -38,3 +38,4 @@ make UDT_timeshifter config=$UDT_CONFIG
 make UDT_merger config=$UDT_CONFIG
 make UDT_json config=$UDT_CONFIG
 make UDT_captures config=$UDT_CONFIG
+make UDT_c89 config=$UDT_CONFIG
