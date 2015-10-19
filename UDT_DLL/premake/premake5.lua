@@ -42,7 +42,9 @@ local function ApplyProjectSettings()
 	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
-	flags { "Unicode", "Symbols", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings", "NoExceptions" }
+	rtti "Off"
+	exceptionhandling "Off"
+	flags { "Unicode", "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -180,7 +182,9 @@ solution "UDT"
 		location ( path_build.."/".._ACTION )
 		files { path_src_apps.."/app_c89.c" }
 		includedirs { path_src_apps, path_inc }
-		flags { "Symbols", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "NoExceptions" }
+		rtti "Off"
+		exceptionhandling "Off"
+		flags { "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings" }
 		links { "UDT" }
 		filter "configurations:Debug"
 			defines { "DEBUG", "_DEBUG" }
