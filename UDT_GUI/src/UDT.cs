@@ -57,7 +57,7 @@ namespace Uber.DemoTools
         [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
         public delegate void udtCrashCallback(string message);
 
-        public enum udtProtocol
+        public enum udtProtocol : uint
         {
             Invalid,
             Dm3,
@@ -298,7 +298,7 @@ namespace Uber.DemoTools
         };
 
         [Flags]
-        public enum udtCutByPatternArgFlags
+        public enum udtCutByPatternArgFlags : uint
         {
             MergeCutSections = 1 << 0
         }
@@ -343,7 +343,7 @@ namespace Uber.DemoTools
 	    }
 
         [Flags]
-        public enum udtCutByFragArgFlags
+        public enum udtCutByFragArgFlags : uint
         {
             AllowSelfKills = 1 << 0,
             AllowTeamKills = 1 << 1,
