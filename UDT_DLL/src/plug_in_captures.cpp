@@ -167,7 +167,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 	for(u32 i = 0; i < 64; ++i)
 	{
 		PlayerInfo& player = _players[i];
-		const bool justCappedFirstPerson = player.CaptureCount > player.PrevCaptureCount;
+		const bool justCappedFirstPerson = (player.CaptureCount > player.PrevCaptureCount) && !player.HasFlag && player.PrevHasFlag;
 		const bool justCappedThirdPerson = player.Capped && !player.PrevCapped;
 		const bool justCapped = justCappedFirstPerson || justCappedThirdPerson;
 		if(justCapped)
