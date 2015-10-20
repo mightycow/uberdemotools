@@ -87,9 +87,9 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	if(ps->clientNum == trackedPlayerIdx)
 	{
 		hasFlag =
-			ps->powerups[redFlagIdx] == S32_MAX ||
-			ps->powerups[blueFlagIdx] == S32_MAX ||
-			(neutralFlagIdx != -1 && ps->powerups[neutralFlagIdx] == S32_MAX);
+			ps->powerups[redFlagIdx] != 0 ||
+			ps->powerups[blueFlagIdx] != 0 ||
+			(neutralFlagIdx != -1 && ps->powerups[neutralFlagIdx] != 0);
 		const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
 		captureCount = ps->persistant[captureCountPersIdx];
 		justCapped = captureCount > _previousCaptureCount;

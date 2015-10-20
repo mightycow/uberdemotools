@@ -55,4 +55,5 @@ private:
 	s32 _demoTakerIndex;
 	PlayerInfo _players[64];
 	TeamInfo _teams[2];
+	bool _firstSnapshot;
 };

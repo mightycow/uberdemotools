@@ -29,6 +29,7 @@ void udtParserPlugInCaptures::StartDemoAnalysis()
 	_mapName = NULL;
 	_gameStateIndex = -1;
 	_demoTakerIndex = -1;
+	_firstSnapshot = true;
 }
 
 void udtParserPlugInCaptures::FinishDemoAnalysis()
@@ -38,6 +39,7 @@ void udtParserPlugInCaptures::FinishDemoAnalysis()
 void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
 	++_gameStateIndex;
+	_firstSnapshot = true;
 
 	memset(_players, 0, sizeof(_players));
 	for(u32 i = 0; i < 64; ++i)
@@ -111,7 +113,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 	if(ps->clientNum >= 0 && ps->clientNum < 64)
 	{
 		PlayerInfo& player = _players[ps->clientNum];
-		const bool hasFlag = ps->powerups[redFlagIdx] == S32_MAX || ps->powerups[blueFlagIdx] == S32_MAX;
+		const bool hasFlag = ps->powerups[redFlagIdx] != 0 || ps->powerups[blueFlagIdx] != 0;
 		const bool prevHasFlag = player.HasFlag;
 		player.HasFlag = hasFlag;
 		player.PrevHasFlag = prevHasFlag;
@@ -119,7 +121,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 		{
 			player.PickupTimeMs = arg.ServerTime;
 			Float3::Copy(player.PickupPosition, ps->origin);
-			const u32 flagTeamIdx = ps->powerups[blueFlagIdx] == S32_MAX ? 1 : 0;
+			const u32 flagTeamIdx = ps->powerups[blueFlagIdx] != 0 ? 1 : 0;
 			player.BasePickup = WasFlagPickedUpInBase(flagTeamIdx);
 		}
 		player.PrevCaptureCount = player.CaptureCount;
@@ -147,11 +149,19 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 			player.PrevCapped = player.Capped;
 			player.Capped = capped;
 			Float3::Copy(player.Position, es->pos.trBase);
+			if(capped && _firstSnapshot)
+			{
+				player.PrevCapped = true;
+			}
 
 			const bool hasRedFlag = (es->powerups & (1 << redFlagIdx)) != 0;
 			const bool hasBlueFlag = (es->powerups & (1 << blueFlagIdx)) != 0;
 			const bool hasFlag = hasRedFlag || hasBlueFlag;
-			const bool prevHasFlag = player.HasFlag;
+			bool prevHasFlag = player.HasFlag;
+			if(hasFlag && _firstSnapshot)
+			{
+				prevHasFlag = true;
+			}
 			player.HasFlag = hasFlag;
 			player.PrevHasFlag = prevHasFlag;
 			if(!prevHasFlag && hasFlag)
@@ -223,6 +233,8 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 			player.PickupTimeMs = S32_MIN;
 		}
 	}
+
+	_firstSnapshot = false;
 }
 
 const char* udtParserPlugInCaptures::GetPlayerName(s32 playerIndex, udtBaseParser& parser)
