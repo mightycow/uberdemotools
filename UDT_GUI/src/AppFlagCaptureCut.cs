@@ -140,6 +140,13 @@ namespace Uber.DemoTools
             }
 
             _app.SaveBothConfigs();
+            if(!_app.Config.FlagCaptureAllowBaseToBase &&
+                !_app.Config.FlagCaptureAllowMissingToBase)
+            {
+                _app.LogError("You disabled both base and non-base pick-ups. Please enable at least one of them to proceed.");
+                return;
+            }
+
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
 
