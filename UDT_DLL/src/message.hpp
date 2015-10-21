@@ -47,7 +47,7 @@ public:
 	void  WriteString(const char* s, s32 length) { (this->*_writeString)(s, length); }       // The string must be null-terminated.
 	void  WriteBigString(const char* s, s32 length) { (this->*_writeBigString)(s, length); } // The string must be null-terminated.
 	bool  WriteDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to) { return (this->*_writeDeltaPlayer)(from, to); }
-	bool  WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force) { return (this->*_writeDeltaEntity)(from, to, force); }
+	bool  WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force) { return (this->*_writeDeltaEntity)(from, to, force); }
 
 	// Functions with return type s32: -1 is returned when the state has become invalid.
 	s32   ReadBits(s32 bits) { return (this->*_readBits)(bits); }
@@ -79,7 +79,7 @@ private:
 	void  DummyWriteCount(s32, s32) {}
 	void  DummyWriteString(const char*, s32) {}
 	bool  DummyWriteDeltaPlayer(const idPlayerStateBase*, idPlayerStateBase*) { return false; }
-	bool  DummyWriteDeltaEntity(const idEntityStateBase*, const idEntityStateBase*, qbool) { return false; }
+	bool  DummyWriteDeltaEntity(const idEntityStateBase*, const idEntityStateBase*, bool) { return false; }
 
 	s32   RealReadBits(s32 bits);
 	s32   RealReadFloat();
@@ -95,7 +95,7 @@ private:
 	void  RealWriteString(const char* s, s32 length);
 	void  RealWriteBigString(const char* s, s32 length);
 	bool  RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to);
-	bool  RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force);
+	bool  RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force);
 
 	void  SetValid(bool valid);
 
@@ -118,7 +118,7 @@ private:
 	typedef void  (udtMessage::*WriteStringFunc)(const char*, s32);
 	typedef void  (udtMessage::*WriteBigStringFunc)(const char*, s32);
 	typedef bool  (udtMessage::*WriteDeltaPlayerFunc)(const idPlayerStateBase*, idPlayerStateBase*);
-	typedef bool  (udtMessage::*WriteDeltaEntityFunc)(const idEntityStateBase*, const idEntityStateBase*, qbool);
+	typedef bool  (udtMessage::*WriteDeltaEntityFunc)(const idEntityStateBase*, const idEntityStateBase*, bool);
 
 private:
 	udtProtocol::Id      _protocol;

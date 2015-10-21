@@ -12,12 +12,6 @@
 extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
 
 
-// @TODO: Use C++ bool instead.
-typedef s32 qbool;
-#define qfalse ((qbool)(0))
-#define qtrue  ((qbool)(!0))
-typedef qbool qboolean;
-
 typedef f32 vec_t;
 typedef vec_t vec2_t[2];
 typedef vec_t vec3_t[3];
@@ -177,7 +171,7 @@ struct idEntityState90 : idEntityStateBase
 
 	// New in dm_90.
 	s32		jumpTime;
-	qbool	doubleJumped;
+	s32		doubleJumped; // qboolean
 };
 
 struct idEntityState91 : idEntityStateBase
@@ -188,7 +182,7 @@ struct idEntityState91 : idEntityStateBase
 
 	// New in dm_90.
 	s32		jumpTime;
-	qbool	doubleJumped;
+	s32		doubleJumped; // qboolean
 
 	// New in dm_91.
 	s32		health;
@@ -416,13 +410,13 @@ struct idPlayerState73 : idPlayerStateBase
 
 struct idPlayerState90 : idPlayerStateBase
 {
-	qboolean doubleJumped;
+	s32 doubleJumped; // qboolean
 	s32 jumpTime;
 };
 
 struct idPlayerState91 : idPlayerStateBase
 {
-	qboolean doubleJumped;
+	s32 doubleJumped; // qboolean
 	s32 jumpTime;
 	s32 weaponPrimary;
 	s32 crouchTime;
@@ -477,22 +471,16 @@ enum svc_ops_e
 // snapshots are a view of the server at a given time
 struct idClientSnapshotBase
 {
-	qbool		valid;			// cleared if delta parsing was invalid
-	s32				snapFlags;		// rate delayed and dropped commands
-
-	s32				serverTime;		// server time the message is valid for (in msec)
-
-	s32				messageNum;		// copied from netchan->incoming_sequence
-	s32				deltaNum;		// messageNum the delta is from
-	s32				ping;			// time from when cmdNum-1 was sent to time packet was reeceived
-	u8			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
-
-	s32				cmdNum;			// the next cmdNum the server is expecting
-
-	s32				numEntities;			// all of the entities that need to be presented
-	s32				parseEntitiesNum;		// at the time of this snapshot
-
-	s32				serverCommandNum;		// execute all commands up to this before making the snapshot current
+	u8   areamask[MAX_MAP_AREA_BYTES]; // portalarea visibility bits
+	s32  snapFlags;                    // rate delayed and dropped commands
+	s32  serverTime;                   // server time the message is valid for (in msec)
+	s32  messageNum;                   // copied from netchan->incoming_sequence
+	s32  deltaNum;                     // messageNum the delta is from
+	s32  cmdNum;                       // the next cmdNum the server is expecting
+	s32  numEntities;                  // all of the entities that need to be presented
+	s32  parseEntitiesNum;             // at the time of this snapshot
+	s32  serverCommandNum;             // execute all commands up to this before making the snapshot current
+	bool valid;                        // cleared if delta parsing was invalid
 };
 
 struct idClientSnapshot3 : idClientSnapshotBase

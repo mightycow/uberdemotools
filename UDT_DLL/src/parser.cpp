@@ -634,7 +634,7 @@ bool udtBaseParser::ParseSnapshot()
 	idClientSnapshotBase* oldSnap;
 	if(newSnap.deltaNum <= 0) 
 	{
-		newSnap.valid = qtrue; // Uncompressed frame.
+		newSnap.valid = true; // Uncompressed frame.
 		oldSnap = NULL;
 	} 
 	else 
@@ -667,7 +667,7 @@ bool udtBaseParser::ParseSnapshot()
 		} 
 		else 
 		{
-			newSnap.valid = qtrue;
+			newSnap.valid = true;
 		}
 	}
 
@@ -705,7 +705,7 @@ bool udtBaseParser::ParseSnapshot()
 
 	// If not valid, dump the entire thing now that 
 	// it has been properly read.
-	if(newSnap.valid == qfalse)
+	if(!newSnap.valid)
 	{
 		return true;
 	}
@@ -725,7 +725,7 @@ bool udtBaseParser::ParseSnapshot()
 
 	for(; oldMessageNum < newSnap.messageNum; ++oldMessageNum)
 	{
-		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = qfalse;
+		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = false;
 	}
 
 	// Copy to the current good spot.
@@ -853,7 +853,7 @@ void udtBaseParser::WriteGameState()
 			// @NOTE: MSG_WriteBits is called in there with newState.number as an argument.
 			idLargestEntityState newStateOutProto;
 			_protocolConverter->ConvertEntityState(newStateOutProto, *newState);
-			_outMsg.WriteDeltaEntity(&nullState, &newStateOutProto, qtrue);
+			_outMsg.WriteDeltaEntity(&nullState, &newStateOutProto, true);
 		}
 	}
 	
@@ -971,7 +971,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			// One or more entities from the old packet is unchanged.
 			//
 
-			if(!DeltaEntity(msg, newframe, oldnum, oldstate, qtrue)) return false;
+			if(!DeltaEntity(msg, newframe, oldnum, oldstate, true)) return false;
 			oldindex++;
 
 			if(oldindex >= oldframe->numEntities) 
@@ -991,7 +991,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			// Delta from previous state.
 			//
 
-			if(!DeltaEntity(msg, newframe, newnum, oldstate, qfalse)) return false;
+			if(!DeltaEntity(msg, newframe, newnum, oldstate, false)) return false;
 			oldindex++;
 
 			if(oldindex >= oldframe->numEntities) 
@@ -1012,7 +1012,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			// Delta from the baseline.
 			//
 
-			if(!DeltaEntity(msg, newframe, newnum, GetBaseline(newnum), qfalse)) return false;
+			if(!DeltaEntity(msg, newframe, newnum, GetBaseline(newnum), false)) return false;
 			continue;
 		}
 	}
@@ -1024,7 +1024,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 		// One or more entities from the old packet is unchanged.
 		//
 
-		if(!DeltaEntity(msg, newframe, oldnum, oldstate, qtrue)) return false;
+		if(!DeltaEntity(msg, newframe, oldnum, oldstate, true)) return false;
 		oldindex++;
 
 		if(oldindex >= oldframe->numEntities) 
@@ -1096,7 +1096,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			idLargestEntityState newEntOutProto;
 			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
 			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
-			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, qfalse);
+			_outMsg.WriteDeltaEntity(&oldEntOutProto, &newEntOutProto, false);
 			oldindex++;
 			newindex++;
 			continue;
@@ -1110,7 +1110,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			idEntityStateBase* baseline = GetBaseline(newnum);
 			_protocolConverter->ConvertEntityState(baselineOutProto, *baseline);
 			_protocolConverter->ConvertEntityState(newEntOutProto, *newent);
-			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, qtrue);
+			_outMsg.WriteDeltaEntity(&baselineOutProto, &newEntOutProto, true);
 			newindex++;
 			continue;
 		}
@@ -1120,7 +1120,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 			// The old entity isn't present in the new message.
 			idLargestEntityState oldEntOutProto;
 			_protocolConverter->ConvertEntityState(oldEntOutProto, *oldent);
-			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, qtrue);
+			_outMsg.WriteDeltaEntity(&oldEntOutProto, NULL, true);
 			oldindex++;
 			continue;
 		}
@@ -1132,7 +1132,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 //
 // Parses deltas from the given base and adds the resulting entity to the current frame.
 //
-bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged)
+bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, bool unchanged)
 {
 	// Save the parsed entity state into the big circular buffer so
 	// it can be used as the source for a later delta.

@@ -1698,7 +1698,7 @@ If to is NULL, a remove entity update will be sent
 If force is not set, then nothing at all will be generated if the entity is
 identical, under the assumption that the in-order delta code will catch it.
 */
-bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force)
+bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force)
 {
 	s32			i, lc;
 	s32			*fromF, *toF;
