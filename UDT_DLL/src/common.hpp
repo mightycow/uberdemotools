@@ -8,6 +8,10 @@
 #include <stdio.h>
 
 
+// safe strncpy that ensures a trailing zero
+extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
+
+
 // @TODO: Use C++ bool instead.
 typedef s32 qbool;
 #define qfalse ((qbool)(0))
@@ -431,23 +435,6 @@ struct idPlayerState91 : idPlayerStateBase
 };
 
 typedef idPlayerState91 idLargestPlayerState;
-
-//====================================================================
-
-s32 Q_isprint( s32 c );
-s32 Q_islower( s32 c );
-s32 Q_isupper( s32 c );
-s32 Q_isalpha( s32 c );
-
-// portable case insensitive compare
-s32			Q_stricmp( const char *s1, const char *s2 );
-s32			Q_strncmp( const char *s1, const char *s2, s32 n );
-s32			Q_stricmpn( const char *s1, const char *s2, s32 n );
-const char	*Q_strrchr( const char* string, s32 c );
-
-// buffer size safe library replacements
-void	Q_strncpyz( char *dest, const char *src, s32 destsize );
-void	Q_strcat( char *dest, s32 size, const char *src );
 
 /*
 ==============================================================
