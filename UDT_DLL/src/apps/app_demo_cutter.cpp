@@ -561,6 +561,12 @@ int udt_main(int argc, char** argv)
 	const int afterLastOption = command == 'g' ? argc : (argc - 1);
 
 	ProgramOptions options;
+	if(command == 'm')
+	{
+		options.StartTimeSec = 10;
+		options.EndTimeSec = 10;
+	}
+
 	for(int i = firstOption; i < afterLastOption; ++i)
 	{
 		s32 localInt = 0;
