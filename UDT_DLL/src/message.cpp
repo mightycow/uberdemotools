@@ -1208,18 +1208,21 @@ void udtMessage::WriteString(const char* s, s32 length)
 		return;
 	}
 
-	char string[MAX_STRING_CHARS];
+	if(_protocol >= udtProtocol::Dm91)
+	{
+		WriteData(s, length + 1);
+		return;
+	}
+
+	udtContext::ReadStringBufferRef string = Context->ReadStringBuffer;
 	Q_strncpyz(string, s, sizeof(string));
 
-	if(_protocol <= udtProtocol::Dm90)
+	// get rid of 0xff bytes, because old clients don't like them
+	for(s32 i = 0; i < length; ++i)
 	{
-		// get rid of 0xff bytes, because old clients don't like them
-		for(s32 i = 0; i < length; ++i)
+		if(((u8*)string)[i] > 127)
 		{
-			if(((u8*)string)[i] > 127)
-			{
-				string[i] = '.';
-			}
+			string[i] = '.';
 		}
 	}
 
@@ -1239,18 +1242,21 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 		return;
 	}
 
-	char string[BIG_INFO_STRING];
+	if(_protocol >= udtProtocol::Dm91)
+	{
+		WriteData(s, length + 1);
+		return;
+	}
+
+	udtContext::ReadBigStringBufferRef string = Context->ReadBigStringBuffer;
 	Q_strncpyz(string, s, sizeof(string));
 
-	if(_protocol <= udtProtocol::Dm90)
+	// get rid of 0xff bytes, because old clients don't like them
+	for(s32 i = 0; i < length; ++i)
 	{
-		// get rid of 0xff bytes, because old clients don't like them
-		for(s32 i = 0; i < length; ++i)
+		if(((u8*)string)[i] > 127)
 		{
-			if(((u8*)string)[i] > 127)
-			{
-				string[i] = '.';
-			}
+			string[i] = '.';
 		}
 	}
 
