@@ -53,7 +53,7 @@ private:
 	bool                  ParseSnapshot();
 	bool                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
 	void                  EmitPacketEntities(idClientSnapshotBase* from, idClientSnapshotBase* to);
-	void                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
+	bool                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, qbool unchanged);
 	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
 	const char*           GetFileName() { return (_inFileName.String != NULL) ? _inFileName.String : "N/A"; }

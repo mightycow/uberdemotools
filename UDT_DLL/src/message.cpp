@@ -906,6 +906,7 @@ void udtMessage::Init(u8* data, s32 length)
 	Com_Memset(&Buffer, 0, sizeof(idMessage));
 	Buffer.data = data;
 	Buffer.maxsize = length;
+	SetValid(true);
 }
 
 void udtMessage::InitOOB(u8* data, s32 length) 
@@ -913,38 +914,18 @@ void udtMessage::InitOOB(u8* data, s32 length)
 	Com_Memset(&Buffer, 0, sizeof(idMessage));
 	Buffer.data = data;
 	Buffer.maxsize = length;
-	Buffer.oob = qtrue;
-}
-
-void udtMessage::Clear() 
-{
-	Buffer.cursize = 0;
-	Buffer.overflowed = qfalse;
-	Buffer.bit = 0;
+	Buffer.oob = true;
+	SetValid(true);
 }
 
 void udtMessage::Bitstream() 
 {
-	Buffer.oob = qfalse;
+	Buffer.oob = false;
 }
 
 void udtMessage::SetHuffman(bool huffman)
 {
-	Buffer.oob = huffman ? qfalse : qtrue;
-}
-
-void udtMessage::BeginReading() 
-{
-	Buffer.readcount = 0;
-	Buffer.bit = 0;
-	Buffer.oob = qfalse;
-}
-
-void udtMessage::BeginReadingOOB()
-{
-	Buffer.readcount = 0;
-	Buffer.bit = 0;
-	Buffer.oob = qtrue;
+	Buffer.oob = huffman ? false : true;
 }
 
 void udtMessage::GoToNextByte()
@@ -957,18 +938,20 @@ void udtMessage::GoToNextByte()
 }
 
 // negative bit values include signs
-void udtMessage::WriteBits(s32 value, s32 bits) 
+void udtMessage::RealWriteBits(s32 value, s32 bits) 
 {
-	// this isn't an exact overflow check, but close enough
-	if(Buffer.maxsize - Buffer.cursize < 4) 
+	if(Buffer.bit + bits > Buffer.maxsize * 8)
 	{
-		Buffer.overflowed = qtrue;
+		Context->LogError("udtMessage::RealWriteBits: Overflowed!");
+		SetValid(false);
 		return;
 	}
 
 	if(bits == 0 || bits < -31 || bits > 32) 
 	{
-		Context->LogErrorAndCrash("idMessage::WriteBits: bad bits %i", bits);
+		Context->LogError("udtMessage::RealWriteBits: Invalid bit count: %d", bits);
+		SetValid(false);
+		return;
 	}
 
 	if(bits < 0) 
@@ -1000,7 +983,9 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 		} 
 		else 
 		{
-			Context->LogErrorAndCrash("idMessage::WriteBits: Can't write %d bits\n", bits);
+			Context->LogError("udtMessage::RealWriteBits: Can't write %d bits", bits);
+			SetValid(false);
+			return;
 		}
 	} 
 	else 
@@ -1032,17 +1017,24 @@ void udtMessage::WriteBits(s32 value, s32 bits)
 	}
 }
 
-s32 udtMessage::ReadBits(s32 bits) 
+s32 udtMessage::RealReadBits(s32 bits) 
 {
-	qbool sgn;
+	if(Buffer.bit + bits > (Buffer.cursize + 1) * 8)
+	{
+		Context->LogError("udtMessage::RealReadBits: Overflowed!");
+		SetValid(false);
+		return -1;
+	}
+
+	bool sgn;
 	if(bits < 0) 
 	{
 		bits = -bits;
-		sgn = qtrue;
+		sgn = true;
 	}
 	else
 	{
-		sgn = qfalse;
+		sgn = false;
 	}
 
 	s32 value = 0;
@@ -1072,14 +1064,18 @@ s32 udtMessage::ReadBits(s32 bits)
 			}
 			else
 			{
-				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits\n", bits);
+				Context->LogError("udtMessage::RealReadBits: Can't read %d bits", bits);
+				SetValid(false);
+				return -1;
 			}
 		}
 		else
 		{
 			if(bits > 32)
 			{
-				Context->LogErrorAndCrash("idMessage::ReadBits: Can't read %d bits (more than 32)\n", bits);
+				Context->LogError("udtMessage::RealReadBits: Can't read %d bits (more than 32)", bits);
+				SetValid(false);
+				return -1;
 			}
 
 			u64 readBits = *(u64*)&Buffer.data[Buffer.readcount];
@@ -1129,11 +1125,6 @@ s32 udtMessage::ReadBits(s32 bits)
 	return value;
 }
 
-void udtMessage::WriteByte(s32 c) 
-{
-	WriteBits(c, 8);
-}
-
 void udtMessage::WriteData(const void* data, s32 length) 
 {
 	for(s32 i = 0; i < length; ++i) 
@@ -1142,17 +1133,7 @@ void udtMessage::WriteData(const void* data, s32 length)
 	}
 }
 
-void udtMessage::WriteShort(s32 c) 
-{
-	WriteBits(c, 16);
-}
-
-void udtMessage::WriteLong(s32 c) 
-{
-	WriteBits(c, 32);
-}
-
-void udtMessage::WriteFloat(s32 c)
+void udtMessage::RealWriteFloat(s32 c)
 {
 	// Sneaking around the strict aliasing rules.
 	union IntAndFloat
@@ -1182,19 +1163,7 @@ void udtMessage::WriteFloat(s32 c)
 	}
 }
 
-void udtMessage::WriteField(s32 c, s32 bits)
-{
-	if(bits == 0)
-	{
-		WriteFloat(c);
-	}
-	else
-	{
-		WriteBits(c, bits);
-	}
-}
-
-void udtMessage::WriteString(const char* s, s32 length) 
+void udtMessage::RealWriteString(const char* s, s32 length) 
 {
 	if(!s) 
 	{
@@ -1204,7 +1173,8 @@ void udtMessage::WriteString(const char* s, s32 length)
 	
 	if(length >= MAX_STRING_CHARS)
 	{
-		Context->LogErrorAndCrash("idMessage::WriteString: The string's length is >= MAX_STRING_CHARS");
+		Context->LogError("udtMessage::WriteString: The string is too long");
+		SetValid(false);
 		return;
 	}
 
@@ -1229,7 +1199,7 @@ void udtMessage::WriteString(const char* s, s32 length)
 	WriteData(string, length + 1);
 }
 
-void udtMessage::WriteBigString(const char* s, s32 length) 
+void udtMessage::RealWriteBigString(const char* s, s32 length) 
 {
 	if(!s) 
 	{
@@ -1238,7 +1208,8 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 
 	if(length >= BIG_INFO_STRING) 
 	{
-		Context->LogErrorAndCrash("idMessage::WriteBigString: The string's length is >= BIG_INFO_STRING");
+		Context->LogError("udtMessage::WriteBigString: The string is too long");
+		SetValid(false);
 		return;
 	}
 
@@ -1263,51 +1234,7 @@ void udtMessage::WriteBigString(const char* s, s32 length)
 	WriteData(string, length + 1);
 }
 
-s32 udtMessage::ReadByte()
-{
-	s32 c = ReadBits(8);
-	if(Buffer.readcount > Buffer.cursize) 
-	{
-		c = -1;
-	}
-
-	return c;
-}
-
-s32 udtMessage::ReadShort()
-{
-	s32 c = ReadBits(16);
-	if(Buffer.readcount > Buffer.cursize) 
-	{
-		c = -1;
-	}
-
-	return c;
-}
-
-s32 udtMessage::ReadSignedShort()
-{
-	s32 c = ReadBits(-16);
-	if(Buffer.readcount > Buffer.cursize)
-	{
-		c = -1;
-	}
-
-	return c;
-}
-
-s32 udtMessage::ReadLong()
-{
-	s32 c = ReadBits(32);
-	if(Buffer.readcount > Buffer.cursize) 
-	{
-		c = -1;
-	}
-
-	return c;
-}
-
-s32 udtMessage::ReadFloat()
+s32 udtMessage::RealReadFloat()
 {
 	if(ReadBits(1))
 	{
@@ -1329,12 +1256,7 @@ s32 udtMessage::ReadFloat()
 	return realValue.AsInt;
 }
 
-s32 udtMessage::ReadField(s32 bits)
-{
-	return (bits == 0) ? ReadFloat() : ReadBits(bits);
-}
-
-char* udtMessage::ReadString(s32& length) 
+char* udtMessage::RealReadString(s32& length) 
 {
 	udtContext::ReadStringBufferRef stringBuffer = Context->ReadStringBuffer;
 
@@ -1371,7 +1293,7 @@ char* udtMessage::ReadString(s32& length)
 	return stringBuffer;
 }
 
-char* udtMessage::ReadBigString(s32& length)
+char* udtMessage::RealReadBigString(s32& length)
 {
 	udtContext::ReadBigStringBufferRef stringBuffer = Context->ReadBigStringBuffer;
 
@@ -1408,44 +1330,7 @@ char* udtMessage::ReadBigString(s32& length)
 	return stringBuffer;
 }
 
-char* udtMessage::ReadStringLine(s32& length) 
-{
-	udtContext::ReadStringLineBufferRef stringBuffer = Context->ReadStringLineBuffer;
-
-	s32 stringLength = 0;
-	do 
-	{
-		// use ReadByte so -1 is out of bounds
-		s32 c = ReadByte();
-		if(c == -1 || c == 0 || c == '\n') 
-		{
-			break;
-		}
-
-		// translate all fmt spec to avoid crash bugs
-		if(c == '%') 
-		{
-			c = '.';
-		}
-
-		// don't allow higher ascii values
-		if(_protocol <= udtProtocol::Dm90 && c > 127)
-		{
-			c = '.';
-		}
-
-		stringBuffer[stringLength] = (s8)c;
-		stringLength++;
-	} 
-	while(stringLength < (s32)sizeof(stringBuffer) - 1);
-	
-	stringBuffer[stringLength] = 0;
-	length = stringLength;
-	
-	return stringBuffer;
-}
-
-void udtMessage::ReadData(void* data, s32 len) 
+void udtMessage::RealReadData(void* data, s32 len) 
 {
 	for(s32 i = 0; i < len; ++i) 
 	{
@@ -1453,17 +1338,17 @@ void udtMessage::ReadData(void* data, s32 len)
 	}
 }
 
-s32 udtMessage::PeekByte()
+s32 udtMessage::RealPeekByte()
 {
-	const s32 readcount = Buffer.readcount;
-	const s32 bit = Buffer.bit;
-
-	// Valgrind: don't return an uninitialized value.
-	if(Buffer.cursize <= Buffer.readcount)
+	if(Buffer.bit + 8 > (Buffer.cursize + 1) * 8)
 	{
-		return 0;
+		Context->LogError("udtMessage::RealPeekByte: Overflowed!");
+		SetValid(false);
+		return -1;
 	}
 
+	const s32 readcount = Buffer.readcount;
+	const s32 bit = Buffer.bit;
 	const s32 c = ReadByte();
 	Buffer.readcount = readcount;
 	Buffer.bit = bit;
@@ -1471,11 +1356,10 @@ s32 udtMessage::PeekByte()
 	return c;
 }
 
-void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
+bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
 	s32				i;
 	idLargestPlayerState dummy;
-	s32				c;
 	s32				*fromF, *toF;
 	s32				lc;
 
@@ -1484,8 +1368,6 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 		from = &dummy;
 		Com_Memset (&dummy, 0, sizeof(dummy));
 	}
-
-	c = Buffer.cursize;
 
 	lc = 0;
 	const idNetField* field;
@@ -1515,8 +1397,6 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 		WriteBits(1, 1);
 		WriteField(*toF, field->bits);
 	}
-	c = Buffer.cursize - c;
-
 
 	//
 	// send the arrays
@@ -1557,7 +1437,7 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 	if(!statsbits && !persistantbits && !ammobits && !powerupbits) 
 	{
 		WriteBits(0, 1);	// no change
-		return;
+		return ValidState();
 	}
 	WriteBits(1, 1);	// changed
 
@@ -1628,9 +1508,11 @@ void udtMessage::WriteDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSt
 	{
 		WriteBits(0, 1);	// no change
 	}
+
+	return ValidState();
 }
 
-void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
+void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 {
 	const idNetField* field = _playerStateFields;
 	const s32 fieldCount = _playerStateFieldCount;
@@ -1701,7 +1583,7 @@ void udtMessage::ReadDeltaPlayerstateDM3(idPlayerStateBase* to)
 	}
 }
 
-void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerStateBase* to)
+bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to)
 {
 	s32			i, lc;
 	s32			bits;
@@ -1717,14 +1599,16 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 	
 	if(_protocol <= udtProtocol::Dm48)
 	{
-		ReadDeltaPlayerstateDM3(to);
-		return;
+		ReadDeltaPlayerDM3(to);
+		return ValidState();
 	}
 
 	lc = ReadByte();
 	if(lc > _playerStateFieldCount || lc < 0)
 	{
-		Context->LogErrorAndCrash("udtMessage::ReadDeltaPlayerstate: Invalid playerState field count: %d (numFields %d)", lc, _playerStateFieldCount);
+		Context->LogError("udtMessage::ReadDeltaPlayerstate: Invalid playerState field count: %d (max is %d)", lc, _playerStateFieldCount);
+		SetValid(false);
+		return false;
 	}
 
 	const idNetField* field;
@@ -1803,21 +1687,18 @@ void udtMessage::ReadDeltaPlayerstate(const idPlayerStateBase* from, idPlayerSta
 			}
 		}
 	}
+
+	return ValidState();
 }
 
 /*
-==================
-idMessage::WriteDeltaEntity
-
 Writes part of a packet entities message, including the entity number.
 Can delta from either a baseline or a previous packet_entity
 If to is NULL, a remove entity update will be sent
 If force is not set, then nothing at all will be generated if the entity is
 identical, under the assumption that the in-order delta code will catch it.
-==================
 */
-
-void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force)
+bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, qbool force)
 {
 	s32			i, lc;
 	s32			*fromF, *toF;
@@ -1844,16 +1725,18 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 	{
 		if(from == NULL) 
 		{
-			return;
+			return ValidState();
 		}
 		WriteBits(from->number, GENTITYNUM_BITS);
 		WriteBits(1, 1);
-		return;
+		return ValidState();
 	}
 
 	if(to->number < 0 || to->number >= MAX_GENTITIES) 
 	{
-		Context->LogErrorAndCrash("idMessage::WriteDeltaEntity: Bad entity number: %i", to->number);
+		Context->LogError("udtMessage::WriteDeltaEntity: Bad entity number: %d (max is %d)", to->number, MAX_GENTITIES - 1);
+		SetValid(false);
+		return false;
 	}
 
 	lc = 0;
@@ -1874,13 +1757,13 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 		// nothing at all changed
 		if(!force) 
 		{
-			return;		// nothing at all
+			return ValidState(); // nothing at all
 		}
 		// write two bits for no change
 		WriteBits(to->number, GENTITYNUM_BITS);
 		WriteBits(0, 1);		// not removed
 		WriteBits(0, 1);		// no delta
-		return;
+		return ValidState();
 	}
 
 	WriteBits(to->number, GENTITYNUM_BITS);
@@ -1910,19 +1793,17 @@ void udtMessage::WriteDeltaEntity(const idEntityStateBase* from, const idEntityS
 		WriteBits(1, 1);
 		WriteField(*toF, field->bits);
 	}
+
+	return ValidState();
 }
 
 /*
-==================
-idMessage::ReadDeltaEntity
-
 The entity number has already been read from the message, which
 is how the from state is identified.
 
 If the delta removes the entity, entityState_t->number will be set to MAX_GENTITIES-1
 
 Can go from either a baseline or a previous packet_entity
-==================
 */
 
 // @NOTE: Same values for dm3 and dm_48 confirmed.
@@ -2004,14 +1885,16 @@ void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityState
 	}
 }
 
-bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBase* to, s32 number)
+bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
 	s32			i, lc;
 	s32			*fromF, *toF;
 
 	if(number < 0 || number >= MAX_GENTITIES) 
 	{
-		Context->LogErrorAndCrash("idMessage::ReadDeltaEntity: Bad delta entity number: %i", number);
+		Context->LogError("udtMessage::ReadDeltaEntity: Bad delta entity number: %d (max is %d)", number, MAX_GENTITIES - 1);
+		SetValid(false);
+		return false;
 	}
 
 	// check for a remove
@@ -2019,7 +1902,8 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 	{
 		Com_Memset(to, 0, _protocolSizeOfEntityState);
 		to->number = MAX_GENTITIES - 1;
-		return false;
+		addedOrChanged = false;
+		return ValidState();
 	}
 
 	// check for no delta
@@ -2027,19 +1911,23 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 	{
 		Com_Memcpy(to, from, _protocolSizeOfEntityState);
 		to->number = number;
-		return false;
+		addedOrChanged = false;
+		return ValidState();
 	}
 
+	addedOrChanged = true;
 	if(_protocol <= udtProtocol::Dm48)
 	{
 		ReadDeltaEntityDM3(from, to, number);
-		return true;
+		return ValidState();
 	}
 	
 	lc = ReadByte();
 	if(lc > _entityStateFieldCount || lc < 0)
 	{
-		Context->LogErrorAndCrash("udtMessage::ReadDeltaEntity: Invalid entityState field count: %d (numFields %d)", lc, _entityStateFieldCount);
+		Context->LogError("udtMessage::ReadDeltaEntity: Invalid entityState field count: %d (max is %d)", lc, _entityStateFieldCount);
+		SetValid(false);
+		return false;
 	}
 
 	to->number = number;
@@ -2072,5 +1960,44 @@ bool udtMessage::ReadDeltaEntity(const idEntityStateBase* from, idEntityStateBas
 		*toF = *fromF;
 	}
 
-	return true;
+	return ValidState();
+}
+
+void udtMessage::SetValid(bool valid)
+{
+	Buffer.valid = valid;
+	if(valid)
+	{
+		_readBits = &udtMessage::RealReadBits;
+		_readFloat = &udtMessage::RealReadFloat;
+		_readString = &udtMessage::RealReadString;
+		_readBigString = &udtMessage::RealReadBigString;
+		_readData = &udtMessage::RealReadData;
+		_peekByte = &udtMessage::RealPeekByte;
+		_readDeltaEntity = &udtMessage::RealReadDeltaEntity;
+		_readDeltaPlayer = &udtMessage::RealReadDeltaPlayer;
+		_writeBits = &udtMessage::RealWriteBits;
+		_writeFloat = &udtMessage::RealWriteFloat;
+		_writeString = &udtMessage::RealWriteString;
+		_writeBigString = &udtMessage::RealWriteBigString;
+		_writeDeltaPlayer = &udtMessage::RealWriteDeltaPlayer;
+		_writeDeltaEntity = &udtMessage::RealWriteDeltaEntity;
+	}
+	else
+	{
+		_readBits = &udtMessage::DummyReadCount;
+		_readFloat = &udtMessage::DummyRead;
+		_readString = &udtMessage::DummyReadString;
+		_readBigString = &udtMessage::DummyReadString;
+		_readData = &udtMessage::DummyReadData;
+		_peekByte = &udtMessage::DummyRead;
+		_readDeltaEntity = &udtMessage::DummyReadDeltaEntity;
+		_readDeltaPlayer = &udtMessage::DummyReadDeltaPlayer;
+		_writeBits = &udtMessage::DummyWriteCount;
+		_writeFloat = &udtMessage::DummyWrite;
+		_writeString = &udtMessage::DummyWriteString;
+		_writeBigString = &udtMessage::DummyWriteString;
+		_writeDeltaPlayer = &udtMessage::DummyWriteDeltaPlayer;
+		_writeDeltaEntity = &udtMessage::DummyWriteDeltaEntity;
+	}
 }

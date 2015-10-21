@@ -340,7 +340,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 	_outMsg.WriteByte(info.SnapFlags);
 	_outMsg.WriteByte(32);
 	_outMsg.WriteData(_areaMask, 32);
-	_outMsg.WriteDeltaPlayerstate(_firstSnapshot ? NULL : &oldSnap.PlayerState, &curSnap.PlayerState);
+	_outMsg.WriteDeltaPlayer(_firstSnapshot ? NULL : &oldSnap.PlayerState, &curSnap.PlayerState);
 
 	if(_firstSnapshot)
 	{
