@@ -1020,7 +1020,9 @@ void udtMessage::RealWriteBits(s32 value, s32 bits)
 
 s32 udtMessage::RealReadBits(s32 bits) 
 {
-	if(Buffer.bit + bits > (Buffer.cursize + 1) * 8)
+	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
+	// that Quake can parse properly don't get fully parsed by UDT.
+	if(Buffer.bit + bits > (Buffer.cursize + 4) * 8)
 	{
 		Context->LogError("udtMessage::RealReadBits: Overflowed! (in file: %s)", GetFileName());
 		SetValid(false);
