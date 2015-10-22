@@ -27,6 +27,8 @@ udtBaseParser::udtBaseParser()
 	_inServerTime = S32_MIN;
 	_inLastSnapshotMessageNumber = S32_MIN;
 
+	_outFileName = udtString::NewEmptyConstant();
+	_outFilePath = udtString::NewEmptyConstant();
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
 	_outWriteFirstMessage = false;
@@ -73,6 +75,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 
 	_inFileName = udtString::NewEmptyConstant();
 	_inFilePath = udtString::NewEmptyConstant();
+	_outFileName = udtString::NewEmptyConstant();
+	_outFilePath = udtString::NewEmptyConstant();
 
 	_cuts.Clear();
 	_persistentAllocator.Clear();
@@ -289,9 +293,22 @@ bool udtBaseParser::ParseServerMessage()
 	if(_outWriteFirstMessage)
 	{
 		udtCutInfo& cut = _cuts[0];
-		cut.Stream = (*cut.StreamCreator)(cut.StartTimeMs, cut.EndTimeMs, cut.VeryShortDesc, this, cut.UserData);
+		udtDemoStreamCreatorArg info;
+		memset(&info, 0, sizeof(info));
+		info.StartTimeMs = cut.StartTimeMs;
+		info.EndTimeMs = cut.EndTimeMs;
+		info.Parser = this;
+		info.VeryShortDesc = cut.VeryShortDesc;
+		info.UserData = cut.UserData;
+		info.TempAllocator = &_tempAllocator;
+		info.FilePathAllocator = &_persistentAllocator;
+		udtString filePath;
+		cut.Stream = (*cut.StreamCreator)(filePath, info);
 		if(cut.Stream != NULL)
 		{
+			_outFilePath = filePath;
+			udtPath::GetFileName(_outFileName, _persistentAllocator, filePath);
+			_outMsg.SetFileNamePtr(_outFileName.String);
 			WriteFirstMessage();
 			_outWriteFirstMessage = false;
 		}

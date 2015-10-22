@@ -14,8 +14,20 @@
 #include <new>
 
 
+struct udtDemoStreamCreatorArg
+{
+	s32 StartTimeMs;
+	s32 EndTimeMs;
+	const char* VeryShortDesc;
+	udtBaseParser* Parser;
+	void* UserData;
+	udtVMLinearAllocator* TempAllocator;
+	udtVMLinearAllocator* FilePathAllocator;
+};
+
 struct udtBaseParser;
-typedef udtStream* (*udtDemoStreamCreator)(s32 startTime, s32 endTime, const char* veryShortDesc, udtBaseParser* parser, void* userData);
+typedef udtStream* (*udtDemoStreamCreator)(udtString& filePath, const udtDemoStreamCreatorArg& info);
+
 
 // Don't ever allocate an instance of this on the stack.
 struct udtBaseParser
@@ -127,6 +139,8 @@ public:
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
+	udtString _outFilePath;
+	udtString _outFileName;
 	udtVMArrayWithAlloc<udtCutInfo> _cuts;
 	u8 _outMsgData[MAX_MSGLEN];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
