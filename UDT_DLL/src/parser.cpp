@@ -144,6 +144,7 @@ void udtBaseParser::Destroy()
 bool udtBaseParser::ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset)
 {
 	_inMsg = inMsg;
+	_inMsg.SetFileNamePtr(_inFileName.String);
 	_inServerMessageSequence = inServerMessageSequence;
 	_inFileOffset = fileOffset;
 
