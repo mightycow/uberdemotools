@@ -42,8 +42,8 @@ struct CallbackCutDemoFileStreamCreationInfo
 	const char* OutputFolderPath;
 };
 
-extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
-extern udtStream*  CallbackConvertedDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
+extern udtStream*  CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
+extern udtStream*  CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
 extern bool        StringParseInt(s32& output, const char* string);
 extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
 extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".

@@ -20,11 +20,12 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 #undef UDT_MEAN_OF_DEATH_ITEM
 
 
-udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData)
+udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
 {
-	udtVMLinearAllocator& tempAllocator = parser->_tempAllocator;
+	udtBaseParser* const parser = arg.Parser;
+	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
-	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
+	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
 	if(udtString::IsNullOrEmpty(parser->_inFilePath) ||
@@ -47,8 +48,8 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 
 	char* startTime = NULL;
 	char* endTime = NULL;
-	FormatTimeForFileName(startTime, tempAllocator, startTimeMs);
-	FormatTimeForFileName(endTime, tempAllocator, endTimeMs);
+	FormatTimeForFileName(startTime, tempAllocator, arg.StartTimeMs);
+	FormatTimeForFileName(endTime, tempAllocator, arg.EndTimeMs);
 
 	const int gsIndex = parser->_inGameStateIndex;
 	const bool outputGsIndex = gsIndex > 0;
@@ -59,9 +60,9 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 	}
 
 	char shortDesc[16];
-	if(veryShortDesc)
+	if(arg.VeryShortDesc != NULL)
 	{
-		sprintf(shortDesc, "_%s", veryShortDesc);
+		sprintf(shortDesc, "_%s", arg.VeryShortDesc);
 	}
 
 	const char* outputFilePathParts[] = 
@@ -72,27 +73,28 @@ udtStream* CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, con
 		startTime, 
 		"_", 
 		endTime, 
-		veryShortDesc ? shortDesc : "",
-		udtGetFileExtensionByProtocol(parser->_inProtocol) 
+		arg.VeryShortDesc != NULL ? shortDesc : "",
+		udtGetFileExtensionByProtocol(parser->_inProtocol)
 	};
-	const udtString outputFilePath = udtString::NewFromConcatenatingMultiple(tempAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
+	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
 	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(outputFilePath.String, udtFileOpenMode::Write))
+	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
 	{
 		return NULL;
 	}
 
-	parser->_context->LogInfo("Writing cut demo: %s", outputFilePath.String);
+	parser->_context->LogInfo("Writing cut demo: %s", filePath.String);
 
 	return stream;
 }
 
-udtStream* CallbackConvertedDemoFileStreamCreation(s32 /*startTimeMs*/, s32 /*endTimeMs*/, const char* /*veryShortDesc*/, udtBaseParser* parser, void* userData)
+udtStream* CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
 {
-	udtVMLinearAllocator& tempAllocator = parser->_tempAllocator;
+	udtBaseParser* const parser = arg.Parser;
+	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
 	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
-	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)userData;
+	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
 	if(udtString::IsNullOrEmpty(parser->_inFilePath) ||
@@ -118,15 +120,15 @@ udtStream* CallbackConvertedDemoFileStreamCreation(s32 /*startTimeMs*/, s32 /*en
 		outputFilePathStart.String,
 		udtGetFileExtensionByProtocol(parser->_outProtocol)
 	};
-	const udtString outputFilePath = udtString::NewFromConcatenatingMultiple(tempAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
+	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
 	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(outputFilePath.String, udtFileOpenMode::Write))
+	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
 	{
 		return NULL;
 	}
 
-	parser->_context->LogInfo("Writing converted demo: %s", outputFilePath.String);
+	parser->_context->LogInfo("Writing converted demo: %s", filePath.String);
 
 	return stream;
 }
