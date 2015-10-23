@@ -20,15 +20,16 @@ void PrintHelp()
 {
 	printf("Cuts demos by time, chat or matches.\n");
 	printf("\n");
-	printf("UDT_cutter t [-o=outputfolder] [-g=gamestateindex] -s=starttime -e=endtime inputfile\n");
-	printf("UDT_cutter c [-o=outputfolder] [-t=maxthreads] [-r] -c=configpath inputfile|inputfolder\n");
-	printf("UDT_cutter m [-o=outputfolder] [-t=maxthreads] [-r] [-s=startoffset] [-e=endoffset] inputfile|inputfolder\n");
+	printf("UDT_cutter t [-o=outputfolder] [-q] [-g=gamestateindex] -s=starttime -e=endtime inputfile\n");
+	printf("UDT_cutter c [-o=outputfolder] [-q] [-t=maxthreads] [-r] -c=configpath inputfile|inputfolder\n");
+	printf("UDT_cutter m [-o=outputfolder] [-q] [-t=maxthreads] [-r] [-s=startoffset] [-e=endoffset] inputfile|inputfolder\n");
 	printf("UDT_cutter g -c=configpath\n");
 	printf("\n");
 	printf("t     cut by time\n");
 	printf("c     cut by chat\n");
 	printf("m     cut by matches\n");
 	printf("g     generate a cut by chat example config\n");
+	printf("-q    quiet mode: no logging to stdout    (default: off)\n");
 	printf("-r    enable recursive demo file search   (default: off)\n");
 	printf("-o=p  set the output folder path to p     (default: input folder)\n");
 	printf("-g=N  set the game state index to N       (default: 0)\n");

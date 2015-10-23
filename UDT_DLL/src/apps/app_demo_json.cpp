@@ -16,8 +16,9 @@ void PrintHelp()
 {
 	printf("For each input demo, outputs JSON data with analysis results to one file per demo or optionally to the terminal.\n");
 	printf("\n");
-	printf("UDT_json [-c] [-r] [-t=maxthreads] [-a=analyzers] [-o=outputfolder] inputfile|inputfolder\n");
+	printf("UDT_json [-c] [-r] [-q] [-t=maxthreads] [-a=analyzers] [-o=outputfolder] inputfile|inputfolder\n");
 	printf("\n");
+	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
 	printf("-c    output to the console/terminal          (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");

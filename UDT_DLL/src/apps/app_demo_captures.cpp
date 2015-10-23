@@ -391,8 +391,9 @@ void PrintHelp()
 	printf("For a collection of demo files, extract and sort all the flag captures from\n");
 	printf("the demo taker and store the data to a single JSON output file.\n");
 	printf("\n");
-	printf("UDT_captures [-r] [-t=maxthreads] [-b=maxb2bcaps] -o=outputfile inputfolder\n");
+	printf("UDT_captures [-r] [-q] [-t=maxthreads] [-b=maxb2bcaps] -o=outputfile inputfolder\n");
 	printf("\n");
+	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
 	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
 	printf("-b=N  top N base2base captures per map        (default: 3)\n");

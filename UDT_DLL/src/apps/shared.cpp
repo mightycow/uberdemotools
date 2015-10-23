@@ -21,6 +21,7 @@ static const char* LogLevels[4] =
 };
 
 static const char* ExecutableFileName = NULL;
+static bool QuietMode = false;
 
 
 extern int  udt_main(int argc, char** argv);
@@ -40,6 +41,18 @@ static void CrashHandler(const char* message)
 	exit(666);
 }
 
+static void ParseQuietOption(int argc, char** argv)
+{
+	for(int i = 1; i < argc; ++i)
+	{
+		if(udtString::Equals(udtString::NewConstRef(argv[i]), "-q"))
+		{
+			QuietMode = true;
+			break;
+		}
+	}
+}
+
 void CallbackConsoleMessage(s32 logLevel, const char* message)
 {
 	if(logLevel < 0 || logLevel >= 3)
@@ -47,7 +60,13 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 		logLevel = 3;
 	}
 
-	FILE* const file = (logLevel == 0 || logLevel == 1) ? stdout : stderr;
+	const bool useStdOut = logLevel == 0 || logLevel == 1;
+	if(QuietMode && useStdOut)
+	{
+		return;
+	}
+
+	FILE* const file = useStdOut ? stdout : stderr;
 	fprintf(file, LogLevels[logLevel]);
 	fprintf(file, message);
 	fprintf(file, "\n");
@@ -132,6 +151,7 @@ int wmain(int argc, wchar_t** argvWide)
 
 	ResetCurrentDirectory(argv[0]);
 	FindExecutableFileName(argv[0]);
+	ParseQuietOption(argc, argv);
 
 	return udt_main(argc, argv);
 }
@@ -175,6 +195,7 @@ int main(int argc, char** argv)
 	FindExecutableFileName(argv[0]);
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
+	ParseQuietOption(argc, argv);
 
 	return udt_main(argc, argv);
 }

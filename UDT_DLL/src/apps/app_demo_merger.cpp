@@ -12,7 +12,9 @@ void PrintHelp()
 	printf("For a set of two or more demos, creates a new demo using the entitystate\n");
 	printf("and playerstate snapshot data of all the specified demos.\n");
 	printf("\n");
-	printf("UDT_merger demopath1 demopath2 [demopath3 ... demopathn]\n");
+	printf("UDT_merger [-q] demopath1 demopath2 [demopath3 ... demopathn]\n");
+	printf("\n");
+	printf("-q  quiet mode: no logging to stdout  (default: off)\n");
 	printf("\n");
 	printf("Demo merging only works for matching server times.\n");
 	printf("In other words, you should only try to merge demos from the same match.\n");

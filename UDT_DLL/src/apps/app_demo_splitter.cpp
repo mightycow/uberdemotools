@@ -39,7 +39,9 @@ void PrintHelp()
 	printf("UDT_splitter creates one output demo per gamestate message for demos\n");
 	printf("with multiple gamestate messages.\n");
 	printf("\n");
-	printf("UDT_splitter inputpath\n");
+	printf("UDT_splitter [-q] inputpath\n");
+	printf("\n");
+	printf("-q  quiet mode: no logging to stdout  (default: off)\n");
 }
 
 int udt_main(int argc, char** argv)
