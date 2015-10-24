@@ -1,3 +1,15 @@
+0.5.3 (24.10.2015)
+ADD: A "Captures" tab under "Info" for listing flag captures
+ADD: Options to allow/disallow base/non-base flag pickups in the Flag Captures cut filter
+ADD: Showing the progress of the current job in the title bar so that you can see the progress when UDT is minimized
+CHG: Jobs split into multiple batches now track byte count for progress instead of file count for improved precision
+CHG: Now printing the linear allocator's name whenever there is a fatal error in one
+CHG: Improved error handling for demo message I/O (overflows and others)
+CHG: Demo message I/O errors can no longer be fatal (there were 10 instances of that), they will cancel parsing of the current demo instead
+CHG: Demo message I/O errors now always print the file's name
+FIX: Cut by Flag: Checking if a flag is taken in the playerstate by testing the end time against 0 instead of INT_MAX
+FIX: Cut by Flag: Got rid of false positives where pickups and captures get detected during the very first snapshot
+
 0.5.2 (01.10.2015)
 ADD: The "Matches" cut filter
 ADD: A match time to server time converter under the "Cut by Time" tab

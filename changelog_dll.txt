@@ -1,3 +1,21 @@
+1.0.0 (24.10.2015)
+ADD: Options to allow/disallow base/non-base flag pickups in the Flag Captures cut filter
+ADD: The flag captures plug-in udtParserPlugInCaptures
+ADD: A new command-line tool called UDT_captures to build a single-file JSON "database" of demo-taker captures
+ADD: UDT_cutter now supports "Cut by Matches"
+ADD: Windows builds of the command-line tools can display their progress in the command prompt's title bar: can see the progress when the console is minimized
+CHG: All command-line tools will now split big jobs into smaller batches to maintain low memory usage
+CHG: Unified the interface of command-line tools for: arguments, help text, stdout/stderr selection, return values (0 is success, 1 is error, 666 is fatal error)
+CHG: Now printing the linear allocator's name whenever there is a fatal error in one
+CHG: One unified C89-compatible header file for library users: uberdemotools.h
+CHG: Improved error handling for demo message I/O (overflows and others)
+CHG: Demo message I/O errors can no longer be fatal (there were 10 instances of that), they will cancel parsing of the current demo instead
+CHG: Demo message I/O errors now always print the file's name
+FIX: Recursive file search in all command-line tools
+FIX: Making sure UDT_json never outputs anything else to stdout that the JSON data when -c is active
+FIX: Cut by Flag: Checking if a flag is taken in the playerstate by testing the end time against 0 instead of INT_MAX
+FIX: Cut by Flag: Got rid of false positives where pickups and captures get detected during the very first snapshot
+
 0.9.2 (01.10.2015)
 ADD: The "Matches" cut filter
 ADD: Stats analyzer: time/score/frag/capture/round limit, game state index
