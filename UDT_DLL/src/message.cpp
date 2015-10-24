@@ -1343,6 +1343,7 @@ void udtMessage::RealReadData(void* data, s32 len)
 
 s32 udtMessage::RealPeekByte()
 {
+	// @TODO: Allow up to 4 bytes of overflow like in RealReadBits?
 	if(Buffer.bit + 8 > (Buffer.cursize + 1) * 8)
 	{
 		Context->LogError("udtMessage::RealPeekByte: Overflowed! (in file: %s)", GetFileName());
