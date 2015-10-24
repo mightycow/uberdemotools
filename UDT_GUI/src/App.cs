@@ -55,10 +55,14 @@ namespace Uber.DemoTools
         public bool ColorLogWarningsAndErrors = false;
         public int FlagCaptureMinCarryTimeMs = 0;
         public int FlagCaptureMaxCarryTimeMs = 10*60*1000; // 10 minutes.
+        public bool FlagCaptureAllowBaseToBase = true;
+        public bool FlagCaptureAllowMissingToBase = true;
         public float FlickRailMinSpeed = 800.0f; // Degrees/second.
         public int FlickRailMinSpeedSnaps = 2;
         public float FlickRailMinAngleDelta = 40.0f; // Degrees.
         public int FlickRailMinAngleDeltaSnaps = 2;
+        public int MatchCutStartTimeOffsetMs = 10 * 1000;
+        public int MatchCutEndTimeOffsetMs = 10 * 1000;
         public int TimeShiftSnapshotCount = 2;
         public string LastDemoOpenFolderPath = "";
         public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
@@ -92,6 +96,45 @@ namespace Uber.DemoTools
     {
         public int GameStateIndex { get; set; }
         public string Time { get; set; }
+
+        public virtual bool GetStartAndEndTimes(out int startTimeSec, out int endTimeSec)
+        {
+            startTimeSec = int.MaxValue;
+            endTimeSec = int.MinValue;
+            int timeSec = 0;
+            if(!App.ParseMinutesSeconds(Time, out timeSec))
+            {
+                return false;
+            }
+            
+            startTimeSec = timeSec;
+            endTimeSec = timeSec;
+
+            return true;
+        }
+    }
+
+    public class Timeout
+    {
+        public Timeout(int startTimeMs, int endTimeMs)
+        {
+            StartTimeMs = startTimeMs;
+            EndTimeMs = endTimeMs;
+        }
+
+        public int StartTimeMs = 0;
+        public int EndTimeMs = 0;
+    }
+
+    public class MatchTimeInfo
+    {
+        public int GameStateIndex = 0;
+        public int StartTimeMs = 0;
+        public int EndTimeMs = 0;
+        public int TimeLimit = 0; // In minutes, 0 when none is set.
+        public bool HadOvertime = false;
+        public bool RoundBasedMode = false;
+        public readonly List<Timeout> TimeOuts = new List<Timeout>();
     }
 
     public class DemoInfo
@@ -111,6 +154,8 @@ namespace Uber.DemoTools
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
         public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
         public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
+        public List<MatchTimeInfo> MatchTimes = new List<MatchTimeInfo>();
+        public List<FlagCaptureDisplayInfo> FlagCaptures = new List<FlagCaptureDisplayInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -144,7 +189,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.5.1";
+        private const string GuiVersion = "0.5.3";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -229,6 +274,7 @@ namespace Uber.DemoTools
         private IntPtr _mainThreadContext = IntPtr.Zero;
         private bool _usingDarkTheme = false;
         private Stopwatch _threadedJobTimer = new Stopwatch();
+        private Stopwatch _threadedJobTitleTimer = new Stopwatch();
         private static RoutedCommand _cutByChatCommand = new RoutedCommand();
         private static RoutedCommand _deleteDemoCommand = new RoutedCommand();
         private static RoutedCommand _splitDemoCommand = new RoutedCommand();
@@ -1252,7 +1298,7 @@ namespace Uber.DemoTools
             var stats = new StatsComponent(this);
             _appComponents.Add(stats);
             var statsTab = new TabItem();
-            statsTab.Header = "Scores and Stats";
+            statsTab.Header = "Stats";
             statsTab.Content = stats.RootControl;
 
             var commands = new CommandsComponent(this);
@@ -1260,6 +1306,12 @@ namespace Uber.DemoTools
             var commandsTab = new TabItem();
             commandsTab.Header = "Commands";
             commandsTab.Content = commands.RootControl;
+
+            var captures = new FlagCapturesComponent(this);
+            _appComponents.Add(captures);
+            var capturesTab = new TabItem();
+            capturesTab.Header = "Captures";
+            capturesTab.Content = captures.RootControl;
 
             var tabControl = new TabControl();
             tabControl.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1270,6 +1322,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(deathsTab);
             tabControl.Items.Add(statsTab);
             tabControl.Items.Add(commandsTab);
+            tabControl.Items.Add(capturesTab);
 
             return tabControl;
         }
@@ -1820,6 +1873,7 @@ namespace Uber.DemoTools
             ParseArg.PlugInCount = 0;
             ParseArg.PlugIns = IntPtr.Zero;
             ParseArg.Flags = 0;
+            ParseArg.MinProgressTimeMs = 100;
             if(outputFolder != null)
             {
                 ParseArg.OutputFolderPath = UDT_DLL.StringToHGlobalUTF8(outputFolder);
@@ -1874,6 +1928,8 @@ namespace Uber.DemoTools
                 demos[i].FilePath = newDemo.FilePath;
                 demos[i].MatchStats = newDemo.MatchStats;
                 demos[i].Commands = newDemo.Commands;
+                demos[i].MatchTimes = newDemo.MatchTimes;
+                demos[i].FlagCaptures = newDemo.FlagCaptures;
             }
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
@@ -2082,27 +2138,36 @@ namespace Uber.DemoTools
             return a2.CompareTo(b2);
         }
 
+        private static Regex MinutesSecondsRegEx = new Regex(@"(\d+):(\d+)", RegexOptions.Compiled);
+        private static Regex SecondsRegEx = new Regex(@"(\d+)", RegexOptions.Compiled);
+
         public static bool GetTimeSeconds(string text, out int time)
         {
             time = -1;
 
-            var minutesSecondsRegEx = new Regex(@"(\d+):(\d+)");
-            var match = minutesSecondsRegEx.Match(text);
+            foreach(var c in text)
+            {
+                if(!char.IsDigit(c) && 
+                    c != ':' &&
+                    !char.IsWhiteSpace(c))
+                {
+                    return false;
+                }
+            }
+
+            var match = MinutesSecondsRegEx.Match(text);
             if(match.Success)
             {
-                int m = int.Parse(match.Groups[1].Value);
-                int s = int.Parse(match.Groups[2].Value);
+                var m = int.Parse(match.Groups[1].Value);
+                var s = int.Parse(match.Groups[2].Value);
                 time = m * 60 + s;
-
                 return true;
             }
 
-            var secondsRegEx = new Regex(@"(\d+)");
-            match = secondsRegEx.Match(text);
-            if(secondsRegEx.IsMatch(text))
+            match = SecondsRegEx.Match(text);
+            if(match.Success)
             {
                 time = int.Parse(match.Groups[1].Value);
-
                 return true;
             }
 
@@ -2249,7 +2314,7 @@ namespace Uber.DemoTools
             AnalyzeDemos(demos);
         }
 
-        private bool ParseMinutesSeconds(string time, out int totalSeconds)
+        public static bool ParseMinutesSeconds(string time, out int totalSeconds)
         {
             totalSeconds = -1;
 
@@ -2315,15 +2380,16 @@ namespace Uber.DemoTools
                     continue;
                 }
 
-                int time = 0;
-                if(!ParseMinutesSeconds(info.Time, out time))
+                int startTimeLocal = int.MaxValue;
+                int endTimeLocal = int.MinValue;
+                if(!info.GetStartAndEndTimes(out startTimeLocal, out endTimeLocal))
                 {
                     continue;
                 }
 
                 gsIndex = info.GameStateIndex;
-                startTime = Math.Min(startTime, time);
-                endTime = Math.Max(endTime, time);
+                startTime = Math.Min(startTime, startTimeLocal);
+                endTime = Math.Max(endTime, endTimeLocal);
             }
 
             if(startTime == int.MaxValue && endTime == int.MinValue)
@@ -2331,24 +2397,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            int startOffset = _config.CutStartOffset;
-            int endOffset = _config.CutEndOffset;
-            if(!_config.SkipChatOffsetsDialog)
-            {
-                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
-                if(!dialog.Valid)
-                {
-                    return;
-                }
-
-                startOffset = dialog.StartOffset;
-                endOffset = dialog.EndOffset;
-            }
-
-            startTime -= startOffset;
-            endTime += endOffset;
-
-            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
+            SetCutByTimeFields(gsIndex, startTime, endTime);
 
             var tabIdx = 0;
             foreach(var item in _tabControl.Items)
@@ -2367,6 +2416,36 @@ namespace Uber.DemoTools
 
                 ++tabIdx;                
             }
+        }
+
+        public bool SetCutByTimeFields(int gsIndex, int firstTime, int lastTime)
+        {
+            var cutByTimeComponent = _cutByTimeComponent as CutByTimeComponent;
+            if(cutByTimeComponent == null)
+            {
+                return false;
+            }
+
+            int startOffset = _config.CutStartOffset;
+            int endOffset = _config.CutEndOffset;
+            if(!_config.SkipChatOffsetsDialog)
+            {
+                var dialog = new TimeOffsetsDialog(_window, _config.CutStartOffset, _config.CutEndOffset);
+                if(!dialog.Valid)
+                {
+                    return false;
+                }
+
+                startOffset = dialog.StartOffset;
+                endOffset = dialog.EndOffset;
+            }
+
+            var startTime = firstTime - startOffset;
+            var endTime = lastTime + endOffset;
+
+            cutByTimeComponent.SetCutInfo(gsIndex, startTime, endTime);
+
+            return true;
         }
 
         public static void CopyListViewRowsToClipboard(ListView listView)
@@ -2431,7 +2510,7 @@ namespace Uber.DemoTools
             if(elapsedTimeMs >= 200 && value > 0.0)
             {
                 var totalTimeSeconds = (elapsedTimeMs / 1000.0) * (100.0 / value);
-                var remainingTimeSeconds = totalTimeSeconds - (elapsedTimeMs / 1000);
+                var remainingTimeSeconds = totalTimeSeconds - (elapsedTimeMs / 1000.0);
                 remaining = remainingTimeSeconds < 1.0 ? 
                     "< 1s" : 
                     FormatProgressTimeFromSeconds((long)remainingTimeSeconds);
@@ -2442,7 +2521,12 @@ namespace Uber.DemoTools
                 _progressTimeElapsedTextBlock.Text = "Time elapsed: " + elapsed;
                 _progressTimeRemainingTextBlock.Text = "Estimated time remaining: " + remaining;
                 _progressBar.Value = value; 
-                _progressBar.InvalidateVisual(); 
+                _progressBar.InvalidateVisual();
+                if(_threadedJobTitleTimer.ElapsedMilliseconds >= 200)
+                {
+                    _window.Title = value.ToString("F1") + "% - UDT";
+                    _threadedJobTitleTimer.Restart();
+                }
             };
             _window.Dispatcher.Invoke(valueSetter);
         }
@@ -2709,6 +2793,7 @@ namespace Uber.DemoTools
         public void StartJobThread(ParameterizedThreadStart entryPoint, object userData)
         {
             _threadedJobTimer.Restart();
+            _threadedJobTitleTimer.Restart();
             var udtData = new JobThreadData();
             udtData.UserFunction = entryPoint;
             udtData.UserData = userData;
@@ -2736,8 +2821,12 @@ namespace Uber.DemoTools
             {
                 EnableUiThreadSafe();
 
-                VoidDelegate focusSetter = delegate { _demoListView.Focus(); };
-                _window.Dispatcher.Invoke(focusSetter);
+                VoidDelegate uiResetter = delegate 
+                {
+                    _window.Title = "UDT";
+                    _demoListView.Focus();
+                };
+                _window.Dispatcher.Invoke(uiResetter);
             }
         }
 

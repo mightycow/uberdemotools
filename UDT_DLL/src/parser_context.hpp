@@ -27,7 +27,7 @@ struct udtPrivateParserPlugIn
 
 
 // Don't ever allocate an instance of this on the stack.
-struct udtParserContext
+struct udtParserContext_s
 {
 private:
 	struct AddOnItem
@@ -37,8 +37,8 @@ private:
 	};
 
 public:
-	udtParserContext();
-	~udtParserContext();
+	udtParserContext_s();
+	~udtParserContext_s();
 
 	void Init(u32 demoCount, const u32* plugInIds = NULL, u32 plugInCount = 0); // Called once for all.
 	void ResetForNextDemo(bool keepPlugInData); // Called once per demo processed.

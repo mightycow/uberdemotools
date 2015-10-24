@@ -1,6 +1,5 @@
 #include "converter_entity_timer_shifter.hpp"
 #include "utils.hpp"
-#include "api.h"
 
 
 udtdEntityTimeShifterPlugIn::udtdEntityTimeShifterPlugIn()

@@ -302,24 +302,19 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 			continue;
 		}
 
-		const s32 MaxMatchDurationDeltaMs = 1000;
-		s32 durationMs = (s32)stats.MatchDurationMs;
-		const s32 durationMinuteModuloMs = durationMs % 60000;
-		const s32 absMinuteDiffMs = udt_min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-		if((stats.OverTimeCount == 0 || stats.OverTimeType == udtOvertimeType::Timed) &&
-		   stats.Forfeited == 0 &&
-		   absMinuteDiffMs < MaxMatchDurationDeltaMs)
-		{
-			s32 minutes = (durationMs + 60000 - 1) / 60000;
-			if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
-			{
-				--minutes;
-			}
-			durationMs = 60000 * minutes;
-		}
-
 		writer.StartObject();
 
+		writer.WriteIntValue("game state index", stats.GameStateIndex);
+		writer.WriteIntValue("start time", stats.StartTimeMs);
+		writer.WriteIntValue("end time", stats.EndTimeMs);
+		if(stats.CountDownStartTimeMs < stats.StartTimeMs)
+		{
+			writer.WriteIntValue("count down start time", stats.CountDownStartTimeMs);
+		}
+		if(stats.IntermissionEndTimeMs > stats.EndTimeMs)
+		{
+			writer.WriteIntValue("intermission end time", stats.IntermissionEndTimeMs);
+		}
 		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
 		writer.WriteStringValue("first place name", stats.FirstPlaceName);
 		writer.WriteStringValue("second place name", stats.SecondPlaceName);
@@ -333,7 +328,27 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		WriteUDTGameTypeShort(writer, stats.GameType);
 		WriteUDTGameTypeLong(writer, stats.GameType);
 		writer.WriteStringValue("map", stats.Map);
-		writer.WriteIntValue("duration", (s32)durationMs);
+		if(stats.TimeLimit != 0)
+		{
+			writer.WriteIntValue("time limit", (s32)stats.TimeLimit);
+		}
+		if(stats.ScoreLimit != 0)
+		{
+			writer.WriteIntValue("score limit", (s32)stats.ScoreLimit);
+		}
+		if(stats.FragLimit != 0)
+		{
+			writer.WriteIntValue("frag limit", (s32)stats.FragLimit);
+		}
+		if(stats.CaptureLimit != 0)
+		{
+			writer.WriteIntValue("capture limit", (s32)stats.CaptureLimit);
+		}
+		if(stats.RoundLimit != 0)
+		{
+			writer.WriteIntValue("round limit", (s32)stats.RoundLimit);
+		}
+		writer.WriteIntValue("duration", (s32)stats.MatchDurationMs);
 		writer.WriteIntValue("overtime count", (s32)stats.OverTimeCount);
 		if(stats.OverTimeCount > 0)
 		{
@@ -604,13 +619,48 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 	writer.EndArray();
 }
 
+static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCapture* captures, u32 count)
+{
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("captures");
+
+	for(u32 i = 0; i < count; ++i)
+	{
+		const udtParseDataCapture& info = captures[i];
+
+		writer.StartObject();
+
+		writer.WriteStringValue("map", info.MapName);
+		writer.WriteStringValue("player name", info.PlayerName);
+		writer.WriteIntValue("player index", info.PlayerIndex);
+		writer.WriteIntValue("game state index", info.GameStateIndex);
+		writer.WriteIntValue("pick up time", info.PickUpTimeMs);
+		writer.WriteIntValue("capture time", info.CaptureTimeMs);
+		writer.WriteIntValue("distance", (s32)info.Distance);
+		writer.WriteBoolValue("base to base", (info.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0);
+		writer.WriteBoolValue("demo taker", (info.Flags & (u32)udtParseDataCaptureFlags::DemoTaker) != 0);
+		writer.WriteBoolValue("spectated player", (info.Flags & (u32)udtParseDataCaptureFlags::FirstPersonPlayer) != 0);
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+
 bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const char* jsonPath)
 {
 	udtFileStream jsonFile;
-	if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
+	if(jsonPath != NULL)
 	{
-		context->Context.LogError("Failed to open file '%s' for writing", jsonPath);
-		return false;
+		if(!jsonFile.Open(jsonPath, udtFileOpenMode::Write))
+		{
+			context->Context.LogError("Failed to open file '%s' for writing", jsonPath);
+			return false;
+		}
 	}
 
 	context->JSONWriterContext.ResetForNextDemo();
@@ -673,9 +723,22 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 		WriteRawConfigStrings(jsonWriter, (const udtParseDataRawConfigString*)rawConfigStringsPointer, rawConfigStringCount);
 	}
 
+	void* capturesPointer = NULL;
+	u32 captureCount = 0;
+	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Captures, &capturesPointer, &captureCount) == (s32)udtErrorCode::None &&
+	   capturesPointer != NULL)
+	{
+		WriteCaptures(jsonWriter, (const udtParseDataCapture*)capturesPointer, captureCount);
+	}
+
 	writer.EndFile();
 
 	udtVMMemoryStream& memoryStream = context->JSONWriterContext.MemoryStream;
+	if(jsonPath == NULL)
+	{
+		return fwrite(memoryStream.GetBuffer(), (size_t)memoryStream.Length(), 1, stdout) == 1;
+	}
+
 	if(jsonFile.Write(memoryStream.GetBuffer(), (u32)memoryStream.Length(), 1) != 1)
 	{
 		context->Context.LogError("Failed to write to JSON file '%s'", jsonPath);

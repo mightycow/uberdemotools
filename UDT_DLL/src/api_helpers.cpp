@@ -124,7 +124,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 
 static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -135,7 +135,7 @@ static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, co
 
 static bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -211,7 +211,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -294,7 +294,7 @@ static void CreateTimeShiftDemoName(udtString& outputFilePath, udtVMLinearAlloca
 
 static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtTimeShiftArg* timeShiftArg)
 {
-	const udtProtocol::Id protocol = udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -418,7 +418,7 @@ static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& 
 	outputFilePath = udtString::NewFromConcatenating(allocator, outputFilePathStart, udtString::NewConstRef(".json"));
 }
 
-static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath)
+static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const udtJSONArg* jsonInfo)
 {
 	if(!ParseDemoFile(context, info, demoFilePath, false))
 	{
@@ -430,9 +430,15 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 
 	udtVMScopedStackAllocator allocatorScope(tempAllocator);
 
-	udtString jsonFilePath;
-	CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
-	if(!ExportPlugInsDataToJSON(context, demoIndex, jsonFilePath.String))
+	const char* outputFilePath = NULL;
+	if(jsonInfo->ConsoleOutput == 0)
+	{
+		udtString jsonFilePath;
+		CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
+		outputFilePath = jsonFilePath.String;
+	}
+	
+	if(!ExportPlugInsDataToJSON(context, demoIndex, outputFilePath))
 	{
 		return false;
 	}
@@ -457,7 +463,7 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
 
 		case udtParsingJobType::ExportToJSON:
-			return ExportToJSON(context, demoIndex, info, demoFilePath);
+			return ExportToJSON(context, demoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
 
 		default:
 			return false;
@@ -472,6 +478,7 @@ struct SingleThreadProgressContext
 	udtProgressCallback UserCallback;
 	void* UserData;
 	udtTimer* Timer;
+	u32 MinProgressTimeMs;
 };
 
 static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
@@ -482,7 +489,7 @@ static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 		return;
 	}
 
-	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	if(context->Timer->GetElapsedMs() < u64(context->MinProgressTimeMs))
 	{
 		return;
 	}
@@ -549,6 +556,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	progressContext.CurrentJobByteCount = 0;
 	progressContext.ProcessedByteCount = 0;
 	progressContext.TotalByteCount = totalByteCount;
+	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
 
 	udtParseArg newInfo = *info;
 	newInfo.ProgressCb = &SingleThreadProgressCallback;

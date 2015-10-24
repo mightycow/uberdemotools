@@ -18,10 +18,13 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
+	void SetIntermissionEndTime();
 	void ResetForNextMatch();
 	bool HasMatchJustStarted() const;
 	bool HasMatchJustEnded() const;
 	bool IsMatchInProgress() const;
+	bool IsInIntermission() const;
+	bool CanMatchBeAdded() const;
 	s32  MatchStartTime() const;
 	s32  MatchEndTime() const;
 	s32  GameStateIndex() const;
@@ -30,11 +33,16 @@ public:
 	s32  TotalTimeOutDuration() const;
 	bool Forfeited() const;
 	bool MercyLimited() const;
-	void SetInWarmUp();
-	void SetInProgress();
 	s32  GetTimeOutStartTime(u32 index) const;
 	s32  GetTimeOutEndTime(u32 index) const;
 	u32  GetMatchStartDateEpoch() const;
+	u32  GetTimeLimit() const { return _timeLimit; }
+	u32  GetScoreLimit() const { return _scoreLimit; }
+	u32  GetFragLimit() const { return _fragLimit; }
+	u32  GetCaptureLimit() const { return _captureLimit; }
+	u32  GetRoundLimit() const { return _roundLimit; }
+	s32  CountDownStartTime() const { return _warmUpEndTime; }
+	s32  IntermissionEndTime() const { return _intermissionEndTime; }
 
 	udtGameType::Id     GameType() const;
 	udtMod::Id          Mod() const;
@@ -50,9 +58,10 @@ private:
 	{
 		enum Id
 		{
-			WarmUp, // For our purposes, we consider intermission to be warm-up.
+			WarmUp,
 			CountDown,
 			InProgress,
+			Intermission,
 			Count
 		};
 	};
@@ -82,6 +91,7 @@ private:
 	void ProcessIntermissionConfigString(const udtString& configString);
 	void ProcessGameTypeFromServerInfo(const char* configString);
 	void ProcessOSPGamePlayConfigString(const char* configString);
+	void ProcessQ3AndQLServerInfoConfigString(const char* configString);
 	void ProcessScores2(const char* configString);
 	void ProcessScores2Player(const char* configString);
 	void ProcessQLPauseStartConfigString(const char* configString);
@@ -105,10 +115,18 @@ private:
 	s32 _matchStartTime;
 	s32 _matchEndTime;
 	s32 _prevMatchStartTime;
+	s32 _warmUpEndTime; // Count down start time or match start time.
+	s32 _intermissionEndTime; // Intermission end time or match end time.
 	u32 _overTimeCount;
 	u32 _timeOutCount;
 	s32 _totalTimeOutDuration;
 	u32 _matchStartDateEpoch;
+	u32 _timeLimit;
+	u32 _scoreLimit;
+	u32 _fragLimit;
+	u32 _captureLimit;
+	u32 _roundLimit;
+	s32 _te;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;

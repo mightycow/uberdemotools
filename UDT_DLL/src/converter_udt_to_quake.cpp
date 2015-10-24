@@ -221,7 +221,7 @@ bool udtdConverter::ProcessGameState()
 		memcpy(GetBaseline(es.number), &es, (size_t)_protocolSizeOfEntityState);
 
 		_outMsg.WriteByte(svc_baseline);
-		_outMsg.WriteDeltaEntity(&nullState, &es, qtrue);
+		_outMsg.WriteDeltaEntity(&nullState, &es, true);
 	}
 
 	_outMsg.WriteByte(svc_EOF);
@@ -340,7 +340,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 	_outMsg.WriteByte(info.SnapFlags);
 	_outMsg.WriteByte(32);
 	_outMsg.WriteData(_areaMask, 32);
-	_outMsg.WriteDeltaPlayerstate(_firstSnapshot ? NULL : &oldSnap.PlayerState, &curSnap.PlayerState);
+	_outMsg.WriteDeltaPlayer(_firstSnapshot ? NULL : &oldSnap.PlayerState, &curSnap.PlayerState);
 
 	if(_firstSnapshot)
 	{
@@ -348,7 +348,7 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 		{
 			if(curSnap.Entities[i].Valid)
 			{
-				_outMsg.WriteDeltaEntity(GetBaseline(i), &curSnap.Entities[i].EntityState, qtrue);
+				_outMsg.WriteDeltaEntity(GetBaseline(i), &curSnap.Entities[i].EntityState, true);
 			}
 		}
 	}
@@ -363,17 +363,17 @@ void udtdConverter::WriteSnapshot(const SnapshotInfo& info)
 			if(curValid && oldValid && memcmp(&curEnt, &oldEnt, (size_t)_protocolSizeOfEntityState))
 			{
 				// Entity changed.
-				_outMsg.WriteDeltaEntity(&oldEnt, &curEnt, qfalse);
+				_outMsg.WriteDeltaEntity(&oldEnt, &curEnt, false);
 			}
 			else if(curValid && !oldValid)
 			{
 				// Entity added from the baseline.
-				_outMsg.WriteDeltaEntity(GetBaseline(i), &curEnt, qtrue);
+				_outMsg.WriteDeltaEntity(GetBaseline(i), &curEnt, true);
 			}
 			else if(oldValid && !curValid)
 			{
 				// Entity removed.
-				_outMsg.WriteDeltaEntity(&oldEnt, NULL, qtrue);
+				_outMsg.WriteDeltaEntity(&oldEnt, NULL, true);
 			}
 		}
 	}

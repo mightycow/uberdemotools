@@ -1,23 +1,88 @@
-#include "api.h"
-
-
+#include "uberdemotools.h"
+#include "macros.hpp"
+#include "string.hpp"
+#include "stack_trace.hpp"
 #if defined(UDT_WINDOWS)
-#	include "string.hpp"
 #	include "thread_local_allocators.hpp"
 #	include "scoped_stack_allocator.hpp"
 #	include <Windows.h>
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 
 
-extern int udt_main(int argc, char** argv);
-extern void CrashHandler(const char* message);
+static const char* LogLevels[4] =
+{
+	"",
+	"Warning: ",
+	"Error: ",
+	"Fatal: "
+};
+
+static const char* ExecutableFileName = NULL;
+static bool QuietMode = false;
+
+
+extern int  udt_main(int argc, char** argv);
+extern void PrintHelp();
+
+
+static void CrashHandler(const char* message)
+{
+	fprintf(stderr, "\n");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+
+#if !defined(UDT_WINDOWS)
+	PrintStackTrace(stderr, 3, ExecutableFileName);
+#endif
+
+	exit(666);
+}
+
+static void ParseQuietOption(int argc, char** argv)
+{
+	for(int i = 1; i < argc; ++i)
+	{
+		if(udtString::Equals(udtString::NewConstRef(argv[i]), "-q"))
+		{
+			QuietMode = true;
+			break;
+		}
+	}
+}
+
+void CallbackConsoleMessage(s32 logLevel, const char* message)
+{
+	if(logLevel < 0 || logLevel >= 3)
+	{
+		logLevel = 3;
+	}
+
+	const bool useStdOut = logLevel == 0 || logLevel == 1;
+	if(QuietMode && useStdOut)
+	{
+		return;
+	}
+
+	FILE* const file = useStdOut ? stdout : stderr;
+	fprintf(file, LogLevels[logLevel]);
+	fprintf(file, message);
+	fprintf(file, "\n");
+}
 
 
 #if defined(UDT_WINDOWS)
 
 #define UDT_MAX_ARG_COUNT 16
+
+void CallbackConsoleProgress(f32 progress, void*)
+{
+	char title[256];
+	sprintf(title, "%.1f%% - %s", 100.0f * progress, ExecutableFileName);
+	SetConsoleTitleA(title);
+}
 
 static void ResetCurrentDirectory(const char* exeFilePath)
 {
@@ -36,9 +101,21 @@ static void ResetCurrentDirectory(const char* exeFilePath)
 	SetCurrentDirectoryW(wideDirectoryPath);
 }
 
+static void FindExecutableFileName(const char* exeFilePath)
+{
+	ExecutableFileName = exeFilePath;
+
+	u32 slashIndex = 0;
+	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
+	if(udtString::FindLastCharacterListMatch(slashIndex, exeFilePathString, udtString::NewConstRef("/\\")) &&
+	   slashIndex + 1 < exeFilePathString.Length)
+	{
+		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+	}
+}
+
 int wmain(int argc, wchar_t** argvWide)
 {
-	printf("UDT library version: %s\n", udtGetVersionString());
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
 
@@ -56,18 +133,69 @@ int wmain(int argc, wchar_t** argvWide)
 		argv[i] = udtString::NewFromUTF16(allocator, argvWide[i]).String;
 	}
 
+	if(argc == 2)
+	{
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "/?") ||
+		   udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+		{
+			PrintHelp();
+			return 0;
+		}
+
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--version"))
+		{
+			printf("UDT library version: %s\n", udtGetVersionString());
+			return 0;
+		}
+	}	   
+
 	ResetCurrentDirectory(argv[0]);
+	FindExecutableFileName(argv[0]);
+	ParseQuietOption(argc, argv);
 
 	return udt_main(argc, argv);
 }
 
 #else
 
+void CallbackConsoleProgress(f32, void*)
+{
+}
+
+static void FindExecutableFileName(const char* exeFilePath)
+{
+	ExecutableFileName = exeFilePath;
+
+	u32 slashIndex = 0;
+	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
+	if(udtString::FindLastCharacterMatch(slashIndex, exeFilePathString, '/') &&
+	   slashIndex + 1 < exeFilePathString.Length)
+	{
+		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+	}
+}
+
 int main(int argc, char** argv)
 {
-	printf("UDT library version: %s\n", udtGetVersionString());
+	if(argc == 2)
+	{
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
+		{
+			PrintHelp();
+			return 0;
+		}
+
+		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--version"))
+		{
+			printf("UDT library version: %s\n", udtGetVersionString());
+			return 0;
+		}
+	}
+
+	FindExecutableFileName(argv[0]);
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
+	ParseQuietOption(argc, argv);
 
 	return udt_main(argc, argv);
 }

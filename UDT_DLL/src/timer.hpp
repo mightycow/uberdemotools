@@ -1,7 +1,8 @@
 #pragma once
 
 
-#include "types.hpp"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 
 struct udtTimerImpl;

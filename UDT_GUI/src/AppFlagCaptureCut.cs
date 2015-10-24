@@ -37,6 +37,8 @@ namespace Uber.DemoTools
             {
                 config.FlagCaptureMaxCarryTimeMs = seconds * 1000;
             }
+            config.FlagCaptureAllowBaseToBase = _allowBaseToBaseCheckBox.IsChecked ?? false;
+            config.FlagCaptureAllowMissingToBase = _allowMissingToBaseCheckBox.IsChecked ?? false;
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -47,6 +49,8 @@ namespace Uber.DemoTools
         private App _app;
         private TextBox _minCarryTimeTextBox;
         private TextBox _maxCarryTimeTextBox;
+        private CheckBox _allowBaseToBaseCheckBox;
+        private CheckBox _allowMissingToBaseCheckBox;
 
         private FrameworkElement CreateTab()
         {
@@ -62,9 +66,23 @@ namespace Uber.DemoTools
             maxCarryTimeTextBox.Text = App.FormatMinutesSeconds(_app.Config.FlagCaptureMaxCarryTimeMs / 1000);
             maxCarryTimeTextBox.ToolTip = "seconds OR minutes:seconds";
 
+            var allowBaseToBaseCheckBox = new CheckBox();
+            _allowBaseToBaseCheckBox = allowBaseToBaseCheckBox;
+            allowBaseToBaseCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            allowBaseToBaseCheckBox.IsChecked = _app.Config.FlagCaptureAllowBaseToBase;
+            allowBaseToBaseCheckBox.Content = " Allow flag pick-ups from the flag's return position?";
+
+            var allowMissingToBaseCheckBox = new CheckBox();
+            _allowMissingToBaseCheckBox = allowMissingToBaseCheckBox;
+            allowMissingToBaseCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            allowMissingToBaseCheckBox.IsChecked = _app.Config.FlagCaptureAllowMissingToBase;
+            allowMissingToBaseCheckBox.Content = " Allow flag pick-ups not from the flag's return position?";
+
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Min. Carry Time", minCarryTimeTextBox));
             rulesPanelList.Add(App.CreateTuple("Max. Carry Time", maxCarryTimeTextBox));
+            rulesPanelList.Add(App.CreateTuple("Base Pick-ups?", allowBaseToBaseCheckBox));
+            rulesPanelList.Add(App.CreateTuple("Non-base Pick-ups?", allowMissingToBaseCheckBox));
 
             var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
@@ -122,6 +140,13 @@ namespace Uber.DemoTools
             }
 
             _app.SaveBothConfigs();
+            if(!_app.Config.FlagCaptureAllowBaseToBase &&
+                !_app.Config.FlagCaptureAllowMissingToBase)
+            {
+                _app.LogError("You disabled both base and non-base pick-ups. Please enable at least one of them to proceed.");
+                return;
+            }
+
             _app.DisableUiNonThreadSafe();
             _app.JoinJobThread();
 

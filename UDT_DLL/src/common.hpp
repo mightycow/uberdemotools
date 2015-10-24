@@ -1,18 +1,16 @@
 #pragma once
 
 
-#include "api.h"
-#include "types.hpp"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 #include <string.h>
 #include <stdio.h>
 
 
-// @TODO: Use C++ bool instead.
-typedef s32 qbool;
-#define qfalse ((qbool)(0))
-#define qtrue  ((qbool)(!0))
-typedef qbool qboolean;
+// safe strncpy that ensures a trailing zero
+extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
+
 
 typedef f32 vec_t;
 typedef vec_t vec2_t[2];
@@ -173,7 +171,7 @@ struct idEntityState90 : idEntityStateBase
 
 	// New in dm_90.
 	s32		jumpTime;
-	qbool	doubleJumped;
+	s32		doubleJumped; // qboolean
 };
 
 struct idEntityState91 : idEntityStateBase
@@ -184,7 +182,7 @@ struct idEntityState91 : idEntityStateBase
 
 	// New in dm_90.
 	s32		jumpTime;
-	qbool	doubleJumped;
+	s32		doubleJumped; // qboolean
 
 	// New in dm_91.
 	s32		health;
@@ -282,6 +280,7 @@ typedef enum {
 
 #define CS_LEVEL_START_TIME_3   13
 #define CS_INTERMISSION_3       14
+#define CS_FLAGSTATUS_3         15
 #define CS_LOCATIONS_3          672
 
 // Doesn't seem to exist in dm_73. Don't know about dm_90.
@@ -411,13 +410,13 @@ struct idPlayerState73 : idPlayerStateBase
 
 struct idPlayerState90 : idPlayerStateBase
 {
-	qboolean doubleJumped;
+	s32 doubleJumped; // qboolean
 	s32 jumpTime;
 };
 
 struct idPlayerState91 : idPlayerStateBase
 {
-	qboolean doubleJumped;
+	s32 doubleJumped; // qboolean
 	s32 jumpTime;
 	s32 weaponPrimary;
 	s32 crouchTime;
@@ -430,23 +429,6 @@ struct idPlayerState91 : idPlayerStateBase
 };
 
 typedef idPlayerState91 idLargestPlayerState;
-
-//====================================================================
-
-s32 Q_isprint( s32 c );
-s32 Q_islower( s32 c );
-s32 Q_isupper( s32 c );
-s32 Q_isalpha( s32 c );
-
-// portable case insensitive compare
-s32			Q_stricmp( const char *s1, const char *s2 );
-s32			Q_strncmp( const char *s1, const char *s2, s32 n );
-s32			Q_stricmpn( const char *s1, const char *s2, s32 n );
-const char	*Q_strrchr( const char* string, s32 c );
-
-// buffer size safe library replacements
-void	Q_strncpyz( char *dest, const char *src, s32 destsize );
-void	Q_strcat( char *dest, s32 size, const char *src );
 
 /*
 ==============================================================
@@ -489,22 +471,16 @@ enum svc_ops_e
 // snapshots are a view of the server at a given time
 struct idClientSnapshotBase
 {
-	qbool		valid;			// cleared if delta parsing was invalid
-	s32				snapFlags;		// rate delayed and dropped commands
-
-	s32				serverTime;		// server time the message is valid for (in msec)
-
-	s32				messageNum;		// copied from netchan->incoming_sequence
-	s32				deltaNum;		// messageNum the delta is from
-	s32				ping;			// time from when cmdNum-1 was sent to time packet was reeceived
-	u8			areamask[MAX_MAP_AREA_BYTES];		// portalarea visibility bits
-
-	s32				cmdNum;			// the next cmdNum the server is expecting
-
-	s32				numEntities;			// all of the entities that need to be presented
-	s32				parseEntitiesNum;		// at the time of this snapshot
-
-	s32				serverCommandNum;		// execute all commands up to this before making the snapshot current
+	u8   areamask[MAX_MAP_AREA_BYTES]; // portalarea visibility bits
+	s32  snapFlags;                    // rate delayed and dropped commands
+	s32  serverTime;                   // server time the message is valid for (in msec)
+	s32  messageNum;                   // copied from netchan->incoming_sequence
+	s32  deltaNum;                     // messageNum the delta is from
+	s32  cmdNum;                       // the next cmdNum the server is expecting
+	s32  numEntities;                  // all of the entities that need to be presented
+	s32  parseEntitiesNum;             // at the time of this snapshot
+	s32  serverCommandNum;             // execute all commands up to this before making the snapshot current
+	bool valid;                        // cleared if delta parsing was invalid
 };
 
 struct idClientSnapshot3 : idClientSnapshotBase
@@ -1402,5 +1378,15 @@ struct udtGame
 		QL,
 		CPMA,
 		OSP
+	};
+};
+
+struct idFlagStatus
+{
+	enum Id
+	{
+		InBase,   // In its spot in base.
+		Captured, // Being carried by an enemy player.
+		Missing   // Not being carried by anyone but not in its spot either.
 	};
 };

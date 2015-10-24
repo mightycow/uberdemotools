@@ -6,7 +6,7 @@ The main features are:
 
 - Extracting and displaying information (examples: map name, player names and teams, game mode, etc)
 - Cutting by time: creating a new demo file that is a time sub-range of the original demo file for easier processing or demo viewing
-- Splitting demos: given a demo with multiple map changes, create a new demo file per map change (plus one for the stuff before the first map change)
+- Splitting demos: given a demo with multiple gamestates (happens on map change/reload), create a new demo file per gamestate
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
 - Time shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
@@ -21,8 +21,8 @@ What's in the project?
 
 The project is currently comprised of 3 parts:
 
-1. A shared library, `UDT_DLL`, with a C interface, written in C++. Supported OSes: Windows, Linux
-2. A set of command-line tools, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter`, `UDT_merger` and `UDT_json`, written in C++. Supported OSes: Windows, Linux
+1. A shared library, `UDT_DLL`, with a C89 compatible interface, written in C++. Supported OSes: Windows, Linux
+2. A set of command-line tools, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
 
 Overview of the binaries
@@ -34,7 +34,8 @@ Overview of the binaries
 | UDT_splitter    | Application<br>C++ | Windows Linux |  | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
 | UDT_timeshifter | Application<br>C++ | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
 | UDT_merger      | Application<br>C++ | Windows Linux |  | Command-line application for merging multiple demos into one |
-| UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files |
+| UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files (one per demo file) |
+| UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
 
 Supported demo formats
@@ -58,7 +59,7 @@ Installation
 ------------
 
 No installation is required for any of the binaries.  
-`UDT_DLL`, `UDT_cutter`, `UDT_splitter`, `UDT_timeshifter`, `UDT_merger` and `UDT_json`` have no third-party dependencies.
+The command-line tools have no third-party dependencies.
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
@@ -115,6 +116,7 @@ Here are the patterns you can look for in demos:
 | Multi-frag rails | Selected               | Railgun frags killing 2 or more players |
 | Flag captures    | Selected               | Flag runs: the player picks up the flag and captures it |
 | Flick rails      | Selected               | Railgun frags where the attacker's view angles changed very fast right before the killing shot |
+| Matches          | None                   | Each match, from pre-match count-down start to post-match intermission (scoreboard screen) end |
 
 1. To which player(s) is the pattern matching applied to?
 2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
@@ -146,6 +148,7 @@ In alphabetical order:
 * gaiia
 * JackBender
 * Naper
+* oranjemetal
 * pakao
 * Sab0o
 * santile

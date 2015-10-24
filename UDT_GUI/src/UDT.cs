@@ -57,7 +57,7 @@ namespace Uber.DemoTools
         [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
         public delegate void udtCrashCallback(string message);
 
-        public enum udtProtocol
+        public enum udtProtocol : uint
         {
             Invalid,
             Dm3,
@@ -103,6 +103,7 @@ namespace Uber.DemoTools
             Stats,
             RawCommands,
             RawConfigStrings,
+            Captures,
             Count
         }
 
@@ -152,6 +153,7 @@ namespace Uber.DemoTools
             TeamStatsDataTypes,
             PlayerStatsDataTypes,
             PerfStatsDataTypes,
+            GameTypeFlags,
             Count
         }
 
@@ -163,6 +165,7 @@ namespace Uber.DemoTools
             MultiFragRails,
             FlagCaptures,
             FlickRails,
+            Matches,
             Count
         }
 
@@ -188,6 +191,17 @@ namespace Uber.DemoTools
             Count
         };
 
+        enum udtGameTypeFlags : byte
+        {
+            None = 0,
+            Team = 1 << 0,
+            RoundBased = 1 << 1,
+            HasCaptureLimit = 1 << 2,
+            HasFragLimit = 1 << 3,
+            HasScoreLimit = 1 << 4,
+            HasRoundLimit = 1 << 5
+        };
+
         private enum udtGameType : uint
         {
             SP,
@@ -195,7 +209,9 @@ namespace Uber.DemoTools
             Duel,
             Race,
             HM,
+            RedRover,
             TDM,
+            CBTDM,
             CA,
             CTF,
             OneFlagCTF,
@@ -203,7 +219,6 @@ namespace Uber.DemoTools
             Harvester,
             Domination,
             CTFS,
-            RedRover,
             NTF,
             TwoVsTwo,
             FT,
@@ -247,6 +262,8 @@ namespace Uber.DemoTools
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
             public UInt32 Flags;
+            public UInt32 MinProgressTimeMs;
+            public Int32 Reserved2;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -282,7 +299,7 @@ namespace Uber.DemoTools
         };
 
         [Flags]
-        public enum udtCutByPatternArgFlags
+        public enum udtCutByPatternArgFlags : uint
         {
             MergeCutSections = 1 << 0
         }
@@ -327,7 +344,7 @@ namespace Uber.DemoTools
 	    }
 
         [Flags]
-        public enum udtCutByFragArgFlags
+        public enum udtCutByFragArgFlags : uint
         {
             AllowSelfKills = 1 << 0,
             AllowTeamKills = 1 << 1,
@@ -366,6 +383,8 @@ namespace Uber.DemoTools
         {
             public UInt32 MinCarryTimeMs;
             public UInt32 MaxCarryTimeMs;
+            public UInt32 AllowBaseToBase;
+            public UInt32 AllowMissingToBase;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -376,6 +395,13 @@ namespace Uber.DemoTools
             public float MinAngleDelta;
             public UInt32 MinAngleDeltaSnapshotCount;
         }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByMatchArg
+        {
+            public UInt32 MatchStartOffsetMs;
+            public UInt32 MatchEndOffsetMs;
+        };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMapConversionRule
@@ -516,6 +542,16 @@ namespace Uber.DemoTools
             public UInt32 SecondPlaceWon;
             public UInt32 TeamMode;
             public UInt32 StartDateEpoch;
+            public UInt32 TimeLimit;
+            public UInt32 ScoreLimit;
+            public UInt32 FragLimit;
+            public UInt32 CaptureLimit;
+            public UInt32 RoundLimit;
+            public Int32 StartTimeMs;
+            public Int32 EndTimeMs;
+            public UInt32 GameStateIndex;
+            public Int32 CountDownStartTimeMs;
+            public Int32 IntermissionEndTimeMs;
             public Int32 Reserved1;
 	    };
 
@@ -535,6 +571,27 @@ namespace Uber.DemoTools
             public IntPtr CleanConfigString; // const char*
             public UInt32 ConfigStringIndex;
             public Int32 GameStateIndex;
+        };
+
+        [Flags]
+        enum udtParseDataCaptureFlags : uint
+	    {
+		    BaseToBase = 1 << 0,
+			DemoTaker = 1 << 1,
+			FirstPersonPlayer = 1 << 2
+	    };
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtParseDataCapture
+        {
+            public IntPtr MapName; // const char*
+            public IntPtr PlayerName; // const char*
+            public Int32 GameStateIndex;
+            public Int32 PickUpTimeMs;
+            public Int32 CaptureTimeMs;
+            public float Distance;
+            public UInt32 Flags;
+            public Int32 PlayerIndex;
         };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -674,7 +731,8 @@ namespace Uber.DemoTools
             (UInt32)udtParserPlugIn.Obituaries,
             (UInt32)udtParserPlugIn.Stats,
             (UInt32)udtParserPlugIn.RawCommands,
-            (UInt32)udtParserPlugIn.RawConfigStrings
+            (UInt32)udtParserPlugIn.RawConfigStrings,
+            (UInt32)udtParserPlugIn.Captures
         };
 
         public static List<string> GetStringArray(udtStringArray array)
@@ -821,6 +879,17 @@ namespace Uber.DemoTools
             var rules = new udtCutByFlagCaptureArg();
             rules.MinCarryTimeMs = (UInt32)config.FlagCaptureMinCarryTimeMs;
             rules.MaxCarryTimeMs = (UInt32)config.FlagCaptureMaxCarryTimeMs;
+            rules.AllowBaseToBase = (UInt32)(config.FlagCaptureAllowBaseToBase ? 1 : 0);
+            rules.AllowMissingToBase = (UInt32)(config.FlagCaptureAllowMissingToBase ? 1 : 0);
+
+            return rules;
+        }
+
+        public static udtCutByMatchArg CreateCutByMatchArg(UdtConfig config)
+        {
+            var rules = new udtCutByMatchArg();
+            rules.MatchStartOffsetMs = (UInt32)config.MatchCutStartTimeOffsetMs;
+            rules.MatchEndOffsetMs = (UInt32)config.MatchCutEndTimeOffsetMs;
 
             return rules;
         }
@@ -1040,6 +1109,17 @@ namespace Uber.DemoTools
             return true;
         }
 
+        public static bool CreateMatchPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMatchArg rules)
+        {
+            var pinnedRules = new PinnedObject(rules);
+            resources.PinnedObjects.Add(pinnedRules);
+
+            pattern.Type = (UInt32)udtPatternType.Matches;
+            pattern.TypeSpecificInfo = pinnedRules.Address;
+
+            return true;
+        }
+
         public class CutByPatternOptions
         {
             public int StartOffset;
@@ -1143,6 +1223,18 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
+        public static bool CutDemosByMatch(ref udtParseArg parseArg, List<string> filePaths, udtCutByMatchArg rules, CutByPatternOptions options)
+        {
+            var resources = new ArgumentResources();
+            var patterns = new udtPatternInfo[1];
+            if(!CreateMatchPatternInfo(ref patterns[0], resources, rules))
+            {
+                return false;
+            }
+
+            return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
+        }
+
         public static bool CutDemosByPattern(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
             InitJobPerfStats();
@@ -1152,7 +1244,8 @@ namespace Uber.DemoTools
             var batchCount = runner.BatchCount;
             for(var i = 0; i < batchCount; ++i)
             {
-                CutDemosByPatternImpl(resources, ref newParseArg, runner.GetNextFiles(i), patterns, options);
+                runner.PrepareNextBatch();
+                CutDemosByPatternImpl(resources, ref newParseArg, runner.GetFileList(), patterns, options);
                 resources.Free();
                 MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
@@ -1234,7 +1327,8 @@ namespace Uber.DemoTools
             var batchCount = runner.BatchCount;
             for(var i = 0; i < batchCount; ++i)
             {
-                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, runner.GetNextFiles(i), maxThreadCount);
+                runner.PrepareNextBatch();
+                ConvertDemosImpl(ref newParseArg, outProtocol, mapRules, runner.GetFileList(), maxThreadCount);
                 MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
@@ -1316,7 +1410,8 @@ namespace Uber.DemoTools
             var batchCount = runner.BatchCount;
             for(var i = 0; i < batchCount; ++i)
             {
-                TimeShiftDemosImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, snapshotCount);
+                runner.PrepareNextBatch();
+                TimeShiftDemosImpl(ref newParseArg, runner.GetFileList(), maxThreadCount, snapshotCount);
                 MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
@@ -1376,7 +1471,8 @@ namespace Uber.DemoTools
             var batchCount = runner.BatchCount;
             for(var i = 0; i < batchCount; ++i)
             {
-                ExportDemosDataToJSONImpl(ref newParseArg, runner.GetNextFiles(i), maxThreadCount, plugIns);
+                runner.PrepareNextBatch();
+                ExportDemosDataToJSONImpl(ref newParseArg, runner.GetFileList(), maxThreadCount, plugIns);
                 MergeBatchPerfStats();
                 if(runner.IsCanceled(parseArg.CancelOperation))
                 {
@@ -1439,8 +1535,9 @@ namespace Uber.DemoTools
             var batchCount = runner.BatchCount;
             for(var i = 0; i < batchCount; ++i)
             {
+                runner.PrepareNextBatch();
                 var fileIndex = runner.FileIndex;
-                var files = runner.GetNextFiles(i);
+                var files = runner.GetFileList();
                 var currentResults = ParseDemosImpl(ref newParseArg, files, maxThreadCount, fileIndex);
                 demos.AddRange(currentResults);
                 MergeBatchPerfStats();
@@ -1566,6 +1663,7 @@ namespace Uber.DemoTools
             ExtractObituaries(context, demoIdx, info);
             ExtractStats(context, demoIdx, info);
             ExtractCommands(context, demoIdx, info);
+            ExtractCaptures(context, demoIdx, info);
         }
 
         private static void ExtractChatEvents(udtParserContextRef context, uint demoIdx, DemoInfo info)
@@ -1867,6 +1965,32 @@ namespace Uber.DemoTools
             }
         }
 
+        private static void ExtractCaptures(udtParserContextRef context, uint demoIdx, DemoInfo info)
+        {
+            uint captureCount = 0;
+            IntPtr captures = IntPtr.Zero;
+            if(udtGetDemoDataInfo(context, demoIdx, udtParserPlugIn.Captures, ref captures, ref captureCount) != udtErrorCode.None)
+            {
+                App.GlobalLogError("Calling udtGetDemoDataInfo for captures failed");
+                return;
+            }
+
+            for(uint i = 0; i < captureCount; ++i)
+            {
+                var address = new IntPtr(captures.ToInt64() + i * sizeof(udtParseDataCapture));
+                var data = (udtParseDataCapture)Marshal.PtrToStructure(address, typeof(udtParseDataCapture));
+                var gs = data.GameStateIndex;
+                var start = data.PickUpTimeMs;
+                var end = data.CaptureTimeMs;
+                var dur = end - start;
+                var b2b = (data.Flags & (uint)udtParseDataCaptureFlags.BaseToBase) != 0;
+                var player = SafeGetUTF8String(data.PlayerName, "N/A");
+                var map = SafeGetUTF8String(data.MapName, "N/A");
+                var item = new FlagCaptureDisplayInfo(gs, start, end, dur, b2b, player, map);
+                info.FlagCaptures.Add(item);
+            }
+        }
+
         private static void ExtractStats(udtParserContextRef context, uint demoIdx, DemoInfo info)
         {
             uint statsCount = 0;
@@ -1943,7 +2067,29 @@ namespace Uber.DemoTools
             stats.AddGenericField("Game type", GetUDTStringForValueOrNull(udtStringArray.GameTypes, data.GameType));
             stats.AddGenericField("Game play", GetUDTStringForValueOrNull(udtStringArray.GamePlayNames, data.GamePlay));
             stats.AddGenericField("Map name", data.Map);
-            stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)GetFixedMatchDuration(data) / 1000));
+
+            if(data.TimeLimit != 0)
+            {
+                stats.AddGenericField("Time limit", data.TimeLimit.ToString());
+            }
+            if(data.ScoreLimit != 0)
+            {
+                stats.AddGenericField("Score limit", data.ScoreLimit.ToString());
+            }
+            if(data.FragLimit != 0)
+            {
+                stats.AddGenericField("Frag limit", data.FragLimit.ToString());
+            }
+            if(data.CaptureLimit != 0)
+            {
+                stats.AddGenericField("Capture limit", data.CaptureLimit.ToString());
+            }
+            if(data.RoundLimit != 0)
+            {
+                stats.AddGenericField("Round limit", data.RoundLimit.ToString());
+            }
+
+            stats.AddGenericField("Match duration", App.FormatMinutesSeconds((int)data.MatchDurationMs / 1000));
             if(info.ProtocolNumber >= udtProtocol.Dm73 && data.GameType == (uint)udtGameType.TDM)
             {
                 stats.AddGenericField("Mercy limit hit?", data.MercyLimited != 0 ? "yes" : "no");
@@ -1969,10 +2115,54 @@ namespace Uber.DemoTools
                 stats.AddGenericField("Time-out #" + (i + 1).ToString(), startTimeString + " - " + endTimeString);
             }
 
+            stats.AddGenericField("Game state index", data.GameStateIndex.ToString());
+            if(data.CountDownStartTimeMs < data.StartTimeMs)
+            {
+                stats.AddGenericField("Count-down start", App.FormatMinutesSeconds(data.CountDownStartTimeMs / 1000));
+            }
+            var startString = App.FormatMinutesSeconds(data.StartTimeMs / 1000);
+            var endString = App.FormatMinutesSeconds(data.EndTimeMs / 1000);
+            stats.AddGenericField("Match time range", startString + " - " + endString);
+            if(data.IntermissionEndTimeMs > data.EndTimeMs)
+            {
+                stats.AddGenericField("Post-match intermission end", App.FormatMinutesSeconds(data.IntermissionEndTimeMs / 1000));
+            }
+
             ExtractTeamStats(data, info, ref stats);
             ExtractPlayerStats(data, info, ref stats);
 
             info.MatchStats.Add(stats);
+
+            ExtractTimeInfo(data, info);
+        }
+
+        private static void ExtractTimeInfo(udtParseDataStats data, DemoInfo info)
+        {
+            var roundBaseMode = false;
+            IntPtr gameTypeFlags = IntPtr.Zero;
+            UInt32 gameTypeCount = 0;
+            if(udtGetByteArray(udtByteArray.GameTypeFlags, ref gameTypeFlags, ref gameTypeCount) == udtErrorCode.None &&
+                data.GameType < gameTypeCount &&
+                (Marshal.ReadByte(gameTypeFlags, (int)data.GameType) & (byte)udtGameTypeFlags.RoundBased) != 0)
+            {
+                roundBaseMode = true;
+            }
+
+            var match = new MatchTimeInfo();
+            match.GameStateIndex = (int)data.GameStateIndex;
+            match.StartTimeMs = data.StartTimeMs;
+            match.EndTimeMs = data.EndTimeMs;
+            match.TimeLimit = (int)data.TimeLimit;
+            match.HadOvertime = data.OverTimeCount > 0;
+            match.RoundBasedMode = roundBaseMode;
+            for(var i = 0; i < (int)data.TimeOutCount; ++i)
+            {
+                var startTimeMs = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4 * (2 * i));
+                var endTimeMs = Marshal.ReadInt32(data.TimeOutStartAndEndTimes, 4 * (2 * i + 1));
+                match.TimeOuts.Add(new Timeout(startTimeMs, endTimeMs));
+            }
+
+            info.MatchTimes.Add(match);
         }
 
         private static void ExtractTeamStats(udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)
@@ -2372,6 +2562,13 @@ namespace Uber.DemoTools
 
         private class BatchJobRunner
         {
+            private class BatchInfo
+            {
+                public long ByteCount;
+                public int FirstFileIndex;
+                public int FileCount;
+            };
+
             public BatchJobRunner(udtParseArg parseArg, List<string> filePaths, int maxBatchSize)
             {
                 var fileCount = filePaths.Count;
@@ -2380,37 +2577,82 @@ namespace Uber.DemoTools
                 _stopwatch = new Stopwatch();
                 _maxBatchSize = maxBatchSize;
                 _oldProgressCb = parseArg.ProgressCb;
-                _batchCount = (fileCount + _maxBatchSize - 1) / _maxBatchSize;
-                _filesPerBatch = fileCount / _batchCount;
                 _newParseArg = parseArg;
 
-                if(fileCount > maxBatchSize)
+                long totalByteCount = 0;
+                if(fileCount <= maxBatchSize)
                 {
-                    _newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+                    for(var i = 0; i < fileCount; ++i)
                     {
-                        var realProgress = _progressBase + _progressRange * progress;
-                        _oldProgressCb(realProgress, userData);
-                    };
+                        var byteCount = new FileInfo(filePaths[i]).Length;
+                        totalByteCount += byteCount;
+                    }
+                    _totalByteCount = totalByteCount;
+
+                    var info = new BatchInfo();
+                    info.ByteCount = totalByteCount;
+                    info.FileCount = fileCount;
+                    info.FirstFileIndex = 0;
+                    _batches.Add(info);
+
+                    _stopwatch.Start();
+
+                    return;
                 }
+
+                _newParseArg.ProgressCb = delegate(float progress, IntPtr userData)
+                {
+                    var realProgress = (float)(_progressBase + _progressRange * (double)progress);
+                    _oldProgressCb(realProgress, userData);
+                };
+
+                var batchCount = (fileCount + _maxBatchSize - 1) / _maxBatchSize;
+                var filesPerBatch = fileCount / batchCount;
+                var fileOffset = 0;
+                for(var i = 0; i < batchCount; ++i)
+                {
+                    var batchFileCount = (i == batchCount - 1) ? (fileCount - fileOffset) : filesPerBatch;
+
+                    long batchByteCount = 0;
+                    for(var j = fileOffset; j < fileOffset + batchFileCount; ++j)
+                    {
+                        var byteCount = new FileInfo(filePaths[j]).Length;
+                        totalByteCount += byteCount;
+                        batchByteCount += byteCount;
+                    }
+
+                    var info = new BatchInfo();
+                    info.ByteCount = batchByteCount;
+                    info.FileCount = batchFileCount;
+                    info.FirstFileIndex = fileOffset;
+                    _batches.Add(info);
+
+                    fileOffset += batchFileCount;
+                }
+
+                _totalByteCount = totalByteCount;
 
                 _stopwatch.Start();
             }
 
-            public List<string> GetNextFiles(int batchIndex)
+            public void PrepareNextBatch()
             {
-                if(_batchCount <= 1)
+                if(_filePaths.Count <= _maxBatchSize || _batchIndex >= BatchCount)
                 {
-                    return _filePaths;
+                    return;
                 }
 
-                var fileCount = _filePaths.Count;
-                _progressBase = (float)_fileIndex / (float)fileCount;
-                var currentFileCount = (batchIndex == _batchCount - 1) ? (fileCount - _fileIndex) : _filesPerBatch;
-                var currentFiles = _filePaths.GetRange(_fileIndex, currentFileCount);
-                _progressRange = (float)currentFileCount / (float)fileCount;
-                _fileIndex += currentFileCount;
+                _progressBase = (double)_processedByteCount / (double)_totalByteCount;
+                _progressRange = (double)_batches[_batchIndex].ByteCount / (double)_totalByteCount;
+                _processedByteCount += _batches[_batchIndex].ByteCount;
+                ++_batchIndex;
+            }
 
-                return currentFiles;
+            public List<string> GetFileList()
+            {
+                var batch = _batches[_batchIndex];
+
+                return _filePaths.GetRange(batch.FirstFileIndex, batch.FileCount);
             }
 
             public bool IsCanceled(IntPtr cancelValueAddress)
@@ -2418,14 +2660,14 @@ namespace Uber.DemoTools
                 return Marshal.ReadInt32(cancelValueAddress) != 0;
             }
 
-            public int BatchCount
-            {
-                get { return _batchCount; }
-            }
-
             public int FileIndex
             {
-                get { return _fileIndex; }
+                get { return _batches[_batchIndex].FirstFileIndex; }
+            }
+
+            public int BatchCount
+            {
+                get { return _batches.Count; }
             }
 
             public Stopwatch Timer
@@ -2439,15 +2681,16 @@ namespace Uber.DemoTools
             }
 
             private List<string> _filePaths;
-            private Stopwatch _stopwatch;
+            private readonly List<BatchInfo> _batches = new List<BatchInfo>();
+            private long _processedByteCount = 0;
+            private long _totalByteCount = 0;
+            private double _progressBase = 0.0;
+            private double _progressRange = 0.0;
             private int _maxBatchSize = 512;
-            private float _progressBase = 0.0f;
-            private float _progressRange = 0.0f;
-            private int _fileIndex = 0;
-            private int _batchCount = 0;
-            private int _filesPerBatch = 0;
+            private int _batchIndex = 0;
             private udtProgressCallback _oldProgressCb;
             private udtParseArg _newParseArg;
+            private Stopwatch _stopwatch;
         }
 
         private static string GetUDTStringForValueOrNull(udtStringArray stringId, uint value)
@@ -2459,28 +2702,6 @@ namespace Uber.DemoTools
             }
 
             return strings[(int)value];
-        }
-
-        private static uint GetFixedMatchDuration(udtParseDataStats stats)
-        {
-            var MaxMatchDurationDeltaMs = 1000;
-            var durationMs = (int)stats.MatchDurationMs;
-            var durationMinuteModuloMs = durationMs % 60000;
-            var absMinuteDiffMs = Math.Min(durationMinuteModuloMs, 60000 - durationMinuteModuloMs);
-            if((stats.OverTimeCount == 0 || stats.OverTimeType == (uint)udtOvertimeType.Timed) &&
-               stats.Forfeited == 0 &&
-               absMinuteDiffMs < MaxMatchDurationDeltaMs)
-            {
-                var minutes = (durationMs + 60000 - 1) / 60000;
-                if(durationMinuteModuloMs < MaxMatchDurationDeltaMs)
-                {
-                    --minutes;
-                }
-
-                return (uint)(60000 * minutes);
-            }
-
-            return stats.MatchDurationMs;
         }
 
         public static IntPtr StringToHGlobalUTF8(string nativeString)

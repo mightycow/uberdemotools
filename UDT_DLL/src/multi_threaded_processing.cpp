@@ -154,6 +154,7 @@ struct MultiThreadedProgressContext
 	u64 CurrentJobByteCount;
 	f32* Progress;
 	udtTimer* Timer;
+	u32 MinProgressTimeMs;
 };
 
 static void MultiThreadedProgressProgressCallback(f32 jobProgress, void* userData)
@@ -164,7 +165,7 @@ static void MultiThreadedProgressProgressCallback(f32 jobProgress, void* userDat
 		return;
 	}
 
-	if(context->Timer->GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+	if(context->Timer->GetElapsedMs() < u64(context->MinProgressTimeMs))
 	{
 		return;
 	}
@@ -217,6 +218,7 @@ static void ThreadFunction(void* userData)
 	progressContext.CurrentJobByteCount = 0;
 	progressContext.Timer = &timer;
 	progressContext.Progress = &data->Progress;
+	progressContext.MinProgressTimeMs = shared->ParseInfo->MinProgressTimeMs;
 
 	udtParseArg newParseInfo = *shared->ParseInfo;
 	newParseInfo.ProgressCb = &MultiThreadedProgressProgressCallback;
@@ -300,6 +302,7 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 	udtTimer progressTimer;
 	progressTimer.Start();
 
+	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	bool success = true;
 	udtVMArrayWithAlloc<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
 	threads.Resize(threadCount);
@@ -344,12 +347,12 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 		}
 
 		udtParsingThreadData& data = threadInfo.Threads[threadIdx];
-		if(threads[threadIdx].TimedJoin(UDT_MIN_PROGRESS_TIME_MS))
+		if(threads[threadIdx].TimedJoin(minProgressTimeMs))
 		{
 			data.Finished = true;
 		}
 
-		if(progressTimer.GetElapsedMs() < UDT_MIN_PROGRESS_TIME_MS)
+		if(progressTimer.GetElapsedMs() < u64(minProgressTimeMs))
 		{
 			continue;
 		}

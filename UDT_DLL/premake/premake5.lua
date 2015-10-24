@@ -5,6 +5,29 @@ path_inc = path_root.."/include"
 path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
 
+local function SetTargetAndLink(option) 
+
+	targetdir(option)
+	libdirs(option)
+
+end
+
+local function ApplyTargetAndLinkSettings() 
+
+	filter { "configurations:Debug", "platforms:x32" }
+		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/debug" )
+		
+	filter { "configurations:Debug", "platforms:x64" }
+		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/debug" )
+		
+	filter { "configurations:Release", "platforms:x32" }
+		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
+		
+	filter { "configurations:Release", "platforms:x64" }
+		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
+
+end
+
 local function ApplyProjectSettings() 
 
 	--
@@ -16,10 +39,12 @@ local function ApplyProjectSettings()
 
 	location ( path_build.."/".._ACTION )
 
-	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_inc.."/*.hpp" }
+	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
-	flags { "Unicode", "Symbols", "NoPCH", "NoRTTI", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings", "NoExceptions" }
+	rtti "Off"
+	exceptionhandling "Off"
+	flags { "Unicode", "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -39,17 +64,7 @@ local function ApplyProjectSettings()
 			"NoRuntimeChecks" 
 		}
 	
-	filter { "configurations:Debug", "platforms:x32" }
-		targetdir ( path_bin.."/".._ACTION.."/x86/debug" )
-		
-	filter { "configurations:Debug", "platforms:x64" }
-		targetdir ( path_bin.."/".._ACTION.."/x64/debug" )
-		
-	filter { "configurations:Release", "platforms:x32" }
-		targetdir ( path_bin.."/".._ACTION.."/x86/release" )
-		
-	filter { "configurations:Release", "platforms:x64" }
-		targetdir ( path_bin.."/".._ACTION.."/x64/release" )
+	ApplyTargetAndLinkSettings()
 		
 	filter "system:windows"
 		defines { "WIN32" }
@@ -150,53 +165,37 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_json.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
-			
-			
+		
+	project "UDT_captures"
 	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_captures.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
+		
+	project "UDT_c89"
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
+		filter { }
+		kind "ConsoleApp"
+		language "C"
+		location ( path_build.."/".._ACTION )
+		files { path_src_apps.."/app_c89.c" }
+		includedirs { path_src_apps, path_inc }
+		rtti "Off"
+		exceptionhandling "Off"
+		flags { "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings" }
+		links { "UDT" }
+		filter "configurations:Debug"
+			defines { "DEBUG", "_DEBUG" }
+		filter "configurations:Release"
+			defines { "NDEBUG" }
+		ApplyTargetAndLinkSettings()
+		filter "system:windows"
+			defines { "WIN32" }
+		filter "action:vs*"
+			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		filter { "action:vs*", "kind:ConsoleApp" }
+			linkoptions { "/ENTRY:mainCRTStartup" }
+		filter "action:gmake"
+			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC

@@ -24,7 +24,7 @@ namespace Uber
             }
         }
 
-        public static FrameworkElement CreateDualColumnPanel(IEnumerable<Tuple<FrameworkElement, FrameworkElement>> elementPairs, int width, int dy = 2)
+        public static StackPanel CreateDualColumnPanel(IEnumerable<Tuple<FrameworkElement, FrameworkElement>> elementPairs, int width, int dy = 2)
         {
             var rootPanel = new StackPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;

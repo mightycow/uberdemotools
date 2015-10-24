@@ -1,9 +1,9 @@
 #include "crash.hpp"
 #include "utils.hpp"
-#include "api.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 
 static void DefaultCrashCallback(const char* message)
@@ -20,7 +20,7 @@ void SetCrashHandler(udtCrashCallback crashHandler)
 	CrashHandler = crashHandler == NULL ? &DefaultCrashCallback : crashHandler;
 }
 
-void FatalError(const char* file, int line, const char* function, const char* message)
+void FatalError(const char* file, int line, const char* function, UDT_PRINTF_FORMAT_ARG const char* msgFormat, ...)
 {
 	const udtString fileString = udtString::NewConstRef(file);
 	const char* fileName = file;
@@ -31,8 +31,14 @@ void FatalError(const char* file, int line, const char* function, const char* me
 		fileName = file + sepIdx + 1;
 	}
 
-	char formattedMsg[512];
-	sprintf(formattedMsg, "FATAL ERROR\nFile: %s, line: %d\nFunction: %s\n%s", fileName, line, function, message);
+	char originalMsg[512];
+	va_list argptr;
+	va_start(argptr, msgFormat);
+	vsprintf(originalMsg, msgFormat, argptr);
+	va_end(argptr);
+
+	char formattedMsg[1024];
+	sprintf(formattedMsg, "FATAL ERROR\nFile: %s, line: %d\nFunction: %s\n%s", fileName, line, function, originalMsg);
 
 	(*CrashHandler)(formattedMsg);
 }

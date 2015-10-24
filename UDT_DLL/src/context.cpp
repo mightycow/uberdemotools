@@ -54,8 +54,7 @@ void udtContext::LogInfo(UDT_PRINTF_FORMAT_ARG const char* format, ...) const
 		return;
 	}
 
-	char msg[MAXPRINTMSG];
-
+	char msg[1024];
 	va_list argptr;
 	va_start(argptr, format);
 	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
@@ -71,8 +70,7 @@ void udtContext::LogWarning(UDT_PRINTF_FORMAT_ARG const char* format, ...) const
 		return;
 	}
 
-	char msg[MAXPRINTMSG];
-
+	char msg[1024];
 	va_list argptr;
 	va_start(argptr, format);
 	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
@@ -88,8 +86,7 @@ void udtContext::LogError(UDT_PRINTF_FORMAT_ARG const char* format, ...) const
 		return;
 	}
 
-	char msg[MAXPRINTMSG];
-
+	char msg[1024];
 	va_list argptr;
 	va_start(argptr, format);
 	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);
@@ -105,8 +102,7 @@ void udtContext::LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...)
 		return;
 	}
 
-	char msg[MAXPRINTMSG];
-
+	char msg[1024];
 	va_list argptr;
 	va_start(argptr, format);
 	Q_vsnprintf(msg, sizeof(msg) - 1, format, argptr);

@@ -10,8 +10,6 @@
 // On Windows, MAX_PATH is 260.
 #define UDT_MAX_PATH_LENGTH    320
 
-#define UDT_MIN_PROGRESS_TIME_MS    100
-
 
 template<typename T>
 T udt_min(const T a, const T b)
@@ -44,10 +42,8 @@ struct CallbackCutDemoFileStreamCreationInfo
 	const char* OutputFolderPath;
 };
 
-extern udtStream*  CallbackCutDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
-extern udtStream*  CallbackConvertedDemoFileStreamCreation(s32 startTimeMs, s32 endTimeMs, const char* veryShortDesc, udtBaseParser* parser, void* userData);
-extern void        CallbackConsoleMessage(s32 logLevel, const char* message);
-extern void	       CallbackConsoleProgress(f32 progress, void* userData);
+extern udtStream*  CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
+extern udtStream*  CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
 extern bool        StringParseInt(s32& output, const char* string);
 extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
 extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
@@ -72,6 +68,8 @@ extern s32         GetUDTModFromIdMod(s32 idMod, udtProtocol::Id protocol); // R
 extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.
 extern bool        GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString);
 extern uptr        ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount);
+extern bool        IsTeamMode(udtGameType::Id gameType);
+extern bool        IsRoundBasedMode(udtGameType::Id gameType);
 extern void        PerfStatsInit(u64* perfStats);
 extern void        PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount);
 extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs);
@@ -105,6 +103,7 @@ namespace idConfigStringIndex
 	extern s32 SecondPlacePlayerName(udtProtocol::Id protocol);
 	extern s32 PauseStart(udtProtocol::Id protocol);
 	extern s32 PauseEnd(udtProtocol::Id protocol);
+	extern s32 FlagStatus(udtProtocol::Id protocol);
 }
 
 namespace idPowerUpIndex

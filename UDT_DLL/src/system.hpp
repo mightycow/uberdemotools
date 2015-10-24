@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "types.hpp"
+#include "uberdemotools.h"
 
 
 // The output "coreCount" is only written to if the function is successful.

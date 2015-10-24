@@ -7,30 +7,20 @@
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
+void PrintHelp()
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_timeshifter");
-
-	exit(666);
-}
-
-static void PrintHelp()
-{
+	printf("Applies a sort of anti-lag to make the first-person view of demos look\n");
+	printf("more like what the player saw when he was playing (especially for CPMA LG).\n");
 	printf("\n");
-	printf("UDT_timeshifter snapshot_count demo_path_1 [demo_path_2 ... demo_path_n]\n");
-	printf("where snapshot_count is in the range: [1;8]\n");
+	printf("UDT_timeshifter [-q] [-s=snapshots] filepath\n");
+	printf("\n");
+	printf("-q    quiet mode: no logging to stdout  (default: off)\n");
+	printf("-s=N  set the snapshot count to N       (default: 2, min: 1, max: 8)\n");
 }
 
-static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
+static bool TimeShiftDemos(s32 snapshotCount, const char* filePath)
 {
-	udtVMArrayWithAlloc<s32> errorCodes;
-	errorCodes.Init((uptr)sizeof(s32) * (uptr)fileCount, "TimeShiftDemos::ErrorCodesArray");
-	errorCodes.Resize((u32)fileCount);
-
+	s32 outputErrorCode = 0;
 	s32 cancel = 0;
 
 	udtParseArg info;
@@ -41,9 +31,9 @@ static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 
 	udtMultiParseArg extraInfo;
 	memset(&extraInfo, 0, sizeof(extraInfo));
-	extraInfo.FileCount = (u32)fileCount;
-	extraInfo.FilePaths = (const char**)filePaths;
-	extraInfo.OutputErrorCodes = errorCodes.GetStartAddress();
+	extraInfo.FileCount = 1;
+	extraInfo.FilePaths = &filePath;
+	extraInfo.OutputErrorCodes = &outputErrorCode;
 
 	udtTimeShiftArg timeShiftArg;
 	memset(&timeShiftArg, 0, sizeof(timeShiftArg));
@@ -52,28 +42,41 @@ static int TimeShiftDemos(s32 snapshotCount, char** filePaths, int fileCount)
 	const s32 errorCode = udtTimeShiftDemoFiles(&info, &extraInfo, &timeShiftArg);
 	if(errorCode != (s32)udtErrorCode::None)
 	{
-		printf("Error: %s\n", udtGetErrorCodeString(errorCode));
-		return __LINE__;
+		fprintf(stderr, "udtTimeShiftDemoFiles failed with error: '%s'.\n", udtGetErrorCodeString(errorCode));
+		return false;
 	}
 
-	return 0;
+	return true;
 }
 
 int udt_main(int argc, char** argv)
 {
-	if(argc < 3)
+	if(argc == 1)
 	{
 		PrintHelp();
-		return __LINE__;
+		return 0;
 	}
 
-	s32 snapshotCount = -1;
-	if(!StringParseSeconds(snapshotCount, argv[1]) || snapshotCount <= 0 || snapshotCount > 8)
+	const char* const inputPath = argv[argc - 1];
+	s32 snapshotCount = 2;
+	for(int i = 1; i < argc - 1; ++i)
 	{
-		printf("Invalid snapshot count.\n");
-		PrintHelp();
-		return __LINE__;
+		s32 localSnapshotCount = 2;
+		const udtString arg = udtString::NewConstRef(argv[i]);
+		if(udtString::StartsWith(arg, "-s=") &&
+		   arg.Length >= 4 &&
+		   StringParseInt(localSnapshotCount, arg.String + 3) &&
+		   localSnapshotCount >= 1 &&
+		   localSnapshotCount <= 8)
+		{
+			snapshotCount = (u32)localSnapshotCount;
+		}
 	}
 
-	return TimeShiftDemos(snapshotCount, argv + 2, argc - 2);
+	if(!TimeShiftDemos(snapshotCount, inputPath))
+	{
+		return 1;
+	}
+
+	return 0;
 }

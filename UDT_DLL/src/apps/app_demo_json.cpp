@@ -3,38 +3,37 @@
 #include "path.hpp"
 #include "file_system.hpp"
 #include "utils.hpp"
+#include "batch_runner.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
 
 
-void CrashHandler(const char* message)
+#define    UDT_JSON_BATCH_SIZE    256
+
+
+void PrintHelp()
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
-
-	PrintStackTrace(3, "UDT_json");
-
-	exit(666);
-}
-
-static void PrintHelp()
-{
-	printf("???? help for UDT_json ????\n");
-	printf("UDT_json demo_file   [options] [-o=output_folder]\n");
-	printf("UDT_json demo_folder [options] [-o=output_folder]\n");
-	printf("If the output_folder isn't provided, the .json file will be output in the same directory as the input file with the same name.\n");
-	printf("Options: \n");
-	printf("-r        : enable recursive demo file search (default: off)\n");
-	printf("-t=max_t  : maximum number of threads         (default: 4)\n");
-	printf("-a=<flags>: select analyzers                  (default: all enabled)\n");
-	printf("            g: Game states\n");
-	printf("            m: chat Messages\n");
-	printf("            d: Deaths\n");
-	printf("            s: Stats\n");
-	printf("            r: Raw commands\n");
-	printf("            c: raw Config strings\n");
+	printf("For each input demo, outputs JSON data with analysis results to one file per demo or optionally to the terminal.\n");
+	printf("\n");
+	printf("UDT_json [-c] [-r] [-q] [-t=maxthreads] [-a=analyzers] [-o=outputfolder] inputfile|inputfolder\n");
+	printf("\n");
+	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
+	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
+	printf("-c    output to the console/terminal          (default: off)\n");
+	printf("-r    enable recursive demo file search       (default: off)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-a=   select analyzers                        (default: all enabled)\n");
+	printf("        g: Game states         s: Stats\n");
+	printf("        m: chat Messages       r: Raw commands\n");
+	printf("        c: raw Config strings  f: Flag captures\n");
+	printf("        d: Deaths\n");
+	printf("\n");
+	printf("The terminal output option -c will only be in effect when you specify the input as a file path.\n");
+	printf("When active, the option will disable all stdout output that isn't the JSON data itself but stderr output will ");
+	printf("still be active, so make sure you only read the stdout output from your programs and scripts.\n");
+	printf("\n");
+	printf("Example for selecting analyzers: -a=sd will select stats and deaths.\n");
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
@@ -56,7 +55,19 @@ static void RegisterAnalyzer(u32* analyzers, u32& analyzerCount, udtParserPlugIn
 	analyzers[analyzerCount++] = (u32)analyzerId;
 }
 
-static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
+static void CallbackConsoleMessageNoStdOut(s32 logLevel, const char* message)
+{
+	if(logLevel != 2 && logLevel != 3)
+	{
+		return;
+	}
+
+	fprintf(stderr, logLevel == 2 ? "Error: " : "Fatal: ");
+	fprintf(stderr, message);
+	fprintf(stderr, "\n");
+}
+
+static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)
 {
 	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
 	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
@@ -67,15 +78,10 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 		filePaths[i] = files[i].Path;
 	}
 
-	udtParseArg info;
-	memset(&info, 0, sizeof(info));
-	s32 cancelOperation = 0;
-	info.CancelOperation = &cancelOperation;
-	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = &CallbackConsoleProgress;
-	info.OutputFolderPath = customOutputFolder;
-	info.PlugIns = plugInIds;
-	info.PlugInCount = plugInCount;
+	if(consoleOutput)
+	{
+		parseArg.MessageCb = &CallbackConsoleMessageNoStdOut;
+	}
 
 	udtMultiParseArg threadInfo;
 	memset(&threadInfo, 0, sizeof(threadInfo));
@@ -84,7 +90,11 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	threadInfo.FileCount = fileCount;
 	threadInfo.MaxThreadCount = maxThreadCount;
 
-	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&info, &threadInfo);
+	udtJSONArg jsonInfo;
+	memset(&jsonInfo, 0, sizeof(jsonInfo));
+	jsonInfo.ConsoleOutput = consoleOutput ? 1 : 0;
+
+	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&parseArg, &threadInfo, &jsonInfo);
 
 	udtVMLinearAllocator tempAllocator;
 	tempAllocator.Init(1 << 16, "ProcessMultipleDemos::Temp");
@@ -110,24 +120,47 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	return false;
 }
 
+static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const char* customOutputFolder, bool consoleOutput, u32 maxThreadCount, const u32* plugInIds, u32 plugInCount)
+{
+	CmdLineParseArg cmdLineParseArg;
+	udtParseArg& parseArg = cmdLineParseArg.ParseArg;
+	parseArg.PlugIns = plugInIds;
+	parseArg.PlugInCount = plugInCount;
+	parseArg.OutputFolderPath = customOutputFolder;
+
+	BatchRunner runner(parseArg, files, fileCount, UDT_JSON_BATCH_SIZE);
+	const u32 batchCount = runner.GetBatchCount();
+	for(u32 i = 0; i < batchCount; ++i)
+	{
+		runner.PrepareNextBatch();
+		const BatchRunner::BatchInfo& info = runner.GetBatchInfo(i);
+		if(!ProcessBatch(parseArg, files + info.FirstFileIndex, info.FileCount, consoleOutput, maxThreadCount))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 int udt_main(int argc, char** argv)
 {
 	if(argc < 2)
 	{
 		PrintHelp();
-		return __LINE__;
+		return 0;
 	}
 
 	bool fileMode = false;
-	if(udtFileStream::Exists(argv[1]) && udtPath::HasValidDemoFileExtension(argv[1]))
+	const char* const inputPath = argv[argc - 1];
+	if(udtFileStream::Exists(inputPath) && udtPath::HasValidDemoFileExtension(inputPath))
 	{
 		fileMode = true;
 	}
-	else if(!IsValidDirectory(argv[1]))
+	else if(!IsValidDirectory(inputPath))
 	{
 		fprintf(stderr, "Invalid file/folder path.\n");
-		PrintHelp();
-		return __LINE__;
+		return 1;
 	}
 
 	const char* customOutputPath = NULL;
@@ -135,13 +168,14 @@ int udt_main(int argc, char** argv)
 	u32 analyzerCount = (u32)udtParserPlugIn::Count;
 	u32 analyzers[udtParserPlugIn::Count];
 	bool recursive = false;
+	bool consoleOutput = false;
 
 	for(u32 i = 0; i < (u32)udtParserPlugIn::Count; ++i)
 	{
 		analyzers[i] = i;
 	}
 
-	for(int i = 2; i < argc; ++i)
+	for(int i = 1; i < argc - 1; ++i)
 	{
 		s32 localMaxThreads = 4;
 
@@ -149,6 +183,10 @@ int udt_main(int argc, char** argv)
 		if(udtString::Equals(arg, "-r"))
 		{
 			recursive = true;
+		}
+		else if(udtString::Equals(arg, "-c"))
+		{
+			consoleOutput = true;
 		}
 		else if(udtString::StartsWith(arg, "-o=") && 
 				arg.Length >= 4 &&
@@ -179,6 +217,7 @@ int udt_main(int argc, char** argv)
 					case 's': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Stats); break;
 					case 'r': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawCommands); break;
 					case 'c': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::RawConfigStrings); break;
+					case 'f': RegisterAnalyzer(analyzers, analyzerCount, udtParserPlugIn::Captures); break;
 				}
 
 				++s;
@@ -191,30 +230,38 @@ int udt_main(int argc, char** argv)
 		udtFileInfo fileInfo;
 		fileInfo.Name = NULL;
 		fileInfo.Size = 0;
-		fileInfo.Path = argv[1];
+		fileInfo.Path = inputPath;
 
-		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, maxThreadCount, analyzers, analyzerCount) ? 0 : __LINE__;
+		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : 1;
 	}
 
 	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
 	udtVMLinearAllocator persistAlloc;
+	udtVMLinearAllocator folderArrayAlloc;
 	udtVMLinearAllocator tempAlloc;
 	persistAlloc.Init(1 << 24, "udt_main::Persistent");
-	tempAlloc.Init(1 << 24, "udt_main::Temp");
+	folderArrayAlloc.Init(1 << 24, "udt_main::FolderArray");
+	tempAlloc.Init(1 << 20, "udt_main::Temp");
 
 	udtFileListQuery query;
 	memset(&query, 0, sizeof(query));
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.Files = &files;
-	query.FolderPath = argv[1];
+	query.FolderArrayAllocator = &folderArrayAlloc;
+	query.FolderPath = inputPath;
 	query.PersistAllocator = &persistAlloc;
 	query.Recursive = recursive;
 	query.TempAllocator = &tempAlloc;
 	GetDirectoryFileList(query);
-
-	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, maxThreadCount, analyzers, analyzerCount))
+	if(files.IsEmpty())
 	{
-		return __LINE__;
+		fprintf(stderr, "No demo file found.\n");
+		return 1;
+	}
+
+	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, false, maxThreadCount, analyzers, analyzerCount))
+	{
+		return 1;
 	}
 
 	return 0;

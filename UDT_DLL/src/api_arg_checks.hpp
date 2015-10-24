@@ -1,7 +1,8 @@
 #pragma once
 
 
-#include "api.h"
+#include "uberdemotools.h"
+#include "macros.hpp"
 #include "file_system.hpp"
 
 
@@ -45,7 +46,7 @@ static bool IsValid(const udtCutByMultiRailArg& arg)
 
 static bool IsValid(const udtCutByFlagCaptureArg& arg)
 {
-	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs;
+	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs && (arg.AllowBaseToBase | arg.AllowMissingToBase) != 0;
 }
 
 static bool IsValid(const udtCutByFlickRailArg& arg)
@@ -55,6 +56,11 @@ static bool IsValid(const udtCutByFlickRailArg& arg)
 		arg.MinAngleDelta >= 0.0f && 
 		(arg.MinSpeedSnapshotCount - 2) <= 2 && 
 		(arg.MinAngleDeltaSnapshotCount - 2) <= 2;
+}
+
+static bool IsValid(const udtCutByMatchArg& /*arg*/)
+{
+	return true;
 }
 
 static bool IsValid(const udtCutByPatternArg& arg)

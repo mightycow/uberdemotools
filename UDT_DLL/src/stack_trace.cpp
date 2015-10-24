@@ -1,11 +1,12 @@
 #include "stack_trace.hpp"
-#include "types.hpp"
+#include "uberdemotools.h"
+#include "macros.hpp"
 
 
 #if defined(UDT_WINDOWS)
 
 
-void PrintStackTrace(int /*skipCount*/, const char* /*executableName*/)
+void PrintStackTrace(FILE* /*file*/, int /*skipCount*/, const char* /*executableName*/)
 {
 }
 
@@ -13,12 +14,11 @@ void PrintStackTrace(int /*skipCount*/, const char* /*executableName*/)
 #else
 
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <execinfo.h>
 
 
-void PrintStackTrace(int skipCount, const char* executableName)
+void PrintStackTrace(FILE* file, int skipCount, const char* executableName)
 {
 	void* addresses[16];
 	const int symbolCount = backtrace(addresses, UDT_COUNT_OF(addresses));
@@ -33,10 +33,10 @@ void PrintStackTrace(int skipCount, const char* executableName)
 		return;
 	}
 
-	printf("Stack trace:\n");
+	fprintf(file, "Stack trace:\n");
 	for(int i = skipCount; i < symbolCount; ++i)
 	{
-		printf("#%d %s\n", i, messages[i]);
+		fprintf(file, "#%d %s\n", i, messages[i]);
 
 		if(executableName == NULL)
 		{

@@ -73,6 +73,7 @@ namespace Uber.DemoTools
         MultiRailFilters,
         FlagCaptureFilters,
         FlickRailFilters,
+        MatchFilters,
         Modifiers,
         TimeShiftModifier,
         Count

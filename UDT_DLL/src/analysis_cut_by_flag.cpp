@@ -40,17 +40,38 @@ udtCutByFlagCaptureAnalyzer::~udtCutByFlagCaptureAnalyzer()
 {
 }
 
-void udtCutByFlagCaptureAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&, udtBaseParser&)
+void udtCutByFlagCaptureAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&, udtBaseParser& parser)
 {
 	++_gameStateIndex;
 	_pickupTimeMs = S32_MIN;
 	_previousCaptureCount = 0;
 	_previousCapped = false;
+
+	_prevFlagState[0] = (u8)idFlagStatus::InBase;
+	_prevFlagState[1] = (u8)idFlagStatus::InBase;
+	_flagState[0] = (u8)idFlagStatus::InBase;
+	_flagState[1] = (u8)idFlagStatus::InBase;
+
+	const s32 flagStatusIdx = idConfigStringIndex::FlagStatus(parser._inProtocol);
+	if(flagStatusIdx >= 0)
+	{
+		const udtString cs = parser.GetConfigString(flagStatusIdx);
+		if(cs.Length >= 2)
+		{
+			_flagState[0] = (u8)(cs.String[0] - '0');
+			_flagState[1] = (u8)(cs.String[1] - '0');
+		}
+	}
 }
 
 void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 trackedPlayerIdx = PlugIn->GetTrackedPlayerIndex();
+	if(trackedPlayerIdx < 0 || trackedPlayerIdx >= 64)
+	{
+		return;
+	}
+
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
 
 	bool hasFlag = false;
@@ -66,9 +87,9 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	if(ps->clientNum == trackedPlayerIdx)
 	{
 		hasFlag =
-			ps->powerups[redFlagIdx] == S32_MAX ||
-			ps->powerups[blueFlagIdx] == S32_MAX ||
-			(neutralFlagIdx != -1 && ps->powerups[neutralFlagIdx] == S32_MAX);
+			ps->powerups[redFlagIdx] != 0 ||
+			ps->powerups[blueFlagIdx] != 0 ||
+			(neutralFlagIdx != -1 && ps->powerups[neutralFlagIdx] != 0);
 		const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
 		captureCount = ps->persistant[captureCountPersIdx];
 		justCapped = captureCount > _previousCaptureCount;
@@ -89,13 +110,33 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		justCapped = !_previousCapped && capped;
 	}
 
+	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
+
 	if(_pickupTimeMs == S32_MIN && hasFlag)
 	{
-		_pickupTimeMs = arg.ServerTime;
+		udtVMScopedStackAllocator allocatorScope(PlugIn->GetTempAllocator());
+
+		s32 playerTeamIdx = 0; // Red by default.
+		const udtString playerCs = parser.GetConfigString(idConfigStringIndex::FirstPlayer(parser._inProtocol) + trackedPlayerIdx);
+		if(ParseConfigStringValueInt(playerTeamIdx, PlugIn->GetTempAllocator(), "t", playerCs.String) &&
+		   playerTeamIdx == TEAM_BLUE)
+		{
+			playerTeamIdx = 1; // Only blue if we can prove it.
+		}
+
+		// It's possible we knew of the flag status change before the entity's change so 
+		// we make sure we test against the right value.
+		const u8 prevEnemyFlagStatus = _prevFlagState[1 - playerTeamIdx];
+		const u8 currEnemyFlagStatus = _flagState[1 - playerTeamIdx];
+		const u8 enemyFlagStatus = currEnemyFlagStatus == (u8)idFlagStatus::Captured ? prevEnemyFlagStatus : currEnemyFlagStatus;
+		if((enemyFlagStatus == (u8)idFlagStatus::InBase && extraInfo.AllowBaseToBase) ||
+		   (enemyFlagStatus == (u8)idFlagStatus::Missing && extraInfo.AllowMissingToBase))
+		{
+			_pickupTimeMs = arg.ServerTime;
+		}
 	}
 
 	const u32 carryTimeMs = (u32)(arg.ServerTime - _pickupTimeMs);
-	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
 	if(_pickupTimeMs != S32_MIN &&
 	   justCapped &&
 	   carryTimeMs >= extraInfo.MinCarryTimeMs &&
@@ -119,6 +160,21 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	if(!hasFlag)
 	{
 		_pickupTimeMs = S32_MIN;
+	}
+}
+
+void udtCutByFlagCaptureAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+{
+	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+	{
+		const udtString cs = parser.GetTokenizer().GetArg(2);
+		if(cs.Length >= 2)
+		{
+			_prevFlagState[0] = _flagState[0];
+			_prevFlagState[1] = _flagState[1];
+			_flagState[0] = (u8)(cs.String[0] - '0');
+			_flagState[1] = (u8)(cs.String[1] - '0');
+		}
 	}
 }
 

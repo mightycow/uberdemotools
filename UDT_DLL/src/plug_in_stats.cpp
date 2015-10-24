@@ -50,25 +50,6 @@ static s32 CPMACharToInt(char c)
 	return 0;
 }
 
-static bool IsTeamMode(udtGameType::Id gameType)
-{
-	return gameType >= udtGameType::FirstTeamMode;
-}
-
-static bool IsRoundBasedMode(udtGameType::Id gameType)
-{
-	switch(gameType)
-	{
-		case udtGameType::CA:
-		case udtGameType::CTFS:
-		case udtGameType::RedRover:
-			return true;
-
-		default:
-			return false;
-	}
-}
-
 static u32 PopCount(u32 bitMask)
 {
 	u32 count = 0;
@@ -122,7 +103,6 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_maxAllowedStats = UDT_MAX_STATS;
-	_gameEnded = false;
 	_disableStatsOverrides = false;
 	_lastMatchEndTime = S32_MIN;
 	ClearStats();
@@ -154,7 +134,6 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_plugInTokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
-	_gameEnded = false;
 	_disableStatsOverrides = false;
 	_lastMatchEndTime = S32_MIN;
 	ClearStats();
@@ -163,18 +142,25 @@ void udtParserPlugInStats::StartDemoAnalysis()
 void udtParserPlugInStats::FinishDemoAnalysis()
 {
 	_analyzer.FinishDemoAnalysis();
-	if(!_analyzer.IsMatchInProgress() && _gameEnded)
+	if(_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission())
 	{
+		if(_analyzer.IsInIntermission())
+		{
+			_analyzer.SetIntermissionEndTime();
+		}
 		AddCurrentStats();
 	}
 }
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
-	if(_analyzer.GameStateIndex() >= 0 &&
-	   !_analyzer.IsMatchInProgress() &&
-	   _gameEnded)
+	if(_analyzer.GameStateIndex() >= 0 && 
+	   (_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission()))
 	{
+		if(_analyzer.IsInIntermission())
+		{
+			_analyzer.SetIntermissionEndTime();
+		}
 		AddCurrentStats();
 	}
 	_analyzer.ProcessGamestateMessage(arg, parser);
@@ -219,16 +205,10 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
 	// So we add stats when a match starts (that isn't the first one) or the demo ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
-	if(_analyzer.HasMatchJustStarted() && _gameEnded)
+	if(_analyzer.CanMatchBeAdded())
 	{
-		_gameEnded = false;
 		AddCurrentStats();
-		_analyzer.SetInProgress();
 		_analyzer.ResetForNextMatch();
-	}
-	else if(_analyzer.HasMatchJustEnded())
-	{
-		_gameEnded = true;
 	}
 
 	if(_tokenizer->GetArgCount() < 2)
@@ -245,11 +225,11 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		ProcessConfigString(csIndex, _tokenizer->GetArg(2));
 	}
 
-	// For some demos we don't have more commands when the match is over.
-	// That is always true for forfeited games in CPMA.
-	// We just decide that incomplete data is better than no data at all.
-	// If that changes, we can uncomment the following line again.
-	//if(_analyzer.IsMatchInProgress() || !_gameEnded) return;
+	if(!_analyzer.IsMatchInProgress() &&
+	   !_analyzer.IsInIntermission())
+	{
+		return;
+	}
 
 	struct CommandHandler
 	{
@@ -313,6 +293,11 @@ void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 	}
 
 	_analyzer.ProcessSnapshotMessage(arg, parser);
+}
+
+void udtParserPlugInStats::ClearMatchList()
+{
+	_statsArray.Clear();
 }
 
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
@@ -2114,7 +2099,7 @@ void udtParserPlugInStats::ParseQLScoresRR()
 void udtParserPlugInStats::ParsePrint()
 {
 	if(_analyzer.Mod() == udtMod::CPMA && 
-	   !_analyzer.IsMatchInProgress())
+	   _analyzer.IsInIntermission())
 	{
 		ParseCPMAPrint();
 	}
@@ -2530,6 +2515,23 @@ void udtParserPlugInStats::AddCurrentStats()
 		_stats.GameType = _analyzer.GameType();
 	}
 
+	if(!_analyzer.Forfeited() &&
+	   !IsRoundBasedMode((udtGameType::Id)_stats.GameType))
+	{
+		if(_analyzer.OvertimeCount() == 0 &&
+		   _analyzer.GetTimeLimit() != 0)
+		{
+			// Match ended by time limit.
+			_stats.MatchDurationMs = _analyzer.GetTimeLimit() * u32(60000);
+		}
+		else if(_analyzer.OvertimeCount() > 0 &&
+				_analyzer.OvertimeType() == udtOvertimeType::Timed)
+		{
+			// Match ended by time limit in overtime, so round to nearest minute.
+			_stats.MatchDurationMs = u32(60000) * ((_stats.MatchDurationMs + u32(59999)) / u32(60000));
+		}
+	}
+
 	for(s32 i = 0; i < 64; ++i)
 	{
 		// Fix the weapon index.
@@ -2826,6 +2828,38 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 	}
 
+	u32 scoreLimit = _analyzer.GetScoreLimit();
+	u32 fragLimit = _analyzer.GetFragLimit();
+	u32 captureLimit = _analyzer.GetCaptureLimit();
+	u32 roundLimit = _analyzer.GetRoundLimit();
+
+	const u8* gameTypeFlags = NULL;
+	u32 gameTypeCount = 0;
+	if(udtGetByteArray(udtByteArray::GameTypeFlags, &gameTypeFlags, &gameTypeCount) == udtErrorCode::None &&
+	   (u32)_stats.GameType < gameTypeCount)
+	{
+		const u8 flags = gameTypeFlags[_stats.GameType];
+		if((flags & (u8)udtGameTypeFlags::HasScoreLimit) == 0)
+		{
+			scoreLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasFragLimit) == 0)
+		{
+			fragLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasCaptureLimit) == 0)
+		{
+			captureLimit = 0;
+		}
+		if((flags & (u8)udtGameTypeFlags::HasRoundLimit) == 0)
+		{
+			roundLimit = 0;
+		}
+	}
+
+	const s32 countDownStartTime = _analyzer.CountDownStartTime();
+	const s32 intermissionEndTime = _analyzer.IntermissionEndTime();
+
 	_stats.StartDateEpoch = _analyzer.GetMatchStartDateEpoch();
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
 	_stats.Map = _analyzer.MapName();
@@ -2838,6 +2872,16 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
 	_stats.TeamMode = IsTeamMode((udtGameType::Id)_stats.GameType) ? 1 : 0;
+	_stats.TimeLimit = _analyzer.GetTimeLimit();
+	_stats.ScoreLimit = scoreLimit;
+	_stats.FragLimit = fragLimit;
+	_stats.CaptureLimit = captureLimit;
+	_stats.RoundLimit = roundLimit;
+	_stats.StartTimeMs = _analyzer.MatchStartTime();
+	_stats.EndTimeMs = _analyzer.MatchEndTime();
+	_stats.GameStateIndex = (u32)_analyzer.GameStateIndex();
+	_stats.CountDownStartTimeMs = countDownStartTime != S32_MIN ? countDownStartTime : _stats.StartTimeMs;
+	_stats.IntermissionEndTimeMs = intermissionEndTime != S32_MIN ? intermissionEndTime : _stats.EndTimeMs;
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();
