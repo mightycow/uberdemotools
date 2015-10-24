@@ -45,8 +45,8 @@ public:
 	void  WriteLong(s32 c) { WriteBits(c, 32); }
 	void  WriteFloat(s32 c) { return (this->*_writeFloat)(c); }
 	void  WriteField(s32 c, s32 bits) { if(bits == 0) WriteFloat(c); else WriteBits(c, bits); }
-	void  WriteString(const char* s, s32 length) { (this->*_writeString)(s, length); }       // The string must be null-terminated.
-	void  WriteBigString(const char* s, s32 length) { (this->*_writeBigString)(s, length); } // The string must be null-terminated.
+	void  WriteString(const char* s, s32 length) { (this->*_writeString)(s, length, (s32)sizeof(Context->ReadStringBuffer), Context->ReadStringBuffer); }          // The string must be null-terminated.
+	void  WriteBigString(const char* s, s32 length) { (this->*_writeString)(s, length, (s32)sizeof(Context->ReadBigStringBuffer), Context->ReadBigStringBuffer); } // The string must be null-terminated.
 	bool  WriteDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to) { return (this->*_writeDeltaPlayer)(from, to); }
 	bool  WriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force) { return (this->*_writeDeltaEntity)(from, to, force); }
 
@@ -58,8 +58,8 @@ public:
 	s32   ReadLong() { return ReadBits(32); }
 	s32   ReadFloat() { return (this->*_readFloat)(); }
 	s32   ReadField(s32 bits) { return (bits == 0) ? ReadFloat() : ReadBits(bits); } // If bits is 0, reads a float.
-	char* ReadString(s32& length) { return (this->*_readString)(length); }
-	char* ReadBigString(s32& length) { return (this->*_readBigString)(length); }
+	char* ReadString(s32& length) { return (this->*_readString)(length, (s32)sizeof(Context->ReadStringBuffer), Context->ReadStringBuffer); }
+	char* ReadBigString(s32& length) { return (this->*_readString)(length, (s32)sizeof(Context->ReadBigStringBuffer), Context->ReadBigStringBuffer); }
 	void  ReadData(void* buffer, s32 size) { (this->*_readData)(buffer, size); }
 	s32   PeekByte() { return (this->*_peekByte)(); }
 	bool  ReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to) { return (this->*_readDeltaPlayer)(from, to); }
@@ -71,21 +71,20 @@ private:
 
 	s32   DummyRead() { return -1; }
 	s32   DummyReadCount(s32) { return -1; }
-	char* DummyReadString(s32& length) { length = 0; return NULL; }
+	char* DummyReadString(s32& length, s32, char* buffer) { length = 0; *buffer = '\0'; return buffer; }
 	void  DummyReadData(void* buffer, s32 size) { memset(buffer, 0, (size_t)size); }
 	bool  DummyReadDeltaPlayer(const idPlayerStateBase*, idPlayerStateBase*) { return false; }
 	bool  DummyReadDeltaEntity(bool&, const idEntityStateBase*, idEntityStateBase*, s32) { return false; }
 
 	void  DummyWrite(s32) {}
 	void  DummyWriteCount(s32, s32) {}
-	void  DummyWriteString(const char*, s32) {}
+	void  DummyWriteString(const char*, s32, s32, char*) {}
 	bool  DummyWriteDeltaPlayer(const idPlayerStateBase*, idPlayerStateBase*) { return false; }
 	bool  DummyWriteDeltaEntity(const idEntityStateBase*, const idEntityStateBase*, bool) { return false; }
 
 	s32   RealReadBits(s32 bits);
 	s32   RealReadFloat();
-	char* RealReadString(s32& length);
-	char* RealReadBigString(s32& length);
+	char* RealReadString(s32& length, s32 bufferLength, char* buffer);
 	void  RealReadData(void* buffer, s32 size);
 	s32   RealPeekByte();
 	bool  RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBase* from, idEntityStateBase* to, s32 number);
@@ -93,8 +92,7 @@ private:
 
 	void  RealWriteBits(s32 value, s32 bits);
 	void  RealWriteFloat(s32 c);
-	void  RealWriteString(const char* s, s32 length);
-	void  RealWriteBigString(const char* s, s32 length);
+	void  RealWriteString(const char* s, s32 length, s32 bufferLength, char* buffer);
 	bool  RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to);
 	bool  RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force);
 
@@ -108,8 +106,7 @@ public:
 private:
 	typedef s32   (udtMessage::*ReadBitsFunc)(s32);
 	typedef s32   (udtMessage::*ReadFloatFunc)();
-	typedef char* (udtMessage::*ReadStringFunc)(s32&);
-	typedef char* (udtMessage::*ReadBigStringFunc)(s32&);
+	typedef char* (udtMessage::*ReadStringFunc)(s32&, s32, char*);
 	typedef void  (udtMessage::*ReadDataFunc)(void*, s32);
 	typedef s32   (udtMessage::*PeekByteFunc)();
 	typedef bool  (udtMessage::*ReadDeltaEntityFunc)(bool&, const idEntityStateBase*, idEntityStateBase*, s32);
@@ -117,8 +114,7 @@ private:
 
 	typedef void  (udtMessage::*WriteBitsFunc)(s32, s32);
 	typedef void  (udtMessage::*WriteFloatFunc)(s32);
-	typedef void  (udtMessage::*WriteStringFunc)(const char*, s32);
-	typedef void  (udtMessage::*WriteBigStringFunc)(const char*, s32);
+	typedef void  (udtMessage::*WriteStringFunc)(const char*, s32, s32, char*);
 	typedef bool  (udtMessage::*WriteDeltaPlayerFunc)(const idPlayerStateBase*, idPlayerStateBase*);
 	typedef bool  (udtMessage::*WriteDeltaEntityFunc)(const idEntityStateBase*, const idEntityStateBase*, bool);
 
@@ -134,7 +130,6 @@ private:
 	ReadBitsFunc         _readBits;
 	ReadFloatFunc        _readFloat;
 	ReadStringFunc       _readString;
-	ReadBigStringFunc    _readBigString;
 	ReadDataFunc         _readData;
 	PeekByteFunc         _peekByte;
 	ReadDeltaEntityFunc  _readDeltaEntity;
@@ -142,7 +137,6 @@ private:
 	WriteBitsFunc        _writeBits;
 	WriteFloatFunc       _writeFloat;
 	WriteStringFunc      _writeString;
-	WriteBigStringFunc   _writeBigString;
 	WriteDeltaPlayerFunc _writeDeltaPlayer;
 	WriteDeltaEntityFunc _writeDeltaEntity;
 };

@@ -1166,7 +1166,7 @@ void udtMessage::RealWriteFloat(s32 c)
 	}
 }
 
-void udtMessage::RealWriteString(const char* s, s32 length) 
+void udtMessage::RealWriteString(const char* s, s32 length, s32 bufferLength, char* buffer)
 {
 	if(!s) 
 	{
@@ -1174,9 +1174,9 @@ void udtMessage::RealWriteString(const char* s, s32 length)
 		return;
 	} 
 	
-	if(length >= MAX_STRING_CHARS)
+	if(length >= bufferLength)
 	{
-		Context->LogError("udtMessage::WriteString: The string is too long: %d (max is %d) (in file: %s)", length, MAX_STRING_CHARS, GetFileName());
+		Context->LogError("udtMessage::RealWriteString: The string is too long: %d (max is %d) (in file: %s)", length, bufferLength, GetFileName());
 		SetValid(false);
 		return;
 	}
@@ -1187,54 +1187,18 @@ void udtMessage::RealWriteString(const char* s, s32 length)
 		return;
 	}
 
-	udtContext::ReadStringBufferRef string = Context->ReadStringBuffer;
-	Q_strncpyz(string, s, sizeof(string));
+	Q_strncpyz(buffer, s, bufferLength);
 
 	// get rid of 0xff bytes, because old clients don't like them
 	for(s32 i = 0; i < length; ++i)
 	{
-		if(((u8*)string)[i] > 127)
+		if(((u8*)buffer)[i] > 127)
 		{
-			string[i] = '.';
+			buffer[i] = '.';
 		}
 	}
 
-	WriteData(string, length + 1);
-}
-
-void udtMessage::RealWriteBigString(const char* s, s32 length) 
-{
-	if(!s) 
-	{
-		WriteData("", 1);
-	}
-
-	if(length >= BIG_INFO_STRING) 
-	{
-		Context->LogError("udtMessage::WriteBigString: The string is too long: %d (max is %d) (in file: %s)", length, MAX_STRING_CHARS, GetFileName());
-		SetValid(false);
-		return;
-	}
-
-	if(_protocol >= udtProtocol::Dm91)
-	{
-		WriteData(s, length + 1);
-		return;
-	}
-
-	udtContext::ReadBigStringBufferRef string = Context->ReadBigStringBuffer;
-	Q_strncpyz(string, s, sizeof(string));
-
-	// get rid of 0xff bytes, because old clients don't like them
-	for(s32 i = 0; i < length; ++i)
-	{
-		if(((u8*)string)[i] > 127)
-		{
-			string[i] = '.';
-		}
-	}
-
-	WriteData(string, length + 1);
+	WriteData(buffer, length + 1);
 }
 
 s32 udtMessage::RealReadFloat()
@@ -1259,16 +1223,14 @@ s32 udtMessage::RealReadFloat()
 	return realValue.AsInt;
 }
 
-char* udtMessage::RealReadString(s32& length) 
+char* udtMessage::RealReadString(s32& length, s32 bufferLength, char* buffer)
 {
-	udtContext::ReadStringBufferRef stringBuffer = Context->ReadStringBuffer;
-
 	s32 stringLength = 0;
-	do 
+	do
 	{
 		// use ReadByte so -1 is out of bounds
-		s32 c = ReadByte(); 
-		if(c == -1 || c == 0) 
+		s32 c = ReadByte();
+		if(c == -1 || c == 0)
 		{
 			break;
 		}
@@ -1278,43 +1240,6 @@ char* udtMessage::RealReadString(s32& length)
 		{
 			c = '.';
 		}
-		
-		// don't allow higher ascii values
-		if(_protocol <= udtProtocol::Dm90 && c > 127)
-		{
-			c = '.';
-		}
-		
-		stringBuffer[stringLength] = (s8)c;
-		stringLength++;
-	} 
-	while(stringLength < (s32)sizeof(stringBuffer) - 1);
-
-	stringBuffer[stringLength] = 0;
-	length = stringLength;
-
-	return stringBuffer;
-}
-
-char* udtMessage::RealReadBigString(s32& length)
-{
-	udtContext::ReadBigStringBufferRef stringBuffer = Context->ReadBigStringBuffer;
-
-	s32 stringLength = 0;
-	do 
-	{
-		// use ReadByte so -1 is out of bounds
-		s32 c = ReadByte(); 
-		if(c == -1 || c == 0)
-		{
-			break;
-		}
-
-		// translate all fmt spec to avoid crash bugs
-		if(c == '%') 
-		{
-			c = '.';
-		}
 
 		// don't allow higher ascii values
 		if(_protocol <= udtProtocol::Dm90 && c > 127)
@@ -1322,15 +1247,15 @@ char* udtMessage::RealReadBigString(s32& length)
 			c = '.';
 		}
 
-		stringBuffer[stringLength] = (s8)c;
+		buffer[stringLength] = (s8)c;
 		stringLength++;
-	} 
-	while(stringLength < (s32)sizeof(stringBuffer) - 1);
+	}
+	while(stringLength < bufferLength - 1);
 
-	stringBuffer[stringLength] = 0;
+	buffer[stringLength] = 0;
 	length = stringLength;
 
-	return stringBuffer;
+	return buffer;
 }
 
 void udtMessage::RealReadData(void* data, s32 len) 
@@ -1610,7 +1535,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 	lc = ReadByte();
 	if(lc > _playerStateFieldCount || lc < 0)
 	{
-		Context->LogError("udtMessage::ReadDeltaPlayerstate: Invalid playerState field count: %d (max is %d) (in file: %s)", lc, _playerStateFieldCount, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaPlayer: Invalid playerState field count: %d (max is %d) (in file: %s)", lc, _playerStateFieldCount, GetFileName());
 		SetValid(false);
 		return false;
 	}
@@ -1739,7 +1664,7 @@ bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEnt
 
 	if(to->number < 0 || to->number >= MAX_GENTITIES) 
 	{
-		Context->LogError("udtMessage::WriteDeltaEntity: Bad entity number: %d (max is %d) (in file: %s)", to->number, MAX_GENTITIES - 1, GetFileName());
+		Context->LogError("udtMessage::RealWriteDeltaEntity: Bad entity number: %d (max is %d) (in file: %s)", to->number, MAX_GENTITIES - 1, GetFileName());
 		SetValid(false);
 		return false;
 	}
@@ -1897,7 +1822,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 
 	if(number < 0 || number >= MAX_GENTITIES) 
 	{
-		Context->LogError("udtMessage::ReadDeltaEntity: Bad delta entity number: %d (max is %d) (in file: %s)", number, MAX_GENTITIES - 1, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaEntity: Bad delta entity number: %d (max is %d) (in file: %s)", number, MAX_GENTITIES - 1, GetFileName());
 		SetValid(false);
 		return false;
 	}
@@ -1930,7 +1855,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 	lc = ReadByte();
 	if(lc > _entityStateFieldCount || lc < 0)
 	{
-		Context->LogError("udtMessage::ReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", lc, _entityStateFieldCount, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", lc, _entityStateFieldCount, GetFileName());
 		SetValid(false);
 		return false;
 	}
@@ -1976,7 +1901,6 @@ void udtMessage::SetValid(bool valid)
 		_readBits = &udtMessage::RealReadBits;
 		_readFloat = &udtMessage::RealReadFloat;
 		_readString = &udtMessage::RealReadString;
-		_readBigString = &udtMessage::RealReadBigString;
 		_readData = &udtMessage::RealReadData;
 		_peekByte = &udtMessage::RealPeekByte;
 		_readDeltaEntity = &udtMessage::RealReadDeltaEntity;
@@ -1984,7 +1908,6 @@ void udtMessage::SetValid(bool valid)
 		_writeBits = &udtMessage::RealWriteBits;
 		_writeFloat = &udtMessage::RealWriteFloat;
 		_writeString = &udtMessage::RealWriteString;
-		_writeBigString = &udtMessage::RealWriteBigString;
 		_writeDeltaPlayer = &udtMessage::RealWriteDeltaPlayer;
 		_writeDeltaEntity = &udtMessage::RealWriteDeltaEntity;
 	}
@@ -1993,7 +1916,6 @@ void udtMessage::SetValid(bool valid)
 		_readBits = &udtMessage::DummyReadCount;
 		_readFloat = &udtMessage::DummyRead;
 		_readString = &udtMessage::DummyReadString;
-		_readBigString = &udtMessage::DummyReadString;
 		_readData = &udtMessage::DummyReadData;
 		_peekByte = &udtMessage::DummyRead;
 		_readDeltaEntity = &udtMessage::DummyReadDeltaEntity;
@@ -2001,7 +1923,6 @@ void udtMessage::SetValid(bool valid)
 		_writeBits = &udtMessage::DummyWriteCount;
 		_writeFloat = &udtMessage::DummyWrite;
 		_writeString = &udtMessage::DummyWriteString;
-		_writeBigString = &udtMessage::DummyWriteString;
 		_writeDeltaPlayer = &udtMessage::DummyWriteDeltaPlayer;
 		_writeDeltaEntity = &udtMessage::DummyWriteDeltaEntity;
 	}
