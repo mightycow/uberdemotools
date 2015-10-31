@@ -183,7 +183,7 @@ bool udtBaseParser::ParseServerMessage()
 	{
 		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize) 
 		{
-			_context->LogError("ParseServerMessage: read past the end of the server message (in file: %s)", GetFileName());
+			_context->LogError("udtBaseParser::ParseServerMessage: Read past the end of the server message (in file: %s)", GetFileName());
 			return false;
 		}
 
@@ -248,7 +248,7 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		default:
-			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
+			_context->LogError("udtBaseParser::ParseServerMessage: Unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
 			return false;
 		}
 
@@ -541,7 +541,7 @@ bool udtBaseParser::ParseGamestate()
 			const s32 index = _inMsg.ReadShort();
 			if(index < 0 || index >= MAX_CONFIGSTRINGS) 
 			{
-				_context->LogError("ParseGamestate: config string index out of range: %d (in file: %s)", index, GetFileName());
+				_context->LogError("udtBaseParser::ParseGamestate: Config string index out of range: %d (in file: %s)", index, GetFileName());
 				return false;
 			}
 
@@ -556,7 +556,7 @@ bool udtBaseParser::ParseGamestate()
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
-				_context->LogError("ParseGamestate: baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
+				_context->LogError("udtBaseParser::ParseGamestate: Baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
 				return false;
 			}
 			
@@ -573,7 +573,7 @@ bool udtBaseParser::ParseGamestate()
 		} 
 		else 
 		{
-			_context->LogError("ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
+			_context->LogError("udtBaseParser::ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
 			return false;
 		}
 	}
@@ -696,7 +696,7 @@ bool udtBaseParser::ParseSnapshot()
 	const s32 areaMaskLength = _inMsg.ReadByte();
 	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 	{
-		_context->LogError("ParseSnapshot: Invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+		_context->LogError("udtBaseParser::ParseSnapshot: Invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
 		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
