@@ -192,30 +192,13 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 		}
 
-		s32 command = _inMsg.ReadByte();
-		
-		if(_inProtocol >= udtProtocol::Dm90)
-		{
-			// See if this is an extension command after the EOF,
-			// which means we got data that a legacy client should ignore.
-			if((command == svc_EOF) && (_inMsg.PeekByte() == svc_extension))
-			{
-				printf("!!!! Command byte: EOF with following svc_extension\n");
-				_inMsg.ReadByte(); // Throw the svc_extension byte away.
-				command = _inMsg.ReadByte();
-				if(_inMsg.RealReadOverflow())
-				{
-					command = svc_EOF;
-				}
-			}
-		}
-
+		const s32 command = _inMsg.ReadByte();
 		if(command == svc_EOF || (_inProtocol <= udtProtocol::Dm48 && command == svc_bad))
 		{
 			break;
 		}
 
-		// @NOTE: Don't write the command byte already, we leave that decision for later.
+		// @NOTE: We don't write the command byte already, we leave that decision for later.
 
 		switch(command) 
 		{
@@ -235,16 +218,8 @@ bool udtBaseParser::ParseServerMessage()
 			if(!ParseSnapshot()) return false;
 			break;
 
-		case svc_voip:
-			_context->LogWarning("@TODO: Command byte: svc_voip");
-			_outMsg.WriteByte(svc_nop);
-			break;
-
 		case svc_download:
-			_context->LogWarning("@TODO: Command byte: svc_download");
-			_outMsg.WriteByte(svc_nop);
-			break;
-
+		case svc_voip:
 		default:
 			_context->LogError("udtBaseParser::ParseServerMessage: Unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
 			return false;
