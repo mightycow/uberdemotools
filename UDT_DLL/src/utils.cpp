@@ -396,6 +396,11 @@ static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator,
 
 bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
+	if(configString == NULL)
+	{
+		return false;
+	}
+
 	const char* const valueString = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueString == NULL)
 	{
@@ -407,6 +412,11 @@ bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, c
 
 bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
+	if(configString == NULL)
+	{
+		return false;
+	}
+
 	const char* const valueStart = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueStart == NULL)
 	{
@@ -414,6 +424,11 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 	}
 
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
+	if(separatorAfterValue == NULL)
+	{
+		return false;
+	}
+
 	const u32 length = (separatorAfterValue == NULL) ? 0 : (u32)(separatorAfterValue - valueStart);
 	varValue = udtString::NewClone(allocator, valueStart, length);
 
