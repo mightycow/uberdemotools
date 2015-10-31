@@ -203,9 +203,7 @@ bool udtBaseParser::ParseServerMessage()
 				printf("!!!! Command byte: EOF with following svc_extension\n");
 				_inMsg.ReadByte(); // Throw the svc_extension byte away.
 				command = _inMsg.ReadByte();
-				// Sometimes you get a svc_extension at end of stream...
-				// dangling bits in the Huffman decoder giving a bogus value?
-				if(command == -1)
+				if(_inMsg.RealReadOverflow())
 				{
 					command = svc_EOF;
 				}

@@ -37,6 +37,7 @@ public:
 	void  SetHuffman(bool huffman);
 	void  GoToNextByte();
 	bool  ValidState() const { return Buffer.valid; }
+	bool  RealReadOverflow() const { return Buffer.bit >= (Buffer.cursize * 8); }
 	void  SetFileNamePtr(const char* fileName) { _fileName = fileName; } // This class has no ownership of the string.
 
 	void  WriteBits(s32 value, s32 bits) { return (this->*_writeBits)(value, bits); }
