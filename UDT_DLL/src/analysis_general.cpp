@@ -879,16 +879,17 @@ void udtGeneralAnalyzer::ProcessScores2(const char* configString)
 		return;
 	}
 
-	// This is to work around old demos sending a score of -9999 on match start.
-	// Maybe this is an OSP specialty?
+	// This is for a work around for demos sending a score of -9999 on match start.
 	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
 
 	s32 score = 0;
-	if(_gameState == udtGameState::InProgress &&
+	if(_matchStartTime != S32_MIN &&
+		matchTime >= 1000 &&
+	   _gameState == udtGameState::InProgress &&
 	   StringParseInt(score, configString) &&
-	   score == -9999 && 
-	   matchTime >= 1000)
+	   score == -9999)
 	{
+		// The player left.
 		_forfeited = true;
 	}
 }
@@ -900,8 +901,13 @@ void udtGeneralAnalyzer::ProcessScores2Player(const char* configString)
 		return;
 	}
 
-	// The 2nd place player's name becomes empty during a game?
-	if(_gameState == udtGameState::InProgress &&
+	// This is for a work around for QL demos clearing the 2nd place player's name on match start.
+	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
+
+	// The 2nd place player's name gets cleared during a game?
+	if(_matchStartTime != S32_MIN &&
+	   matchTime >= 1000 &&
+	   _gameState == udtGameState::InProgress &&
 	   configString[0] == '\0')
 	{
 		// The player left.
