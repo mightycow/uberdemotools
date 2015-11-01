@@ -2637,6 +2637,7 @@ namespace Uber.DemoTools
 
             public void PrepareNextBatch()
             {
+                ++_batchIndex;
                 if(_filePaths.Count <= _maxBatchSize || _batchIndex >= BatchCount)
                 {
                     return;
@@ -2645,7 +2646,6 @@ namespace Uber.DemoTools
                 _progressBase = (double)_processedByteCount / (double)_totalByteCount;
                 _progressRange = (double)_batches[_batchIndex].ByteCount / (double)_totalByteCount;
                 _processedByteCount += _batches[_batchIndex].ByteCount;
-                ++_batchIndex;
             }
 
             public List<string> GetFileList()
@@ -2687,7 +2687,7 @@ namespace Uber.DemoTools
             private double _progressBase = 0.0;
             private double _progressRange = 0.0;
             private int _maxBatchSize = 512;
-            private int _batchIndex = 0;
+            private int _batchIndex = -1;
             private udtProgressCallback _oldProgressCb;
             private udtParseArg _newParseArg;
             private Stopwatch _stopwatch;

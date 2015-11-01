@@ -52,7 +52,7 @@ struct BatchRunner
 		_files = files;
 		_fileCount = fileCount;
 		_maxBatchSize = maxBatchSize;
-		_batchIndex = 0;
+		_batchIndex = -1;
 		_progressCb = parseArg.ProgressCb;
 		_progressUserData = parseArg.ProgressContext;
 
@@ -116,8 +116,9 @@ struct BatchRunner
 
 	void PrepareNextBatch()
 	{
+		++_batchIndex;
 		if(_fileCount <= _maxBatchSize ||
-		   _batchIndex >= GetBatchCount())
+		   (u32)_batchIndex >= GetBatchCount())
 		{
 			return;
 		}
@@ -125,7 +126,6 @@ struct BatchRunner
 		_progressBase = (f64)_processedByteCount / (f64)_totalByteCount;
 		_progressRange = (f64)_batches[_batchIndex].ByteCount / (f64)_totalByteCount;
 		_processedByteCount += _batches[_batchIndex].ByteCount;
-		++_batchIndex;
 	}
 
 	const BatchInfo& GetBatchInfo(u32 batchIndex) const
@@ -156,5 +156,5 @@ private:
 	void* _progressUserData;
 	u32 _fileCount;
 	u32 _maxBatchSize;
-	u32 _batchIndex;
+	s32 _batchIndex;
 };

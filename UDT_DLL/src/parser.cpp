@@ -183,7 +183,7 @@ bool udtBaseParser::ParseServerMessage()
 	{
 		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize) 
 		{
-			_context->LogError("ParseServerMessage: read past the end of the server message (in file: %s)", GetFileName());
+			_context->LogError("udtBaseParser::ParseServerMessage: Read past the end of the server message (in file: %s)", GetFileName());
 			return false;
 		}
 
@@ -192,32 +192,13 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 		}
 
-		s32 command = _inMsg.ReadByte();
-		
-		if(_inProtocol >= udtProtocol::Dm90)
-		{
-			// See if this is an extension command after the EOF,
-			// which means we got data that a legacy client should ignore.
-			if((command == svc_EOF) && (_inMsg.PeekByte() == svc_extension))
-			{
-				printf("!!!! Command byte: EOF with following svc_extension\n");
-				_inMsg.ReadByte(); // Throw the svc_extension byte away.
-				command = _inMsg.ReadByte();
-				// Sometimes you get a svc_extension at end of stream...
-				// dangling bits in the Huffman decoder giving a bogus value?
-				if(command == -1)
-				{
-					command = svc_EOF;
-				}
-			}
-		}
-
+		const s32 command = _inMsg.ReadByte();
 		if(command == svc_EOF || (_inProtocol <= udtProtocol::Dm48 && command == svc_bad))
 		{
 			break;
 		}
 
-		// @NOTE: Don't write the command byte already, we leave that decision for later.
+		// @NOTE: We don't write the command byte already, we leave that decision for later.
 
 		switch(command) 
 		{
@@ -237,18 +218,10 @@ bool udtBaseParser::ParseServerMessage()
 			if(!ParseSnapshot()) return false;
 			break;
 
-		case svc_voip:
-			_context->LogWarning("@TODO: Command byte: svc_voip");
-			_outMsg.WriteByte(svc_nop);
-			break;
-
 		case svc_download:
-			_context->LogWarning("@TODO: Command byte: svc_download");
-			_outMsg.WriteByte(svc_nop);
-			break;
-
+		case svc_voip:
 		default:
-			_context->LogError("ParseServerMessage: unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
+			_context->LogError("udtBaseParser::ParseServerMessage: Unrecognized server message command byte: %d (in file: %s)", command, GetFileName());
 			return false;
 		}
 
@@ -541,7 +514,7 @@ bool udtBaseParser::ParseGamestate()
 			const s32 index = _inMsg.ReadShort();
 			if(index < 0 || index >= MAX_CONFIGSTRINGS) 
 			{
-				_context->LogError("ParseGamestate: config string index out of range: %d (in file: %s)", index, GetFileName());
+				_context->LogError("udtBaseParser::ParseGamestate: Config string index out of range: %d (in file: %s)", index, GetFileName());
 				return false;
 			}
 
@@ -556,7 +529,7 @@ bool udtBaseParser::ParseGamestate()
 			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
-				_context->LogError("ParseGamestate: baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
+				_context->LogError("udtBaseParser::ParseGamestate: Baseline number out of range: %d (in file: %s)", newIndex, GetFileName());
 				return false;
 			}
 			
@@ -573,7 +546,7 @@ bool udtBaseParser::ParseGamestate()
 		} 
 		else 
 		{
-			_context->LogError("ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
+			_context->LogError("udtBaseParser::ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileName());
 			return false;
 		}
 	}
@@ -696,7 +669,7 @@ bool udtBaseParser::ParseSnapshot()
 	const s32 areaMaskLength = _inMsg.ReadByte();
 	if(areaMaskLength > (s32)sizeof(newSnap.areamask))
 	{
-		_context->LogError("ParseSnapshot: Invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
+		_context->LogError("udtBaseParser::ParseSnapshot: Invalid size %d for areamask (in file: %s)", areaMaskLength, GetFileName());
 		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
