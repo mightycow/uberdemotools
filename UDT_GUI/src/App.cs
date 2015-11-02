@@ -368,6 +368,30 @@ namespace Uber.DemoTools
         {
             Instance = this;
 
+            var mutex = Updater.UpdaterHelper.TryOpenNamedMutex();
+            if(mutex != null)
+            {
+                // Updater still running, try waiting for a bit.
+                Thread.Sleep(1000);
+                mutex = Updater.UpdaterHelper.TryOpenNamedMutex();
+                if(mutex != null)
+                {
+                    // No luck. Might be that the user was a bit impatient. :)
+                    Process.GetCurrentProcess().Kill();
+                }
+            }
+
+            var updaterFileName = Updater.UpdaterHelper.ExeFileName;
+            var updaterFileNameNewExt = updaterFileName + Updater.UpdaterHelper.NewFileExtension;
+            if(File.Exists(updaterFileNameNewExt))
+            {
+                if(File.Exists(updaterFileName))
+                {
+                    DeleteFile(updaterFileName);
+                }
+                MoveFile(updaterFileNameNewExt, updaterFileName);
+            }
+
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
@@ -512,9 +536,16 @@ namespace Uber.DemoTools
             aboutMenuItem.Click += (obj, arg) => ShowAboutWindow();
             aboutMenuItem.ToolTip = new ToolTip { Content = "Learn more about this awesome application" };
 
+            var updateMenuItem = new MenuItem();
+            updateMenuItem.Header = "Check for _Update";
+            updateMenuItem.Click += (obj, arg) => CheckForUpdate();
+            updateMenuItem.ToolTip = new ToolTip { Content = "See if a newer version is available" };
+
             var helpMenuItem = new MenuItem();
             helpMenuItem.Header = "_Help";
             helpMenuItem.Items.Add(viewHelpMenuItem);
+            helpMenuItem.Items.Add(new Separator());
+            helpMenuItem.Items.Add(updateMenuItem);
             helpMenuItem.Items.Add(new Separator());
             helpMenuItem.Items.Add(aboutMenuItem);
 
@@ -1216,6 +1247,25 @@ namespace Uber.DemoTools
             catch(Exception exception)
             {
                 LogError("Failed to open the online help: " + exception.Message);
+            }
+        }
+
+        private void CheckForUpdate()
+        {
+#if UDT_X64
+            const string arch = "x64";
+#else
+            const string arch = "x86";
+#endif
+
+            try
+            {
+                var arguments = string.Join(" ", DllVersion, GuiVersion, arch, Process.GetCurrentProcess().Id.ToString());
+                Process.Start("UDT_GUI_Updater.exe", arguments);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open the updater: " + exception.Message);
             }
         }
 
@@ -2852,6 +2902,34 @@ namespace Uber.DemoTools
 
             element.InputBindings.Add(inputBinding);
             element.CommandBindings.Add(commandBinding);
+        }
+
+        private static bool DeleteFile(string filePath)
+        {
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch(Exception)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool MoveFile(string filePath, string newFilePath)
+        {
+            try
+            {
+                File.Move(filePath, newFilePath);
+            }
+            catch(Exception)
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 
