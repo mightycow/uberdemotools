@@ -132,11 +132,22 @@ namespace Uber.DemoTools.Updater
             var data = _webClient.DownloadData(_downloadUrl);
             using(var memoryStream = new MemoryStream(data))
             {
-                using(var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read))
+                using(var archive = ZipStorer.Open(memoryStream, FileAccess.Read))
                 {
+                    var centralDir = archive.ReadCentralDir();
                     foreach(var fileName in _filesToAdd)
                     {
-                        if(!ExtractTempFile(archive, fileName))
+                        bool found = false;
+                        foreach(var entry in centralDir)
+                        {
+                            if(entry.FilenameInZip == fileName)
+                            {
+                                archive.ExtractFile(entry, fileName);
+                                break;
+                            }
+                        }
+
+                        if(!found)
                         {
                             filesNotFound.Add(fileName);
                         }
@@ -147,27 +158,6 @@ namespace Uber.DemoTools.Updater
             foreach(var fileName in filesNotFound)
             {
                 _filesToAdd.Remove(fileName);
-            }
-
-            return true;
-        }
-
-        private static bool ExtractTempFile(ZipArchive archive, string name)
-        {
-            var entry = archive.GetEntry(name);
-            if(entry == null)
-            {
-                return false;
-            }
-
-            using(var file = File.Create(name + UpdaterHelper.NewFileExtension))
-            {
-                using(var entryStream = entry.Open())
-                {
-                    entryStream.CopyTo(file);
-                    entryStream.Close();
-                }
-                file.Close();
             }
 
             return true;

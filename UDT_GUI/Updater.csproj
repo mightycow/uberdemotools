@@ -9,11 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>UDT_GUI_Updater</RootNamespace>
     <AssemblyName>UDT_GUI_Updater</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
-	<BaseIntermediateOutputPath>.build</BaseIntermediateOutputPath>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <BaseIntermediateOutputPath>.build</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>
@@ -69,10 +68,10 @@
   <ItemGroup>
     <Compile Include="src\UpdaterApp.cs" />
     <Compile Include="src\UpdaterShared.cs" />
+    <Compile Include="src\ZipStorer.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="System.IO.Compression" />
     <Reference Include="System.Net" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
