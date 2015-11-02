@@ -9,8 +9,10 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 
 
 namespace Uber.DemoTools
@@ -1271,25 +1273,63 @@ namespace Uber.DemoTools
 
         private void ShowAboutWindow()
         {
-            var textPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            textPanelList.Add(CreateTuple("GUI Version", GuiVersion));
-            textPanelList.Add(CreateTuple("DLL Version", DllVersion));
-            var textPanel = WpfHelper.CreateDualColumnPanel(textPanelList, 100, 1);
+            var udtIcon = new System.Windows.Controls.Image();
+            udtIcon.HorizontalAlignment = HorizontalAlignment.Right;
+            udtIcon.VerticalAlignment = VerticalAlignment.Top;
+            udtIcon.Stretch = Stretch.None;
+            udtIcon.Source = UDT.Properties.Resources.UDTIcon.ToImageSource();
 
-            var image = new System.Windows.Controls.Image();
-            image.HorizontalAlignment = HorizontalAlignment.Right;
-            image.VerticalAlignment = VerticalAlignment.Top;
-            image.Margin = new Thickness(5);
-            image.Stretch = Stretch.None;
-            image.Source = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            var guiVersion = new TextBlock { Text = "UDT GUI Version " + GuiVersion };
+            var dllVersion = new TextBlock { Text = "UDT DLL Version " + DllVersion };
+            guiVersion.Margin = new Thickness(0, 10, 0, 0);
+            dllVersion.Margin = new Thickness(0, 5, 0, 0);
+
+            var udtPanel = new DockPanel();
+            udtPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            udtPanel.VerticalAlignment = VerticalAlignment.Top;
+            udtPanel.LastChildFill = false;
+            udtPanel.Children.Add(udtIcon);
+            udtPanel.Children.Add(guiVersion);
+            udtPanel.Children.Add(dllVersion);
+            DockPanel.SetDock(udtIcon, Dock.Right);
+            DockPanel.SetDock(guiVersion, Dock.Top);
+            DockPanel.SetDock(dllVersion, Dock.Top);
+
+            var zipStorerIcon = new System.Windows.Controls.Image();
+            zipStorerIcon.HorizontalAlignment = HorizontalAlignment.Right;
+            zipStorerIcon.VerticalAlignment = VerticalAlignment.Top;
+            zipStorerIcon.Stretch = Stretch.None;
+            zipStorerIcon.Source = UDT.Properties.Resources.ZipStorerIcon.ToImageSource();
+
+            const string ZipStorerUrl = "https://zipstorer.codeplex.com/";
+            var zipStorerCredit = new TextBlock { Text = "The updater uses ZipStorer by Jaime Olivares" };
+            var zipStorerHyperLink = new Hyperlink(new Run(ZipStorerUrl));
+            zipStorerHyperLink.NavigateUri = new Uri(ZipStorerUrl);
+            zipStorerHyperLink.RequestNavigate += (obj, args) => HandleLinkClick(args);
+            var zipStorerLink = new TextBlock();
+            zipStorerLink.Inlines.Add(zipStorerHyperLink);
+            zipStorerCredit.Margin = new Thickness(0, 5, 0, 0);
+            zipStorerLink.Margin = new Thickness(0, 5, 0, 0);
+
+            var zipStorerPanel = new DockPanel();
+            zipStorerPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            zipStorerPanel.VerticalAlignment = VerticalAlignment.Top;
+            zipStorerPanel.LastChildFill = false;
+            zipStorerPanel.Margin = new Thickness(0, 10, 0, 0);
+            zipStorerPanel.Children.Add(zipStorerIcon);
+            zipStorerPanel.Children.Add(zipStorerCredit);
+            zipStorerPanel.Children.Add(zipStorerLink);
+            DockPanel.SetDock(zipStorerIcon, Dock.Right);
+            DockPanel.SetDock(zipStorerCredit, Dock.Top);
+            DockPanel.SetDock(zipStorerLink, Dock.Top);
 
             var rootPanel = new StackPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            rootPanel.Margin = new Thickness(5);
-            rootPanel.Orientation = Orientation.Horizontal;
-            rootPanel.Children.Add(textPanel);
-            rootPanel.Children.Add(image);
+            rootPanel.VerticalAlignment = VerticalAlignment.Top;
+            rootPanel.Margin = new Thickness(10);
+            rootPanel.Orientation = Orientation.Vertical;
+            rootPanel.Children.Add(udtPanel);
+            rootPanel.Children.Add(zipStorerPanel);
 
             var window = new Window();
             window.Owner = MainWindow;
@@ -1299,12 +1339,24 @@ namespace Uber.DemoTools
             window.ShowInTaskbar = false;
             window.Title = "About UberDemoTools";
             window.Content = rootPanel;
-            window.Width = 240;
-            window.Height = 100;
+            window.Width = 360;
+            window.Height = 180;
             window.Left = _window.Left + (_window.Width - window.Width) / 2;
             window.Top = _window.Top + (_window.Height - window.Height) / 2;
             window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
             window.ShowDialog();
+        }
+
+        private static void HandleLinkClick(RequestNavigateEventArgs args)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(args.Uri.AbsoluteUri));
+            }
+            catch(Exception)
+            {
+            }
+            args.Handled = true;
         }
 
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, FrameworkElement b)
