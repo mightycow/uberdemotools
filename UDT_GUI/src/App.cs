@@ -70,6 +70,7 @@ namespace Uber.DemoTools
         public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
         public uint PerfStatsEnabled = 0; // All disabled by default.
         public uint CSharpPerfStatsEnabled = 0; // All disabled by default.
+        public bool RunUpdaterAtStartUp = true;
     }
 
     public class MapConversionRule
@@ -403,6 +404,10 @@ namespace Uber.DemoTools
             Marshal.WriteInt32(_cancelOperation, 0);
 
             LoadConfig();
+            if(Config.RunUpdaterAtStartUp)
+            {
+                CheckForUpdate(true);
+            }
 
             var listItemColor1 = SystemColors.WindowColor;
             var listItemColor2 = listItemColor1;
@@ -540,7 +545,7 @@ namespace Uber.DemoTools
 
             var updateMenuItem = new MenuItem();
             updateMenuItem.Header = "Check for _Update";
-            updateMenuItem.Click += (obj, arg) => CheckForUpdate();
+            updateMenuItem.Click += (obj, arg) => CheckForUpdate(false);
             updateMenuItem.ToolTip = new ToolTip { Content = "See if a newer version is available" };
 
             var helpMenuItem = new MenuItem();
@@ -1252,7 +1257,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private void CheckForUpdate()
+        private void CheckForUpdate(bool fromStartUp)
         {
 #if UDT_X64
             const string arch = "x64";
@@ -1262,12 +1267,16 @@ namespace Uber.DemoTools
 
             try
             {
-                var arguments = string.Join(" ", DllVersion, GuiVersion, arch, Process.GetCurrentProcess().Id.ToString());
+                var startUpArg = fromStartUp ? Updater.UpdaterHelper.NoMessageBoxIfCurrentArg : "blabla";
+                var arguments = string.Join(" ", DllVersion, GuiVersion, arch, Process.GetCurrentProcess().Id.ToString(), startUpArg);
                 Process.Start("UDT_GUI_Updater.exe", arguments);
             }
             catch(Exception exception)
             {
-                LogError("Failed to open the updater: " + exception.Message);
+                if(!fromStartUp)
+                {
+                    LogError("Failed to open the updater: " + exception.Message);
+                }
             }
         }
 

@@ -11,6 +11,7 @@ namespace Uber.DemoTools.Updater
         public static string NewFileExtension = ".newupdaterfile";
         public static string OldFileExtension = ".oldupdaterfile";
         public static string ExeFileName = "UDT_GUI_Updater.exe";
+        public static string NoMessageBoxIfCurrentArg = "silentifcurrent";
 
         public static Mutex TryOpenNamedMutex()
         {

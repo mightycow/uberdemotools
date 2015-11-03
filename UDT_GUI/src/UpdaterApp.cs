@@ -20,6 +20,7 @@ namespace Uber.DemoTools.Updater
             public string GuiVersion;
             public string ArchName;
             public int ParentProcessId;
+            public bool NoMessageBoxIfCurrent;
         }
 
         static public void UpdateUDT(UpdaterArg arg)
@@ -34,6 +35,7 @@ namespace Uber.DemoTools.Updater
             _curGuiVersion = arg.GuiVersion;
             _archName = arg.ArchName;
             _parentProcessId = arg.ParentProcessId;
+            _noMessageBoxIfCurrent = arg.NoMessageBoxIfCurrent;
         }
 
         private void Update()
@@ -42,7 +44,10 @@ namespace Uber.DemoTools.Updater
             GetLatestVersionNumbersAndBinariesUrl();
             if(!IsNewVersionHigher())
             {
-                MessageBox.Show("You are already running the latest version.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if(!_noMessageBoxIfCurrent)
+                {
+                    MessageBox.Show("You are already running the latest version.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
                 _webClient.Dispose();
                 return;
             }
@@ -238,6 +243,7 @@ namespace Uber.DemoTools.Updater
         private string _newGuiVersion;
         private string _downloadUrl;
         private int _parentProcessId;
+        private bool _noMessageBoxIfCurrent;
     }
 
 
@@ -250,7 +256,7 @@ namespace Uber.DemoTools.Updater
 
         static void RealMain(string[] arguments)
         {
-            if(arguments.Length != 4)
+            if(arguments.Length != 5)
             {
                 OnArgumentError();
                 return;
@@ -283,6 +289,7 @@ namespace Uber.DemoTools.Updater
             updaterArg.GuiVersion = arguments[1];
             updaterArg.ArchName = arguments[2];
             updaterArg.ParentProcessId = processId;
+            updaterArg.NoMessageBoxIfCurrent = arguments[4] == UpdaterHelper.NoMessageBoxIfCurrentArg;
             Updater.UpdateUDT(updaterArg);
         }
 
