@@ -1285,6 +1285,7 @@ namespace Uber.DemoTools
             var udtIcon = new System.Windows.Controls.Image();
             udtIcon.HorizontalAlignment = HorizontalAlignment.Right;
             udtIcon.VerticalAlignment = VerticalAlignment.Top;
+            udtIcon.Margin = new Thickness(10, 0, 0, 0);
             udtIcon.Stretch = Stretch.None;
             udtIcon.Source = UDT.Properties.Resources.UDTIcon.ToImageSource();
 
@@ -1307,6 +1308,7 @@ namespace Uber.DemoTools
             var zipStorerIcon = new System.Windows.Controls.Image();
             zipStorerIcon.HorizontalAlignment = HorizontalAlignment.Right;
             zipStorerIcon.VerticalAlignment = VerticalAlignment.Top;
+            zipStorerIcon.Margin = new Thickness(10, 0, 0, 0);
             zipStorerIcon.Stretch = Stretch.None;
             zipStorerIcon.Source = UDT.Properties.Resources.ZipStorerIcon.ToImageSource();
 
@@ -1348,11 +1350,14 @@ namespace Uber.DemoTools
             window.ShowInTaskbar = false;
             window.Title = "About UberDemoTools";
             window.Content = rootPanel;
-            window.Width = 360;
-            window.Height = 180;
-            window.Left = _window.Left + (_window.Width - window.Width) / 2;
-            window.Top = _window.Top + (_window.Height - window.Height) / 2;
+            window.SizeToContent = SizeToContent.WidthAndHeight;
+            window.ResizeMode = ResizeMode.NoResize;
             window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            window.Loaded += (obj, args) => 
+            { 
+                window.Left = _window.Left + (_window.Width - window.Width) / 2; 
+                window.Top = _window.Top + (_window.Height - window.Height) / 2; 
+            };
             window.ShowDialog();
         }
 
@@ -1584,6 +1589,28 @@ namespace Uber.DemoTools
             multiDemoActionButtonsGroupBox.Header = "Multi-demo Actions";
             multiDemoActionButtonsGroupBox.Content = multiDemoActionButtonsPanel;
 
+            var steamButton = new Button();
+            steamButton.Content = "Steam Info...";
+            steamButton.Width = 90;
+            steamButton.Height = 25;
+            steamButton.Margin = new Thickness(5);
+            steamButton.ToolTip = "Display Steam information: user accounts, Q3 and QL demos paths";
+            steamButton.Click += (obj, args) => OnSteamInfoClicked();
+
+            var extraActionButtonsPanel = new StackPanel();
+            extraActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            extraActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
+            extraActionButtonsPanel.Margin = new Thickness(5);
+            extraActionButtonsPanel.Orientation = Orientation.Vertical;
+            extraActionButtonsPanel.Children.Add(steamButton);
+
+            var extraActionButtonsGroupBox = new GroupBox();
+            extraActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            extraActionButtonsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            extraActionButtonsGroupBox.Margin = new Thickness(5);
+            extraActionButtonsGroupBox.Header = "Extra Stuff";
+            extraActionButtonsGroupBox.Content = extraActionButtonsPanel;
+
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
@@ -1605,8 +1632,9 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(demoListButtonGroupBox);
-            rootPanel.Children.Add(demoButtonGroupBox);
             rootPanel.Children.Add(multiDemoActionButtonsGroupBox);
+            rootPanel.Children.Add(demoButtonGroupBox);
+            rootPanel.Children.Add(extraActionButtonsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
             return rootPanel;
@@ -1908,6 +1936,11 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(JSONDemoExportThread, demos);
+        }
+
+        private void OnSteamInfoClicked()
+        {
+            new SteamDialog(_window);
         }
 
         public delegate void VoidDelegate();
