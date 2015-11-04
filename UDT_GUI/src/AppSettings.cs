@@ -164,6 +164,16 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
+        public void SetInputFolderPath(string path)
+        {
+            _inputFolderTextBox.Text = path;
+        }
+
+        public void SetOutputFolderPath(string path)
+        {
+            _outputFolderTextBox.Text = path;
+        }
+
         private FrameworkElement CreateSettingsControl()
         {
             var startTimeOffsetEditBox = new TextBox();

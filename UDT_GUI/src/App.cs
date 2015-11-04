@@ -1640,6 +1640,32 @@ namespace Uber.DemoTools
             return rootPanel;
         }
 
+        public void SetInputFolderPath(string path)
+        {
+            var settings = _appComponents.Find(c => c is AppSettingsComponent) as AppSettingsComponent;
+            if(settings == null)
+            {
+                return;
+            }
+
+            Config.InputFolder = path;
+            SaveConfig();
+            settings.SetInputFolderPath(path);
+        }
+
+        public void SetOutputFolderPath(string path)
+        {
+            var settings = _appComponents.Find(c => c is AppSettingsComponent) as AppSettingsComponent;
+            if(settings == null)
+            {
+                return;
+            }
+
+            Config.OutputFolder = path;
+            SaveConfig();
+            settings.SetOutputFolderPath(path);
+        }
+
         private void PopulateInfoListView(DemoInfo demoInfo)
         {
             _infoListView.Items.Clear();

@@ -323,9 +323,6 @@ namespace Uber.DemoTools
                 return;
             }
 
-            // @TODO: Check that we have found 1+ game, 1+ demo folder, 1+ user...
-            // ...or handle things more gracefully.
-
             var installPathsPanel = CreateVerticalPanel();
             for(var i = 0; i < steam.InstallPaths.Count; ++i)
             {
@@ -338,6 +335,10 @@ namespace Uber.DemoTools
                 installPathsPanel.Children.Add(row);
             }
             var installPathsGroupBox = CreateGroupBox("Steam Folders", installPathsPanel);
+            if(installPathsPanel.Children.Count == 0)
+            {
+                installPathsGroupBox.Visibility = Visibility.Collapsed;
+            }
 
             var usersGridView = new GridView();
             usersGridView.AllowsColumnReorder = false;
@@ -357,6 +358,10 @@ namespace Uber.DemoTools
                 usersListView.Items.Add(user);
             }
             var usersGroupBox = CreateGroupBox("Steam Users", usersListView);
+            if(usersListView.Items.Count == 0)
+            {
+                usersGroupBox.Visibility = Visibility.Collapsed;
+            }
 
             var gamePathsPanel = CreateVerticalPanel();
             foreach(var game in steam.Games)
@@ -368,6 +373,10 @@ namespace Uber.DemoTools
                 gamePathsPanel.Children.Add(row);
             }
             var gamePathsGroupBox = CreateGroupBox("Game Folders", gamePathsPanel);
+            if(gamePathsPanel.Children.Count == 0)
+            {
+                gamePathsGroupBox.Visibility = Visibility.Collapsed;
+            }
 
             var demoPathsGridView = new GridView();
             demoPathsGridView.AllowsColumnReorder = false;
@@ -416,6 +425,10 @@ namespace Uber.DemoTools
             demoPathsPanel.Children.Add(demoPathsButtonRow);
 
             var demoPathsGroupBox = CreateGroupBox("Demo Folders", demoPathsPanel);
+            if(demoPathsListView.Items.Count == 0)
+            {
+                demoPathsGroupBox.Visibility = Visibility.Collapsed;
+            }
 
             var rootPanel = CreateVerticalPanel();
             rootPanel.Children.Add(installPathsGroupBox);
@@ -528,8 +541,8 @@ namespace Uber.DemoTools
                 NoItemSelected();
             }
 
-            // @TODO:
-            //App.Instance.Config.InputFolder = item.Path;
+            var x = App.Instance.SelectedDemo;
+            App.Instance.SetInputFolderPath(item.Path);
         }
 
         private static void SetAsOutputFolder(ListView listView)
@@ -540,8 +553,7 @@ namespace Uber.DemoTools
                 NoItemSelected();
             }
 
-            // @TODO:
-            //App.Instance.Config.OutputFolder = item.Path;
+            App.Instance.SetOutputFolderPath(item.Path);
         }
 
         private static void NoItemSelected()
