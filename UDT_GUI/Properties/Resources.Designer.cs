@@ -63,10 +63,30 @@ namespace UDT.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
+        internal static System.Drawing.Icon UDT {
+            get {
+                object obj = ResourceManager.GetObject("UDT", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
         internal static System.Drawing.Icon UDTIcon {
             get {
                 object obj = ResourceManager.GetObject("UDTIcon", resourceCulture);
                 return ((System.Drawing.Icon)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap ZipStorerIcon {
+            get {
+                object obj = ResourceManager.GetObject("ZipStorerIcon", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

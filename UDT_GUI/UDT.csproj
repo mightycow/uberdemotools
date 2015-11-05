@@ -121,8 +121,10 @@
     <Compile Include="src\AppTimeShiftMod.cs" />
     <Compile Include="src\AppStats.cs" />
     <Compile Include="src\AppCommands.cs" />
-	<Compile Include="src\AppMatchCut.cs" />
-	<Compile Include="src\AppFlagCaptures.cs" />
+    <Compile Include="src\AppMatchCut.cs" />
+    <Compile Include="src\AppFlagCaptures.cs" />
+    <Compile Include="src\UpdaterShared.cs" />
+	<Compile Include="src\Steam.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -145,7 +147,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\todo.txt" />
+    <None Include="Resources\ZipStorerIcon.ico" />
     <Content Include="UDT.ico" />
+    <Content Include="ZipStorer.png" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">

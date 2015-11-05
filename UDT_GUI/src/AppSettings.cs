@@ -111,6 +111,7 @@ namespace Uber.DemoTools
         private TextBox _endTimeOffsetEditBox = null;
         private CheckBox _mergeCutSectionsCheckBox = null;
         private CheckBox _colorLogMessagesCheckBox = null;
+        private CheckBox _runUpdaterAtStartUpCheckBox = null;
         private readonly List<CheckBox> _jsonEnabledPlugInsCheckBoxes = new List<CheckBox>();
         private readonly List<CheckBox> _enabledPerfStatsCheckBoxes = new List<CheckBox>();
         private readonly List<CheckBox> _enabledCSharpPerfStatsCheckBoxes = new List<CheckBox>();
@@ -161,6 +162,16 @@ namespace Uber.DemoTools
         public void PopulateViews(DemoInfo demoInfo)
         {
             // Nothing to do.
+        }
+
+        public void SetInputFolderPath(string path)
+        {
+            _inputFolderTextBox.Text = path;
+        }
+
+        public void SetOutputFolderPath(string path)
+        {
+            _outputFolderTextBox.Text = path;
         }
 
         private FrameworkElement CreateSettingsControl()
@@ -277,6 +288,15 @@ namespace Uber.DemoTools
             colorLogMessagesCheckBox.Unchecked += (obj, args) => _app.Config.ColorLogWarningsAndErrors = false;
             colorLogMessagesCheckBox.ToolTip = "The option is disabled by default because it might not integrate well with your current theme.";
 
+            var runUpdaterAtStartUpCheckBox = new CheckBox();
+            _runUpdaterAtStartUpCheckBox = runUpdaterAtStartUpCheckBox;
+            runUpdaterAtStartUpCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            runUpdaterAtStartUpCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            runUpdaterAtStartUpCheckBox.IsChecked = _app.Config.RunUpdaterAtStartUp;
+            runUpdaterAtStartUpCheckBox.Content = " Run the updater at application start-up time?";
+            runUpdaterAtStartUpCheckBox.Checked += (obj, args) => _app.Config.RunUpdaterAtStartUp = true;
+            runUpdaterAtStartUpCheckBox.Unchecked += (obj, args) => _app.Config.RunUpdaterAtStartUp = false;
+
             const int OutputFolderIndex = 1;
             const int SkipRecursiveDialogIndex = 4;
             const int InputFolderIndex = 8;
@@ -295,6 +315,7 @@ namespace Uber.DemoTools
             panelList.Add(App.CreateTuple("End Time Offset [s]", endTimeOffsetEditBox));
             panelList.Add(App.CreateTuple("Merge Cut Sections", mergeCutSectionsCheckBox));
             panelList.Add(App.CreateTuple("Color Log Messages", colorLogMessagesCheckBox));
+            panelList.Add(App.CreateTuple("Start-up Updates", runUpdaterAtStartUpCheckBox));
 
             var settingsPanel = WpfHelper.CreateDualColumnPanel(panelList, 135, 2);
             settingsPanel.HorizontalAlignment = HorizontalAlignment.Left;
