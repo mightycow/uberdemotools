@@ -357,7 +357,14 @@ namespace Uber.DemoTools
             {
                 usersListView.Items.Add(user);
             }
-            var usersGroupBox = CreateGroupBox("Steam Users", usersListView);
+
+            var copySteamIdButton = CreateButton("Copy Steam ID to Clipboard", (obj, args) => CopySteamIdToClipboard(usersListView));
+            var usersPanel = CreateVerticalPanel();
+            usersPanel.Margin = new Thickness(0);
+            usersPanel.Children.Add(usersListView);
+            usersPanel.Children.Add(copySteamIdButton);
+
+            var usersGroupBox = CreateGroupBox("Steam Users", usersPanel);
             if(usersListView.Items.Count == 0)
             {
                 usersGroupBox.Visibility = Visibility.Collapsed;
@@ -528,6 +535,7 @@ namespace Uber.DemoTools
             if(item == null)
             {
                 NoItemSelected();
+                return;
             }
 
             Clipboard.SetText(item.Path, TextDataFormat.UnicodeText);
@@ -539,6 +547,7 @@ namespace Uber.DemoTools
             if(item == null)
             {
                 NoItemSelected();
+                return;
             }
 
             var x = App.Instance.SelectedDemo;
@@ -551,9 +560,22 @@ namespace Uber.DemoTools
             if(item == null)
             {
                 NoItemSelected();
+                return;
             }
 
             App.Instance.SetOutputFolderPath(item.Path);
+        }
+
+        private static void CopySteamIdToClipboard(ListView listView)
+        {
+            var item = listView.SelectedItem as SteamUser;
+            if(item == null)
+            {
+                NoItemSelected();
+                return;
+            }
+
+            Clipboard.SetText(item.SteamID, TextDataFormat.UnicodeText);
         }
 
         private static void NoItemSelected()
