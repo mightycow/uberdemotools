@@ -359,6 +359,8 @@ namespace Uber.DemoTools
             }
 
             var copySteamIdButton = CreateButton("Copy Steam ID to Clipboard", (obj, args) => CopySteamIdToClipboard(usersListView));
+            copySteamIdButton.HorizontalAlignment = HorizontalAlignment.Left;
+            copySteamIdButton.Margin = new Thickness(5);
             var usersPanel = CreateVerticalPanel();
             usersPanel.Margin = new Thickness(0);
             usersPanel.Children.Add(usersListView);
