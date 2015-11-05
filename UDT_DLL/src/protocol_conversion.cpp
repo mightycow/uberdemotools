@@ -8,27 +8,70 @@
 73/90 -> 91
 
 No changes:
-Global team sounds
-Entity events
-Weapons
-Player reward sounds
-Holdable items
-Persistent indices
-Game types
-PMOVE types
-Animation number
-Means of death
-Item types (only difference is the key was added)
-Entity state types
+- Global team sounds
+- Entity events
+- Weapons
+- Player reward sounds
+- Holdable items
+- Persistent indices
+- Game types
+- PMOVE types
+- Animation number
+- Means of death
+- Item types (only difference is the key was added)
+- Entity state types
 
 Different:
-PMOVE flags: different?
-Stats indices: 14 is either frags or attackee armour?
-Entity state flags: 0x4000 became "global spectator" instead of "already voted"? if so, when?
-Power-up indices: very different
-Config strings: @TODO:
+- PMOVE flags: @TODO: different?
+- Stats indices: @TODO: 14 is either frags or attackee armour?
+- Entity state flags: @TODO: 0x4000 became "global spectator" instead of "already voted"? if so, when?
+- Power-up indices: very different
+- Config strings: pretty different after CS_SHADERSTATE_73p
 */
 
+
+static s32 ConvertConfigStringIndex73or90to91(s32 index)
+{
+	if(index <= CS_SHADERSTATE_73p ||
+	   (index >= CS_TIMEOUT_BEGIN_TIME_73p && index <= CS_BLUE_TEAM_TIMEOUTS_LEFT_73p))
+	{
+		return index;
+	}
+
+	switch(index)
+	{
+		case CS_MAP_CREATOR_73p: return (s32)CS_AUTHOR_91;
+		case CS_ORIGINAL_MAP_CREATOR_73p: return (s32)CS_AUTHOR2_91;
+		case CS_PMOVE_SETTINGS_73p: return (s32)CS_PMOVEINFO_91;
+		case CS_ARMOR_TIERED_73p: return (s32)CS_ARMORINFO_91;
+		case CS_WEAPON_SETTINGS_73p: return (s32)CS_WEAPONINFO_91;
+		case CS_CUSTOM_PLAYER_MODELS_73p: return (s32)CS_PLAYERINFO_91;
+		case CS_FIRST_PLACE_CLIENT_NUM_73p: return (s32)CS_CLIENTNUM1STPLAYER_91;
+		case CS_SECOND_PLACE_CLIENT_NUM_73p: return (s32)CS_CLIENTNUM2NDPLAYER_91;
+		case CS_FIRST_PLACE_SCORE_73p: return (s32)CS_SCORE1STPLAYER_91;
+		case CS_SECOND_PLACE_SCORE_73p: return (s32)CS_SCORE2NDPLAYER_91;
+		case CS_MOST_DAMAGE_DEALT_73p: return (s32)CS_MOST_DAMAGEDEALT_PLYR_91;
+		case CS_MOST_ACCURATE_73p: return (s32)CS_MOST_ACCURATE_PLYR_91;
+		case CS_BEST_ITEM_CONTROL_73p: return (s32)CS_BEST_ITEMCONTROL_PLYR_91;
+		case CS_RED_TEAM_CLAN_NAME_73p: return (s32)CS_REDTEAMBASE_91;
+		case CS_BLUE_TEAM_CLAN_NAME_73p: return (s32)CS_BLUETEAMBASE_91;
+		case CS_RED_TEAM_CLAN_TAG_73p: return (s32)CS_REDTEAMBASE_91;
+		case CS_BLUE_TEAM_CLAN_TAG_73p: return (s32)CS_BLUETEAMBASE_91;
+		case CS_MVP_OFFENSE_73p: return (s32)CS_MOST_VALUABLE_OFFENSIVE_PLYR_91;
+		case CS_MVP_DEFENSE_73p: return (s32)CS_MOST_VALUABLE_DEFENSIVE_PLYR_91;
+		case CS_MVP_73p: return (s32)CS_MOST_VALUABLE_PLYR_91;
+		case CS_DOMINATION_RED_POINTS_73p: return (s32)CS_GENERIC_COUNT_RED_91;
+		case CS_DOMINATION_BLUE_POINTS_73p: return (s32)CS_GENERIC_COUNT_BLUE_91;
+		case CS_ROUND_WINNERS_73p: return (s32)CS_ROUND_WINNER_91;
+		case CS_CUSTOM_SERVER_SETTINGS_73p: return (s32)CS_CUSTOM_SETTINGS_91;
+		case CS_MAP_VOTE_INFO_73p: return (s32)CS_ROTATIONMAPS_91;
+		case CS_MAP_VOTE_COUNT_73p: return (s32)CS_ROTATIONVOTES_91;
+		case CS_DISABLE_MAP_VOTE_73p: return (s32)CS_DISABLE_VOTE_UI_91;
+		case CS_READY_UP_TIME_73p: return (s32)CS_ALLREADY_TIME_91;
+		case CS_NUMBER_OF_RACE_CHECKPOINTS_73p: return (s32)CS_RACE_POINTS_91;
+		default: return -1;
+	}
+}
 
 static s32 ConvertPowerUpIndex73or90to91(s32 index)
 {
@@ -52,6 +95,46 @@ static s32 ConvertPowerUpIndex73or90to91(s32 index)
 
 	return -1;
 }
+
+static void ConvertPowerUps73or90to91(idPlayerStateBase& out, idPlayerStateBase& in)
+{
+	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	{
+		out.powerups[i] = 0;
+	}
+
+	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	{
+		const s32 p = ConvertPowerUpIndex73or90to91(i);
+		if(p >= 0)
+		{
+			out.powerups[p] = in.powerups[i];
+		}
+	}
+}
+
+static s32 ConvertPowerUpFlags73or90to91(s32 oldFlags)
+{
+	s32 flags = 0;
+	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	{
+		if((oldFlags & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32 p = ConvertPowerUpIndex73or90to91(i);
+		if(p < 0)
+		{
+			continue;
+		}
+
+		flags |= (1 << p);
+	}
+
+	return flags;
+}
+
 
 
 // Return false to drop the key/value pair altogether.
@@ -143,45 +226,57 @@ void udtProtocolConverterIdentity::ConvertConfigString(udtConfigStringConversion
 	result.String = configString;
 	result.StringLength = configStringLength;
 }
-/*
+
 void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {
 	(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
-	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm91) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
+	idPlayerState91& out = *(idPlayerState91*)GetPlayerState(&outSnapshot, udtProtocol::Dm91);
 	out.doubleJumped = 0;
 	out.jumpTime = 0;
+	out.weaponPrimary = 0;
+	out.crouchTime = 0;
+	out.crouchSlideTime = 0;
+	out.location = 0;
+	out.fov = 0;
+	out.forwardmove = 0;
+	out.rightmove = 0;
+	out.upmove = 0;
+	ConvertPowerUps73or90to91(*GetPlayerState(&outSnapshot, udtProtocol::Dm91), *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90));
 }
 
 void udtProtocolConverter90to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
-	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
-	idEntityState90& out = (idEntityState90&)outEntityState;
-	idEntityState73& in = (idEntityState73&)inEntityState;
+	idEntityState91& out = (idEntityState91&)outEntityState;
+	idEntityState90& in = (idEntityState90&)inEntityState;
 	(idEntityStateBase&)outEntityState = inEntityState;
 	out.pos_gravity = in.pos_gravity;
 	out.apos_gravity = in.apos_gravity;
-	out.jumpTime = 0;
-	out.doubleJumped = 0;
+	out.jumpTime = in.jumpTime;
+	out.doubleJumped = in.doubleJumped;
+	out.health = 0;
+	out.armor = 0;
+	out.location = 0;
+	out.powerups = ConvertPowerUpFlags73or90to91(inEntityState.powerups);
 }
 
 void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
 {
 	result.NewString = false;
-	result.Index = inIndex;
+	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
 	result.String = configString;
 	result.StringLength = configStringLength;
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
-		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90, NULL);
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
 	}
 }
-*/
+
 /*
 void udtProtocolConverter73to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {

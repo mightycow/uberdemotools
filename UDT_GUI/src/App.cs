@@ -1829,9 +1829,9 @@ namespace Uber.DemoTools
         private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
         {
             // @TODO: dm_73 -> dm_91 conversion
-            // @TODO: dm_90 -> dm_91 conversion
             if( (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48))
+                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm90))
             {
                 return true;
             }
