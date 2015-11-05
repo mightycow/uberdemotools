@@ -1,6 +1,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -358,7 +359,7 @@ namespace Uber.DemoTools
                 usersListView.Items.Add(user);
             }
 
-            var copySteamIdButton = CreateButton("Copy Steam ID to Clipboard", (obj, args) => CopySteamIdToClipboard(usersListView));
+            var copySteamIdButton = CreateButton("Copy ID to Clipboard", (obj, args) => CopySteamIdToClipboard(usersListView));
             copySteamIdButton.HorizontalAlignment = HorizontalAlignment.Left;
             copySteamIdButton.Margin = new Thickness(5);
             var usersPanel = CreateVerticalPanel();
@@ -422,11 +423,13 @@ namespace Uber.DemoTools
             var copyButton = CreateButton("Copy Path to Clipboard", (obj, args) => CopyPathToClipboard(demoPathsListView));
             var setAsInputButton = CreateButton("Set as UDT Input Path", (obj, args) => SetAsInputFolder(demoPathsListView));
             var setAsOutputButton = CreateButton("Set as UDT Output Path", (obj, args) => SetAsOutputFolder(demoPathsListView));
+            var openButton = CreateButton("Open in File Explorer", (obj, args) => OpenDemoPath(demoPathsListView));
 
             var demoPathsButtonRow = CreateHorizontalPanel();
             demoPathsButtonRow.Children.Add(copyButton);
             demoPathsButtonRow.Children.Add(setAsInputButton);
             demoPathsButtonRow.Children.Add(setAsOutputButton);
+            demoPathsButtonRow.Children.Add(openButton);
 
             var demoPathsPanel = CreateVerticalPanel();
             demoPathsPanel.Margin = new Thickness(0);
@@ -566,6 +569,24 @@ namespace Uber.DemoTools
             }
 
             App.Instance.SetOutputFolderPath(item.Path);
+        }
+
+        private static void OpenDemoPath(ListView listView)
+        {
+            var item = listView.SelectedItem as DemoFolder;
+            if(item == null)
+            {
+                NoItemSelected();
+                return;
+            }
+
+            try
+            {
+                Process.Start(item.Path);
+            }
+            catch(Exception)
+            {
+            }
         }
 
         private static void CopySteamIdToClipboard(ListView listView)
