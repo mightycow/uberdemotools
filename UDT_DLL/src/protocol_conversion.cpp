@@ -13,7 +13,7 @@ No changes:
 - Weapons
 - Player reward sounds
 - Holdable items
-- Persistent indices
+- Stats
 - Game types
 - PMOVE types
 - Animation number
@@ -23,7 +23,7 @@ No changes:
 
 Different:
 - PMOVE flags: @TODO: different?
-- Stats indices: @TODO: 14 is either frags or attackee armour?
+- Persistent stats: 14 was attackee armor, now frags, 15 is new: XP points
 - Entity state flags: @TODO: 0x4000 became "global spectator" instead of "already voted"? if so, when?
 - Power-up indices: very different
 - Config strings: pretty different after CS_SHADERSTATE_73p
@@ -96,7 +96,7 @@ static s32 ConvertPowerUpIndex73or90to91(s32 index)
 	return -1;
 }
 
-static void ConvertPowerUps73or90to91(idPlayerStateBase& out, idPlayerStateBase& in)
+static void ConvertPowerUps73or90to91(idPlayerStateBase& out, const idPlayerStateBase& in)
 {
 	for(s32 i = 0; i < MAX_POWERUPS; ++i)
 	{
@@ -135,6 +135,32 @@ static s32 ConvertPowerUpFlags73or90to91(s32 oldFlags)
 	return flags;
 }
 
+static s32 ConvertPersistStatIndex73or90to91(s32 index)
+{
+	if(index >= 0 && index <= 13)
+	{
+		return index;
+	}
+
+	return -1;
+}
+
+static void ConvertPersistStat73or90to91(idPlayerStateBase& out, const idPlayerStateBase& in)
+{
+	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	{
+		out.persistant[i] = 0;
+	}
+
+	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	{
+		const s32 p = ConvertPersistStatIndex73or90to91(i);
+		if(p >= 0)
+		{
+			out.persistant[p] = in.persistant[i];
+		}
+	}
+}
 
 
 // Return false to drop the key/value pair altogether.
@@ -242,7 +268,10 @@ void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSna
 	out.forwardmove = 0;
 	out.rightmove = 0;
 	out.upmove = 0;
-	ConvertPowerUps73or90to91(*GetPlayerState(&outSnapshot, udtProtocol::Dm91), *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90));
+	idPlayerStateBase& outBasePs = *GetPlayerState(&outSnapshot, udtProtocol::Dm91);
+	const idPlayerStateBase& inBasePs = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
+	ConvertPowerUps73or90to91(outBasePs, inBasePs);
+	ConvertPersistStat73or90to91(outBasePs, inBasePs);
 }
 
 void udtProtocolConverter90to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -292,7 +321,10 @@ void udtProtocolConverter73to91::ConvertSnapshot(idLargestClientSnapshot& outSna
 	out.forwardmove = 0;
 	out.rightmove = 0;
 	out.upmove = 0;
-	ConvertPowerUps73or90to91(*GetPlayerState(&outSnapshot, udtProtocol::Dm91), *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73));
+	idPlayerStateBase& outBasePs = *GetPlayerState(&outSnapshot, udtProtocol::Dm91);
+	const idPlayerStateBase& inBasePs = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
+	ConvertPowerUps73or90to91(outBasePs, inBasePs);
+	ConvertPersistStat73or90to91(outBasePs, inBasePs);
 }
 
 void udtProtocolConverter73to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
