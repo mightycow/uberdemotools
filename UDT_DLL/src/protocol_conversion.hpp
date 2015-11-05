@@ -48,16 +48,28 @@ private:
 	u32 _protocolSizeOfEntityState;
 };
 
-struct udtProtocolConverter73to90 : public udtProtocolConverter
+struct udtProtocolConverter90to91 : public udtProtocolConverter
 {
-	udtProtocolConverter73to90() {}
+	udtProtocolConverter90to91() {}
 
 	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
 	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
 	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtProtocolConverter73to90);
+	UDT_NO_COPY_SEMANTICS(udtProtocolConverter90to91);
+};
+
+struct udtProtocolConverter73to91 : public udtProtocolConverter
+{
+	udtProtocolConverter73to91() {}
+
+	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
+	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
+	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
+
+private:
+	UDT_NO_COPY_SEMANTICS(udtProtocolConverter73to91);
 };
 
 struct udtProtocolConverter48to68 : public udtProtocolConverter

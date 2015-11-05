@@ -4,6 +4,56 @@
 #include "utils.hpp"
 
 
+/*
+73/90 -> 91
+
+No changes:
+Global team sounds
+Entity events
+Weapons
+Player reward sounds
+Holdable items
+Persistent indices
+Game types
+PMOVE types
+Animation number
+Means of death
+Item types (only difference is the key was added)
+Entity state types
+
+Different:
+PMOVE flags: different?
+Stats indices: 14 is either frags or attackee armour?
+Entity state flags: 0x4000 became "global spectator" instead of "already voted"? if so, when?
+Power-up indices: very different
+Config strings: @TODO:
+*/
+
+
+static s32 ConvertPowerUpIndex73or90to91(s32 index)
+{
+	// 0 is none, 10+ is invul, scout, guard, doubler, armor regen, frozen
+	if(index == 0 || index >= 10)
+	{
+		return index;
+	}
+
+	// quad, bs, haste, invis, regen, flight
+	if(index >= 1 && index <= 6)
+	{
+		return index + 3;
+	}
+
+	// red flag, blue flag, neutral flag
+	if(index >= 7 && index <= 9)
+	{
+		return index - 6;
+	}
+
+	return -1;
+}
+
+
 // Return false to drop the key/value pair altogether.
 typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value, void* userData);
 
@@ -57,9 +107,9 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 	}
 }
 
-static bool ConvertConfigStringValue73to90(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value, void*)
+static bool ConvertConfigStringValue73or90to91(udtString& newValue, udtVMLinearAllocator&, const udtString& key, const udtString& value, void*)
 {
-	newValue = udtString::Equals(key, "protocol") ? udtString::NewConstRef("90") : value;
+	newValue = udtString::Equals(key, "protocol") ? udtString::NewConstRef("91") : value;
 
 	return true;
 }
@@ -93,8 +143,8 @@ void udtProtocolConverterIdentity::ConvertConfigString(udtConfigStringConversion
 	result.String = configString;
 	result.StringLength = configStringLength;
 }
-
-void udtProtocolConverter73to90::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+/*
+void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {
 	(idClientSnapshotBase&)outSnapshot = inSnapshot;
 	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
@@ -103,7 +153,7 @@ void udtProtocolConverter73to90::ConvertSnapshot(idLargestClientSnapshot& outSna
 	out.jumpTime = 0;
 }
 
-void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+void udtProtocolConverter90to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
 	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
 	idEntityState90& out = (idEntityState90&)outEntityState;
@@ -115,7 +165,7 @@ void udtProtocolConverter73to90::ConvertEntityState(idLargestEntityState& outEnt
 	out.doubleJumped = 0;
 }
 
-void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
+void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
 {
 	result.NewString = false;
 	result.Index = inIndex;
@@ -131,7 +181,46 @@ void udtProtocolConverter73to90::ConvertConfigString(udtConfigStringConversion& 
 		result.StringLength = newString.Length;
 	}
 }
+*/
+/*
+void udtProtocolConverter73to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
+	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
+	out.doubleJumped = 0;
+	out.jumpTime = 0;
+}
 
+void udtProtocolConverter73to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
+	idEntityState90& out = (idEntityState90&)outEntityState;
+	idEntityState73& in = (idEntityState73&)inEntityState;
+	(idEntityStateBase&)outEntityState = inEntityState;
+	out.pos_gravity = in.pos_gravity;
+	out.apos_gravity = in.apos_gravity;
+	out.jumpTime = 0;
+	out.doubleJumped = 0;
+}
+
+void udtProtocolConverter73to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.NewString = false;
+	result.Index = inIndex;
+	result.String = configString;
+	result.StringLength = configStringLength;
+
+	if(inIndex == CS_SERVERINFO)
+	{
+		udtString newString;
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90, NULL);
+		result.NewString = true;
+		result.String = newString.String;
+		result.StringLength = newString.Length;
+	}
+}
+*/
 static s32 ConvertConfigStringIndex48to68(s32 index, s32 protocolNumber)
 {
 	if(protocolNumber >= 48)
