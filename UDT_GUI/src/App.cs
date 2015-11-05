@@ -73,20 +73,6 @@ namespace Uber.DemoTools
         public bool RunUpdaterAtStartUp = true;
     }
 
-    public class MapConversionRule
-    {
-        public string InputName = "";
-        public string OutputName = "";
-        public float OffsetX = 0.0f;
-        public float OffsetY = 0.0f;
-        public float OffsetZ = 0.0f;
-    }
-
-    public class UdtMapConversionsConfig
-    {
-        public List<MapConversionRule> MapRules = new List<MapConversionRule> { new MapConversionRule() };
-    }
-
     public class UdtPrivateConfig
     {
         public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
@@ -1541,19 +1527,16 @@ namespace Uber.DemoTools
             convert68Button.Width = 75;
             convert68Button.Height = 25;
             convert68Button.Margin = new Thickness(5);
-            convert68Button.ToolTip =
-                "a) Convert *.dm_3 and *.dm_48 Q3 demos to Q3 *.dm_68 demos\n" +
-                "b) Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)\n" +
-                "     Please refer to ConversionRules90to68.xml for known issues";
+            convert68Button.ToolTip = "Convert Q3 *.dm_3 and *.dm_48 demos to Q3 *.dm_68 demos";
             convert68Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
 
-            var convert90Button = new Button();
-            convert90Button.Content = "=> *.dm__90";
-            convert90Button.Width = 75;
-            convert90Button.Height = 25;
-            convert90Button.Margin = new Thickness(5);
-            convert90Button.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
-            convert90Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
+            var convert91Button = new Button();
+            convert91Button.Content = "=> *.dm__91";
+            convert91Button.Width = 75;
+            convert91Button.Height = 25;
+            convert91Button.Margin = new Thickness(5);
+            convert91Button.ToolTip = "Convert QL *.dm_73 and *.dm_90 demos to QL *.dm_91 demos";
+            convert91Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm91);
 
             var mergeDemosButton = new Button();
             mergeDemosButton.Content = "Merge";
@@ -1578,7 +1561,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Orientation = Orientation.Vertical;
             multiDemoActionButtonsPanel.Children.Add(analyzeButton);
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
-            multiDemoActionButtonsPanel.Children.Add(convert90Button);
+            multiDemoActionButtonsPanel.Children.Add(convert91Button);
             multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
             multiDemoActionButtonsPanel.Children.Add(jsonExportButton);
 
@@ -1843,22 +1826,11 @@ namespace Uber.DemoTools
             StartJobThread(DemoAnalyzeThread, demos);
         }
 
-        private List<MapConversionRule> LoadMapRules(UDT_DLL.udtProtocol outputFormat)
-        {
-            var config = new UdtMapConversionsConfig();
-            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && Serializer.FromXml<UdtMapConversionsConfig>("ConversionRules90to68.xml", out config))
-            {
-                return config.MapRules;
-            }
-
-            return new List<MapConversionRule>();
-        }
-
         private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
         {
-            if((outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm90) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
+            // @TODO: dm_73 -> dm_91 conversion
+            // @TODO: dm_90 -> dm_91 conversion
+            if( (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
                 (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48))
             {
                 return true;
@@ -1870,7 +1842,6 @@ namespace Uber.DemoTools
         private class DemoConvertThreadArg
         {
             public List<DemoInfo> Demos;
-            public List<MapConversionRule> MapRules;
         }
 
         private void OnConvertDemosClicked(UDT_DLL.udtProtocol outputFormat)
@@ -1896,7 +1867,6 @@ namespace Uber.DemoTools
 
             var threadData = new DemoConvertThreadArg();
             threadData.Demos = demos;
-            threadData.MapRules = LoadMapRules(outputFormat);
 
             JoinJobThread();
             StartJobThread(DemoConvertThread, threadData);
@@ -2127,7 +2097,7 @@ namespace Uber.DemoTools
 
             try
             {
-                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, threadData.MapRules, filePaths, _config.MaxThreadCount);
+                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {

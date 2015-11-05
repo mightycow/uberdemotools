@@ -147,15 +147,5 @@ udtProtocolConverter* udtContext::GetProtocolConverter(udtProtocol::Id outProtoc
 		return &_converter48to68;
 	}
 
-	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
-	{
-		return &_converter73to90;
-	}
-
-	if(outProtocol == udtProtocol::Dm68 && inProtocol == udtProtocol::Dm90)
-	{
-		return &_converter90to68;
-	}
-
 	return NULL;
 }
