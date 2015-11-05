@@ -277,45 +277,56 @@ void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& 
 	}
 }
 
-/*
 void udtProtocolConverter73to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
 {
 	(idClientSnapshotBase&)outSnapshot = inSnapshot;
-	*GetPlayerState(&outSnapshot, udtProtocol::Dm90) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
-	idPlayerState90& out = *(idPlayerState90*)GetPlayerState(&outSnapshot, udtProtocol::Dm90);
+	*GetPlayerState(&outSnapshot, udtProtocol::Dm91) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
+	idPlayerState91& out = *(idPlayerState91*)GetPlayerState(&outSnapshot, udtProtocol::Dm91);
 	out.doubleJumped = 0;
 	out.jumpTime = 0;
+	out.weaponPrimary = 0;
+	out.crouchTime = 0;
+	out.crouchSlideTime = 0;
+	out.location = 0;
+	out.fov = 0;
+	out.forwardmove = 0;
+	out.rightmove = 0;
+	out.upmove = 0;
+	ConvertPowerUps73or90to91(*GetPlayerState(&outSnapshot, udtProtocol::Dm91), *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73));
 }
 
 void udtProtocolConverter73to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
 {
-	// @NOTE: Model indices are the same except protocol 90 adds a few. So no changes needed.
-	idEntityState90& out = (idEntityState90&)outEntityState;
+	idEntityState91& out = (idEntityState91&)outEntityState;
 	idEntityState73& in = (idEntityState73&)inEntityState;
 	(idEntityStateBase&)outEntityState = inEntityState;
 	out.pos_gravity = in.pos_gravity;
 	out.apos_gravity = in.apos_gravity;
 	out.jumpTime = 0;
 	out.doubleJumped = 0;
+	out.health = 0;
+	out.armor = 0;
+	out.location = 0;
+	out.powerups = ConvertPowerUpFlags73or90to91(inEntityState.powerups);
 }
 
 void udtProtocolConverter73to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
 {
 	result.NewString = false;
-	result.Index = inIndex;
+	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
 	result.String = configString;
 	result.StringLength = configStringLength;
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
-		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73to90, NULL);
+		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
 		result.String = newString.String;
 		result.StringLength = newString.Length;
 	}
 }
-*/
+
 static s32 ConvertConfigStringIndex48to68(s32 index, s32 protocolNumber)
 {
 	if(protocolNumber >= 48)
