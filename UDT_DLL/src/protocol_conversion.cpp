@@ -22,8 +22,8 @@ No changes:
 - Entity state types
 
 Different:
-- PMOVE flags: @TODO: different?
-- Persistent stats: 14 was attackee armor, now frags, 15 is new: XP points
+- PMOVE flags: scoreboard was dropped, waterjump moved
+- Persistent stats: 14 was attackee armor but is now frags, 15 is new: XP points
 - Entity state flags: @TODO: 0x4000 became "global spectator" instead of "already voted"? if so, when?
 - Power-up indices: very different
 - Config strings: pretty different after CS_SHADERSTATE_73p
@@ -162,6 +162,45 @@ static void ConvertPersistStat73or90to91(idPlayerStateBase& out, const idPlayerS
 	}
 }
 
+static s32 ConvertPMoveIndex73or90to91(s32 index)
+{
+	// PMF_TIME_WATERJUMP moved.
+	if(index == 8)
+	{
+		return 7;
+	}
+
+	// PMF_SCOREBOARD no longer exists.
+	if(index == 13)
+	{
+		return -1;
+	}
+
+	return index;
+}
+
+static s32 ConvertPMoveFlags73or90to91(s32 oldFlags)
+{
+	s32 flags = 0;
+	for(s32 i = 0; i < 32; ++i)
+	{
+		if((oldFlags & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32 f = ConvertPMoveIndex73or90to91(i);
+		if(f < 0)
+		{
+			continue;
+		}
+
+		flags |= (1 << f);
+	}
+
+	return flags;
+}
+
 
 // Return false to drop the key/value pair altogether.
 typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value, void* userData);
@@ -272,6 +311,7 @@ void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSna
 	const idPlayerStateBase& inBasePs = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm90);
 	ConvertPowerUps73or90to91(outBasePs, inBasePs);
 	ConvertPersistStat73or90to91(outBasePs, inBasePs);
+	out.pm_flags = ConvertPMoveFlags73or90to91(inBasePs.pm_flags);
 }
 
 void udtProtocolConverter90to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
@@ -325,6 +365,7 @@ void udtProtocolConverter73to91::ConvertSnapshot(idLargestClientSnapshot& outSna
 	const idPlayerStateBase& inBasePs = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm73);
 	ConvertPowerUps73or90to91(outBasePs, inBasePs);
 	ConvertPersistStat73or90to91(outBasePs, inBasePs);
+	out.pm_flags = ConvertPMoveFlags73or90to91(inBasePs.pm_flags);
 }
 
 void udtProtocolConverter73to91::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
