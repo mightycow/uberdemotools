@@ -24,7 +24,7 @@ No changes:
 Different:
 - PMOVE flags: scoreboard was dropped, waterjump moved
 - Persistent stats: 14 was attackee armor but is now frags, 15 is new: XP points
-- Entity state flags: @TODO: 0x4000 became "global spectator" instead of "already voted"? if so, when?
+- Entity state flags: 0x4000 became "global spectator" instead of "already voted"
 - Power-up indices: very different
 - Config strings: pretty different after CS_SHADERSTATE_73p
 */
