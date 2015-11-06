@@ -201,6 +201,12 @@ static s32 ConvertPMoveFlags73or90to91(s32 oldFlags)
 	return flags;
 }
 
+static s32 ConvertEntityStateFlags73or90to91(s32 oldFlags)
+{
+	// EF_VOTED (0x4000) was dropped and EF_GLOBAL_SPECTATOR (0x4000) replaces it.
+	return oldFlags & (~s32(0x4000));
+}
+
 
 // Return false to drop the key/value pair altogether.
 typedef bool (*ProcessConfigStringCallback)(udtString& newValue, udtVMLinearAllocator& allocator, const udtString& key, const udtString& value, void* userData);
@@ -327,6 +333,7 @@ void udtProtocolConverter90to91::ConvertEntityState(idLargestEntityState& outEnt
 	out.armor = 0;
 	out.location = 0;
 	out.powerups = ConvertPowerUpFlags73or90to91(inEntityState.powerups);
+	out.eFlags = ConvertEntityStateFlags73or90to91(inEntityState.eFlags);
 }
 
 void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
@@ -381,6 +388,7 @@ void udtProtocolConverter73to91::ConvertEntityState(idLargestEntityState& outEnt
 	out.armor = 0;
 	out.location = 0;
 	out.powerups = ConvertPowerUpFlags73or90to91(inEntityState.powerups);
+	out.eFlags = ConvertEntityStateFlags73or90to91(inEntityState.eFlags);
 }
 
 void udtProtocolConverter73to91::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength)
