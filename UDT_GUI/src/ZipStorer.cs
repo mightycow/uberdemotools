@@ -327,13 +327,13 @@ namespace System.IO.Compression
         public bool ExtractFile(ZipFileEntry _zfe, string _filename)
         {
             // Make sure the parent directory exist
-            string path = System.IO.Path.GetDirectoryName(_filename);
+            string path = Path.GetDirectoryName(_filename);
 
             if (!string.IsNullOrWhiteSpace(path) && !Directory.Exists(path))
                 Directory.CreateDirectory(path);
             // Check it is directory. If so, do nothing
             if (Directory.Exists(_filename))
-                return true;
+                return false;
 
             Stream output = new FileStream(_filename, FileMode.Create, FileAccess.Write);
             bool result = ExtractFile(_zfe, output);
