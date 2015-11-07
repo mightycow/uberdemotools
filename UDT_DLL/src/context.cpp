@@ -157,5 +157,8 @@ udtProtocolConverter* udtContext::GetProtocolConverter(udtProtocol::Id outProtoc
 		return &_converter90to91;
 	}
 
+	// Please sanitize the input before asking the library to do something it can't.
+	FatalError(__FILE__, __LINE__, __FUNCTION__, "Invalid input/output protocol combo");
+
 	return NULL;
 }
