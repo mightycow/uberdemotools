@@ -266,26 +266,118 @@ typedef enum {
 #define CS_PARTICLES_68			(CS_LOCATIONS_68 + MAX_LOCATIONS)
 #define CS_PAST_LAST_INDEX_68	(CS_PARTICLES_68 + MAX_LOCATIONS)
 
-#define	CS_GAME_VERSION_73p		12
-#define CS_LEVEL_START_TIME_73p 13
-#define	CS_INTERMISSION_73p		14
-#define CS_ITEMS_73p			15
-#define	CS_MODELS_73p			17
-#define CS_SOUNDS_73p           274
-#define	CS_PLAYERS_73p          529
-#define CS_LOCATIONS_73p		593
-#define CS_FLAGSTATUS_73p		658
-#define CS_SHADERSTATE_73p		665
-#define CS_PARTICLES_73p		(CS_LOCATIONS_73p + MAX_LOCATIONS)
+#define CS_GAME_VERSION_73p               12
+#define CS_LEVEL_START_TIME_73p           13
+#define CS_INTERMISSION_73p               14
+#define CS_ITEMS_73p                      15
+#define CS_MODELS_73p                     17
+#define CS_SOUNDS_73p                     274
+#define CS_PLAYERS_73p                    529
+#define CS_LOCATIONS_73p                  593
+#define CS_PARTICLES_73p                  657
+#define CS_FLAGSTATUS_73p                 658
+#define CS_SHADERSTATE_73p                665
+#define CS_TIMEOUT_BEGIN_TIME_73p         669
+#define CS_TIMEOUT_END_TIME_73p           670
+#define CS_RED_TEAM_TIMEOUTS_LEFT_73p     671
+#define CS_BLUE_TEAM_TIMEOUTS_LEFT_73p    672
+#define CS_MAP_CREATOR_73p                679
+#define CS_ORIGINAL_MAP_CREATOR_73p       680
+#define CS_PMOVE_SETTINGS_73p             682
+#define CS_ARMOR_TIERED_73p               683
+#define CS_WEAPON_SETTINGS_73p            684
+#define CS_CUSTOM_PLAYER_MODELS_73p       685
+#define CS_FIRST_PLACE_CLIENT_NUM_73p     686
+#define CS_SECOND_PLACE_CLIENT_NUM_73p    687
+#define CS_FIRST_PLACE_SCORE_73p          688
+#define CS_SECOND_PLACE_SCORE_73p         689
+#define CS_MOST_DAMAGE_DEALT_73p          691
+#define CS_MOST_ACCURATE_73p              692
+#define CS_RED_TEAM_CLAN_NAME_73p         693
+#define CS_BLUE_TEAM_CLAN_NAME_73p        694
+#define CS_RED_TEAM_CLAN_TAG_73p          695
+#define CS_BLUE_TEAM_CLAN_TAG_73p         696
+#define CS_BEST_ITEM_CONTROL_73p          697
+#define CS_MVP_OFFENSE_73p                699
+#define CS_MVP_DEFENSE_73p                700
+#define CS_MVP_73p                        701
+#define CS_DOMINATION_RED_POINTS_73p      702
+#define CS_DOMINATION_BLUE_POINTS_73p     703
+#define CS_ROUND_WINNERS_73p              705
+#define CS_CUSTOM_SERVER_SETTINGS_73p     706
+#define CS_MAP_VOTE_INFO_73p              707
+#define CS_MAP_VOTE_COUNT_73p             708
+#define CS_DISABLE_MAP_VOTE_73p           709
+#define CS_READY_UP_TIME_73p              710
+#define CS_NUMBER_OF_RACE_CHECKPOINTS_73p 713
 
 #define CS_LEVEL_START_TIME_3   13
 #define CS_INTERMISSION_3       14
 #define CS_FLAGSTATUS_3         15
 #define CS_LOCATIONS_3          672
 
+enum idConfigString91
+{
+	CS_NEXTMAP_91 = 666,
+	CS_PRACTICE_91,
+	CS_FREECAM_91,
+
+	CS_PAUSE_START_TIME_91,    // if this is non-zero, the game is paused
+	CS_PAUSE_END_TIME_91,      // 0 = pause, !0 = timeout
+
+	CS_TIMEOUTS_RED_91,        // TOs REMAINING
+	CS_TIMEOUTS_BLUE_91,
+
+	CS_MODEL_OVERRIDE_91,
+
+	CS_PLAYER_CYLINDERS_91,
+	CS_DEBUGFLAGS_91,
+	CS_ENABLEBREATH_91,
+	CS_DMGTHROUGHDEPTH_91,
+	CS_AUTHOR_91,              // from the map worldspawn's author field
+	CS_AUTHOR2_91,
+	CS_ADVERT_DELAY_91,
+	CS_PMOVEINFO_91,
+	CS_ARMORINFO_91,
+	CS_WEAPONINFO_91,
+	CS_PLAYERINFO_91,
+	CS_SCORE1STPLAYER_91,		// Score of the duel player on the left
+	CS_SCORE2NDPLAYER_91,		// Score of the duel player on the right
+	CS_CLIENTNUM1STPLAYER_91,	// ClientNum of the duel player on the left
+	CS_CLIENTNUM2NDPLAYER_91,	// ClientNum of the duel player on the right
+	CS_NAME1STPLAYER_91,		// Name of the duel player on the left
+	CS_NAME2NDPLAYER_91,		// Name of the duel player on the right
+	CS_ATMOSEFFECT_91, // unused, was per-map rain/snow effects
+	CS_MOST_DAMAGEDEALT_PLYR_91,
+	CS_MOST_ACCURATE_PLYR_91,
+	CS_REDTEAMBASE_91,
+	CS_BLUETEAMBASE_91,
+	CS_BEST_ITEMCONTROL_PLYR_91,
+	CS_MOST_VALUABLE_OFFENSIVE_PLYR_91,
+	CS_MOST_VALUABLE_DEFENSIVE_PLYR_91,
+	CS_MOST_VALUABLE_PLYR_91,
+	CS_GENERIC_COUNT_RED_91,
+	CS_GENERIC_COUNT_BLUE_91,
+	CS_AD_SCORES_91,
+	CS_ROUND_WINNER_91,
+	CS_CUSTOM_SETTINGS_91,
+	CS_ROTATIONMAPS_91,
+	CS_ROTATIONVOTES_91,
+	CS_DISABLE_VOTE_UI_91,
+	CS_ALLREADY_TIME_91,
+	CS_INFECTED_SURVIVOR_MINSPEED_91,
+	CS_RACE_POINTS_91,
+	CS_DISABLE_LOADOUT_91,
+	CS_MATCH_GUID_91,
+	CS_STARTING_WEAPONS_91,
+	CS_STEAM_ID_91,
+	CS_STEAM_WORKSHOP_IDS_91,
+	CS_MAX_91
+};
+
 // Doesn't seem to exist in dm_73. Don't know about dm_90.
-#define CS_SCORES1PLAYER_91p    659 // 1st place player's name
-#define CS_SCORES2PLAYER_91p    660 // 2nd place player's name
+#define CS_SCORES1PLAYER_91     659 // 1st place player's name
+#define CS_SCORES2PLAYER_91     660 // 2nd place player's name
 
 // CPMA
 #define CS_CPMA_GAME_INFO       672

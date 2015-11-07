@@ -48,46 +48,28 @@ private:
 	u32 _protocolSizeOfEntityState;
 };
 
-struct udtProtocolConverter73to90 : public udtProtocolConverter
+struct udtProtocolConverter90to91 : public udtProtocolConverter
 {
-	udtProtocolConverter73to90() {}
+	udtProtocolConverter90to91() {}
 
 	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
 	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
 	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtProtocolConverter73to90);
+	UDT_NO_COPY_SEMANTICS(udtProtocolConverter90to91);
 };
 
-struct udtProtocolConverter90to68_CPMA : public udtProtocolConverter
+struct udtProtocolConverter73to91 : public udtProtocolConverter
 {
-	udtProtocolConverter90to68_CPMA() {}
+	udtProtocolConverter73to91() {}
 
-	void StartGameState() override;
-	void StartSnapshot(s32 serverTimeMs) override;
 	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
 	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
 	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtProtocolConverter90to68_CPMA);
-
-	struct ShaftingPlayer
-	{
-		s32 FirstCellTimeMs;
-		s32 FirstSoundTimeMs;
-		u32 SnapshotSoundCounter;
-	};
-
-	struct SnapshotInfo
-	{
-		ShaftingPlayer Players[MAX_CLIENTS];
-		s32 SnapshotTimeMs;
-	};
-
-	SnapshotInfo _snapshots[2];
-	u32 _snapshotIndex;
+	UDT_NO_COPY_SEMANTICS(udtProtocolConverter73to91);
 };
 
 struct udtProtocolConverter48to68 : public udtProtocolConverter
