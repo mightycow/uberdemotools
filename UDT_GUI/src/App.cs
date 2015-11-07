@@ -534,11 +534,21 @@ namespace Uber.DemoTools
             updateMenuItem.Click += (obj, arg) => CheckForUpdate(false);
             updateMenuItem.ToolTip = new ToolTip { Content = "See if a newer version is available" };
 
+#if DEBUG
+            var forceUpdateMenuItem = new MenuItem();
+            forceUpdateMenuItem.Header = "_Force Update";
+            forceUpdateMenuItem.Click += (obj, arg) => CheckForUpdateFromFakeOldVersion();
+            forceUpdateMenuItem.ToolTip = new ToolTip { Content = "Force an update for testing purposes" };
+#endif
+
             var helpMenuItem = new MenuItem();
             helpMenuItem.Header = "_Help";
             helpMenuItem.Items.Add(viewHelpMenuItem);
             helpMenuItem.Items.Add(new Separator());
             helpMenuItem.Items.Add(updateMenuItem);
+#if DEBUG
+            helpMenuItem.Items.Add(forceUpdateMenuItem);
+#endif
             helpMenuItem.Items.Add(new Separator());
             helpMenuItem.Items.Add(aboutMenuItem);
 
@@ -1265,6 +1275,27 @@ namespace Uber.DemoTools
                 }
             }
         }
+
+#if DEBUG
+        private void CheckForUpdateFromFakeOldVersion()
+        {
+#if UDT_X64
+            const string arch = "x64";
+#else
+            const string arch = "x86";
+#endif
+
+            try
+            {
+                var arguments = string.Join(" ", "0.1.0", "0.1.0", arch, Process.GetCurrentProcess().Id.ToString(), "blabla");
+                Process.Start("UDT_GUI_Updater.exe", arguments);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open the updater: " + exception.Message);
+            }
+        }
+#endif
 
         private void ShowAboutWindow()
         {
