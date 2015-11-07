@@ -6,12 +6,149 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
 using System.Threading;
+using System.Windows.Forms;
 
 
 namespace Uber.DemoTools.Updater
 {
+    public static class FileOps
+    {
+        public static bool TryDelete(string filePath)
+        {
+            try
+            {
+                if(File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                return true;
+            }
+            catch(Exception)
+            {
+            }
+
+            return false;
+        }
+
+        public static bool TryMove(string sourceFilePath, string destFilePath)
+        {
+            try
+            {
+                if(File.Exists(sourceFilePath))
+                {
+                    File.Move(sourceFilePath, destFilePath);
+                    return true;
+                }
+            }
+            catch(Exception)
+            {
+            }
+
+            return false;
+        }
+    }
+
+    public static class Tokenizer
+    {
+        public static List<string> Tokenize(string line)
+        {
+            var tokens = new List<string>();
+            if(string.IsNullOrWhiteSpace(line))
+            {
+                return tokens;
+            }
+
+            if(line.StartsWith("//"))
+            {
+                return tokens;
+            }
+
+            var i = 0;
+            while(i < line.Length)
+            {
+                var c = line[i];
+                if(char.IsWhiteSpace(c))
+                {
+                    ++i;
+                    continue;
+                }
+                else if(c == '"')
+                {
+                    var endQuoteIdx = line.IndexOf('"', i + 1);
+                    if(endQuoteIdx < 0)
+                    {
+                        break;
+                    }
+                    tokens.Add(line.Substring(i + 1, endQuoteIdx - i - 1));
+                    i = endQuoteIdx + 1;
+                }
+                else
+                {
+                    var startTokenIdx = i++;
+                    while(i < line.Length)
+                    {
+                        if(char.IsWhiteSpace(line[i++]))
+                        {
+                            break;
+                        }
+                    }
+                    var endOffset = i == line.Length ? 0 : 1;
+                    tokens.Add(line.Substring(startTokenIdx, i - startTokenIdx - endOffset));
+                }
+            }
+
+            return tokens;
+        }
+    }
+
+    public static class ConfigParser
+    {
+        public class ConfigCommand
+        {
+            public string Command = "";
+            public readonly List<string> Arguments = new List<string>();
+            public readonly List<string> Options = new List<string>();
+        }
+
+        public static ConfigCommand ParseCommand(string line)
+        {
+            var tokens = Tokenizer.Tokenize(line);
+            if(tokens.Count == 0)
+            {
+                return null;
+            }
+
+            var command = new ConfigCommand();
+            var commandIdx = 0;
+            foreach(var token in tokens)
+            {
+                if(token.StartsWith("[") && token.EndsWith("]"))
+                {
+                    ++commandIdx;
+                    command.Options.Add(token.Substring(1, token.Length - 2));
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if(commandIdx >= tokens.Count)
+            {
+                return null;
+            }
+
+            command.Command = tokens[commandIdx];
+            for(var i = commandIdx + 1; i < tokens.Count; ++i)
+            {
+                command.Arguments.Add(tokens[i]);
+            }
+
+            return command;
+        }
+    }
+
     public class Updater
     {
         public class UpdaterArg
@@ -40,48 +177,72 @@ namespace Uber.DemoTools.Updater
 
         private void Update()
         {
-            _webClient = new WebClient();
-            GetLatestVersionNumbersAndBinariesUrl();
-            if(!IsNewVersionHigher())
+            using(var webClient = new WebClient())
             {
-                if(!_noMessageBoxIfCurrent)
+                _webClient = webClient;
+
+                GetLatestVersionNumbersAndBinariesUrl();
+                if(!IsNewVersionHigher())
                 {
-                    MessageBox.Show("You are already running the latest version.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    if(!_noMessageBoxIfCurrent)
+                    {
+                        MessageBox.Show("You are already running the latest version.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    return;
                 }
-                _webClient.Dispose();
-                return;
+
+                var result = MessageBox.Show("A new version is available. Close UDT and update now?", "UDT Updater", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+                if(result != DialogResult.OK)
+                {
+                    return;
+                }
+
+                try
+                {
+                    var parentProcess = Process.GetProcessById(_parentProcessId);
+                    parentProcess.CloseMainWindow();
+                    parentProcess.WaitForExit();
+                }
+                catch(Exception)
+                {
+                }
+
+                DownloadAndReadConfig();
+                if(!_fileOps.Exists(o => o.Operation == FileOperationType.ExtractFile && o.AllowedToFail == false))
+                {
+                    MessageBox.Show("Failed to retrieve valid update information.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var patchSuccessful = false;
+                try
+                {
+                    if(DownloadAndExtractNewTempFiles() && ApplyPatch())
+                    {
+                        patchSuccessful = true;
+                    }
+                }
+                catch(Exception)
+                {
+                }
+                finally
+                {
+                    if(!patchSuccessful)
+                    {
+                        TryUndoPatch();
+                    }
+                }
+
+                if(!patchSuccessful)
+                {
+                    MessageBox.Show("Failed to patch the existing install.\nTried to roll back as well as possible.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+
+                if(patchSuccessful || (File.Exists("UDT_GUI.exe") && File.Exists("UDT.dll")))
+                {
+                    Process.Start("UDT_GUI.exe");
+                }
             }
-
-            var result = MessageBox.Show("A new version is available. Close UDT and update now?", "UDT Updater", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
-            if(result != DialogResult.OK)
-            {
-                _webClient.Dispose();
-                return;
-            }
-
-            try
-            {
-                var parentProcess = Process.GetProcessById(_parentProcessId);
-                parentProcess.CloseMainWindow();
-                parentProcess.WaitForExit();
-            }
-            catch(Exception)
-            {
-            }
-
-            DownloadAndReadConfig();
-            if(_filesToAdd.Count == 0)
-            {
-                MessageBox.Show("Failed to access update information.", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            DownloadAndExtractNewTempFiles();
-            ApplyPatch();
-
-            Process.Start("UDT_GUI.exe");
-
-            _webClient.Dispose();
         }
 
         private bool GetLatestVersionNumbersAndBinariesUrl()
@@ -109,9 +270,10 @@ namespace Uber.DemoTools.Updater
                 string line;
                 while((line = sr.ReadLine()) != null)
                 {
-                    if(!string.IsNullOrWhiteSpace(line))
+                    var command = ConfigParser.ParseCommand(line);
+                    if(command != null)
                     {
-                        ProcessConfigEntry(line);
+                        ProcessConfigCommand(command);
                     }
                 }
             }
@@ -119,83 +281,149 @@ namespace Uber.DemoTools.Updater
             return true;
         }
 
-        private void ProcessConfigEntry(string line)
+        private void ProcessConfigCommand(ConfigParser.ConfigCommand command)
         {
-            if(line.StartsWith("add "))
+            var op = new FileOperation();
+            op.AllowedToFail = command.Options.Exists(o => o == "canfail");
+            if(command.Command == "extract" && command.Arguments.Count == 1)
             {
-                _filesToAdd.Add(line.Substring(4));
+                op.Operation = FileOperationType.ExtractFile;
+                op.FilePath = command.Arguments[0];
+                _fileOps.Add(op);
             }
-            else if(line.StartsWith("rem "))
+            else if(command.Command == "delete" && command.Arguments.Count == 1)
             {
-                _filesToRemove.Add(line.Substring(4));
+                op.Operation = FileOperationType.DeleteFile;
+                op.FilePath = command.Arguments[0];
+                _fileOps.Add(op);
+            }
+            else if(command.Command == "rename" && command.Arguments.Count == 2)
+            {
+                op.Operation = FileOperationType.RenameFile;
+                op.FilePath = command.Arguments[0];
+                op.FilePath2 = command.Arguments[1];
+                _fileOps.Add(op);
             }
         }
 
         private bool DownloadAndExtractNewTempFiles()
         {
-            var filesNotFound = new List<string>();
             var data = _webClient.DownloadData(_downloadUrl);
             using(var memoryStream = new MemoryStream(data))
             {
                 using(var archive = ZipStorer.Open(memoryStream, FileAccess.Read))
                 {
-                    var centralDir = archive.ReadCentralDir();
-                    foreach(var fileName in _filesToAdd)
+                    var entries = archive.ReadCentralDir();
+                    var extractOps = _fileOps.FindAll(o => o.Operation == FileOperationType.ExtractFile);
+                    foreach(var op in extractOps)
                     {
-                        bool found = false;
-                        foreach(var entry in centralDir)
+                        var entryIdx = entries.FindIndex(e => e.FilenameInZip == op.FilePath);
+                        if(entryIdx < 0)
                         {
-                            if(entry.FilenameInZip == fileName)
+                            if(op.AllowedToFail)
                             {
-                                archive.ExtractFile(entry, fileName);
-                                break;
+                                continue;
+                            }
+                            else
+                            {
+                                return false;
                             }
                         }
 
-                        if(!found)
+                        var entry = entries[entryIdx];
+                        var success = archive.ExtractFile(entry, op.FilePath + UpdaterHelper.NewFileExtension);
+                        if(success)
                         {
-                            filesNotFound.Add(fileName);
+                            AddUndoDelete(op.FilePath + UpdaterHelper.NewFileExtension);
+                        }
+                        else if(!success && !op.AllowedToFail)
+                        {
+                            return false;
                         }
                     }
-                }
-            }
 
-            foreach(var fileName in filesNotFound)
-            {
-                _filesToAdd.Remove(fileName);
+                    archive.Close();
+                }
+
+                memoryStream.Close();
             }
 
             return true;
         }
 
-        private void ApplyPatch()
+        private bool ApplyPatch()
         {
-            foreach(var fileName in _filesToAdd)
+            var extractOps = _fileOps.FindAll(o => o.Operation == FileOperationType.ExtractFile);
+            var deleteOps = _fileOps.FindAll(o => o.Operation == FileOperationType.DeleteFile);
+            var renameOps = _fileOps.FindAll(o => o.Operation == FileOperationType.RenameFile);
+
+            // Delete files that may be dangling from a previously failed update attempt.
+            foreach(var op in extractOps)
             {
-                File.Delete(fileName + UpdaterHelper.OldFileExtension);
+                TryDeleteFile(op.FilePath + UpdaterHelper.OldFileExtension);
             }
 
-            foreach(var fileName in _filesToAdd)
+            // Rename the currently valid files for backup.
+            foreach(var op in extractOps)
             {
-                if(File.Exists(fileName))
+                TryMoveFileWithUndo(op.FilePath, op.FilePath + UpdaterHelper.OldFileExtension);
+            }
+
+            // Rename the freshly extracted files to be the new current ones.
+            foreach(var op in extractOps)
+            {
+                if(!TryMoveFileWithUndo(op.FilePath + UpdaterHelper.NewFileExtension, op.FilePath) && !op.AllowedToFail)
                 {
-                    File.Move(fileName, fileName + UpdaterHelper.OldFileExtension);
+                    return false;
                 }
             }
 
-            foreach(var fileName in _filesToAdd)
+            // Execute rename operations from the updater config.
+            foreach(var op in renameOps)
             {
-                File.Move(fileName + UpdaterHelper.NewFileExtension, fileName);
+                if(!TryMoveFileWithUndo(op.FilePath, op.FilePath2) && !op.AllowedToFail)
+                {
+                    return false;
+                }
             }
 
-            foreach(var fileName in _filesToAdd)
+            // Execute delete operations from the updater config.
+            foreach(var op in deleteOps)
             {
-                File.Delete(fileName + UpdaterHelper.OldFileExtension);
+                if(!TryDeleteFile(op.FilePath) && !op.AllowedToFail)
+                {
+                    return false;
+                }
             }
 
-            foreach(var fileName in _filesToRemove)
+            // Get rid of the backup files.
+            foreach(var op in extractOps)
             {
-                File.Delete(fileName);
+                TryDeleteFile(op.FilePath + UpdaterHelper.OldFileExtension);
+            }
+
+            return true;
+        }
+
+        private void TryUndoPatch()
+        {
+            _undoFileOps.Reverse();
+            foreach(var op in _undoFileOps)
+            {
+                try
+                {
+                    if(op.Operation == FileOperationType.DeleteFile)
+                    {
+                        File.Delete(op.FilePath);
+                    }
+                    else if(op.Operation == FileOperationType.RenameFile)
+                    {
+                        File.Move(op.FilePath, op.FilePath2);
+                    }
+                }
+                catch(Exception)
+                {
+                }
             }
         }
 
@@ -232,9 +460,58 @@ namespace Uber.DemoTools.Updater
                 CompareStringVersions(_newGuiVersion, _curGuiVersion) > 0;
         }
 
+        private void AddUndoDelete(string filePath)
+        {
+            var op = new FileOperation();
+            op.Operation = FileOperationType.DeleteFile;
+            op.FilePath = filePath;
+            _undoFileOps.Add(op);
+        }
+
+        private void AddUndoRename(string filePath, string filePath2)
+        {
+            var op = new FileOperation();
+            op.Operation = FileOperationType.RenameFile;
+            op.FilePath = filePath;
+            op.FilePath2 = filePath2;
+            _undoFileOps.Add(op);
+        }
+
+        private bool TryDeleteFile(string filePath)
+        {
+            return FileOps.TryDelete(filePath);
+        }
+
+        private bool TryMoveFileWithUndo(string filePath, string filePath2)
+        {
+            if(FileOps.TryMove(filePath, filePath2))
+            {
+                AddUndoRename(filePath, filePath2);
+                return true;
+            }
+
+            return false;
+        }
+
+        public enum FileOperationType
+        {
+            None,
+            ExtractFile,
+            RenameFile,
+            DeleteFile
+        }
+
+        public class FileOperation
+        {
+            public FileOperationType Operation = FileOperationType.None;
+            public string FilePath = "";
+            public string FilePath2 = "";
+            public bool AllowedToFail = false;
+        }
+
         private static readonly Regex _versionRegEx = new Regex("(\\d+)\\.(\\d+)\\.(\\d+)([a-z])?", RegexOptions.Compiled);
-        private readonly List<string> _filesToAdd = new List<string>();
-        private readonly List<string> _filesToRemove = new List<string>();
+        private readonly List<FileOperation> _fileOps = new List<FileOperation>();
+        private readonly List<FileOperation> _undoFileOps = new List<FileOperation>();
         private WebClient _webClient;
         private string _curDllVersion;
         private string _curGuiVersion;
@@ -245,7 +522,6 @@ namespace Uber.DemoTools.Updater
         private int _parentProcessId;
         private bool _noMessageBoxIfCurrent;
     }
-
 
     static class MainClass
     {
@@ -295,32 +571,35 @@ namespace Uber.DemoTools.Updater
 
         public static void Main(string[] arguments)
         {
-            var mutex = UpdaterHelper.TryOpenNamedMutex();
-            if(mutex != null)
-            {
-                // Updater already running.
-                return;
-            }
-
-            mutex = UpdaterHelper.CreateNamedMutex();
-            if(mutex == null)
-            {
-                MessageBox.Show("Mutex creation failed. :-(", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
+            Mutex mutex = null;
             try
             {
+                mutex = UpdaterHelper.TryOpenNamedMutex();
+                if(mutex != null)
+                {
+                    // Updater already running.
+                    return;
+                }
+
+                mutex = UpdaterHelper.TryCreateNamedMutex();
+                if(mutex == null)
+                {
+                    MessageBox.Show("Mutex creation failed. :-(", "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
                 RealMain(arguments);
             }
             catch(Exception e)
             {
-                MessageBox.Show("Exception caught: " + e.Message, "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Exception caught: " + e.Message + "\n" + e.StackTrace, "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
-                mutex.Close();
-                mutex.Dispose();
+                if(mutex != null)
+                {
+                    mutex.Close();
+                }
             }
         }
     }

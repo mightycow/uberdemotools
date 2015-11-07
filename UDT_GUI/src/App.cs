@@ -376,9 +376,9 @@ namespace Uber.DemoTools
             {
                 if(File.Exists(updaterFileName))
                 {
-                    DeleteFile(updaterFileName);
+                    TryDeleteFile(updaterFileName);
                 }
-                MoveFile(updaterFileNameNewExt, updaterFileName);
+                TryMoveFile(updaterFileNameNewExt, updaterFileName);
             }
 
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
@@ -2994,32 +2994,40 @@ namespace Uber.DemoTools
             element.CommandBindings.Add(commandBinding);
         }
 
-        private static bool DeleteFile(string filePath)
+        // True if the file doesn't exist at the end of the call.
+        private static bool TryDeleteFile(string filePath)
         {
             try
             {
-                File.Delete(filePath);
+                if(File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                return true;
             }
             catch(Exception)
             {
-                return false;
             }
 
-            return true;
+            return false;
         }
 
-        private static bool MoveFile(string filePath, string newFilePath)
+        // True if the source file existed and was renamed.
+        private static bool TryMoveFile(string filePath, string newFilePath)
         {
             try
             {
-                File.Move(filePath, newFilePath);
+                if(File.Exists(filePath))
+                {
+                    File.Move(filePath, newFilePath);
+                    return true;
+                }   
             }
             catch(Exception)
             {
-                return false;
             }
 
-            return true;
+            return false;
         }
     }
 

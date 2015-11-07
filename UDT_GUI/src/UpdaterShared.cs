@@ -26,7 +26,7 @@ namespace Uber.DemoTools.Updater
             return null;
         }
 
-        public static Mutex CreateNamedMutex()
+        public static Mutex TryCreateNamedMutex()
         {
             try
             {
