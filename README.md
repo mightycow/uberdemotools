@@ -38,7 +38,7 @@ Overview of the binaries
 | UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files (one per demo file) |
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
 | UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
-| UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
+| UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting, merging, conversions, etc |
 
 Supported demo formats
 ----------------------
