@@ -372,6 +372,7 @@ namespace Uber.DemoTools
 
             var updaterFileName = Updater.UpdaterHelper.ExeFileName;
             var updaterFileNameNewExt = updaterFileName + Updater.UpdaterHelper.NewFileExtension;
+            var updaterFileNameOldExt = updaterFileName + Updater.UpdaterHelper.OldFileExtension;
             if(File.Exists(updaterFileNameNewExt))
             {
                 if(File.Exists(updaterFileName))
@@ -380,6 +381,8 @@ namespace Uber.DemoTools
                 }
                 TryMoveFile(updaterFileNameNewExt, updaterFileName);
             }
+            TryDeleteFile(updaterFileNameNewExt);
+            TryDeleteFile(updaterFileNameOldExt);
 
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
