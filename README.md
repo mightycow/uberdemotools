@@ -10,6 +10,7 @@ The main features are:
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
 - Time shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
+- Converting demos: convert demos to a different protocol version
 
 Official UDT binaries
 ---------------------
@@ -36,6 +37,7 @@ Overview of the binaries
 | UDT_merger      | Application<br>C++ | Windows Linux |  | Command-line application for merging multiple demos into one |
 | UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files (one per demo file) |
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
+| UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
 
 Supported demo formats
