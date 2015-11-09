@@ -438,7 +438,7 @@ namespace Uber.DemoTools.Updater
             var n1 = int.Parse(match.Groups[1].Value);
             var n2 = int.Parse(match.Groups[2].Value);
             var n3 = int.Parse(match.Groups[3].Value);
-            var n4 = match.Groups[4].Value.Length == 1 ? (int)('b' - match.Groups[4].Value[0]) : 0;
+            var n4 = match.Groups[4].Value.Length == 1 ? (int)(1 + char.ToLower(match.Groups[4].Value[0]) - 'a') : 0;
             var version = n4 + n3 * (100) + n2 * (100 * 100) + n1 * (100 * 100 * 100);
 
             return version;
