@@ -31,7 +31,7 @@ Overview of the binaries
 | Project name    | Type/Language      | Platforms     | Dependencies  | Description  |
 |:----------------|:------------------:|:-------------:|:-------------:|:------------:|
 | UDT_DLL         | Library<br>C++     | Windows Linux |  | Shared library that does the actual cutting and analysis work |
-| UDT_cutter      | Application<br>C++ | Windows Linux |  | Command-line application for cutting demos by time or chat patterns (*Cut by Chat*) |
+| UDT_cutter      | Application<br>C++ | Windows Linux |  | Command-line application for cutting demos by time, chat patterns (*Cut by Chat*) or matches (*Cut by Match*) |
 | UDT_splitter    | Application<br>C++ | Windows Linux |  | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
 | UDT_timeshifter | Application<br>C++ | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
 | UDT_merger      | Application<br>C++ | Windows Linux |  | Command-line application for merging multiple demos into one |
