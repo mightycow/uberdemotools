@@ -140,6 +140,7 @@ struct udtProtocol
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 		AfterLastProtocol,
 		FirstProtocol = Dm3,
+		FirstCuttableProtocol = Dm66,
 		Count = AfterLastProtocol - 1,
 		LatestProtocol = Count
 	};

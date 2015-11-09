@@ -12,7 +12,7 @@ struct udtFileInfo
 	u64 Size;
 };
 
-typedef bool(*KeepFileCallback)(const char* name, u64 size); // Returns true if the file is to be kept.
+typedef bool(*KeepFileCallback)(const char* name, u64 size, void* userData); // Returns true if the file is to be kept.
 
 struct udtFileListQuery
 {
@@ -22,6 +22,7 @@ struct udtFileListQuery
 	udtVMLinearAllocator* TempAllocator;
 	udtVMLinearAllocator* FolderArrayAllocator;
 	KeepFileCallback FileFilter;
+	void* UserData;
 	bool Recursive;
 };
 

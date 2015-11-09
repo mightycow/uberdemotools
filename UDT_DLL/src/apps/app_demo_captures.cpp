@@ -404,7 +404,7 @@ void PrintHelp()
 	printf("Setting -b=0 will disable the writing of that extra JSON array entirely.\n");
 }
 
-static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/, void* /*userData*/)
 {
 	return udtPath::HasValidDemoFileExtension(name);
 }
