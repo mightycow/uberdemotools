@@ -147,15 +147,18 @@ udtProtocolConverter* udtContext::GetProtocolConverter(udtProtocol::Id outProtoc
 		return &_converter48to68;
 	}
 
-	if(outProtocol == udtProtocol::Dm90 && inProtocol == udtProtocol::Dm73)
+	if(outProtocol == udtProtocol::Dm91 && inProtocol == udtProtocol::Dm73)
 	{
-		return &_converter73to90;
+		return &_converter73to91;
 	}
 
-	if(outProtocol == udtProtocol::Dm68 && inProtocol == udtProtocol::Dm90)
+	if(outProtocol == udtProtocol::Dm91 && inProtocol == udtProtocol::Dm90)
 	{
-		return &_converter90to68;
+		return &_converter90to91;
 	}
+
+	// Please sanitize the input before asking the library to do something it can't.
+	FatalError(__FILE__, __LINE__, __FUNCTION__, "Invalid input/output protocol combo");
 
 	return NULL;
 }

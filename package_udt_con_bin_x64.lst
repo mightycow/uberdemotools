@@ -3,4 +3,6 @@ UDT_DLL\.bin\vs2013\x64\release\UDT_splitter.exe
 UDT_DLL\.bin\vs2013\x64\release\UDT_timeshifter.exe
 UDT_DLL\.bin\vs2013\x64\release\UDT_merger.exe
 UDT_DLL\.bin\vs2013\x64\release\UDT_json.exe
+UDT_DLL\.bin\vs2013\x64\release\UDT_captures.exe
+UDT_DLL\.bin\vs2013\x64\release\UDT_converter.exe
 changelog_dll.txt

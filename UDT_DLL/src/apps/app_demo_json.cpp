@@ -36,7 +36,7 @@ void PrintHelp()
 	printf("Example for selecting analyzers: -a=sd will select stats and deaths.\n");
 }
 
-static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/)
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/, void* /*userData*/)
 {
 	return udtPath::HasValidDemoFileExtension(name);
 }

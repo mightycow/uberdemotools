@@ -139,7 +139,8 @@ struct udtProtocol
 	{
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 		AfterLastProtocol,
-		FirstProtocol = Dm68,
+		FirstProtocol = Dm3,
+		FirstCuttableProtocol = Dm66,
 		Count = AfterLastProtocol - 1,
 		LatestProtocol = Count
 	};
@@ -1221,33 +1222,13 @@ extern "C"
 	}
 	udtCutByMatchArg;
 
-	typedef struct udtMapConversionRule_s
+	typedef struct udtProtocolConversionArg_s
 	{
-		/* If the input name matches this... */
-		const char* InputName;
-
-		/* ...replace it with this. */
-		const char* OutputName;
-
-		/* Coordinates by which to shift everything. */
-		/* Includes players, items, etc. Only necessary for some maps. */
-		f32 PositionOffsets[3];
+		/* Of type udtProtocol::Id. */
+		u32 OutputProtocol;
 
 		/* Ignore this. */
 		s32 Reserved1;
-	}
-	udtMapConversionRule;
-
-	typedef struct udtProtocolConversionArg_s
-	{
-		/* Pointer to an array of map rules. */
-		const udtMapConversionRule* MapRules;
-
-		/* Number of elements in the array pointed to by the MapRules pointer. */
-		u32 MapRuleCount;
-
-		/* Of type udtProtocol::Id. */
-		u32 OutputProtocol;
 	}
 	udtProtocolConversionArg;
 

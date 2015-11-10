@@ -92,13 +92,16 @@ namespace Uber.DemoTools
             window.AllowsTransparency = false;
             window.Background = new SolidColorBrush(System.Windows.SystemColors.ControlColor);
             window.ShowInTaskbar = false;
-            window.Width = 240;
-            window.Height = 180;
-            window.Left = parent.Left + (parent.Width - window.Width) / 2;
-            window.Top = parent.Top + (parent.Height - window.Height) / 2;
+            window.SizeToContent = SizeToContent.WidthAndHeight;
+            window.ResizeMode = ResizeMode.NoResize;
             window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
             window.Title = "Cut Offsets";
             window.Content = rootPanel;
+            window.Loaded += (obj, args) =>
+            {
+                window.Left = parent.Left + (parent.Width - window.Width) / 2;
+                window.Top = parent.Top + (parent.Height - window.Height) / 2;
+            };
             window.ShowDialog();
 
             _valid = window.DialogResult ?? false;

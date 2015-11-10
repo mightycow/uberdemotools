@@ -1092,12 +1092,12 @@ namespace idConfigStringIndex
 
 	s32 FirstPlacePlayerName(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES1PLAYER_91p : -1;
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES1PLAYER_91 : -1;
 	}
 
 	s32 SecondPlacePlayerName(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES2PLAYER_91p : -1;
+		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES2PLAYER_91 : -1;
 	}
 
 	s32 PauseStart(udtProtocol::Id protocol)

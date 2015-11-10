@@ -10,6 +10,7 @@ The main features are:
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
 - Time shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
+- Converting demos: convert demos to a different protocol version
 
 Official UDT binaries
 ---------------------
@@ -30,13 +31,14 @@ Overview of the binaries
 | Project name    | Type/Language      | Platforms     | Dependencies  | Description  |
 |:----------------|:------------------:|:-------------:|:-------------:|:------------:|
 | UDT_DLL         | Library<br>C++     | Windows Linux |  | Shared library that does the actual cutting and analysis work |
-| UDT_cutter      | Application<br>C++ | Windows Linux |  | Command-line application for cutting demos by time or chat patterns (*Cut by Chat*) |
+| UDT_cutter      | Application<br>C++ | Windows Linux |  | Command-line application for cutting demos by time, chat patterns (*Cut by Chat*) or matches (*Cut by Match*) |
 | UDT_splitter    | Application<br>C++ | Windows Linux |  | Command-line application for splitting demos with at least one map change into individual demos with no map changes |
 | UDT_timeshifter | Application<br>C++ | Windows Linux |  | Command-line application for shifting the non-first-person players back in time (a sort of anti-lag) |
 | UDT_merger      | Application<br>C++ | Windows Linux |  | Command-line application for merging multiple demos into one |
 | UDT_json        | Application<br>C++ | Windows Linux |  | Command-line application for exporting analysis data to JSON files (one per demo file) |
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
-| UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting and merging |
+| UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
+| UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting, merging, conversions, etc |
 
 Supported demo formats
 ----------------------

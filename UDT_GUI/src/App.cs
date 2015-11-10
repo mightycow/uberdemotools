@@ -9,8 +9,10 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 
 
 namespace Uber.DemoTools
@@ -68,20 +70,7 @@ namespace Uber.DemoTools
         public uint JSONPlugInsEnabled = uint.MaxValue; // All enabled by default.
         public uint PerfStatsEnabled = 0; // All disabled by default.
         public uint CSharpPerfStatsEnabled = 0; // All disabled by default.
-    }
-
-    public class MapConversionRule
-    {
-        public string InputName = "";
-        public string OutputName = "";
-        public float OffsetX = 0.0f;
-        public float OffsetY = 0.0f;
-        public float OffsetZ = 0.0f;
-    }
-
-    public class UdtMapConversionsConfig
-    {
-        public List<MapConversionRule> MapRules = new List<MapConversionRule> { new MapConversionRule() };
+        public bool RunUpdaterAtStartUp = true;
     }
 
     public class UdtPrivateConfig
@@ -189,7 +178,7 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.5.4";
+        private const string GuiVersion = "0.6.0";
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -368,6 +357,33 @@ namespace Uber.DemoTools
         {
             Instance = this;
 
+            var mutex = Updater.UpdaterHelper.TryOpenNamedMutex();
+            if(mutex != null)
+            {
+                // Updater still running, try waiting for a bit.
+                Thread.Sleep(1000);
+                mutex = Updater.UpdaterHelper.TryOpenNamedMutex();
+                if(mutex != null)
+                {
+                    // No luck. Might be that the user was a bit impatient. :)
+                    Process.GetCurrentProcess().Kill();
+                }
+            }
+
+            var updaterFileName = Updater.UpdaterHelper.ExeFileName;
+            var updaterFileNameNewExt = updaterFileName + Updater.UpdaterHelper.NewFileExtension;
+            var updaterFileNameOldExt = updaterFileName + Updater.UpdaterHelper.OldFileExtension;
+            if(File.Exists(updaterFileNameNewExt))
+            {
+                if(File.Exists(updaterFileName))
+                {
+                    TryDeleteFile(updaterFileName);
+                }
+                TryMoveFile(updaterFileNameNewExt, updaterFileName);
+            }
+            TryDeleteFile(updaterFileNameNewExt);
+            TryDeleteFile(updaterFileNameOldExt);
+
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
@@ -377,6 +393,10 @@ namespace Uber.DemoTools
             Marshal.WriteInt32(_cancelOperation, 0);
 
             LoadConfig();
+            if(Config.RunUpdaterAtStartUp)
+            {
+                CheckForUpdate(true);
+            }
 
             var listItemColor1 = SystemColors.WindowColor;
             var listItemColor2 = listItemColor1;
@@ -512,9 +532,26 @@ namespace Uber.DemoTools
             aboutMenuItem.Click += (obj, arg) => ShowAboutWindow();
             aboutMenuItem.ToolTip = new ToolTip { Content = "Learn more about this awesome application" };
 
+            var updateMenuItem = new MenuItem();
+            updateMenuItem.Header = "Check for _Update";
+            updateMenuItem.Click += (obj, arg) => CheckForUpdate(false);
+            updateMenuItem.ToolTip = new ToolTip { Content = "See if a newer version is available" };
+
+#if DEBUG
+            var forceUpdateMenuItem = new MenuItem();
+            forceUpdateMenuItem.Header = "_Force Update";
+            forceUpdateMenuItem.Click += (obj, arg) => CheckForUpdateFromFakeOldVersion();
+            forceUpdateMenuItem.ToolTip = new ToolTip { Content = "Force an update for testing purposes" };
+#endif
+
             var helpMenuItem = new MenuItem();
             helpMenuItem.Header = "_Help";
             helpMenuItem.Items.Add(viewHelpMenuItem);
+            helpMenuItem.Items.Add(new Separator());
+            helpMenuItem.Items.Add(updateMenuItem);
+#if DEBUG
+            helpMenuItem.Items.Add(forceUpdateMenuItem);
+#endif
             helpMenuItem.Items.Add(new Separator());
             helpMenuItem.Items.Add(aboutMenuItem);
 
@@ -1219,27 +1256,111 @@ namespace Uber.DemoTools
             }
         }
 
+        private void CheckForUpdate(bool fromStartUp)
+        {
+#if UDT_X64
+            const string arch = "x64";
+#else
+            const string arch = "x86";
+#endif
+
+            try
+            {
+                var startUpArg = fromStartUp ? Updater.UpdaterHelper.NoMessageBoxIfCurrentArg : "blabla";
+                var arguments = string.Join(" ", DllVersion, GuiVersion, arch, Process.GetCurrentProcess().Id.ToString(), startUpArg);
+                Process.Start("UDT_GUI_Updater.exe", arguments);
+            }
+            catch(Exception exception)
+            {
+                if(!fromStartUp)
+                {
+                    LogError("Failed to open the updater: " + exception.Message);
+                }
+            }
+        }
+
+#if DEBUG
+        private void CheckForUpdateFromFakeOldVersion()
+        {
+#if UDT_X64
+            const string arch = "x64";
+#else
+            const string arch = "x86";
+#endif
+
+            try
+            {
+                var arguments = string.Join(" ", "0.1.0", "0.1.0", arch, Process.GetCurrentProcess().Id.ToString(), "blabla");
+                Process.Start("UDT_GUI_Updater.exe", arguments);
+            }
+            catch(Exception exception)
+            {
+                LogError("Failed to open the updater: " + exception.Message);
+            }
+        }
+#endif
+
         private void ShowAboutWindow()
         {
-            var textPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
-            textPanelList.Add(CreateTuple("GUI Version", GuiVersion));
-            textPanelList.Add(CreateTuple("DLL Version", DllVersion));
-            var textPanel = WpfHelper.CreateDualColumnPanel(textPanelList, 100, 1);
+            var udtIcon = new System.Windows.Controls.Image();
+            udtIcon.HorizontalAlignment = HorizontalAlignment.Right;
+            udtIcon.VerticalAlignment = VerticalAlignment.Top;
+            udtIcon.Margin = new Thickness(10, 0, 0, 0);
+            udtIcon.Stretch = Stretch.None;
+            udtIcon.Source = UDT.Properties.Resources.UDTIcon.ToImageSource();
 
-            var image = new System.Windows.Controls.Image();
-            image.HorizontalAlignment = HorizontalAlignment.Right;
-            image.VerticalAlignment = VerticalAlignment.Top;
-            image.Margin = new Thickness(5);
-            image.Stretch = Stretch.None;
-            image.Source = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            var guiVersion = new TextBlock { Text = "UDT GUI Version " + GuiVersion };
+            var dllVersion = new TextBlock { Text = "UDT DLL Version " + DllVersion };
+            guiVersion.Margin = new Thickness(0, 10, 0, 0);
+            dllVersion.Margin = new Thickness(0, 5, 0, 0);
+
+            var udtPanel = new DockPanel();
+            udtPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            udtPanel.VerticalAlignment = VerticalAlignment.Top;
+            udtPanel.LastChildFill = false;
+            udtPanel.Children.Add(udtIcon);
+            udtPanel.Children.Add(guiVersion);
+            udtPanel.Children.Add(dllVersion);
+            DockPanel.SetDock(udtIcon, Dock.Right);
+            DockPanel.SetDock(guiVersion, Dock.Top);
+            DockPanel.SetDock(dllVersion, Dock.Top);
+
+            var zipStorerIcon = new System.Windows.Controls.Image();
+            zipStorerIcon.HorizontalAlignment = HorizontalAlignment.Right;
+            zipStorerIcon.VerticalAlignment = VerticalAlignment.Top;
+            zipStorerIcon.Margin = new Thickness(10, 0, 0, 0);
+            zipStorerIcon.Stretch = Stretch.None;
+            zipStorerIcon.Source = UDT.Properties.Resources.ZipStorerIcon.ToImageSource();
+
+            const string ZipStorerUrl = "https://zipstorer.codeplex.com/";
+            var zipStorerCredit = new TextBlock { Text = "The updater uses ZipStorer by Jaime Olivares" };
+            var zipStorerHyperLink = new Hyperlink(new Run(ZipStorerUrl));
+            zipStorerHyperLink.NavigateUri = new Uri(ZipStorerUrl);
+            zipStorerHyperLink.RequestNavigate += (obj, args) => HandleLinkClick(args);
+            var zipStorerLink = new TextBlock();
+            zipStorerLink.Inlines.Add(zipStorerHyperLink);
+            zipStorerCredit.Margin = new Thickness(0, 5, 0, 0);
+            zipStorerLink.Margin = new Thickness(0, 5, 0, 0);
+
+            var zipStorerPanel = new DockPanel();
+            zipStorerPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            zipStorerPanel.VerticalAlignment = VerticalAlignment.Top;
+            zipStorerPanel.LastChildFill = false;
+            zipStorerPanel.Margin = new Thickness(0, 10, 0, 0);
+            zipStorerPanel.Children.Add(zipStorerIcon);
+            zipStorerPanel.Children.Add(zipStorerCredit);
+            zipStorerPanel.Children.Add(zipStorerLink);
+            DockPanel.SetDock(zipStorerIcon, Dock.Right);
+            DockPanel.SetDock(zipStorerCredit, Dock.Top);
+            DockPanel.SetDock(zipStorerLink, Dock.Top);
 
             var rootPanel = new StackPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            rootPanel.VerticalAlignment = VerticalAlignment.Stretch;
-            rootPanel.Margin = new Thickness(5);
-            rootPanel.Orientation = Orientation.Horizontal;
-            rootPanel.Children.Add(textPanel);
-            rootPanel.Children.Add(image);
+            rootPanel.VerticalAlignment = VerticalAlignment.Top;
+            rootPanel.Margin = new Thickness(10);
+            rootPanel.Orientation = Orientation.Vertical;
+            rootPanel.Children.Add(udtPanel);
+            rootPanel.Children.Add(zipStorerPanel);
 
             var window = new Window();
             window.Owner = MainWindow;
@@ -1249,12 +1370,27 @@ namespace Uber.DemoTools
             window.ShowInTaskbar = false;
             window.Title = "About UberDemoTools";
             window.Content = rootPanel;
-            window.Width = 240;
-            window.Height = 100;
-            window.Left = _window.Left + (_window.Width - window.Width) / 2;
-            window.Top = _window.Top + (_window.Height - window.Height) / 2;
+            window.SizeToContent = SizeToContent.WidthAndHeight;
+            window.ResizeMode = ResizeMode.NoResize;
             window.Icon = UDT.Properties.Resources.UDTIcon.ToImageSource();
+            window.Loaded += (obj, args) => 
+            { 
+                window.Left = _window.Left + (_window.Width - window.Width) / 2; 
+                window.Top = _window.Top + (_window.Height - window.Height) / 2; 
+            };
             window.ShowDialog();
+        }
+
+        private static void HandleLinkClick(RequestNavigateEventArgs args)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(args.Uri.AbsoluteUri));
+            }
+            catch(Exception)
+            {
+            }
+            args.Handled = true;
         }
 
         public static Tuple<FrameworkElement, FrameworkElement> CreateTuple(FrameworkElement a, FrameworkElement b)
@@ -1425,19 +1561,16 @@ namespace Uber.DemoTools
             convert68Button.Width = 75;
             convert68Button.Height = 25;
             convert68Button.Margin = new Thickness(5);
-            convert68Button.ToolTip =
-                "a) Convert *.dm_3 and *.dm_48 Q3 demos to Q3 *.dm_68 demos\n" +
-                "b) Convert QL *.dm_90 demos to Q3 CPMA *.dm_68 demos (for Q3MME playback)\n" +
-                "     Please refer to ConversionRules90to68.xml for known issues";
+            convert68Button.ToolTip = "Convert Q3 *.dm_3 and *.dm_48 demos to Q3 *.dm_68 demos";
             convert68Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm68);
 
-            var convert90Button = new Button();
-            convert90Button.Content = "=> *.dm__90";
-            convert90Button.Width = 75;
-            convert90Button.Height = 25;
-            convert90Button.Margin = new Thickness(5);
-            convert90Button.ToolTip = "Convert QL *.dm_73 demos to QL *.dm_90 demos";
-            convert90Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm90);
+            var convert91Button = new Button();
+            convert91Button.Content = "=> *.dm__91";
+            convert91Button.Width = 75;
+            convert91Button.Height = 25;
+            convert91Button.Margin = new Thickness(5);
+            convert91Button.ToolTip = "Convert QL *.dm_73 and *.dm_90 demos to QL *.dm_91 demos";
+            convert91Button.Click += (obj, args) => OnConvertDemosClicked(UDT_DLL.udtProtocol.Dm91);
 
             var mergeDemosButton = new Button();
             mergeDemosButton.Content = "Merge";
@@ -1462,7 +1595,7 @@ namespace Uber.DemoTools
             multiDemoActionButtonsPanel.Orientation = Orientation.Vertical;
             multiDemoActionButtonsPanel.Children.Add(analyzeButton);
             multiDemoActionButtonsPanel.Children.Add(convert68Button);
-            multiDemoActionButtonsPanel.Children.Add(convert90Button);
+            multiDemoActionButtonsPanel.Children.Add(convert91Button);
             multiDemoActionButtonsPanel.Children.Add(mergeDemosButton);
             multiDemoActionButtonsPanel.Children.Add(jsonExportButton);
 
@@ -1472,6 +1605,28 @@ namespace Uber.DemoTools
             multiDemoActionButtonsGroupBox.Margin = new Thickness(5);
             multiDemoActionButtonsGroupBox.Header = "Multi-demo Actions";
             multiDemoActionButtonsGroupBox.Content = multiDemoActionButtonsPanel;
+
+            var steamButton = new Button();
+            steamButton.Content = "Steam Info...";
+            steamButton.Width = 90;
+            steamButton.Height = 25;
+            steamButton.Margin = new Thickness(5);
+            steamButton.ToolTip = "Display Steam information: user accounts, Q3 and QL demos paths";
+            steamButton.Click += (obj, args) => OnSteamInfoClicked();
+
+            var extraActionButtonsPanel = new StackPanel();
+            extraActionButtonsPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            extraActionButtonsPanel.VerticalAlignment = VerticalAlignment.Top;
+            extraActionButtonsPanel.Margin = new Thickness(5);
+            extraActionButtonsPanel.Orientation = Orientation.Vertical;
+            extraActionButtonsPanel.Children.Add(steamButton);
+
+            var extraActionButtonsGroupBox = new GroupBox();
+            extraActionButtonsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            extraActionButtonsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            extraActionButtonsGroupBox.Margin = new Thickness(5);
+            extraActionButtonsGroupBox.Header = "Extra Stuff";
+            extraActionButtonsGroupBox.Content = extraActionButtonsPanel;
 
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -1494,11 +1649,38 @@ namespace Uber.DemoTools
             rootPanel.Margin = new Thickness(5);
             rootPanel.Orientation = Orientation.Horizontal;
             rootPanel.Children.Add(demoListButtonGroupBox);
-            rootPanel.Children.Add(demoButtonGroupBox);
             rootPanel.Children.Add(multiDemoActionButtonsGroupBox);
+            rootPanel.Children.Add(demoButtonGroupBox);
+            rootPanel.Children.Add(extraActionButtonsGroupBox);
             rootPanel.Children.Add(helpGroupBox);
 
             return rootPanel;
+        }
+
+        public void SetInputFolderPath(string path)
+        {
+            var settings = _appComponents.Find(c => c is AppSettingsComponent) as AppSettingsComponent;
+            if(settings == null)
+            {
+                return;
+            }
+
+            Config.InputFolder = path;
+            SaveConfig();
+            settings.SetInputFolderPath(path);
+        }
+
+        public void SetOutputFolderPath(string path)
+        {
+            var settings = _appComponents.Find(c => c is AppSettingsComponent) as AppSettingsComponent;
+            if(settings == null)
+            {
+                return;
+            }
+
+            Config.OutputFolder = path;
+            SaveConfig();
+            settings.SetOutputFolderPath(path);
         }
 
         private void PopulateInfoListView(DemoInfo demoInfo)
@@ -1678,23 +1860,12 @@ namespace Uber.DemoTools
             StartJobThread(DemoAnalyzeThread, demos);
         }
 
-        private List<MapConversionRule> LoadMapRules(UDT_DLL.udtProtocol outputFormat)
-        {
-            var config = new UdtMapConversionsConfig();
-            if(outputFormat == UDT_DLL.udtProtocol.Dm68 && Serializer.FromXml<UdtMapConversionsConfig>("ConversionRules90to68.xml", out config))
-            {
-                return config.MapRules;
-            }
-
-            return new List<MapConversionRule>();
-        }
-
         private bool IsValidInputFormatForConverter(UDT_DLL.udtProtocol outputFormat, UDT_DLL.udtProtocol inputFormat)
         {
-            if((outputFormat == UDT_DLL.udtProtocol.Dm90 && inputFormat == UDT_DLL.udtProtocol.Dm73) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm90) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48))
+            if( (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm73) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm90))
             {
                 return true;
             }
@@ -1705,7 +1876,6 @@ namespace Uber.DemoTools
         private class DemoConvertThreadArg
         {
             public List<DemoInfo> Demos;
-            public List<MapConversionRule> MapRules;
         }
 
         private void OnConvertDemosClicked(UDT_DLL.udtProtocol outputFormat)
@@ -1731,7 +1901,6 @@ namespace Uber.DemoTools
 
             var threadData = new DemoConvertThreadArg();
             threadData.Demos = demos;
-            threadData.MapRules = LoadMapRules(outputFormat);
 
             JoinJobThread();
             StartJobThread(DemoConvertThread, threadData);
@@ -1797,6 +1966,11 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(JSONDemoExportThread, demos);
+        }
+
+        private void OnSteamInfoClicked()
+        {
+            new SteamDialog(_window);
         }
 
         public delegate void VoidDelegate();
@@ -1957,7 +2131,7 @@ namespace Uber.DemoTools
 
             try
             {
-                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, threadData.MapRules, filePaths, _config.MaxThreadCount);
+                UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, filePaths, _config.MaxThreadCount);
             }
             catch(Exception exception)
             {
@@ -2852,6 +3026,42 @@ namespace Uber.DemoTools
 
             element.InputBindings.Add(inputBinding);
             element.CommandBindings.Add(commandBinding);
+        }
+
+        // True if the file doesn't exist at the end of the call.
+        private static bool TryDeleteFile(string filePath)
+        {
+            try
+            {
+                if(File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                return true;
+            }
+            catch(Exception)
+            {
+            }
+
+            return false;
+        }
+
+        // True if the source file existed and was renamed.
+        private static bool TryMoveFile(string filePath, string newFilePath)
+        {
+            try
+            {
+                if(File.Exists(filePath))
+                {
+                    File.Move(filePath, newFilePath);
+                    return true;
+                }   
+            }
+            catch(Exception)
+            {
+            }
+
+            return false;
         }
     }
 

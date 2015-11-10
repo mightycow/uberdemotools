@@ -75,7 +75,7 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		}
 
 		const u64 fileSize = (u64)findData.nFileSizeLow + ((u64)findData.nFileSizeHigh << 32);
-		if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.String, fileSize))
+		if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.String, fileSize, query.UserData))
 		{
 			continue;
 		}
@@ -195,7 +195,7 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		}
 		
 		const u64 fileSize = udtFileStream::GetFileLength(filePath.String);
-		if(query.FileFilter != NULL && !(*query.FileFilter)(dirEntry->d_name, fileSize))
+		if(query.FileFilter != NULL && !(*query.FileFilter)(dirEntry->d_name, fileSize, query.UserData))
 		{
 			continue;
 		}

@@ -174,6 +174,15 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
 		
+	project "UDT_converter"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/app_demo_converter.cpp" }
+		files { path_src_apps.."/shared.cpp" }
+		ApplyProjectSettings()
+		
+	-- This project exists only to test the API in C89 mode to ensure nothing got messed up for C programmers.
 	project "UDT_c89"
 	
 		filter { }
