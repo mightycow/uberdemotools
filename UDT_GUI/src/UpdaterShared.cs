@@ -8,10 +8,10 @@ namespace Uber.DemoTools.Updater
     {
         private const string MutexName = "UDT_GUI_Updater";
 
-        public static string NewFileExtension = ".newupdaterfile";
-        public static string OldFileExtension = ".oldupdaterfile";
-        public static string ExeFileName = "UDT_GUI_Updater.exe";
-        public static string NoMessageBoxIfCurrentArg = "silentifcurrent";
+        public const string NewFileExtension = ".newupdaterfile";
+        public const string OldFileExtension = ".oldupdaterfile";
+        public const string ExeFileName = "UDT_GUI_Updater.exe";
+        public const string NoMessageBoxIfCurrentArg = "silentifcurrent";
 
         public static Mutex TryOpenNamedMutex()
         {

@@ -10,7 +10,7 @@ namespace System.IO.Compression
     /// <summary>
     /// Unique class for compression/decompression file. Represents a Zip file.
     /// </summary>
-    public class ZipStorer : IDisposable
+    public sealed class ZipStorer : IDisposable
     {
         /// <summary>
         /// Compression method enumeration

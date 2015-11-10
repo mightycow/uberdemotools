@@ -314,43 +314,36 @@ namespace Uber.DemoTools.Updater
         private bool DownloadAndExtractNewTempFiles()
         {
             var data = _webClient.DownloadData(_downloadUrl);
-            using(var memoryStream = new MemoryStream(data))
+            using(var archive = ZipStorer.Open(new MemoryStream(data), FileAccess.Read))
             {
-                using(var archive = ZipStorer.Open(memoryStream, FileAccess.Read))
+                var entries = archive.ReadCentralDir();
+                var extractOps = _fileOps.FindAll(o => o.Operation == FileOperationType.ExtractFile);
+                foreach(var op in extractOps)
                 {
-                    var entries = archive.ReadCentralDir();
-                    var extractOps = _fileOps.FindAll(o => o.Operation == FileOperationType.ExtractFile);
-                    foreach(var op in extractOps)
+                    var entryIdx = entries.FindIndex(e => e.FilenameInZip == op.FilePath);
+                    if(entryIdx < 0)
                     {
-                        var entryIdx = entries.FindIndex(e => e.FilenameInZip == op.FilePath);
-                        if(entryIdx < 0)
+                        if(op.AllowedToFail)
                         {
-                            if(op.AllowedToFail)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                return false;
-                            }
+                            continue;
                         }
-
-                        var entry = entries[entryIdx];
-                        var success = archive.ExtractFile(entry, op.FilePath + UpdaterHelper.NewFileExtension);
-                        if(success)
-                        {
-                            AddUndoDelete(op.FilePath + UpdaterHelper.NewFileExtension);
-                        }
-                        else if(!success && !op.AllowedToFail)
+                        else
                         {
                             return false;
                         }
                     }
 
-                    archive.Close();
+                    var entry = entries[entryIdx];
+                    var success = archive.ExtractFile(entry, op.FilePath + UpdaterHelper.NewFileExtension);
+                    if(success)
+                    {
+                        AddUndoDelete(op.FilePath + UpdaterHelper.NewFileExtension);
+                    }
+                    else if(!success && !op.AllowedToFail)
+                    {
+                        return false;
+                    }
                 }
-
-                memoryStream.Close();
             }
 
             return true;
