@@ -12,6 +12,11 @@ using System.Windows.Forms;
 
 namespace Uber.DemoTools.Updater
 {
+    public static class VersionInfo
+    {
+        public static readonly string Version = "0.1.0";
+    }
+
     public static class FileOps
     {
         public static bool TryDelete(string filePath)
@@ -574,6 +579,12 @@ namespace Uber.DemoTools.Updater
             Mutex mutex = null;
             try
             {
+                if(arguments.Length == 1 && arguments[0] == "/?")
+                {
+                    MessageBox.Show("UDT Updater version: " + VersionInfo.Version, "UDT Updater", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
                 mutex = UpdaterHelper.TryOpenNamedMutex();
                 if(mutex != null)
                 {
