@@ -1,3 +1,8 @@
+1.1.0 (10.11.2015)
+ADD: UDT_converter command-line tool to convert demos to different protocol versions
+ADD: dm_73 to dm_91 and dm_90 to dm_91 demo converters
+REM: dm_90 to dm_68 and dm_73 to dm_90 demo converters
+
 1.0.1 (01.11.2015)
 FIX: Multiple parsing errors occurring with dm_90 and dm_91 demos because of previous overflow handling changes
 FIX: When a job was large enough to get split into multiple batches, some demos ended up not being processed
