@@ -719,8 +719,20 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
+	udtTimer progressTimer;
+	progressTimer.Start();
+
+	SingleThreadProgressContext progressContext;
+	progressContext.Timer = &progressTimer;
+	progressContext.UserCallback = info->ProgressCb;
+	progressContext.UserData = info->ProgressContext;
+	progressContext.CurrentJobByteCount = 0;
+	progressContext.ProcessedByteCount = 0;
+	progressContext.TotalByteCount = udtFileStream::GetFileLength(demoFilePath);
+	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
+
 	context->ResetForNextDemo(false);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}

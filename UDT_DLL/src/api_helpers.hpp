@@ -18,6 +18,20 @@ struct udtParsingJobType
 	};
 };
 
+struct udtTimer;
+
+struct SingleThreadProgressContext
+{
+	u64 TotalByteCount;
+	u64 ProcessedByteCount;
+	u64 CurrentJobByteCount;
+	udtProgressCallback UserCallback;
+	void* UserData;
+	udtTimer* Timer;
+	u32 MinProgressTimeMs;
+};
+
+extern void SingleThreadProgressCallback(f32 jobProgress, void* userData);
 extern bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo = NULL);
 extern bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo);
 extern bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32 fileCount, udtProtocol::Id protocol);
