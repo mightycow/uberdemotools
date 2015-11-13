@@ -470,18 +470,7 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 	}
 }
 
-struct SingleThreadProgressContext
-{
-	u64 TotalByteCount;
-	u64 ProcessedByteCount;
-	u64 CurrentJobByteCount;
-	udtProgressCallback UserCallback;
-	void* UserData;
-	udtTimer* Timer;
-	u32 MinProgressTimeMs;
-};
-
-static void SingleThreadProgressCallback(f32 jobProgress, void* userData)
+void SingleThreadProgressCallback(f32 jobProgress, void* userData)
 {
 	SingleThreadProgressContext* const context = (SingleThreadProgressContext*)userData;
 	if(context == NULL || context->Timer == NULL || context->UserCallback == NULL)

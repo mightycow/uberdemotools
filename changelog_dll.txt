@@ -1,3 +1,6 @@
+1.1.0a (13.11.2015)
+FIX: Cut by Time performance was bad due to excessive progress callback invocations
+
 1.1.0 (10.11.2015)
 ADD: UDT_converter command-line tool to convert demos to different protocol versions
 ADD: dm_73 to dm_91 and dm_90 to dm_91 demo converters
