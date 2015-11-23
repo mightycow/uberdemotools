@@ -1,6 +1,3 @@
-0.6.0a (13.11.2015)
-FIX: Cut by Time performance
-
 0.6.0 (10.11.2015)
 ADD: An updater and the option to run it at start-up to look for new releases
 ADD: A Steam info dialog showing Steam users, Steam installation folders, game folders and demo folders
