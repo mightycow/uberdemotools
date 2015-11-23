@@ -1,3 +1,6 @@
+1.1.0b (23.11.2015)
+FIX: Reserving more address space for the raw commands' array allocator
+
 1.1.0a (13.11.2015)
 FIX: Cut by Time performance was bad due to excessive progress callback invocations
 
