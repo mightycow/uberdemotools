@@ -13,7 +13,7 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
 	const uptr smallByteCount = 192 * 1024;
-	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawCommands::CommandsArray");
+	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 18), "ParserPlugInRawCommands::CommandsArray");
 	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInRawCommands::Strings");
 	_commands.SetAllocator(FinalAllocator);
 }
