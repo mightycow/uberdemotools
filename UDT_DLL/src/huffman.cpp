@@ -182,7 +182,7 @@ static const u16 EncoderTable[256] =
 };
 
 
-static void ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
+static UDT_FORCE_INLINE void ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
 {
 	const u32 lookFirstByte = look & 0xFF;
 	const u8 bitCount = SmallCodeBitCounts[lookFirstByte];
@@ -200,27 +200,18 @@ static void ReadSymbol(u32& symbol, u32& bitsRead, u32 look)
 	symbol = SmallCodeSymbols[lookFirstByte];
 }
 
-// Get the right-aligned bits starting at bitIndex.
-// We only really need the first 11 and don't care what comes after that.
-static UDT_FORCE_INLINE u32 GetBits(u32 bitIndex, const u8* fin)
-{
-	return *(u32*)(fin + (bitIndex >> 3)) >> (bitIndex & 7);
-}
-
 
 namespace udtHuffman
 {
-	void OffsetReceive(s32* ch, const u8* fin, s32* offset)
+	void OffsetReceive(s32* ch, s32* bitsRead, const u8* fin, s32 bitIndex)
 	{
-		const u32 input = GetBits(*(u32*)offset, fin);
-
-		u32 bitsRead = 0;
-		ReadSymbol(*(u32*)ch, bitsRead, input);
-
-		*offset += (s32)bitsRead;
+		// Get the right-aligned bits starting at bitIndex.
+		// We only really need the first 11 and don't care what comes after that.
+		const u32 input = *(u32*)fin >> ((u32)bitIndex & 7);
+		ReadSymbol(*(u32*)ch, *(u32*)bitsRead, input);
 	}
 
-	void OffsetTransmit(u8 *fout, s32 *offset, s32 ch)
+	void OffsetTransmit(u8* fout, s32* offset, s32 ch)
 	{
 		const u16 result = EncoderTable[ch];
 		const u16 bitCount = result & 15;

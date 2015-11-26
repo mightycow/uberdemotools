@@ -23,6 +23,6 @@ namespace udtHuffman
 		return (fin[(bitIndex >> 3)] >> (bitIndex & 7)) & 1;
 	}
 
-	extern void OffsetReceive(s32* ch, const u8* fin, s32* offset);
+	extern void OffsetReceive(s32* ch, s32* bitsRead, const u8* fin, s32 bitIndex);
 	extern void OffsetTransmit(u8 *fout, s32 *offset, s32 ch);
 }

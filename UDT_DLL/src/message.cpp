@@ -1087,27 +1087,30 @@ s32 udtMessage::RealReadBits(s32 bits)
 	} 
 	else
 	{
-		int nbits = 0;
-		if(bits & 7)
-		{
-			nbits = bits & 7;
-			const s16 allBits = *(s16*)(Buffer.data + (Buffer.bit >> 3)) >> (Buffer.bit & 7);
+		const s32 nbits = bits & 7;
+		s32 bitIndex = Buffer.bit;
+		if(nbits)
+		{		
+			const s16 allBits = *(s16*)(Buffer.data + (bitIndex >> 3)) >> (bitIndex & 7);
 			value = allBits & ((1 << nbits) - 1);
-			Buffer.bit += (s32)nbits;
-			bits = bits - nbits;
+			bitIndex += nbits;
+			bits -= nbits;
 		}
 
 		if(bits)
 		{
 			for(s32 i = 0; i < bits; i += 8)
 			{
-				s32	get;
-				udtHuffman::OffsetReceive(&get, Buffer.data, &Buffer.bit);
-				value |= (get << (i + nbits));
+				s32 symbol;
+				s32 readBits;
+				udtHuffman::OffsetReceive(&symbol, &readBits, Buffer.data + (bitIndex >> 3), bitIndex & 7);
+				value |= (symbol << (i + nbits));
+				bitIndex += readBits;
 			}
 		}
 
-		Buffer.readcount = (Buffer.bit >> 3) + 1;
+		Buffer.bit = bitIndex;
+		Buffer.readcount = (bitIndex >> 3) + 1;
 	}
 
 	if(sgn) 
