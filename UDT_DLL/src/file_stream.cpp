@@ -14,47 +14,28 @@ static const wchar_t* const stdioFileOpenModes[udtFileOpenMode::Count] =
 	L"r+b" // Read/write binary, file must exist.
 };
 
-#else
-
-static const char* const stdioFileOpenModes[udtFileOpenMode::Count] =
-{
-	"rb", // Read binary, file must exist.
-	"wb", // Write binary, file created or emptied if exists.
-	"r+b" // Read/write binary, file must exist.
-};
-
-#endif
-
-
-bool udtFileStream::Exists(const char* filePath)
-{
-	udtFileStream file;
-	
-	return file.Open(filePath, udtFileOpenMode::Read);
-}
-
 u64 udtFileStream::GetFileLength(const char* filePath)
 {
-	udtFileStream file;
-	if(!file.Open(filePath, udtFileOpenMode::Read))
+	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocatorScope(allocator);
+	wchar_t* const wideFilePath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(filePath));
+	const HANDLE hFile = CreateFileW(wideFilePath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	if(hFile == INVALID_HANDLE_VALUE)
 	{
 		return 0;
 	}
-	
-	return file.Length();
+
+	LARGE_INTEGER size;
+	if(GetFileSizeEx(hFile, &size) == FALSE)
+	{
+		CloseHandle(hFile);
+		return 0;
+	}
+
+	CloseHandle(hFile);
+
+	return (u64)size.QuadPart;
 }
-
-
-udtFileStream::udtFileStream() : _file(NULL) 
-{
-}
-
-udtFileStream::~udtFileStream() 
-{
-	Destroy(); 
-}
-
-#if defined(UDT_WINDOWS)
 
 bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 {
@@ -66,11 +47,31 @@ bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
 	udtVMScopedStackAllocator allocatorScope(allocator);
 	wchar_t* const wideFilePath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(filePath));
-	
+
 	return (_file = _wfopen(wideFilePath, stdioFileOpenModes[mode])) != NULL;
 }
 
 #else
+
+#include <sys/stat.h>
+
+static const char* const stdioFileOpenModes[udtFileOpenMode::Count] =
+{
+	"rb", // Read binary, file must exist.
+	"wb", // Write binary, file created or emptied if exists.
+	"r+b" // Read/write binary, file must exist.
+};
+
+u64 udtFileStream::GetFileLength(const char* filePath)
+{
+	stat fileStat;
+	if(stat(filePath, &fileStat) != 0)
+	{
+		return 0;
+	}
+
+	return (u64)fileStat.st_size;
+}
 
 bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 {
@@ -83,6 +84,24 @@ bool udtFileStream::Open(const char* filePath, udtFileOpenMode::Id mode)
 }
 
 #endif
+
+
+bool udtFileStream::Exists(const char* filePath)
+{
+	udtFileStream file;
+	
+	return file.Open(filePath, udtFileOpenMode::Read);
+}
+
+
+udtFileStream::udtFileStream() : _file(NULL) 
+{
+}
+
+udtFileStream::~udtFileStream() 
+{
+	Destroy(); 
+}
 
 u32 udtFileStream::Read(void* dstBuff, u32 elementSize, u32 count)
 {
