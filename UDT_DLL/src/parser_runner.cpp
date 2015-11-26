@@ -5,6 +5,7 @@
 udtParserRunner::udtParserRunner()
 {
 	_fileStartOffset = 0;
+	_fileOffset = 0;
 	_maxByteCount = 0;
 	_parser = NULL;
 	_file = NULL;
@@ -40,7 +41,7 @@ bool udtParserRunner::ParseNextMessage()
 		return false;
 	}
 
-	const u32 fileOffset = (u32)_file->Offset();
+	const u64 fileOffset = _fileOffset;
 
 	s32 inServerMessageSequence = 0;
 	u32 elementsRead = _file->Read(&inServerMessageSequence, 4, 1);
@@ -83,15 +84,16 @@ bool udtParserRunner::ParseNextMessage()
 	}
 
 	_inMsg.Buffer.readcount = 0;
-	if(!_parser->ParseNextMessage(_inMsg, inServerMessageSequence, fileOffset))
+	if(!_parser->ParseNextMessage(_inMsg, inServerMessageSequence, (u32)fileOffset))
 	{
 		SetSuccess(true);
 		return false;
 	}
 
-	const u64 currentByteCount = (u64)fileOffset - _fileStartOffset;
+	const u64 currentByteCount = fileOffset - _fileStartOffset;
 	const f32 currentProgress = (f32)currentByteCount / (f32)_maxByteCount;
 	_parser->_context->NotifyProgress(currentProgress);
+	_fileOffset += (u64)_inMsg.Buffer.cursize + 8;
 
 	SetSuccess(true);
 
