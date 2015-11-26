@@ -910,23 +910,16 @@ void udtMessage::Init(u8* data, s32 length)
 	SetValid(true);
 }
 
-void udtMessage::InitOOB(u8* data, s32 length) 
-{
-	Com_Memset(&Buffer, 0, sizeof(idMessage));
-	Buffer.data = data;
-	Buffer.maxsize = length;
-	Buffer.oob = true;
-	SetValid(true);
-}
-
 void udtMessage::Bitstream() 
 {
 	Buffer.oob = false;
+	SetValid(Buffer.valid);
 }
 
 void udtMessage::SetHuffman(bool huffman)
 {
 	Buffer.oob = huffman ? false : true;
+	SetValid(Buffer.valid);
 }
 
 void udtMessage::GoToNextByte()
@@ -1128,6 +1121,47 @@ s32 udtMessage::RealReadBits(s32 bits)
 	return value;
 }
 
+s32 udtMessage::RealReadBitNoHuffman()
+{
+	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
+	// that Quake can parse properly don't get fully parsed by UDT.
+	if(Buffer.bit + 1 > (Buffer.cursize + 4) * 8)
+	{
+		Context->LogError("udtMessage::RealReadBitNoHuffman: Overflowed! (in file: %s)", GetFileName());
+		SetValid(false);
+		return -1;
+	}
+
+	const u8 byte = Buffer.data[Buffer.readcount] >> ((u8)Buffer.bit & 7);
+	const s32 value = s32(byte & 1);
+	const s32 newBitCount = Buffer.bit + 1;
+	Buffer.bit = newBitCount;
+	Buffer.readcount = newBitCount >> 3;
+
+	return value;
+}
+
+s32 udtMessage::RealReadBitHuffman()
+{
+	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
+	// that Quake can parse properly don't get fully parsed by UDT.
+	if(Buffer.bit + 1 > (Buffer.cursize + 4) * 8)
+	{
+		Context->LogError("udtMessage::RealReadBitHuffman: Overflowed! (in file: %s)", GetFileName());
+		SetValid(false);
+		return -1;
+	}
+
+	const s32 bitCount = Buffer.bit;
+	const u8 byte = Buffer.data[bitCount >> 3] >> (u8)(bitCount & 7);
+	const s32 value = s32(byte & 1);
+	const s32 newBitCount = bitCount + 1;
+	Buffer.bit = newBitCount;
+	Buffer.readcount = (newBitCount >> 3) + 1;
+
+	return value;
+}
+
 void udtMessage::WriteData(const void* data, s32 length) 
 {
 	for(s32 i = 0; i < length; ++i) 
@@ -1203,7 +1237,7 @@ void udtMessage::RealWriteString(const char* s, s32 length, s32 bufferLength, ch
 
 s32 udtMessage::RealReadFloat()
 {
-	if(ReadBits(1))
+	if(ReadBit())
 	{
 		return ReadBits(32);
 	}
@@ -1447,7 +1481,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	const s32 fieldCount = _playerStateFieldCount;
 	for(s32 i = 0; i < fieldCount; i++, field++)
 	{
-		if(!ReadBits(1))
+		if(!ReadBit())
 		{
 			continue;
 		}
@@ -1457,7 +1491,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	}
 
 	// Stats array.
-	if(ReadBits(1))
+	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
 		for(s32 i = 0; i < MAX_STATS; ++i)
@@ -1471,7 +1505,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	}
 
 	// Persistent array.
-	if(ReadBits(1))
+	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
 		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
@@ -1485,7 +1519,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	}
 
 	// Ammo array.
-	if(ReadBits(1))
+	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
 		for(s32 i = 0; i < MAX_WEAPONS; ++i)
@@ -1498,7 +1532,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	}
 
 	// Power-ups array.
-	if(ReadBits(1))
+	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
 		for(s32 i = 0; i < MAX_POWERUPS; ++i)
@@ -1546,7 +1580,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(ReadBits(1) == 0) 
+		if(ReadBit() == 0) 
 		{
 			*toF = *fromF;
 			continue;
@@ -1562,10 +1596,10 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 	}
 
 	// read the arrays
-	if(ReadBits(1)) 
+	if(ReadBit()) 
 	{
 		// parse stats
-		if(ReadBits(1)) 
+		if(ReadBit()) 
 		{
 			bits = ReadBits(MAX_STATS);
 			for(i=0 ; i<MAX_STATS ; i++) 
@@ -1578,7 +1612,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		}
 
 		// parse persistant stats
-		if(ReadBits(1)) 
+		if(ReadBit()) 
 		{
 			bits = ReadBits(MAX_PERSISTANT);
 			for(i=0 ; i<MAX_PERSISTANT ; i++) 
@@ -1591,7 +1625,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		}
 
 		// parse ammo
-		if(ReadBits(1)) 
+		if(ReadBit()) 
 		{
 			bits = ReadBits(MAX_WEAPONS);
 			for(i=0 ; i<MAX_WEAPONS ; i++) 
@@ -1604,7 +1638,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		}
 
 		// parse powerups
-		if(ReadBits(1)) 
+		if(ReadBit()) 
 		{
 			bits = ReadBits(MAX_POWERUPS);
 			for(i=0 ; i<MAX_POWERUPS ; i++) 
@@ -1828,7 +1862,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 	}
 
 	// check for a remove
-	if(ReadBits(1) == 1) 
+	if(ReadBit() == 1) 
 	{
 		Com_Memset(to, 0, _protocolSizeOfEntityState);
 		to->number = MAX_GENTITIES - 1;
@@ -1837,7 +1871,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 	}
 
 	// check for no delta
-	if(ReadBits(1) == 0) 
+	if(ReadBit() == 0) 
 	{
 		Com_Memcpy(to, from, _protocolSizeOfEntityState);
 		to->number = number;
@@ -1868,13 +1902,13 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 		fromF = (s32 *)((u8 *)from + field->offset);
 		toF = (s32 *)((u8 *)to + field->offset);
 
-		if(ReadBits(1) == 0) 
+		if(ReadBit() == 0) 
 		{
 			*toF = *fromF;
 			continue;
 		} 
 
-		if(ReadBits(1) == 0)
+		if(ReadBit() == 0)
 		{
 			*toF = 0;
 			continue;
@@ -1899,6 +1933,7 @@ void udtMessage::SetValid(bool valid)
 	if(valid)
 	{
 		_readBits = &udtMessage::RealReadBits;
+		_readBit = Buffer.oob ? &udtMessage::RealReadBitNoHuffman : &udtMessage::RealReadBitHuffman;
 		_readFloat = &udtMessage::RealReadFloat;
 		_readString = &udtMessage::RealReadString;
 		_readData = &udtMessage::RealReadData;
@@ -1914,6 +1949,7 @@ void udtMessage::SetValid(bool valid)
 	else
 	{
 		_readBits = &udtMessage::DummyReadCount;
+		_readBit = &udtMessage::DummyRead;
 		_readFloat = &udtMessage::DummyRead;
 		_readString = &udtMessage::DummyReadString;
 		_readData = &udtMessage::DummyReadData;
