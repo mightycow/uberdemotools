@@ -114,6 +114,9 @@ static void FindExecutableFileName(const char* exeFilePath)
 	}
 }
 
+#if defined(UDT_MINGWIN)
+extern "C"
+#endif
 int wmain(int argc, wchar_t** argvWide)
 {
 	udtSetCrashHandler(&CrashHandler);

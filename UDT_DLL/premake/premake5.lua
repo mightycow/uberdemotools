@@ -44,7 +44,7 @@ local function ApplyProjectSettings()
 
 	rtti "Off"
 	exceptionhandling "Off"
-	flags { "Unicode", "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
+	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -82,6 +82,7 @@ local function ApplyProjectSettings()
 	-- /GS- => Buffer Security Check disabled
 	
 	filter "action:vs*"
+		flags { "Symbols" }
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 		
 	filter { "action:vs*", "kind:ConsoleApp" }
@@ -100,7 +101,7 @@ local function ApplyProjectSettings()
 	--
 	filter "action:gmake"
 		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" } -- Directly passed to the compiler.
-		linkoptions { "-rdynamic" } -- Directly passed to the linker.
+		linkoptions { "-municode" } -- Directly passed to the linker.
 	
 	filter { "action:gmake", "configurations:Debug" }
 		buildoptions { "" } -- Directly passed to the compiler.
