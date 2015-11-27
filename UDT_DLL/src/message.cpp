@@ -1126,15 +1126,8 @@ s32 udtMessage::RealReadBits(s32 bits)
 
 s32 udtMessage::RealReadBitNoHuffman()
 {
-	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
-	// that Quake can parse properly don't get fully parsed by UDT.
-	if(Buffer.bit + 1 > (Buffer.cursize + 4) * 8)
-	{
-		Context->LogError("udtMessage::RealReadBitNoHuffman: Overflowed! (in file: %s)", GetFileName());
-		SetValid(false);
-		return -1;
-	}
-
+	// @NOTE: We leave overflow checking to RealReadBits.
+	// There is no way we call this enough times in a row to get an overflow.
 	const u8 byte = Buffer.data[Buffer.readcount] >> ((u8)Buffer.bit & 7);
 	const s32 value = s32(byte & 1);
 	const s32 newBitCount = Buffer.bit + 1;
@@ -1146,15 +1139,8 @@ s32 udtMessage::RealReadBitNoHuffman()
 
 s32 udtMessage::RealReadBitHuffman()
 {
-	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
-	// that Quake can parse properly don't get fully parsed by UDT.
-	if(Buffer.bit + 1 > (Buffer.cursize + 4) * 8)
-	{
-		Context->LogError("udtMessage::RealReadBitHuffman: Overflowed! (in file: %s)", GetFileName());
-		SetValid(false);
-		return -1;
-	}
-
+	// @NOTE: We leave overflow checking to RealReadBits.
+	// There is no way we call this enough times in a row to get an overflow.
 	const s32 bitCount = Buffer.bit;
 	const u8 byte = Buffer.data[bitCount >> 3] >> (u8)(bitCount & 7);
 	const s32 value = s32(byte & 1);
