@@ -177,7 +177,10 @@ bool udtBaseParser::ParseServerMessage()
 		}
 	}
 	_inReliableSequenceAcknowledge = reliableSequenceAcknowledge;
-	_outMsg.WriteLong(_inReliableSequenceAcknowledge);
+	if(ShouldWriteMessage())
+	{
+		_outMsg.WriteLong(_inReliableSequenceAcknowledge);
+	}
 
 	for(;;)
 	{
@@ -203,7 +206,10 @@ bool udtBaseParser::ParseServerMessage()
 		switch(command) 
 		{
 		case svc_nop:
-			_outMsg.WriteByte(svc_nop);
+			if(ShouldWriteMessage())
+			{
+				_outMsg.WriteByte(svc_nop);
+			}
 			break;
 
 		case svc_serverCommand:
@@ -231,7 +237,10 @@ bool udtBaseParser::ParseServerMessage()
 		}
 	}
 
-	_outMsg.WriteByte(svc_EOF);
+	if(ShouldWriteMessage())
+	{
+		_outMsg.WriteByte(svc_EOF);
+	}
 
 	if(_cuts.GetSize() > 0)
 	{
