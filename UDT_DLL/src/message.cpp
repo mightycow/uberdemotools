@@ -932,8 +932,10 @@ void udtMessage::GoToNextByte()
 }
 
 // negative bit values include signs
-void udtMessage::RealWriteBits(s32 value, s32 bits) 
+void udtMessage::RealWriteBits(s32 value, s32 signedBits)
 {
+	const bool signedValue = signedBits < 0;
+	s32 bits = signedValue ? -signedBits : signedBits;
 	if(Buffer.bit + bits > Buffer.maxsize * 8)
 	{
 		Context->LogError("udtMessage::RealWriteBits: Overflowed! (in file: %s)", GetFileName());
@@ -941,16 +943,11 @@ void udtMessage::RealWriteBits(s32 value, s32 bits)
 		return;
 	}
 
-	if(bits == 0 || bits < -31 || bits > 32) 
+	if(signedBits == 0 || signedBits < -31 || signedBits > 32)
 	{
 		Context->LogError("udtMessage::RealWriteBits: Invalid bit count: %d (in file: %s)", bits, GetFileName());
 		SetValid(false);
 		return;
-	}
-
-	if(bits < 0) 
-	{
-		bits = -bits;
 	}
 
 	if(Buffer.oob) 
@@ -1011,26 +1008,17 @@ void udtMessage::RealWriteBits(s32 value, s32 bits)
 	}
 }
 
-s32 udtMessage::RealReadBits(s32 bits) 
+s32 udtMessage::RealReadBits(s32 signedBits)
 {
 	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
 	// that Quake can parse properly don't get fully parsed by UDT.
+	const bool signedValue = signedBits < 0;
+	s32 bits = signedValue ? -signedBits : signedBits;
 	if(Buffer.bit + bits > (Buffer.cursize + 4) * 8)
 	{
 		Context->LogError("udtMessage::RealReadBits: Overflowed! (in file: %s)", GetFileName());
 		SetValid(false);
 		return -1;
-	}
-
-	bool sgn;
-	if(bits < 0) 
-	{
-		bits = -bits;
-		sgn = true;
-	}
-	else
-	{
-		sgn = false;
 	}
 
 	s32 value = 0;
@@ -1113,7 +1101,7 @@ s32 udtMessage::RealReadBits(s32 bits)
 		Buffer.readcount = (bitIndex >> 3) + 1;
 	}
 
-	if(sgn) 
+	if(signedValue)
 	{
 		if(value & (1 << (bits - 1)))
 		{
