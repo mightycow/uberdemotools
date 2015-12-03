@@ -1101,12 +1101,14 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		Buffer.readcount = (bitIndex >> 3) + 1;
 	}
 
+	// If signed, we need to replicate the bit sign.
 	if(signedValue)
 	{
-		if(value & (1 << (bits - 1)))
-		{
-			value |= -1 ^ ((1 << bits) - 1);
-		}
+		const s32 bitCount = 32 - bits;
+
+		// Yes, right shifting a negative signed number has implementation-defined behavior
+		// but we're fine on that front with Visual Studio and GCC on x86 and x64.
+		return (value << bitCount) >> bitCount;
 	}
 
 	return value;
