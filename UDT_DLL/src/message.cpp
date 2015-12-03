@@ -1830,9 +1830,6 @@ void udtMessage::ReadDeltaEntityDM3(const idEntityStateBase* from, idEntityState
 
 bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBase* from, idEntityStateBase* to, s32 number)
 {
-	s32			i, lc;
-	s32			*fromF, *toF;
-
 	if(number < 0 || number >= MAX_GENTITIES) 
 	{
 		Context->LogError("udtMessage::RealReadDeltaEntity: Bad delta entity number: %d (max is %d) (in file: %s)", number, MAX_GENTITIES - 1, GetFileName());
@@ -1865,21 +1862,22 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 		return ValidState();
 	}
 	
-	lc = ReadByte();
-	if(lc > _entityStateFieldCount || lc < 0)
+	const s32 fieldCount = ReadByte();
+	const s32 maxFieldCount = _entityStateFieldCount;
+	if(fieldCount > maxFieldCount || fieldCount < 0)
 	{
-		Context->LogError("udtMessage::RealReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", lc, _entityStateFieldCount, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", fieldCount, maxFieldCount, GetFileName());
 		SetValid(false);
 		return false;
 	}
 
 	to->number = number;
 
-	const idNetField* field;
-	for(i = 0, field = _entityStateFields ; i < lc ; i++, field++) 
+	const idNetField* field = _entityStateFields;
+	for(s32 i = 0; i < fieldCount; i++, field++) 
 	{
-		fromF = (s32 *)((u8 *)from + field->offset);
-		toF = (s32 *)((u8 *)to + field->offset);
+		const s32* const fromF = (const s32*)((const u8*)from + field->offset);
+		s32* const toF = (s32*)((u8*)to + field->offset);
 
 		if(ReadBit() == 0) 
 		{
@@ -1896,10 +1894,11 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 		*toF = ReadField(field->bits);
 	}
 
-	for(i = lc, field = &_entityStateFields[lc] ; i < _entityStateFieldCount ; i++, field++) 
+	field = &_entityStateFields[fieldCount];
+	for(s32 i = fieldCount; i < maxFieldCount; i++, field++)
 	{
-		fromF = (s32 *)((u8 *)from + field->offset);
-		toF = (s32 *)((u8 *)to + field->offset);
+		const s32* const fromF = (const s32*)((const u8*)from + field->offset);
+		s32* const toF = (s32*)((u8*)to + field->offset);
 		*toF = *fromF;
 	}
 
