@@ -1660,6 +1660,14 @@ bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEnt
 	STATIC_ASSERT(EntityStateFieldCount73 + 1 == sizeof(idEntityState73) / 4);
 	STATIC_ASSERT(EntityStateFieldCount90 + 1 == sizeof(idEntityState90) / 4);
 	STATIC_ASSERT(EntityStateFieldCount91 + 1 == sizeof(idEntityState91) / 4);
+	STATIC_ASSERT(sizeof(idEntityState3)  % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState48) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState66) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState67) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState68) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState73) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState90) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState91) % 4 == 0);
 #undef STATIC_ASSERT
 
 	// a NULL to is a delta remove message
