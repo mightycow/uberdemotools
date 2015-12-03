@@ -1021,6 +1021,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		return -1;
 	}
 
+	const u8* const bufferData = Buffer.data;
 	s32 value = 0;
 	if(Buffer.oob) 
 	{
@@ -1028,21 +1029,19 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		{
 			if(bits == 8)
 			{
-				value = Buffer.data[Buffer.readcount];
+				value = bufferData[Buffer.readcount];
 				Buffer.readcount += 1;
 				Buffer.bit += 8;
 			}
 			else if(bits == 16)
 			{
-				unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.readcount];
-				value = *sp;
+				value = s32(*(const u16*)&bufferData[Buffer.readcount]);
 				Buffer.readcount += 2;
 				Buffer.bit += 16;
 			}
 			else if(bits == 32)
 			{
-				u32* ip = (u32*)&Buffer.data[Buffer.readcount];
-				value = *ip;
+				value = s32(*(const u32*)&bufferData[Buffer.readcount]);
 				Buffer.readcount += 4;
 				Buffer.bit += 32;
 			}
@@ -1062,7 +1061,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 				return -1;
 			}
 
-			u64 readBits = *(u64*)&Buffer.data[Buffer.readcount];
+			u64 readBits = *(const u64*)&bufferData[Buffer.readcount];
 			const u64 bitPosition = (u64)Buffer.bit & 7;
 			const u64 diff = 64 - (u64)bits;
 			readBits >>= bitPosition;
@@ -1079,7 +1078,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		s32 bitIndex = Buffer.bit;
 		if(nbits)
 		{		
-			const s16 allBits = *(s16*)(Buffer.data + (bitIndex >> 3)) >> (bitIndex & 7);
+			const s16 allBits = *(const s16*)(bufferData + (bitIndex >> 3)) >> (bitIndex & 7);
 			value = allBits & ((1 << nbits) - 1);
 			bitIndex += nbits;
 			bits -= nbits;
@@ -1091,7 +1090,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 			{
 				s32 symbol;
 				s32 readBits;
-				udtHuffman::OffsetReceive(&symbol, &readBits, Buffer.data + (bitIndex >> 3), bitIndex & 7);
+				udtHuffman::OffsetReceive(&symbol, &readBits, bufferData + (bitIndex >> 3), bitIndex & 7);
 				value |= (symbol << (i + nbits));
 				bitIndex += readBits;
 			}
