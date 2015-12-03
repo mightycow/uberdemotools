@@ -23,7 +23,8 @@ local function ApplyTargetAndLinkSettings()
 	filter { "configurations:Release", "platforms:x32" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
 		
-	filter { "configurations:Release", "platforms:x64" }
+	-- Release, ReleaseInst, ReleaseOpt
+	filter { "configurations:Release*", "platforms:x64" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
 
 end
@@ -46,11 +47,18 @@ local function ApplyProjectSettings()
 	exceptionhandling "Off"
 	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 	
+	-- The PG instrumented and PG optimized builds need to share their .obj files.
+	filter "configurations:ReleaseInst"
+		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
+	filter "configurations:ReleaseOpt"
+		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
+	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
 		flags { }
 
-	filter "configurations:Release"
+	-- Release, ReleaseInst, ReleaseOpt
+	filter "configurations:Release*"
 		defines { "NDEBUG" }
 		flags -- others: NoIncrementalLink NoCopyLocal NoImplicitLink NoBufferSecurityChecks
 		{ 
@@ -80,6 +88,7 @@ local function ApplyProjectSettings()
 	-- Some build options:
 	-- /GT  => Support Fiber-Safe Thread-Local Storage
 	-- /GS- => Buffer Security Check disabled
+	-- /GL  => Whole Program Optimization
 	
 	filter "action:vs*"
 		flags { "Symbols" }
@@ -93,8 +102,16 @@ local function ApplyProjectSettings()
 		linkoptions { "" } -- Directly passed to the linker.
 		
 	filter { "action:vs*", "configurations:Release" }
-		buildoptions { "/GS-" } -- Directly passed to the compiler.
+		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
 		linkoptions { "/OPT:REF", "/OPT:ICF" } -- Directly passed to the linker.
+		
+	filter { "action:vs*", "configurations:ReleaseInst" }
+		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGINSTRUMENT" } -- Directly passed to the linker.
+		
+	filter { "action:vs*", "configurations:ReleaseOpt" }
+		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGOPTIMIZE" } -- Directly passed to the linker.
 		
 	--
 	-- GCC
@@ -119,7 +136,7 @@ solution "UDT"
 
 	location ( path_build.."/".._ACTION )
 	platforms { "x32", "x64" }
-	configurations { "Debug", "Release" }
+	configurations { "Debug", "Release", "ReleaseInst", "ReleaseOpt" }
 
 	project "UDT"
 	
