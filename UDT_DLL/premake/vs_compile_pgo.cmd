@@ -22,6 +22,9 @@ if %action%==1 (
 
 :Build
 
+@echo off
+del ..\.bin\%vs_generator%\x64\release\*.pgd
+del ..\.bin\%vs_generator%\x64\release\*.pgc
 @echo on
 call "helpers/vs_msbuild.cmd" UDT %CONFIG% x64
 call "helpers/vs_msbuild.cmd" UDT_captures %CONFIG% x64
