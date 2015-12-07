@@ -95,39 +95,44 @@ local function ApplyProjectSettings()
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 		
 	filter { "action:vs*", "kind:ConsoleApp" }
-		linkoptions { "/ENTRY:wmainCRTStartup" } -- Directly passed to the linker.
+		linkoptions { "/ENTRY:wmainCRTStartup" }
 	
 	filter { "action:vs*", "configurations:Debug" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		buildoptions { "" }
+		linkoptions { "" }
 		
 	filter { "action:vs*", "configurations:Release" }
-		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
-		linkoptions { "/OPT:REF", "/OPT:ICF" } -- Directly passed to the linker.
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF" }
 		
 	filter { "action:vs*", "configurations:ReleaseInst" }
-		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
-		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGINSTRUMENT" } -- Directly passed to the linker.
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGINSTRUMENT" }
 		
 	filter { "action:vs*", "configurations:ReleaseOpt" }
-		buildoptions { "/GS-", "/GL" } -- Directly passed to the compiler.
-		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGOPTIMIZE" } -- Directly passed to the linker.
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGOPTIMIZE" }
+		
+	filter "action:vs2015"
+		buildoptions { "/wd4577" --[[ noexcept --]] }
+		linkoptions { "" }
 		
 	--
 	-- GCC
 	--
-	filter "action:gmake"
-		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" } -- Directly passed to the compiler.
-		linkoptions { "-municode" } -- Directly passed to the linker.
 	
+	filter "action:gmake"
+		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" }
+		linkoptions { "-municode" }
+		
 	filter { "action:gmake", "configurations:Debug" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		buildoptions { "" }
+		linkoptions { "" }
 		
 	filter { "action:gmake", "configurations:Release" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
-	
+		buildoptions { "" }
+		linkoptions { "" }
+
 end
 
 os.mkdir(path_bin)
