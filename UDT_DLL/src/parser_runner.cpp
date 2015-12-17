@@ -68,7 +68,7 @@ bool udtParserRunner::ParseNextMessage()
 		return false;
 	}
 
-	if(_inMsg.Buffer.cursize > _inMsg.Buffer.maxsize)
+	if((u32)_inMsg.Buffer.cursize > (u32)_inMsg.Buffer.maxsize)
 	{
 		_parser->_context->LogError("Demo file %s has a message length greater than MAX_SIZE", _parser->_inFileName.String);
 		SetSuccess(false);
