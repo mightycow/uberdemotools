@@ -28,8 +28,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 			}
 		}
 
-		context.Init(demoCount, info.PlugIns, info.PlugInCount);
-		return true;
+		return context.Init(demoCount, info.PlugIns, info.PlugInCount);
 	}
 
 	if(jobType == udtParsingJobType::Conversion)
@@ -39,8 +38,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 			return false;
 		}
 
-		context.Init(demoCount, NULL, 0);
-		return true;
+		return context.Init(demoCount, NULL, 0);
 	}
 
 	if(jobType == udtParsingJobType::TimeShift)
@@ -51,7 +49,10 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		}
 
 		const u32 plugInId = udtPrivateParserPlugIn::ConvertToUDT;
-		context.Init(demoCount, &plugInId, 1);
+		if(!context.Init(demoCount, &plugInId, 1))
+		{
+			return false;
+		}
 
 		udtBaseParserPlugIn* plugInBase = NULL;
 		context.GetPlugInById(plugInBase, plugInId);
@@ -71,7 +72,10 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 	}
 
 	const u32 plugInId = udtPrivateParserPlugIn::CutByPattern;
-	context.Init(demoCount, &plugInId, 1);
+	if(!context.Init(demoCount, &plugInId, 1))
+	{
+		return false;
+	}
 
 	udtBaseParserPlugIn* plugInBase = NULL;
 	context.GetPlugInById(plugInBase, plugInId);
@@ -102,11 +106,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(file, demoFilePath, context);
 
 	if(!context->Parser.Init(&context->Context, protocol, protocol))
 	{
@@ -161,18 +161,9 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
-
 	const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
 	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
-	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
 	// Save the cut sections in a temporary array.
 	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
@@ -229,11 +220,7 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(file, demoFilePath, context);
 
 	if(!context->Parser.Init(&context->Context, protocol, (udtProtocol::Id)conversionInfo->OutputProtocol))
 	{
@@ -307,11 +294,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	udtFileStream input;
-	if(!input.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(input, demoFilePath, context);
 
 	context->ModifierContext.ResetForNextDemo();
 
@@ -676,9 +659,16 @@ struct DemoMerger
 			DemoData& demo = _demos[i];
 
 			demo.Context = udtCreateContext();
+			if(demo.Context == NULL)
+			{
+				return false;
+			}
 
 			const u32 plugInId = udtPrivateParserPlugIn::ConvertToUDT;
-			demo.Context->Init(1, &plugInId, 1);
+			if(!demo.Context->Init(1, &plugInId, 1))
+			{
+				return false;
+			}
 
 			udtBaseParserPlugIn* plugInBase = NULL;
 			demo.Context->GetPlugInById(plugInBase, plugInId);

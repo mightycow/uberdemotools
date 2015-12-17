@@ -57,8 +57,15 @@ udtParserContext_s::~udtParserContext_s()
 	DestroyPlugIns();
 }
 
-void udtParserContext_s::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
+bool udtParserContext_s::Init(u32 demoCount, const u32* plugInIds, u32 plugInCount)
 {
+#if defined(UDT_WINDOWS)
+	if(!DemoReader.Init())
+	{
+		return false;
+	}
+#endif
+
 	DemoCount = demoCount;
 
 	for(u32 i = 0; i < plugInCount; ++i)
@@ -76,6 +83,8 @@ void udtParserContext_s::Init(u32 demoCount, const u32* plugInIds, u32 plugInCou
 
 		Parser.AddPlugIn(plugIn);
 	}
+
+	return true;
 }
 
 void udtParserContext_s::ResetForNextDemo(bool keepPlugInData)
