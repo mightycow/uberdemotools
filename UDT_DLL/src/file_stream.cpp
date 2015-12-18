@@ -64,7 +64,7 @@ static const char* const stdioFileOpenModes[udtFileOpenMode::Count] =
 
 u64 udtFileStream::GetFileLength(const char* filePath)
 {
-	stat fileStat;
+	struct stat fileStat;
 	if(stat(filePath, &fileStat) != 0)
 	{
 		return 0;

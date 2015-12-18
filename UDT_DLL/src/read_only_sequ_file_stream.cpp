@@ -1,4 +1,9 @@
 #include "read_only_sequ_file_stream.hpp"
+
+
+#if defined(UDT_WINDOWS)
+
+
 #include "string.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "thread_local_allocators.hpp"
@@ -338,3 +343,7 @@ void udtReadOnlySequentialFileStream::Destroy()
 	
 	free(_data);
 }
+
+
+#endif
+

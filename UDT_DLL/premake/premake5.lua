@@ -120,10 +120,14 @@ local function ApplyProjectSettings()
 	--
 	-- GCC
 	--
+
+	filter { "action:gmake", "system:windows" }
+		buildoptions { "" }
+		linkoptions { "-municode" }
 	
 	filter "action:gmake"
 		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" }
-		linkoptions { "-municode" }
+		linkoptions { "" }
 		
 	filter { "action:gmake", "configurations:Debug" }
 		buildoptions { "" }
