@@ -3,10 +3,6 @@
 
 #include "linear_allocator.hpp"
 
-#if defined(UDT_WINDOWS)
-#	include <Windows.h>
-#endif
-
 
 struct udtString
 {

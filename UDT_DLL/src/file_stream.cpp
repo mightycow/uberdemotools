@@ -7,6 +7,8 @@
 #include "scoped_stack_allocator.hpp"
 #include "thread_local_allocators.hpp"
 
+#include <Windows.h>
+
 static const wchar_t* const stdioFileOpenModes[udtFileOpenMode::Count] =
 {
 	L"rb", // Read binary, file must exist.
