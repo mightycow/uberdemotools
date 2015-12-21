@@ -18,9 +18,8 @@ struct idMessage
 
 struct idNetField
 {
-	const char* name;
-	s32         offset;
-	s32         bits; // 0 = floating-point number (f32)
+	s16 offset;
+	s16 bits; // 0 = floating-point number (f32)
 };
 
 struct udtMessage

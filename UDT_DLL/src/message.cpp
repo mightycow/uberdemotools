@@ -204,7 +204,7 @@ static UDT_FORCE_INLINE void HuffmanOffsetTransmit(u8* fout, s32* offset, s32 ch
 // 3
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState3, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState3, field), bits }
 
 // Each field's index is the corresponding index into the field bit mask.
 const idNetField EntityStateFields3[]
@@ -270,7 +270,7 @@ static_assert(EntityStateFieldCount3 == 50, "dm3 network entity states have 50 f
 // 48
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState48, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState48, field), bits }
 
 // Each field's index is the corresponding index into the field bit mask.
 const idNetField EntityStateFields48[]
@@ -337,7 +337,7 @@ static_assert(EntityStateFieldCount48 == 51, "dm_48 network entity states have 5
 // 68
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState68, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState68, field), bits }
 
 const idNetField EntityStateFields68[] =
 {
@@ -402,7 +402,7 @@ const s32 EntityStateFieldCount68 = sizeof(EntityStateFields68) / sizeof(EntityS
 // 73
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState73, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState73, field), bits }
 
 const idNetField EntityStateFields73[] =
 {
@@ -469,7 +469,7 @@ const s32 EntityStateFieldCount73 = sizeof(EntityStateFields73) / sizeof(EntityS
 // 90
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState90, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState90, field), bits }
 
 const idNetField EntityStateFields90[] =
 {
@@ -538,7 +538,7 @@ const s32 EntityStateFieldCount90 = sizeof(EntityStateFields90) / sizeof(EntityS
 // 91
 //
 
-#define ESF(field, bits) { #field, (s32)OFFSET_OF(idEntityState91, field), bits }
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState91, field), bits }
 
 const idNetField EntityStateFields91[] =
 {
@@ -610,7 +610,7 @@ const s32 EntityStateFieldCount91 = sizeof(EntityStateFields91) / sizeof(EntityS
 // 3
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState3, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState3, field), bits }
 
 static const idNetField PlayerStateFields3[] =
 {
@@ -669,7 +669,7 @@ static const s32 PlayerStateFieldCount3 = sizeof(PlayerStateFields3) / sizeof(Pl
 // 48
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState48, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState48, field), bits }
 
 static const idNetField PlayerStateFields48[] =
 {
@@ -731,7 +731,7 @@ static const s32 PlayerStateFieldCount48 = sizeof(PlayerStateFields48) / sizeof(
 // 68
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState68, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState68, field), bits }
 
 static const idNetField PlayerStateFields68[] =
 {
@@ -793,7 +793,7 @@ static const s32 PlayerStateFieldCount68 = sizeof(PlayerStateFields68) / sizeof(
 // 73
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState73, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState73, field), bits }
 
 static const idNetField PlayerStateFields73[] =
 {
@@ -855,7 +855,7 @@ static const s32 PlayerStateFieldCount73 = sizeof(PlayerStateFields73) / sizeof(
 // 90
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState90, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState90, field), bits }
 
 static const idNetField PlayerStateFields90[] =
 {
@@ -919,7 +919,7 @@ static const s32 PlayerStateFieldCount90 = sizeof(PlayerStateFields90) / sizeof(
 // 91
 //
 
-#define PSF(field, bits) { #field, (s32)OFFSET_OF(idPlayerState91, field), bits }
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState91, field), bits }
 
 static const idNetField PlayerStateFields91[] =
 {
