@@ -81,15 +81,15 @@ public:
 	Worker()
 	{
 		_maxThreadCount = 4;
-		_topBaseToBaseCapCount = 3;
+		_topBaseToBaseTimeCount = 3;
 
 		_parseArg.SetSinglePlugIn(udtParserPlugIn::Captures);
 	}
 
-	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount, u32 topBaseToBaseCapCount)
+	bool ProcessDemos(const udtFileInfo* files, u32 fileCount, const char* outputFilePath, u32 maxThreadCount, u32 topBaseToBaseTimeCount)
 	{
 		_maxThreadCount = maxThreadCount;
-		_topBaseToBaseCapCount = topBaseToBaseCapCount;
+		_topBaseToBaseTimeCount = topBaseToBaseTimeCount;
 
 		// Max demo count: 64k
 		// Captures per demo: 64
@@ -133,7 +133,7 @@ public:
 		context->JSONWriterContext.ResetForNextDemo();
 		udtJSONWriter& writer = context->JSONWriterContext.Writer;
 		writer.StartFile();
-		if(topBaseToBaseCapCount > 0)
+		if(topBaseToBaseTimeCount > 0)
 		{
 			WriteFastestBaseToBaseCaptures(writer);
 		}
@@ -302,11 +302,12 @@ private:
 	{
 		writer.StartArray("fastestBaseToBaseCaptures");
 
-		const u32 topBaseToBaseCapCount = _topBaseToBaseCapCount;
+		const u32 topBaseToBaseTimeCount = _topBaseToBaseTimeCount;
 		const char* previousMap = "__invalid__";
 		const char* currentSectionMap = "__invalid__";
 		bool previousBaseToBase = false;
-		u32 mapCaptureIndex = 0;
+		u32 mapTimeIndex = 0;
+		s32 previousMapTimeMs = S32_MIN;
 		bool hasAtLeastOneObject = false;
 
 		const u32 captureCount = _captures.GetSize();
@@ -328,7 +329,8 @@ private:
 					}
 
 					hasAtLeastOneObject = true;
-					mapCaptureIndex = 0;
+					mapTimeIndex = 0;
+					previousMapTimeMs = S32_MIN;
 					writer.StartObject();
 					writer.WriteStringValue("map", cap.MapName);
 					writer.StartArray("captures");
@@ -344,7 +346,13 @@ private:
 				continue;
 			}
 
-			if(mapCaptureIndex++ >= topBaseToBaseCapCount)
+			if(cap.DurationMs > previousMapTimeMs)
+			{
+				++mapTimeIndex;
+				previousMapTimeMs = cap.DurationMs;
+			}
+
+			if(mapTimeIndex > topBaseToBaseTimeCount)
 			{
 				continue;
 			}
@@ -390,7 +398,7 @@ private:
 	udtVMLinearAllocator _stringAllocator;
 	CmdLineParseArg _parseArg;
 	u32 _maxThreadCount;
-	u32 _topBaseToBaseCapCount;
+	u32 _topBaseToBaseTimeCount;
 };
 
 
@@ -404,11 +412,11 @@ void PrintHelp()
 	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
 	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
-	printf("-b=N  top N base2base captures per map        (default: 3)\n");
+	printf("-b=N  top N base2base capture times per map   (default: 3)\n");
 	printf("-o=p  output path p of the JSON file with the sorted results\n");
 	printf("\n");
-	printf("The top base2base captures are a subset of the entire captures collection\n");
-	printf("that is stored in the separate JSON array 'fastestBaseToBaseCaptures'.\n");
+	printf("The top base2base capture times are a subset of the entire captures collection\n");
+	printf("that are stored in the separate JSON array 'fastestBaseToBaseCaptures'.\n");
 	printf("Setting -b=0 will disable the writing of that extra JSON array entirely.\n");
 }
 
@@ -435,12 +443,12 @@ int udt_main(int argc, char** argv)
 
 	const char* outputFilePath = NULL;
 	u32 maxThreadCount = 4;
-	u32 topBaseToBaseCapCount = 3;
+	u32 topBaseToBaseTimeCount = 3;
 	bool recursive = false;
 	for(int i = 1; i < argc - 1; ++i)
 	{
 		s32 localMaxThreads = 4;
-		s32 localCapCount = 3;
+		s32 localTimeCount = 3;
 
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::Equals(arg, "-r"))
@@ -462,9 +470,9 @@ int udt_main(int argc, char** argv)
 		}
 		else if(udtString::StartsWith(arg, "-b=") &&
 				arg.Length >= 4 &&
-				StringParseInt(localCapCount, arg.String + 3))
+				StringParseInt(localTimeCount, arg.String + 3))
 		{
-			topBaseToBaseCapCount = (u32)localCapCount;
+			topBaseToBaseTimeCount = (u32)localTimeCount;
 		}
 	}
 
@@ -501,7 +509,7 @@ int udt_main(int argc, char** argv)
 	}
 
 	Worker worker;
-	if(!worker.ProcessDemos(files.GetStartAddress(), files.GetSize(), outputFilePath, maxThreadCount, topBaseToBaseCapCount))
+	if(!worker.ProcessDemos(files.GetStartAddress(), files.GetSize(), outputFilePath, maxThreadCount, topBaseToBaseTimeCount))
 	{
 		return 2;
 	}
