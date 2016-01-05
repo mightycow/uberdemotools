@@ -27,6 +27,7 @@ struct CaptureInfo
 	s32 DurationMs;
 	f32 Speed;
 	s32 SortIndex; // Used for stable sorting.
+	u32 DemoIndex; // Used for having the same results no matter the number of threads.
 	bool BaseToBase;
 };
 
@@ -66,6 +67,11 @@ s32 SortByBaseToBaseTrueToFalse(const CaptureInfo& a, const CaptureInfo& b)
 s32 SortBySpeedDescending(const CaptureInfo& a, const CaptureInfo& b)
 {
 	return (s32)(b.Speed - a.Speed);
+}
+
+s32 SortByDemoIndexAscending(const CaptureInfo& a, const CaptureInfo& b)
+{
+	return (s32)(a.DemoIndex - b.DemoIndex);
 }
 
 
@@ -202,13 +208,13 @@ private:
 				if(udtGetDemoDataInfo(context, demoIdx, (u32)udtParserPlugIn::Captures, &capturesPointer, &captureCount) == (s32)udtErrorCode::None &&
 				   capturesPointer != NULL)
 				{
-					ProcessCaptures((const udtParseDataCapture*)capturesPointer, captureCount, files[demoInputIdx].Path, files[demoInputIdx].Name);
+					ProcessCaptures((const udtParseDataCapture*)capturesPointer, captureCount, demoInputIdx, files[demoInputIdx].Path, files[demoInputIdx].Name);
 				}
 			}
 		}
 	}
 
-	void ProcessCaptures(const udtParseDataCapture* captures, u32 captureCount, const char* filePath, const char* fileName)
+	void ProcessCaptures(const udtParseDataCapture* captures, u32 captureCount, u32 fileIndex, const char* filePath, const char* fileName)
 	{
 		for(u32 i = 0; i < captureCount; ++i)
 		{
@@ -232,6 +238,7 @@ private:
 			cap.FilePath = udtString::NewClone(_stringAllocator, filePath).String;
 			cap.GameStateIndex = capture.GameStateIndex;
 			cap.SortIndex = (s32)i;
+			cap.DemoIndex = fileIndex;
 			cap.MapName = mapName.String;
 			cap.PickUpTimeMs = capture.PickUpTimeMs;
 			cap.Speed = durationMs == 0 ? FLT_MAX : capture.Distance / ((f32)durationMs / 1000.0f);
@@ -360,6 +367,7 @@ private:
 
 	void SortCaptures()
 	{
+		SortCapturesPass<&SortByDemoIndexAscending>();
 		SortCapturesPass<&SortBySpeedDescending>();
 		SortCapturesPass<&SortByDurationAscending>();
 		SortCapturesPass<&SortByBaseToBaseTrueToFalse>();
