@@ -1194,8 +1194,19 @@ void udtMessage::RealWriteBits(s32 value, s32 signedBits)
 
 s32 udtMessage::RealReadBits(s32 signedBits)
 {
+	//
 	// Allow up to 4 bytes of overflow. This is needed because otherwise some demos 
 	// that Quake can parse properly don't get fully parsed by UDT.
+	//
+	// In the Huffman case, the number of bits that will actually be read is not known in advance.
+	// Instead of checking for an overflow after every symbol decode, we check once before using
+	// an upper bound. The maximum code length is 11 bits.
+	// > full_bytes = bits / 8
+	// > remainder_bits = bits % 8
+	// > max_bits_read = full_bytes*11 + remainder_bits
+	// The maximum request length is 32 bits or 4 symbols. That is, the maximum number of bits read 
+	// would be 4 x 11 = 44 bits and thus the maximum overflow 44 - 32 = 12 bits.
+	//
 	const bool signedValue = signedBits < 0;
 	s32 bits = signedValue ? -signedBits : signedBits;
 	if(Buffer.bit + bits > (Buffer.cursize + 4) * 8)
