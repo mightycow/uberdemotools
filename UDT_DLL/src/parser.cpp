@@ -418,7 +418,7 @@ tokenize:
 			if(outCs.NewString || outCs.Index != csIndex)
 			{
 				commandString = udtString::NewEmpty(_privateTempAllocator, 2 * BIG_INFO_STRING);
-				sprintf(commandString.GetWritePtr(), "cs %d \"%s\"", outCs.Index, outCs.String);
+				sprintf(commandString.GetWritePtr(), "cs %d \"%s\"", outCs.Index, outCs.String.GetPtr());
 				commandStringLength = (s32)strlen(commandString.GetPtr());
 				csStringLength = outCs.String.GetLength();
 			}

@@ -732,7 +732,7 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 
 		// Use allocator before any new allocations calls before it could be relocated by FormatBytes.
 		const u64 reservedByteCount = allocator.GetReservedByteCount();
-		const u64 resizeCount = allocator.GetResizeCount();
+		const u32 resizeCount = allocator.GetResizeCount();
 
 		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
 		unusedMemory = FormatBytes(tempAllocator, (u64)lowestUnusedByteCount);
