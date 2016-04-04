@@ -159,7 +159,7 @@ static void UTF8_CleanForJSON(char* output, const char* input)
 static char* UTF8_CloneForJSON(udtVMLinearAllocator& allocator, const char* input)
 {
 	const u32 newLength = UTF8_LengthForJSON(input);
-	char* const output = (char*)allocator.Allocate((uptr)newLength + 1);
+	char* const output = (char*)allocator.AllocateAndGetAddress((uptr)newLength + 1);
 	UTF8_CleanForJSON(output, input);
 
 	return output;

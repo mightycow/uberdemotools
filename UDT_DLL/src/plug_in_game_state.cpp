@@ -44,13 +44,37 @@ void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 	// - 2 config strings
 	// - the demo taker's name
 	// - player names for everyone who connects during the game
-	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::GameStatesArray");
 	_matches.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Matches");
 	_keyValuePairs.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::KeyValuePairs");
 	_players.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Players");
 	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Strings");
-	_gameStates.SetAllocator(FinalAllocator);
+	_gameStates.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::GameStatesArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
+}
+
+void udtParserPlugInGameState::CopyBuffersStruct(void* buffersStruct) const
+{
+	*(udtParseDataGameStateBuffers*)buffersStruct = _buffers;
+}
+
+void udtParserPlugInGameState::UpdateBufferStruct()
+{
+	_buffers.GameStateRanges = BufferRanges.GetStartAddress();
+	_buffers.GameStateCount = _gameStates.GetSize();
+	_buffers.GameStates = _gameStates.GetStartAddress();
+	_buffers.Players = _players.GetStartAddress();
+	_buffers.PlayerCount = _players.GetSize();
+	_buffers.Matches = _matches.GetStartAddress();
+	_buffers.MatchCount = _matches.GetSize();
+	_buffers.KeyValuePairs = _keyValuePairs.GetStartAddress();
+	_buffers.KeyValuePairCount = _keyValuePairs.GetSize();
+	_buffers.StringBuffer = _stringAllocator.GetStartAddress();
+	_buffers.StringBufferSize = (u32)_stringAllocator.GetCurrentByteCount();
+}
+
+u32 udtParserPlugInGameState::GetItemCount() const
+{
+	return _gameStates.GetSize();
 }
 
 void udtParserPlugInGameState::StartDemoAnalysis()
@@ -81,9 +105,9 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	_protocol = parser._inProtocol;
 
 	_currentGameState.FileOffset = parser._inFileOffset;
-	_currentGameState.Matches = _matches.GetEndAddress();
-	_currentGameState.KeyValuePairs = _keyValuePairs.GetEndAddress();
-	_currentGameState.Players = _players.GetEndAddress();
+	_currentGameState.FirstMatchIndex = _matches.GetSize();
+	_currentGameState.FirstKeyValuePairIndex = _keyValuePairs.GetSize();
+	_currentGameState.FirstPlayerIndex = _players.GetSize();
 
 	const udtString systemInfoString = parser.GetConfigString(CS_SYSTEMINFO);
 	const udtString serverInfoString = parser.GetConfigString(CS_SERVERINFO);
@@ -139,7 +163,8 @@ void udtParserPlugInGameState::ClearPlayerInfos()
 {
 	for(s32 i = 0; i < 64; ++i)
 	{
-		_playerInfos[i].FirstName = NULL;
+		_playerInfos[i].FirstName = U32_MAX;
+		_playerInfos[i].FirstNameLength = 0;
 		_playerInfos[i].FirstSnapshotTimeMs = S32_MAX;
 		_playerInfos[i].LastSnapshotTimeMs = S32_MIN;
 		_playerInfos[i].Index = -1;
@@ -152,12 +177,12 @@ void udtParserPlugInGameState::ClearGameState()
 	_currentGameState.FileOffset = 0;
 	_currentGameState.FirstSnapshotTimeMs = S32_MAX;
 	_currentGameState.LastSnapshotTimeMs = S32_MIN;
+	_currentGameState.FirstMatchIndex = 0;
 	_currentGameState.MatchCount = 0;
-	_currentGameState.Matches = NULL;
+	_currentGameState.FirstKeyValuePairIndex = 0;
 	_currentGameState.KeyValuePairCount = 0;
-	_currentGameState.KeyValuePairs = NULL;
+	_currentGameState.FirstPlayerIndex = 0;
 	_currentGameState.PlayerCount = 0;
-	_currentGameState.Players = NULL;
 }
 
 void udtParserPlugInGameState::AddCurrentMatchIfValid(bool addIfInProgress)
@@ -211,7 +236,8 @@ void udtParserPlugInGameState::AddCurrentGameState()
 void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol)
 {
 	_currentGameState.DemoTakerPlayerIndex = playerIndex;
-	_currentGameState.DemoTakerName = "N/A"; // Pessimism...
+	_currentGameState.DemoTakerName = U32_MAX; // Not available in all demo protocols.
+	_currentGameState.DemoTakerNameLength = 0;
 
 	if(playerIndex < 0 || playerIndex >= MAX_CLIENTS)
 	{
@@ -229,15 +255,15 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtSt
 
 	udtString clan, name;
 	bool hasClan;
-	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, protocol, cs.String))
+	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, protocol, cs.GetPtr()))
 	{
-		_currentGameState.DemoTakerName = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, name).String;
+		WriteStringToApiStruct(_currentGameState.DemoTakerName, udtString::NewCleanCloneFromRef(_stringAllocator, protocol, name));
 	}
 }
 
 void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& configStrings)
 {
-	char* const searchString = configStrings.String;
+	char* const searchString = configStrings.GetWritePtr();
 	const u32 previousCount = _keyValuePairs.GetSize();
 	u32 keyStart = 1;
 	for(;;)
@@ -263,8 +289,10 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& confi
 		if(IsInterestingKey(searchString + keyStart))
 		{
 			udtGameStateKeyValuePair info;
-			info.Name = searchString + keyStart;
-			info.Value = searchString + valueStart;
+			info.Name = configStrings.GetOffset() + keyStart;
+			info.NameLength = (u32)strlen(_stringAllocator.GetStringAt(info.Name));
+			info.Value = configStrings.GetOffset() + valueStart;
+			info.ValueLength = (u32)strlen(_stringAllocator.GetStringAt(info.Value));
 			_keyValuePairs.Add(info);
 		}
 
@@ -283,9 +311,9 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 	{
 		udtString clan, name, finalName;
 		bool hasClan;
-		if(!GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString.String))
+		if(!GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString.GetPtr()))
 		{
-			finalName = udtString::NewConstRef("N/A");
+			finalName = udtString::NewClone(_stringAllocator, "N/A");
 		}
 		else
 		{
@@ -293,13 +321,13 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		}
 
 		s32 team = -1;
-		if(!ParseConfigStringValueInt(team, *TempAllocator, "t", configString.String))
+		if(!ParseConfigStringValueInt(team, *TempAllocator, "t", configString.GetPtr()))
 		{
 			team = -1;
 		}
 
 		_playerInfos[playerIndex].Index = playerIndex;
-		_playerInfos[playerIndex].FirstName = finalName.String;
+		WriteStringToApiStruct(_playerInfos[playerIndex].FirstName, finalName);
 		_playerInfos[playerIndex].FirstTeam = team;
 	}
 	// Player disconnected?
@@ -309,7 +337,8 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		++_currentGameState.PlayerCount;
 
 		_playerInfos[playerIndex].Index = -1;
-		_playerInfos[playerIndex].FirstName = NULL;
+		_playerInfos[playerIndex].FirstName = U32_MAX;
+		_playerInfos[playerIndex].FirstNameLength = 0;
 		_playerInfos[playerIndex].FirstSnapshotTimeMs = S32_MAX;
 		_playerInfos[playerIndex].LastSnapshotTimeMs = S32_MIN;
 		_playerInfos[playerIndex].FirstTeam = (u32)-1;

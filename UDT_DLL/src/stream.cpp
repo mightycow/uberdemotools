@@ -2,7 +2,7 @@
 #include "utils.hpp"
 
 
-u8* udtStream::ReadAll(udtVMLinearAllocator& allocator)
+uptr udtStream::ReadAll(udtVMLinearAllocator& allocator)
 {
 	const u32 length = (u32)Length();
 	if(length == 0)
@@ -10,40 +10,32 @@ u8* udtStream::ReadAll(udtVMLinearAllocator& allocator)
 		return NULL;
 	}
 
-	u8* const data = allocator.Allocate(length);
-	if(data == NULL)
-	{
-		return NULL;
-	}
-
+	const uptr offset = allocator.Allocate(length);
+	u8* const data = allocator.GetAddressAt(offset);
 	if(Read(data, length, 1) != 1)
 	{
 		return NULL;
 	}
 
-	return (u8*)data;
+	return (u32)offset;
 }
 
-char* udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
+udtString udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
 {
 	const u32 length = (u32)Length();
 	if(length == 0)
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
 
-	char* const data = AllocateSpaceForString(allocator, length);
-	if(data == NULL)
+	udtString result = udtString::NewEmpty(allocator, length + 1);
+	char* const resultPtr = result.GetWritePtr();
+	if(Read(resultPtr, length, 1) != 1)
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
 
-	if(Read(data, length, 1) != 1)
-	{
-		return NULL;
-	}
+	resultPtr[length] = '\0';
 
-	data[length] = '\0';
-
-	return data;
+	return result;
 }

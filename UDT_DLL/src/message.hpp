@@ -35,7 +35,7 @@ public:
 	void  SetHuffman(bool huffman);
 	void  GoToNextByte();
 	bool  ValidState() const { return Buffer.valid; }
-	void  SetFileNamePtr(const char* fileName) { _fileName = fileName; } // This class has no ownership of the string.
+	void  SetFileName(udtString fileName) { _fileName = fileName; }
 
 	void  WriteBits(s32 value, s32 bits) { return (this->*_writeBits)(value, bits); }
 	void  WriteByte(s32 c) { WriteBits(c, 8); }
@@ -98,7 +98,7 @@ private:
 	bool  RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force);
 
 	void        SetValid(bool valid);
-	const char* GetFileName() const { return _fileName != NULL ? _fileName : "N/A"; }
+	const char* GetFileNamePtr() const { return _fileName.GetPtrSafe("N/A"); }
 
 public:
 	udtContext* Context;
@@ -128,7 +128,7 @@ private:
 	s32                  _playerStateFieldCount;
 	size_t               _protocolSizeOfEntityState;
 	size_t               _protocolSizeOfPlayerState;
-	const char*          _fileName;
+	udtString            _fileName;
 	ReadBitsFunc         _readBits;
 	ReadBitFunc          _readBit;
 	ReadFloatFunc        _readFloat;

@@ -114,17 +114,52 @@ udtParserPlugInStats::~udtParserPlugInStats()
 
 void udtParserPlugInStats::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
-	_allocator.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::Stats");
-	_statsArray.SetAllocator(FinalAllocator);
+	_stringAllocator.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::Stats");
+	_statsArray.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
 	_maxAllowedStats = demoCount * (u32)UDT_MAX_STATS;
+
+	_teamFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFlags");
+	_playerFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFlags");
+	_teamFieldsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFields");
+	_playerFieldsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFields");
+	_playerStatsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerStats");
+	_timeOutTimes.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TimeOutTimes");
+
+	_redString = udtString::NewClone(_stringAllocator, "RED");
+	_blueString = udtString::NewClone(_stringAllocator, "BLUE");
 }
 
-u32 udtParserPlugInStats::GetElementSize() const
+void udtParserPlugInStats::CopyBuffersStruct(void* buffersStruct) const
 {
-	return (u32)sizeof(udtParseDataStats);
-};
+	*(udtParseDataStatsBuffers*)buffersStruct = _buffers;
+}
+
+void udtParserPlugInStats::UpdateBufferStruct()
+{
+	_buffers.MatchStatsRanges = BufferRanges.GetStartAddress();
+	_buffers.MatchStats = _statsArray.GetStartAddress();
+	_buffers.MatchCount = _statsArray.GetSize();
+	_buffers.TimeOutStartAndEndTimes = _timeOutTimes.GetStartAddress();
+	_buffers.TimeOutRangeCount = _timeOutTimes.GetSize() / 2;
+	_buffers.TeamFlags = _teamFlagsArray.GetStartAddress();
+	_buffers.TeamFlagCount = _teamFlagsArray.GetSize();
+	_buffers.PlayerFlags = _playerFlagsArray.GetStartAddress();
+	_buffers.PlayerFlagCount = _playerFlagsArray.GetSize();
+	_buffers.TeamFields = _teamFieldsArray.GetStartAddress();
+	_buffers.TeamFieldCount = _teamFieldsArray.GetSize();
+	_buffers.PlayerFields = _playerFieldsArray.GetStartAddress();
+	_buffers.PlayerFieldCount = _playerFieldsArray.GetSize();
+	_buffers.PlayerStats = _playerStatsArray.GetStartAddress();
+	_buffers.PlayerStatsCount = _playerStatsArray.GetSize();
+	_buffers.StringBuffer = _stringAllocator.GetStartAddress();
+	_buffers.StringBufferSize = (u32)_stringAllocator.GetCurrentByteCount();
+}
+
+u32 udtParserPlugInStats::GetItemCount() const
+{
+	return _statsArray.GetSize();
+}
 
 void udtParserPlugInStats::StartDemoAnalysis()
 {
@@ -185,7 +220,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		ProcessPlayerConfigString(parser.GetConfigString(firstPlayerCs + i).String, i);
+		ProcessPlayerConfigString(parser.GetConfigString(firstPlayerCs + i).GetPtr(), i);
 	}
 
 	if(_analyzer.Mod() == udtMod::CPMA)
@@ -298,7 +333,17 @@ void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 void udtParserPlugInStats::ClearMatchList()
 {
 	_statsArray.Clear();
-	_allocator.Clear();
+	_stringAllocator.Clear();
+
+	_teamFlagsArray.Clear();
+	_playerFlagsArray.Clear();
+	_teamFieldsArray.Clear();
+	_playerFieldsArray.Clear();
+	_playerStatsArray.Clear();
+	_timeOutTimes.Clear();
+
+	_redString = udtString::NewClone(_stringAllocator, "RED");
+	_blueString = udtString::NewClone(_stringAllocator, "BLUE");
 }
 
 void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& configString)
@@ -311,14 +356,14 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
 	if(csIndex >= firstPlayerCs && csIndex < firstPlayerCs + 64)
 	{
-		ProcessPlayerConfigString(configString.String, csIndex - firstPlayerCs);
+		ProcessPlayerConfigString(configString.GetPtr(), csIndex - firstPlayerCs);
 	}
 	else if(_analyzer.Mod() == udtMod::CPMA && csIndex == CS_CPMA_GAME_INFO)
 	{
 		udtVMScopedStackAllocator allocatorScope(*TempAllocator);
 		s32 sr, sb;
-		ParseConfigStringValueInt(sr, *TempAllocator, "sr", configString.String);
-		ParseConfigStringValueInt(sb, *TempAllocator, "sb", configString.String);
+		ParseConfigStringValueInt(sr, *TempAllocator, "sr", configString.GetPtr());
+		ParseConfigStringValueInt(sb, *TempAllocator, "sb", configString.GetPtr());
 		if(sr != -9999 || sb != -9999)
 		{
 			// When both scores are -9999, CPMA did an arena reset.
@@ -327,23 +372,23 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		}
 
 		udtString redTeamName, blueTeamName;
-		if(ParseConfigStringValueString(redTeamName, *TempAllocator, "nr", configString.String) &&
-		   redTeamName.Length != 0)
+		if(ParseConfigStringValueString(redTeamName, *TempAllocator, "nr", configString.GetPtr()) &&
+		   redTeamName.GetLength() != 0)
 		{
-			_stats.CustomRedName = udtString::NewCleanCloneFromRef(_allocator, _protocol, redTeamName).String;
+			WriteStringToApiStruct(_stats.CustomRedName, udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, redTeamName));
 		}
-		if(ParseConfigStringValueString(blueTeamName, *TempAllocator, "nb", configString.String) &&
-		   blueTeamName.Length != 0)
+		if(ParseConfigStringValueString(blueTeamName, *TempAllocator, "nb", configString.GetPtr()) &&
+		   blueTeamName.GetLength() != 0)
 		{
-			_stats.CustomBlueName = udtString::NewCleanCloneFromRef(_allocator, _protocol, blueTeamName).String;
+			WriteStringToApiStruct(_stats.CustomBlueName, udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, blueTeamName));
 		}
 		
 		s32 cr, cb;
 		if(_analyzer.GameType() >= udtGameType::FirstTeamMode && 
 		   _analyzer.IsMatchInProgress() &&
 		   _cpmaRoundScoreRed != _cpmaRoundScoreBlue &&
-		   ParseConfigStringValueInt(cr, *TempAllocator, "cr", configString.String) &&
-		   ParseConfigStringValueInt(cb, *TempAllocator, "cb", configString.String) &&
+		   ParseConfigStringValueInt(cr, *TempAllocator, "cr", configString.GetPtr()) &&
+		   ParseConfigStringValueInt(cb, *TempAllocator, "cb", configString.GetPtr()) &&
 		   ((_cpmaRoundScoreRed > _cpmaRoundScoreBlue && cr == 0) || (_cpmaRoundScoreBlue > _cpmaRoundScoreRed && cb == 0)))
 		{
 			// All the players of the leading team left.
@@ -353,8 +398,8 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	else if(_analyzer.Mod() == udtMod::CPMA && csIndex == CS_CPMA_ROUND_INFO)
 	{
 		s32 sr, sb;
-		ParseConfigStringValueInt(sr, *TempAllocator, "sr", configString.String);
-		ParseConfigStringValueInt(sb, *TempAllocator, "sb", configString.String);
+		ParseConfigStringValueInt(sr, *TempAllocator, "sr", configString.GetPtr());
+		ParseConfigStringValueInt(sb, *TempAllocator, "sb", configString.GetPtr());
 		if(sr != -9999 && sb != -9999)
 		{
 			_cpmaRoundScoreRed = sr;
@@ -371,7 +416,7 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
 	{
 		s32 score = -1;
-		if(StringParseInt(score, configString.String))
+		if(StringParseInt(score, configString.GetPtr()))
 		{
 			if(score != -999)
 			{
@@ -388,7 +433,7 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES2)
 	{
 		s32 score = -1;
-		if(StringParseInt(score, configString.String))
+		if(StringParseInt(score, configString.GetPtr()))
 		{
 			if(score != -999)
 			{
@@ -444,8 +489,8 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 	bool hasClan;
 	if(GetClanAndPlayerName(clan, name, hasClan, *TempAllocator, _protocol, configString))
 	{
-		_playerStats[playerIndex].Name = udtString::NewCloneFromRef(_allocator, name).String;
-		_playerStats[playerIndex].CleanName = udtString::NewCleanCloneFromRef(_allocator, _protocol, name).String;
+		WriteStringToApiStruct(_playerStats[playerIndex].Name, udtString::NewCloneFromRef(_stringAllocator, name));
+		WriteStringToApiStruct(_playerStats[playerIndex].CleanName, udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, name));
 	}
 }
 
@@ -1238,7 +1283,8 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 	for(u32 i = (u32)offset, count = _tokenizer->GetArgCount(); i < count; ++i)
 	{
 		const udtString token = _tokenizer->GetArg(i);
-		if(token.Length >= 4 && (token.String[0] < '0' || token.String[0] > '9'))
+		const char* const tokenString = token.GetPtr();
+		if(token.GetLength() >= 4 && (tokenString[0] < '0' || tokenString[0] > '9'))
 		{
 			offset = (s32)i + 1;
 			break;
@@ -1298,10 +1344,11 @@ void udtParserPlugInStats::ParseCPMAXScores()
 			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
 
 			const udtString textField = _tokenizer->GetArg((u32)offset + 2);
-			if(textField.Length >= 4)
+			if(textField.GetLength() >= 4)
 			{
 				// It seems that 3-4 and 5-6 give the low and high values of the ping range.
-				const s32 ping = 32 * CPMACharToInt(textField.String[2]) + CPMACharToInt(textField.String[3]);
+				const char* const textFieldString = textField.GetPtr();
+				const s32 ping = 32 * CPMACharToInt(textFieldString[2]) + CPMACharToInt(textFieldString[3]);
 				SetPlayerField(clientNumber, udtPlayerStatsField::Ping, ping);
 			}
 		}
@@ -2203,7 +2250,7 @@ void udtParserPlugInStats::ParseCPMAPrintHeader(const udtString& message)
 #undef CPMA_TEAM_FIELD_EX
 
 	idTokenizer* const tokenizer = _plugInTokenizer;
-	tokenizer->Tokenize(message.String);
+	tokenizer->Tokenize(message.GetPtr());
 
 	const u32 tokenCount = tokenizer->GetArgCount();
 	const u32 fieldCount = (u32)UDT_COUNT_OF(fields);
@@ -2288,8 +2335,8 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 	s32 clientNumber = -1;
 	for(u32 i = 0; i < 64; ++i)
 	{
-		if(_playerStats[i].CleanName != NULL &&
-		   udtString::Equals(playerName, _playerStats[i].CleanName))
+		if(_playerStats[i].CleanName != U32_MAX &&
+		   udtString::Equals(playerName, _stringAllocator.GetStringAt(_playerStats[i].CleanName)))
 		{
 			clientNumber = (s32)i;
 			break;
@@ -2331,7 +2378,7 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 
 		s32 value = 0;
 		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
-		tokenizer->Tokenize(section.String);
+		tokenizer->Tokenize(section.GetPtr());
 		if(tokenizer->GetArgCount() >= 1)
 		{
 			StringParseInt(value, tokenizer->GetArgString(0));
@@ -2386,7 +2433,7 @@ void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 
 		s32 value = 0;
 		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
-		tokenizer->Tokenize(section.String);
+		tokenizer->Tokenize(section.GetPtr());
 		if(tokenizer->GetArgCount() >= 1)
 		{
 			StringParseInt(value, tokenizer->GetArgString(0));
@@ -2636,19 +2683,19 @@ void udtParserPlugInStats::AddCurrentStats()
 		playerFieldCount += PopCount(GetPlayerFlags(i), UDT_PLAYER_STATS_MASK_BYTE_COUNT);
 	}
 
-	u8* teamFlags = teamCount == 0 ? NULL : (u8*)_allocator.Allocate((uptr)teamCount * (uptr)UDT_TEAM_STATS_MASK_BYTE_COUNT);
-	u8* playerFlags = playerCount == 0 ? NULL : (u8*)_allocator.Allocate((uptr)playerCount * (uptr)UDT_PLAYER_STATS_MASK_BYTE_COUNT);
-	s32* teamFields = teamFieldCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)teamFieldCount * 4);
-	s32* playerFields = playerFieldCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)playerFieldCount * 4);
-	udtPlayerStats* playerStats = playerCount == 0 ? NULL : (udtPlayerStats*)_allocator.Allocate((uptr)playerCount * (uptr)sizeof(udtPlayerStats));
-	s32* const timeOutTimes = timeOutCount == 0 ? NULL : (s32*)_allocator.Allocate((uptr)timeOutCount * 8);
+	_stats.FirstTeamFlagIndex = _teamFlagsArray.GetSize();
+	_stats.FirstPlayerFlagIndex = _playerFlagsArray.GetSize();
+	_stats.FirstTeamFieldIndex = _teamFieldsArray.GetSize();
+	_stats.FirstPlayerFieldIndex = _playerFieldsArray.GetSize();
+	_stats.FirstPlayerStatsIndex = _playerStatsArray.GetSize();
+	_stats.FirstTimeOutRangeIndex = _timeOutTimes.GetSize() / 2;
 
-	_stats.TeamFlags = teamFlags;
-	_stats.PlayerFlags = playerFlags;
-	_stats.TeamFields = teamFields;
-	_stats.PlayerFields = playerFields;
-	_stats.PlayerStats = playerStats;
-	_stats.TimeOutStartAndEndTimes = timeOutTimes;
+	u8* teamFlags = teamCount == 0 ? NULL : _teamFlagsArray.ExtendAndMemset(teamCount * UDT_TEAM_STATS_MASK_BYTE_COUNT, 0);
+	u8* playerFlags = playerCount == 0 ? NULL : _playerFlagsArray.ExtendAndMemset(playerCount * UDT_PLAYER_STATS_MASK_BYTE_COUNT, 0);
+	s32* teamFields = teamFieldCount == 0 ? NULL : _teamFieldsArray.ExtendAndMemset(teamFieldCount, 0);
+	s32* playerFields = playerFieldCount == 0 ? NULL : _playerFieldsArray.ExtendAndMemset(playerFieldCount, 0);
+	udtPlayerStats* playerStats = playerCount == 0 ? NULL : _playerStatsArray.ExtendAndMemset(playerCount, 0);
+	s32* const timeOutTimes = timeOutCount == 0 ? NULL : _timeOutTimes.ExtendAndMemset(timeOutCount * 2, 0);
 
 	for(s32 i = 0; i < 2; ++i)
 	{
@@ -2711,8 +2758,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			blueScore = _secondPlaceScore;
 			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
 			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
-			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
-			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+			WriteStringToApiStruct(_stats.FirstPlaceName, redScore > blueScore ? _redString : _blueString);
+			WriteStringToApiStruct(_stats.SecondPlaceName, redScore > blueScore ? _blueString : _redString);
 		}
 		else if((_stats.ValidTeams & 3) == 3 &&
 				IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
@@ -2722,8 +2769,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			blueScore = GetTeamFields(1)[udtTeamStatsField::Score];
 			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
 			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
-			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
-			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+			WriteStringToApiStruct(_stats.FirstPlaceName, redScore > blueScore ? _redString : _blueString);
+			WriteStringToApiStruct(_stats.SecondPlaceName, redScore > blueScore ? _blueString : _redString);
 		}
 		else if(_analyzer.Mod() == udtMod::CPMA)
 		{
@@ -2732,8 +2779,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			blueScore = roundBased ? _cpmaScoreBlue : _cpmaRoundScoreBlue;
 			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
 			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
-			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
-			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+			WriteStringToApiStruct(_stats.FirstPlaceName, redScore > blueScore ? _redString : _blueString);
+			WriteStringToApiStruct(_stats.SecondPlaceName, redScore > blueScore ? _blueString : _redString);
 		}
 		else
 		{
@@ -2741,8 +2788,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			blueScore = _secondPlaceScore;
 			_stats.FirstPlaceScore = udt_max(redScore, blueScore);
 			_stats.SecondPlaceScore = udt_min(redScore, blueScore);
-			_stats.FirstPlaceName = redScore > blueScore ? "RED" : "BLUE";
-			_stats.SecondPlaceName = redScore > blueScore ? "BLUE" : "RED";
+			WriteStringToApiStruct(_stats.FirstPlaceName, redScore > blueScore ? _redString : _blueString);
+			WriteStringToApiStruct(_stats.SecondPlaceName, redScore > blueScore ? _blueString : _redString);
 		}
 	}
 	else
@@ -2786,7 +2833,9 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceScore = udt_max(_cpmaRoundScoreRed, _cpmaRoundScoreBlue);
 			_stats.SecondPlaceScore = udt_min(_cpmaRoundScoreRed, _cpmaRoundScoreBlue);
 			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
+			_stats.FirstPlaceNameLength = _playerStats[_firstPlaceClientNumber].CleanNameLength;
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
+			_stats.SecondPlaceNameLength = _playerStats[_secondPlaceClientNumber].CleanNameLength;
 		}
 		else if(firstPlaceScore != S32_MIN &&
 				secondPlaceScore != S32_MIN &&
@@ -2796,7 +2845,9 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceScore = firstPlaceScore;
 			_stats.SecondPlaceScore = secondPlaceScore;
 			_stats.FirstPlaceName = _playerStats[firstPlaceIndex].CleanName;
+			_stats.FirstPlaceNameLength = _playerStats[firstPlaceIndex].CleanNameLength;
 			_stats.SecondPlaceName = _playerStats[secondPlaceIndex].CleanName;
+			_stats.SecondPlaceNameLength = _playerStats[secondPlaceIndex].CleanNameLength;
 		}
 		else if(_analyzer.Mod() != udtMod::CPMA &&
 				_firstPlaceClientNumber >= 0 &&
@@ -2807,7 +2858,9 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceScore = _firstPlaceScore;
 			_stats.SecondPlaceScore = _secondPlaceScore;
 			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
+			_stats.FirstPlaceNameLength = _playerStats[_firstPlaceClientNumber].CleanNameLength;
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
+			_stats.SecondPlaceNameLength = _playerStats[_secondPlaceClientNumber].CleanNameLength;
 		}
 		else if(_analyzer.Mod() == udtMod::CPMA &&
 				_firstPlaceClientNumber >= 0 &&
@@ -2818,14 +2871,18 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceScore = udt_max(_cpmaScoreRed, _cpmaScoreBlue);
 			_stats.SecondPlaceScore = udt_min(_cpmaScoreRed, _cpmaScoreBlue);
 			_stats.FirstPlaceName = _playerStats[_firstPlaceClientNumber].CleanName;
+			_stats.FirstPlaceNameLength = _playerStats[_firstPlaceClientNumber].CleanNameLength;
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
+			_stats.SecondPlaceNameLength = _playerStats[_secondPlaceClientNumber].CleanNameLength;
 		}
 		else
 		{
 			_stats.FirstPlaceScore = S32_MIN;
 			_stats.SecondPlaceScore = S32_MIN;
-			_stats.FirstPlaceName = NULL;
-			_stats.SecondPlaceName = NULL;
+			_stats.FirstPlaceName = U32_MAX;
+			_stats.FirstPlaceNameLength = 0;
+			_stats.SecondPlaceName = U32_MAX;
+			_stats.SecondPlaceNameLength = 0;
 		}
 	}
 
@@ -2863,11 +2920,11 @@ void udtParserPlugInStats::AddCurrentStats()
 
 	_stats.StartDateEpoch = _analyzer.GetMatchStartDateEpoch();
 	_stats.GamePlay = (u32)_analyzer.GamePlay();
-	_stats.Map = _analyzer.MapName();
+	WriteStringToApiStruct(_stats.MapName, udtString::NewCloneFromRef(_stringAllocator, _analyzer.MapName()));
 	_stats.OverTimeCount = _analyzer.OvertimeCount();
 	_stats.OverTimeType = (u32)_analyzer.OvertimeType();
 	_stats.Mod = _analyzer.Mod();
-	_stats.ModVersion = _analyzer.ModVersion();
+	WriteStringToApiStruct(_stats.ModVersion, udtString::NewCloneFromRef(_stringAllocator, _analyzer.ModVersion()));
 	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
 	_stats.TimeOutCount = timeOutCount;
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
@@ -2904,6 +2961,12 @@ void udtParserPlugInStats::ClearStats(bool newGameState)
 		memset(&_stats, 0, sizeof(_stats));
 		memset(_playerStats, 0, sizeof(_playerStats));
 		_stats.GameType = (u32)udtGameType::Invalid;
+		_stats.CustomBlueName = U32_MAX;
+		_stats.CustomRedName = U32_MAX;
+		_stats.FirstPlaceName = U32_MAX;
+		_stats.MapName = U32_MAX;
+		_stats.ModVersion = U32_MAX;
+		_stats.SecondPlaceName = U32_MAX;
 		for(s32 i = 0; i < 64; ++i)
 		{
 			_playerTeamIndices[i] = -1;

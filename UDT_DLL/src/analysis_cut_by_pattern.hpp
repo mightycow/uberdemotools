@@ -25,7 +25,7 @@ public:
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	
-	udtVMArrayWithAlloc<udtCutSection> CutSections;
+	udtVMArray<udtCutSection> CutSections;
 
 protected:
 	udtCutByPatternPlugIn* PlugIn;
@@ -48,8 +48,6 @@ public:
 	~udtCutByPatternPlugIn() {}
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override { return (u32)sizeof(udtCutSection); };
-
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser) override;
@@ -75,8 +73,8 @@ private:
 	void TrackPlayerFromCommandMessage(udtBaseParser& parser);
 	bool GetTempPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx); // Valid until TempAllocator calls Allocate again.
 
-	udtVMArrayWithAlloc<udtCutByPatternAnalyzerBase*> _analyzers;
-	udtVMArrayWithAlloc<udtPatternType::Id> _analyzerTypes;
+	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
+	udtVMArray<udtPatternType::Id> _analyzerTypes;
 	udtVMLinearAllocator _analyzerAllocator;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 

@@ -56,10 +56,11 @@ void udtCutByFlagCaptureAnalyzer::ProcessGamestateMessage(const udtGamestateCall
 	if(flagStatusIdx >= 0)
 	{
 		const udtString cs = parser.GetConfigString(flagStatusIdx);
-		if(cs.Length >= 2)
+		if(cs.GetLength() == 2)
 		{
-			_flagState[0] = (u8)(cs.String[0] - '0');
-			_flagState[1] = (u8)(cs.String[1] - '0');
+			const char* const csPtr = cs.GetPtr();
+			_flagState[0] = (u8)(csPtr[0] - '0');
+			_flagState[1] = (u8)(csPtr[1] - '0');
 		}
 	}
 }
@@ -118,7 +119,7 @@ void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 
 		s32 playerTeamIdx = 0; // Red by default.
 		const udtString playerCs = parser.GetConfigString(idConfigStringIndex::FirstPlayer(parser._inProtocol) + trackedPlayerIdx);
-		if(ParseConfigStringValueInt(playerTeamIdx, PlugIn->GetTempAllocator(), "t", playerCs.String) &&
+		if(ParseConfigStringValueInt(playerTeamIdx, PlugIn->GetTempAllocator(), "t", playerCs.GetPtr()) &&
 		   playerTeamIdx == TEAM_BLUE)
 		{
 			playerTeamIdx = 1; // Only blue if we can prove it.
@@ -168,12 +169,13 @@ void udtCutByFlagCaptureAnalyzer::ProcessCommandMessage(const udtCommandCallback
 	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
 	{
 		const udtString cs = parser.GetTokenizer().GetArg(2);
-		if(cs.Length >= 2)
+		if(cs.GetLength() >= 2)
 		{
 			_prevFlagState[0] = _flagState[0];
 			_prevFlagState[1] = _flagState[1];
-			_flagState[0] = (u8)(cs.String[0] - '0');
-			_flagState[1] = (u8)(cs.String[1] - '0');
+			const char* const csPtr = cs.GetPtr();
+			_flagState[0] = (u8)(csPtr[0] - '0');
+			_flagState[1] = (u8)(csPtr[1] - '0');
 		}
 	}
 }

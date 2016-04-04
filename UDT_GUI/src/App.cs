@@ -2089,6 +2089,11 @@ namespace Uber.DemoTools
 
             foreach(var newDemo in newDemos)
             {
+                if(newDemo == null)
+                {
+                    continue;
+                }
+
                 var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
                 demos[i].ChatEvents = newDemo.ChatEvents;
@@ -2980,6 +2985,22 @@ namespace Uber.DemoTools
             var data = udtData as JobThreadData;
             if(data == null)
             {
+                return;
+            }
+
+            if(Debugger.IsAttached)
+            {
+                data.UserFunction(data.UserData);
+
+                EnableUiThreadSafe();
+
+                VoidDelegate uiResetter = delegate
+                {
+                    _window.Title = "UDT";
+                    _demoListView.Focus();
+                };
+                _window.Dispatcher.Invoke(uiResetter);
+
                 return;
             }
 

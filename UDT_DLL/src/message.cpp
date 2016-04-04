@@ -997,7 +997,7 @@ udtMessage::udtMessage()
 	_entityStateFieldCount = EntityStateFieldCount68;
 	_playerStateFields = PlayerStateFields68;
 	_playerStateFieldCount = PlayerStateFieldCount68;
-	_fileName = NULL;
+	_fileName = udtString::NewNull();
 }
 
 void udtMessage::InitContext(udtContext* context)
@@ -1122,14 +1122,14 @@ void udtMessage::RealWriteBits(s32 value, s32 signedBits)
 	s32 bits = signedValue ? -signedBits : signedBits;
 	if(Buffer.bit + bits > Buffer.maxsize * 8)
 	{
-		Context->LogError("udtMessage::RealWriteBits: Overflowed! (in file: %s)", GetFileName());
+		Context->LogError("udtMessage::RealWriteBits: Overflowed! (in file: %s)", GetFileNamePtr());
 		SetValid(false);
 		return;
 	}
 
 	if(signedBits == 0 || signedBits < -31 || signedBits > 32)
 	{
-		Context->LogError("udtMessage::RealWriteBits: Invalid bit count: %d (in file: %s)", bits, GetFileName());
+		Context->LogError("udtMessage::RealWriteBits: Invalid bit count: %d (in file: %s)", bits, GetFileNamePtr());
 		SetValid(false);
 		return;
 	}
@@ -1158,7 +1158,7 @@ void udtMessage::RealWriteBits(s32 value, s32 signedBits)
 		} 
 		else 
 		{
-			Context->LogError("udtMessage::RealWriteBits: Can't write %d bits (in file: %s)", bits, GetFileName());
+			Context->LogError("udtMessage::RealWriteBits: Can't write %d bits (in file: %s)", bits, GetFileNamePtr());
 			SetValid(false);
 			return;
 		}
@@ -1211,7 +1211,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 	s32 bits = signedValue ? -signedBits : signedBits;
 	if(Buffer.bit + bits > (Buffer.cursize + 4) * 8)
 	{
-		Context->LogError("udtMessage::RealReadBits: Overflowed! (in file: %s)", GetFileName());
+		Context->LogError("udtMessage::RealReadBits: Overflowed! (in file: %s)", GetFileNamePtr());
 		SetValid(false);
 		return -1;
 	}
@@ -1242,7 +1242,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 			}
 			else
 			{
-				Context->LogError("udtMessage::RealReadBits: Can't read %d bits (in file: %s)", bits, GetFileName());
+				Context->LogError("udtMessage::RealReadBits: Can't read %d bits (in file: %s)", bits, GetFileNamePtr());
 				SetValid(false);
 				return -1;
 			}
@@ -1251,7 +1251,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		{
 			if(bits > 32)
 			{
-				Context->LogError("udtMessage::RealReadBits: Can't read %d bits (more than 32) (in file: %s)", bits, GetFileName());
+				Context->LogError("udtMessage::RealReadBits: Can't read %d bits (more than 32) (in file: %s)", bits, GetFileNamePtr());
 				SetValid(false);
 				return -1;
 			}
@@ -1382,7 +1382,7 @@ void udtMessage::RealWriteString(const char* s, s32 length, s32 bufferLength, ch
 	
 	if(length >= bufferLength)
 	{
-		Context->LogError("udtMessage::RealWriteString: The string is too long: %d (max is %d) (in file: %s)", length, bufferLength, GetFileName());
+		Context->LogError("udtMessage::RealWriteString: The string is too long: %d (max is %d) (in file: %s)", length, bufferLength, GetFileNamePtr());
 		SetValid(false);
 		return;
 	}
@@ -1477,7 +1477,7 @@ s32 udtMessage::RealPeekByte()
 	// @TODO: Allow up to 4 bytes of overflow like in RealReadBits?
 	if(Buffer.bit + 8 > (Buffer.cursize + 1) * 8)
 	{
-		Context->LogError("udtMessage::RealPeekByte: Overflowed! (in file: %s)", GetFileName());
+		Context->LogError("udtMessage::RealPeekByte: Overflowed! (in file: %s)", GetFileNamePtr());
 		SetValid(false);
 		return -1;
 	}
@@ -1741,7 +1741,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 	lc = ReadByte();
 	if(lc > _playerStateFieldCount || lc < 0)
 	{
-		Context->LogError("udtMessage::RealReadDeltaPlayer: Invalid playerState field count: %d (max is %d) (in file: %s)", lc, _playerStateFieldCount, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaPlayer: Invalid playerState field count: %d (max is %d) (in file: %s)", lc, _playerStateFieldCount, GetFileNamePtr());
 		SetValid(false);
 		return false;
 	}
@@ -1878,7 +1878,7 @@ bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEnt
 
 	if(to->number < 0 || to->number >= MAX_GENTITIES) 
 	{
-		Context->LogError("udtMessage::RealWriteDeltaEntity: Bad entity number: %d (max is %d) (in file: %s)", to->number, MAX_GENTITIES - 1, GetFileName());
+		Context->LogError("udtMessage::RealWriteDeltaEntity: Bad entity number: %d (max is %d) (in file: %s)", to->number, MAX_GENTITIES - 1, GetFileNamePtr());
 		SetValid(false);
 		return false;
 	}
@@ -2033,7 +2033,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 {
 	if(number < 0 || number >= MAX_GENTITIES) 
 	{
-		Context->LogError("udtMessage::RealReadDeltaEntity: Bad delta entity number: %d (max is %d) (in file: %s)", number, MAX_GENTITIES - 1, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaEntity: Bad delta entity number: %d (max is %d) (in file: %s)", number, MAX_GENTITIES - 1, GetFileNamePtr());
 		SetValid(false);
 		return false;
 	}
@@ -2067,7 +2067,7 @@ bool udtMessage::RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBa
 	const s32 maxFieldCount = _entityStateFieldCount;
 	if(fieldCount > maxFieldCount || fieldCount < 0)
 	{
-		Context->LogError("udtMessage::RealReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", fieldCount, maxFieldCount, GetFileName());
+		Context->LogError("udtMessage::RealReadDeltaEntity: Invalid entityState field count: %d (max is %d) (in file: %s)", fieldCount, maxFieldCount, GetFileNamePtr());
 		SetValid(false);
 		return false;
 	}

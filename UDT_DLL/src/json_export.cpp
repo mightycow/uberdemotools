@@ -14,47 +14,21 @@
 #include <time.h>
 
 
-static udtString NewCamelCaseString(udtVMLinearAllocator& allocator, const udtString& name)
-{
-	if(udtString::IsNullOrEmpty(name))
-	{
-		return name;
-	}
-
-	udtString fixed = udtString::NewCloneFromRef(allocator, name);
-	char* dest = fixed.String;
-	const char* src = fixed.String;
-	*dest++ = (char)::tolower((int)*src++);
-	while(*src)
-	{
-		if(src[0] != ' ')
-		{
-			*dest++ = *src++;
-			continue;
-		}
-
-		if(src[1] == '\0')
-		{
-			break;
-		}
-
-		*dest++ = (char)::toupper((int)src[1]);
-		src += 2;
-	}
-
-	*dest = '\0';
-	fixed.Length = (u32)(dest - name.String);
-
-	return fixed;
-}
-
 struct udtJSONExporter
 {
 public:
 	udtJSONExporter(udtJSONWriter& writer, udtVMLinearAllocator& tempAllocator)
 		: Writer(writer)
 		, TempAllocator(tempAllocator)
+		, StringBuffer(NULL)
+		, StringBufferSize(0)
 	{
+	}
+
+	void SetStringBuffer(const u8* stringBuffer, u32 stringBufferSize)
+	{
+		StringBuffer = stringBuffer;
+		StringBufferSize = stringBufferSize;
 	}
 
 	void StartObject()
@@ -65,7 +39,7 @@ public:
 	void StartObject(const char* name)
 	{
 		udtVMScopedStackAllocator allocatorScope(TempAllocator);
-		Writer.StartObject(GetFixedName(name).String);
+		Writer.StartObject(GetFixedName(name).GetPtr());
 	}
 
 	void EndObject()
@@ -81,7 +55,7 @@ public:
 	void StartArray(const char* name)
 	{
 		udtVMScopedStackAllocator allocatorScope(TempAllocator);
-		Writer.StartArray(GetFixedName(name).String);
+		Writer.StartArray(GetFixedName(name).GetPtr());
 	}
 
 	void EndArray()
@@ -92,19 +66,47 @@ public:
 	void WriteBoolValue(const char* name, bool value)
 	{
 		udtVMScopedStackAllocator allocatorScope(TempAllocator);
-		Writer.WriteBoolValue(GetFixedName(name).String, value);
+		Writer.WriteBoolValue(GetFixedName(name).GetPtr(), value);
 	}
 
 	void WriteIntValue(const char* name, s32 number)
 	{
 		udtVMScopedStackAllocator allocatorScope(TempAllocator);
-		Writer.WriteIntValue(GetFixedName(name).String, number);
+		Writer.WriteIntValue(GetFixedName(name).GetPtr(), number);
 	}
 
 	void WriteStringValue(const char* name, const char* string)
 	{
 		udtVMScopedStackAllocator allocatorScope(TempAllocator);
-		Writer.WriteStringValue(GetFixedName(name).String, string);
+		Writer.WriteStringValue(GetFixedName(name).GetPtr(), string);
+	}
+
+	void WriteStringValue(const char* name, u32 stringOffset)
+	{
+		if(stringOffset >= StringBufferSize)
+		{
+			return;
+		}
+
+		const char* const string = (const char*)StringBuffer + stringOffset;
+
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.WriteStringValue(GetFixedName(name).GetPtr(), string);
+	}
+
+	void WriteStringValue(u32 nameOffset, u32 stringOffset)
+	{
+		if(nameOffset >= StringBufferSize ||
+		   stringOffset >= StringBufferSize)
+		{
+			return;
+		}
+
+		const char* const name = (const char*)StringBuffer + nameOffset;
+		const char* const string = (const char*)StringBuffer + stringOffset;
+
+		udtVMScopedStackAllocator allocatorScope(TempAllocator);
+		Writer.WriteStringValue(GetFixedName(name).GetPtr(), string);
 	}
 
 private:
@@ -113,11 +115,13 @@ private:
 private:
 	udtString GetFixedName(const char* name)
 	{
-		return NewCamelCaseString(TempAllocator, udtString::NewConstRef(name));
+		return udtString::NewCamelCaseClone(TempAllocator, udtString::NewConstRef(name));
 	}
 
 	udtJSONWriter& Writer;
 	udtVMLinearAllocator& TempAllocator;
+	const u8* StringBuffer;
+	u32 StringBufferSize;
 };
 
 
@@ -280,20 +284,28 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONExporter& writer, const udt
 	writer.EndObject();
 }
 
-static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsArray, u32 count, const char** playerStatsFieldNames, const char** teamStatsFieldNames)
+static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& statsBuffers, u32 demoIndex, const char** playerStatsFieldNames, const char** teamStatsFieldNames)
 {
-	if(count == 0 ||
-	   playerStatsFieldNames == NULL ||
+	if(playerStatsFieldNames == NULL ||
 	   teamStatsFieldNames == NULL)
 	{
 		return;
 	}
 
-	writer.StartArray("match stats");
-
-	for(u32 matchIdx = 0; matchIdx < count; ++matchIdx)
+	const udtParseDataBufferRange range = statsBuffers.MatchStatsRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
+	if(count == 0)
 	{
-		const udtParseDataStats& stats = statsArray[matchIdx];
+		return;
+	}
+
+	writer.StartArray("match stats");
+	writer.SetStringBuffer(statsBuffers.StringBuffer, statsBuffers.StringBufferSize);
+
+	for(u32 matchIdx = first, end = first + count; matchIdx < end; ++matchIdx)
+	{
+		const udtParseDataStats& stats = statsBuffers.MatchStats[matchIdx];
 
 		const bool hasTeamStats = HasValidTeamStats(stats);
 		const bool hasPlayerStats = HasValidPlayerStats(stats);
@@ -327,7 +339,7 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		writer.WriteStringValue("mod version", stats.ModVersion);
 		WriteUDTGameTypeShort(writer, stats.GameType);
 		WriteUDTGameTypeLong(writer, stats.GameType);
-		writer.WriteStringValue("map", stats.Map);
+		writer.WriteStringValue("map", stats.MapName);
 		if(stats.TimeLimit != 0)
 		{
 			writer.WriteIntValue("time limit", (s32)stats.TimeLimit);
@@ -369,11 +381,13 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 		{
 			writer.StartArray("time outs");
 
-			for(u32 i = 0; i < stats.TimeOutCount; ++i)
+			const u32 first = stats.FirstTimeOutRangeIndex;
+			const u32 count = stats.TimeOutCount;
+			for(u32 i = first, end = first + count; i < end; ++i)
 			{
 				writer.StartObject();
-				writer.WriteIntValue("start time", stats.TimeOutStartAndEndTimes[2 * i]);
-				writer.WriteIntValue("end time", stats.TimeOutStartAndEndTimes[2 * i + 1]);
+				writer.WriteIntValue("start time", statsBuffers.TimeOutStartAndEndTimes[2*i]);
+				writer.WriteIntValue("end time", statsBuffers.TimeOutStartAndEndTimes[2*i + 1]);
 				writer.EndObject();
 			}
 
@@ -382,8 +396,8 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 
 		if(hasTeamStats)
 		{
-			const u8* flags = stats.TeamFlags;
-			const s32* fields = stats.TeamFields;
+			const u8* flags = statsBuffers.TeamFlags + stats.FirstTeamFlagIndex;
+			const s32* fields = statsBuffers.TeamFields + stats.FirstTeamFieldIndex;
 
 			writer.StartArray("team stats");
 
@@ -403,9 +417,9 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 
 		if(hasPlayerStats)
 		{
-			const u8* flags = stats.PlayerFlags;
-			const s32* fields = stats.PlayerFields;
-			const udtPlayerStats* extraStats = stats.PlayerStats;
+			const u8* flags = statsBuffers.PlayerFlags + stats.FirstPlayerFlagIndex;
+			const s32* fields = statsBuffers.PlayerFields + stats.FirstPlayerFieldIndex;
+			const udtPlayerStats* extraStats = statsBuffers.PlayerStats + stats.FirstPlayerStatsIndex;
 
 			writer.StartArray("player stats");
 
@@ -430,18 +444,22 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStats* statsAr
 	writer.EndArray();
 }
 
-static void WriteChatEvents(udtJSONExporter& writer, const udtParseDataChat* chatEvents, u32 count)
+static void WriteChatEvents(udtJSONExporter& writer, const udtParseDataChatBuffers& chatBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = chatBuffers.ChatMessageRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("chat");
+	writer.SetStringBuffer(chatBuffers.StringBuffer, chatBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataChat& info = chatEvents[i];
+		const udtParseDataChat& info = chatBuffers.ChatMessages[i];
 
 		writer.StartObject();
 
@@ -469,18 +487,22 @@ static void WriteChatEvents(udtJSONExporter& writer, const udtParseDataChat* cha
 	writer.EndArray();
 }
 
-static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituary* deathEvents, u32 count)
+static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituaryBuffers& deathBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = deathBuffers.ObituaryRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("obituaries");
+	writer.SetStringBuffer(deathBuffers.StringBuffer, deathBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataObituary& info = deathEvents[i];
+		const udtParseDataObituary& info = deathBuffers.Obituaries[i];
 
 		writer.StartObject();
 
@@ -506,18 +528,22 @@ static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituary
 	writer.EndArray();
 }
 
-static void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommand* commands, u32 count)
+static void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawCommandBuffers& commandBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = commandBuffers.CommandRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("raw commands");
+	writer.SetStringBuffer(commandBuffers.StringBuffer, commandBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataRawCommand& info = commands[i];
+		const udtParseDataRawCommand& info = commandBuffers.Commands[i];
 
 		writer.StartObject();
 
@@ -532,18 +558,22 @@ static void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawComma
 	writer.EndArray();
 }
 
-static void WriteRawConfigStrings(udtJSONExporter& writer, const udtParseDataRawConfigString* configString, u32 count)
+static void WriteRawConfigStrings(udtJSONExporter& writer, const udtParseDataRawConfigStringBuffers& configStringBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = configStringBuffers.ConfigStringRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("raw config strings");
+	writer.SetStringBuffer(configStringBuffers.StringBuffer, configStringBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataRawConfigString& info = configString[i];
+		const udtParseDataRawConfigString& info = configStringBuffers.ConfigStrings[i];
 
 		writer.StartObject();
 
@@ -558,18 +588,22 @@ static void WriteRawConfigStrings(udtJSONExporter& writer, const udtParseDataRaw
 	writer.EndArray();
 }
 
-static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState* gameStates, u32 count)
+static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameStateBuffers& gameStateBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = gameStateBuffers.GameStateRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("game states");
+	writer.SetStringBuffer(gameStateBuffers.StringBuffer, gameStateBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataGameState& info = gameStates[i];
+		const udtParseDataGameState& info = gameStateBuffers.GameStates[i];
 
 		writer.StartObject();
 
@@ -584,32 +618,32 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 		writer.WriteIntValue("end time", info.LastSnapshotTimeMs);
 
 		writer.StartArray("matches");
-		for(u32 j = 0; j < info.MatchCount; ++j)
+		for(u32 j = info.FirstMatchIndex, end = j + info.MatchCount; j < end; ++j)
 		{
 			writer.StartObject();
-			writer.WriteIntValue("start time", info.Matches[j].MatchStartTimeMs);
-			writer.WriteIntValue("end time", info.Matches[j].MatchEndTimeMs);
+			writer.WriteIntValue("start time", gameStateBuffers.Matches[j].MatchStartTimeMs);
+			writer.WriteIntValue("end time", gameStateBuffers.Matches[j].MatchEndTimeMs);
 			writer.EndObject();
 		}
 		writer.EndArray();
 
 		writer.StartArray("players");
-		for(u32 j = 0; j < info.PlayerCount; ++j)
+		for(u32 j = info.FirstPlayerIndex, end = j + info.PlayerCount; j < end; ++j)
 		{
 			writer.StartObject();
-			writer.WriteIntValue("client number", info.Players[j].Index);
-			writer.WriteStringValue("clean name", info.Players[j].FirstName);
-			WriteUDTTeamIndex(writer, info.Players[j].FirstTeam);
-			writer.WriteIntValue("start time", info.Players[j].FirstSnapshotTimeMs);
-			writer.WriteIntValue("end time", info.Players[j].LastSnapshotTimeMs);
+			writer.WriteIntValue("client number", gameStateBuffers.Players[j].Index);
+			writer.WriteStringValue("clean name", gameStateBuffers.Players[j].FirstName);
+			WriteUDTTeamIndex(writer, gameStateBuffers.Players[j].FirstTeam);
+			writer.WriteIntValue("start time", gameStateBuffers.Players[j].FirstSnapshotTimeMs);
+			writer.WriteIntValue("end time", gameStateBuffers.Players[j].LastSnapshotTimeMs);
 			writer.EndObject();
 		}
 		writer.EndArray();
 
 		writer.StartObject("config string values");
-		for(u32 j = 0; j < info.KeyValuePairCount; ++j)
+		for(u32 j = info.FirstKeyValuePairIndex, end = j + info.KeyValuePairCount; j < end; ++j)
 		{
-			writer.WriteStringValue(info.KeyValuePairs[j].Name, info.KeyValuePairs[j].Value);
+			writer.WriteStringValue(gameStateBuffers.KeyValuePairs[j].Name, gameStateBuffers.KeyValuePairs[j].Value);
 		}
 		writer.EndObject();
 
@@ -619,18 +653,22 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 	writer.EndArray();
 }
 
-static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCapture* captures, u32 count)
+static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCaptureBuffers& captureBuffers, u32 demoIndex)
 {
+	const udtParseDataBufferRange range = captureBuffers.CaptureRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
 	if(count == 0)
 	{
 		return;
 	}
 
 	writer.StartArray("captures");
+	writer.SetStringBuffer(captureBuffers.StringBuffer, captureBuffers.StringBufferSize);
 
-	for(u32 i = 0; i < count; ++i)
+	for(u32 i = first, end = first + count; i < end; ++i)
 	{
-		const udtParseDataCapture& info = captures[i];
+		const udtParseDataCapture& info = captureBuffers.Captures[i];
 
 		writer.StartObject();
 
@@ -670,65 +708,65 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 
 	writer.StartFile();
 
-	void* gameStatesPointer = NULL;
-	u32 gameStateCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::GameState, &gameStatesPointer, &gameStateCount) == (s32)udtErrorCode::None &&
-	   gameStatesPointer != NULL)
 	{
-		WriteGameStates(jsonWriter, (const udtParseDataGameState*)gameStatesPointer, gameStateCount);
+		udtParseDataGameStateBuffers gameStateBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::GameState, &gameStateBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteGameStates(jsonWriter, gameStateBuffers, demoIndex);
+		}
 	}
 
-	void* chatEventPointer = NULL;
-	u32 chatEventCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Chat, &chatEventPointer, &chatEventCount) == (s32)udtErrorCode::None &&
-	   chatEventPointer != NULL)
 	{
-		WriteChatEvents(jsonWriter, (const udtParseDataChat*)chatEventPointer, chatEventCount);
+		udtParseDataChatBuffers chatBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Chat, &chatBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteChatEvents(jsonWriter, chatBuffers, demoIndex);
+		}
 	}
 
-	void* deathEventPointer = NULL;
-	u32 deathEventCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Obituaries, &deathEventPointer, &deathEventCount) == (s32)udtErrorCode::None &&
-	   deathEventPointer != NULL)
 	{
-		WriteDeathEvents(jsonWriter, (const udtParseDataObituary*)deathEventPointer, deathEventCount);
+		udtParseDataObituaryBuffers deathBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Obituaries, &deathBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteDeathEvents(jsonWriter, deathBuffers, demoIndex);
+		}
 	}
 
-	void* statsPointer = NULL;
-	u32 statsCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Stats, &statsPointer, &statsCount) == (s32)udtErrorCode::None &&
-	   statsPointer != NULL)
 	{
-		u32 dummy = 0;
-		const char** playerStatsFieldNames = NULL;
-		const char** teamStatsFieldNames = NULL;
-		udtGetStringArray(udtStringArray::PlayerStatsNames, &playerStatsFieldNames, &dummy);
-		udtGetStringArray(udtStringArray::TeamStatsNames, &teamStatsFieldNames, &dummy);
-		WriteStats(jsonWriter, (const udtParseDataStats*)statsPointer, statsCount, playerStatsFieldNames, teamStatsFieldNames);
+		udtParseDataStatsBuffers statsBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Stats, &statsBuffers) == (s32)udtErrorCode::None)
+		{
+			u32 dummy = 0;
+			const char** playerStatsFieldNames = NULL;
+			const char** teamStatsFieldNames = NULL;
+			udtGetStringArray(udtStringArray::PlayerStatsNames, &playerStatsFieldNames, &dummy);
+			udtGetStringArray(udtStringArray::TeamStatsNames, &teamStatsFieldNames, &dummy);
+			WriteStats(jsonWriter, statsBuffers, demoIndex, playerStatsFieldNames, teamStatsFieldNames);
+		}
 	}
 
-	void* rawEventsPointer = NULL;
-	u32 rawEventCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::RawCommands, &rawEventsPointer, &rawEventCount) == (s32)udtErrorCode::None &&
-	   rawEventsPointer != NULL)
 	{
-		WriteRawCommands(jsonWriter, (const udtParseDataRawCommand*)rawEventsPointer, rawEventCount);
+		udtParseDataRawCommandBuffers commandBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::RawCommands, &commandBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteRawCommands(jsonWriter, commandBuffers, demoIndex);
+		}
 	}
 
-	void* rawConfigStringsPointer = NULL;
-	u32 rawConfigStringCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::RawConfigStrings, &rawConfigStringsPointer, &rawConfigStringCount) == (s32)udtErrorCode::None &&
-	   rawConfigStringsPointer != NULL)
 	{
-		WriteRawConfigStrings(jsonWriter, (const udtParseDataRawConfigString*)rawConfigStringsPointer, rawConfigStringCount);
+		udtParseDataRawConfigStringBuffers configStringBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::RawConfigStrings, &configStringBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteRawConfigStrings(jsonWriter, configStringBuffers, demoIndex);
+		}
 	}
 
-	void* capturesPointer = NULL;
-	u32 captureCount = 0;
-	if(udtGetDemoDataInfo(context, demoIndex, (u32)udtParserPlugIn::Captures, &capturesPointer, &captureCount) == (s32)udtErrorCode::None &&
-	   capturesPointer != NULL)
 	{
-		WriteCaptures(jsonWriter, (const udtParseDataCapture*)capturesPointer, captureCount);
+		udtParseDataCaptureBuffers captureBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Captures, &captureBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteCaptures(jsonWriter, captureBuffers, demoIndex);
+		}
 	}
 
 	writer.EndFile();

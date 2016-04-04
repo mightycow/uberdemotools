@@ -15,7 +15,9 @@ public:
 	~udtParserPlugInGameState();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override { return (u32)sizeof(udtParseDataGameState); }
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
@@ -39,11 +41,12 @@ private:
 private:
 	udtGeneralAnalyzer _analyzer;
 	udtGameStatePlayerInfo _playerInfos[64];
-	udtVMArray<udtParseDataGameState> _gameStates; // The final array.
-	udtVMArrayWithAlloc<udtMatchInfo> _matches;
-	udtVMArrayWithAlloc<udtGameStateKeyValuePair> _keyValuePairs; // Key/value pairs from config strings 0 and 1.
-	udtVMArrayWithAlloc<udtGameStatePlayerInfo> _players;
+	udtVMArray<udtParseDataGameState> _gameStates;
+	udtVMArray<udtMatchInfo> _matches;
+	udtVMArray<udtGameStateKeyValuePair> _keyValuePairs; // Key/value pairs from config strings 0 and 1.
+	udtVMArray<udtGameStatePlayerInfo> _players;
 	udtVMLinearAllocator _stringAllocator; // For the key/value pairs and the demo taker's name.
 	udtParseDataGameState _currentGameState;
+	udtParseDataGameStateBuffers _buffers;
 	udtProtocol::Id _protocol;
 };

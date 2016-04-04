@@ -9,7 +9,6 @@ udtParserRunner::udtParserRunner()
 	_maxByteCount = 0;
 	_parser = NULL;
 	_file = NULL;
-	_inMsgData = NULL;
 	_cancelOperation = NULL;
 	_success = false;
 }
@@ -19,8 +18,6 @@ bool udtParserRunner::Init(udtBaseParser& parser, udtStream& file, const s32* ca
 	_parser = &parser;
 	_file = &file;
 	_cancelOperation = cancelOperation;
-
-	_inMsgData = parser._persistentAllocator.Allocate(MAX_MSGLEN); // Avoid allocating 16 KB on the stack...
 
 	_inMsg.InitContext(parser._context);
 	_inMsg.InitProtocol(parser._inProtocol);
@@ -47,17 +44,17 @@ bool udtParserRunner::ParseNextMessage()
 	u32 elementsRead = _file->Read(&inServerMessageSequence, 4, 1);
 	if(elementsRead != 1)
 	{
-		_parser->_context->LogWarning("Demo file %s is truncated", _parser->_inFileName.String);
+		_parser->_context->LogWarning("Demo file %s is truncated", _parser->GetFileNamePtr());
 		SetSuccess(true);
 		return false;
 	}
 
-	_inMsg.Init(&_inMsgData[0], MAX_MSGLEN);
+	_inMsg.Init(_parser->_inMsgData, MAX_MSGLEN);
 
 	elementsRead = _file->Read(&_inMsg.Buffer.cursize, 4, 1);
 	if(elementsRead != 1)
 	{
-		_parser->_context->LogWarning("Demo file %s is truncated", _parser->_inFileName.String);
+		_parser->_context->LogWarning("Demo file %s is truncated", _parser->GetFileNamePtr());
 		SetSuccess(true);
 		return false;
 	}
@@ -70,7 +67,7 @@ bool udtParserRunner::ParseNextMessage()
 
 	if((u32)_inMsg.Buffer.cursize > (u32)_inMsg.Buffer.maxsize)
 	{
-		_parser->_context->LogError("Demo file %s has a message length greater than MAX_SIZE", _parser->_inFileName.String);
+		_parser->_context->LogError("Demo file %s has a message length greater than MAX_SIZE", _parser->GetFileNamePtr());
 		SetSuccess(false);
 		return false;
 	}
@@ -78,7 +75,7 @@ bool udtParserRunner::ParseNextMessage()
 	elementsRead = _file->Read(_inMsg.Buffer.data, _inMsg.Buffer.cursize, 1);
 	if(elementsRead != 1)
 	{
-		_parser->_context->LogWarning("Demo file %s is truncated", _parser->_inFileName.String);
+		_parser->_context->LogWarning("Demo file %s is truncated", _parser->GetFileNamePtr());
 		SetSuccess(true);
 		return false;
 	}

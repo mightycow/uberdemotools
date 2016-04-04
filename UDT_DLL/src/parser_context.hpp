@@ -43,7 +43,8 @@ public:
 
 	bool Init(u32 demoCount, const u32* plugInIds = NULL, u32 plugInCount = 0); // Called once for all.
 	void ResetForNextDemo(bool keepPlugInData); // Called once per demo processed.
-	bool GetDataInfo(u32 demoIdx, u32 plugInId, void** buffer, u32* count);
+	bool CopyBuffersStruct(u32 plugInId, void* buffersStruct);
+	void UpdatePlugInBufferStructs();
 	u32  GetDemoCount() const { return DemoCount; }
 	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
 
@@ -56,8 +57,8 @@ public:
 	udtModifierContext ModifierContext;
 	udtJSONWriterContext JSONWriterContext;
 	udtVMLinearAllocator PlugInAllocator;
-	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
-	udtVMArrayWithAlloc<u32> InputIndices;
+	udtVMArray<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
+	udtVMArray<u32> InputIndices;
 	udtVMLinearAllocator PlugInTempAllocator;
 #if defined(UDT_WINDOWS)
 	udtReadOnlySequentialFileStream DemoReader;

@@ -585,13 +585,13 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
-	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
-	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart.String, index + 1, udtGetFileExtensionByProtocol(protocol));
+	udtString newFilePath = udtString::NewEmpty(tempAllocator, UDT_MAX_PATH_LENGTH);
+	sprintf(newFilePath.GetWritePtr(), "%s_SPLIT_%u%s", outputFilePathStart.GetPtr(), index + 1, udtGetFileExtensionByProtocol(protocol));
 
 	context.LogInfo("Writing demo %s...", newFilePath);
 
 	udtFileStream outputFile;
-	if(!outputFile.Open(newFilePath, udtFileOpenMode::Write))
+	if(!outputFile.Open(newFilePath.GetPtr(), udtFileOpenMode::Write))
 	{
 		context.LogError("Could not open file");
 		return false;
@@ -765,7 +765,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		{
 			context->Parser.AddCut(
 				info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, 
-				&CallbackCutDemoFileStreamCreation, NULL, &streamInfo);
+				&CallbackCutDemoFileNameCreation, NULL, &streamInfo);
 		}
 	}
 
@@ -844,15 +844,14 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
+UDT_API(s32) udtGetContextPlugInBuffers(udtParserContext* context, u32 plugInId, void* buffersStruct)
 {
-	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||
-	   demoIdx >= context->DemoCount)
+	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffersStruct == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!context->GetDataInfo(demoIdx, plugInId, buffer, count))
+	if(!context->CopyBuffersStruct(plugInId, buffersStruct))
 	{
 		return udtErrorCode::OperationFailed;
 	}

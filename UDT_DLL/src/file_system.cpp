@@ -22,30 +22,17 @@ bool IsValidDirectory(const char* folderPath)
 	return (attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-bool GetDirectoryFileList(const udtFileListQuery& query)
+bool GetDirectoryFileList(udtFileListQuery& query)
 {
-	if(query.Files == NULL || 
-	   query.FolderPath == NULL || 
-	   query.PersistAllocator == NULL || 
-	   query.TempAllocator == NULL)
-	{
-		return false;
-	}
-
-	if(query.Recursive && query.FolderArrayAllocator == NULL)
-	{
-		return false;
-	}
-
-	const udtString folderPath = udtString::NewConstRef(query.FolderPath);
+	const udtString folderPath = query.FolderPath;
 
 	udtString queryPath;
-	if(!udtPath::Combine(queryPath, *query.TempAllocator, folderPath, "*"))
+	if(!udtPath::Combine(queryPath, query.TempAllocator, folderPath, "*"))
 	{
 		return false;
 	}
 
-	wchar_t* const wideQueryPath = udtString::ConvertToUTF16(*query.TempAllocator, queryPath);
+	wchar_t* const wideQueryPath = udtString::ConvertToUTF16(query.TempAllocator, queryPath);
 	WIN32_FIND_DATAW findData;
 	const HANDLE findHandle = FindFirstFileW(wideQueryPath, &findData);
 	if(findHandle == INVALID_HANDLE_VALUE)
@@ -53,44 +40,43 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		return false;
 	}
 
-	udtVMArray<const char*> folders;
+	udtVMArray<udtString> folders;
 	if(query.Recursive)
 	{
-		query.FolderArrayAllocator->Clear();
-		folders.SetAllocator(*query.FolderArrayAllocator);
+		folders.Init(UDT_KB(4), "FileListQuery::FoldersArray");
 	}
 	do
 	{
 		// @NOTE: we can't create a temp alloc scope here because of
 		// allocations necessary for sub-folder paths.
 
-		udtString fileName = udtString::NewFromUTF16(*query.TempAllocator, findData.cFileName);
+		udtString fileName = udtString::NewFromUTF16(query.TempAllocator, findData.cFileName);
 		if((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
 		{
 			if(query.Recursive && !udtString::Equals(fileName, ".") && !udtString::Equals(fileName, "..") != 0)
 			{
-				folders.Add(fileName.String);
+				folders.Add(fileName);
 			}
 			continue;
 		}
 
 		const u64 fileSize = (u64)findData.nFileSizeLow + ((u64)findData.nFileSizeHigh << 32);
-		if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.String, fileSize, query.UserData))
+		if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.GetPtr(), fileSize, query.UserData))
 		{
 			continue;
 		}
 
 		udtString filePath;
-		if(!udtPath::Combine(filePath, *query.TempAllocator, folderPath, fileName))
+		if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, fileName))
 		{
 			return false;
 		}
 
 		udtFileInfo info;
-		info.Name = AllocateString(*query.PersistAllocator, fileName.String);
-		info.Path = AllocateString(*query.PersistAllocator, filePath.String);
+		info.Name = udtString::NewCloneFromRef(query.PersistAllocator, fileName);
+		info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
 		info.Size = fileSize;
-		query.Files->Add(info);
+		query.Files.Add(info);
 	}
 	while(FindNextFileW(findHandle, &findData) != 0);
 
@@ -101,14 +87,13 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		for(u32 i = 0, count = folders.GetSize(); i < count; ++i)
 		{
 			udtString subFolderPath;
-			if(!udtPath::Combine(subFolderPath, *query.TempAllocator, folderPath, folders[i]))
+			if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, folders[i]))
 			{
 				return false;
 			}
 
-			udtFileListQuery newQuery = query;
-			newQuery.FolderPath = subFolderPath.String;
-			if(!GetDirectoryFileList(newQuery))
+			query.FolderPath = subFolderPath;
+			if(!GetDirectoryFileList(query))
 			{
 				return false;
 			}

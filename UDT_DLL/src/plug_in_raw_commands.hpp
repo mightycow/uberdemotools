@@ -13,7 +13,9 @@ public:
 	~udtParserPlugInRawCommands();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override;
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
@@ -24,6 +26,7 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInRawCommands);
 
 	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataRawCommand> _commands; // The final array.
+	udtVMArray<udtParseDataRawCommand> _commands;
+	udtParseDataRawCommandBuffers _buffers;
 	s32 _gameStateIndex;
 };

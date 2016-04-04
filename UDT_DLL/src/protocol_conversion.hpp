@@ -4,14 +4,14 @@
 #include "common.hpp"
 #include "linear_allocator.hpp"
 #include "math.hpp"
+#include "string.hpp"
 
 
 struct udtConfigStringConversion
 {
-	const char* String; // Always valid.
-	u32 StringLength;   // Always valid.
-	s32 Index;          // Negative if needs to be dropped.
-	bool NewString;     // True when a new string was created.
+	udtString String; // Always valid.
+	s32 Index;        // Negative if needs to be dropped.
+	bool NewString;   // True when a new string was created.
 };
 
 struct udtProtocolConverter

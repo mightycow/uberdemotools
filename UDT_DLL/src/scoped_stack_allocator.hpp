@@ -16,7 +16,7 @@ private:
 	struct Finalizer
 	{
 		void (*Destructor)(void*);
-		Finalizer* Next;
+		uptr Next;
 	};
 
 public:
@@ -26,27 +26,30 @@ public:
 
 	void SetAllocator(udtVMLinearAllocator& linearAllocator);
 
-	u8* Allocate(uptr byteCount);
-
 	template<typename T>
-	T* NewObject()
+	uptr NewObject()
 	{
 		// Allocate and construct.
-		Finalizer* const finalizer = (Finalizer*)_linearAllocator->Allocate((uptr)sizeof(Finalizer));
-		T* const result = new (_linearAllocator->Allocate(sizeof(T))) T;
+		const uptr offset = _linearAllocator->Allocate((uptr)sizeof(Finalizer) + (uptr)sizeof(T));
+		Finalizer* const finalizer = (Finalizer*)_linearAllocator->GetAddressAt(offset);
+		new (finalizer + 1) T;
 
 		// Register the finalizer.
 		finalizer->Destructor = &DestructorCall<T>;
 		finalizer->Next = _finalizerList;
-		_finalizerList = finalizer;
+		_finalizerList = offset;
 
-		return result;
+		return offset + (uptr)sizeof(Finalizer);
 	}
 
 	template<typename T>
-	T* NewPOD()
+	uptr NewPOD()
 	{
-		return new (_linearAllocator->Allocate(sizeof(T))) T;
+		const uptr offset = _linearAllocator->Allocate(sizeof(T));
+
+		new (_linearAllocator->GetAddressAt(offset)) T;
+
+		return offset;
 	}
 
 private:
@@ -55,6 +58,6 @@ private:
 	u8* GetObjectFromFinalizer(Finalizer* finalizer);
 
 	udtVMLinearAllocator* _linearAllocator;
-	Finalizer* _finalizerList;
+	uptr _finalizerList;
 	uptr _oldUsedByteCount;
 };

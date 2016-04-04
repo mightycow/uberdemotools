@@ -13,7 +13,9 @@ public:
 	~udtParserPlugInCaptures();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override;
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
@@ -25,8 +27,8 @@ private:
 
 	// Teams: 0=red, 1=blue.
 
-	const char* GetPlayerName(s32 playerIndex, udtBaseParser& parser);
-	bool        WasFlagPickedUpInBase(u32 teamIndex);
+	udtString GetPlayerName(s32 playerIndex, udtBaseParser& parser);
+	bool      WasFlagPickedUpInBase(u32 teamIndex);
 
 	struct PlayerInfo
 	{
@@ -49,8 +51,9 @@ private:
 	};
 
 	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataCapture> _captures; // The final array.
-	const char* _mapName;
+	udtVMArray<udtParseDataCapture> _captures;
+	udtParseDataCaptureBuffers _buffers;
+	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
 	PlayerInfo _players[64];

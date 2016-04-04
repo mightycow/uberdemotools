@@ -6,14 +6,16 @@
 
 
 #define    UDT_MEMORY_PAGE_SIZE    4096
+#define    UDT_KB(x)               (x << 10)
+#define    UDT_MB(x)               (x << 20)
+#define    UDT_GB(x)               (x << 30)
 
 
 //
-// A virtual-memory based linear allocator.
-// It pointer bumps like any linear allocator, 
-// but can grow and never needs to move old allocations.
+// A linear allocator using virtual memory to avoid 
+// relocating data too often when growing.
 //
-struct udtVMLinearAllocator// : udtAllocator
+struct udtVMLinearAllocator
 {
 public:
 	struct Stats
@@ -32,7 +34,8 @@ public:
 	~udtVMLinearAllocator();
 
 	bool        Init(uptr reservedByteCount, const char* name);
-	u8*         Allocate(uptr byteCount);
+	uptr        Allocate(uptr byteCount);
+	u8*         AllocateAndGetAddress(uptr byteCount);
 	void        Pop(uptr byteCount);
 	void        Clear(); // Only resets the index to the first free byte.
 	void        Purge(); // De-commit all unused memory pages.
@@ -44,18 +47,27 @@ public:
 	u8*         GetStartAddress() const;
 	u8*         GetCurrentAddress() const;
 	const char* GetName() const;
+	u32         GetResizeCount() const;
+	const char* GetStringAt(uptr offset) const;
+	char*       GetWriteStringAt(uptr offset) const;
+	u8*         GetAddressAt(uptr offset) const;
+	void        DisableReserveOverride();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMLinearAllocator);
 
-	void    Destroy();
+	uptr AllocateWithRelocation(uptr byteCount);
+	uptr ComputeNewReservedByteCount();
+	void Destroy();
 
 	udtIntrusiveListNode _listNode;
-	u8* _addressSpaceStart;
-	uptr _firstFreeByteIndex; // In other words: the used byte count.
+	uptr _usedByteCount; // The index of the first free byte, if any.
 	uptr _reservedByteCount;
 	uptr _commitByteCountGranularity;
 	uptr _committedByteCount;
 	uptr _peakUsedByteCount;
+	u8* _addressSpaceStart;
 	const char* _name;
+	u32 _resizeCount;
+	bool _enableReserveOverride;
 };

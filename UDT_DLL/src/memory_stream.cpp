@@ -130,12 +130,15 @@ u32 udtVMMemoryStream::Write(const void* srcBuff, u32 elementSize, u32 count)
 	const u32 byteCount = elementSize * count;
 	_buffer.Resize(oldBufferLength + byteCount);
 
-	if(_offset != oldBufferLength)
+	const u32 offset = _offset;
+	u8* const writeAddress = _buffer.GetStartAddress() + offset;
+	if(offset != oldBufferLength)
 	{
-		memmove(_buffer.GetStartAddress() + _offset, _buffer.GetStartAddress() + oldBufferLength, (size_t)(oldBufferLength - _offset));
+		// We're not appending, so move some of the data up to make room for what we're about to copy.
+		memmove(writeAddress, writeAddress + byteCount, (size_t)(oldBufferLength - offset));
 	}
 
-	memcpy(_buffer.GetStartAddress() + _offset, srcBuff, (size_t)byteCount);
+	memcpy(writeAddress, srcBuff, (size_t)byteCount);
 	_offset += byteCount;
 
 	return count;

@@ -177,13 +177,13 @@ Macro arguments:
 4. plug-in output class type (for reading back the results of Analyzer plug-ins)
 */
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,             "chat messages",      udtParserPlugInChat,             udtParseDataChat) \
-	N(GameState,        "game states",        udtParserPlugInGameState,        udtParseDataGameState) \
-	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituary) \
-	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStats) \
-	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommand) \
-	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigString) \
-	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCapture)
+	N(Chat,             "chat messages",      udtParserPlugInChat,             udtParseDataChatBuffers) \
+	N(GameState,        "game states",        udtParserPlugInGameState,        udtParseDataGameStateBuffers) \
+	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituaryBuffers) \
+	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStatsBuffers) \
+	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommandBuffers) \
+	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigStringBuffers) \
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -1232,30 +1232,49 @@ extern "C"
 	}
 	udtProtocolConversionArg;
 
+	/* Used when extracting analysis data. */
+	typedef struct udtParseDataBufferRange_s
+	{
+		/* Index of the first item in the buffer. */
+		u32 FirstIndex;
+
+		/* The number of items starting at index FirstIndex. */
+		u32 Count;
+	}
+	udtParseDataBufferRange;
+
 	typedef struct udtChatEventData_s
 	{
-		/* All C string pointers can be NULL if extraction failed. */
+		/* String offset. The original, unmodified command string. */
+		u32 OriginalCommand;
 
-		/* The original, unmodified command string. */
-		const char* OriginalCommand;
+		/* String length. */
+		u32 OriginalCommandLength;
 
-		/* The player's active clan name at the time the demo was recorded. */
+		/* String offset. The player's active clan name at the time the demo was recorded. */
 		/* Not available in protocol version 68. */
-		/* Points to a null string if not available. */
-		const char* ClanName;
+		u32 ClanName;
 
-		/* The player's name. */
-		const char* PlayerName;
+		/* String length. */
+		u32 ClanNameLength;
 
-		/* The message itself. */
-		const char* Message;
+		/* String offset. The player's name. */
+		u32 PlayerName;
 
-		/* For team messages, where the player was. */
-		/* May be NULL if unavailable. */
-		const char* Location;
+		/* String length. */
+		u32 PlayerNameLength;
 
-		/* Ignore this. */
-		const char* Reserved1;
+		/* String offset. The message itself. */
+		u32 Message;
+
+		/* String length. */
+		u32 MessageLength;
+
+		/* String offset. For team messages, where the player was. */
+		u32 Location;
+
+		/* String length. */
+		u32 LocationLength;
 	}
 	udtChatEventData;
 
@@ -1283,6 +1302,30 @@ extern "C"
 	}
 	udtParseDataChat;
 
+	/* Complete chat data for all demos in a context. */
+	typedef struct udtParseDataChatBuffers_s
+	{
+		/* The chat messages. */
+		const udtParseDataChat* ChatMessages;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of ChatMessages to use. */
+		const udtParseDataBufferRange* ChatMessageRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the ChatMessages array. */
+		u32 ChatMessageCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataChatBuffers;
+
 	typedef struct udtMatchInfo_s
 	{
 		/* The time between the warm-up end and the match start is the countdown phase, */
@@ -1307,20 +1350,29 @@ extern "C"
 
 	typedef struct udtGameStateKeyValuePair_s
 	{
-		/* The name of the config string variable. */
-		const char* Name;
+		/* String offset. The name of the config string variable. */
+		u32 Name;
 
-		/* The value of the config string variable. */
-		const char* Value;
+		/* String length. */
+		u32 NameLength;
+
+		/* String offset. The value of the config string variable. */
+		u32 Value;
+
+		/* String length. */
+		u32 ValueLength;
 	}
 	udtGameStateKeyValuePair;
 
 	typedef struct udtGameStatePlayerInfo_s
 	{
-		/* The player's name without color codes. */
+		/* String offset. The player's name without color codes. */
 		/* If QL, the only name. */
 		/* If Q3, may have renamed later. */
-		const char* FirstName;
+		u32 FirstName;
+
+		/* String length. */
+		u32 FirstNameLength;
 
 		/* The client number. */
 		/* Range: [0;63]. */
@@ -1340,25 +1392,28 @@ extern "C"
 
 	typedef struct udtParseDataGameState_s
 	{
-		/* Pointer to an array of match information. */
-		const udtMatchInfo* Matches;
+		/* String offset. Name of the player who recorded the demo without color codes. */
+		u32 DemoTakerName;
 
-		/* Pointer to an array of string key/value pairs. */
-		const udtGameStateKeyValuePair* KeyValuePairs;
+		/* String length. */
+		u32 DemoTakerNameLength;
 
-		/* Pointer to an array of player information. */
-		const udtGameStatePlayerInfo* Players;
+		/* The index of the first match in udtParseDataGameStateBuffers::Matches. */
+		u32 FirstMatchIndex;
 
-		/* Name of the player who recorded the demo without color codes. */
-		const char* DemoTakerName;
-
-		/* Number of elements in the array pointed to by the Matches pointer. */
+		/* The match count for this gamestate. */
 		u32 MatchCount;
 
-		/* Number of elements in the array pointed to by the KeyValuePairs pointer. */
+		/* The index of the first pair in udtParseDataGameStateBuffers::KeyValuePairs. */
+		u32 FirstKeyValuePairIndex;
+
+		/* The key/value pair count for this gamestate. */
 		u32 KeyValuePairCount;
 
-		/* Number of elements in the array pointed to by the Players pointer. */
+		/* The index of the first player in udtParseDataGameStateBuffers::Players. */
+		u32 FirstPlayerIndex;
+
+		/* The player count for this gamestate. */
 		u32 PlayerCount;
 
 		/* Index the player who recorded the demo. */
@@ -1376,22 +1431,67 @@ extern "C"
 	}
 	udtParseDataGameState;
 
-	typedef struct udtParseDataObituary_s
+	/* Complete gamestate data for all demos in a context. */
+	typedef struct udtParseDataGameStateBuffers_s
 	{
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* AttackerName;
+		/* The gamestate descriptors. */
+		const udtParseDataGameState* GameStates;
 
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* TargetName;
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of GameStates to use. */
+		const udtParseDataBufferRange* GameStateRanges;
 
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* MeanOfDeathName;
+		/* The match descriptors. */
+		const udtMatchInfo* Matches;
+
+		/* The string key/value pairs from gamestate config strings 0 and 1. */
+		const udtGameStateKeyValuePair* KeyValuePairs;
+
+		/* The player descriptors. */
+		const udtGameStatePlayerInfo* Players;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* The length of the GameStates array. */
+		u32 GameStateCount;
+
+		/* The length of the Matches array. */
+		u32 MatchCount;
+
+		/* The length of the KeyValuePairs array. */
+		u32 KeyValuePairCount;
+
+		/* The length of the Players array. */
+		u32 PlayerCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
 
 		/* Ignore this. */
-		const char* Reserved1;
+		u32 Reserved1;
+	}
+	udtParseDataGameStateBuffers;
+
+	typedef struct udtParseDataObituary_s
+	{
+		/* String offset. The name of the attacker or another string. */
+		u32 AttackerName;
+
+		/* String length. */
+		u32 AttackerNameLength;
+
+		/* String offset. The name of the attacker or another string. */
+		u32 TargetName;
+
+		/* String length. */
+		u32 TargetNameLength;
+
+		/* String offset. The name of the attacker or another string. */
+		u32 MeanOfDeathName;
+
+		/* String length. */
+		u32 MeanOfDeathNameLength;
 
 		/* The index of the last gamestate message after which this death event occurred. */
 		/* Negative if invalid or not available. */
@@ -1421,22 +1521,52 @@ extern "C"
 		/* Of type udtTeam::Id. */
 		/* Negative if not available. */
 		s32 TargetTeamIdx;
-		
+
 		/* Ignore this. */
-		s32 Reserved2;
+		s32 Reserved1;
 	}
 	udtParseDataObituary;
 
+	/* Complete obituary data for all demos in a context. */
+	typedef struct udtParseDataObituaryBuffers_s
+	{
+		/* The obituary descriptors. */
+		const udtParseDataObituary* Obituaries;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of Obituaries to use. */
+		const udtParseDataBufferRange* ObituaryRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Obituaries array. */
+		u32 ObituaryCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataObituaryBuffers;
+
 	typedef struct udtPlayerStats_s
 	{
-		/* The player's name at the time the stats were given by the server. */
-		/* May be NULL. */
-		const char* Name;
+		/* String offset. The player's name at the time the stats were given by the server. */
+		/* May be invalid. */
+		u32 Name;
 
-		/* The player's name at the time the stats were given by the server. */
+		/* String length. */
+		u32 NameLength;
+
+		/* String offset. The player's name at the time the stats were given by the server. */
 		/* This version has color codes stripped out for clarity. */
-		/* May be NULL. */
-		const char* CleanName;
+		/* May be invalid. */
+		u32 CleanName;
+
+		/* String length. */
+		u32 CleanNameLength;
 	}
 	udtPlayerStats;
 
@@ -1448,49 +1578,60 @@ extern "C"
 		/* A bit mask describing which players are valid. */
 		u64 ValidPlayers;
 
-		/* A bit set describing which team stats fields are valid. */
-		/* Array length: popcnt(ValidTeams) * UDT_TEAM_STATS_MASK_BYTE_COUNT bytes. */
-		/* See udtTeamStatsField::Id. */
-		const u8* TeamFlags;
+		/* String offset. */
+		u32 ModVersion;
 
-		/* A bit set describing which players stats fields are valid. */
-		/* Array length: popcnt(ValidPlayers) * UDT_PLAYER_STATS_MASK_BYTE_COUNT bytes. */
-		/* See udtPlayerStatsField::Id. */
-		const u8* PlayerFlags;
+		/* String length. */
+		u32 ModVersionLength;
 
-		/* The team stats. */
-		/* Array length: popcnt(RedTeam.Flags) + popcnt(BlueTeam.Flags) */
-		const s32* TeamFields;
+		/* String offset. */
+		u32 MapName;
 
-		/* The player stats. */
-		/* Array length: popcnt(Player1.Flags) + ... + popcnt(PlayerN.Flags) */
-		const s32* PlayerFields;
+		/* String length. */
+		u32 MapNameLength;
 
-		/* The length of the array is the number of bits set in ValidPlayers. */
-		/* The player's client numbers will correspond to the indices of the bits set in ValidPlayers. */
-		const udtPlayerStats* PlayerStats;
+		/* String offset. Name of the first place player or team name. */
+		u32 FirstPlaceName;
 
-		/* NULL if nothing was found. */
-		const char* ModVersion;
+		/* String length. */
+		u32 FirstPlaceNameLength;
 
-		/* NULL if nothing was found. */
-		const char* Map;
+		/* String offset. Name of the second place player or team name. */
+		u32 SecondPlaceName;
 
-		/* Name of the first place player or team name. */
-		const char* FirstPlaceName;
+		/* String length. */
+		u32 SecondPlaceNameLength;
 
-		/* Name of the second place player or team name. */
-		const char* SecondPlaceName;
+		/* String offset. Custom red team name. */
+		u32 CustomRedName;
 
-		/* Custom red team name or NULL if not available. */
-		const char* CustomRedName;
+		/* String length. */
+		u32 CustomRedNameLength;
 
-		/* Custom blue team name or NULL if not available. */
-		const char* CustomBlueName;
+		/* String offset. Custom blue team name. */
+		u32 CustomBlueName;
 
-		/* Start and end times for each time-out. */
-		/* Order: start0, end0, start1, end1, etc. */
-		const s32* TimeOutStartAndEndTimes;
+		/* String length. */
+		u32 CustomBlueNameLength;
+
+		/* The index of the first time-out in udtParseDataStatsBuffers::TimeOutStartAndEndTimes. */
+		/* It is the index into the s32 integers pair array, not the s32 integers array. */
+		u32 FirstTimeOutRangeIndex;
+
+		/* The index of the first team flag in udtParseDataStatsBuffers::TeamFlags. */
+		u32 FirstTeamFlagIndex;
+
+		/* The index of the first player flag in udtParseDataStatsBuffers::PlayerFlags. */
+		u32 FirstPlayerFlagIndex;
+
+		/* The index of the first team field in udtParseDataStatsBuffers::TeamFields. */
+		u32 FirstTeamFieldIndex;
+
+		/* The index of the first player field in udtParseDataStatsBuffers::PlayerFields. */
+		u32 FirstPlayerFieldIndex;
+
+		/* The index of the first player stats descriptor in udtParseDataStatsBuffers::PlayerStats. */
+		u32 FirstPlayerStatsIndex;
 
 		/* Of type udtGameType::Id. */
 		/* Defaults to (u32)-1 when invalid or uninitialized. */
@@ -1575,13 +1716,87 @@ extern "C"
 	}
 	udtParseDataStats;
 
+	/* Complete match statistics data for all demos in a context. */
+	typedef struct udtParseDataStatsBuffers_s
+	{
+		/* The match statistics descriptors. */
+		const udtParseDataStats* MatchStats;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of MatchStats to use. */
+		const udtParseDataBufferRange* MatchStatsRanges;
+
+		/* Start and end times for each time-out. */
+		/* Order: start0, end0, start1, end1, etc. */
+		const s32* TimeOutStartAndEndTimes;
+
+		/* A bit set describing which team stats fields are valid. */
+		/* Array length: popcnt(ValidTeams) * UDT_TEAM_STATS_MASK_BYTE_COUNT bytes. */
+		/* See udtTeamStatsField::Id. */
+		const u8* TeamFlags;
+
+		/* A bit set describing which players stats fields are valid. */
+		/* Array length: popcnt(ValidPlayers) * UDT_PLAYER_STATS_MASK_BYTE_COUNT bytes. */
+		/* See udtPlayerStatsField::Id. */
+		const u8* PlayerFlags;
+
+		/* The team stats. */
+		/* Array length: popcnt(RedTeam.Flags) + popcnt(BlueTeam.Flags) */
+		const s32* TeamFields;
+
+		/* The player stats. */
+		/* Array length: popcnt(Player1.Flags) + ... + popcnt(PlayerN.Flags) */
+		const s32* PlayerFields;
+
+		/* The length of the array is the number of bits set in ValidPlayers. */
+		/* The player's client numbers will correspond to the indices of the bits set in ValidPlayers. */
+		const udtPlayerStats* PlayerStats;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The match count for this match statistics descriptor. */
+		u32 MatchCount;
+
+		/* The time-out range count for this match statistics descriptor (i.e. the number of s32 values over 2). */
+		u32 TimeOutRangeCount;
+
+		/* The team flag count for this match statistics descriptor. */
+		u32 TeamFlagCount;
+
+		/* The player flag count for this match statistics descriptor. */
+		u32 PlayerFlagCount;
+
+		/* The team field count for this match statistics descriptor. */
+		u32 TeamFieldCount;
+
+		/* The player field count for this match statistics descriptor. */
+		u32 PlayerFieldCount;
+
+		/* The player statistics count for this match statistics descriptor. */
+		u32 PlayerStatsCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataStatsBuffers;
+
 	typedef struct udtParseDataRawCommand_s
 	{
-		/* The raw command, as it was sent from the server. */
-		const char* RawCommand;
+		/* String offset. The raw command, as it was sent from the server. */
+		u32 RawCommand;
 
-		/* The command with no color codes etc. */
-		const char* CleanCommand;
+		/* String length. */
+		u32 RawCommandLength;
+
+		/* String offset. The command with no color codes etc. */
+		u32 CleanCommand;
+
+		/* String length. */
+		u32 CleanCommandLength;
 
 		/* The time at which the server command was sent from the client. */
 		s32 ServerTimeMs;
@@ -1592,13 +1807,43 @@ extern "C"
 	}
 	udtParseDataRawCommand;
 
+	/* Complete server-to-client command data for all demos in a context. */
+	typedef struct udtParseDataRawCommandBuffers_s
+	{
+		/* The command descriptors. */
+		const udtParseDataRawCommand* Commands;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of CommandRanges to use. */
+		const udtParseDataBufferRange* CommandRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Commands array. */
+		u32 CommandCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataRawCommandBuffers;
+
 	typedef struct udtParseDataRawConfigString_s
 	{
-		/* The raw config string, as it was sent from the server. */
-		const char* RawConfigString;
+		/* String Offset. The raw config string, as it was sent from the server. */
+		u32 RawConfigString;
 
-		/* The config string with no color codes etc. */
-		const char* CleanConfigString;
+		/* String length. */
+		u32 RawConfigStringLength;
+
+		/* String Offset. The config string with no color codes etc. */
+		u32 CleanConfigString;
+
+		/* String length. */
+		u32 CleanConfigStringLength;
 
 		/* The index of the config string. */
 		u32 ConfigStringIndex;
@@ -1608,6 +1853,30 @@ extern "C"
 		s32 GameStateIndex;
 	}
 	udtParseDataRawConfigString;
+
+	/* Complete config string data for all demos in a context. */
+	typedef struct udtParseDataRawConfigStringBuffers_s
+	{
+		/* The config string descriptors. */
+		const udtParseDataRawConfigString* ConfigStrings;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of ConfigStringRanges to use. */
+		const udtParseDataBufferRange* ConfigStringRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the ConfigStrings array. */
+		u32 ConfigStringCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataRawConfigStringBuffers;
 
 #if defined(__cplusplus)
 	struct udtParseDataCaptureFlags
@@ -1623,11 +1892,17 @@ extern "C"
 
 	typedef struct udtParseDataCapture_s
 	{
-		/* Name of the map. Can't be NULL. */
-		const char* MapName;
+		/* String offset. Name of the map. */
+		u32 MapName;
 
-		/* Name of the player who capped. */
-		const char* PlayerName;
+		/* String length. */
+		u32 MapNameLength;
+
+		/* String offset. Name of the player who capped. */
+		u32 PlayerName;
+
+		/* String length. */
+		u32 PlayerNameLength;
 
 		/* The index of the gamestate message this config string was in. */
 		/* Negative if invalid or not available. */
@@ -1650,6 +1925,30 @@ extern "C"
 		s32 PlayerIndex;
 	}
 	udtParseDataCapture;
+
+	/* Complete flag capture data for all demos in a context. */
+	typedef struct udtParseDataCaptureBuffers_s
+	{
+		/* The flag capture descriptors. */
+		const udtParseDataCapture* Captures;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of CaptureRanges to use. */
+		const udtParseDataBufferRange* CaptureRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Captures array. */
+		u32 CaptureCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataCaptureBuffers;
 
 	typedef struct udtTimeShiftArg_s
 	{
@@ -1762,9 +2061,10 @@ extern "C"
 	/* The maximum amount of demos merged (i.e. the maximum value of fileCount) is UDT_MAX_MERGE_DEMO_COUNT. */
 	UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, u32 fileCount);
 
-	/* Gets the address and element count for the requested parse data type. */
-	/* The "plugInId" argument is of type udtParserPlugIn::Id. */
-	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count);
+	/* For a given plug-in id, gets the complete buffer descriptor table for all demos in the context. */
+	/* The buffersStruct argument points to a data structure of type udtParseData*Buffers which corresponds to the plug-in type. */
+	/* All strings are UTF-8 encoded and string lengths represent the number of bytes (not characters) excluding the terminating NULL byte. */
+	UDT_API(s32) udtGetContextPlugInBuffers(udtParserContext* context, u32 plugInId, void* buffersStruct);
 
 	/*
 	The configurable API for fine-grained task selection.

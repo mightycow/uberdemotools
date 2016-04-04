@@ -59,7 +59,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Get file sizes and make sure we have enough data to process
 	// to even consider launching new threads.
-	udtVMArrayWithAlloc<FileInfo> files((uptr)sizeof(FileInfo) * (uptr)fileCount, "DemoThreadAllocator::Process::FilesArray");
+	udtVMArray<FileInfo> files((uptr)sizeof(FileInfo) * (uptr)fileCount, "DemoThreadAllocator::Process::FilesArray");
 	u64 totalByteCount = 0;
 	files.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -250,6 +250,8 @@ static void ThreadFunction(void* userData)
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
 	}
+
+	data->Context->UpdatePlugInBufferStructs();
 	
 	if(data->Shared->ParseInfo->PerformanceStats != NULL)
 	{
@@ -304,7 +306,7 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 
 	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	bool success = true;
-	udtVMArrayWithAlloc<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
+	udtVMArray<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
 	threads.Resize(threadCount);
 	for(u32 i = 0; i < threadCount; ++i)
 	{

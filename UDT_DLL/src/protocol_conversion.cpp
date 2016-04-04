@@ -215,7 +215,7 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 {
 	const udtString separator = udtString::NewConstRef("\\");
 	result = udtString::NewEmpty(allocator, BIG_INFO_STRING);
-	const char* key = input.String + 1;
+	const char* key = input.GetPtr() + 1;
 	const char* value = NULL;
 	for(;;)
 	{
@@ -235,7 +235,7 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 		const char* sepBeforeNextKey = strchr(value, '\\');
 		if(sepBeforeNextKey == NULL)
 		{
-			sepBeforeNextKey = input.String + input.Length;
+			sepBeforeNextKey = input.GetPtr() + input.GetLength();
 			done = true;
 		}
 
@@ -294,8 +294,7 @@ void udtProtocolConverterIdentity::ConvertConfigString(udtConfigStringConversion
 {
 	result.NewString = false;
 	result.Index = inIndex;
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 }
 
 void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
@@ -340,16 +339,14 @@ void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }
 
@@ -395,16 +392,14 @@ void udtProtocolConverter73to91::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }
 
@@ -447,16 +442,14 @@ void udtProtocolConverter48to68::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex48to68(inIndex, _protocolNumber);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 	
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 
 		s32 protocol;
 		if(ParseConfigStringValueInt(protocol, allocator, "protocol", configString))
@@ -594,15 +587,13 @@ void udtProtocolConverter3to68::ConvertConfigString(udtConfigStringConversion& r
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex3to68(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }

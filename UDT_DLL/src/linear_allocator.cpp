@@ -67,12 +67,14 @@ void udtVMLinearAllocator::GetThreadAllocators(u32& allocatorCount, udtVMLinearA
 udtVMLinearAllocator::udtVMLinearAllocator()
 {
 	_addressSpaceStart = NULL;
-	_firstFreeByteIndex = 0;
+	_usedByteCount = 0;
 	_reservedByteCount = 0;
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
 	_peakUsedByteCount = 0;
 	_name = NULL;
+	_resizeCount = 0;
+	_enableReserveOverride = true;
 
 	AllocatorTracker.RegisterAllocator(_listNode);
 }
@@ -90,6 +92,12 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	{
 		return false;
 	}
+
+	if(_enableReserveOverride && reservedByteCount > UDT_KB(64))
+	{
+		// @TODO: @FIXME:
+		reservedByteCount = UDT_KB(64);
+	}
 	
 	const uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE;
 
@@ -97,13 +105,10 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	// If it is, leave it as is. If it's not, bump it up to the next multiple.
 	reservedByteCount = (reservedByteCount + commitByteCountGranularity - 1) & (~(commitByteCountGranularity - 1));
 
-	// Make sure we reserve at least 2 memory pages while still respecting the commit granularity.
-	if(reservedByteCount < (u32)(UDT_MEMORY_PAGE_SIZE * 2))
-	{
-		reservedByteCount += commitByteCountGranularity;
-	}
+	// Make sure we reserve at least 1 memory page.
+	reservedByteCount = udt_max(reservedByteCount, (uptr)UDT_MEMORY_PAGE_SIZE);
 
-	UDT_ASSERT_OR_FATAL(reservedByteCount >= (u32)(UDT_MEMORY_PAGE_SIZE * 2));
+	UDT_ASSERT_OR_FATAL(reservedByteCount >= (uptr)UDT_MEMORY_PAGE_SIZE);
 
 	u8* const data = (u8*)VirtualMemoryReserve(reservedByteCount);
 	if(data == NULL)
@@ -113,7 +118,7 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	}
 	
 	_addressSpaceStart = data;
-	_firstFreeByteIndex = 0;
+	_usedByteCount = 0;
 	_reservedByteCount = reservedByteCount;
 	_committedByteCount = 0;
 	_commitByteCountGranularity = commitByteCountGranularity;
@@ -122,7 +127,7 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	return true;
 }
 
-u8* udtVMLinearAllocator::Allocate(uptr byteCount)
+uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 {
 	UDT_ASSERT_OR_FATAL_MSG(_addressSpaceStart != NULL, "An allocator was not properly initialized.");
 
@@ -130,54 +135,120 @@ u8* udtVMLinearAllocator::Allocate(uptr byteCount)
 	byteCount = (byteCount + 3) & (~3);
 
 	// We didn't reserve enough address space?
-	UDT_ASSERT_OR_FATAL_MSG(_firstFreeByteIndex + byteCount <= _reservedByteCount, 
-							"Not enough address space was reserved in allocator '%s'.", SAFE_NAME);
+	if(_usedByteCount + byteCount > _reservedByteCount)
+	{
+		return AllocateWithRelocation(byteCount);
+	}
 
-	if(_firstFreeByteIndex + byteCount > _committedByteCount)
+	if(_usedByteCount + byteCount > _committedByteCount)
 	{
 		// How many more commit chunks do we need?
-		const uptr neededByteCount = _firstFreeByteIndex + byteCount - _committedByteCount;
+		const uptr neededByteCount = _usedByteCount + byteCount - _committedByteCount;
 		const uptr chunkCount = (neededByteCount + _commitByteCountGranularity - 1) / _commitByteCountGranularity;
 		const uptr newByteCount = chunkCount * _commitByteCountGranularity;
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
 			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
-			return NULL;
+			return U32_MAX;
 		}
 		_committedByteCount += newByteCount;
 	}
 
-	u8* const data = _addressSpaceStart + _firstFreeByteIndex;
-	_firstFreeByteIndex += byteCount;
-	_peakUsedByteCount = udt_max(_peakUsedByteCount, _firstFreeByteIndex);
+	const uptr offset = _usedByteCount;
+	_usedByteCount += byteCount;
+	_peakUsedByteCount = udt_max(_peakUsedByteCount, _usedByteCount);
 
-	return data;
+	return offset;
+}
+
+uptr udtVMLinearAllocator::AllocateWithRelocation(uptr byteCount)
+{
+	// Reserve new address space.
+	const uptr commitByteCountGranularity = _commitByteCountGranularity;
+	uptr newReservedByteCount = udt_max(_usedByteCount + byteCount, ComputeNewReservedByteCount());
+	newReservedByteCount = (newReservedByteCount + commitByteCountGranularity - 1) & (~(commitByteCountGranularity - 1));
+	UDT_ASSERT_OR_FATAL(newReservedByteCount >= (uptr)commitByteCountGranularity);
+	u8* const data = (u8*)VirtualMemoryReserve(newReservedByteCount);
+	if(data == NULL)
+	{
+		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
+		return U32_MAX;
+	}
+
+	// Commit just enough for the new used size.
+	const uptr neededByteCount = _usedByteCount + byteCount;
+	const uptr chunkCount = (neededByteCount + commitByteCountGranularity - 1) / commitByteCountGranularity;
+	const uptr newCommitByteCount = chunkCount * commitByteCountGranularity;
+	if(!VirtualMemoryCommit(data, newCommitByteCount))
+	{
+		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
+		return U32_MAX;
+	}
+
+	// Copy the old data to the new location.
+	const uptr oldUsedByteCount = _usedByteCount;
+	if(oldUsedByteCount > 0)
+	{
+		memcpy(data, _addressSpaceStart, (size_t)oldUsedByteCount);
+	}
+	
+	// Return the old address space and pages to the system.
+	VirtualMemoryDecommitAndRelease(_addressSpaceStart, _reservedByteCount);
+	
+	// Update the members.
+	_addressSpaceStart = data;
+	_reservedByteCount = newReservedByteCount;
+	_committedByteCount = newCommitByteCount;
+	_usedByteCount += byteCount;
+	_peakUsedByteCount = udt_max(_peakUsedByteCount, _usedByteCount);
+	++_resizeCount;
+
+	return oldUsedByteCount;
+}
+
+uptr udtVMLinearAllocator::ComputeNewReservedByteCount()
+{
+	const uptr byteCount = _reservedByteCount;
+
+	if(byteCount >= UDT_KB(512))
+	{
+		return byteCount * 2;
+	}
+
+	return byteCount * 4;
+}
+
+u8* udtVMLinearAllocator::AllocateAndGetAddress(uptr byteCount)
+{
+	const uptr offset = Allocate(byteCount);
+
+	return GetStartAddress() + offset;
 }
 
 void udtVMLinearAllocator::Pop(uptr byteCount)
 {
-	if(byteCount > _firstFreeByteIndex)
+	if(byteCount > _usedByteCount)
 	{
 		return;
 	}
 
-	_firstFreeByteIndex -= byteCount;
+	_usedByteCount -= byteCount;
 }
 
 void udtVMLinearAllocator::Clear()
 {
-	_firstFreeByteIndex = 0;
+	_usedByteCount = 0;
 }
 
 void udtVMLinearAllocator::Purge()
 {
-	if(_committedByteCount - _firstFreeByteIndex < UDT_MEMORY_PAGE_SIZE)
+	if(_committedByteCount - _usedByteCount < UDT_MEMORY_PAGE_SIZE)
 	{
 		return;
 	}
 
 	const uptr pageSizeM1 = (uptr)(UDT_MEMORY_PAGE_SIZE - 1);
-	u8* const memoryToDecommit = (u8*)((uptr)(_addressSpaceStart + _firstFreeByteIndex + pageSizeM1) & (~pageSizeM1));
+	u8* const memoryToDecommit = (u8*)((uptr)(_addressSpaceStart + _usedByteCount + pageSizeM1) & (~pageSizeM1));
 	u8* const committedEnd = _addressSpaceStart + _committedByteCount;
 	const uptr byteCount = (uptr)(committedEnd - memoryToDecommit);
 	VirtualMemoryDecommit(memoryToDecommit, byteCount);
@@ -191,12 +262,12 @@ void udtVMLinearAllocator::SetCurrentByteCount(uptr byteCount)
 		return;
 	}
 
-	_firstFreeByteIndex = byteCount;
+	_usedByteCount = byteCount;
 }
 
 uptr udtVMLinearAllocator::GetCurrentByteCount() const
 {
-	return _firstFreeByteIndex;
+	return _usedByteCount;
 }
 
 uptr udtVMLinearAllocator::GetCommittedByteCount() const
@@ -221,12 +292,41 @@ u8* udtVMLinearAllocator::GetStartAddress() const
 
 u8* udtVMLinearAllocator::GetCurrentAddress() const
 {
-	return _addressSpaceStart + _firstFreeByteIndex;
+	return _addressSpaceStart + _usedByteCount;
 }
 
 const char* udtVMLinearAllocator::GetName() const
 {
 	return _name;
+}
+
+u32 udtVMLinearAllocator::GetResizeCount() const
+{
+	return _resizeCount;
+}
+
+const char* udtVMLinearAllocator::GetStringAt(uptr offset) const
+{
+	assert(offset < _usedByteCount);
+
+	return (const char*)_addressSpaceStart + offset;
+}
+
+char* udtVMLinearAllocator::GetWriteStringAt(uptr offset) const
+{
+	assert(offset < _usedByteCount);
+
+	return (char*)_addressSpaceStart + offset;
+}
+
+u8* udtVMLinearAllocator::GetAddressAt(uptr offset) const
+{
+	return _addressSpaceStart + offset;
+}
+
+void udtVMLinearAllocator::DisableReserveOverride()
+{
+	_enableReserveOverride = false;
 }
 
 void udtVMLinearAllocator::Destroy()
@@ -238,7 +338,7 @@ void udtVMLinearAllocator::Destroy()
 
 	VirtualMemoryDecommitAndRelease(_addressSpaceStart, _reservedByteCount);
 	_addressSpaceStart = NULL;
-	_firstFreeByteIndex = 0;
+	_usedByteCount = 0;
 	_reservedByteCount = 0;
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;

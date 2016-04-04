@@ -146,7 +146,7 @@ private:
 		(*runner->_progressCb)((f32)realProgress, runner->_progressUserData);
 	}
 
-	udtVMArrayWithAlloc<BatchInfo> _batches;
+	udtVMArray<BatchInfo> _batches;
 	u64 _processedByteCount;
 	u64 _totalByteCount;
 	f64 _progressBase;
