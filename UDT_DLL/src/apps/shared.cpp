@@ -178,9 +178,9 @@ static void FindExecutableFileName(const char* exeFilePath)
 	u32 slashIndex = 0;
 	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
 	if(udtString::FindLastCharacterMatch(slashIndex, exeFilePathString, '/') &&
-	   slashIndex + 1 < exeFilePathString.Length)
+	   slashIndex + 1 < exeFilePathString.GetLength())
 	{
-		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+		ExecutableFileName = exeFilePath + slashIndex + 1;
 	}
 }
 

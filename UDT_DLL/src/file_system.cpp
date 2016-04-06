@@ -126,34 +126,20 @@ bool IsValidDirectory(const char* folderPath)
 	return (status.st_mode & S_IFDIR) != 0;
 }
 
-bool GetDirectoryFileList(const udtFileListQuery& query)
+bool GetDirectoryFileList(udtFileListQuery& query)
 {
-	if(query.Files == NULL || 
-	   query.FolderPath == NULL || 
-	   query.PersistAllocator == NULL || 
-	   query.TempAllocator == NULL)
-	{
-		return false;
-	}
-
-	if(query.Recursive && query.FolderArrayAllocator == NULL)
-	{
-		return false;
-	}
-
-	DIR* const dirHandle = opendir(query.FolderPath);
+	DIR* const dirHandle = opendir(query.FolderPath.GetPtr());
 	if(dirHandle == NULL)
 	{
 		return false;
 	}
 
-	udtVMArray<const char*> folders;
+	udtVMArray<udtString> folders;
 	if(query.Recursive)
 	{
-		query.FolderArrayAllocator->Clear();
-		folders.SetAllocator(*query.FolderArrayAllocator);
+		folders.Init(UDT_KB(4), "FileListQuery::FoldersArray");
 	}
-	const udtString folderPath = udtString::NewConstRef(query.FolderPath);
+	const udtString folderPath = query.FolderPath;
 	
 	struct dirent* dirEntry;
 	while((dirEntry = readdir(dirHandle)) != NULL)
@@ -162,7 +148,7 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		{
 			if(query.Recursive && strcmp(dirEntry->d_name, ".") != 0 && strcmp(dirEntry->d_name, "..") != 0)
 			{
-				folders.Add(AllocateString(*query.TempAllocator, dirEntry->d_name));
+				folders.Add(udtString::NewClone(query.TempAllocator, dirEntry->d_name));
 			}
 			continue;
 		}
@@ -174,22 +160,22 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		}
 		
 		udtString filePath;
-		if(!udtPath::Combine(filePath, *query.TempAllocator, folderPath, dirEntry->d_name))
+		if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, dirEntry->d_name))
 		{
 			return false;
 		}
 		
-		const u64 fileSize = udtFileStream::GetFileLength(filePath.String);
+		const u64 fileSize = udtFileStream::GetFileLength(filePath.GetPtr());
 		if(query.FileFilter != NULL && !(*query.FileFilter)(dirEntry->d_name, fileSize, query.UserData))
 		{
 			continue;
 		}
 
 		udtFileInfo info;
-		info.Name = AllocateString(*query.PersistAllocator, dirEntry->d_name);
-		info.Path = AllocateString(*query.PersistAllocator, filePath.String);
+		info.Name = udtString::NewClone(query.PersistAllocator, dirEntry->d_name);
+		info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
 		info.Size = fileSize;
-		query.Files->Add(info);
+		query.Files.Add(info);
 	}
 
 	closedir(dirHandle);
@@ -199,14 +185,13 @@ bool GetDirectoryFileList(const udtFileListQuery& query)
 		for(u32 i = 0, count = folders.GetSize(); i < count; ++i)
 		{
 			udtString subFolderPath;
-			if(!udtPath::Combine(subFolderPath, *query.TempAllocator, folderPath, folders[i]))
+			if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, folders[i]))
 			{
 				return false;
 			}
 
-			udtFileListQuery newQuery = query;
-			newQuery.FolderPath = subFolderPath.String;
-			if(!GetDirectoryFileList(newQuery))
+			query.FolderPath = subFolderPath;
+			if(!GetDirectoryFileList(query))
 			{
 				return false;
 			}
