@@ -34,7 +34,7 @@ udtString udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
 	{
 		return udtString::NewNull();
 	}
-
+	result.SetLength(length);
 	resultPtr[length] = '\0';
 
 	return result;
