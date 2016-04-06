@@ -178,7 +178,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 			else if(udtString::Equals(tokenizer.GetArg(0), "Pattern"))
 			{
 				// We temporarily save an offset because the data might get relocated.
-				rule.Pattern = (const char*)udtString::NewClone(config.StringAllocator, tokenizer.GetArgString(1)).GetOffset();
+				rule.Pattern = (const char*)(uintptr_t)udtString::NewClone(config.StringAllocator, tokenizer.GetArgString(1)).GetOffset();
 			}
 			else if(udtString::Equals(tokenizer.GetArg(0), "CaseSensitive"))
 			{
@@ -207,7 +207,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 	// Fix up the pattern pointers.
 	for(u32 i = 0, count = config.ChatRules.GetSize(); i < count; ++i)
 	{
-		const u32 offset = (u32)config.ChatRules[i].Pattern;
+		const u32 offset = (u32)(uintptr_t)config.ChatRules[i].Pattern;
 		config.ChatRules[i].Pattern = config.StringAllocator.GetStringAt(offset);
 	}
 
