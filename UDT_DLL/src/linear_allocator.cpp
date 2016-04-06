@@ -36,6 +36,7 @@ void udtVMLinearAllocator::GetThreadStats(Stats& stats)
 		stats.CommittedByteCount += allocator->_committedByteCount;
 		stats.ReservedByteCount += allocator->_reservedByteCount;
 		stats.UsedByteCount += allocator->_peakUsedByteCount;
+		stats.ResizeCount += allocator->_resizeCount;
 		node = node->Next;
 	}
 }

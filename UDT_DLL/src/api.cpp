@@ -527,6 +527,8 @@ UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfSta
 		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
 	}
 
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+
 	return (s32)udtErrorCode::None;
 }
 
@@ -546,6 +548,7 @@ UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStat
 	destPerfStats[udtPerfStatsField::MemoryCommitted] += sourcePerfStats[udtPerfStatsField::MemoryCommitted];
 	destPerfStats[udtPerfStatsField::MemoryUsed] += sourcePerfStats[udtPerfStatsField::MemoryUsed];
 	destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
 
 	return (s32)udtErrorCode::None;
 }

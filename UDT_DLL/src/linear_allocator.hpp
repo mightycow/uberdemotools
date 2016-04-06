@@ -24,6 +24,7 @@ public:
 		uptr CommittedByteCount;
 		uptr UsedByteCount;
 		u32 AllocatorCount;
+		u32 ResizeCount;
 	};
 	
 	static void GetThreadStats(Stats& stats);

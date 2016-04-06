@@ -967,6 +967,7 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
 	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
 	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
+	perfStats[udtPerfStatsField::ResizeCount] += (u64)allocStats.ResizeCount;
 }
 
 void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)

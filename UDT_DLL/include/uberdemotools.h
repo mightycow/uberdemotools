@@ -837,7 +837,8 @@ struct udtPerfStatsDataType
 	N(MemoryReserved, "memory reserved", Bytes) \
 	N(MemoryCommitted, "memory committed", Bytes) \
 	N(MemoryUsed, "memory used", Bytes) \
-	N(MemoryEfficiency, "memory usage efficiency", Percentage)
+	N(MemoryEfficiency, "memory usage efficiency", Percentage) \
+	N(ResizeCount, "buffer relocation count", Generic)
 
 #define UDT_PERF_STATS_ITEM(Enum, Desc, Type) Enum,
 struct udtPerfStatsField
