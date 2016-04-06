@@ -1,8 +1,6 @@
 #include "memory.hpp"
 #include "assert_or_fatal.hpp"
 
-#include <stdlib.h>
-
 
 void* udt_malloc(size_t byteCount)
 {
