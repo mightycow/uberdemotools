@@ -12,6 +12,7 @@
 #include "analysis_splitter.hpp"
 #include "path.hpp"
 #include "thread_local_allocators.hpp"
+#include "system.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -506,6 +507,11 @@ UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCou
 
 UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
 {
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
 	destPerfStats[udtPerfStatsField::ThreadCount] = sourcePerfStats[udtPerfStatsField::ThreadCount];
 	destPerfStats[udtPerfStatsField::AllocatorCount] = sourcePerfStats[udtPerfStatsField::AllocatorCount];
 
@@ -520,6 +526,44 @@ UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfSta
 		destPerfStats[udtPerfStatsField::MemoryUsed] = sourcePerfStats[udtPerfStatsField::MemoryUsed];
 		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
 	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
+{
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	destPerfStats[udtPerfStatsField::ThreadCount] += sourcePerfStats[udtPerfStatsField::ThreadCount];
+	destPerfStats[udtPerfStatsField::AllocatorCount] += sourcePerfStats[udtPerfStatsField::AllocatorCount];
+	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
+	destPerfStats[udtPerfStatsField::Duration] = udt_max(destPerfStats[udtPerfStatsField::Duration], sourcePerfStats[udtPerfStatsField::Duration]);
+	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	destPerfStats[udtPerfStatsField::MemoryReserved] += sourcePerfStats[udtPerfStatsField::MemoryReserved];
+	destPerfStats[udtPerfStatsField::MemoryCommitted] += sourcePerfStats[udtPerfStatsField::MemoryCommitted];
+	destPerfStats[udtPerfStatsField::MemoryUsed] += sourcePerfStats[udtPerfStatsField::MemoryUsed];
+	destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount)
+{
+	if(cpuCoreCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	u32 count;
+	if(!GetProcessorCoreCount(count))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+	
+	*cpuCoreCount = count;
 
 	return (s32)udtErrorCode::None;
 }

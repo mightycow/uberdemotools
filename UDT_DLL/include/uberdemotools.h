@@ -2026,6 +2026,12 @@ extern "C"
 	/* Merges/add/replaces the stats of both arrays and writes the result to destPerfStats. */
 	UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats);
 
+	/* Adds the stats of both arrays and writes the result to destPerfStats. */
+	UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStats);
+
+	/* Gets the processor core count. */
+	UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount);
+
 	/*
 	Init and shut down functions.
 	*/
