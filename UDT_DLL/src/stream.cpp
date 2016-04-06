@@ -7,17 +7,17 @@ uptr udtStream::ReadAll(udtVMLinearAllocator& allocator)
 	const u32 length = (u32)Length();
 	if(length == 0)
 	{
-		return NULL;
+		return uptr(~0);
 	}
 
 	const uptr offset = allocator.Allocate(length);
 	u8* const data = allocator.GetAddressAt(offset);
 	if(Read(data, length, 1) != 1)
 	{
-		return NULL;
+		return uptr(~0);
 	}
 
-	return (u32)offset;
+	return offset;
 }
 
 udtString udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
