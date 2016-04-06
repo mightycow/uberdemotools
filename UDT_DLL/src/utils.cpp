@@ -962,7 +962,7 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 	udtVMLinearAllocator::Stats allocStats;
 	udtVMLinearAllocator::GetThreadStats(allocStats);
 	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
-	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
+	perfStats[udtPerfStatsField::MemoryReserved] += (u64)(allocStats.ReservedByteCount + extraByteCount);
 	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
 	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
 	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
