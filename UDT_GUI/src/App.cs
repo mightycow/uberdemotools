@@ -1151,6 +1151,10 @@ namespace Uber.DemoTools
         private void OnQuit()
         {
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             SaveConfig();
             _application.Shutdown();
         }
@@ -2037,7 +2041,7 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             Marshal.WriteInt32(_cancelOperation, 0);
             ParseArg.CancelOperation = _cancelOperation;
-            ParseArg.PerformanceStats = UDT_DLL.BatchPerfStats;
+            ParseArg.PerformanceStats = IntPtr.Zero; // @TODO: Do we really want stats for the small jobs?
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
@@ -2654,9 +2658,25 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(allRowsFixed, true);
         }
 
+        private MultithreadedJob _currentJob;
+
+        public bool CreateAndProcessJob(ref UDT_DLL.udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int maxBatchSize, MultithreadedJob.JobExecuter jobExecuter)
+        {
+            _currentJob = new MultithreadedJob();
+            _currentJob.Process(ref parseArg, filePaths, maxThreadCount, maxBatchSize, jobExecuter);
+            _currentJob.FreeResources();
+
+            return true;
+        }
+
         private void OnCancelJobClicked()
         {
+            // @NOTE: Not all job types will require an instance of MultithreadedJob.
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             LogWarning("Job canceled!");
         }
 

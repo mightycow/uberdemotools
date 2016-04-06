@@ -212,7 +212,7 @@ namespace Uber.DemoTools
         {
             public List<string> FilePaths = null;
             public UDT_DLL.udtPatternInfo[] Patterns = null;
-            public UDT_DLL.ArgumentResources Resources = null;
+            public ArgumentResources Resources = null;
         }
 
         private static UInt32 GetBit(UDT_DLL.udtPatternType type)
@@ -259,7 +259,7 @@ namespace Uber.DemoTools
 
             var selectedPatterns = (UInt32)config.PatternsSelectionBitMask;
             var patterns = new List<UDT_DLL.udtPatternInfo>();
-            var resources = new UDT_DLL.ArgumentResources();
+            var resources = new ArgumentResources();
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Chat))
             {
