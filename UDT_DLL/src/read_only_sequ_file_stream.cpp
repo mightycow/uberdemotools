@@ -1,4 +1,5 @@
 #include "read_only_sequ_file_stream.hpp"
+#include "memory.hpp"
 
 
 #if defined(UDT_WINDOWS)
@@ -104,7 +105,7 @@ struct udtReadOnlySequentialFileStreamImpl
 
 udtReadOnlySequentialFileStream::udtReadOnlySequentialFileStream()
 {
-	_data = (udtReadOnlySequentialFileStreamImpl*)malloc(sizeof(udtReadOnlySequentialFileStreamImpl));
+	_data = (udtReadOnlySequentialFileStreamImpl*)udt_malloc(sizeof(udtReadOnlySequentialFileStreamImpl));
 	_data->_buffer = NULL;
 	_data->_file = INVALID_HANDLE_VALUE;
 	_data->_blockSize = 0;

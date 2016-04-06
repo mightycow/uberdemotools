@@ -1,13 +1,11 @@
 #include "timer.hpp"
-#include "assert_or_fatal.hpp"
+#include "memory.hpp"
 
 
 #if defined(UDT_WINDOWS)
 
 
 #include <Windows.h>
-#include <stdlib.h>
-#include <malloc.h>
 
 
 /*
@@ -81,8 +79,7 @@ struct udtTimerImpl
 
 udtTimer::udtTimer()
 {
-	_data = (udtTimerImpl*)malloc(sizeof(udtTimerImpl));
-	UDT_ASSERT_OR_FATAL(_data != NULL);
+	_data = (udtTimerImpl*)udt_malloc(sizeof(udtTimerImpl));
 	const bool bIsHighPerf = IsQpcAvailable();
 	_data->GetFrequencyFunc = bIsHighPerf ? &GetFrequencyQpc : &GetFrequencyTgt;
 	_data->GetElapsedTicksFunc = bIsHighPerf ? &GetElapsedTicksQpc : &GetElapsedTicksTgt;
@@ -205,8 +202,7 @@ struct udtTimerImpl
 
 udtTimer::udtTimer()
 {
-	_data = (udtTimerImpl*)malloc(sizeof(udtTimerImpl));
-	UDT_ASSERT_OR_FATAL(_data != NULL);
+	_data = (udtTimerImpl*)udt_malloc(sizeof(udtTimerImpl));
 	_data->ClockId = CLOCK_MONOTONIC;
 	_data->StartTime.tv_sec = 0;
 	_data->StartTime.tv_nsec = 0;
