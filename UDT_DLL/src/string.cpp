@@ -198,7 +198,7 @@ udtString udtString::NewSubstringClone(udtVMLinearAllocator& allocator, const ud
 
 	udtString clone = NewEmpty(allocator, length + 1);
 	char* const clonePtr = clone.GetWritePtr();
-	memcpy(clonePtr, input.GetPtr(), length);
+	memcpy(clonePtr, input.GetPtr() + offset, length);
 	clonePtr[length] = '\0';
 	clone.Length = length;
 
