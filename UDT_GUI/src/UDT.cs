@@ -1541,7 +1541,7 @@ namespace Uber.DemoTools
                 IntPtr teamFieldDataTypes = IntPtr.Zero;
                 UInt32 teamFieldDataTypeCount = 0;
                 udtGetByteArray(udtByteArray.TeamStatsDataTypes, ref teamFieldDataTypes, ref teamFieldDataTypeCount);
-                _teamDataTypes = MarshalHelper.PtrToByteArray(playerDataTypes, (int)playerDataTypeCount);
+                _teamDataTypes = MarshalHelper.PtrToByteArray(teamFieldDataTypes, (int)teamFieldDataTypeCount);
 
                 IntPtr gameTypeFlags = IntPtr.Zero;
                 UInt32 gameTypeCount = 0;
