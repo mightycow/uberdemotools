@@ -29,17 +29,17 @@ private:
 	typedef void (udtParserPlugInCaptures::*ProcessCommandFunc)(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 	typedef void (udtParserPlugInCaptures::*ProcessSnapshotFunc)(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageString(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageString(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageString(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageStrings(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageStrings(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageStrings(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageEvents(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageEvents(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageEvents(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageEntities(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageEntities(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageEntities(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageNada(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageNada(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageNada(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageDummy(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageDummy(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageDummy(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
 	// Teams: 0=red, 1=blue.
 
@@ -48,22 +48,19 @@ private:
 
 	struct PlayerInfo
 	{
-		s32 CaptureCount;
-		s32 PickupTimeMs;
-		s32 PrevCaptureCount;
 		f32 PickupPosition[3];
 		f32 Position[3];
-		bool Capped;
-		bool PrevCapped;
-		bool BasePickup;
-		bool HasFlag;
-		bool PrevHasFlag;
+		bool Defined;     // Defined in this snapshot?
+		bool PrevDefined; // Defined in the previous snapshot?
+		bool PickupPositionValid;
 	};
 
 	struct TeamInfo
 	{
+		s32 PlayerIndex;
 		u8 PrevFlagState;
 		u8 FlagState;
+		bool BasePickup;
 	};
 
 	ProcessGamestateFunc _processGamestate;

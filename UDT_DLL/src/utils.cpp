@@ -985,6 +985,13 @@ void WriteStringToApiStruct(u32& offset, const udtString& string)
 	offsetAndLength[1] = string.GetLength();
 }
 
+void WriteNullStringToApiStruct(u32& offset)
+{
+	u32* const offsetAndLength = &offset;
+	offsetAndLength[0] = U32_MAX;
+	offsetAndLength[1] = 0;
+}
+
 namespace idEntityEvent
 {
 	s32 Obituary(udtProtocol::Id protocol)

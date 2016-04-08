@@ -669,16 +669,19 @@ static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCaptureBuff
 	for(u32 i = first, end = first + count; i < end; ++i)
 	{
 		const udtParseDataCapture& info = captureBuffers.Captures[i];
+		const bool playerNameValid = (info.Flags & (u32)udtParseDataCaptureFlags::PlayerNameValid) != 0;
+		const bool playerIndexValid = (info.Flags & (u32)udtParseDataCaptureFlags::PlayerIndexValid) != 0;
+		const bool distanceValid = (info.Flags & (u32)udtParseDataCaptureFlags::DistanceValid) != 0;
 
 		writer.StartObject();
 
 		writer.WriteStringValue("map", info.MapName);
-		writer.WriteStringValue("player name", info.PlayerName);
-		writer.WriteIntValue("player index", info.PlayerIndex);
+		if(playerNameValid)  writer.WriteStringValue("player name", info.PlayerName);
+		if(playerIndexValid) writer.WriteIntValue("player index", info.PlayerIndex);
 		writer.WriteIntValue("game state index", info.GameStateIndex);
 		writer.WriteIntValue("pick up time", info.PickUpTimeMs);
 		writer.WriteIntValue("capture time", info.CaptureTimeMs);
-		writer.WriteIntValue("distance", (s32)info.Distance);
+		if(distanceValid) writer.WriteIntValue("distance", (s32)info.Distance);
 		writer.WriteBoolValue("base to base", (info.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0);
 		writer.WriteBoolValue("demo taker", (info.Flags & (u32)udtParseDataCaptureFlags::DemoTaker) != 0);
 		writer.WriteBoolValue("spectated player", (info.Flags & (u32)udtParseDataCaptureFlags::FirstPersonPlayer) != 0);

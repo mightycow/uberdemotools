@@ -72,6 +72,7 @@ extern void        PerfStatsInit(u64* perfStats);
 extern void        PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount);
 extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs);
 extern void        WriteStringToApiStruct(u32& offset, const udtString& string);
+extern void        WriteNullStringToApiStruct(u32& offset);
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.

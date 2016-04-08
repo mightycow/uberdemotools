@@ -1326,7 +1326,10 @@ namespace Uber.DemoTools
 	    {
 		    BaseToBase = 1 << 0,
 			DemoTaker = 1 << 1,
-			FirstPersonPlayer = 1 << 2
+			FirstPersonPlayer = 1 << 2,
+            PlayerIndexValid = 1 << 3,
+			PlayerNameValid = 1 << 4,
+			DistanceValid = 1 << 5
 	    };
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -2664,12 +2667,13 @@ namespace Uber.DemoTools
             for(uint i = start, end = start + count; i < end; ++i)
             {
                 var data = buffers.Captures[i];
+                var playerNameValid = (data.Flags & (uint)udtParseDataCaptureFlags.PlayerNameValid) != 0;
                 var gs = data.GameStateIndex;
                 var startTime = data.PickUpTimeMs;
                 var endTime = data.CaptureTimeMs;
                 var dur = endTime - startTime;
                 var b2b = (data.Flags & (uint)udtParseDataCaptureFlags.BaseToBase) != 0;
-                var player = buffers.GetString(data.PlayerName, data.PlayerNameLength, "N/A");
+                var player = playerNameValid ? buffers.GetString(data.PlayerName, data.PlayerNameLength, "N/A") : "N/A";
                 var map = buffers.GetString(data.MapName, data.MapNameLength, "N/A");
                 var item = new FlagCaptureDisplayInfo(gs, startTime, endTime, dur, b2b, player, map);
                 info.FlagCaptures.Add(item);

@@ -1884,9 +1884,12 @@ extern "C"
 	{
 		enum Id
 		{
-			BaseToBase = UDT_BIT(0),       /* Flag picked up from its default return position. */
-			DemoTaker = UDT_BIT(1),        /* Flag captured by the player who recorded the demo. */
-			FirstPersonPlayer = UDT_BIT(2) /* Flag captured by a player being spectated by whoever recorded the demo. */
+			BaseToBase = UDT_BIT(0),        /* Flag picked up from its default return position. */
+			DemoTaker = UDT_BIT(1),         /* Flag captured by the player who recorded the demo. */
+			FirstPersonPlayer = UDT_BIT(2), /* Flag captured by a player being spectated by whoever recorded the demo. */
+			PlayerIndexValid = UDT_BIT(3),  /* The PlayerIndex field is valid. */
+			PlayerNameValid = UDT_BIT(4),   /* The PlayerName and PlayerNameLength fields are valid. */
+			DistanceValid = UDT_BIT(5)      /* The Distance field is valid. */
 		};
 	};
 #endif
@@ -1900,9 +1903,11 @@ extern "C"
 		u32 MapNameLength;
 
 		/* String offset. Name of the player who capped. */
+		/* Not always available: check for the PlayerNameValid bit of Flags. */
 		u32 PlayerName;
 
 		/* String length. */
+		/* Not always available: check for the PlayerNameValid bit of Flags. */
 		u32 PlayerNameLength;
 
 		/* The index of the gamestate message this config string was in. */
@@ -1917,12 +1922,14 @@ extern "C"
 
 		/* Distance between the pick-up spot and the capture spot, in Quake units. */
 		/* This is not the distance traveled by the capping player. */
+		/* Not always available: check for the DistanceValid bit of Flags. */
 		f32 Distance;
 
 		/* Check the bits against values in udtParseDataCaptureFlags::Id. */
 		u32 Flags;
 
 		/* Index of the player who capped (the "client number"). */
+		/* Not always available: check for the PlayerIndexValid bit of Flags. */
 		s32 PlayerIndex;
 	}
 	udtParseDataCapture;

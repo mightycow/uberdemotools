@@ -3,6 +3,15 @@
 #include "scoped_stack_allocator.hpp"
 
 
+/*
+Sound indices for EV_GLOBAL_TEAM_SOUND in CPMA:
+0 blue captures (flag team: red)
+1 red captures  (flag team: blue)
+4 red taken     (flag team: red)
+5 blue taken    (flag team: blue)
+*/
+
+
 static bool ParseDuration(s32& durationMs, const udtString& duration)
 {
 	u32 colonIndex = 0;
@@ -91,9 +100,9 @@ void udtParserPlugInCaptures::StartDemoAnalysis()
 	_gameStateIndex = -1;
 	_demoTakerIndex = -1;
 	_firstSnapshot = true;
-	_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageNada;
-	_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageNada;
-	_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageNada;
+	_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageDummy;
+	_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageDummy;
+	_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageDummy;
 }
 
 void udtParserPlugInCaptures::FinishDemoAnalysis()
@@ -106,22 +115,28 @@ void udtParserPlugInCaptures::ProcessGamestateMessage(const udtGamestateCallback
 	_firstSnapshot = true;
 	_demoTakerIndex = arg.ClientNum;
 
+	udtVMScopedStackAllocator allocScope(*TempAllocator);
+
 	const udtProtocol::Id protocol = parser._inProtocol;
 	if(protocol >= udtProtocol::Dm73 && protocol <= udtProtocol::Dm91)
 	{
-		_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageString;
-		_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageString;
-		_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageString;
+		_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageStrings;
+		_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageStrings;
+		_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageStrings;
 	}
 	// @NOTE: EF_AWARD_CAP doesn't exist in dm3.
 	else if(protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68)
 	{
-		_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageEvents;
-		_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageEvents;
-		_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageEvents;
+		udtString gameName;
+		if(ParseConfigStringValueString(gameName, *TempAllocator, "gamename", parser.GetConfigString(CS_SERVERINFO).GetPtr()) &&
+		   udtString::Equals(gameName, "cpma"))
+		{
+			_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageEntities;
+			_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageEntities;
+			_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageEntities;
+		}
 	}
 
-	udtVMScopedStackAllocator allocScope(*TempAllocator);
 	udtString mapName;
 	if(ParseConfigStringValueString(mapName, *TempAllocator, "mapname", parser.GetConfigString(CS_SERVERINFO).GetPtr()))
 	{
@@ -147,11 +162,11 @@ void udtParserPlugInCaptures::ProcessSnapshotMessage(const udtSnapshotCallbackAr
 	_firstSnapshot = false;
 }
 
-void udtParserPlugInCaptures::ProcessGamestateMessageString(const udtGamestateCallbackArg&, udtBaseParser&)
+void udtParserPlugInCaptures::ProcessGamestateMessageStrings(const udtGamestateCallbackArg&, udtBaseParser&)
 {
 }
 
-void udtParserPlugInCaptures::ProcessCommandMessageString(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+void udtParserPlugInCaptures::ProcessCommandMessageStrings(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	if(arg.IsConfigString)
 	{
@@ -224,6 +239,7 @@ void udtParserPlugInCaptures::ProcessCommandMessageString(const udtCommandCallba
 	{
 		flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
 	}
+	flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
 
 	udtParseDataCapture capture;
 	capture.CaptureTimeMs = time;
@@ -237,32 +253,31 @@ void udtParserPlugInCaptures::ProcessCommandMessageString(const udtCommandCallba
 	_captures.Add(capture);
 }
 
-void udtParserPlugInCaptures::ProcessSnapshotMessageString(const udtSnapshotCallbackArg&, udtBaseParser&)
+void udtParserPlugInCaptures::ProcessSnapshotMessageStrings(const udtSnapshotCallbackArg&, udtBaseParser&)
 {
 }
 
-void udtParserPlugInCaptures::ProcessGamestateMessageEvents(const udtGamestateCallbackArg&, udtBaseParser& parser)
+void udtParserPlugInCaptures::ProcessGamestateMessageEntities(const udtGamestateCallbackArg&, udtBaseParser& parser)
 {
 	memset(_players, 0, sizeof(_players));
 	for(u32 i = 0; i < 64; ++i)
 	{
-		_players[i].BasePickup = false;
-		_players[i].Capped = false;
-		_players[i].PrevCapped = false;
-		_players[i].HasFlag = false;
-		_players[i].PrevHasFlag = false;
-		_players[i].PrevCaptureCount = 0;
-		_players[i].CaptureCount = 0;
-		_players[i].PickupTimeMs = S32_MIN;
-		Float3::Zero(_players[i].PickupPosition);
-		Float3::Zero(_players[i].Position);
+		PlayerInfo& player = _players[i];
+		player.Defined = false;
+		player.PrevDefined = false;
+		player.PickupPositionValid = false;
+		Float3::Zero(player.PickupPosition);
+		Float3::Zero(player.Position);
 	}
 
 	memset(_teams, 0, sizeof(_teams));
 	for(u32 i = 0; i < 2; ++i)
 	{
-		_teams[i].FlagState = (u8)idFlagStatus::InBase;
-		_teams[i].PrevFlagState = (u8)idFlagStatus::InBase;
+		TeamInfo& team = _teams[i];
+		team.PlayerIndex = -1;
+		team.FlagState = (u8)idFlagStatus::InBase;
+		team.PrevFlagState = (u8)idFlagStatus::InBase;
+		team.BasePickup = false;
 	}
 
 	const s32 flagStatusIdx = idConfigStringIndex::FlagStatus(parser._inProtocol);
@@ -278,7 +293,7 @@ void udtParserPlugInCaptures::ProcessGamestateMessageEvents(const udtGamestateCa
 	}
 }
 
-void udtParserPlugInCaptures::ProcessCommandMessageEvents(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+void udtParserPlugInCaptures::ProcessCommandMessageEntities(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
 	{
@@ -294,147 +309,148 @@ void udtParserPlugInCaptures::ProcessCommandMessageEvents(const udtCommandCallba
 	}
 }
 
-void udtParserPlugInCaptures::ProcessSnapshotMessageEvents(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtParserPlugInCaptures::ProcessSnapshotMessageEntities(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
-	const s32 redFlagIdx = idPowerUpIndex::RedFlag(parser._inProtocol);
-	const s32 blueFlagIdx = idPowerUpIndex::BlueFlag(parser._inProtocol);
-	const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
+
+	//
+	// Step 1: update Defined, PrevDefined, Position
+	//
 
 	if(ps->clientNum >= 0 && ps->clientNum < 64)
 	{
 		PlayerInfo& player = _players[ps->clientNum];
-		const bool hasFlag = ps->powerups[redFlagIdx] != 0 || ps->powerups[blueFlagIdx] != 0;
-		const bool prevHasFlag = player.HasFlag;
-		player.HasFlag = hasFlag;
-		player.PrevHasFlag = prevHasFlag;
-		if(!prevHasFlag && hasFlag)
-		{
-			player.PickupTimeMs = arg.ServerTime;
-			Float3::Copy(player.PickupPosition, ps->origin);
-			const u32 flagTeamIdx = ps->powerups[blueFlagIdx] != 0 ? 1 : 0;
-			player.BasePickup = WasFlagPickedUpInBase(flagTeamIdx);
-		}
-		player.PrevCaptureCount = player.CaptureCount;
-		player.CaptureCount = ps->persistant[captureCountPersIdx];
+		player.PrevDefined = player.Defined;
+		player.Defined = true;
 		Float3::Copy(player.Position, ps->origin);
 	}
 
-	if(parser._inProtocol >= udtProtocol::Dm48) // @NOTE: EF_AWARD_CAP doesn't exist in dm3.
-	{
-		for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
-		{
-			idEntityStateBase* const es = arg.Entities[i].Entity;
-			if(arg.Entities[i].IsNewEvent ||
-			   es == NULL ||
-			   es->eType != ET_PLAYER ||
-			   es->clientNum < 0 ||
-			   es->clientNum >= 64)
-			{
-				continue;
-			}
-
-			PlayerInfo& player = _players[es->clientNum];
-
-			const bool capped = (es->eFlags & EF_AWARD_CAP) != 0;
-			player.PrevCapped = player.Capped;
-			player.Capped = capped;
-			Float3::Copy(player.Position, es->pos.trBase);
-			if(capped && _firstSnapshot)
-			{
-				player.PrevCapped = true;
-			}
-
-			const bool hasRedFlag = (es->powerups & (1 << redFlagIdx)) != 0;
-			const bool hasBlueFlag = (es->powerups & (1 << blueFlagIdx)) != 0;
-			const bool hasFlag = hasRedFlag || hasBlueFlag;
-			bool prevHasFlag = player.HasFlag;
-			if(hasFlag && _firstSnapshot)
-			{
-				prevHasFlag = true;
-			}
-			player.HasFlag = hasFlag;
-			player.PrevHasFlag = prevHasFlag;
-			if(!prevHasFlag && hasFlag)
-			{
-				player.PickupTimeMs = arg.ServerTime;
-				Float3::Copy(player.PickupPosition, es->pos.trBase);
-				const u32 flagTeamIdx = hasBlueFlag ? 1 : 0;
-				player.BasePickup = WasFlagPickedUpInBase(flagTeamIdx);
-			}
-		}
-	}
-
 	for(u32 i = 0; i < 64; ++i)
 	{
 		PlayerInfo& player = _players[i];
-		const bool justCappedFirstPerson = (player.CaptureCount > player.PrevCaptureCount) && !player.HasFlag && player.PrevHasFlag;
-		const bool justCappedThirdPerson = player.Capped && !player.PrevCapped;
-		const bool justCapped = justCappedFirstPerson || justCappedThirdPerson;
-		if(justCapped)
-		{
-			// @NOTE: It's possible to cap on the same snapshot that you pick up the flag.
-			// So when the pick up time is undefined, it can mean one of 2 things:
-			// 1. there was an instant cap, or
-			// 2. the pick-up happened before demo recording began.
-			// If the latter is true, we drop the cap because we don't know enough about it.
-			if(player.PickupTimeMs == S32_MIN && player.PrevHasFlag)
-			{
-				continue;
-			}
-
-			const s32 pickupTimeMs = player.PickupTimeMs == S32_MIN ? arg.ServerTime : player.PickupTimeMs;
-			const s32 captureTimeMs = arg.ServerTime;
-			const s32 playerIndex = (s32)i;
-			udtParseDataCapture cap;
-			cap.GameStateIndex = _gameStateIndex;
-			cap.PickUpTimeMs = pickupTimeMs;
-			cap.CaptureTimeMs = captureTimeMs;
-			cap.Distance = Float3::Dist(player.PickupPosition, player.Position);
-			cap.PlayerIndex = playerIndex;
-			WriteStringToApiStruct(cap.PlayerName, GetPlayerName(playerIndex, parser));
-			WriteStringToApiStruct(cap.MapName, _mapName);
-			cap.Flags = 0;
-			if(playerIndex == _demoTakerIndex)
-			{
-				cap.Flags |= (u32)udtParseDataCaptureFlags::DemoTaker;
-			}
-			else if(playerIndex == ps->clientNum)
-			{
-				cap.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
-			}
-			if(player.BasePickup && player.PrevHasFlag && captureTimeMs > pickupTimeMs)
-			{
-				cap.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
-			}
-			_captures.Add(cap);
-
-			player.PickupTimeMs = S32_MIN;
-
-			// We don't break now because it might be possible to have 2 caps on the same snapshot.
-			// Not sure if the Q3 servers can actually handle that properly though.
-		}
+		player.PrevDefined = player.Defined;
+		player.Defined = false;
 	}
 
-	for(u32 i = 0; i < 64; ++i)
+	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
 	{
-		PlayerInfo& player = _players[i];
-		if(!player.HasFlag)
+		idEntityStateBase* const es = arg.Entities[i].Entity;
+		if(arg.Entities[i].IsNewEvent ||
+		   es == NULL ||
+		   es->eType != ET_PLAYER ||
+		   es->clientNum < 0 ||
+		   es->clientNum >= 64)
 		{
-			player.PickupTimeMs = S32_MIN;
+			continue;
+		}
+
+		PlayerInfo& player = _players[es->clientNum];
+		player.Defined = true;
+		Float3::Copy(player.Position, es->pos.trBase);
+	}
+
+	//
+	// Step 2: handle pick-up and capture events
+	//
+
+	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	{
+		idEntityStateBase* const es = arg.Entities[i].Entity;
+		if(!arg.Entities[i].IsNewEvent || 
+		   es == NULL ||
+		   es->eType <= ET_EVENTS)
+		{
+			continue;
+		}
+
+		const s32 event = (es->eType - ET_EVENTS) & (~EV_EVENT_BITS);
+		if(event == EV_GLOBAL_TEAM_SOUND)
+		{
+			const s32 soundIndex = es->eventParm;
+			if(soundIndex == 0 || soundIndex == 1)
+			{
+				const s32 captureTimeMs = parser._inServerTime;
+				const s32 durationMs = es->time;
+				const s32 pickupTimeMs = captureTimeMs - durationMs;
+
+				TeamInfo& team = _teams[soundIndex];
+				const s32 playerIndex = team.PlayerIndex;
+
+				udtParseDataCapture capture;
+				capture.GameStateIndex = _gameStateIndex;
+				capture.PickUpTimeMs = pickupTimeMs;
+				capture.CaptureTimeMs = captureTimeMs;
+				capture.PlayerIndex = playerIndex;
+				WriteStringToApiStruct(capture.MapName, _mapName);
+				capture.Flags = 0;
+				if(playerIndex == _demoTakerIndex)
+				{
+					capture.Flags |= (u32)udtParseDataCaptureFlags::DemoTaker;
+				}
+				else if(playerIndex == ps->clientNum)
+				{
+					capture.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
+				}
+
+				if(playerIndex >= 0 && playerIndex < 64)
+				{
+					capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
+					capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
+					capture.Flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
+					PlayerInfo& player = _players[playerIndex];
+					capture.Distance = Float3::Dist(player.PickupPosition, player.Position);
+					WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
+					if(team.BasePickup)
+					{
+						capture.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
+					}
+					player.PickupPositionValid = false;
+					team.BasePickup = false;
+					team.PlayerIndex = -1;
+				}
+				else
+				{
+					WriteNullStringToApiStruct(capture.PlayerName);
+					capture.Distance = -1.0f;
+				}
+
+				_captures.Add(capture);
+			}
+			else if(soundIndex == 4 || soundIndex == 5)
+			{
+				const s32 playerIndex = es->generic1;
+				if(playerIndex >= 0 && playerIndex < 64)
+				{
+					PlayerInfo& player = _players[playerIndex];
+					if(player.Defined && player.PrevDefined)
+					{
+						Float3::Copy(player.PickupPosition, player.Position);
+						player.PickupPositionValid = true;
+					}
+					else
+					{
+						player.PickupPositionValid = false;
+					}
+					
+					const u32 teamIndex = (u32)soundIndex - 4;
+					TeamInfo& team = _teams[teamIndex];
+					team.BasePickup = WasFlagPickedUpInBase(teamIndex);
+					team.PlayerIndex = playerIndex;
+				}
+			}
 		}
 	}
 }
 
-void udtParserPlugInCaptures::ProcessGamestateMessageNada(const udtGamestateCallbackArg&, udtBaseParser&)
+void udtParserPlugInCaptures::ProcessGamestateMessageDummy(const udtGamestateCallbackArg&, udtBaseParser&)
 {
 }
 
-void udtParserPlugInCaptures::ProcessCommandMessageNada(const udtCommandCallbackArg&, udtBaseParser&)
+void udtParserPlugInCaptures::ProcessCommandMessageDummy(const udtCommandCallbackArg&, udtBaseParser&)
 {
 }
 
-void udtParserPlugInCaptures::ProcessSnapshotMessageNada(const udtSnapshotCallbackArg&, udtBaseParser&)
+void udtParserPlugInCaptures::ProcessSnapshotMessageDummy(const udtSnapshotCallbackArg&, udtBaseParser&)
 {
 }
 
