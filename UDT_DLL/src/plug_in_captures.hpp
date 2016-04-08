@@ -25,6 +25,22 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInCaptures);
 
+	typedef void (udtParserPlugInCaptures::*ProcessGamestateFunc)(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	typedef void (udtParserPlugInCaptures::*ProcessCommandFunc)(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	typedef void (udtParserPlugInCaptures::*ProcessSnapshotFunc)(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageString(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageString(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageString(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageEvents(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageEvents(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageEvents(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageNada(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageNada(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageNada(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
 	// Teams: 0=red, 1=blue.
 
 	udtString GetPlayerName(s32 playerIndex, udtBaseParser& parser);
@@ -50,6 +66,9 @@ private:
 		u8 FlagState;
 	};
 
+	ProcessGamestateFunc _processGamestate;
+	ProcessCommandFunc _processCommand;
+	ProcessSnapshotFunc _processSnapshot;
 	udtVMLinearAllocator _stringAllocator;
 	udtVMArray<udtParseDataCapture> _captures;
 	udtParseDataCaptureBuffers _buffers;
