@@ -29,17 +29,20 @@ private:
 	typedef void (udtParserPlugInCaptures::*ProcessCommandFunc)(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 	typedef void (udtParserPlugInCaptures::*ProcessSnapshotFunc)(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageStrings(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageStrings(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageStrings(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageQL(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageQL(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageEntities(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageEntities(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageEntities(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageCPMA(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageCPMA(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageCPMA(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
 	void ProcessGamestateMessageDummy(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessageDummy(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 	void ProcessSnapshotMessageDummy(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageClearStates(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageFlagStatusCS(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
 	// Teams: 0=red, 1=blue.
 
@@ -50,6 +53,7 @@ private:
 	{
 		f32 PickupPosition[3];
 		f32 Position[3];
+		s32 PickupTime; // Only for QL.
 		bool Defined;     // Defined in this snapshot?
 		bool PrevDefined; // Defined in the previous snapshot?
 		bool PickupPositionValid;
@@ -63,6 +67,39 @@ private:
 		bool BasePickup;
 	};
 
+	struct LastCaptureQL
+	{
+		bool IsValid() const
+		{
+			return Time != S32_MIN && Distance > 0.0f;
+		}
+
+		void Clear()
+		{
+			Time = S32_MIN;
+			Distance = -1.0f;
+		}
+
+		s32 Time;
+		f32 Distance;
+	};
+
+	struct PlayerStateQL
+	{
+		void Clear()
+		{
+			CaptureCount = 0;
+			PrevCaptureCount = 0;
+			HasFlag = false;
+			PrevHasFlag = false;
+		}
+
+		s32 CaptureCount;
+		s32 PrevCaptureCount;
+		bool HasFlag;
+		bool PrevHasFlag;
+	};
+
 	ProcessGamestateFunc _processGamestate;
 	ProcessCommandFunc _processCommand;
 	ProcessSnapshotFunc _processSnapshot;
@@ -74,5 +111,7 @@ private:
 	s32 _demoTakerIndex;
 	PlayerInfo _players[64];
 	TeamInfo _teams[2];
+	LastCaptureQL _lastCaptureQL;
+	PlayerStateQL _playerStateQL;
 	bool _firstSnapshot;
 };
