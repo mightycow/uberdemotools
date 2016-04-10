@@ -15,9 +15,6 @@ Sound indices for EV_GLOBAL_TEAM_SOUND in CPMA:
 #define    MAX_ALLOWED_TIME_DELTA_QL_MS    1500
 
 
-// @TODO: Compute the player positions from their trajectories instead of using "pos.trBase".
-
-
 static bool ParseDuration(s32& durationMs, const udtString& duration)
 {
 	u32 colonIndex = 0;
