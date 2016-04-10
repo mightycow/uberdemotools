@@ -183,10 +183,9 @@ namespace Uber.DemoTools
 
         private void OnCutByChatClicked()
         {
-            var demos = _app.SelectedDemos;
+            var demos = _app.SelectedWriteDemos;
             if(demos == null)
             {
-                _app.LogError("No demo was selected. Please select one to proceed.");
                 return;
             }
 

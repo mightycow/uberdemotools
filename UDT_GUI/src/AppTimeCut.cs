@@ -398,6 +398,12 @@ namespace Uber.DemoTools
                 return;
             }
 
+            if(!App.IsValidWriteProtocol(demo.ProtocolNumber))
+            {
+                _app.LogError("Can't write demos of that protocol");
+                return;
+            }
+
             int startTime = -1;
             if(!App.GetTimeSeconds(_startTimeEditBox.Text, out startTime))
             {

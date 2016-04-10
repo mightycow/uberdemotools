@@ -1721,10 +1721,6 @@ namespace Uber.DemoTools
             {
                 weaponFlags |= (UInt32)udtWeaponBits.Rocket;
             }
-            if(config.MidAirCutAllowGrenade)
-            {
-                weaponFlags |= (UInt32)udtWeaponBits.Grenade;
-            }
             if(config.MidAirCutAllowBFG)
             {
                 weaponFlags |= (UInt32)udtWeaponBits.BFG;

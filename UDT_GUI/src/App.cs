@@ -50,7 +50,6 @@ namespace Uber.DemoTools
         public int MidAirCutMinDistance = 300;
         public int MidAirCutMinAirTimeMs = 800;
         public bool MidAirCutAllowRocket = true;
-        public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
@@ -221,6 +220,16 @@ namespace Uber.DemoTools
             { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
         };
 
+        private static readonly List<UDT_DLL.udtProtocol> ValidWriteProtocols = new List<UDT_DLL.udtProtocol>
+        {
+            { UDT_DLL.udtProtocol.Dm66 },
+            { UDT_DLL.udtProtocol.Dm67 },
+            { UDT_DLL.udtProtocol.Dm68 },
+            { UDT_DLL.udtProtocol.Dm73 },
+            { UDT_DLL.udtProtocol.Dm90 },
+            { UDT_DLL.udtProtocol.Dm91 }
+        };
+
         private class ConfigStringDisplayInfo
         {
             public ConfigStringDisplayInfo(string description, string value)
@@ -335,6 +344,28 @@ namespace Uber.DemoTools
                     }
 
                     demos.Add(displayInfo.Demo);
+                }
+
+                return demos;
+            }
+        }
+
+        public List<DemoInfo> SelectedWriteDemos
+        {
+            get
+            {
+                var demos = SelectedDemos;
+                if(demos == null)
+                {
+                    LogError("No demo was selected");
+                    return null;
+                }
+
+                demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
+                if(demos.Count == 0)
+                {
+                    LogError("No selected demo had a protocol version compatible with the requested operation");
+                    return null;
                 }
 
                 return demos;
@@ -2741,6 +2772,19 @@ namespace Uber.DemoTools
             var prot = ProtocolFileExtDic[extension];
 
             return ProtocolFileExtDic[extension];
+        }
+
+        public static bool IsValidWriteProtocol(UDT_DLL.udtProtocol protocol)
+        {
+            foreach(var writeProtocol in ValidWriteProtocols)
+            {
+                if(writeProtocol == protocol)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void LogMessageNoColor(string message)
