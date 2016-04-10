@@ -354,22 +354,27 @@ namespace Uber.DemoTools
         {
             get
             {
-                var demos = SelectedDemos;
-                if(demos == null)
-                {
-                    LogError("No demo was selected");
-                    return null;
-                }
-
-                demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
-                if(demos.Count == 0)
-                {
-                    LogError("No selected demo had a protocol version compatible with the requested operation");
-                    return null;
-                }
-
-                return demos;
+                return GetSelectedWriteDemos(false);
             }
+        }
+
+        public List<DemoInfo> GetSelectedWriteDemos(bool silent)
+        {
+            var demos = SelectedDemos;
+            if(demos == null)
+            {
+                if(!silent) LogError("No demo was selected");
+                return null;
+            }
+
+            demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
+            if(demos.Count == 0)
+            {
+                if(!silent) LogError("No selected demo had a protocol version compatible with the requested operation");
+                return null;
+            }
+
+            return demos;
         }
 
         private static Color MultiplyRGBSpace(Color color, float value)
@@ -1026,7 +1031,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteMergeCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null)
             {
                 return false;
@@ -1083,7 +1088,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteSplitCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null || demos.Count > 1)
             {
                 return false;
@@ -1943,11 +1948,14 @@ namespace Uber.DemoTools
 
         private void OnMergeDemosClicked()
         {
-            var demos = SelectedDemos;
-            if(demos == null || demos.Count < 2)
+            var demos = SelectedWriteDemos;
+            if(demos == null)
+            {
+                return;
+            }
+            if(demos.Count < 2)
             {
                 LogError("No enough demos selected. Please select at least two to proceed.");
-                return;
             }
 
             var firstProtocol = demos[0].ProtocolNumber;
@@ -2481,6 +2489,12 @@ namespace Uber.DemoTools
             if(demo == null)
             {
                 LogError("No demo selected. Please select one to proceed.");
+                return;
+            }
+
+            if(!IsValidWriteProtocol(demo.ProtocolNumber))
+            {
+                LogError("The selected demo is using a protocol that UDT can't write.");
                 return;
             }
 
