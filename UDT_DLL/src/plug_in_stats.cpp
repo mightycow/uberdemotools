@@ -7,9 +7,6 @@ static_assert((s32)udtTeamStatsField::Count <= (s32)(UDT_TEAM_STATS_MASK_BYTE_CO
 static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYTE_COUNT * 8), "Too many player stats fields for the bit mask size");
 
 
-#define    UDT_MAX_STATS    4
-
-
 /*
 CPMA stats/scores commands:
 - mstats  : full stats for one player sent multiple times during a game
@@ -102,7 +99,6 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_plugInTokenizer = NULL;
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
-	_maxAllowedStats = UDT_MAX_STATS;
 	_disableStatsOverrides = false;
 	_lastMatchEndTime = S32_MIN;
 	ClearStats();
@@ -115,9 +111,8 @@ udtParserPlugInStats::~udtParserPlugInStats()
 void udtParserPlugInStats::InitAllocators(u32 demoCount)
 {
 	_stringAllocator.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::Stats");
-	_statsArray.Init((uptr)UDT_MAX_STATS * (uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
+	_statsArray.Init((uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
-	_maxAllowedStats = demoCount * (u32)UDT_MAX_STATS;
 
 	_teamFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFlags");
 	_playerFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFlags");
@@ -2539,8 +2534,7 @@ bool udtParserPlugInStats::AreStatsValid()
 
 void udtParserPlugInStats::AddCurrentStats()
 {
-	if(_statsArray.GetSize() >= _maxAllowedStats ||
-	   !AreStatsValid())
+	if(!AreStatsValid())
 	{
 		return;
 	}

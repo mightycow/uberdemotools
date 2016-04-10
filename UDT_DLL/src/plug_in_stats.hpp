@@ -164,7 +164,6 @@ private:
 	idTokenizer* _plugInTokenizer;
 	udtProtocol::Id _protocol;
 	s32 _followedClientNumber;
-	u32 _maxAllowedStats;
 	s32 _firstPlaceClientNumber;
 	s32 _secondPlaceClientNumber;
 	s32 _cpmaScoreRed;
