@@ -29,6 +29,7 @@ struct CaptureInfo
 	s32 SortIndex; // Used for stable sorting.
 	u32 DemoIndex; // Used for having the same results no matter the number of threads.
 	bool BaseToBase;
+	bool DistanceAndSpeedValid;
 };
 
 
@@ -230,10 +231,13 @@ private:
 			udtString mapName = udtString::NewClone(_stringAllocator, (const char*)buffers.StringBuffer + capture.MapName);
 			udtString::MakeLowerCase(mapName);
 
+			const bool distanceValid = (capture.Flags & (u32)udtParseDataCaptureFlags::DistanceValid) != 0;
+
 			CaptureInfo cap;
 			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0;
 			cap.CaptureTimeMs = capture.CaptureTimeMs;
 			cap.Distance = capture.Distance;
+			cap.DistanceAndSpeedValid = distanceValid && durationMs > 0;
 			cap.DurationMs = durationMs;
 			cap.FileName = udtString::NewCloneFromRef(_stringAllocator, fileName);
 			cap.FilePath = udtString::NewCloneFromRef(_stringAllocator, filePath);
@@ -242,7 +246,7 @@ private:
 			cap.DemoIndex = fileIndex;
 			cap.MapName = mapName;
 			cap.PickUpTimeMs = capture.PickUpTimeMs;
-			cap.Speed = durationMs == 0 ? FLT_MAX : capture.Distance / ((f32)durationMs / 1000.0f);
+			cap.Speed = durationMs == 0 ? 0.0f : (capture.Distance / ((f32)durationMs / 1000.0f));
 			_captures.Add(cap);
 		}
 	}
@@ -279,8 +283,9 @@ private:
 			}
 
 			writer.StartObject();
-			if(!cap.BaseToBase && cap.Speed != FLT_MAX)
+			if(!cap.BaseToBase && cap.DistanceAndSpeedValid)
 			{
+				writer.WriteIntValue("distance", (s32)cap.Distance);
 				writer.WriteIntValue("speed", (s32)cap.Speed);
 			}
 			writer.WriteIntValue("duration", cap.DurationMs);
