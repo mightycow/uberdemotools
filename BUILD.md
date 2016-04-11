@@ -52,8 +52,8 @@ The steps:
 
 Notes:
 
-The temporary build files will be found in `UDT_DLL\.build\gmake`.
-The output files will be found in `UDT_DLL\.bin\gmake`.
+* The temporary build files will be found in `UDT_DLL\.build\gmake`.
+* The output files will be found in `UDT_DLL\.bin\gmake`.
 
 Windows + Visual C# (GUI application)
 -------------------------------------
