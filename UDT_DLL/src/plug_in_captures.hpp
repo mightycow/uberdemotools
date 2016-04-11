@@ -42,7 +42,6 @@ private:
 	void ProcessSnapshotMessageDummy(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
 	void ProcessGamestateMessageClearStates(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageFlagStatusCS(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
 	// Teams: 0=red, 1=blue.
 
@@ -65,6 +64,18 @@ private:
 		u8 PrevFlagState;
 		u8 FlagState;
 		bool BasePickup;
+	};
+
+	struct FlagStatusCPMA
+	{
+		void Clear()
+		{
+			ChangeTime = S32_MIN;
+			InstantCapture = false;
+		}
+
+		s32 ChangeTime;
+		bool InstantCapture;
 	};
 
 	struct LastCaptureQL
@@ -113,5 +124,6 @@ private:
 	TeamInfo _teams[2];
 	LastCaptureQL _lastCaptureQL;
 	PlayerStateQL _playerStateQL;
+	FlagStatusCPMA _flagStatusCPMA[2];
 	bool _firstSnapshot;
 };

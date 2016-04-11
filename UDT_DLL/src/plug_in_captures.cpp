@@ -176,7 +176,18 @@ void udtParserPlugInCaptures::ProcessGamestateMessageQL(const udtGamestateCallba
 
 void udtParserPlugInCaptures::ProcessCommandMessageQL(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	ProcessCommandMessageFlagStatusCS(arg, parser);
+	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+	{
+		const udtString cs = parser.GetTokenizer().GetArg(2);
+		if(cs.GetLength() >= 2)
+		{
+			_teams[0].PrevFlagState = _teams[0].FlagState;
+			_teams[1].PrevFlagState = _teams[1].FlagState;
+			const char* const csString = cs.GetPtr();
+			_teams[0].FlagState = (u8)(csString[0] - '0');
+			_teams[1].FlagState = (u8)(csString[1] - '0');
+		}
+	}
 
 	if(arg.IsConfigString)
 	{
@@ -290,6 +301,11 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallback
 
 	for(u32 i = 0; i < 64; ++i)
 	{
+		if((s32)i == ps->clientNum)
+		{
+			continue;
+		}
+
 		PlayerInfo& player = _players[i];
 		player.PrevDefined = player.Defined;
 		player.Defined = false;
@@ -435,11 +451,41 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallback
 void udtParserPlugInCaptures::ProcessGamestateMessageCPMA(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
 	ProcessGamestateMessageClearStates(arg, parser);
+	_flagStatusCPMA[0].Clear();
+	_flagStatusCPMA[1].Clear();
 }
 
 void udtParserPlugInCaptures::ProcessCommandMessageCPMA(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	ProcessCommandMessageFlagStatusCS(arg, parser);
+	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+	{
+		const udtString cs = parser.GetTokenizer().GetArg(2);
+		if(cs.GetLength() >= 2)
+		{
+			_teams[0].PrevFlagState = _teams[0].FlagState;
+			_teams[1].PrevFlagState = _teams[1].FlagState;
+			const char* const csString = cs.GetPtr();
+			_teams[0].FlagState = (u8)(csString[0] - '0');
+			_teams[1].FlagState = (u8)(csString[1] - '0');
+
+			const s32 time = parser._inServerTime;
+			for(u32 i = 0; i < 2; ++i)
+			{
+				FlagStatusCPMA& flagStatus = _flagStatusCPMA[i];
+				const TeamInfo& team = _teams[i];
+				const s32 prevTime = flagStatus.ChangeTime;
+				const bool returned = team.PrevFlagState == (u8)idFlagStatus::Captured && team.FlagState == (u8)idFlagStatus::InBase;
+				if(time == prevTime && returned)
+				{
+					flagStatus.InstantCapture = true;
+				}
+				if(team.FlagState != team.PrevFlagState)
+				{
+					flagStatus.ChangeTime = time;
+				}
+			}
+		}
+	}
 }
 
 void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
@@ -460,6 +506,11 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 
 	for(u32 i = 0; i < 64; ++i)
 	{
+		if((s32)i == ps->clientNum)
+		{
+			continue;
+		}
+
 		PlayerInfo& player = _players[i];
 		player.PrevDefined = player.Defined;
 		player.Defined = false;
@@ -525,6 +576,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 					capture.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
 				}
 
+				FlagStatusCPMA& flagStatus = _flagStatusCPMA[soundIndex];
 				if(playerIndex >= 0 && playerIndex < 64)
 				{
 					capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
@@ -533,7 +585,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 					PlayerInfo& player = _players[playerIndex];
 					capture.Distance = Float3::Dist(player.PickupPosition, player.Position);
 					WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
-					if(team.BasePickup)
+					if(team.BasePickup && !flagStatus.InstantCapture)
 					{
 						capture.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
 					}
@@ -548,6 +600,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 				}
 
 				_captures.Add(capture);
+				flagStatus.InstantCapture = false;
 			}
 			else if(soundIndex == 4 || soundIndex == 5)
 			{
@@ -587,22 +640,6 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageDummy(const udtSnapshotCallb
 {
 }
 
-void udtParserPlugInCaptures::ProcessCommandMessageFlagStatusCS(const udtCommandCallbackArg& arg, udtBaseParser& parser)
-{
-	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
-	{
-		const udtString cs = parser.GetTokenizer().GetArg(2);
-		if(cs.GetLength() >= 2)
-		{
-			_teams[0].PrevFlagState = _teams[0].FlagState;
-			_teams[1].PrevFlagState = _teams[1].FlagState;
-			const char* const csString = cs.GetPtr();
-			_teams[0].FlagState = (u8)(csString[0] - '0');
-			_teams[1].FlagState = (u8)(csString[1] - '0');
-		}
-	}
-}
-
 void udtParserPlugInCaptures::ProcessGamestateMessageClearStates(const udtGamestateCallbackArg&, udtBaseParser& parser)
 {
 	memset(_players, 0, sizeof(_players));
@@ -636,6 +673,8 @@ void udtParserPlugInCaptures::ProcessGamestateMessageClearStates(const udtGamest
 			const char* const csString = cs.GetPtr();
 			_teams[0].FlagState = (u8)(csString[0] - '0');
 			_teams[1].FlagState = (u8)(csString[1] - '0');
+			_teams[0].PrevFlagState = _teams[0].FlagState;
+			_teams[1].PrevFlagState = _teams[1].FlagState;
 		}
 	}
 }
