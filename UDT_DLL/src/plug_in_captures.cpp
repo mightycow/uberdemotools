@@ -2,6 +2,8 @@
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
 
+#include <stdlib.h>
+
 
 /*
 Sound indices for EV_GLOBAL_TEAM_SOUND in CPMA:
@@ -339,7 +341,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallback
 			if(!hasFlag && prevHasFlag && storedCaptureCount > 0)
 			{
 				udtParseDataCapture& capture = _captures[storedCaptureCount - 1];
-				if(abs(capture.CaptureTimeMs - parser._inServerTime) < MAX_ALLOWED_TIME_DELTA_QL_MS)
+				if(abs((int)(capture.CaptureTimeMs - parser._inServerTime)) < (int)MAX_ALLOWED_TIME_DELTA_QL_MS)
 				{
 					const f32 distance = Float3::Dist(player.PickupPosition, player.Position);
 					capture.Distance = distance;
@@ -387,7 +389,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallback
 					if(captureCount > 0)
 					{
 						udtParseDataCapture& cap = _captures[captureCount - 1];
-						if(abs(cap.CaptureTimeMs - parser._inServerTime) < MAX_ALLOWED_TIME_DELTA_QL_MS)
+						if(abs((int)(cap.CaptureTimeMs - parser._inServerTime)) < (int)MAX_ALLOWED_TIME_DELTA_QL_MS)
 						{
 							_lastCaptureQL.Time = parser._inServerTime;
 							_lastCaptureQL.Distance = distance;
