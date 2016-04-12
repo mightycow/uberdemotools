@@ -961,10 +961,9 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 {
 	udtVMLinearAllocator::Stats allocStats;
 	udtVMLinearAllocator::GetThreadStats(allocStats);
-	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
-	perfStats[udtPerfStatsField::MemoryReserved] += (u64)(allocStats.ReservedByteCount + extraByteCount);
-	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
-	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)allocStats.CommittedByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += (u64)allocStats.UsedByteCount;
 	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
 	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
 	perfStats[udtPerfStatsField::ResizeCount] += (u64)allocStats.ResizeCount;
@@ -972,6 +971,10 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 
 void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
 {
+	const u64 extraByteCount = (u64)sizeof(udtParserContext) * (u64)threadCount;
+	perfStats[udtPerfStatsField::MemoryReserved] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += extraByteCount;
 	perfStats[udtPerfStatsField::Duration] = durationMs;
 	perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
 	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
