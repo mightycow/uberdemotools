@@ -22,7 +22,7 @@ void PrintHelp()
 	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
-	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 1)\n");
 	printf("-p=N  set the output protocol version to N\n");
 	printf("        N=68  output to .dm_68 files\n");
 	printf("              supported input: .dm3 and .dm_48\n");
@@ -48,7 +48,7 @@ struct Config
 	Config()
 	{
 		CustomOutputFolder = NULL;
-		MaxThreadCount = 4;
+		MaxThreadCount = 1;
 		OutputProtocol = udtProtocol::Invalid;
 	}
 
@@ -157,7 +157,7 @@ int udt_main(int argc, char** argv)
 	Config config;
 	for(int i = 1; i < argc - 1; ++i)
 	{
-		s32 localMaxThreads = 4;
+		s32 localMaxThreads = 1;
 		s32 localProtocol = (s32)udtProtocol::Invalid;
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::StartsWith(arg, "-p=") &&

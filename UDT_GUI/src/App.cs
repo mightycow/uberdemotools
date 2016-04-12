@@ -36,7 +36,7 @@ namespace Uber.DemoTools
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 8;
+        public int MaxThreadCount = 1;
         public bool MergeCutSectionsFromDifferentPatterns = true;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;

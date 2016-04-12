@@ -230,7 +230,10 @@ namespace Uber.DemoTools
 
             var maxThreadCountTextBox = new TextBox();
             _maxThreadCountTextBox = maxThreadCountTextBox;
-            maxThreadCountTextBox.ToolTip = "The maximum number of threads that you allow UDT to use during batch process operations";
+            maxThreadCountTextBox.ToolTip = 
+                "The maximum number of threads that you allow UDT to use during batch process operations\n" + 
+                "Only set this to a number greater than 1 if you read your demo files from an SSD\n" + 
+                "Otherwise, performance will decrease";
             maxThreadCountTextBox.HorizontalAlignment = HorizontalAlignment.Left;
             maxThreadCountTextBox.VerticalAlignment = VerticalAlignment.Center;
             maxThreadCountTextBox.Text = _app.Config.MaxThreadCount.ToString();

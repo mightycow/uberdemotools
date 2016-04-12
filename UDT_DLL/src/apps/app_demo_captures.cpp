@@ -81,7 +81,7 @@ struct Worker
 public:
 	Worker()
 	{
-		_maxThreadCount = 4;
+		_maxThreadCount = 1;
 		_topBaseToBaseTimeCount = 3;
 
 		_parseArg.SetSinglePlugIn(udtParserPlugIn::Captures);
@@ -416,7 +416,7 @@ void PrintHelp()
 	printf("\n");
 	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
-	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 1)\n");
 	printf("-b=N  top N base2base capture times per map   (default: 3)\n");
 	printf("-o=p  output path p of the JSON file with the sorted results\n");
 	printf("\n");
@@ -447,12 +447,12 @@ int udt_main(int argc, char** argv)
 	}
 
 	const char* outputFilePath = NULL;
-	u32 maxThreadCount = 4;
+	u32 maxThreadCount = 1;
 	u32 topBaseToBaseTimeCount = 3;
 	bool recursive = false;
 	for(int i = 1; i < argc - 1; ++i)
 	{
-		s32 localMaxThreads = 4;
+		s32 localMaxThreads = 1;
 		s32 localTimeCount = 3;
 
 		const udtString arg = udtString::NewConstRef(argv[i]);

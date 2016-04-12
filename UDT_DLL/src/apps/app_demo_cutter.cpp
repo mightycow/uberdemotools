@@ -33,7 +33,7 @@ void PrintHelp()
 	printf("-r    enable recursive demo file search   (default: off)\n");
 	printf("-o=p  set the output folder path to p     (default: input folder)\n");
 	printf("-g=N  set the game state index to N       (default: 0)\n");
-	printf("-t=N  set the maximum thread count to N   (default: 4)\n");
+	printf("-t=N  set the maximum thread count to N   (default: 1)\n");
 	printf("-s=T  set the start cut time/offset to T  (default offset: 10 seconds)\n");
 	printf("-e=T  set the end cut time/offset to T    (default offset: 10 seconds)\n");
 	printf("-c=p  set the config file path to p\n");
@@ -77,7 +77,7 @@ struct CutByChatConfig
 		ChatRules.Init(1 << 16, "CutByChatConfig::ChatRulesArray");
 		StringAllocator.Init(1 << 16, "CutByChatConfig::String");
 		CustomOutputFolder = NULL;
-		MaxThreadCount = 4;
+		MaxThreadCount = 1;
 		StartOffsetSec = 10;
 		EndOffsetSec = 10;
 	}
@@ -508,7 +508,7 @@ struct ProgramOptions
 {
 	const char* ConfigFilePath = NULL; // -c=
 	const char* OutputFolderPath = NULL; // -o=
-	u32 MaxThreadCount = 4; // -t=
+	u32 MaxThreadCount = 1; // -t=
 	u32 GameStateIndex = 0; // -g=
 	s32 StartTimeSec = S32_MIN; // -s=
 	s32 EndTimeSec = S32_MIN; // -e=
