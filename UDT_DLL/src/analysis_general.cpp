@@ -366,6 +366,11 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 	}
 }
 
+void udtGeneralAnalyzer::ClearStringAllocator()
+{
+	_stringAllocator.Clear();
+}
+
 void udtGeneralAnalyzer::SetIntermissionEndTime()
 {
 	_intermissionEndTime = _parser->_inServerTime;
