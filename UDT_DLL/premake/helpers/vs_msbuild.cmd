@@ -1,0 +1,1 @@
+"C:\Program Files (x86)\MSBuild\%vs_version%\Bin\MSBuild.exe" /t:Build /p:Configuration=%2 /p:Platform=%3 ..\.build\%vs_generator%\%1.vcxproj

@@ -118,9 +118,7 @@ void udtCutByFragAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& 
 
 void udtCutByFragAnalyzer::InitAllocators(u32 demoCount)
 {
-	// @FIXME: The following line is redundant?
-	_analyzerFinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByFragAnalyzer::Final");
-	_analyzer.InitAllocators(demoCount, _analyzerFinalAllocator, PlugIn->GetTempAllocator());
+	_analyzer.InitAllocators(demoCount, PlugIn->GetTempAllocator());
 }
 
 void udtCutByFragAnalyzer::StartAnalysis()

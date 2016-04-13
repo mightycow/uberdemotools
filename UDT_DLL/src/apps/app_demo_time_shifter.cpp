@@ -64,8 +64,8 @@ int udt_main(int argc, char** argv)
 		s32 localSnapshotCount = 2;
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::StartsWith(arg, "-s=") &&
-		   arg.Length >= 4 &&
-		   StringParseInt(localSnapshotCount, arg.String + 3) &&
+		   arg.GetLength() >= 4 &&
+		   StringParseInt(localSnapshotCount, arg.GetPtr() + 3) &&
 		   localSnapshotCount >= 1 &&
 		   localSnapshotCount <= 8)
 		{

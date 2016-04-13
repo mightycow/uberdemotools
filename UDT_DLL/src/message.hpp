@@ -18,9 +18,8 @@ struct idMessage
 
 struct idNetField
 {
-	const char* name;
-	s32         offset;
-	s32         bits; // 0 = floating-point number (f32)
+	s16 offset;
+	s16 bits; // 0 = floating-point number (f32)
 };
 
 struct udtMessage
@@ -31,13 +30,12 @@ public:
 	void  InitContext(udtContext* context);
 	void  InitProtocol(udtProtocol::Id protocol);
 	void  Init(u8* data, s32 length);
-	void  InitOOB(u8* data, s32 length );
 	void  WriteData (const void* data, s32 length);
 	void  Bitstream();
 	void  SetHuffman(bool huffman);
 	void  GoToNextByte();
 	bool  ValidState() const { return Buffer.valid; }
-	void  SetFileNamePtr(const char* fileName) { _fileName = fileName; } // This class has no ownership of the string.
+	void  SetFileName(udtString fileName) { _fileName = fileName; }
 
 	void  WriteBits(s32 value, s32 bits) { return (this->*_writeBits)(value, bits); }
 	void  WriteByte(s32 c) { WriteBits(c, 8); }
@@ -52,6 +50,7 @@ public:
 
 	// Functions with return type s32: -1 is returned when the state has become invalid.
 	s32   ReadBits(s32 bits) { return (this->*_readBits)(bits); }
+	s32   ReadBit() { return (this->*_readBit)(); }
 	s32   ReadByte() { return ReadBits(8); }
 	s32   ReadShort() { return ReadBits(16); }
 	s32   ReadSignedShort() { return ReadBits(-16); }
@@ -83,6 +82,8 @@ private:
 	bool  DummyWriteDeltaEntity(const idEntityStateBase*, const idEntityStateBase*, bool) { return false; }
 
 	s32   RealReadBits(s32 bits);
+	s32   RealReadBitNoHuffman();
+	s32   RealReadBitHuffman();
 	s32   RealReadFloat();
 	char* RealReadString(s32& length, s32 bufferLength, char* buffer);
 	void  RealReadData(void* buffer, s32 size);
@@ -97,7 +98,7 @@ private:
 	bool  RealWriteDeltaEntity(const idEntityStateBase* from, const idEntityStateBase* to, bool force);
 
 	void        SetValid(bool valid);
-	const char* GetFileName() const { return _fileName != NULL ? _fileName : "N/A"; }
+	const char* GetFileNamePtr() const { return _fileName.GetPtrSafe("N/A"); }
 
 public:
 	udtContext* Context;
@@ -105,6 +106,7 @@ public:
 
 private:
 	typedef s32   (udtMessage::*ReadBitsFunc)(s32);
+	typedef s32   (udtMessage::*ReadBitFunc)();
 	typedef s32   (udtMessage::*ReadFloatFunc)();
 	typedef char* (udtMessage::*ReadStringFunc)(s32&, s32, char*);
 	typedef void  (udtMessage::*ReadDataFunc)(void*, s32);
@@ -126,8 +128,9 @@ private:
 	s32                  _playerStateFieldCount;
 	size_t               _protocolSizeOfEntityState;
 	size_t               _protocolSizeOfPlayerState;
-	const char*          _fileName;
+	udtString            _fileName;
 	ReadBitsFunc         _readBits;
+	ReadBitFunc          _readBit;
 	ReadFloatFunc        _readFloat;
 	ReadStringFunc       _readString;
 	ReadDataFunc         _readData;

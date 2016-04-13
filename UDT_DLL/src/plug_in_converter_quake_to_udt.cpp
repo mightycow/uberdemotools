@@ -7,7 +7,7 @@ udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
 	_allocator.Init((uptr)sizeof(udtdData), "ParserPlugInQuakeToUDT::Data");
-	_data = (udtdData*)_allocator.Allocate((uptr)sizeof(udtdData));
+	_data = (udtdData*)_allocator.AllocateAndGetAddress((uptr)sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
 	_protocolSizeOfEntityState = 0;
@@ -77,9 +77,10 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 		const udtString& cs = parser._inConfigStrings[i];
 		if(!udtString::IsNullOrEmpty(cs))
 		{
+			const u32 length = cs.GetLength();
 			_outputFile->Write(&i, 4, 1);
-			_outputFile->Write(&cs.Length, 4, 1);
-			_outputFile->Write(cs.String, cs.Length, 1);
+			_outputFile->Write(&length, 4, 1);
+			_outputFile->Write(cs.GetPtr(), length, 1);
 		}
 	}
 

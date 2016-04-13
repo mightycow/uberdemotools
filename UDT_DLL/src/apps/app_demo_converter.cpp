@@ -22,7 +22,7 @@ void PrintHelp()
 	printf("-q    quiet mode: no logging to stdout        (default: off)\n");
 	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
-	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 1)\n");
 	printf("-p=N  set the output protocol version to N\n");
 	printf("        N=68  output to .dm_68 files\n");
 	printf("              supported input: .dm3 and .dm_48\n");
@@ -48,7 +48,7 @@ struct Config
 	Config()
 	{
 		CustomOutputFolder = NULL;
-		MaxThreadCount = 4;
+		MaxThreadCount = 1;
 		OutputProtocol = udtProtocol::Invalid;
 	}
 
@@ -59,13 +59,13 @@ struct Config
 
 static bool ConvertDemoBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, const Config& config)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ConvertDemoBatch::FilePathsArray");
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ConvertDemoBatch::ErrorCodesArray");
+	udtVMArray<const char*> filePaths(1 << 16, "ConvertDemoBatch::FilePathsArray");
+	udtVMArray<s32> errorCodes(1 << 16, "ConvertDemoBatch::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
-		filePaths[i] = files[i].Path;
+		filePaths[i] = files[i].Path.GetPtr();
 	}
 
 	udtMultiParseArg threadInfo;
@@ -91,7 +91,7 @@ static bool ConvertDemoBatch(udtParseArg& parseArg, const udtFileInfo* files, u3
 			tempAllocator.Clear();
 			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.GetPtrSafe("?"), udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
@@ -157,12 +157,12 @@ int udt_main(int argc, char** argv)
 	Config config;
 	for(int i = 1; i < argc - 1; ++i)
 	{
-		s32 localMaxThreads = 4;
+		s32 localMaxThreads = 1;
 		s32 localProtocol = (s32)udtProtocol::Invalid;
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::StartsWith(arg, "-p=") &&
-		   arg.Length >= 4 &&
-		   StringParseInt(localProtocol, arg.String + 3))
+		   arg.GetLength() >= 4 &&
+		   StringParseInt(localProtocol, arg.GetPtr() + 3))
 		{
 			if(localProtocol == 68)
 			{
@@ -178,14 +178,14 @@ int udt_main(int argc, char** argv)
 			recursive = true;
 		}
 		else if(udtString::StartsWith(arg, "-o=") &&
-				arg.Length >= 4 &&
+				arg.GetLength() >= 4 &&
 				IsValidDirectory(argv[i] + 3))
 		{
 			config.CustomOutputFolder = argv[i] + 3;
 		}
 		else if(udtString::StartsWith(arg, "-t=") &&
-				arg.Length >= 4 &&
-				StringParseInt(localMaxThreads, arg.String + 3) &&
+				arg.GetLength() >= 4 &&
+				StringParseInt(localMaxThreads, arg.GetPtr() + 3) &&
 				localMaxThreads >= 1 &&
 				localMaxThreads <= 16)
 		{
@@ -208,37 +208,25 @@ int udt_main(int argc, char** argv)
 		}
 
 		udtFileInfo fileInfo;
-		fileInfo.Name = NULL;
+		fileInfo.Name = udtString::NewNull();
+		fileInfo.Path = udtString::NewConstRef(inputPath);
 		fileInfo.Size = 0;
-		fileInfo.Path = inputPath;
 
 		return ConvertMultipleDemos(&fileInfo, 1, config) ? 0 : 1;
 	}
 
-	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
-	udtVMLinearAllocator persistAlloc;
-	udtVMLinearAllocator folderArrayAlloc;
-	udtVMLinearAllocator tempAlloc;
-	persistAlloc.Init(1 << 24, "udt_main::Persistent");
-	folderArrayAlloc.Init(1 << 24, "udt_main::FolderArray");
-	tempAlloc.Init(1 << 20, "udt_main::Temp");
-
 	udtFileListQuery query;
-	memset(&query, 0, sizeof(query));
+	query.InitAllocators(64);
 	query.FileFilter = &KeepOnlyCompatibleDemoFiles;
-	query.Files = &files;
-	query.FolderArrayAllocator = &folderArrayAlloc;
-	query.FolderPath = inputPath;
-	query.PersistAllocator = &persistAlloc;
+	query.FolderPath = udtString::NewConstRef(inputPath);
 	query.Recursive = recursive;
-	query.TempAllocator = &tempAlloc;
 	query.UserData = &config;
 	GetDirectoryFileList(query);
-	if(files.IsEmpty())
+	if(query.Files.IsEmpty())
 	{
 		fprintf(stderr, "No compatible demo file found.\n");
 		return 1;
 	}
 
-	return ConvertMultipleDemos(files.GetStartAddress(), files.GetSize(), config) ? 0 : 1;
+	return ConvertMultipleDemos(query.Files.GetStartAddress(), query.Files.GetSize(), config) ? 0 : 1;
 }

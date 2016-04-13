@@ -13,7 +13,9 @@ public:
 	~udtParserPlugInChat();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override { return (u32)sizeof(udtParseDataChat); }
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 
 	void StartDemoAnalysis() override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
@@ -29,12 +31,14 @@ private:
 	void ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser);
 	void ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const udtString* argument1);
 	bool IsPlayerCleanName(const udtString& cleanName);
+	void InitChatEvent(udtParseDataChat& chatEvent, s32 serverTimeMs);
 
 public:
 	udtVMArray<udtParseDataChat> ChatEvents;
 
 private:
 	udtString _cleanPlayerNames[64];
-	udtVMLinearAllocator _chatStringAllocator;
+	udtVMLinearAllocator _stringAllocator;
+	udtParseDataChatBuffers _buffers;
 	s32 _gameStateIndex;
 };

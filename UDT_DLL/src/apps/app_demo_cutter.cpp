@@ -33,7 +33,7 @@ void PrintHelp()
 	printf("-r    enable recursive demo file search   (default: off)\n");
 	printf("-o=p  set the output folder path to p     (default: input folder)\n");
 	printf("-g=N  set the game state index to N       (default: 0)\n");
-	printf("-t=N  set the maximum thread count to N   (default: 4)\n");
+	printf("-t=N  set the maximum thread count to N   (default: 1)\n");
 	printf("-s=T  set the start cut time/offset to T  (default offset: 10 seconds)\n");
 	printf("-e=T  set the end cut time/offset to T    (default offset: 10 seconds)\n");
 	printf("-c=p  set the config file path to p\n");
@@ -77,12 +77,12 @@ struct CutByChatConfig
 		ChatRules.Init(1 << 16, "CutByChatConfig::ChatRulesArray");
 		StringAllocator.Init(1 << 16, "CutByChatConfig::String");
 		CustomOutputFolder = NULL;
-		MaxThreadCount = 4;
+		MaxThreadCount = 1;
 		StartOffsetSec = 10;
 		EndOffsetSec = 10;
 	}
 
-	udtVMArrayWithAlloc<udtCutByChatRule> ChatRules;
+	udtVMArray<udtCutByChatRule> ChatRules;
 	udtVMLinearAllocator StringAllocator;
 	const char* CustomOutputFolder;
 	int MaxThreadCount;
@@ -125,24 +125,20 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 		return false;
 	}
 
-	char* const fileData = file.ReadAllAsString(fileAllocator);
-	if(fileData == NULL)
+	udtString fileString = file.ReadAllAsString(fileAllocator);
+	if(fileString.GetLength() == 0 || !fileString.IsValid())
 	{
 		return false;
 	}
-
-	const u32 fileLength = (u32)file.Length();
 	file.Close();
 
-	idTokenizer& tokenizer = context.Tokenizer;
-
-	udtVMArrayWithAlloc<udtString> lines(1 << 16, "ReadConfig::LinesArray");
-	udtString fileString = udtString::NewRef(fileData, fileLength, fileLength + 1);
+	udtVMArray<udtString> lines(1 << 16, "ReadConfig::LinesArray");
 	if(!StringSplitLines(lines, fileString))
 	{
 		return false;
 	}
 
+	idTokenizer& tokenizer = context.Tokenizer;
 	for(u32 i = 0, count = lines.GetSize(); i < count; ++i)
 	{
 		const udtString line = lines[i];
@@ -165,7 +161,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 			continue;
 		}
 
-		tokenizer.Tokenize(line.String);
+		tokenizer.Tokenize(line.GetPtr());
 		if(tokenizer.GetArgCount() != 2)
 		{
 			continue;
@@ -181,7 +177,8 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 			}
 			else if(udtString::Equals(tokenizer.GetArg(0), "Pattern"))
 			{
-				rule.Pattern = AllocateString(config.StringAllocator, tokenizer.GetArgString(1));
+				// We temporarily save an offset because the data might get relocated.
+				rule.Pattern = (const char*)(uintptr_t)udtString::NewClone(config.StringAllocator, tokenizer.GetArgString(1)).GetOffset();
 			}
 			else if(udtString::Equals(tokenizer.GetArg(0), "CaseSensitive"))
 			{
@@ -205,6 +202,13 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 				if(StringParseInt(tempInt, tokenizer.GetArgString(1)) && tempInt > 0) config.EndOffsetSec = tempInt;
 			}
 		}
+	}
+
+	// Fix up the pattern pointers.
+	for(u32 i = 0, count = config.ChatRules.GetSize(); i < count; ++i)
+	{
+		const u32 offset = (u32)(uintptr_t)config.ChatRules[i].Pattern;
+		config.ChatRules[i].Pattern = config.StringAllocator.GetStringAt(offset);
 	}
 
 	return true;
@@ -272,13 +276,13 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 
 static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, const u32 fileCount, const CutByChatConfig& config)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
+	udtVMArray<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
+	udtVMArray<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
-		filePaths[i] = files[i].Path;
+		filePaths[i] = files[i].Path.GetPtr();
 	}
 
 	udtMultiParseArg threadInfo;
@@ -317,7 +321,7 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 			tempAllocator.Clear();
 			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.GetPtrSafe("?"), udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
@@ -353,9 +357,9 @@ static bool CutByChatMultipleFiles(udtParseArg& parseArg, const udtFileInfo* fil
 static bool CutByChatSingleFile(udtParseArg& parseArg, const char* filePath, const CutByChatConfig& config)
 {
 	udtFileInfo fileInfo;
-	fileInfo.Name = NULL; // Ignored by CutByChatMultipleFiles.
-	fileInfo.Size = 0;    // Ignored by CutByChatMultipleFiles.
-	fileInfo.Path = filePath;
+	fileInfo.Name = udtString::NewNull();
+	fileInfo.Path = udtString::NewConstRef(filePath);
+	fileInfo.Size = 0;
 
 	return CutByChatMultipleFiles(parseArg, &fileInfo, 1, config);
 }
@@ -370,13 +374,13 @@ struct CutByMatchConfig
 
 static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, const u32 fileCount, const CutByMatchConfig& config)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
+	udtVMArray<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
+	udtVMArray<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
-		filePaths[i] = files[i].Path;
+		filePaths[i] = files[i].Path.GetPtr();
 	}
 
 	udtMultiParseArg threadInfo;
@@ -415,7 +419,7 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 			tempAllocator.Clear();
 			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.GetPtrSafe("?"), udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
@@ -451,9 +455,9 @@ static bool CutByMatchMultipleFiles(udtParseArg& parseArg, const udtFileInfo* fi
 static bool CutByMatchSingleFile(udtParseArg& parseArg, const char* filePath, const CutByMatchConfig& config)
 {
 	udtFileInfo fileInfo;
-	fileInfo.Name = NULL; // Ignored by CutByMatchMultipleFiles.
-	fileInfo.Size = 0;    // Ignored by CutByMatchMultipleFiles.
-	fileInfo.Path = filePath;
+	fileInfo.Name = udtString::NewNull();
+	fileInfo.Path = udtString::NewConstRef(filePath);
+	fileInfo.Size = 0;
 
 	return CutByMatchMultipleFiles(parseArg, &fileInfo, 1, config);
 }
@@ -504,7 +508,7 @@ struct ProgramOptions
 {
 	const char* ConfigFilePath = NULL; // -c=
 	const char* OutputFolderPath = NULL; // -o=
-	u32 MaxThreadCount = 4; // -t=
+	u32 MaxThreadCount = 1; // -t=
 	u32 GameStateIndex = 0; // -g=
 	s32 StartTimeSec = S32_MIN; // -s=
 	s32 EndTimeSec = S32_MIN; // -e=
@@ -545,13 +549,13 @@ int udt_main(int argc, char** argv)
 	}
 
 	const udtString commandString = udtString::NewConstRef(argv[1]);
-	if(commandString.Length != 1)
+	if(commandString.GetLength() != 1)
 	{
 		fprintf(stderr, "Invalid command.\n");
 		return 1;
 	}
 
-	const char command = commandString.String[0];
+	const char command = commandString.GetPtr()[0];
 	if(!IsValidCommand(command))
 	{
 		fprintf(stderr, "Invalid command.\n");
@@ -578,39 +582,39 @@ int udt_main(int argc, char** argv)
 			options.Recursive = true;
 		}
 		else if(udtString::StartsWith(arg, "-c=") &&
-				arg.Length >= 4)
+				arg.GetLength() >= 4)
 		{
 			options.ConfigFilePath = argv[i] + 3;
 		}
 		else if(udtString::StartsWith(arg, "-o=") &&
-				arg.Length >= 4)
+				arg.GetLength() >= 4)
 		{
 			options.OutputFolderPath = argv[i] + 3;
 		}
 		else if(udtString::StartsWith(arg, "-t=") &&
-				arg.Length >= 4 &&
-				StringParseInt(localInt, arg.String + 3) &&
+				arg.GetLength() >= 4 &&
+				StringParseInt(localInt, arg.GetPtr() + 3) &&
 				localInt >= 1 &&
 				localInt <= 16)
 		{
 			options.MaxThreadCount = (u32)localInt;
 		}
 		else if(udtString::StartsWith(arg, "-g=") &&
-				arg.Length >= 4 &&
-				StringParseInt(localInt, arg.String + 3) &&
+				arg.GetLength() >= 4 &&
+				StringParseInt(localInt, arg.GetPtr() + 3) &&
 				localInt >= 0)
 		{
 			options.GameStateIndex = (u32)localInt;
 		}
 		else if(udtString::StartsWith(arg, "-s=") &&
-				arg.Length >= 4 &&
-				StringParseSeconds(localInt, arg.String + 3))
+				arg.GetLength() >= 4 &&
+				StringParseSeconds(localInt, arg.GetPtr() + 3))
 		{
 			options.StartTimeSec = localInt;
 		}
 		else if(udtString::StartsWith(arg, "-e=") &&
-				arg.Length >= 4 &&
-				StringParseSeconds(localInt, arg.String + 3))
+				arg.GetLength() >= 4 &&
+				StringParseSeconds(localInt, arg.GetPtr() + 3))
 		{
 			options.EndTimeSec = localInt;
 		}
@@ -691,23 +695,11 @@ int udt_main(int argc, char** argv)
 	}
 	else
 	{
-		udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
-		udtVMLinearAllocator folderArrayAlloc;
-		udtVMLinearAllocator persistAlloc;
-		udtVMLinearAllocator tempAlloc;
-		folderArrayAlloc.Init(1 << 24, "udt_main::FolderArray");
-		persistAlloc.Init(1 << 24, "udt_main::Persistent");
-		tempAlloc.Init(1 << 20, "udt_main::Temp");
-
 		udtFileListQuery query;
-		memset(&query, 0, sizeof(query));
+		query.InitAllocators(64);
 		query.FileFilter = &KeepOnlyCuttableDemoFiles;
-		query.Files = &files;
-		query.FolderArrayAllocator = &folderArrayAlloc;
-		query.FolderPath = inputPath;
-		query.PersistAllocator = &persistAlloc;
+		query.FolderPath = udtString::NewConstRef(inputPath);
 		query.Recursive = options.Recursive;
-		query.TempAllocator = &tempAlloc;
 		GetDirectoryFileList(query);
 
 		if(command == 'c')
@@ -718,14 +710,14 @@ int udt_main(int argc, char** argv)
 				return 1;
 			}
 
-			return CutByChatMultipleFiles(parseArg.ParseArg, files.GetStartAddress(), files.GetSize(), config) ? 0 : 1;
+			return CutByChatMultipleFiles(parseArg.ParseArg, query.Files.GetStartAddress(), query.Files.GetSize(), config) ? 0 : 1;
 		}
 		else if(command == 'm')
 		{
 			CutByMatchConfig config;
 			LoadMatchConfig(config, options);
 
-			return CutByMatchMultipleFiles(parseArg.ParseArg, files.GetStartAddress(), files.GetSize(), config) ? 0 : 1;
+			return CutByMatchMultipleFiles(parseArg.ParseArg, query.Files.GetStartAddress(), query.Files.GetSize(), config) ? 0 : 1;
 		}
 	}
 

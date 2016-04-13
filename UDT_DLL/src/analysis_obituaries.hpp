@@ -21,21 +21,23 @@ public:
 
 	void SetNameAllocationEnabled(bool enabled) { _enableNameAllocation = enabled; }
 
-	void InitAllocators(u32 demoCount, udtVMLinearAllocator& finalAllocator, udtVMLinearAllocator& tempAllocator);
+	void InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator);
 	void ResetForNextDemo();
  
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
+	udtVMLinearAllocator& GetStringAllocator() { return _stringAllocator; }
+
 	udtVMArray<udtParseDataObituary> Obituaries;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtObituariesAnalyzer);
 
-	const char* AllocatePlayerName(udtBaseParser& parser, s32 playerIdx);
+	udtString AllocatePlayerName(udtBaseParser& parser, s32 playerIdx);
 
-	udtVMLinearAllocator _playerNamesAllocator;
+	udtVMLinearAllocator _stringAllocator;
 	udtVMLinearAllocator* _tempAllocator;
 	s32 _playerTeams[64];
 	s32 _gameStateIndex;
@@ -55,13 +57,27 @@ public:
 
 	void InitAllocators(u32 demoCount) override
 	{
-		Analyzer.InitAllocators(demoCount, FinalAllocator, *TempAllocator);
+		Analyzer.InitAllocators(demoCount, *TempAllocator);
 	}
 
-	u32 GetElementSize() const override
+	void CopyBuffersStruct(void* buffersStruct) const override
 	{
-		return (u32)sizeof(udtParseDataObituary);
-	};
+		*(udtParseDataObituaryBuffers*)buffersStruct = _buffers;
+	}
+
+	void UpdateBufferStruct() override
+	{
+		_buffers.ObituaryCount = Analyzer.Obituaries.GetSize();
+		_buffers.ObituaryRanges = BufferRanges.GetStartAddress();
+		_buffers.Obituaries = Analyzer.Obituaries.GetStartAddress();
+		_buffers.StringBuffer = Analyzer.GetStringAllocator().GetStartAddress();
+		_buffers.StringBufferSize = (u32)Analyzer.GetStringAllocator().GetCurrentByteCount();
+	}
+
+	u32  GetItemCount() const override
+	{
+		return Analyzer.Obituaries.GetSize();
+	}
 
 	void StartDemoAnalysis() override
 	{
@@ -83,9 +99,10 @@ public:
 		Analyzer.ProcessCommandMessage(arg, parser);
 	}
 
-	// udtObituariesAnalyzer::Obituaries is the final array.
 	udtObituariesAnalyzer Analyzer;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInObituaries);
+
+	udtParseDataObituaryBuffers _buffers;
 };

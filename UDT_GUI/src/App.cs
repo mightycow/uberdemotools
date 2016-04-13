@@ -36,7 +36,7 @@ namespace Uber.DemoTools
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 8;
+        public int MaxThreadCount = 1;
         public bool MergeCutSectionsFromDifferentPatterns = true;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
@@ -50,7 +50,6 @@ namespace Uber.DemoTools
         public int MidAirCutMinDistance = 300;
         public int MidAirCutMinAirTimeMs = 800;
         public bool MidAirCutAllowRocket = true;
-        public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
@@ -221,6 +220,16 @@ namespace Uber.DemoTools
             { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
         };
 
+        private static readonly List<UDT_DLL.udtProtocol> ValidWriteProtocols = new List<UDT_DLL.udtProtocol>
+        {
+            { UDT_DLL.udtProtocol.Dm66 },
+            { UDT_DLL.udtProtocol.Dm67 },
+            { UDT_DLL.udtProtocol.Dm68 },
+            { UDT_DLL.udtProtocol.Dm73 },
+            { UDT_DLL.udtProtocol.Dm90 },
+            { UDT_DLL.udtProtocol.Dm91 }
+        };
+
         private class ConfigStringDisplayInfo
         {
             public ConfigStringDisplayInfo(string description, string value)
@@ -339,6 +348,33 @@ namespace Uber.DemoTools
 
                 return demos;
             }
+        }
+
+        public List<DemoInfo> SelectedWriteDemos
+        {
+            get
+            {
+                return GetSelectedWriteDemos(false);
+            }
+        }
+
+        public List<DemoInfo> GetSelectedWriteDemos(bool silent)
+        {
+            var demos = SelectedDemos;
+            if(demos == null)
+            {
+                if(!silent) LogError("No demo was selected");
+                return null;
+            }
+
+            demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
+            if(demos.Count == 0)
+            {
+                if(!silent) LogError("No selected demo had a protocol version compatible with the requested operation");
+                return null;
+            }
+
+            return demos;
         }
 
         private static Color MultiplyRGBSpace(Color color, float value)
@@ -995,7 +1031,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteMergeCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null)
             {
                 return false;
@@ -1052,7 +1088,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteSplitCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null || demos.Count > 1)
             {
                 return false;
@@ -1151,6 +1187,10 @@ namespace Uber.DemoTools
         private void OnQuit()
         {
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             SaveConfig();
             _application.Shutdown();
         }
@@ -1908,11 +1948,14 @@ namespace Uber.DemoTools
 
         private void OnMergeDemosClicked()
         {
-            var demos = SelectedDemos;
-            if(demos == null || demos.Count < 2)
+            var demos = SelectedWriteDemos;
+            if(demos == null)
+            {
+                return;
+            }
+            if(demos.Count < 2)
             {
                 LogError("No enough demos selected. Please select at least two to proceed.");
-                return;
             }
 
             var firstProtocol = demos[0].ProtocolNumber;
@@ -2037,7 +2080,7 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             Marshal.WriteInt32(_cancelOperation, 0);
             ParseArg.CancelOperation = _cancelOperation;
-            ParseArg.PerformanceStats = UDT_DLL.BatchPerfStats;
+            ParseArg.PerformanceStats = IntPtr.Zero; // @TODO: Do we really want stats for the small jobs?
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
@@ -2089,6 +2132,11 @@ namespace Uber.DemoTools
 
             foreach(var newDemo in newDemos)
             {
+                if(newDemo == null)
+                {
+                    continue;
+                }
+
                 var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
                 demos[i].ChatEvents = newDemo.ChatEvents;
@@ -2444,6 +2492,12 @@ namespace Uber.DemoTools
                 return;
             }
 
+            if(!IsValidWriteProtocol(demo.ProtocolNumber))
+            {
+                LogError("The selected demo is using a protocol that UDT can't write.");
+                return;
+            }
+
             if(demo.Analyzed && demo.GameStateFileOffsets.Count == 1)
             {
                 LogError("The selected demo only has 1 game state message. There's nothing to split.");
@@ -2649,9 +2703,25 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(allRowsFixed, true);
         }
 
+        private MultithreadedJob _currentJob;
+
+        public bool CreateAndProcessJob(ref UDT_DLL.udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int maxBatchSize, MultithreadedJob.JobExecuter jobExecuter)
+        {
+            _currentJob = new MultithreadedJob();
+            _currentJob.Process(ref parseArg, filePaths, maxThreadCount, maxBatchSize, jobExecuter);
+            _currentJob.FreeResources();
+
+            return true;
+        }
+
         private void OnCancelJobClicked()
         {
+            // @NOTE: Not all job types will require an instance of MultithreadedJob.
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             LogWarning("Job canceled!");
         }
 
@@ -2716,6 +2786,19 @@ namespace Uber.DemoTools
             var prot = ProtocolFileExtDic[extension];
 
             return ProtocolFileExtDic[extension];
+        }
+
+        public static bool IsValidWriteProtocol(UDT_DLL.udtProtocol protocol)
+        {
+            foreach(var writeProtocol in ValidWriteProtocols)
+            {
+                if(writeProtocol == protocol)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void LogMessageNoColor(string message)
@@ -2980,6 +3063,22 @@ namespace Uber.DemoTools
             var data = udtData as JobThreadData;
             if(data == null)
             {
+                return;
+            }
+
+            if(Debugger.IsAttached)
+            {
+                data.UserFunction(data.UserData);
+
+                EnableUiThreadSafe();
+
+                VoidDelegate uiResetter = delegate
+                {
+                    _window.Title = "UDT";
+                    _demoListView.Focus();
+                };
+                _window.Dispatcher.Invoke(uiResetter);
+
                 return;
             }
 

@@ -30,7 +30,6 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	udtVMArrayWithAlloc<Frag> _frags;
-	udtVMLinearAllocator _analyzerFinalAllocator;
+	udtVMArray<Frag> _frags;
 	udtObituariesAnalyzer _analyzer;
 };

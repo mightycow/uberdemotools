@@ -18,6 +18,7 @@ public:
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
+	void ClearStringAllocator();
 	void SetIntermissionEndTime();
 	void ResetForNextMatch();
 	bool HasMatchJustStarted() const;
@@ -48,8 +49,8 @@ public:
 	udtMod::Id          Mod() const;
 	udtOvertimeType::Id OvertimeType() const;
 	udtGamePlay::Id     GamePlay() const;
-	const char*         ModVersion() const;
-	const char*         MapName() const;
+	udtString           ModVersion() const;
+	udtString           MapName() const;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtGeneralAnalyzer);
@@ -109,8 +110,8 @@ private:
 	udtVMLinearAllocator _stringAllocator;
 	udtBaseParser* _parser;
 	udtVMLinearAllocator* _tempAllocator;
-	const char* _modVersion;
-	const char* _mapName;
+	udtString _modVersion; // Allocated by _stringAllocator.
+	udtString _mapName;    // Allocated by _stringAllocator.
 	s32 _gameStateIndex;
 	s32 _matchStartTime;
 	s32 _matchEndTime;

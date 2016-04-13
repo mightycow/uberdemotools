@@ -26,7 +26,7 @@ void FatalError(const char* file, int line, const char* function, UDT_PRINTF_FOR
 	const char* fileName = file;
 	u32 sepIdx = 0;
 	if(udtString::FindLastCharacterListMatch(sepIdx, fileString, udtString::NewConstRef("/\\")) && 
-	   sepIdx < fileString.Length - 1)
+	   sepIdx < fileString.GetLength() - 1)
 	{
 		fileName = file + sepIdx + 1;
 	}

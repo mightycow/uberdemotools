@@ -3,16 +3,11 @@
 #include "scoped_stack_allocator.hpp"
 
 
-void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& finalAllocator, udtVMLinearAllocator& tempAllocator)
+void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator)
 {
-	if(_enableNameAllocation)
-	{
-		_playerNamesAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::PlayerNames");
-	}
-
-	finalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::ObituariesArray");
+	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::PlayerNames");
 	_tempAllocator = &tempAllocator;
-	Obituaries.SetAllocator(finalAllocator);
+	Obituaries.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::ObituariesArray");
 }
 
 void udtObituariesAnalyzer::ResetForNextDemo()
@@ -42,8 +37,9 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 
 		const s32 targetTeamIdx = _playerTeams[eventInfo.TargetIndex];
 		const s32 attackerTeamIdx = (eventInfo.AttackerIndex == -1) ? -1 : _playerTeams[eventInfo.AttackerIndex];
-		const char* const targetName = AllocatePlayerName(parser, eventInfo.TargetIndex);
-		const char* const attackerName = AllocatePlayerName(parser, eventInfo.AttackerIndex);
+		const udtString targetName = AllocatePlayerName(parser, eventInfo.TargetIndex);
+		const udtString attackerName = AllocatePlayerName(parser, eventInfo.AttackerIndex);
+		const udtString modName = udtString::NewClone(_stringAllocator, GetUDTModName(eventInfo.MeanOfDeath));
 
 		udtParseDataObituary info;
 		info.TargetTeamIdx = targetTeamIdx;
@@ -53,27 +49,27 @@ void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 		info.ServerTimeMs = arg.Snapshot->serverTime;
 		info.TargetIdx = eventInfo.TargetIndex;
 		info.AttackerIdx = eventInfo.AttackerIndex;
-		info.TargetName = targetName;
-		info.AttackerName = attackerName;
-		info.MeanOfDeathName = GetUDTModName(eventInfo.MeanOfDeath);
+		WriteStringToApiStruct(info.TargetName, targetName);
+		WriteStringToApiStruct(info.AttackerName, attackerName);
+		WriteStringToApiStruct(info.MeanOfDeathName, modName);
 		Obituaries.Add(info);
 	}
 }
 
-const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 playerIdx)
+udtString udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 playerIdx)
 {
 	if(!_enableNameAllocation)
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
 
 	if(playerIdx == -1)
 	{
-		return AllocateString(_playerNamesAllocator, "world");
+		return udtString::NewClone(_stringAllocator, "world");
 	}
 
 	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
-	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].String;
+	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].GetPtr();
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
 
@@ -81,10 +77,10 @@ const char* udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32
 	bool hasClan;
 	if(!GetClanAndPlayerName(clan, player, hasClan, *_tempAllocator, parser._inProtocol, cs))
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
 
-	return udtString::NewCleanCloneFromRef(_playerNamesAllocator, parser._inProtocol, player).String;
+	return udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, player);
 }
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
@@ -96,7 +92,7 @@ void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackAr
 		if(!udtString::IsNullOrEmpty(cs))
 		{
 			udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs.String);
+			ParseConfigStringValueInt(_playerTeams[i], *_tempAllocator, "t", cs.GetPtr());
 		}
 	}
 }
@@ -130,5 +126,5 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 	}
 
 	udtVMScopedStackAllocator tempAllocScope(*_tempAllocator);
-	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs.String);
+	ParseConfigStringValueInt(_playerTeams[playerIdx], *_tempAllocator, "t", cs.GetPtr());
 }

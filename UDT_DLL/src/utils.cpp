@@ -20,11 +20,10 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 #undef UDT_MEAN_OF_DEATH_ITEM
 
 
-udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
+udtString CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
 	udtBaseParser* const parser = arg.Parser;
 	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
@@ -46,10 +45,8 @@ udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoS
 		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
-	char* startTime = NULL;
-	char* endTime = NULL;
-	FormatTimeForFileName(startTime, tempAllocator, arg.StartTimeMs);
-	FormatTimeForFileName(endTime, tempAllocator, arg.EndTimeMs);
+	const udtString startTime = FormatTimeForFileName(tempAllocator, arg.StartTimeMs);
+	const udtString endTime = FormatTimeForFileName(tempAllocator, arg.EndTimeMs);
 
 	const int gsIndex = parser->_inGameStateIndex;
 	const bool outputGsIndex = gsIndex > 0;
@@ -65,35 +62,33 @@ udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoS
 		sprintf(shortDesc, "_%s", arg.VeryShortDesc);
 	}
 
-	const char* outputFilePathParts[] = 
-	{ 
-		outputFilePathStart.String, 
-		"_CUT_", 
-		outputGsIndex ? gsIndexStr : "",
-		startTime, 
-		"_", 
-		endTime, 
-		arg.VeryShortDesc != NULL ? shortDesc : "",
-		udtGetFileExtensionByProtocol(parser->_inProtocol)
-	};
-	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
-
-	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
+	const udtString cut = udtString::NewConstRef("_CUT_");
+	const udtString us = udtString::NewConstRef("_");
+	const udtString gsIdx = udtString::NewConstRef(outputGsIndex ? gsIndexStr : "");
+	const udtString desc = udtString::NewConstRef(arg.VeryShortDesc != NULL ? shortDesc : "");
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(parser->_inProtocol));
+	const udtString* outputFilePathParts[] =
 	{
-		return NULL;
-	}
+		&outputFilePathStart,
+		&cut,
+		&gsIdx,
+		&startTime,
+		&us,
+		&endTime,
+		&desc,
+		&proto
+	};
+	const udtString filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
-	parser->_context->LogInfo("Writing cut demo: %s", filePath.String);
+	parser->_context->LogInfo("Writing cut demo: %s", filePath.GetPtr());
 
-	return stream;
+	return filePath;
 }
 
-udtStream* CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
+udtString CallbackConvertedDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
 	udtBaseParser* const parser = arg.Parser;
 	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
@@ -115,22 +110,17 @@ udtStream* CallbackConvertedDemoFileStreamCreation(udtString& filePath, const ud
 		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
-	const char* outputFilePathParts[] =
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(parser->_outProtocol));
+	const udtString* outputFilePathParts[] =
 	{
-		outputFilePathStart.String,
-		udtGetFileExtensionByProtocol(parser->_outProtocol)
+		&outputFilePathStart,
+		&proto
 	};
-	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
+	const udtString filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
-	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
-	{
-		return NULL;
-	}
+	parser->_context->LogInfo("Writing converted demo: %s", filePath.GetPtr());
 
-	parser->_context->LogInfo("Writing converted demo: %s", filePath.String);
-
-	return stream;
+	return filePath;
 }
 
 bool StringParseInt(s32& output, const char* string)
@@ -140,7 +130,7 @@ bool StringParseInt(s32& output, const char* string)
 
 bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
 {
-	if(string.String == NULL || rule.Pattern == NULL)
+	if(!string.IsValid() || rule.Pattern == NULL)
 	{
 		return false;
 	}
@@ -176,24 +166,20 @@ bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule&
 	return false;
 }
 
-bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText)
+bool StringSplitLines(udtVMArray<udtString>& lines, udtString& inOutText)
 {
-	const u32 length = (s32)inOutText.Length;
-
-	udtString tempString;
-	tempString.ReservedBytes = 0;
-	tempString.Length = 0;
+	const u32 length = inOutText.GetLength();
+	char* const inOutTextPtr = inOutText.GetWritePtr();
 
 	u32 lastStart = 0;
 	for(u32 i = 0; i < length; ++i)
 	{
-		if(inOutText.String[i] == '\r' || inOutText.String[i] == '\n')
+		if(inOutTextPtr[i] == '\r' || inOutTextPtr[i] == '\n')
 		{
-			inOutText.String[i] = '\0';
+			inOutTextPtr[i] = '\0';
 			if(i - lastStart > 0)
 			{
-				tempString.String = inOutText.String + lastStart;
-				lines.Add(tempString);
+				lines.Add(udtString::NewConstRef(inOutTextPtr + lastStart));
 			}
 			lastStart = i + 1;
 		}
@@ -201,14 +187,13 @@ bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutTex
 
 	if(lastStart < length)
 	{
-		tempString.String = inOutText.String + lastStart;
-		lines.Add(tempString);
+		lines.Add(udtString::NewConstRef(inOutTextPtr + lastStart));
 	}
 
 	// Fix line lengths.
 	for(u32 i = 0, end = lines.GetSize(); i < end; ++i)
 	{
-		lines[i] = udtString::NewConstRef(lines[i].String);
+		lines[i] = udtString::NewConstRef(lines[i].GetPtr());
 	}
 
 	inOutText = udtString::NewEmptyConstant();
@@ -216,7 +201,7 @@ bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutTex
 	return true;
 }
 
-bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs)
+udtString FormatTimeForFileName(udtVMLinearAllocator& allocator, s32 timeMs)
 {
 	bool negative = false;
 	if(timeMs < 0)
@@ -237,23 +222,19 @@ bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator
 		minutesCopy /= 10;
 	}
 
-	formattedTime = AllocateSpaceForString(allocator, minutesDigits + 2 + (negative ? 1 : 0));
-	if(formattedTime == NULL)
-	{
-		return false;
-	}
+	const u32 length = minutesDigits + 2 + (negative ? 1 : 0);
+	udtString formattedTime = udtString::NewEmpty(allocator, length + 1);
+	sprintf(formattedTime.GetWritePtr(), "%s%d%02d", negative ? "-" : "", minutes, seconds);
+	formattedTime.SetLength(length);
 
-	sprintf(formattedTime, "%s%d%02d", negative ? "-" : "", minutes, seconds);
-
-	return true;
+	return formattedTime;
 }
 
-bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount)
+udtString FormatBytes(udtVMLinearAllocator& allocator, u64 byteCount)
 {
 	if(byteCount == 0)
 	{
-		formattedSize = AllocateString(allocator, "0 byte");
-		return true;
+		return udtString::NewClone(allocator, "0 byte");
 	}
 
 	const char* const units[] = { "bytes", "KB", "MB", "GB", "TB" };
@@ -270,10 +251,10 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byte
 
 	const f64 number = (f64)prev / 1024.0f;
 
-	formattedSize = (char*)allocator.Allocate(64);
-	sprintf(formattedSize, "%.3f %s", number, units[unitIndex]);
+	udtString formattedSize = udtString::NewEmpty(allocator, 64);
+	sprintf(formattedSize.GetWritePtr(), "%.3f %s", number, units[unitIndex]);
 
-	return true;
+	return formattedSize;
 }
 
 bool StringParseSeconds(s32& duration, const char* buffer)
@@ -298,7 +279,7 @@ bool StringParseSeconds(s32& duration, const char* buffer)
 bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset)
 {
 	const u32 chunkSize = 64 * 1024;
-	u8* const chunk = allocator.Allocate(chunkSize);
+	u8* const chunk = allocator.AllocateAndGetAddress(chunkSize);
 
 	const u32 fullChunkCount = (endOffset - startOffset) / chunkSize;
 	const u32 lastChunkSize = (endOffset - startOffset) % chunkSize;
@@ -344,30 +325,6 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	return runner.WasSuccess();
 }
 
-char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)
-{
-	if(string == NULL)
-	{
-		return NULL;
-	}
-
-	if(stringLength == 0)
-	{
-		stringLength = (u32)strlen(string);
-	}
-
-	char* newString = (char*)allocator.Allocate(stringLength + 1);
-	memcpy(newString, string, stringLength);
-	newString[stringLength] = '\0';
-
-	return newString;
-}
-
-char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
-{
-	return (char*)allocator.Allocate(stringLength + 1);
-}
-
 static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
 	// The format is the following: "key1\value1\key2\value2"
@@ -376,9 +333,9 @@ static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator,
 
 	const udtString inputString = udtString::NewConstRef(configString);
 	const udtString varNameString = udtString::NewConstRef(varName);
-	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.Length] == '\\')
+	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.GetLength()] == '\\')
 	{
-		return configString + varNameString.Length + 1;
+		return configString + varNameString.GetLength() + 1;
 	}
 
 	const udtString separator = udtString::NewConstRef("\\");
@@ -388,7 +345,7 @@ static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator,
 	u32 charIndex = 0;
 	if(udtString::Contains(charIndex, inputString, pattern))
 	{
-		return configString + charIndex + pattern.Length;
+		return configString + charIndex + pattern.GetLength();
 	}
 
 	return NULL;
@@ -743,17 +700,19 @@ s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id g
 void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tempAllocator)
 {
 	u32 allocatorCount = 256;
-	udtVMLinearAllocator** const allocators = (udtVMLinearAllocator**)tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * allocatorCount);
+	const uptr allocatorListOffset = tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * (uptr)allocatorCount);
+	udtVMLinearAllocator** allocators = (udtVMLinearAllocator**)tempAllocator.GetAddressAt(allocatorListOffset);
 	udtVMLinearAllocator::GetThreadAllocators(allocatorCount, allocators);
 
-	char* unusedMemory = NULL;
-	char* reservedMemory = NULL;
+	udtString unusedMemory;
+	udtString reservedMemory;
 	uptr totalUnused = 0;
 	uptr totalReserved = 0;
 	uptr unusedPc = 0;
 	context.LogInfo("Thread allocator count: %u", allocatorCount);
 	for(u32 i = 0; i < allocatorCount; ++i)
 	{
+		allocators = (udtVMLinearAllocator**)tempAllocator.GetAddressAt(allocatorListOffset);
 		udtVMLinearAllocator& allocator = *allocators[i];
 		if(allocator.GetReservedByteCount() == 0)
 		{
@@ -771,17 +730,21 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 		totalReserved += allocator.GetReservedByteCount();
 		unusedPc = (100 * lowestUnusedByteCount) / allocator.GetReservedByteCount();
 
+		// Use allocator before any new allocations calls before it could be relocated by FormatBytes.
+		const u64 reservedByteCount = allocator.GetReservedByteCount();
+		const u32 resizeCount = allocator.GetResizeCount();
+
 		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
-		FormatBytes(unusedMemory, tempAllocator, (u64)lowestUnusedByteCount);
-		FormatBytes(reservedMemory, tempAllocator, (u64)allocator.GetReservedByteCount());
-		context.LogInfo("- %s: reserved %s - unused %s (%u%%)", name, reservedMemory, unusedMemory, (u32)unusedPc);
+		unusedMemory = FormatBytes(tempAllocator, (u64)lowestUnusedByteCount);
+		reservedMemory = FormatBytes(tempAllocator, (u64)reservedByteCount);
+		context.LogInfo("- %s: reserved %s - unused %s (%u%%) - resized %u", name, reservedMemory.GetPtr(), unusedMemory.GetPtr(), (u32)unusedPc, resizeCount);
 	}
 
 	unusedPc = (100 * totalUnused) / totalReserved;
-	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
-	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
-	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, (u32)unusedPc);
-	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
+	unusedMemory = FormatBytes(tempAllocator, (u64)totalUnused);
+	reservedMemory = FormatBytes(tempAllocator, (u64)totalReserved);
+	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory.GetPtr(), (u32)unusedPc);
+	context.LogInfo("Thread reserved byte count: %s", reservedMemory.GetPtr());
 }
 
 bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
@@ -998,20 +961,38 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 {
 	udtVMLinearAllocator::Stats allocStats;
 	udtVMLinearAllocator::GetThreadStats(allocStats);
-	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
 	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
-	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
-	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)allocStats.CommittedByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += (u64)allocStats.UsedByteCount;
 	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
 	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
+	perfStats[udtPerfStatsField::ResizeCount] += (u64)allocStats.ResizeCount;
 }
 
 void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
 {
+	const u64 extraByteCount = (u64)sizeof(udtParserContext) * (u64)threadCount;
+	perfStats[udtPerfStatsField::MemoryReserved] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += extraByteCount;
 	perfStats[udtPerfStatsField::Duration] = durationMs;
 	perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
 	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
 	perfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted];
+}
+
+void WriteStringToApiStruct(u32& offset, const udtString& string)
+{
+	u32* const offsetAndLength = &offset;
+	offsetAndLength[0] = string.GetOffset();
+	offsetAndLength[1] = string.GetLength();
+}
+
+void WriteNullStringToApiStruct(u32& offset)
+{
+	u32* const offsetAndLength = &offset;
+	offsetAndLength[0] = U32_MAX;
+	offsetAndLength[1] = 0;
 }
 
 namespace idEntityEvent

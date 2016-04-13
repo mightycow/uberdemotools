@@ -12,6 +12,7 @@
 #include "analysis_splitter.hpp"
 #include "path.hpp"
 #include "thread_local_allocators.hpp"
+#include "system.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -506,6 +507,11 @@ UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCou
 
 UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
 {
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
 	destPerfStats[udtPerfStatsField::ThreadCount] = sourcePerfStats[udtPerfStatsField::ThreadCount];
 	destPerfStats[udtPerfStatsField::AllocatorCount] = sourcePerfStats[udtPerfStatsField::AllocatorCount];
 
@@ -520,6 +526,47 @@ UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfSta
 		destPerfStats[udtPerfStatsField::MemoryUsed] = sourcePerfStats[udtPerfStatsField::MemoryUsed];
 		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
 	}
+
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
+{
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	destPerfStats[udtPerfStatsField::ThreadCount] += sourcePerfStats[udtPerfStatsField::ThreadCount];
+	destPerfStats[udtPerfStatsField::AllocatorCount] += sourcePerfStats[udtPerfStatsField::AllocatorCount];
+	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
+	destPerfStats[udtPerfStatsField::Duration] = udt_max(destPerfStats[udtPerfStatsField::Duration], sourcePerfStats[udtPerfStatsField::Duration]);
+	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	destPerfStats[udtPerfStatsField::MemoryReserved] += sourcePerfStats[udtPerfStatsField::MemoryReserved];
+	destPerfStats[udtPerfStatsField::MemoryCommitted] += sourcePerfStats[udtPerfStatsField::MemoryCommitted];
+	destPerfStats[udtPerfStatsField::MemoryUsed] += sourcePerfStats[udtPerfStatsField::MemoryUsed];
+	destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount)
+{
+	if(cpuCoreCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	u32 count;
+	if(!GetProcessorCoreCount(count))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+	
+	*cpuCoreCount = count;
 
 	return (s32)udtErrorCode::None;
 }
@@ -585,13 +632,13 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
-	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
-	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart.String, index + 1, udtGetFileExtensionByProtocol(protocol));
+	udtString newFilePath = udtString::NewEmpty(tempAllocator, UDT_MAX_PATH_LENGTH);
+	sprintf(newFilePath.GetWritePtr(), "%s_SPLIT_%u%s", outputFilePathStart.GetPtr(), index + 1, udtGetFileExtensionByProtocol(protocol));
 
-	context.LogInfo("Writing demo %s...", newFilePath);
+	context.LogInfo("Writing demo %s...", newFilePath.GetPtr());
 
 	udtFileStream outputFile;
-	if(!outputFile.Open(newFilePath, udtFileOpenMode::Write))
+	if(!outputFile.Open(newFilePath.GetPtr(), udtFileOpenMode::Write))
 	{
 		context.LogError("Could not open file");
 		return false;
@@ -765,7 +812,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		{
 			context->Parser.AddCut(
 				info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, 
-				&CallbackCutDemoFileStreamCreation, NULL, &streamInfo);
+				&CallbackCutDemoFileNameCreation, NULL, &streamInfo);
 		}
 	}
 
@@ -844,15 +891,14 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
+UDT_API(s32) udtGetContextPlugInBuffers(udtParserContext* context, u32 plugInId, void* buffersStruct)
 {
-	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||
-	   demoIdx >= context->DemoCount)
+	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffersStruct == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!context->GetDataInfo(demoIdx, plugInId, buffer, count))
+	if(!context->CopyBuffersStruct(plugInId, buffersStruct))
 	{
 		return udtErrorCode::OperationFailed;
 	}

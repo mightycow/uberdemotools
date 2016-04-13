@@ -1,5 +1,6 @@
 #include "threads.hpp"
 #include "thread_local_allocators.hpp"
+#include "memory.hpp"
 
 
 #if defined(UDT_WINDOWS)
@@ -87,7 +88,7 @@ bool udtThread::CreateAndStart(ThreadEntryPoint entryPoint, void* userData)
 	pthread_attr_destroy(&attribs);
 	if(success)
 	{
-		_threadhandle = (u8*)malloc(sizeof(pthread_t));
+		_threadhandle = (u8*)udt_malloc(sizeof(pthread_t));
 		memcpy(_threadhandle, &thread, sizeof(pthread_t));
 	}
 

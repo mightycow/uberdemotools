@@ -42,18 +42,16 @@ struct CallbackCutDemoFileStreamCreationInfo
 	const char* OutputFolderPath;
 };
 
-extern udtStream*  CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
-extern udtStream*  CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg);
+extern udtString   CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
+extern udtString   CallbackConvertedDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
 extern bool        StringParseInt(s32& output, const char* string);
-extern bool        StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText);
-extern bool        FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
-extern bool        FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.
+extern bool        StringSplitLines(udtVMArray<udtString>& lines, udtString& inOutText);
+extern udtString   FormatTimeForFileName(udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
+extern udtString   FormatBytes(udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.
 extern bool        StringParseSeconds(s32& duration, const char* buffer); // Format is minutes:seconds or seconds.
 extern bool        CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset);
 extern s32         GetErrorCode(bool success, const s32* cancel);
 extern bool        RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation);
-extern char*       AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0);
-extern char*       AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength);
 extern s32         ConvertPowerUpFlagsToValue(s32 flags);
 extern const char* GetTeamName(s32 team);
 extern s32         GetUDTPlayerMODBitFromIdMod(s32 idMod, udtProtocol::Id protocol);
@@ -73,6 +71,8 @@ extern bool        IsRoundBasedMode(udtGameType::Id gameType);
 extern void        PerfStatsInit(u64* perfStats);
 extern void        PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount);
 extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs);
+extern void        WriteStringToApiStruct(u32& offset, const udtString& string);
+extern void        WriteNullStringToApiStruct(u32& offset);
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.

@@ -40,7 +40,6 @@ namespace Uber.DemoTools
             }
 
             config.MidAirCutAllowRocket = _allowRocketsCheckBox.IsChecked ?? false;
-            config.MidAirCutAllowGrenade = _allowGrenadesCheckBox.IsChecked ?? false;
             config.MidAirCutAllowBFG = _allowBFGsCheckBox.IsChecked ?? false;
         }
 
@@ -53,7 +52,6 @@ namespace Uber.DemoTools
         private TextBox _minDistanceEditBox;
         private TextBox _minAirTimeEditBox;
         private CheckBox _allowRocketsCheckBox;
-        private CheckBox _allowGrenadesCheckBox;
         private CheckBox _allowBFGsCheckBox;
 
         private FrameworkElement CreateTab()
@@ -76,12 +74,6 @@ namespace Uber.DemoTools
             allowRocketsCheckBox.VerticalAlignment = VerticalAlignment.Center;
             allowRocketsCheckBox.IsChecked = _app.Config.MidAirCutAllowRocket;
 
-            var allowGrenadesCheckBox = new CheckBox();
-            _allowGrenadesCheckBox = allowGrenadesCheckBox;
-            allowGrenadesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            allowGrenadesCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            allowGrenadesCheckBox.IsChecked = _app.Config.MidAirCutAllowGrenade;
-
             var allowBFGsCheckBox = new CheckBox();
             _allowBFGsCheckBox = allowBFGsCheckBox;
             allowBFGsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -90,7 +82,6 @@ namespace Uber.DemoTools
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Allow Rockets?", allowRocketsCheckBox));
-            //rulesPanelList.Add(App.CreateTuple("Allow Grenades?", allowGrenadesCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow BFG?", allowBFGsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Min. Distance", minDistanceEditBox));
             rulesPanelList.Add(App.CreateTuple("Min. Air Time [ms]", minAirTimeEditBox));
@@ -160,17 +151,16 @@ namespace Uber.DemoTools
 
         private void OnCutClicked()
         {
-            var demos = _app.SelectedDemos;
+            var demos = _app.SelectedWriteDemos;
             if(demos == null)
             {
-                _app.LogError("No demo was selected. Please select one to proceed.");
                 return;
             }
 
             _app.SaveBothConfigs();
 
             var config = _app.Config;
-            if(!config.MidAirCutAllowRocket && !config.MidAirCutAllowGrenade && !config.MidAirCutAllowBFG)
+            if(!config.MidAirCutAllowRocket && !config.MidAirCutAllowBFG)
             {
                 _app.LogError("You didn't check any weapon. Please check at least one to proceed.");
                 return;

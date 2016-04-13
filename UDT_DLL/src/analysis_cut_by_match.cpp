@@ -47,7 +47,9 @@ void udtCutByMatchAnalyzer::FinishAnalysis()
 {
 	_statsAnalyzer.FinishProcessingDemo();
 
-	const udtParseDataStats* const matches = (const udtParseDataStats*)_statsAnalyzer.GetFirstElementAddress(0);
+	udtParseDataStatsBuffers statsBuffers;
+	_statsAnalyzer.CopyBuffersStruct(&statsBuffers);
+	const udtParseDataStats* const matches = statsBuffers.MatchStats;
 	if(matches == NULL)
 	{
 		return;
@@ -55,7 +57,7 @@ void udtCutByMatchAnalyzer::FinishAnalysis()
 
 	const udtCutByMatchArg& info = GetExtraInfo<udtCutByMatchArg>();
 
-	const u32 matchCount = udt_min(_statsAnalyzer.GetElementCount(0), (u32)UDT_COUNT_OF(ShortDescriptions));
+	const u32 matchCount = udt_min(statsBuffers.MatchCount, (u32)UDT_COUNT_OF(ShortDescriptions));
 	for(u32 i = 0; i < matchCount; ++i)
 	{
 		const s32 startTime = matches[i].StartTimeMs;

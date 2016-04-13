@@ -229,6 +229,11 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequen
 
 struct PlayerEntities
 {
+	PlayerEntities()
+	{
+		Players.Init(1 << 16, "PlayerEntities::PlayersArray");
+	}
+
 	idLargestEntityState TempEntityState;
 	udtVMArray<idEntityStateBase*> Players;
 };
@@ -325,10 +330,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	}
 
 	// Update player information: position, Z-axis change, fire projectiles, etc.
-	udtVMLinearAllocator& tempAllocator = PlugIn->GetTempAllocator();
-	udtVMScopedStackAllocator tempAllocScope(tempAllocator);
 	PlayerEntities playersInfo;
-	playersInfo.Players.SetAllocator(tempAllocator);
 	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._inProtocol);
 	for(u32 i = 0, count = playersInfo.Players.GetSize(); i < count; ++i)
 	{

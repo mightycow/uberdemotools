@@ -13,7 +13,9 @@ public:
 	~udtParserPlugInCaptures();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override;
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
@@ -23,37 +25,105 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInCaptures);
 
+	typedef void (udtParserPlugInCaptures::*ProcessGamestateFunc)(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	typedef void (udtParserPlugInCaptures::*ProcessCommandFunc)(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	typedef void (udtParserPlugInCaptures::*ProcessSnapshotFunc)(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageQL(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageQL(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageCPMA(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageCPMA(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageCPMA(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageDummy(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageDummy(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageDummy(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+
+	void ProcessGamestateMessageClearStates(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+
 	// Teams: 0=red, 1=blue.
 
-	const char* GetPlayerName(s32 playerIndex, udtBaseParser& parser);
-	bool        WasFlagPickedUpInBase(u32 teamIndex);
+	udtString GetPlayerName(s32 playerIndex, udtBaseParser& parser);
+	bool      WasFlagPickedUpInBase(u32 teamIndex);
 
 	struct PlayerInfo
 	{
-		s32 CaptureCount;
-		s32 PickupTimeMs;
-		s32 PrevCaptureCount;
 		f32 PickupPosition[3];
 		f32 Position[3];
-		bool Capped;
-		bool PrevCapped;
-		bool BasePickup;
-		bool HasFlag;
-		bool PrevHasFlag;
+		s32 PickupTime; // Only for QL.
+		bool Defined;     // Defined in this snapshot?
+		bool PrevDefined; // Defined in the previous snapshot?
+		bool PickupPositionValid;
 	};
 
 	struct TeamInfo
 	{
+		s32 PlayerIndex;
 		u8 PrevFlagState;
 		u8 FlagState;
+		bool BasePickup;
 	};
 
+	struct FlagStatusCPMA
+	{
+		void Clear()
+		{
+			ChangeTime = S32_MIN;
+			InstantCapture = false;
+		}
+
+		s32 ChangeTime;
+		bool InstantCapture;
+	};
+
+	struct LastCaptureQL
+	{
+		bool IsValid() const
+		{
+			return Time != S32_MIN && Distance > 0.0f;
+		}
+
+		void Clear()
+		{
+			Time = S32_MIN;
+			Distance = -1.0f;
+		}
+
+		s32 Time;
+		f32 Distance;
+	};
+
+	struct PlayerStateQL
+	{
+		void Clear()
+		{
+			CaptureCount = 0;
+			PrevCaptureCount = 0;
+			HasFlag = false;
+			PrevHasFlag = false;
+		}
+
+		s32 CaptureCount;
+		s32 PrevCaptureCount;
+		bool HasFlag;
+		bool PrevHasFlag;
+	};
+
+	ProcessGamestateFunc _processGamestate;
+	ProcessCommandFunc _processCommand;
+	ProcessSnapshotFunc _processSnapshot;
 	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataCapture> _captures; // The final array.
-	const char* _mapName;
+	udtVMArray<udtParseDataCapture> _captures;
+	udtParseDataCaptureBuffers _buffers;
+	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
 	PlayerInfo _players[64];
 	TeamInfo _teams[2];
+	LastCaptureQL _lastCaptureQL;
+	PlayerStateQL _playerStateQL;
+	FlagStatusCPMA _flagStatusCPMA[2];
 	bool _firstSnapshot;
 };

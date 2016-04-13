@@ -2,6 +2,7 @@
 
 
 #include "context.hpp"
+#include "string.hpp"
 
 
 struct udtSeekOrigin
@@ -26,6 +27,6 @@ struct udtStream
 	virtual u64 Length() = 0; // -1 for failure.
 	virtual s32 Close() = 0; // 0 for success. Must be safe to call more than once.
 
-	u8*   ReadAll(udtVMLinearAllocator& allocator);
-	char* ReadAllAsString(udtVMLinearAllocator& allocator); // Will allocate and set the trailing NULL terminator.
+	uptr      ReadAll(udtVMLinearAllocator& allocator);
+	udtString ReadAllAsString(udtVMLinearAllocator& allocator); // Will allocate and set the trailing NULL terminator.
 };

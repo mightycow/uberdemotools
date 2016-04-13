@@ -2,48 +2,40 @@
 #include "utils.hpp"
 
 
-u8* udtStream::ReadAll(udtVMLinearAllocator& allocator)
+uptr udtStream::ReadAll(udtVMLinearAllocator& allocator)
 {
 	const u32 length = (u32)Length();
 	if(length == 0)
 	{
-		return NULL;
+		return uptr(~0);
 	}
 
-	u8* const data = allocator.Allocate(length);
-	if(data == NULL)
-	{
-		return NULL;
-	}
-
+	const uptr offset = allocator.Allocate(length);
+	u8* const data = allocator.GetAddressAt(offset);
 	if(Read(data, length, 1) != 1)
 	{
-		return NULL;
+		return uptr(~0);
 	}
 
-	return (u8*)data;
+	return offset;
 }
 
-char* udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
+udtString udtStream::ReadAllAsString(udtVMLinearAllocator& allocator)
 {
 	const u32 length = (u32)Length();
 	if(length == 0)
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
 
-	char* const data = AllocateSpaceForString(allocator, length);
-	if(data == NULL)
+	udtString result = udtString::NewEmpty(allocator, length + 1);
+	char* const resultPtr = result.GetWritePtr();
+	if(Read(resultPtr, length, 1) != 1)
 	{
-		return NULL;
+		return udtString::NewNull();
 	}
+	result.SetLength(length);
+	resultPtr[length] = '\0';
 
-	if(Read(data, length, 1) != 1)
-	{
-		return NULL;
-	}
-
-	data[length] = '\0';
-
-	return data;
+	return result;
 }

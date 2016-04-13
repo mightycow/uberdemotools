@@ -12,6 +12,11 @@
 #include <stdlib.h>
 
 
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) sizeof(AnalyzerType) +
+static const size_t SizeOfAllAnalyzers = UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM) 0;
+#undef UDT_CUT_PATTERN_ITEM
+
+
 struct CutSection : public udtCutSection
 {
 	// qsort isn't guaranteed to be stable, so we work around that.
@@ -63,14 +68,14 @@ udtCutByPatternPlugIn::udtCutByPatternPlugIn()
 {
 	_analyzers.Init(1 << 12, "CutByPatternPlugIn::AnalyzersArray");
 	_analyzerTypes.Init(1 << 12, "CutByPatternPlugIn::AnalyzerTypesArray");
-	_analyzerAllocator.Init(1 << 16, "CutByPatternPlugIn::AnalyzerData");
+	_analyzerAllocator.DisableReserveOverride();
+	_analyzerAllocator.Init((uptr)SizeOfAllAnalyzers, "CutByPatternPlugIn::AnalyzerData");
 	_analyzerAllocatorScope.SetAllocator(_analyzerAllocator);
 }
 
 void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByPatternPlugIn::CutSectionsArray");
-	CutSections.SetAllocator(FinalAllocator);
+	CutSections.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByPatternPlugIn::CutSectionsArray");
 }
 
 void udtCutByPatternPlugIn::InitAnalyzerAllocators(u32 demoCount)
@@ -88,7 +93,7 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatt
 		return NULL;
 	}
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = _analyzerAllocatorScope.NewObject<AnalyzerType>(); break;
+#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = (udtCutByPatternAnalyzerBase*)_analyzerAllocator.GetAddressAt(_analyzerAllocatorScope.NewObject<AnalyzerType>()); break;
 	udtCutByPatternAnalyzerBase* analyzer = NULL;
 	switch(patternType)
 	{
@@ -252,10 +257,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
-	TempAllocator->Clear();
-	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
-	udtVMArray<CutSection> tempCutSections;
-	tempCutSections.SetAllocator(*TempAllocator);
+	udtVMArray<CutSection> tempCutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
 		udtCutByPatternAnalyzerBase* const analyzer = _analyzers[i];
@@ -293,7 +295,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	//
 	if((GetInfo().Flags & (u32)udtCutByPatternArgFlags::MergeCutSections) != 0)
 	{
-		udtVMArrayWithAlloc<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
+		udtVMArray<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
 		AppendCutSections(cutSections, tempCutSections);
 		MergeRanges(CutSections, cutSections);
 	}
@@ -315,7 +317,7 @@ bool udtCutByPatternPlugIn::GetTempPlayerName(udtString& playerName, udtBasePars
 
 	udtString clan;
 	bool hasClan;
-	if(!GetClanAndPlayerName(clan, playerName, hasClan, *TempAllocator, parser._inProtocol, parser._inConfigStrings[csIdx].String))
+	if(!GetClanAndPlayerName(clan, playerName, hasClan, *TempAllocator, parser._inProtocol, parser._inConfigStrings[csIdx].GetPtr()))
 	{
 		playerName = udtString::NewEmptyConstant();
 		return false;

@@ -7,6 +7,7 @@
 #include "array.hpp"
 #include "modifier_context.hpp"
 #include "json_writer_context.hpp"
+#include "read_only_sequ_file_stream.hpp"
 
 
 #define UDT_PRIVATE_PLUG_IN_LIST(N) \
@@ -40,9 +41,10 @@ public:
 	udtParserContext_s();
 	~udtParserContext_s();
 
-	void Init(u32 demoCount, const u32* plugInIds = NULL, u32 plugInCount = 0); // Called once for all.
+	bool Init(u32 demoCount, const u32* plugInIds = NULL, u32 plugInCount = 0); // Called once for all.
 	void ResetForNextDemo(bool keepPlugInData); // Called once per demo processed.
-	bool GetDataInfo(u32 demoIdx, u32 plugInId, void** buffer, u32* count);
+	bool CopyBuffersStruct(u32 plugInId, void* buffersStruct);
+	void UpdatePlugInBufferStructs();
 	u32  GetDemoCount() const { return DemoCount; }
 	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
 
@@ -55,8 +57,55 @@ public:
 	udtModifierContext ModifierContext;
 	udtJSONWriterContext JSONWriterContext;
 	udtVMLinearAllocator PlugInAllocator;
-	udtVMArrayWithAlloc<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
-	udtVMArrayWithAlloc<u32> InputIndices;
+	udtVMArray<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
+	udtVMArray<u32> InputIndices;
 	udtVMLinearAllocator PlugInTempAllocator;
+#if defined(UDT_WINDOWS)
+	udtReadOnlySequentialFileStream DemoReader;
+#endif
 	u32 DemoCount;
 };
+
+
+#if defined(UDT_WINDOWS)
+
+struct udtStreamScopeGuard
+{
+	udtStreamScopeGuard(udtStream& stream)
+		: _stream(stream)
+	{
+	}
+
+	~udtStreamScopeGuard()
+	{
+		_stream.Close();
+	}
+
+private:
+	UDT_NO_COPY_SEMANTICS(udtStreamScopeGuard);
+
+	udtStream& _stream;
+};
+
+#endif
+
+
+#if defined(UDT_WINDOWS)
+#	define UDT_INIT_DEMO_FILE_READER(name, filePath, context) \
+		udtReadOnlySequentialFileStream& name = context->DemoReader; \
+		udtStreamScopeGuard name##ScopeGuard(name); \
+		if(!name.Open(filePath)) return false;
+#	define UDT_INIT_DEMO_FILE_READER_AT(name, filePath, context, offset) \
+		udtReadOnlySequentialFileStream& name = context->DemoReader; \
+		udtStreamScopeGuard name##ScopeGuard(name); \
+		if(!name.Open(filePath, offset)) return false;
+#else
+#	define UDT_INIT_DEMO_FILE_READER(name, filePath, context) \
+		udtFileStream name; \
+		if(!name.Open(filePath, udtFileOpenMode::Read)) return false;
+#	define UDT_INIT_DEMO_FILE_READER_AT(name, filePath, context, offset) \
+		udtFileStream name; \
+		if(!name.Open(filePath, udtFileOpenMode::Read)) return false; \
+		if(fileOffset > 0 && name.Seek((s32)offset, udtSeekOrigin::Start) != 0) return false;
+
+#endif

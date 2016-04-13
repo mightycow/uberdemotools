@@ -21,5 +21,5 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);
 
-	udtVMArrayWithAlloc<udtCutSection> _cutSections; // Local copy, write back to the final array as merged.
+	udtVMArray<udtCutSection> _cutSections; // Local copy, write back to the final array as merged.
 };

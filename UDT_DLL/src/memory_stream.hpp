@@ -48,6 +48,6 @@ public:
 private:
 	s32    SetOffsetIfValid(s32 newOffset);
 
-	udtVMArrayWithAlloc<u8> _buffer;
+	udtVMArray<u8> _buffer;
 	u32 _offset;
 };
