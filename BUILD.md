@@ -72,5 +72,5 @@ Notes:
 Additional information
 ----------------------
 
-For the C++ code, the repository doesn't host any makefile. Instead, it has a **premake** Lua script used to either generate Visual Studio solution and project files or makefiles for **GNU Make**.  
+For the C++ code, the repository doesn't host any makefile. Instead, it has a **premake** Lua script used to either generate *Visual Studio* solution and project files or makefiles for *GNU Make*.  
 You don't need to install it nor download it, the specific alpha builds of **premake** needed for Windows and Linux are in the repository already.
