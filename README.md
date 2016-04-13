@@ -63,6 +63,9 @@ Installation
 No installation is required for any of the binaries.  
 The command-line tools have no third-party dependencies.
 
+For Windows users: UDT_GUI.exe and UDT_cutter.exe need to be able to read and write to config files right next to them.  
+It is therefore recommended to put all the binaries in a new folder with read and write access (i.e. not in `Program Files` nor `Program Files (x86)`).
+
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
 
@@ -123,10 +126,34 @@ Here are the patterns you can look for in demos:
 1. To which player(s) is the pattern matching applied to?
 2. `Selected` &mdash; see the `Player Selection` rules in the `Cut by Patterns` tab
 
+Maximum Thread Count
+--------------------
+
+UDT GUI and most of the command-line tools expose a `Maximum Thread Count` option which, as the name implies, *only* acts as an upper bound.  
+The actual thread count used by UDT for processing a job is based on the number of files, total byte count, CPU core count and the `Maximum Thread Count` the user specified.  
+Please note that given the way UDT works, augmenting the thread count will only yield a performance increase when reading the demos from an SSD.  
+If you have a standard hard drive and not an SSD, make sure to leave the `Maximum Thread Count` to 1.
+
+Here are the throughputs I measured on an Intel Core i7 2600K CPU (quad core) and an Intel X25-M SSD for parsing with all analyzers enabled:
+
+| Thread Count | Throughput (MB/s) |
+|-------------:|------------------:|
+| 1            | 45.0              |
+| 2            | 89.1              |
+| 3            | 117.8             |
+| 4            | 149.2             |
+
+While the performance increase isn't perfectly linear, the benefits are far from negligible for users with SSDs.
+
 Technical Notes
 ---------------
 
-The technical notes have their own page [here](https://github.com/mightycow/uberdemotools/blob/master/TECHNICAL_NOTES.md).
+The technical notes have their own page [here](https://github.com/mightycow/uberdemotools/blob/develop/TECHNICAL_NOTES.md).
+
+Building from Source
+--------------------
+
+The guide for all supported OS and compiler combinations is [here](https://github.com/mightycow/uberdemotools/blob/develop/BUILD.md).
 
 Contact
 -------
