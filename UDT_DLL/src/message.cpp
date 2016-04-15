@@ -369,7 +369,7 @@ const idNetField EntityStateFields68[] =
 	ESF(origin[1], 0),
 	ESF(origin[2], 0),
 	ESF(solid, 24),
-	ESF(powerups, MAX_POWERUPS),
+	ESF(powerups, ID_MAX_PS_POWERUPS),
 	ESF(modelindex, 8),
 	ESF(otherEntityNum2, GENTITYNUM_BITS),
 	ESF(loopSound, 8),
@@ -1537,7 +1537,7 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	// send the arrays
 	//
 	s32 statsbits = 0;
-	for(i=0 ; i<MAX_STATS ; i++) 
+	for(i=0 ; i<ID_MAX_PS_STATS ; i++) 
 	{
 		if(to->stats[i] != from->stats[i])
 		{
@@ -1545,7 +1545,7 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 		}
 	}
 	s32 persistantbits = 0;
-	for(i=0 ; i<MAX_PERSISTANT ; i++) 
+	for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++) 
 	{
 		if(to->persistant[i] != from->persistant[i])
 		{
@@ -1553,7 +1553,7 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 		}
 	}
 	s32 ammobits = 0;
-	for(i=0 ; i<MAX_WEAPONS ; i++)
+	for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++)
 	{
 		if(to->ammo[i] != from->ammo[i]) 
 		{
@@ -1561,7 +1561,7 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 		}
 	}
 	s32 powerupbits = 0;
-	for(i=0 ; i<MAX_POWERUPS ; i++) 
+	for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++) 
 	{
 		if(to->powerups[i] != from->powerups[i]) 
 		{
@@ -1579,8 +1579,8 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	if(statsbits) 
 	{
 		WriteBits(1, 1);	// changed
-		WriteBits(statsbits, MAX_STATS);
-		for(i=0 ; i<MAX_STATS ; i++)
+		WriteBits(statsbits, ID_MAX_PS_STATS);
+		for(i=0 ; i<ID_MAX_PS_STATS ; i++)
 		{
 			if(statsbits & (1<<i))
 			{
@@ -1596,8 +1596,8 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	if(persistantbits)
 	{
 		WriteBits(1, 1);	// changed
-		WriteBits(persistantbits, MAX_PERSISTANT);
-		for(i=0 ; i<MAX_PERSISTANT ; i++)
+		WriteBits(persistantbits, ID_MAX_PS_PERSISTANT);
+		for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++)
 		{
 			if(persistantbits & (1<<i))
 			{
@@ -1613,8 +1613,8 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	if(ammobits) 
 	{
 		WriteBits(1, 1);	// changed
-		WriteBits(ammobits, MAX_WEAPONS);
-		for(i=0 ; i<MAX_WEAPONS ; i++)
+		WriteBits(ammobits, ID_MAX_PS_WEAPONS);
+		for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++)
 		{
 			if(ammobits & (1<<i))
 			{
@@ -1630,8 +1630,8 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	if(powerupbits) 
 	{
 		WriteBits(1, 1);	// changed
-		WriteBits(powerupbits, MAX_POWERUPS);
-		for(i=0 ; i<MAX_POWERUPS ; i++)
+		WriteBits(powerupbits, ID_MAX_PS_POWERUPS);
+		for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++)
 		{
 			if(powerupbits & (1<<i))
 			{
@@ -1666,7 +1666,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
-		for(s32 i = 0; i < MAX_STATS; ++i)
+		for(s32 i = 0; i < ID_MAX_PS_STATS; ++i)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
@@ -1680,7 +1680,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
-		for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+		for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
@@ -1694,7 +1694,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
-		for(s32 i = 0; i < MAX_WEAPONS; ++i)
+		for(s32 i = 0; i < ID_MAX_PS_WEAPONS; ++i)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
@@ -1707,7 +1707,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
-		for(s32 i = 0; i < MAX_POWERUPS; ++i)
+		for(s32 i = 0; i < ID_MAX_PS_POWERUPS; ++i)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
@@ -1773,8 +1773,8 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		// parse stats
 		if(ReadBit()) 
 		{
-			bits = ReadBits(MAX_STATS);
-			for(i=0 ; i<MAX_STATS ; i++) 
+			bits = ReadBits(ID_MAX_PS_STATS);
+			for(i=0 ; i<ID_MAX_PS_STATS ; i++) 
 			{
 				if(bits & (1<<i))
 				{
@@ -1786,8 +1786,8 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		// parse persistant stats
 		if(ReadBit()) 
 		{
-			bits = ReadBits(MAX_PERSISTANT);
-			for(i=0 ; i<MAX_PERSISTANT ; i++) 
+			bits = ReadBits(ID_MAX_PS_PERSISTANT);
+			for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++) 
 			{
 				if(bits & (1<<i)) 
 				{
@@ -1799,8 +1799,8 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		// parse ammo
 		if(ReadBit()) 
 		{
-			bits = ReadBits(MAX_WEAPONS);
-			for(i=0 ; i<MAX_WEAPONS ; i++) 
+			bits = ReadBits(ID_MAX_PS_WEAPONS);
+			for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++) 
 			{
 				if(bits & (1<<i)) 
 				{
@@ -1812,8 +1812,8 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		// parse powerups
 		if(ReadBit()) 
 		{
-			bits = ReadBits(MAX_POWERUPS);
-			for(i=0 ; i<MAX_POWERUPS ; i++) 
+			bits = ReadBits(ID_MAX_PS_POWERUPS);
+			for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++) 
 			{
 				if(bits & (1<<i)) 
 				{

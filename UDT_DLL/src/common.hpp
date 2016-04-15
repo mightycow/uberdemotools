@@ -12,11 +12,6 @@
 extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
 
 
-typedef f32 vec_t;
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
-
 // angle indexes
 #define	PITCH				0		// up / down
 #define	YAW					1		// left / right
@@ -67,135 +62,9 @@ typedef vec_t vec4_t[4];
 // if entityState->solid == SOLID_BMODEL, modelindex is an inline model number
 #define	SOLID_BMODEL	0xffffff
 
-typedef enum {
-	TR_STATIONARY,
-	TR_INTERPOLATE,				// non-parametric, but interpolate between snapshots
-	TR_LINEAR,
-	TR_LINEAR_STOP,
-	TR_SINE,					// value = base + sin( time / duration ) * delta
-	TR_GRAVITY
-} trType_t;
-
-struct idTrajectoryBase
-{
-	trType_t	trType;
-	s32			trTime;
-	s32			trDuration;			// if non 0, trTime + trDuration = stop time
-	vec3_t		trBase;
-	vec3_t		trDelta;			// velocity, etc
-};
-
-// This is the information conveyed from the server
-// in an update message about entities that the client will
-// need to render in some way.
-// Different eTypes may use the information in different ways.
-// The messages are delta compressed, so it doesn't really matter if
-// the structure size is fairly large.
-struct idEntityStateBase
-{
-	s32		number;			// entity index
-	s32		eType;			// entityType_t
-	s32		eFlags;
-
-	idTrajectoryBase	pos;
-	idTrajectoryBase	apos;
-
-	s32		time;
-	s32		time2;
-
-	vec3_t	origin;
-	vec3_t	origin2;
-
-	vec3_t	angles;
-	vec3_t	angles2;
-
-	s32		otherEntityNum;	// shotgun sources, etc
-	s32		otherEntityNum2;
-
-	s32		groundEntityNum;// ENTITYNUM_NONE = in air
-
-	s32		constantLight;	// r + (g<<8) + (b<<16) + (intensity<<24)
-	s32		loopSound;		// constantly loop this sound
-
-	s32		modelindex;
-	s32		modelindex2;
-	s32		clientNum;		// 0 to (MAX_CLIENTS - 1), for players and corpses
-	s32		frame;
-
-	s32		solid;			// for client side prediction, trap_linkentity sets this properly
-
-	s32		event;			// impulse events -- muzzle flashes, footsteps, etc
-	s32		eventParm;
-
-	// for players
-	s32		powerups;		// bit flags
-	s32		weapon;			// determines weapon and flash model, etc
-	s32		legsAnim;		// mask off ANIM_TOGGLEBIT
-	s32		torsoAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32		generic1;
-};
-
-struct idEntityState3 : idEntityStateBase
-{
-};
-
-struct idEntityState48 : idEntityStateBase
-{
-};
-
-struct idEntityState66 : idEntityStateBase
-{
-};
-
-struct idEntityState67 : idEntityStateBase
-{
-};
-
-struct idEntityState68 : idEntityStateBase
-{
-};
-
-struct idEntityState73 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-};
-
-struct idEntityState90 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-
-	// New in dm_90.
-	s32		jumpTime;
-	s32		doubleJumped; // qboolean
-};
-
-struct idEntityState91 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-
-	// New in dm_90.
-	s32		jumpTime;
-	s32		doubleJumped; // qboolean
-
-	// New in dm_91.
-	s32		health;
-	s32		armor;
-	s32		location;
-};
-
-typedef idEntityState91 idLargestEntityState;
-
 //
 // per-level limits
 //
-#define	MAX_CLIENTS			64		// absolute limit
 #define MAX_LOCATIONS		64
 
 #define	GENTITYNUM_BITS		10		// don't need to send any more
@@ -262,7 +131,7 @@ typedef enum {
 #define CS_SECOND_PLACE         660
 #define CS_AD_WAIT              681
 #define	CS_SOUNDS_68			(CS_MODELS_68 + MAX_MODELS)
-#define CS_LOCATIONS_68			(CS_PLAYERS_68 + MAX_CLIENTS)
+#define CS_LOCATIONS_68			(CS_PLAYERS_68 + ID_MAX_CLIENTS)
 #define CS_PARTICLES_68			(CS_LOCATIONS_68 + MAX_LOCATIONS)
 #define CS_PAST_LAST_INDEX_68	(CS_PARTICLES_68 + MAX_LOCATIONS)
 
@@ -386,142 +255,6 @@ enum idConfigString91
 // OSP
 #define CS_OSP_GAMEPLAY         806
 
-#define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
-
-#define	MAX_GAMESTATE_CHARS	16000
-
-//=========================================================
-
-// bit field limits
-#define	MAX_STATS				16
-#define	MAX_PERSISTANT			16
-#define	MAX_POWERUPS			16
-#define	MAX_WEAPONS				16
-
-#define	MAX_PS_EVENTS			2
-
-#define PS_PMOVEFRAMECOUNTBITS	6
-
-// playerState_t is the information needed by both the client and server
-// to predict player motion and actions
-// nothing outside of pmove should modify these, or some degree of prediction error
-// will occur
-
-// you can't add anything to this without modifying the code in msg.c
-
-// playerState_t is a full superset of entityState_t as it is used by players,
-// so if a playerState_t is transmitted, the entityState_t can be fully derived
-// from it.
-struct idPlayerStateBase
-{
-	s32			commandTime;	// cmd->serverTime of last executed command
-	s32			pm_type;
-	s32			bobCycle;		// for view bobbing and footstep generation
-	s32			pm_flags;		// ducked, jump_held, etc
-	s32			pm_time;
-
-	vec3_t		origin;
-	vec3_t		velocity;
-	s32			weaponTime;
-	s32			gravity;
-	s32			speed;
-	s32			delta_angles[3];	// add to command angles to get view direction
-									// changed by spawns, rotating objects, and teleporters
-
-	s32			groundEntityNum;// ENTITYNUM_NONE = in air
-
-	s32			legsTimer;		// don't change low priority animations until this runs out
-	s32			legsAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32			torsoTimer;		// don't change low priority animations until this runs out
-	s32			torsoAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32			movementDir;	// a number 0 to 7 that represents the reletive angle
-								// of movement to the view angle (axial and diagonals)
-								// when at rest, the value will remain unchanged
-								// used to twist the legs during strafing
-
-	vec3_t		grapplePoint;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
-
-	s32			eFlags;			// copied to entityState_t->eFlags
-
-	s32			eventSequence;	// pmove generated events
-	s32			events[MAX_PS_EVENTS];
-	s32			eventParms[MAX_PS_EVENTS];
-
-	s32			externalEvent;	// events set on player from another source
-	s32			externalEventParm;
-	s32			externalEventTime;
-
-	s32			clientNum;		// ranges from 0 to MAX_CLIENTS-1
-	s32			weapon;			// copied to entityState_t->weapon
-	s32			weaponstate;
-
-	vec3_t		viewangles;		// for fixed views
-	s32			viewheight;
-
-	// damage feedback
-	s32			damageEvent;	// when it changes, latch the other parms
-	s32			damageYaw;
-	s32			damagePitch;
-	s32			damageCount;
-
-	s32			stats[MAX_STATS];
-	s32			persistant[MAX_PERSISTANT];	// stats that aren't cleared on death
-	s32			powerups[MAX_POWERUPS];	// level.time that the powerup runs out
-	s32			ammo[MAX_WEAPONS];
-
-	s32			generic1;
-	s32			loopSound;
-	s32			jumppad_ent;	// jumppad entity hit this frame
-};
-
-struct idPlayerState3 : idPlayerStateBase
-{
-};
-
-struct idPlayerState48 : idPlayerStateBase
-{
-};
-
-struct idPlayerState66 : idPlayerStateBase
-{
-};
-
-struct idPlayerState67 : idPlayerStateBase
-{
-};
-
-struct idPlayerState68 : idPlayerStateBase
-{
-};
-
-struct idPlayerState73 : idPlayerStateBase
-{
-};
-
-struct idPlayerState90 : idPlayerStateBase
-{
-	s32 doubleJumped; // qboolean
-	s32 jumpTime;
-};
-
-struct idPlayerState91 : idPlayerStateBase
-{
-	s32 doubleJumped; // qboolean
-	s32 jumpTime;
-	s32 weaponPrimary;
-	s32 crouchTime;
-	s32 crouchSlideTime;
-	s32 location;
-	s32 fov;
-	s32 forwardmove;
-	s32 rightmove;
-	s32 upmove;
-};
-
-typedef idPlayerState91 idLargestPlayerState;
-
 /*
 ==============================================================
 
@@ -537,8 +270,6 @@ NET
 #define	MAX_PACKET_USERCMDS		32		// max number of usercmd_t in a packet
 
 #define	MAX_RELIABLE_COMMANDS	64			// max string commands buffered for restransmit
-
-#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented into multiple packets
 
 // server to client
 // the svc_strings[] array in cl_parse.c should mirror this
@@ -568,7 +299,7 @@ struct idClientSnapshotBase
 	s32  serverTime;                   // server time the message is valid for (in msec)
 	s32  messageNum;                   // copied from netchan->incoming_sequence
 	s32  deltaNum;                     // messageNum the delta is from
-	s32  cmdNum;                       // the next cmdNum the server is expecting
+	//s32  cmdNum;                     // the next cmdNum the server is expecting
 	s32  numEntities;                  // all of the entities that need to be presented
 	s32  parseEntitiesNum;             // at the time of this snapshot
 	s32  serverCommandNum;             // execute all commands up to this before making the snapshot current
@@ -638,29 +369,6 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 // needs to be larger than PACKET_BACKUP
 #define	CMD_BACKUP		64
 #define	CMD_MASK		(CMD_BACKUP - 1)
-
-/*
-=============================================================================
-
-the clientActive_t structure is wiped completely at every
-new gamestate_t, potentially several times during an established connection
-
-=============================================================================
-*/
-
-// the parseEntities array must be large enough to hold PACKET_BACKUP frames of
-// entities, so that when a delta compressed message arives from the server
-// it can be un-deltad from the original 
-#define	MAX_PARSE_ENTITIES	2048
-
-// two bits at the top of the entityState->event field
-// will be incremented with each change in the event so
-// that an identical event started twice in a row can
-// be distinguished.  And off the value with ~EV_EVENT_BITS
-// to retrieve the actual event number
-#define	EV_EVENT_BIT1		0x00000100
-#define	EV_EVENT_BIT2		0x00000200
-#define	EV_EVENT_BITS		(EV_EVENT_BIT1|EV_EVENT_BIT2)
 
 #define	EVENT_VALID_MSEC	300
 

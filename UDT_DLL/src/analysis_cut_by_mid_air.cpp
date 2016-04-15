@@ -214,7 +214,7 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequen
 	es.groundEntityNum = ps.groundEntityNum;
 
 	es.powerups = 0;
-	for(s32 i = 0; i < MAX_POWERUPS; i++)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; i++)
 	{
 		if(ps.powerups[i])
 		{
@@ -252,7 +252,7 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(es->eType == ET_PLAYER && es->clientNum >= 0 && es->clientNum < MAX_CLIENTS)
+		if(es->eType == ET_PLAYER && es->clientNum >= 0 && es->clientNum < ID_MAX_CLIENTS)
 		{
 			info.Players.Add(es);
 		}
@@ -341,7 +341,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 		if(es->clientNum == trackedPlayerIndex)
 		{
 			// Store the projectile fired by the tracked player, if any.
-			const s32 eventType = es->event & (~EV_EVENT_BITS);
+			const s32 eventType = es->event & (~ID_ES_EVENT_BITS);
 			const s32 fireWeaponEventId = idEntityEvent::WeaponFired(_protocol);
 			if(eventType == fireWeaponEventId && IsAllowedIdWeapon(es->weapon, _protocol))
 			{

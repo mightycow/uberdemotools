@@ -155,6 +155,11 @@ Building from Source
 
 The guide for all supported OS and compiler combinations is [here](https://github.com/mightycow/uberdemotools/blob/develop/BUILD.md).
 
+Custom Parsing API
+------------------
+
+The developer's guide to the custom parsing API is [here](https://github.com/mightycow/uberdemotools/blob/develop/CUSTOM_PARSING.md).
+
 Contact
 -------
 

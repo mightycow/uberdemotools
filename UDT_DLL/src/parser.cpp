@@ -182,6 +182,16 @@ bool udtBaseParser::ParseServerMessage()
 		_outMsg.WriteLong(_inReliableSequenceAcknowledge);
 	}
 
+	if(EnablePlugIns && !PlugIns.IsEmpty())
+	{
+		udtMessageBundleCallbackArg info;
+		info.ReliableSequenceAcknowledge = reliableSequenceAcknowledge;
+		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+		{
+			PlugIns[i]->ProcessMessageBundleStart(info, *this);
+		}
+	}
+
 	for(;;)
 	{
 		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize) 
@@ -242,6 +252,16 @@ bool udtBaseParser::ParseServerMessage()
 		_outMsg.WriteByte(svc_EOF);
 	}
 
+	if(EnablePlugIns && !PlugIns.IsEmpty())
+	{
+		udtMessageBundleCallbackArg info;
+		info.ReliableSequenceAcknowledge = reliableSequenceAcknowledge;
+		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
+		{
+			PlugIns[i]->ProcessMessageBundleEnd(info, *this);
+		}
+	}
+
 	if(_cuts.GetSize() > 0)
 	{
 		const udtCutInfo cut = _cuts[0];
@@ -275,16 +295,24 @@ bool udtBaseParser::ParseServerMessage()
 	if(_outWriteFirstMessage)
 	{
 		udtCutInfo& cut = _cuts[0];
-		udtDemoStreamCreatorArg info;
-		memset(&info, 0, sizeof(info));
-		info.StartTimeMs = cut.StartTimeMs;
-		info.EndTimeMs = cut.EndTimeMs;
-		info.Parser = this;
-		info.VeryShortDesc = cut.VeryShortDesc;
-		info.UserData = cut.UserData;
-		info.TempAllocator = &_tempAllocator;
-		info.FilePathAllocator = &_persistentAllocator;
-		const udtString filePath = (*cut.StreamCreator)(info);
+		udtString filePath;
+		if(cut.FilePath != NULL)
+		{
+			filePath = udtString::NewConstRef(cut.FilePath);
+		}
+		else
+		{
+			udtDemoStreamCreatorArg info;
+			memset(&info, 0, sizeof(info));
+			info.StartTimeMs = cut.StartTimeMs;
+			info.EndTimeMs = cut.EndTimeMs;
+			info.Parser = this;
+			info.VeryShortDesc = cut.VeryShortDesc;
+			info.UserData = cut.UserData;
+			info.TempAllocator = &_tempAllocator;
+			info.FilePathAllocator = &_persistentAllocator;
+			filePath = (*cut.StreamCreator)(info);
+		}
 		_outFile.Close();
 		if(_outFile.Open(filePath.GetPtr(), udtFileOpenMode::Write))
 		{
@@ -333,12 +361,24 @@ void udtBaseParser::FinishParsing(bool /*success*/)
 void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData)
 {
 	udtCutInfo cut;
+	memset(&cut, 0, sizeof(cut));
 	cut.VeryShortDesc = veryShortDesc;
 	cut.GameStateIndex = gsIndex;
 	cut.StartTimeMs = startTimeMs;
 	cut.EndTimeMs = endTimeMs;
 	cut.StreamCreator = streamCreator;
 	cut.UserData = userData;
+	_cuts.Add(cut);
+}
+
+void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath)
+{
+	udtCutInfo cut;
+	memset(&cut, 0, sizeof(cut));
+	cut.GameStateIndex = gsIndex;
+	cut.StartTimeMs = startTimeMs;
+	cut.EndTimeMs = endTimeMs;
+	cut.FilePath = filePath;
 	_cuts.Add(cut);
 }
 
@@ -657,7 +697,7 @@ bool udtBaseParser::ParseSnapshot()
 			// is too old, so we can't reconstruct it properly.
 			_context->LogWarning("udtBaseParser::ParseSnapshot: Delta frame %d too old.", deltaNum);
 		} 
-		else if(_inParseEntitiesNum - oldSnap->parseEntitiesNum > MAX_PARSE_ENTITIES - 128) 
+		else if(_inParseEntitiesNum - oldSnap->parseEntitiesNum > ID_MAX_PARSE_ENTITIES - 128) 
 		{
 			_context->LogWarning("udtBaseParser::ParseSnapshot: Delta parseEntitiesNum %d too old.", _inParseEntitiesNum);
 		} 
@@ -752,6 +792,8 @@ bool udtBaseParser::ParseSnapshot()
 		info.EntityCount = _inChangedEntities.GetSize();
 		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
 		info.RemovedEntityCount = _inRemovedEntities.GetSize();
+		info.CommandNumber = newSnap.serverCommandNum;
+		info.MessageNumber = newSnap.messageNum;
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{
@@ -836,7 +878,7 @@ void udtBaseParser::WriteGameState()
 	Com_Memset(&nullState, 0, sizeof(nullState));
 	
 	// Baseline entities.
-	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
+	for(s32 i = 0; i < ID_MAX_PARSE_ENTITIES; ++i)
 	{
 		// We delta from the null state because we write a full entity.
 		const idEntityStateBase* const newState = GetBaseline(i);
@@ -942,7 +984,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 		} 
 		else 
 		{
-			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (MAX_PARSE_ENTITIES-1));
+			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES-1));
 			oldnum = oldstate->number;
 		}
 	}
@@ -976,7 +1018,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			} 
 			else 
 			{
-				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (MAX_PARSE_ENTITIES-1));
+				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES-1));
 				oldnum = oldstate->number;
 			}
 		}
@@ -996,7 +1038,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 			} 
 			else
 			{
-				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (MAX_PARSE_ENTITIES-1));
+				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES-1));
 				oldnum = oldstate->number;
 			}
 			continue;
@@ -1029,7 +1071,7 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 		} 
 		else 
 		{
-			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (MAX_PARSE_ENTITIES-1));
+			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES-1));
 			oldnum = oldstate->number;
 		}
 	}
@@ -1067,7 +1109,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		} 
 		else 
 		{
-			s32 entNum = (to->parseEntitiesNum + newindex) & (MAX_PARSE_ENTITIES - 1);
+			s32 entNum = (to->parseEntitiesNum + newindex) & (ID_MAX_PARSE_ENTITIES - 1);
 			newent = GetEntity(entNum);
 			newnum = newent->number;
 		}
@@ -1078,7 +1120,7 @@ void udtBaseParser::EmitPacketEntities(idClientSnapshotBase* from, idClientSnaps
 		}
 		else 
 		{
-			s32 entNum = (from->parseEntitiesNum + oldindex) & (MAX_PARSE_ENTITIES - 1);
+			s32 entNum = (from->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1);
 			oldent = GetEntity(entNum);
 			oldnum = oldent->number;
 		}
@@ -1132,7 +1174,7 @@ bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 {
 	// Save the parsed entity state into the big circular buffer so
 	// it can be used as the source for a later delta.
-	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (MAX_PARSE_ENTITIES-1));
+	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (ID_MAX_PARSE_ENTITIES-1));
 
 	s32 removedEntityNumber = old ? old->number : 0;
 	if(unchanged) 

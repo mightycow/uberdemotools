@@ -383,7 +383,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallback
 			continue;
 		}
 
-		const s32 event = (es->eType - ET_EVENTS) & (~EV_EVENT_BITS);
+		const s32 event = (es->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
 		if(event == EV_GLOBAL_TEAM_SOUND_73p)
 		{
 			const s32 soundIndex = es->eventParm;
@@ -547,7 +547,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 			continue;
 		}
 
-		const s32 event = (es->eType - ET_EVENTS) & (~EV_EVENT_BITS);
+		const s32 event = (es->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
 		if(event == EV_GLOBAL_TEAM_SOUND)
 		{
 			const s32 soundIndex = es->eventParm;

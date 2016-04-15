@@ -49,7 +49,7 @@ bool udtParserRunner::ParseNextMessage()
 		return false;
 	}
 
-	_inMsg.Init(_parser->_inMsgData, MAX_MSGLEN);
+	_inMsg.Init(_parser->_inMsgData, ID_MAX_MSG_LENGTH);
 
 	elementsRead = _file->Read(&_inMsg.Buffer.cursize, 4, 1);
 	if(elementsRead != 1)

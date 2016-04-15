@@ -239,7 +239,7 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtSt
 	_currentGameState.DemoTakerName = U32_MAX; // Not available in all demo protocols.
 	_currentGameState.DemoTakerNameLength = 0;
 
-	if(playerIndex < 0 || playerIndex >= MAX_CLIENTS)
+	if(playerIndex < 0 || playerIndex >= ID_MAX_CLIENTS)
 	{
 		return;
 	}

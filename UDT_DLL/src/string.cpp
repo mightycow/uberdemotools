@@ -712,6 +712,38 @@ static bool IsLongOSPColorString(const udtString& string)
 	return true;
 }
 
+u32 CleanUpString(char* string, udtProtocol::Id protocol)
+{
+	u32 newLength = 0;
+	char* const start = string;
+	char* dest = start;
+	char* source = start;
+	char c;
+	while((c = *source) != 0)
+	{
+		if(IsLongOSPColorString(udtString::NewConstRef(string, (u32)(source - start))))
+		{
+			source += 7;
+		}
+		else if(IsColorString(source))
+		{
+			source++;
+		}
+		// Protocols up to 90 : only keep printable codes.
+		// Protocols 91 and up: keep everything.
+		else if(protocol >= udtProtocol::Dm91 ||
+				(c >= 0x20 && c <= 0x7E))
+		{
+			*dest++ = c;
+			newLength++;
+		}
+		source++;
+	}
+	*dest = '\0';
+
+	return newLength;
+}
+
 void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 {
 	if(IsNullOrEmpty(result))
@@ -722,34 +754,7 @@ void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 	// Make sure we're not trying to modify a read-only string.
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
 
-	u32 newLength = 0;
-	char* const start = result.GetWritePtr();
-	char* dest = start;
-	char* source = start;
-	char c;
-	while((c = *source) != 0)
-	{
-		if(IsLongOSPColorString(udtString::NewSubstringRef(result, (u32)(source - start))))
-		{
-			source += 7;
-		}
-		else if(IsColorString(source))
-		{
-			source++;
-		}
-		// Protocols up to 90 : only keep printable codes.
-		// Protocols 91 and up: keep everything.
-		else if(protocol >= udtProtocol::Dm91 || 
-				(c >= 0x20 && c <= 0x7E))
-		{
-			*dest++ = c;
-			newLength++;
-		}
-		source++;
-	}
-	*dest = '\0';
-
-	result.Length = newLength;
+	result.Length = CleanUpString(result.GetWritePtr(), protocol);
 }
 
 void udtString::RemoveCharacter(udtString& result, char toRemove)

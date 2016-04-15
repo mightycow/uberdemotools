@@ -19,6 +19,11 @@ struct udtChangedEntity
 	bool IsNewEvent;
 };
 
+struct udtMessageBundleCallbackArg
+{
+	s32 ReliableSequenceAcknowledge;
+};
+
 struct udtGamestateCallbackArg
 {
 	s32 ServerCommandSequence;
@@ -36,6 +41,8 @@ struct udtSnapshotCallbackArg
 	u32 EntityCount;
 	u32 RemovedEntityCount;
 	s32 ServerTime;
+	s32 CommandNumber;
+	s32 MessageNumber;
 };
 
 struct udtCommandCallbackArg
@@ -101,6 +108,8 @@ struct udtBaseParserPlugIn
 	virtual void UpdateBufferStruct() {}
 	virtual u32  GetItemCount() const { return 0; }
 
+	virtual void ProcessMessageBundleStart(const udtMessageBundleCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
+	virtual void ProcessMessageBundleEnd(const udtMessageBundleCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}

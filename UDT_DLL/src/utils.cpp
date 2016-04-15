@@ -751,7 +751,7 @@ bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, ud
 {
 	const s32 obituaryEvtId = idEntityEvent::Obituary(protocol);
 	const s32 eventTypeId = idEntityType::Event(protocol);
-	const s32 eventType = entity.eType & (~EV_EVENT_BITS);
+	const s32 eventType = entity.eType & (~ID_ES_EVENT_BITS);
 	if(eventType != eventTypeId + obituaryEvtId)
 	{
 		return false;
@@ -759,14 +759,14 @@ bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, ud
 
 	// The target must always be a player.
 	const s32 targetIdx = entity.otherEntityNum;
-	if(targetIdx < 0 || targetIdx >= MAX_CLIENTS)
+	if(targetIdx < 0 || targetIdx >= ID_MAX_CLIENTS)
 	{
 		return false;
 	}
 
 	// The attacker can be the world, though.
 	s32 attackerIdx = entity.otherEntityNum2;
-	if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+	if(attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 	{
 		attackerIdx = -1;
 	}

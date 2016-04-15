@@ -79,7 +79,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		}
 
 		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		const s32 eventType = ent->eType & (~EV_EVENT_BITS);
+		const s32 eventType = ent->eType & (~ID_ES_EVENT_BITS);
 		if(eventType != (s32)(ET_EVENTS + obituaryEvtId))
 		{
 			continue;
@@ -87,8 +87,8 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 
 		const s32 targetIdx = ent->otherEntityNum;
 		const s32 attackerIdx = ent->otherEntityNum2;
-		if(targetIdx < 0 || targetIdx >= MAX_CLIENTS || 
-		   attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+		if(targetIdx < 0 || targetIdx >= ID_MAX_CLIENTS || 
+		   attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 		{
 			continue;
 		}

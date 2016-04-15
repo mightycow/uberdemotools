@@ -149,3 +149,6 @@ private:
 	u32 Length;
 	u32 ReservedBytes; // When 0, the string is read-only and Allocator points to a string.
 };
+
+// Returns the new length.
+extern u32 CleanUpString(char* string, udtProtocol::Id protocol);

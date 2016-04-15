@@ -13,6 +13,7 @@
 #include "path.hpp"
 #include "thread_local_allocators.hpp"
 #include "system.hpp"
+#include "custom_context.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -810,9 +811,14 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		const udtCut& cut = cutInfo->Cuts[i];
 		if(cut.StartTimeMs < cut.EndTimeMs)
 		{
-			context->Parser.AddCut(
-				info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, 
-				&CallbackCutDemoFileNameCreation, NULL, &streamInfo);
+			if(cut.FilePath != NULL)
+			{
+				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, cut.FilePath);
+			}
+			else
+			{
+				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileNameCreation, NULL, &streamInfo);
+			}
 		}
 	}
 
@@ -1137,4 +1143,221 @@ UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* d
 	*demoInputIdx = context->InputIndices[demoIdx];
 
 	return (s32)udtErrorCode::None;
+}
+
+UDT_API(udtCuContext*) udtCuCreateContext()
+{
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	udtCuContext* const context = (udtCuContext*)malloc(sizeof(udtCuContext));
+	if(context == NULL)
+	{
+		return NULL;
+	}
+
+	new (context) udtCuContext;
+
+	if(!context->Context.Init(1, NULL, 0))
+	{
+		udtCuDestroyContext(context);
+		return NULL;
+	}
+
+	context->PlugIn.InitAllocators(0);
+
+	return context;
+}
+
+UDT_API(s32) udtCuSetMessageCallback(udtCuContext* context, udtMessageCallback callback)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(!context->Context.Context.SetCallbacks(callback, NULL, NULL))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuStartParsing(udtCuContext* context, u32 protocol)
+{
+	if(context == NULL || udtIsValidProtocol(protocol) == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const udtProtocol::Id protocolId = (udtProtocol::Id)protocol;
+	context->Context.ResetForNextDemo(false);
+	udtMessage& message = context->InMessage;
+	message.InitContext(&context->Context.Context);
+	message.InitProtocol(protocolId);
+	if(!context->Context.Parser.Init(&context->Context.Context, protocolId, protocolId, 0, true))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuParseMessage(udtCuContext* context, udtCuMessageOutput* messageOutput, u32* continueParsing, const udtCuMessageInput* messageInput)
+{
+	if(context == NULL || messageOutput == NULL || continueParsing == NULL || messageInput == NULL ||
+	   messageInput->Buffer == NULL || messageInput->BufferByteCount == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtMessage& message = context->InMessage;
+	message.Init((u8*)messageInput->Buffer, ID_MAX_MSG_LENGTH);
+	message.Buffer.cursize = (s32)messageInput->BufferByteCount;
+	context->Context.Parser.PlugIns.Clear();
+	context->Context.Parser.PlugIns.Add(&context->PlugIn);
+	const bool cont = context->Context.Parser.ParseNextMessage(message, messageInput->MessageSequence, 0);
+	*messageOutput = context->Message;
+	*continueParsing = cont ? 1 : 0;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuGetConfigString(udtCuContext* context, udtCuConfigString* configString, u32 configStringIndex)
+{
+	if(context == NULL || configString == NULL || configStringIndex >= (u32)MAX_CONFIGSTRINGS)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const udtString cs = context->Context.Parser._inConfigStrings[configStringIndex];
+	configString->ConfigString = cs.GetPtr();
+	configString->ConfigStringLength = cs.GetLength();
+
+	return (s32)udtErrorCode::None;
+}
+
+static s32 GetEntity(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex, bool baseLine)
+{
+	if(context == NULL || entityState == NULL || entityIndex >= (u32)ID_MAX_PARSE_ENTITIES)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(baseLine)
+	{
+		*entityState = context->Context.Parser.GetBaseline((s32)entityIndex);
+	}
+	else
+	{
+		*entityState = context->Context.Parser.GetEntity((s32)entityIndex);
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuGetEntityBaseline(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex)
+{
+	return GetEntity(context, entityState, entityIndex, true);
+}
+
+UDT_API(s32) udtCuGetEntityState(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex)
+{
+	return GetEntity(context, entityState, entityIndex, false);
+}
+
+UDT_API(s32) udtCuDestroyContext(udtCuContext* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	context->~udtCuContext();
+	free(context);
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCleanUpString(char* string, u32 protocol)
+{
+	if(string == NULL || !udtIsValidProtocol(protocol))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	CleanUpString(string, (udtProtocol::Id)protocol);
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	switch((udtConfigStringIndex::Id)udtConfigStringId)
+	{
+		case udtConfigStringIndex::FirstPlayer: return idConfigStringIndex::FirstPlayer((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::Intermission: return idConfigStringIndex::Intermission((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::LevelStartTime: return idConfigStringIndex::LevelStartTime((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::WarmUpEndTime: return idConfigStringIndex::WarmUpEndTime((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::FirstPlacePlayerName: return idConfigStringIndex::FirstPlacePlayerName((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::SecondPlacePlayerName: return idConfigStringIndex::SecondPlacePlayerName((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::PauseStart: return idConfigStringIndex::PauseStart((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::PauseEnd: return idConfigStringIndex::PauseEnd((udtProtocol::Id)protocol);
+		case udtConfigStringIndex::FlagStatus: return idConfigStringIndex::FlagStatus((udtProtocol::Id)protocol);
+		default: return -1;
+	}
+}
+
+UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	return GetUDTWeaponFromIdWeapon(idWeaponId, (udtProtocol::Id)protocol);
+}
+
+UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	return GetUDTModFromIdMod(idModId, (udtProtocol::Id)protocol);
+}
+
+UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	switch((udtEntityEvent::Id)udtEntityEventId)
+	{
+		case udtEntityEvent::Obituary: return idEntityEvent::Obituary((udtProtocol::Id)protocol);
+		case udtEntityEvent::WeaponFired: return idEntityEvent::WeaponFired((udtProtocol::Id)protocol);
+		default: return -1;
+	}
+}
+
+UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	switch((udtEntityType::Id)udtEntityTypeId)
+	{
+		case udtEntityType::Event: return idEntityType::Event((udtProtocol::Id)protocol);
+		default: return -1;
+	}
 }

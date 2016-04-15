@@ -430,7 +430,7 @@ void udtdConverter::MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipT
 
 static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase cur)
 {
-	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(vec3_t)) != 0;
+	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(idVec3)) != 0;
 }
 
 static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
@@ -499,7 +499,7 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequenc
 	es.groundEntityNum = ps.groundEntityNum;
 
 	es.powerups = 0;
-	for(s32 i = 0; i < MAX_POWERUPS; i++)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; i++)
 	{
 		if(ps.powerups[i])
 		{

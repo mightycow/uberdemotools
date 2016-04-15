@@ -963,6 +963,13 @@ extern "C"
 	
 	typedef struct udtCut_s
 	{
+		/* Output file path. */
+		/* May be NULL, in which case udtParseArg::OutputFolderPath is used. */
+		const char* FilePath;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Cut start time in milli-seconds. */
 		s32 StartTimeMs;
 
@@ -973,7 +980,7 @@ extern "C"
 		s32 GameStateIndex;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtCut;
 
@@ -1047,11 +1054,14 @@ extern "C"
 		/* May not be NULL. */
 		const udtCut* Cuts;
 
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Number of elements in the array pointed by Cuts. */
 		u32 CutCount;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtCutByTimeArg;
 
@@ -2119,6 +2129,525 @@ extern "C"
 
 	/* Creates, for each demo, a .JSON file with the data from all the selected plug-ins. */
 	UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtJSONArg* jsonInfo);
+
+	/*
+	Custom parsing constants and data structures.
+	*/
+
+#define	ID_MAX_PS_STATS		       16
+#define	ID_MAX_PS_PERSISTANT       16
+#define	ID_MAX_PS_POWERUPS         16
+#define	ID_MAX_PS_WEAPONS	       16
+#define	ID_MAX_PS_EVENTS	        2
+#define	ID_MAX_PARSE_ENTITIES    2048
+#define	ID_MAX_CLIENTS	           64 /* max player count */
+#define ID_MAX_MSG_LENGTH       16384 /* max length of a message, which may be fragmented into multiple packets */
+
+	/*
+	Two bits at the top of the idEntityStateBase::event field
+	will be incremented with each change in the event so
+	that an identical event started twice in a row can
+	be distinguished.
+	And off the value with (~EV_EVENT_BITS) to retrieve the actual event number.
+	*/
+#define	ID_ES_EVENT_BIT_1    0x00000100
+#define	ID_ES_EVENT_BIT_2    0x00000200
+#define	ID_ES_EVENT_BITS     (ID_ES_EVENT_BIT_1 | ID_ES_EVENT_BIT_2)
+
+	typedef f32   idVec;
+	typedef idVec idVec2[2];
+	typedef idVec idVec3[3];
+	typedef idVec idVec4[4];
+
+#pragma pack(push, 1)
+
+	typedef enum
+	{
+		TR_STATIONARY,
+		TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
+		TR_LINEAR,
+		TR_LINEAR_STOP,
+		TR_SINE,        /* value = base + sin( time / duration ) * delta */
+		TR_GRAVITY
+	}
+	idTrajectoryType;
+
+	typedef struct idTrajectoryBase_s
+	{
+		idTrajectoryType trType;
+		s32 trTime;
+		s32 trDuration; /* if non 0, trTime + trDuration = stop time */
+		idVec3 trBase;
+		idVec3 trDelta; /* velocity, etc */
+	}
+	idTrajectoryBase;
+
+	/*
+	/This is the information conveyed from the server in an update message about entities that 
+	the client will need to render in some way. 
+	Different eTypes may use the information in different ways.
+	The messages are delta compressed, so it doesn't really matter if the structure size is fairly large.
+	*/
+	struct idEntityStateBase
+	{
+		s32 number;	/* entity index */
+		s32 eType;  /* entityType_t */
+		s32 eFlags;
+		idTrajectoryBase pos;
+		idTrajectoryBase apos;
+		s32 time;
+		s32	time2;
+		idVec3 origin;
+		idVec3 origin2;
+		idVec3 angles;
+		idVec3 angles2;
+		s32 otherEntityNum;  /* shotgun sources, etc */
+		s32 otherEntityNum2;
+		s32 groundEntityNum; /* ENTITYNUM_NONE = in air */
+		s32 constantLight;   /* r + (g<<8) + (b<<16) + (intensity<<24) */
+		s32 loopSound;       /* constantly loop this sound */
+		s32 modelindex;
+		s32 modelindex2;
+		s32 clientNum; /* 0 to (MAX_CLIENTS - 1), for players and corpses */
+		s32 frame;
+		s32 solid;     /* for client side prediction, trap_linkentity sets this properly */
+		s32 event;     /* impulse events -- muzzle flashes, footsteps, etc */
+		s32 eventParm;
+		s32 powerups;  /* bit flags */
+		s32 weapon;    /* determines weapon and flash model, etc */
+		s32 legsAnim;  /* mask off ANIM_TOGGLEBIT */
+		s32 torsoAnim; /* mask off ANIM_TOGGLEBIT */
+		s32 generic1;
+	};
+
+#if defined(__cplusplus)
+
+	struct idEntityState3 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState48 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState66 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState67 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState68 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState73 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+	};
+
+	struct idEntityState90 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+		s32 jumpTime;
+		s32 doubleJumped; /* qboolean */
+	};
+
+	struct idEntityState91 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+		s32 jumpTime;
+		s32 doubleJumped; /* qboolean */
+		s32 health;
+		s32 armor;
+		s32 location;
+	};
+
+	typedef idEntityState91 idLargestEntityState;
+
+#endif
+
+	/*
+	This is the information needed by both the client and server to predict player motion and actions.
+	Nothing outside of pmove should modify these, or some degree of prediction error will occur.
+
+	This is a full superset of idEntityState as it is used by players,
+	so if an idPlayerState is transmitted, the idEntityState can be fully derived from it.
+	*/
+	struct idPlayerStateBase
+	{
+		s32 commandTime; /* cmd->serverTime of last executed command */
+		s32 pm_type;
+		s32 bobCycle;    /* for view bobbing and footstep generation */
+		s32 pm_flags;    /* ducked, jump_held, etc */
+		s32 pm_time;
+		idVec3 origin;
+		idVec3 velocity;
+		s32 weaponTime;
+		s32 gravity;
+		s32 speed;
+		/* add to command angles to get view direction */
+		/* changed by spawns, rotating objects, and teleporters */
+		s32 delta_angles[3]; 
+		s32 groundEntityNum; /* ENTITYNUM_NONE = in air */
+		s32 legsTimer;       /* don't change low priority animations until this runs out */
+		s32 legsAnim;        /* mask off ANIM_TOGGLEBIT */
+		s32 torsoTimer;      /* don't change low priority animations until this runs out */
+		s32 torsoAnim;       /* mask off ANIM_TOGGLEBIT */
+		/* a number 0 to 7 that represents the relative angle */
+		/* of movement to the view angle (axial and diagonals) */
+		/* when at rest, the value will remain unchanged */
+		/* used to twist the legs during strafing */
+		s32 movementDir;
+		idVec3 grapplePoint; /* location of grapple to pull towards if PMF_GRAPPLE_PULL */
+		s32 eFlags;          /* copied to entityState_t->eFlags */
+		s32 eventSequence;   /* pmove generated events */
+		s32 events[ID_MAX_PS_EVENTS];
+		s32 eventParms[ID_MAX_PS_EVENTS];
+		s32 externalEvent;   /* events set on player from another source */
+		s32 externalEventParm;
+		s32 externalEventTime;
+		s32 clientNum; /* ranges from 0 to MAX_CLIENTS-1 */
+		s32 weapon;    /* copied to entityState_t->weapon */
+		s32 weaponstate;
+		idVec3 viewangles; /* for fixed views */
+		s32 viewheight;
+		s32 damageEvent;   /* when it changes, latch the other parms */
+		s32 damageYaw;
+		s32 damagePitch;
+		s32 damageCount;
+		s32 stats[ID_MAX_PS_STATS];
+		s32 persistant[ID_MAX_PS_PERSISTANT]; /* stats that aren't cleared on death */
+		s32 powerups[ID_MAX_PS_POWERUPS];     /* level.time that the powerup runs out */
+		s32 ammo[ID_MAX_PS_WEAPONS];
+		s32 generic1;
+		s32 loopSound;
+		s32 jumppad_ent; /* jumppad entity hit this frame */
+	};
+
+#if defined(__cplusplus)
+
+	struct idPlayerState3 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState48 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState66 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState67 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState68 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState73 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState90 : idPlayerStateBase
+	{
+		s32 doubleJumped; /* qboolean */
+		s32 jumpTime;
+	};
+
+	struct idPlayerState91 : idPlayerStateBase
+	{
+		s32 doubleJumped; /* qboolean */
+		s32 jumpTime;
+		s32 weaponPrimary;
+		s32 crouchTime;
+		s32 crouchSlideTime;
+		s32 location;
+		s32 fov;
+		s32 forwardmove;
+		s32 rightmove;
+		s32 upmove;
+	};
+
+	typedef idPlayerState91 idLargestPlayerState;
+
+#endif
+
+	typedef struct udtCuContext_s udtCuContext;
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuCommandMessage_s
+	{
+		/* Might be NULL. */
+		const char* CommandString;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* Length of CommandString. */
+		u32 CommandStringLength;
+
+		/* The sequence number that uniquely identifies this command. */
+		s32 CommandSequence;
+
+		/* Only valid if IsConfigString is true. */
+		s32 ConfigStringIndex;
+
+		/* If non-zero, this command is for a config string update. */
+		u32 IsConfigString;
+	}
+	udtCuCommandMessage;
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuSnapshotMessage_s
+	{
+		/* Portal area visibility bits. */
+		u8 AreaMask[32];
+
+		/* Pointer to the player state. */
+		const idPlayerStateBase* PlayerState;
+
+		/* An array of pointers to the entity states that changed or were added. */
+		const idEntityStateBase** ChangedEntities;
+
+		/* An array of flags for the entity states that changed or were added. */
+		const u32* ChangedEntityFlags;
+
+		/* An array of numbers for the entities that were removed. */
+		const s32* RemovedEntities;
+
+		/* The server time the message is valid for. */
+		s32 ServerTimeMs;
+
+		/* The message sequence number. */
+		s32 MessageNumber;
+
+		/* Execute all commands up to this sequence number before making the snapshot current. */
+		s32 CommandNumber;
+
+		/* How many entities have been transmitted. */
+		/* Length of the ChangedEntities array and the ChangedEntityFlags array. */
+		u32 EntityCount;
+
+		/* How many entities were removed. */
+		/* Length of the RemovedEntities array. */
+		u32 RemovedEntityCount;
+
+		/* Execute all commands up to this before making the snapshot current. */
+		s32 Reserved1;
+	}
+	udtCuSnapshotMessage;
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuGamestateMessage_s
+	{
+		/* A game state message always marks the start of a server command sequence. */
+		s32 ServerCommandSequence;
+
+		/* The client number of the player who recorded the demo file. */
+		s32 ClientNumber;
+
+		/* The checksum feed of the server that the client will have to use. */
+		s32 ChecksumFeed;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtCuGamestateMessage;
+	
+	/* UDT will not give you redundant snapshots and commands like Quake demos do. */
+	/* If a snapshot or a command was already processed, it's dropped so you don't have to deal with duplicates. */
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuMessageOutput_s
+	{
+		/* Can be NULL. */
+		/* There are 3 possible scenarios: */
+		/* 1. 1 game state and no snapshot */
+		/* 2. 1 snapshot and no game state */
+		/* 3. no game state and no snapshot */
+		union 
+		{
+			const udtCuGamestateMessage* GameState;
+			const udtCuSnapshotMessage* Snapshot;
+		}
+		GameStateOrSnapshot;
+
+		/* An array of server-to-client string commands. */
+		const udtCuCommandMessage* Commands;
+
+		/* Length of the ServerCommandCount array. */
+		u32 ServerCommandCount;
+
+		/* When non-zero, use GameStateOrSnapshot::GameState. */
+		/* Else, use GameStateOrSnapshot::Snapshot. */
+		u32 IsGameState;
+	}
+	udtCuMessageOutput;
+
+	typedef struct udtCuMessageInput_s
+	{
+		/* The raw Quake message buffer. */
+		const void* Buffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The message sequence number. */
+		s32 MessageSequence;
+
+		/* The byte size of the buffer pointed to by Buffer. */
+		u32 BufferByteCount;
+	}
+	udtCuMessageInput;
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuConfigString_s
+	{
+		/* NULL if not defined. */
+		const char* ConfigString;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of ConfigString. */
+		u32 ConfigStringLength;
+
+		/* Ignore this. */
+		s32 Reserved2;
+	}
+	udtCuConfigString;
+
+#if defined(__cplusplus)
+
+	struct udtEntityFlags
+	{
+		enum Id
+		{
+			IsNewEvent = UDT_BIT(0)
+		};
+	};
+
+	struct udtEntityEvent
+	{
+		enum Id
+		{
+			Obituary,
+			WeaponFired,
+			Count
+		};
+	};
+
+	struct udtEntityType
+	{
+		enum Id
+		{
+			Event,
+			Count
+		};
+	};
+
+	struct udtConfigStringIndex
+	{
+		enum Id
+		{
+			FirstPlayer,
+			Intermission,
+			LevelStartTime,
+			WarmUpEndTime,
+			FirstPlacePlayerName,
+			SecondPlacePlayerName,
+			PauseStart,
+			PauseEnd,
+			FlagStatus,
+			Count
+		};
+	};
+
+#endif
+
+#pragma pack(pop)
+
+	/*
+	The API for custom parsing.
+	With this API, you still have to call udtInitLibrary first and udtShutDownLibrary last.
+	To set the crash handler, use udtSetCrashHandler.
+	*/
+
+	/* Creates a custom parsing context. */
+	/* The same context can be used to parse multiple demos. */
+	UDT_API(udtCuContext*) udtCuCreateContext();
+
+	/* Sets the message printing callback. */
+	/* The callback argument can be NULL. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuSetMessageCallback(udtCuContext* context, udtMessageCallback callback);
+
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuStartParsing(udtCuContext* context, u32 protocol);
+
+	/* Parses a demo message and outputs the results into messageOutput. */
+	/* If you should continue parsing, continueParsing will be set to a non-zero value. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuParseMessage(udtCuContext* context, udtCuMessageOutput* messageOutput, u32* continueParsing, const udtCuMessageInput* messageInput);
+
+	/* Gets a config string descriptor. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetConfigString(udtCuContext* context, udtCuConfigString* configString, u32 configStringIndex);
+
+	/* Returns a pointer to a baseline entity. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetEntityBaseline(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex);
+
+	/* Returns a pointer to a parsed entity entity. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetEntityState(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex);
+
+	/* Frees all the resources allocated by the custom parsing context. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuDestroyContext(udtCuContext* context);
+
+	/*
+	The API for custom parsing.
+	Helper functions.
+	*/
+
+	/* Will clean up the string for printing by: */
+	/* - getting rid of Quake 3/Live and OSP color codes */
+	/* - removing unprintable characters for protocols <= 90 (no UTF-8 support) */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCleanUpString(char* string, u32 protocol);
+
+	/* Gets the Quake config string index from the UDT index. */
+	/* udtConfigStringId is of type udtConfigStringIndex::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol);
+
+	/* Gets the UDT weapon number from the Quake number. */
+	/* The result is of type udtWeapon::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol);
+
+	/* Gets the UDT mean of death number from the Quake number. */
+	/* The result is of type udtMeanOfDeath::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol);
+
+	/* Gets the Quake entity event number from the UDT number. */
+	/* udtEntityEventId is of type udtEntityEvent::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol);
+
+	/* Gets the entity type number for the specified protocol. */
+	/* udtEntityType is of type udtEntityType::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdEntityType(u32 udtEntityType, u32 protocol);
 
 #ifdef __cplusplus
 }

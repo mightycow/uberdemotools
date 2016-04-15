@@ -140,6 +140,40 @@ local function ApplyProjectSettings()
 
 end
 
+local function ApplyTutorialProjectSettings()
+
+	filter { }
+	kind "ConsoleApp"
+	language "C++"
+	location ( path_build.."/".._ACTION )
+	includedirs { path_src_apps, path_inc }
+	rtti "Off"
+	exceptionhandling "On"
+	flags { "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings" }
+	links { "UDT" }
+	
+	filter "configurations:Debug"
+		defines { "DEBUG", "_DEBUG" }
+		
+	filter "configurations:Release"
+		defines { "NDEBUG" }
+		
+	ApplyTargetAndLinkSettings()
+	
+	filter "system:windows"
+		defines { "WIN32" }
+		
+	filter "action:vs*"
+		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		
+	filter { "action:vs*", "kind:ConsoleApp" }
+		linkoptions { "/ENTRY:mainCRTStartup" }
+		
+	filter "action:gmake"
+		buildoptions { "-pedantic" }
+
+end
+
 os.mkdir(path_bin)
 
 solution "UDT"
@@ -232,7 +266,20 @@ solution "UDT"
 			defines { "WIN32" }
 		filter "action:vs*"
 			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+			--buildoptions { "/Za" } -- /Za: disable language extensions
 		filter { "action:vs*", "kind:ConsoleApp" }
 			linkoptions { "/ENTRY:mainCRTStartup" }
 		filter "action:gmake"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
+			
+	project "tut_multi_rail"
+	
+		filter { }
+		files { path_src_apps.."/tut_multi_rail.cpp" }
+		ApplyTutorialProjectSettings()
+		
+	project "tut_players"
+	
+		filter { }
+		files { path_src_apps.."/tut_players.cpp" }
+		ApplyTutorialProjectSettings()

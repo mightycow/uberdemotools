@@ -45,7 +45,7 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		}
 
 		const s32 attackerIdx = eventInfo.AttackerIndex;
-		if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+		if(attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 		{
 			continue;
 		}

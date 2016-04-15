@@ -922,10 +922,12 @@ namespace Uber.DemoTools
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    public struct udtCut
 	    {
+            public IntPtr FilePath; // const char*
+            public IntPtr Reserved1;
 		    public Int32 StartTimeMs;
 		    public Int32 EndTimeMs;
             public Int32 GameStateIndex;
-            public Int32 Reserved1;
+            public Int32 Reserved2;
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -965,8 +967,9 @@ namespace Uber.DemoTools
         public struct udtCutByTimeArg
         {
             public IntPtr Cuts; // const udtCut*
+            public IntPtr Reserved1;
             public UInt32 CutCount;
-            public Int32 Reserved1;
+            public Int32 Reserved2;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1822,6 +1825,7 @@ namespace Uber.DemoTools
             parseArg.PlugIns = IntPtr.Zero;
 
             var cut = new udtCut();
+            cut.FilePath = IntPtr.Zero;
             cut.GameStateIndex = parseArg.GameStateIndex;
             cut.StartTimeMs = startTimeSec * 1000;
             cut.EndTimeMs = endTimeSec * 1000;

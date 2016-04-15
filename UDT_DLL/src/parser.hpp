@@ -48,6 +48,7 @@ public:
 	void	FinishParsing(bool success);
 
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
+	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
 	const udtString       GetConfigString(s32 csIndex) const;
@@ -78,6 +79,7 @@ public:
 public:
 	struct udtCutInfo
 	{
+		const char* FilePath;
 		udtDemoNameCreator StreamCreator;
 		void* UserData;
 		const char* VeryShortDesc;
@@ -118,9 +120,9 @@ public:
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
 	s32 _inLastSnapshotMessageNumber;
-	u8 _inMsgData[MAX_MSGLEN];
-	u8 _inEntityBaselines[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
-	u8 _inParseEntities[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
+	u8 _inMsgData[ID_MAX_MSG_LENGTH];
+	u8 _inEntityBaselines[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
+	u8 _inParseEntities[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
 	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.
@@ -135,7 +137,7 @@ public:
 	udtString _outFilePath;
 	udtString _outFileName;
 	udtVMArray<udtCutInfo> _cuts;
-	u8 _outMsgData[MAX_MSGLEN];
+	u8 _outMsgData[ID_MAX_MSG_LENGTH];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;
 	s32 _outSnapshotsWritten;
