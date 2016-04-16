@@ -370,6 +370,15 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 #define	CMD_BACKUP		64
 #define	CMD_MASK		(CMD_BACKUP - 1)
 
+// Two bits at the top of the idEntityStateBase::event field
+// will be incremented with each change in the event so
+// that an identical event started twice in a row can
+// be distinguished.
+// And off the value with (~EV_EVENT_BITS) to retrieve the actual event number.
+#define	ID_ES_EVENT_BIT_1    0x00000100
+#define	ID_ES_EVENT_BIT_2    0x00000200
+#define	ID_ES_EVENT_BITS     (ID_ES_EVENT_BIT_1 | ID_ES_EVENT_BIT_2)
+
 #define	EVENT_VALID_MSEC	300
 
 typedef enum

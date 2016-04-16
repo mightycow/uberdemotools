@@ -78,25 +78,29 @@ void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 {
 	const u32 entityCount = arg.EntityCount;
 	udtVMArray<const idEntityStateBase*>& changedEntities = _context->ChangedEntities;
-	udtVMArray<u32>& changedEntityFlags = _context->ChangedEntityFlags;
 	changedEntities.Clear();
-	changedEntityFlags.Clear();
 	for(u32 i = 0; i < entityCount; ++i)
 	{
-		changedEntities.Add(arg.Entities[i].Entity);
-
-		u32 flags = 0;
-		if(arg.Entities[i].IsNewEvent)
+		idEntityStateBase* const ent = arg.Entities[i].Entity;
+		if(ent->eType >= ET_EVENTS)
 		{
-			flags |= (u32)udtEntityFlags::IsNewEvent;
+			if(!arg.Entities[i].IsNewEvent)
+			{
+				// Don't give our user any duplicate event.
+				continue;
+			}
+
+			// Simplify stuff for our user a bit.
+			ent->event = (ent->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
+			ent->eType = ET_EVENTS;
 		}
-		changedEntityFlags.Add(flags);
+
+		changedEntities.Add(arg.Entities[i].Entity);
 	}
 
 	udtCuSnapshotMessage& snap = _context->Snapshot;
 	memcpy(snap.AreaMask, arg.Snapshot->areamask, 32);
 	snap.ChangedEntities = changedEntities.GetStartAddress();
-	snap.ChangedEntityFlags = changedEntityFlags.GetStartAddress();
 	snap.CommandNumber = arg.CommandNumber;
 	snap.EntityCount = entityCount;
 	snap.MessageNumber = arg.MessageNumber;

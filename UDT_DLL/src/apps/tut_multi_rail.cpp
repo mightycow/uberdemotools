@@ -140,6 +140,8 @@ struct Obituary
 
 static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity, udtProtocol::Id protocol)
 {	
+	// Ideally, you should get and test those once before parsing instead of 
+	// querying those values and over.
 	const s32 obituaryEvtId = udtGetIdEntityEventId((u32)udtEntityEvent::Obituary, (u32)protocol);
 	const s32 eventTypeId = udtGetIdEntityType((u32)udtEntityType::Event, (u32)protocol);
 	if(obituaryEvtId < 0 || eventTypeId < 0)
@@ -147,8 +149,9 @@ static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity,
 		return false;
 	}
 
-	const s32 eventType = entity.eType & (~ID_ES_EVENT_BITS);
-	if(eventType != eventTypeId + obituaryEvtId)
+	// Make sure it's an obituary event.
+	if(entity.eType != eventTypeId ||
+	   entity.event != obituaryEvtId)
 	{
 		return false;
 	}
@@ -445,17 +448,6 @@ private:
 		u32 railKillCount = 0;
 		for(u32 i = 0; i < snapshot.EntityCount; ++i)
 		{
-			// By checking the udtEntityFlags::IsNewEvent bit of the flags,
-			// we make sure we only process the event entity once, when it's actually new.
-			// Otherwise, an event might appear to happen multiples times in quick succession 
-			// when it really doesn't.
-			const u32 flags = snapshot.ChangedEntityFlags[i];
-			const bool isNewEvent = (flags & (u32)udtEntityFlags::IsNewEvent) != 0;
-			if(!isNewEvent)
-			{
-				continue;
-			}
-
 			Obituary obituary;
 			if(!IsObituaryEvent(obituary, *snapshot.ChangedEntities[i], _protocol))
 			{

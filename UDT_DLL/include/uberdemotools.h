@@ -2148,17 +2148,6 @@ extern "C"
 #define	ID_MAX_CLIENTS	           64 /* max player count */
 #define ID_MAX_MSG_LENGTH       16384 /* max length of a message, which may be fragmented into multiple packets */
 
-	/*
-	Two bits at the top of the idEntityStateBase::event field
-	will be incremented with each change in the event so
-	that an identical event started twice in a row can
-	be distinguished.
-	And off the value with (~EV_EVENT_BITS) to retrieve the actual event number.
-	*/
-#define	ID_ES_EVENT_BIT_1    0x00000100
-#define	ID_ES_EVENT_BIT_2    0x00000200
-#define	ID_ES_EVENT_BITS     (ID_ES_EVENT_BIT_1 | ID_ES_EVENT_BIT_2)
-
 	typedef f32   idVec;
 	typedef idVec idVec2[2];
 	typedef idVec idVec3[3];
@@ -2421,11 +2410,11 @@ extern "C"
 		/* An array of pointers to the entity states that changed or were added. */
 		const idEntityStateBase** ChangedEntities;
 
-		/* An array of flags for the entity states that changed or were added. */
-		const u32* ChangedEntityFlags;
-
 		/* An array of numbers for the entities that were removed. */
 		const s32* RemovedEntities;
+
+		/* Ignore this. */
+		const void* Reserved1;
 
 		/* The server time the message is valid for. */
 		s32 ServerTimeMs;
@@ -2444,8 +2433,8 @@ extern "C"
 		/* Length of the RemovedEntities array. */
 		u32 RemovedEntityCount;
 
-		/* Execute all commands up to this before making the snapshot current. */
-		s32 Reserved1;
+		/* Ignore this. */
+		s32 Reserved2;
 	}
 	udtCuSnapshotMessage;
 
@@ -2529,14 +2518,6 @@ extern "C"
 	udtCuConfigString;
 
 #if defined(__cplusplus)
-
-	struct udtEntityFlags
-	{
-		enum Id
-		{
-			IsNewEvent = UDT_BIT(0)
-		};
-	};
 
 	struct udtEntityEvent
 	{
