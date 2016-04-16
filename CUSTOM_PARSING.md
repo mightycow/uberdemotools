@@ -72,8 +72,8 @@ foreach variable in variables
   cs.append(variable.value)
 ```
 
-In practice, a player config string looks like something this: "n\UnnamedPlayer\t\3\hc\100".  
-In this specific example
+In practice, a player config string looks like this: "n\UnnamedPlayer\t\3\hc\100".  
+In this specific example:
 
 * the name (n) is UnnamedPlayer
 * the team (t) is 3 (he's a spectator)
