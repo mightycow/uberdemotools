@@ -108,7 +108,8 @@ typedef struct udtParserContextGroup_s udtParserContextGroup;
 	N(InvalidArgument, "invalid argument") \
 	N(OperationFailed, "operation failed") \
 	N(OperationCanceled, "operation canceled") \
-	N(Unprocessed, "unprocessed job")
+	N(Unprocessed, "unprocessed job") \
+	N(InsufficientBufferSize, "insufficient buffer size")
 
 #define UDT_ERROR_ITEM(Enum, Desc) Enum,
 struct udtErrorCode
@@ -2648,6 +2649,16 @@ extern "C"
 	/* udtEntityType is of type udtEntityType::Id. */
 	/* Returns -1 when not available. */
 	UDT_API(s32) udtGetIdEntityType(u32 udtEntityType, u32 protocol);
+
+	/* Reads the integer value of a config string variable. */
+	/* The temp buffer is used for constructing a search string. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtParseConfigStringValueAsInteger(s32* res, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
+
+	/* Reads the string value of a config string variable. */
+	/* The temp buffer is used for constructing a search string. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
 
 #ifdef __cplusplus
 }

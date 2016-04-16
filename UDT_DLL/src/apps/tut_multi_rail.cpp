@@ -423,13 +423,17 @@ private:
 		u32 railKillCount = 0;
 		for(u32 i = 0; i < snapshot.EntityCount; ++i)
 		{
+			// By checking the udtEntityFlags::IsNewEvent bit of the flags,
+			// we make sure we only process the event entity once, when it's actually new.
+			// Otherwise, an event might appear to happen multiples times in quick succession 
+			// when it really doesn't.
 			const u32 flags = snapshot.ChangedEntityFlags[i];
 			const bool isNewEvent = (flags & (u32)udtEntityFlags::IsNewEvent) != 0;
 			if(!isNewEvent)
 			{
 				continue;
 			}
-			
+
 			Obituary obituary;
 			if(!IsObituaryEvent(obituary, *snapshot.ChangedEntities[i], _protocol))
 			{
@@ -452,6 +456,7 @@ private:
 		{
 			const u32 cutIndex = (u32)_cutSections.size();
 
+			// Create a 20 seconds long demo cut to keep that sweet frag.
 			udtCut cut;
 			cut.GameStateIndex = _gameStateIndex;
 			cut.StartTimeMs = snapshot.ServerTimeMs - 10 * 1000;

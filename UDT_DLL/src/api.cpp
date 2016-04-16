@@ -1361,3 +1361,108 @@ UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
 		default: return -1;
 	}
 }
+
+static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
+{
+	bufferTooSmall = false;
+
+	const u32 nameLength = (u32)strlen(variableName);
+	const u32 csLength = (u32)strlen(configString);
+	if(csLength > nameLength && 
+	   strstr(configString, variableName) == configString && 
+	   configString[nameLength] == '\\')
+	{
+		// Variable found at the start.
+		return configString + nameLength + 1;
+	}
+
+	const u32 patternLength = nameLength + 2;
+	const u32 patternByteCount = patternLength + 1;
+	if(tempBytes < patternByteCount)
+	{
+		// The buffer's not large enough.
+		bufferTooSmall = true;
+		return NULL;
+	}
+
+	sprintf(tempBuf, "\\%s\\", variableName);
+	const char* const keySepAddress = strstr(configString, tempBuf);
+	if(keySepAddress == NULL)
+	{
+		// Variable not found.
+		return NULL;
+	}
+
+	return keySepAddress + patternLength;
+}
+
+UDT_API(s32) udtParseConfigStringValueAsInteger(s32* res, char* tempBuf, u32 tempBytes, const char* varName, const char* configString)
+{
+	if(res == NULL || tempBuf == NULL || tempBytes == 0 || varName == NULL || configString == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	bool bufferTooSmall = false;
+	const char* const valueAddress = FindConfigStringValueAddress(bufferTooSmall, tempBuf, tempBytes, varName, configString);
+	if(bufferTooSmall)
+	{
+		return (s32)udtErrorCode::InsufficientBufferSize;
+	}
+	else if(valueAddress == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	int result = 0;
+	if(sscanf(valueAddress, "%d", &result) != 1)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	*res = (s32)result;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString)
+{
+	if(resBuf == NULL || resBytes == 0 || tempBuf == NULL || tempBytes == 0 || varName == NULL || configString == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	bool bufferTooSmall = false;
+	const char* const valueAddress = FindConfigStringValueAddress(bufferTooSmall, tempBuf, tempBytes, varName, configString);
+	if(bufferTooSmall)
+	{
+		return (s32)udtErrorCode::InsufficientBufferSize;
+	}
+	else if(valueAddress == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	const char* const sepAfterValue = strchr(valueAddress, '\\');
+	if(sepAfterValue == NULL)
+	{
+		const u32 length = (u32)strlen(valueAddress);
+		if(resBytes < length + 1)
+		{
+			return (s32)udtErrorCode::InsufficientBufferSize;
+		}
+		strcpy(resBuf, valueAddress);
+	}
+	else
+	{
+		const u32 length = (u32)(sepAfterValue - valueAddress);
+		if(resBytes < length + 1)
+		{
+			return (s32)udtErrorCode::InsufficientBufferSize;
+		}
+		memcpy(resBuf, valueAddress, length);
+		resBuf[length] = '\0';
+	}
+
+	return (s32)udtErrorCode::None;
+}

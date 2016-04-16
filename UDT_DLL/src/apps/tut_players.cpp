@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <assert.h>
 #include <vector>
 #include <string>
 
@@ -120,39 +121,16 @@ static void FormatServerTime(std::string& serverTime, s32 serverTimeMs)
 
 static bool ExtractRawPlayerName(std::string& playerName, const std::string& configString)
 {
-	if(configString.length() > 3 &&
-	   configString.c_str()[0] == 'n' &&
-	   configString.c_str()[1] == '\\')
-	{
-		const size_t endSep = configString.find('\\', 2);
-		if(endSep == std::string::npos)
-		{
-			playerName = configString.substr(2);
-		}
-		else
-		{
-			playerName = configString.substr(2, endSep - 2);
-		}
-
-		return true;
-	}
-
-	const size_t keyIdx = configString.find("\\n\\");
-	const size_t startIdx = keyIdx + 3;
-	if(keyIdx == std::string::npos)
+	char name[256];
+	char temp[4];
+	const s32 errorCode = udtParseConfigStringValueAsString(name, (u32)sizeof(name), temp, (u32)sizeof(temp), "n", configString.c_str());
+	assert(errorCode != (s32)udtErrorCode::InsufficientBufferSize);
+	if(errorCode != (s32)udtErrorCode::None)
 	{
 		return false;
 	}
 
-	const size_t endSep = configString.find('\\', startIdx);
-	if(endSep == std::string::npos)
-	{
-		playerName = configString.substr(startIdx);
-	}
-	else
-	{
-		playerName = configString.substr(startIdx, endSep - startIdx - 1);
-	}
+	playerName = name;
 
 	return true;
 }
