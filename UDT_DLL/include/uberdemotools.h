@@ -2008,6 +2008,10 @@ extern "C"
 	/* The protocol argument is of type udtProtocol::Id. */
 	UDT_API(s32) udtIsValidProtocol(u32 protocol);
 
+	/* Returns zero if the protocol is invalid or UDT doesn't support writing demos in that protocol. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol);
+
 	/* Returns zero if not a valid protocol. */
 	/* The protocol argument is of type udtProtocol::Id. */
 	UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol);

@@ -233,6 +233,7 @@ struct MultiFragRailCutter
 		_gameStateIndex = -1;
 		_trackedClientNumber = -1;
 		_protocol = udtProtocol::Invalid;
+		_protocolWriteEnabled = false;
 	}
 
 	~MultiFragRailCutter()
@@ -300,10 +301,24 @@ struct MultiFragRailCutter
 			return true;
 		}
 
-		PrintInfo("%u multi-frag rail kills were found, attempting to cut now...", _cutSections.size());
+		const size_t cutCount = _cutSections.size();
+		if(!_protocolWriteEnabled)
+		{
+			PrintInfo("%u multi-frag rail kill%s were found, here's the list:", cutCount, cutCount > 1 ? "s" : "");
+			for(size_t i = 0; i < cutCount; ++i)
+			{
+				PrintInfo("- game state #%d, server time %d ms", 
+						  (int)_cutSections[i].GameStateIndex + 1, 
+						  (int)(_cutSections[i].StartTimeMs + _cutSections[i].EndTimeMs) / 2);
+			}
+
+			return true;
+		}
+
+		PrintInfo("%u multi-frag rail kill%s were found, attempting to cut now...", cutCount, cutCount > 1 ? "s" : "");
 
 		// Fix up the file paths pointers.
-		for(size_t i = 0, count = _cutSections.size(); i < count; ++i)
+		for(size_t i = 0; i < cutCount; ++i)
 		{
 			_cutSections[i].FilePath = _cutFilePaths[i].c_str();
 		}
@@ -342,7 +357,14 @@ private:
 
 		udtCuContext* const cuContext = _cuContext;
 		const u32 protocol = udtGetProtocolByFilePath(filePath);
+		const bool writeEnabled = udtIsProtocolWriteSupported(protocol) != 0;
+		if(!writeEnabled)
+		{
+			PrintWarning("UDT can't cut demos of this protocol, but the application will proceed with the analysis.");
+		}
+
 		_protocol = (udtProtocol::Id)protocol;
+		_protocolWriteEnabled = writeEnabled;
 		s32 errorCode = udtCuStartParsing(cuContext, protocol);
 		if(errorCode != udtErrorCode::None)
 		{
@@ -500,6 +522,7 @@ private:
 	s32 _gameStateIndex;
 	s32 _trackedClientNumber;
 	udtProtocol::Id _protocol;
+	bool _protocolWriteEnabled;
 };
 
 

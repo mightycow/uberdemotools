@@ -244,6 +244,16 @@ UDT_API(s32) udtIsValidProtocol(u32 protocol)
 	return (protocol >= (u32)udtProtocol::AfterLastProtocol || protocol < 1) ? 0 : 1;
 }
 
+UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return 0;
+	}
+
+	return protocol >= (u32)udtProtocol::Dm66 ? 1 : 0;
+}
+
 UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
 {
 	switch((udtProtocol::Id)protocol)
