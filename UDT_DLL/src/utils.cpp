@@ -329,11 +329,12 @@ static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator,
 {
 	// The format is the following: "key1\value1\key2\value2"
 	// We work with no guarantee of a leading or trailing backslash.
-	// @NOTE: Config strings 0 and 1 have a leading backslash, but player config strings don't.
 
 	const udtString inputString = udtString::NewConstRef(configString);
 	const udtString varNameString = udtString::NewConstRef(varName);
-	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.GetLength()] == '\\')
+	if(inputString.GetLength() > varNameString.GetLength() && 
+	   udtString::StartsWith(inputString, varNameString) &&
+	   configString[varNameString.GetLength()] == '\\')
 	{
 		return configString + varNameString.GetLength() + 1;
 	}
@@ -359,12 +360,20 @@ bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, c
 	}
 
 	const char* const valueString = FindConfigStringValueAddress(allocator, varName, configString);
-	if(valueString == NULL)
+	if(valueString == NULL || *valueString == '\0')
 	{
 		return false;
 	}
 
-	return sscanf(valueString, "%d", &varValue) == 1;
+	int result = 0;
+	if(sscanf(valueString, "%d", &varValue) != 1)
+	{
+		return false;
+	}
+
+	varValue = (s32)result;
+
+	return true;
 }
 
 bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
@@ -374,6 +383,7 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 		return false;
 	}
 
+	// @NOTE: An empty string can be a valid value.
 	const char* const valueStart = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueStart == NULL)
 	{
@@ -381,12 +391,7 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 	}
 
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
-	if(separatorAfterValue == NULL)
-	{
-		return false;
-	}
-
-	const u32 length = (separatorAfterValue == NULL) ? 0 : (u32)(separatorAfterValue - valueStart);
+	const u32 length = separatorAfterValue == NULL ? u32(udtString::InvalidLength) : u32(separatorAfterValue - valueStart);
 	varValue = udtString::NewClone(allocator, valueStart, length);
 
 	return true;
