@@ -100,6 +100,12 @@ When a config string is deemed too large to be put in a network packet by the Qu
 
 UDT handles those commands for you, you only have to concern yourself with the `cs` commands if you want to.
 
+###### Player state and entity state
+
+The entity state is a general-purpose data structure. It can represent players, items, projectiles, events, etc. The fields can have different meanings for different entity state types (the `idEntityStateBase::eType` field).
+
+The player state is used for representing the spectated player only. Because it is a superset of the entity state, it can be converted to an entity state (the `BG_PlayerStateToEntityState` function in the original **Quake 3** source code).
+
 ###### Note on the terminology
 
 In the original Quake 3 source code, the message bundles (or packets as I call them) were also called messages.  
