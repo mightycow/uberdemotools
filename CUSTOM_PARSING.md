@@ -176,3 +176,10 @@ Please note that if you want proper support for Unicode file paths, you will hav
 
 To deal with Unicode, the recommended course of action is to internally do everything with UTF-8 and only convert from/to UTF-16 when dealing with Windows-specific stuff. No extra steps needed on Linux.  
 That's what UDT does for the library and all command-line tools.
+
+Additional resources
+--------------------
+
+* [The Quake3 Networking Model](http://trac.bookofhook.com/bookofhook/trac.cgi/wiki/Quake3Networking) by *Brian Hook*, who worked on **Quake 3**
+* [Quake 3 Source Code Review: The Network Model](http://fabiensanglard.net/quake3/network.php) by *Fabien Sanglard*  
+Note that Huffman compression wasn't used originally. It was introduced with protocol 66 (*.dm_66 demo files).
