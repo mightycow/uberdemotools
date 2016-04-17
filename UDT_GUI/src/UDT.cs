@@ -2519,9 +2519,13 @@ namespace Uber.DemoTools
             for(uint i = 0; i < demoCount; ++i)
             {
                 Int32 errorCode = Marshal.ReadInt32(multiParseArg.OutputErrorCodes, 4 * (int)i);
-                if(errorCode != (Int32)udtErrorCode.None &&
-                    errorCode != (Int32)udtErrorCode.Unprocessed && 
-                    errorCode != (Int32)udtErrorCode.OperationCanceled)
+                if(errorCode == (Int32)udtErrorCode.Unprocessed || 
+                    errorCode == (Int32)udtErrorCode.OperationCanceled)
+                {
+                    continue;
+                }
+
+                if(errorCode != (Int32)udtErrorCode.None)
                 {
                     var fileName = Path.GetFileName(filePaths[(int)i]);
                     var errorCodeString = GetErrorCodeString((udtErrorCode)errorCode);
