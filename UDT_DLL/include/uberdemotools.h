@@ -2182,7 +2182,7 @@ extern "C"
 	Different eTypes may use the information in different ways.
 	The messages are delta compressed, so it doesn't really matter if the structure size is fairly large.
 	*/
-	struct idEntityStateBase
+	typedef struct idEntityStateBase_s
 	{
 		s32 number;	/* entity index */
 		s32 eType;  /* entityType_t */
@@ -2212,7 +2212,8 @@ extern "C"
 		s32 legsAnim;  /* mask off ANIM_TOGGLEBIT */
 		s32 torsoAnim; /* mask off ANIM_TOGGLEBIT */
 		s32 generic1;
-	};
+	}
+	idEntityStateBase;
 
 #if defined(__cplusplus)
 
@@ -2272,7 +2273,7 @@ extern "C"
 	This is a full superset of idEntityState as it is used by players,
 	so if an idPlayerState is transmitted, the idEntityState can be fully derived from it.
 	*/
-	struct idPlayerStateBase
+	typedef struct idPlayerStateBase_s
 	{
 		s32 commandTime; /* cmd->serverTime of last executed command */
 		s32 pm_type;
@@ -2321,7 +2322,8 @@ extern "C"
 		s32 generic1;
 		s32 loopSound;
 		s32 jumppad_ent; /* jumppad entity hit this frame */
-	};
+	}
+	idPlayerStateBase;
 
 #if defined(__cplusplus)
 
