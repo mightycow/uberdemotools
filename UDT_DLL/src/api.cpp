@@ -1372,6 +1372,36 @@ UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
 	}
 }
 
+UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	switch((udtPowerUpIndex::Id)udtPowerUpId)
+	{
+		case udtPowerUpIndex::RedFlag: return idPowerUpIndex::RedFlag((udtProtocol::Id)protocol);
+		case udtPowerUpIndex::BlueFlag: return idPowerUpIndex::BlueFlag((udtProtocol::Id)protocol);
+		case udtPowerUpIndex::NeutralFlag: return idPowerUpIndex::NeutralFlag((udtProtocol::Id)protocol);
+		default: return -1;
+	}
+}
+
+UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	switch((udtPersStatsIndex::Id)udtPersStatsId)
+	{
+		case udtPersStatsIndex::FlagCaptures: return idPersStatsIndex::FlagCaptures((udtProtocol::Id)protocol);
+		default: return -1;
+	}
+}
+
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
 {
 	bufferTooSmall = false;

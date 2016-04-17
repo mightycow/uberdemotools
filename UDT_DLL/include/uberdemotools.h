@@ -2555,6 +2555,25 @@ extern "C"
 		};
 	};
 
+	struct udtPowerUpIndex
+	{
+		enum Id
+		{
+			RedFlag,
+			BlueFlag,
+			NeutralFlag
+		};
+	};
+
+	struct udtPersStatsIndex
+	{
+		enum Id
+		{
+			FlagCaptures
+		};
+	};
+
+
 #endif
 
 #pragma pack(pop)
@@ -2630,10 +2649,20 @@ extern "C"
 	/* Returns -1 when not available. */
 	UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol);
 
-	/* Gets the entity type number for the specified protocol. */
+	/* Gets the Quake entity type number from the UDT number. */
 	/* udtEntityType is of type udtEntityType::Id. */
 	/* Returns -1 when not available. */
 	UDT_API(s32) udtGetIdEntityType(u32 udtEntityType, u32 protocol);
+
+	/* Gets the Quake player state power-up index from the UDT number. */
+	/* udtPowerUpId is of type udtPowerUpIndex::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol);
+
+	/* Gets the Quake player state persistant stats index from the UDT number. */
+	/* udtPersStatsId is of udtPersStatsIndextype ::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */
