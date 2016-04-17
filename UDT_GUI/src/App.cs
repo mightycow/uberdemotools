@@ -2680,7 +2680,8 @@ namespace Uber.DemoTools
         {
             var stringBuilder = new StringBuilder();
 
-            foreach(var item in listView.SelectedItems)
+            var items = CreateSortedList(listView.SelectedItems);
+            foreach(var item in items)
             {
                 var listViewItem = item as ListViewItem;
                 if(listViewItem == null)
@@ -2994,11 +2995,25 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(GetLog(), true);
         }
 
+        public static List<object> CreateSortedList(System.Collections.IList items)
+        {
+            var itemList = new List<object>();
+            itemList.Capacity = items.Count;
+            foreach(var item in items)
+            {
+                itemList.Add(item);
+            }
+            
+            itemList.Sort((a, b) => items.IndexOf(b).CompareTo(items.IndexOf(a)));
+
+            return itemList;
+        }
+
         private void CopyLogSelection()
         {
             var stringBuilder = new StringBuilder();
 
-            var items = _logListBox.SelectedItems;
+            var items = CreateSortedList(_logListBox.SelectedItems);
             foreach(var item in items)
             {
                 var line = GetTextFromLogItem(item);
