@@ -381,9 +381,9 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& 
 		{
 			writer.StartArray("time outs");
 
-			const u32 first = stats.FirstTimeOutRangeIndex;
-			const u32 count = stats.TimeOutCount;
-			for(u32 i = first, end = first + count; i < end; ++i)
+			const u32 firstTo = stats.FirstTimeOutRangeIndex;
+			const u32 countTo = stats.TimeOutCount;
+			for(u32 i = firstTo, endTo = firstTo + countTo; i < endTo; ++i)
 			{
 				writer.StartObject();
 				writer.WriteIntValue("start time", statsBuffers.TimeOutStartAndEndTimes[2*i]);
@@ -616,7 +616,7 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 		writer.WriteIntValue("end time", info.LastSnapshotTimeMs);
 
 		writer.StartArray("matches");
-		for(u32 j = info.FirstMatchIndex, end = j + info.MatchCount; j < end; ++j)
+		for(u32 j = info.FirstMatchIndex, endM = j + info.MatchCount; j < endM; ++j)
 		{
 			writer.StartObject();
 			writer.WriteIntValue("start time", gameStateBuffers.Matches[j].MatchStartTimeMs);
@@ -626,7 +626,7 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 		writer.EndArray();
 
 		writer.StartArray("players");
-		for(u32 j = info.FirstPlayerIndex, end = j + info.PlayerCount; j < end; ++j)
+		for(u32 j = info.FirstPlayerIndex, endP = j + info.PlayerCount; j < endP; ++j)
 		{
 			writer.StartObject();
 			writer.WriteIntValue("client number", gameStateBuffers.Players[j].Index);
@@ -639,7 +639,7 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 		writer.EndArray();
 
 		writer.StartObject("config string values");
-		for(u32 j = info.FirstKeyValuePairIndex, end = j + info.KeyValuePairCount; j < end; ++j)
+		for(u32 j = info.FirstKeyValuePairIndex, endKvp = j + info.KeyValuePairCount; j < endKvp; ++j)
 		{
 			writer.WriteStringValue(gameStateBuffers.KeyValuePairs[j].Name, gameStateBuffers.KeyValuePairs[j].Value);
 		}
