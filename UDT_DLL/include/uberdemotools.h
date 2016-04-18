@@ -2515,6 +2515,13 @@ extern "C"
 		{
 			Obituary,
 			WeaponFired,
+#if UDT_DISABLED
+			ItemPickup,
+			GlobalItemPickup,
+			GlobalTeamSound,
+			QL_Overtime,
+			QL_GameOver,
+#endif
 			Count
 		};
 	};
@@ -2524,6 +2531,21 @@ extern "C"
 		enum Id
 		{
 			Event,
+#if UDT_DISABLED
+			General,
+			Player,
+			Item,
+			Missile,
+			Mover,
+			Beam,
+			Portal,
+			Speaker,
+			PushTrigger,
+			TeleportTrigger,
+			Invisible,
+			Grapple,
+			Team,
+#endif
 			Count
 		};
 	};
@@ -2541,6 +2563,41 @@ extern "C"
 			PauseStart,
 			PauseEnd,
 			FlagStatus,
+#if UDT_DISABLED
+			ServerInfo,
+			SystemInfo,
+			Scores1,
+			Scores2,
+			VoteTime,
+			VoteString,
+			VoteYes,
+			VoteNo,
+			TeamVoteTime,
+			TeamVoteString,
+			TeamVoteYes,
+			TeamVoteNo,
+			GameVersion,
+			ItemFlags, /* A string of 0's and 1's that tell which items are present. */
+			ClanArenaRoundInfo,
+			ClanArenaRoundStart,
+			RedPlayers,
+			BluePlayers,
+			QL_TimeoutStartTime,
+			QL_TimeoutEndTime,
+			QL_RedTeamTimeoutsLeft,
+			QL_BlueTeamTimeoutsLeft,
+			QL_FirstPlaceClientNumber,
+			QL_SecondPlaceClientNumber,
+			QL_FirstPlaceScore,
+			QL_SecondPlaceScore,
+			QL_ReadTeamClanName,
+			QL_BlueTeamClanName,
+			QL_RedTeamClanTag,
+			QL_BlueTeamClanTag,
+			CPMA_GameInfo,
+			CPMA_RoundInfo,
+			OSP_GamePlay,
+#endif
 			Count
 		};
 	};
@@ -2551,7 +2608,17 @@ extern "C"
 		{
 			RedFlag,
 			BlueFlag,
-			NeutralFlag
+			NeutralFlag,
+#if UDT_DISABLED
+			Quad,
+			BattleSuit,
+			Haste,
+			Invis,
+			Regen,
+			Flight,
+			Invulnerability,
+#endif
+			Count
 		};
 	};
 
@@ -2559,10 +2626,51 @@ extern "C"
 	{
 		enum Id
 		{
-			FlagCaptures
+			FlagCaptures,
+#if UDT_DISABLED
+			Score,
+			DamageGiven,
+			Rank,
+			Team,
+			SpawnCount,
+			LastAttacker,
+			LastAttackerHealthAndArmor,
+			Deaths,
+			Impressives,
+			Excellents,
+			Defends,
+			Assists,
+			Humiliations,
+#endif
+			Count
 		};
 	};
 
+	struct udtEntityStateFlags
+	{
+		enum Id
+		{
+#if UDT_DISABLED
+			Dead,
+			TeleportBit, /* Toggled every time the origin abruptly changes. */
+			AwardExcellent,
+			PlayerEvent,
+			AwardHumiliation,
+			NoDraw,
+			Firing, /* For the LG. */
+			AwardCapture,
+			Chatting,
+			ConnectionInterrupted,
+			HasVoted,
+			AwardImpressive,
+			AwardDefense,
+			AwardAssist,
+			AwardDenied,
+			HasTeamVoted,
+#endif
+			Count
+		};
+	};
 
 #endif
 
