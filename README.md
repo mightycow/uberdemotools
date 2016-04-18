@@ -134,14 +134,17 @@ The actual thread count used by UDT for processing a job is based on the number 
 Please note that given the way UDT works, augmenting the thread count will only yield a performance increase when reading the demos from an SSD.  
 If you have a standard hard drive and not an SSD, make sure to leave the `Maximum Thread Count` to 1.
 
-Here are the throughputs I measured on an Intel Core i7 2600K CPU (quad core) and an Intel X25-M SSD for parsing with all analyzers enabled:
+Here are the throughputs (in MB/s), for each thread count, when parsing with all analyzers enabled:
 
-| Thread Count | Throughput (MB/s) |
-|-------------:|------------------:|
-| 1            | 45.0              |
-| 2            | 89.1              |
-| 3            | 117.8             |
-| 4            | 149.2             |
+| Machine Config         | 1    | 2     | 3     | 4     |
+|:-----------------------|-----:|------:|------:|------:|
+| i7 2600k<sup>[1]</sup> | 51   | 101   | 141   | 169   |
+| i7 3770k<sup>[2]</sup> | 60   | 120   | 167   | 216   |
+
+1) Intel Core i7 2600K CPU (4 cores) + Intel X25-M SSD  
+2) Intel Core i7 3770K CPU (4 cores) + Samsung 850 EVO SSD  
+
+Build date: April 18, 2016.
 
 While the performance increase isn't perfectly linear, the benefits are far from negligible for users with SSDs.
 
