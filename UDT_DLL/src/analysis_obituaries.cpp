@@ -5,9 +5,9 @@
 
 void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator)
 {
-	_stringAllocator.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::PlayerNames");
 	_tempAllocator = &tempAllocator;
-	Obituaries.Init((uptr)(1 << 16) * (uptr)demoCount, "ObituariesAnalyzer::ObituariesArray");
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(2), "ObituariesAnalyzer::PlayerNames");
+	Obituaries.InitNoOverride(demoCount * UDT_KB(4), "ObituariesAnalyzer::ObituariesArray");
 }
 
 void udtObituariesAnalyzer::ResetForNextDemo()

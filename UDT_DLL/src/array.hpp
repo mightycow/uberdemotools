@@ -28,9 +28,15 @@ struct udtVMArray
 	{
 	}
 
+	
 	void Init(uptr reservedByteCount, const char* allocatorName)
 	{
 		_allocator.Init(reservedByteCount, allocatorName);
+	}
+
+	void InitNoOverride(uptr reservedByteCount, const char* allocatorName)
+	{
+		_allocator.InitNoOverride(reservedByteCount, allocatorName);
 	}
 
 	T& operator[](u32 index)

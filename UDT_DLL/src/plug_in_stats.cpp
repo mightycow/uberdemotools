@@ -117,7 +117,7 @@ void udtParserPlugInStats::InitAllocators(u32 demoCount)
 	_teamFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFlags");
 	_playerFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFlags");
 	_teamFieldsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFields");
-	_playerFieldsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFields");
+	_playerFieldsArray.InitNoOverride(demoCount * 600, "ParserPlugInStats::PlayerFields");
 	_playerStatsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerStats");
 	_timeOutTimes.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TimeOutTimes");
 

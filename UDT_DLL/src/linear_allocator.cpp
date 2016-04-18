@@ -128,6 +128,13 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	return true;
 }
 
+bool udtVMLinearAllocator::InitNoOverride(uptr reservedByteCount, const char* name)
+{
+	_enableReserveOverride = false;
+	
+	return Init(reservedByteCount, name);
+}
+
 uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 {
 	UDT_ASSERT_OR_FATAL_MSG(_addressSpaceStart != NULL, "An allocator was not properly initialized.");

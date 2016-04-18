@@ -1804,12 +1804,6 @@ extern "C"
 		/* String length. */
 		u32 RawCommandLength;
 
-		/* String offset. The command with no color codes etc. */
-		u32 CleanCommand;
-
-		/* String length. */
-		u32 CleanCommandLength;
-
 		/* The time at which the server command was sent from the client. */
 		s32 ServerTimeMs;
 
@@ -1850,12 +1844,6 @@ extern "C"
 
 		/* String length. */
 		u32 RawConfigStringLength;
-
-		/* String Offset. The config string with no color codes etc. */
-		u32 CleanConfigString;
-
-		/* String length. */
-		u32 CleanConfigStringLength;
 
 		/* The index of the config string. */
 		u32 ConfigStringIndex;

@@ -550,7 +550,6 @@ static void WriteRawCommands(udtJSONExporter& writer, const udtParseDataRawComma
 		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
 		writer.WriteIntValue("server time", info.ServerTimeMs);
 		writer.WriteStringValue("raw command", info.RawCommand);
-		writer.WriteStringValue("clean command", info.CleanCommand);
 
 		writer.EndObject();
 	}
@@ -580,7 +579,6 @@ static void WriteRawConfigStrings(udtJSONExporter& writer, const udtParseDataRaw
 		writer.WriteIntValue("game state number", info.GameStateIndex + 1);
 		writer.WriteIntValue("index", info.ConfigStringIndex);
 		writer.WriteStringValue("raw string", info.RawConfigString);
-		writer.WriteStringValue("clean string", info.CleanConfigString);
 
 		writer.EndObject();
 	}

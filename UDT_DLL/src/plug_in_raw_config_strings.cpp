@@ -12,8 +12,8 @@ udtParserPlugInRawConfigStrings::~udtParserPlugInRawConfigStrings()
 
 void udtParserPlugInRawConfigStrings::InitAllocators(u32 demoCount)
 {
-	_stringAllocator.Init(ComputeReservedByteCount(1 << 16, 1 << 18, 16, demoCount), "ParserPlugInRawConfigStrings::Strings");
-	_configStrings.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawConfigStrings::ConfigStringsArray");
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(16), "ParserPlugInRawConfigStrings::Strings");
+	_configStrings.InitNoOverride(demoCount * 800, "ParserPlugInRawConfigStrings::ConfigStringsArray");
 }
 
 void udtParserPlugInRawConfigStrings::CopyBuffersStruct(void* buffersStruct) const
@@ -56,14 +56,12 @@ void udtParserPlugInRawConfigStrings::ProcessGamestateMessage(const udtGamestate
 			continue;
 		}
 
-		const udtString raw = udtString::NewCloneFromRef(_stringAllocator, string);
-		const udtString clean = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, string);
-		
+		const udtString rawConfigString = udtString::NewCloneFromRef(_stringAllocator, string);		
+
 		udtParseDataRawConfigString cs;
 		cs.GameStateIndex = _gameStateIndex;
 		cs.ConfigStringIndex = i;
-		WriteStringToApiStruct(cs.RawConfigString, raw);
-		WriteStringToApiStruct(cs.CleanConfigString, clean);
+		WriteStringToApiStruct(cs.RawConfigString, rawConfigString);
 		_configStrings.Add(cs);
 	}
 }

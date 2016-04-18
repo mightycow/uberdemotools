@@ -12,9 +12,8 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
-	const uptr smallByteCount = 192 * 1024;
-	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInRawCommands::Strings");
-	_commands.Init((uptr)demoCount * (uptr)(1 << 18), "ParserPlugInRawCommands::CommandsArray");
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(50), "ParserPlugInRawCommands::Strings");
+	_commands.InitNoOverride(demoCount * UDT_KB(10), "ParserPlugInRawCommands::CommandsArray");
 }
 
 void udtParserPlugInRawCommands::CopyBuffersStruct(void* buffersStruct) const
@@ -53,13 +52,11 @@ void udtParserPlugInRawCommands::ProcessGamestateMessage(const udtGamestateCallb
 void udtParserPlugInRawCommands::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	const udtString rawCommand = udtString::NewClone(_stringAllocator, arg.String, arg.StringLength);
-	const udtString cleanCommand = udtString::NewCleanClone(_stringAllocator, parser._inProtocol, arg.String, arg.StringLength);
 
 	udtParseDataRawCommand info;
 	info.GameStateIndex = _gameStateIndex;
 	info.ServerTimeMs = parser._inServerTime;
 	WriteStringToApiStruct(info.RawCommand, rawCommand);
-	WriteStringToApiStruct(info.CleanCommand, cleanCommand);
 	_commands.Add(info);
 }
 

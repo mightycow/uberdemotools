@@ -1285,8 +1285,6 @@ namespace Uber.DemoTools
         {
             public UInt32 RawCommand; // string offset
             public UInt32 RawCommandLength;
-            public UInt32 CleanCommand; // string offset
-            public UInt32 CleanCommandLength;
             public Int32 ServerTimeMs;
             public Int32 GameStateIndex;
         };
@@ -1307,8 +1305,6 @@ namespace Uber.DemoTools
         {
             public UInt32 RawConfigString; // string offset
             public UInt32 RawConfigStringLength;
-            public UInt32 CleanConfigString; // string offset
-            public UInt32 CleanConfigStringLength;
             public UInt32 ConfigStringIndex;
             public Int32 GameStateIndex;
         };
