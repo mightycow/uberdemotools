@@ -2509,168 +2509,171 @@ extern "C"
 
 #if defined(__cplusplus)
 
+#define UDT_IDENTITY_WITH_COMMA(x) x,
+
+#define UDT_ENTITY_EVENT_LIST(N) \
+	N(Obituary) \
+	N(WeaponFired) \
+	N(ItemPickup) \
+	N(GlobalItemPickup) \
+	N(GlobalTeamSound) \
+	N(QL_Overtime) \
+	N(QL_GameOver)
+
 	struct udtEntityEvent
 	{
 		enum Id
 		{
-			Obituary,
-			WeaponFired,
-#if UDT_DISABLED
-			ItemPickup,
-			GlobalItemPickup,
-			GlobalTeamSound,
-			QL_Overtime,
-			QL_GameOver,
-#endif
+			UDT_ENTITY_EVENT_LIST(UDT_IDENTITY_WITH_COMMA)
 			Count
 		};
 	};
+
+#define UDT_ENTITY_TYPE_LIST(N) \
+	N(Event) \
+	N(General) \
+	N(Player) \
+	N(Item) \
+	N(Missile) \
+	N(Mover) \
+	N(Beam) \
+	N(Portal) \
+	N(Speaker) \
+	N(PushTrigger) \
+	N(TeleportTrigger) \
+	N(Invisible) \
+	N(Grapple) \
+	N(Team)
 
 	struct udtEntityType
 	{
 		enum Id
 		{
-			Event,
-#if UDT_DISABLED
-			General,
-			Player,
-			Item,
-			Missile,
-			Mover,
-			Beam,
-			Portal,
-			Speaker,
-			PushTrigger,
-			TeleportTrigger,
-			Invisible,
-			Grapple,
-			Team,
-#endif
+			UDT_ENTITY_TYPE_LIST(UDT_IDENTITY_WITH_COMMA)
 			Count
 		};
 	};
 
+#define UDT_CONFIG_STRING_LIST(N) \
+	N(FirstPlayer) \
+	N(Intermission) \
+	N(LevelStartTime) \
+	N(WarmUpEndTime) \
+	N(FirstPlacePlayerName) \
+	N(SecondPlacePlayerName) \
+	N(PauseStart) \
+	N(PauseEnd) \
+	N(FlagStatus) \
+	N(ServerInfo) \
+	N(SystemInfo) \
+	N(Scores1) \
+	N(Scores2) \
+	N(VoteTime) \
+	N(VoteString) \
+	N(VoteYes) \
+	N(VoteNo) \
+	N(TeamVoteTime) \
+	N(TeamVoteString) \
+	N(TeamVoteYes) \
+	N(TeamVoteNo) \
+	N(GameVersion) \
+	N(ItemFlags) \
+	N(ClanArenaRoundInfo) \
+	N(ClanArenaRoundStart) \
+	N(RedPlayers) \
+	N(BluePlayers) \
+	N(QL_TimeoutStartTime) \
+	N(QL_TimeoutEndTime) \
+	N(QL_RedTeamTimeoutsLeft) \
+	N(QL_BlueTeamTimeoutsLeft) \
+	N(QL_FirstPlaceClientNumber) \
+	N(QL_SecondPlaceClientNumber) \
+	N(QL_FirstPlaceScore) \
+	N(QL_SecondPlaceScore) \
+	N(QL_ReadTeamClanName) \
+	N(QL_BlueTeamClanName) \
+	N(QL_RedTeamClanTag) \
+	N(QL_BlueTeamClanTag) \
+	N(CPMA_GameInfo) \
+	N(CPMA_RoundInfo) \
+	N(OSP_GamePlay)
+	
 	struct udtConfigStringIndex
 	{
 		enum Id
 		{
-			FirstPlayer,
-			Intermission,
-			LevelStartTime,
-			WarmUpEndTime,
-			FirstPlacePlayerName,
-			SecondPlacePlayerName,
-			PauseStart,
-			PauseEnd,
-			FlagStatus,
-#if UDT_DISABLED
-			ServerInfo,
-			SystemInfo,
-			Scores1,
-			Scores2,
-			VoteTime,
-			VoteString,
-			VoteYes,
-			VoteNo,
-			TeamVoteTime,
-			TeamVoteString,
-			TeamVoteYes,
-			TeamVoteNo,
-			GameVersion,
-			ItemFlags, /* A string of 0's and 1's that tell which items are present. */
-			ClanArenaRoundInfo,
-			ClanArenaRoundStart,
-			RedPlayers,
-			BluePlayers,
-			QL_TimeoutStartTime,
-			QL_TimeoutEndTime,
-			QL_RedTeamTimeoutsLeft,
-			QL_BlueTeamTimeoutsLeft,
-			QL_FirstPlaceClientNumber,
-			QL_SecondPlaceClientNumber,
-			QL_FirstPlaceScore,
-			QL_SecondPlaceScore,
-			QL_ReadTeamClanName,
-			QL_BlueTeamClanName,
-			QL_RedTeamClanTag,
-			QL_BlueTeamClanTag,
-			CPMA_GameInfo,
-			CPMA_RoundInfo,
-			OSP_GamePlay,
-#endif
+			/* ItemFlags: A string of 0's and 1's that tell which items are present. */
+			UDT_CONFIG_STRING_LIST(UDT_IDENTITY_WITH_COMMA)
 			Count
 		};
 	};
 
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum,
 	struct udtPowerUpIndex
 	{
 		enum Id
 		{
-			RedFlag,
-			BlueFlag,
-			NeutralFlag,
-#if UDT_DISABLED
-			Quad,
-			BattleSuit,
-			Haste,
-			Invis,
-			Regen,
-			Flight,
-			Invulnerability,
-#endif
+			UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
 			Count
 		};
 	};
+#undef UDT_POWER_UP_ITEM
+
+#define UDT_PERSISTENT_STATS_LIST(N) \
+	N(FlagCaptures) \
+	N(Score) \
+	N(DamageGiven) \
+	N(Rank) \
+	N(Team) \
+	N(SpawnCount) \
+	N(LastAttacker) \
+	N(LastAttackerHealthAndArmor) \
+	N(Deaths) \
+	N(Impressives) \
+	N(Excellents) \
+	N(Defends) \
+	N(Assists) \
+	N(Humiliations)
 
 	struct udtPersStatsIndex
 	{
 		enum Id
 		{
-			FlagCaptures,
-#if UDT_DISABLED
-			Score,
-			DamageGiven,
-			Rank,
-			Team,
-			SpawnCount,
-			LastAttacker,
-			LastAttackerHealthAndArmor,
-			Deaths,
-			Impressives,
-			Excellents,
-			Defends,
-			Assists,
-			Humiliations,
-#endif
+			UDT_PERSISTENT_STATS_LIST(UDT_IDENTITY_WITH_COMMA)
 			Count
 		};
 	};
+
+#define UDT_ENTITY_STATE_FLAG_LIST(N) \
+	N(Dead) \
+	N(TeleportBit) \
+	N(AwardExcellent) \
+	N(PlayerEvent) \
+	N(AwardHumiliation) \
+	N(NoDraw) \
+	N(Firing) \
+	N(AwardCapture) \
+	N(Chatting) \
+	N(ConnectionInterrupted) \
+	N(HasVoted) \
+	N(AwardImpressive) \
+	N(AwardDefense) \
+	N(AwardAssist) \
+	N(AwardDenied) \
+	N(HasTeamVoted)
 
 	struct udtEntityStateFlags
 	{
 		enum Id
 		{
-#if UDT_DISABLED
-			Dead,
-			TeleportBit, /* Toggled every time the origin abruptly changes. */
-			AwardExcellent,
-			PlayerEvent,
-			AwardHumiliation,
-			NoDraw,
-			Firing, /* For the LG. */
-			AwardCapture,
-			Chatting,
-			ConnectionInterrupted,
-			HasVoted,
-			AwardImpressive,
-			AwardDefense,
-			AwardAssist,
-			AwardDenied,
-			HasTeamVoted,
-#endif
+			/* TeleportBit: Toggled every time the origin abruptly changes. */
+			/* Firing: For the LG. */
+			UDT_ENTITY_STATE_FLAG_LIST(UDT_IDENTITY_WITH_COMMA)
 			Count
 		};
 	};
+
+#undef UDT_IDENTITY_WITH_COMMA
 
 #endif
 

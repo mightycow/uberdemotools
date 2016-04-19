@@ -1308,19 +1308,22 @@ UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol)
 		return -1;
 	}
 
+#define CASE(Name) case udtConfigStringIndex::Name: return idConfigStringIndex::Name((udtProtocol::Id)protocol)
 	switch((udtConfigStringIndex::Id)udtConfigStringId)
 	{
-		case udtConfigStringIndex::FirstPlayer: return idConfigStringIndex::FirstPlayer((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::Intermission: return idConfigStringIndex::Intermission((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::LevelStartTime: return idConfigStringIndex::LevelStartTime((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::WarmUpEndTime: return idConfigStringIndex::WarmUpEndTime((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::FirstPlacePlayerName: return idConfigStringIndex::FirstPlacePlayerName((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::SecondPlacePlayerName: return idConfigStringIndex::SecondPlacePlayerName((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::PauseStart: return idConfigStringIndex::PauseStart((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::PauseEnd: return idConfigStringIndex::PauseEnd((udtProtocol::Id)protocol);
-		case udtConfigStringIndex::FlagStatus: return idConfigStringIndex::FlagStatus((udtProtocol::Id)protocol);
+		// @TODO: UDT_CONFIG_STRING_LIST(CASE)
+		CASE(FirstPlayer);
+		CASE(Intermission);
+		CASE(LevelStartTime);
+		CASE(WarmUpEndTime);
+		CASE(FirstPlacePlayerName);
+		CASE(SecondPlacePlayerName);
+		CASE(PauseStart);
+		CASE(PauseEnd);
+		CASE(FlagStatus);
 		default: return -1;
 	}
+#undef CASE
 }
 
 UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol)
@@ -1350,12 +1353,15 @@ UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol)
 		return -1;
 	}
 
+#define CASE(Name) case udtEntityEvent::Name: return idEntityEvent::Name((udtProtocol::Id)protocol)
 	switch((udtEntityEvent::Id)udtEntityEventId)
 	{
-		case udtEntityEvent::Obituary: return idEntityEvent::Obituary((udtProtocol::Id)protocol);
-		case udtEntityEvent::WeaponFired: return idEntityEvent::WeaponFired((udtProtocol::Id)protocol);
+		// @TODO: UDT_ENTITY_EVENT_LIST(CASE)
+		CASE(Obituary);
+		CASE(WeaponFired);
 		default: return -1;
 	}
+#undef CASE
 }
 
 UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
@@ -1365,11 +1371,14 @@ UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
 		return -1;
 	}
 
+#define CASE(Name) case udtEntityType::Name: return idEntityType::Name((udtProtocol::Id)protocol)
 	switch((udtEntityType::Id)udtEntityTypeId)
 	{
-		case udtEntityType::Event: return idEntityType::Event((udtProtocol::Id)protocol);
+		// @TODO: UDT_ENTITY_TYPE_LIST(CASE)
+		CASE(Event);
 		default: return -1;
 	}
+#undef CASE
 }
 
 UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
@@ -1379,13 +1388,16 @@ UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
 		return -1;
 	}
 
+#define CASE(Name) case udtPowerUpIndex::Name: return idPowerUpIndex::Name((udtProtocol::Id)protocol)
 	switch((udtPowerUpIndex::Id)udtPowerUpId)
 	{
-		case udtPowerUpIndex::RedFlag: return idPowerUpIndex::RedFlag((udtProtocol::Id)protocol);
-		case udtPowerUpIndex::BlueFlag: return idPowerUpIndex::BlueFlag((udtProtocol::Id)protocol);
-		case udtPowerUpIndex::NeutralFlag: return idPowerUpIndex::NeutralFlag((udtProtocol::Id)protocol);
+		// @TODO: UDT_POWER_UP_LIST(CASE)
+		CASE(RedFlag);
+		CASE(BlueFlag);
+		CASE(NeutralFlag);
 		default: return -1;
 	}
+#undef CASE
 }
 
 UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
@@ -1395,11 +1407,14 @@ UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
 		return -1;
 	}
 
+#define CASE(Name) case udtPersStatsIndex::Name: return idPersStatsIndex::Name((udtProtocol::Id)protocol)
 	switch((udtPersStatsIndex::Id)udtPersStatsId)
 	{
-		case udtPersStatsIndex::FlagCaptures: return idPersStatsIndex::FlagCaptures((udtProtocol::Id)protocol);
+		// @TODO: UDT_PERSISTENT_STATS_LIST(CASE)
+		CASE(FlagCaptures);
 		default: return -1;
 	}
+#undef CASE
 }
 
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
