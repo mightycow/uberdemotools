@@ -1056,6 +1056,71 @@ namespace idEntityEvent
 
 namespace idEntityType
 {
+	s32 General(udtProtocol::Id)
+	{
+		return (s32)ET_GENERAL;
+	}
+
+	s32 Player(udtProtocol::Id)
+	{
+		return (s32)ET_PLAYER;
+	}
+
+	s32 Item(udtProtocol::Id)
+	{
+		return (s32)ET_ITEM;
+	}
+
+	s32 Missile(udtProtocol::Id)
+	{
+		return (s32)ET_MISSILE;
+	}
+
+	s32 Mover(udtProtocol::Id)
+	{
+		return (s32)ET_MOVER;
+	}
+
+	s32 Beam(udtProtocol::Id)
+	{
+		return (s32)ET_BEAM;
+	}
+
+	s32 Portal(udtProtocol::Id)
+	{
+		return (s32)ET_PORTAL;
+	}
+
+	s32 Speaker(udtProtocol::Id)
+	{
+		return (s32)ET_SPEAKER;
+	}
+
+	s32 PushTrigger(udtProtocol::Id)
+	{
+		return (s32)ET_PUSH_TRIGGER;
+	}
+
+	s32 TeleportTrigger(udtProtocol::Id)
+	{
+		return (s32)ET_TELEPORT_TRIGGER;
+	}
+
+	s32 Invisible(udtProtocol::Id)
+	{
+		return (s32)ET_INVISIBLE;
+	}
+
+	s32 Grapple(udtProtocol::Id)
+	{
+		return (s32)ET_GRAPPLE;
+	}
+
+	s32 Team(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? (s32)ET_TEAM : -1;
+	}
+
 	s32 Event(udtProtocol::Id protocol)
 	{
 		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;

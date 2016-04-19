@@ -96,6 +96,19 @@ namespace idEntityEvent
 
 namespace idEntityType
 {
+	extern s32 General(udtProtocol::Id protocol);
+	extern s32 Player(udtProtocol::Id protocol);
+	extern s32 Item(udtProtocol::Id protocol);
+	extern s32 Missile(udtProtocol::Id protocol);
+	extern s32 Mover(udtProtocol::Id protocol);
+	extern s32 Beam(udtProtocol::Id protocol);
+	extern s32 Portal(udtProtocol::Id protocol);
+	extern s32 Speaker(udtProtocol::Id protocol);
+	extern s32 PushTrigger(udtProtocol::Id protocol);
+	extern s32 TeleportTrigger(udtProtocol::Id protocol);
+	extern s32 Invisible(udtProtocol::Id protocol);
+	extern s32 Grapple(udtProtocol::Id protocol);
+	extern s32 Team(udtProtocol::Id protocol);
 	extern s32 Event(udtProtocol::Id protocol);
 }
 

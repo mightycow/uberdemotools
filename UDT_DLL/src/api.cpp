@@ -1369,11 +1369,10 @@ UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
 		return -1;
 	}
 
-#define CASE(Name) case udtEntityType::Name: return idEntityType::Name((udtProtocol::Id)protocol)
+#define CASE(Name) case udtEntityType::Name: return idEntityType::Name((udtProtocol::Id)protocol);
 	switch((udtEntityType::Id)udtEntityTypeId)
 	{
-		// @TODO: UDT_ENTITY_TYPE_LIST(CASE)
-		CASE(Event);
+		UDT_ENTITY_TYPE_LIST(CASE)
 		default: return -1;
 	}
 #undef CASE
