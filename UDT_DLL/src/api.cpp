@@ -1385,13 +1385,10 @@ UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
 		return -1;
 	}
 
-#define CASE(Name) case udtPowerUpIndex::Name: return idPowerUpIndex::Name((udtProtocol::Id)protocol)
+#define CASE(Name, Enum, Bit) case udtPowerUpIndex::Name: return idPowerUpIndex::Name((udtProtocol::Id)protocol);
 	switch((udtPowerUpIndex::Id)udtPowerUpId)
 	{
-		// @TODO: UDT_POWER_UP_LIST(CASE)
-		CASE(RedFlag);
-		CASE(BlueFlag);
-		CASE(NeutralFlag);
+		UDT_POWER_UP_LIST(CASE)
 		default: return -1;
 	}
 #undef CASE

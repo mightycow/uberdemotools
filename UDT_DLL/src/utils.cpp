@@ -1220,6 +1220,71 @@ namespace idPowerUpIndex
 
 		return (protocol <= udtProtocol::Dm90) ? (s32)PW_NEUTRALFLAG : (s32)PW_NEUTRALFLAG_91;
 	}
+
+	s32 QuadDamage(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REDFLAG : (s32)PW_REDFLAG_91;
+	}
+
+	s32 BattleSuit(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_BATTLESUIT : (s32)PW_BATTLESUIT_91;
+	}
+
+	s32 Haste(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_HASTE : (s32)PW_HASTE_91;
+	}
+
+	s32 Invisibility(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVIS : (s32)PW_INVIS_91;
+	}
+
+	s32 Regeneration(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REGEN : (s32)PW_REGEN_91;
+	}
+
+	s32 Flight(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_FLIGHT : (s32)PW_FLIGHT_91;
+	}
+
+	s32 Scout(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_SCOUT : (s32)NOTPW_SCOUT_91;
+	}
+
+	s32 Guard(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_GUARD : (s32)NOTPW_GUARD_91;
+	}
+
+	s32 Doubler(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_DOUBLER : (s32)NOTPW_DOUBLER_91;
+	}
+
+	s32 ArmorRegeneration(udtProtocol::Id protocol)
+	{
+		if(protocol <= udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_AMMOREGEN : (s32)NOTPW_ARMORREGEN_91;
+	}
+
+	s32 Invulnerability(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVULNERABILITY : (s32)PW_INVULNERABILITY_91;
+	}
 }
 
 namespace idPersStatsIndex

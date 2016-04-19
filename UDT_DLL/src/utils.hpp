@@ -130,6 +130,17 @@ namespace idPowerUpIndex
 	extern s32 RedFlag(udtProtocol::Id protocol);
 	extern s32 BlueFlag(udtProtocol::Id protocol);
 	extern s32 NeutralFlag(udtProtocol::Id protocol);
+	extern s32 QuadDamage(udtProtocol::Id protocol);
+	extern s32 BattleSuit(udtProtocol::Id protocol);
+	extern s32 Haste(udtProtocol::Id protocol);
+	extern s32 Invisibility(udtProtocol::Id protocol);
+	extern s32 Regeneration(udtProtocol::Id protocol);
+	extern s32 Flight(udtProtocol::Id protocol);
+	extern s32 Scout(udtProtocol::Id protocol);
+	extern s32 Guard(udtProtocol::Id protocol);
+	extern s32 Doubler(udtProtocol::Id protocol);
+	extern s32 ArmorRegeneration(udtProtocol::Id protocol);
+	extern s32 Invulnerability(udtProtocol::Id protocol);
 }
 
 namespace idPersStatsIndex
