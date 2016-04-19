@@ -1020,27 +1020,27 @@ namespace idEntityEvent
 
 	s32 WeaponFired(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_FIRE_WEAPON_68 : EV_FIRE_WEAPON_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
 	}
 
 	s32 ItemPickup(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_ITEM_PICKUP_68 : EV_ITEM_PICKUP_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_ITEM_PICKUP_68 : (s32)EV_ITEM_PICKUP_73p;
 	}
 
 	s32 GlobalItemPickup(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_GLOBAL_ITEM_PICKUP_68 : EV_GLOBAL_ITEM_PICKUP_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_ITEM_PICKUP_68 : (s32)EV_GLOBAL_ITEM_PICKUP_73p;
 	}
 
 	s32 GlobalSound(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_GLOBAL_SOUND_68 : EV_GLOBAL_SOUND_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_SOUND_68 : (s32)EV_GLOBAL_SOUND_73p;
 	}
 
 	s32 GlobalTeamSound(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? EV_GLOBAL_TEAM_SOUND_68 : EV_GLOBAL_TEAM_SOUND_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_TEAM_SOUND_68 : (s32)EV_GLOBAL_TEAM_SOUND_73p;
 	}
 
 	s32 QL_Overtime(udtProtocol::Id protocol)
@@ -1123,7 +1123,7 @@ namespace idEntityType
 
 	s32 Event(udtProtocol::Id protocol)
 	{
-		return (protocol == udtProtocol::Dm3) ? ET_EVENTS_3 : ET_EVENTS;
+		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
 	}
 }
 
@@ -1342,84 +1342,84 @@ namespace idPowerUpIndex
 {
 	s32 RedFlag(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_REDFLAG : PW_REDFLAG_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REDFLAG : (s32)PW_REDFLAG_91;
 	}
 
 	s32 BlueFlag(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_BLUEFLAG : PW_BLUEFLAG_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_BLUEFLAG : (s32)PW_BLUEFLAG_91;
 	}
 
 	s32 NeutralFlag(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1; // @NOTE: dm3 doesn't have a neutral flag slot.
 
-		return (protocol <= udtProtocol::Dm90) ? PW_NEUTRALFLAG : PW_NEUTRALFLAG_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_NEUTRALFLAG : (s32)PW_NEUTRALFLAG_91;
 	}
 
 	s32 QuadDamage(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_REDFLAG : PW_REDFLAG_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REDFLAG : (s32)PW_REDFLAG_91;
 	}
 
 	s32 BattleSuit(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_BATTLESUIT : PW_BATTLESUIT_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_BATTLESUIT : (s32)PW_BATTLESUIT_91;
 	}
 
 	s32 Haste(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_HASTE : PW_HASTE_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_HASTE : (s32)PW_HASTE_91;
 	}
 
 	s32 Invisibility(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_INVIS : PW_INVIS_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVIS : (s32)PW_INVIS_91;
 	}
 
 	s32 Regeneration(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_REGEN : PW_REGEN_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REGEN : (s32)PW_REGEN_91;
 	}
 
 	s32 Flight(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? PW_FLIGHT : PW_FLIGHT_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_FLIGHT : (s32)PW_FLIGHT_91;
 	}
 
 	s32 Scout(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm90) ? PW_SCOUT : NOTPW_SCOUT_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_SCOUT : (s32)NOTPW_SCOUT_91;
 	}
 
 	s32 Guard(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm90) ? PW_GUARD : NOTPW_GUARD_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_GUARD : (s32)NOTPW_GUARD_91;
 	}
 
 	s32 Doubler(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm90) ? PW_DOUBLER : NOTPW_DOUBLER_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_DOUBLER : (s32)NOTPW_DOUBLER_91;
 	}
 
 	s32 ArmorRegeneration(udtProtocol::Id protocol)
 	{
 		if(protocol <= udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm90) ? PW_AMMOREGEN : NOTPW_ARMORREGEN_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_AMMOREGEN : (s32)NOTPW_ARMORREGEN_91;
 	}
 
 	s32 Invulnerability(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm90) ? PW_INVULNERABILITY : PW_INVULNERABILITY_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVULNERABILITY : (s32)PW_INVULNERABILITY_91;
 	}
 }
 
@@ -1429,95 +1429,95 @@ namespace idPersStatsIndex
 	{
 		if(protocol == udtProtocol::Dm3) return -1; // @NOTE: dm3 doesn't have a flag captures slot.
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_CAPTURES_68 : PERS_CAPTURES_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
 	}
 
 	s32 Score(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? PERS_SCORE_68 : PERS_SCORE_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SCORE_68 : (s32)PERS_SCORE_73p;
 	}
 
 	s32 Hits(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? PERS_HITS_68 : PERS_HITS_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
 	}
 
 	s32 Rank(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? PERS_RANK_68 : PERS_RANK_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_RANK_68 : (s32)PERS_RANK_73p;
 	}
 
 	s32 Team(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? PERS_TEAM_68 : PERS_TEAM_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_TEAM_68 : (s32)PERS_TEAM_73p;
 	}
 
 	s32 SpawnCount(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? PERS_SPAWN_COUNT_68 : PERS_SPAWN_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SPAWN_COUNT_68 : (s32)PERS_SPAWN_COUNT_73p;
 	}
 
 	s32 Deaths(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_KILLED_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_KILLED_68 : PERS_KILLED_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_KILLED_68 : (s32)PERS_KILLED_73p;
 	}
 
 	s32 LastAttacker(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_ATTACKER_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_ATTACKER_68 : PERS_ATTACKER_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKER_68 : (s32)PERS_ATTACKER_73p;
 	}
 
 	s32 DamageGiven(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_HITS_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_HITS_68 : PERS_HITS_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
 	}
 
 	s32 LastTargetHealthAndArmor(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_ATTACKEE_ARMOR_68 : PERS_ATTACKEE_ARMOR_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKEE_ARMOR_68 : (s32)PERS_ATTACKEE_ARMOR_73p;
 	}
 
 	s32 Impressives(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_IMPRESSIVE_COUNT_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_IMPRESSIVE_COUNT_68 : PERS_IMPRESSIVE_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_IMPRESSIVE_COUNT_68 : (s32)PERS_IMPRESSIVE_COUNT_73p;
 	}
 
 	s32 Excellents(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_EXCELLENT_COUNT_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_EXCELLENT_COUNT_68 : PERS_EXCELLENT_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_EXCELLENT_COUNT_68 : (s32)PERS_EXCELLENT_COUNT_73p;
 	}
 
 	s32 Defends(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_DEFEND_COUNT_68 : PERS_DEFEND_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_DEFEND_COUNT_68 : (s32)PERS_DEFEND_COUNT_73p;
 	}
 
 	s32 Assists(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return -1;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_ASSIST_COUNT_68 : PERS_ASSIST_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ASSIST_COUNT_68 : (s32)PERS_ASSIST_COUNT_73p;
 	}
 
 	s32 Humiliations(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3) return PERS_GAUNTLET_FRAG_COUNT_3;
 
-		return (protocol <= udtProtocol::Dm68) ? PERS_GAUNTLET_FRAG_COUNT_68 : PERS_GAUNTLET_FRAG_COUNT_73p;
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_GAUNTLET_FRAG_COUNT_68 : (s32)PERS_GAUNTLET_FRAG_COUNT_73p;
 	}
 }
 
