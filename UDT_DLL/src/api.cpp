@@ -1401,14 +1401,25 @@ UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
 		return -1;
 	}
 
-#define CASE(Name) case udtPersStatsIndex::Name: return idPersStatsIndex::Name((udtProtocol::Id)protocol)
+#define CASE(Name) case udtPersStatsIndex::Name: return idPersStatsIndex::Name((udtProtocol::Id)protocol);
 	switch((udtPersStatsIndex::Id)udtPersStatsId)
 	{
-		// @TODO: UDT_PERSISTENT_STATS_LIST(CASE)
-		CASE(FlagCaptures);
+		UDT_PERSISTENT_STATS_LIST(CASE)
 		default: return -1;
 	}
 #undef CASE
+}
+
+UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	// @TODO:
+	udtEntityStateFlagId;
+	return -1;
 }
 
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)

@@ -2628,7 +2628,7 @@ extern "C"
 	N(Team) \
 	N(SpawnCount) \
 	N(LastAttacker) \
-	N(LastAttackerHealthAndArmor) \
+	N(LastTargetHealthAndArmor) \
 	N(Deaths) \
 	N(Impressives) \
 	N(Excellents) \
@@ -2762,9 +2762,14 @@ extern "C"
 	UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol);
 
 	/* Gets the Quake player state persistant stats index from the UDT number. */
-	/* udtPersStatsId is of udtPersStatsIndextype ::Id. */
+	/* udtPersStatsId is of type udtPersStatsIndextype ::Id. */
 	/* Returns -1 when not available. */
 	UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol);
+
+	/* Gets the Quake entity state bit mask from the UDT number. */
+	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */

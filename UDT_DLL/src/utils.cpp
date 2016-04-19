@@ -1295,4 +1295,92 @@ namespace idPersStatsIndex
 
 		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
 	}
+
+	s32 Score(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SCORE_68 : (s32)PERS_SCORE_73p;
+	}
+
+	s32 Hits(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
+	}
+
+	s32 Rank(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_RANK_68 : (s32)PERS_RANK_73p;
+	}
+
+	s32 Team(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_TEAM_68 : (s32)PERS_TEAM_73p;
+	}
+
+	s32 SpawnCount(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SPAWN_COUNT_68 : (s32)PERS_SPAWN_COUNT_73p;
+	}
+
+	s32 Deaths(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_KILLED_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_KILLED_68 : (s32)PERS_KILLED_73p;
+	}
+
+	s32 LastAttacker(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_ATTACKER_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKER_68 : (s32)PERS_ATTACKER_73p;
+	}
+
+	s32 DamageGiven(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_HITS_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
+	}
+
+	s32 LastTargetHealthAndArmor(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKEE_ARMOR_68 : (s32)PERS_ATTACKEE_ARMOR_73p;
+	}
+
+	s32 Impressives(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_IMPRESSIVE_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_IMPRESSIVE_COUNT_68 : (s32)PERS_IMPRESSIVE_COUNT_73p;
+	}
+
+	s32 Excellents(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_EXCELLENT_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_EXCELLENT_COUNT_68 : (s32)PERS_EXCELLENT_COUNT_73p;
+	}
+
+	s32 Defends(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_DEFEND_COUNT_68 : (s32)PERS_DEFEND_COUNT_73p;
+	}
+
+	s32 Assists(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ASSIST_COUNT_68 : (s32)PERS_ASSIST_COUNT_73p;
+	}
+
+	s32 Humiliations(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return (s32)PERS_GAUNTLET_FRAG_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_GAUNTLET_FRAG_COUNT_68 : (s32)PERS_GAUNTLET_FRAG_COUNT_73p;
+	}
 }

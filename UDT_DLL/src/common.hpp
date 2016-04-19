@@ -786,6 +786,25 @@ typedef enum {
 
 typedef enum
 {
+	PERS_SCORE_3,					// !!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!
+	PERS_HITS_3,					// total points damage inflicted so damage beeps can sound on change
+	PERS_RANK_3,
+	PERS_TEAM_3,
+	PERS_SPAWN_COUNT_3,				// incremented every respawn
+	PERS_REWARD_COUNT_3,			// incremented for each reward sound
+	PERS_REWARD_3,					// a reward_t
+	PERS_ATTACKER_3,				// clientnum of last damage inflicter
+	PERS_KILLED_3,					// count of the number of times you died
+	// these were added for single player awards tracking
+	PERS_IMPRESSIVE_COUNT_3,
+	PERS_EXCELLENT_COUNT_3,
+	PERS_GAUNTLET_FRAG_COUNT_3,
+	PERS_ACCURACY_SHOTS_3,
+	PERS_ACCURACY_HITS_3
+} persEnum_3_t;
+
+typedef enum
+{
 	PERS_SCORE_73p = 0,
 	PERS_HITS_73p = 1,
 	PERS_RANK_73p = 2,

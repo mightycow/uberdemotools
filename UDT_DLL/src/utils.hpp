@@ -146,4 +146,18 @@ namespace idPowerUpIndex
 namespace idPersStatsIndex
 {
 	extern s32 FlagCaptures(udtProtocol::Id protocol);
+	extern s32 Score(udtProtocol::Id protocol);
+	extern s32 Hits(udtProtocol::Id protocol);
+	extern s32 Rank(udtProtocol::Id protocol);
+	extern s32 Team(udtProtocol::Id protocol);
+	extern s32 SpawnCount(udtProtocol::Id protocol);
+	extern s32 Deaths(udtProtocol::Id protocol);
+	extern s32 LastAttacker(udtProtocol::Id protocol);
+	extern s32 DamageGiven(udtProtocol::Id protocol);
+	extern s32 LastTargetHealthAndArmor(udtProtocol::Id protocol);
+	extern s32 Impressives(udtProtocol::Id protocol);
+	extern s32 Excellents(udtProtocol::Id protocol);
+	extern s32 Defends(udtProtocol::Id protocol);
+	extern s32 Assists(udtProtocol::Id protocol);
+	extern s32 Humiliations(udtProtocol::Id protocol);
 }
