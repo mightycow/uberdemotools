@@ -161,3 +161,23 @@ namespace idPersStatsIndex
 	extern s32 Assists(udtProtocol::Id protocol);
 	extern s32 Humiliations(udtProtocol::Id protocol);
 }
+
+namespace idEntityStateFlag
+{
+	extern s32 Dead(udtProtocol::Id protocol);
+	extern s32 TeleportBit(udtProtocol::Id protocol);
+	extern s32 AwardExcellent(udtProtocol::Id protocol);
+	extern s32 PlayerEvent(udtProtocol::Id protocol);
+	extern s32 AwardHumiliation(udtProtocol::Id protocol);
+	extern s32 NoDraw(udtProtocol::Id protocol);
+	extern s32 Firing(udtProtocol::Id protocol);
+	extern s32 AwardCapture(udtProtocol::Id protocol);
+	extern s32 Chatting(udtProtocol::Id protocol);
+	extern s32 ConnectionInterrupted(udtProtocol::Id protocol);
+	extern s32 HasVoted(udtProtocol::Id protocol);
+	extern s32 AwardImpressive(udtProtocol::Id protocol);
+	extern s32 AwardDefense(udtProtocol::Id protocol);
+	extern s32 AwardAssist(udtProtocol::Id protocol);
+	extern s32 AwardDenied(udtProtocol::Id protocol);
+	extern s32 HasTeamVoted(udtProtocol::Id protocol);
+}

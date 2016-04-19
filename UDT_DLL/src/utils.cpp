@@ -1384,3 +1384,86 @@ namespace idPersStatsIndex
 		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_GAUNTLET_FRAG_COUNT_68 : (s32)PERS_GAUNTLET_FRAG_COUNT_73p;
 	}
 }
+
+namespace idEntityStateFlag
+{
+	s32 Dead(udtProtocol::Id)
+	{
+		return (s32)EF_DEAD;
+	}
+
+	s32 TeleportBit(udtProtocol::Id)
+	{
+		return (s32)EF_TELEPORT_BIT;
+	}
+
+	s32 AwardExcellent(udtProtocol::Id)
+	{
+		return (s32)EF_AWARD_EXCELLENT;
+	}
+
+	s32 PlayerEvent(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm66) ? (s32)EF_PLAYER_EVENT_66p : 0;
+	}
+
+	s32 AwardHumiliation(udtProtocol::Id)
+	{
+		return (s32)EF_AWARD_GAUNTLET;
+	}
+
+	s32 NoDraw(udtProtocol::Id)
+	{
+		return (s32)EF_NODRAW;
+	}
+
+	s32 Firing(udtProtocol::Id)
+	{
+		return (s32)EF_FIRING;
+	}
+
+	s32 AwardCapture(udtProtocol::Id)
+	{
+		return (s32)EF_AWARD_CAP;
+	}
+
+	s32 Chatting(udtProtocol::Id)
+	{
+		return (s32)EF_TALK;
+	}
+
+	s32 ConnectionInterrupted(udtProtocol::Id)
+	{
+		return (s32)EF_CONNECTION;
+	}
+
+	s32 HasVoted(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)EF_VOTED_3_90 : 0;
+	}
+
+	s32 AwardImpressive(udtProtocol::Id)
+	{
+		return (s32)EF_AWARD_IMPRESSIVE;
+	}
+
+	s32 AwardDefense(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? (s32)EF_AWARD_DEFEND_48p : 0;
+	}
+
+	s32 AwardAssist(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? (s32)EF_AWARD_ASSIST_48p : 0;
+	}
+
+	s32 AwardDenied(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? (s32)EF_AWARD_DENIED_48p : 0;
+	}
+
+	s32 HasTeamVoted(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm90) ? (s32)EF_TEAMVOTED_48_90 : 0;
+	}
+}

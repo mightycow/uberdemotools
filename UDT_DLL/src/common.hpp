@@ -824,10 +824,10 @@ typedef enum
 
 // entityState_t->eFlags
 #define	EF_DEAD				0x00000001		// don't draw a foe marker over players with EF_DEAD
-#define EF_TICKING_73		0x00000002		// used to make players play the prox mine ticking sound
+#define EF_TICKING_48p		0x00000002		// used to make players play the prox mine ticking sound
 #define	EF_TELEPORT_BIT		0x00000004		// toggled every time the origin abruptly changes
 #define	EF_AWARD_EXCELLENT	0x00000008		// draw an excellent sprite
-#define EF_PLAYER_EVENT		0x00000010
+#define EF_PLAYER_EVENT_66p	0x00000010
 #define	EF_BOUNCE			0x00000010		// for missiles
 #define	EF_BOUNCE_HALF		0x00000020		// for missiles
 #define	EF_AWARD_GAUNTLET	0x00000040		// draw a gauntlet sprite
@@ -838,12 +838,14 @@ typedef enum
 #define EF_AWARD_CAP		0x00000800		// draw the capture sprite
 #define	EF_TALK				0x00001000		// draw a talk balloon
 #define	EF_CONNECTION		0x00002000		// draw a connection trouble sprite
-#define	EF_VOTED			0x00004000		// already cast a vote
+#define	EF_VOTED_3_90		0x00004000		// already cast a vote
+#define EF_GLOBAL_SPEC_91	0x00004000		// read client-side to determine if this player is truely a spectator(not on a team), even if in follow cam.
 #define	EF_AWARD_IMPRESSIVE	0x00008000		// draw an impressive sprite
-#define	EF_AWARD_DEFEND		0x00010000		// draw a defend sprite
-#define	EF_AWARD_ASSIST		0x00020000		// draw a assist sprite
-#define EF_AWARD_DENIED		0x00040000		// denied
-#define EF_TEAMVOTED		0x00080000		// already cast a team votetypedef enum 
+#define	EF_AWARD_DEFEND_48p	0x00010000		// draw a defend sprite
+#define	EF_AWARD_ASSIST_48p	0x00020000		// draw a assist sprite
+#define EF_AWARD_DENIED_48p	0x00040000		// denied
+#define EF_TEAMVOTED_48_90	0x00080000		// already cast a team votetypedef enum 
+#define EF_BOUNCE_MULTI_91	0x00100000		// for missiles
 
 struct idWeapon68
 {

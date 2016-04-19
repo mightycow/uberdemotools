@@ -1414,12 +1414,16 @@ UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
-		return -1;
+		return 0;
 	}
 
-	// @TODO:
-	udtEntityStateFlagId;
-	return -1;
+#define CASE(Name) case udtEntityStateFlags::Name: return idEntityStateFlag::Name((udtProtocol::Id)protocol);
+	switch((udtEntityStateFlags::Id)udtEntityStateFlagId)
+	{
+		UDT_ENTITY_STATE_FLAG_LIST(CASE)
+		default: return 0;
+	}
+#undef CASE
 }
 
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)

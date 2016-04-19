@@ -2768,7 +2768,7 @@ extern "C"
 
 	/* Gets the Quake entity state bit mask from the UDT number. */
 	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
-	/* Returns -1 when not available. */
+	/* Returns 0 when not available. */
 	UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
