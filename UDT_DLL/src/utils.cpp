@@ -1022,6 +1022,36 @@ namespace idEntityEvent
 	{
 		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
 	}
+
+	s32 ItemPickup(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_ITEM_PICKUP_68 : (s32)EV_ITEM_PICKUP_73p;
+	}
+
+	s32 GlobalItemPickup(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_ITEM_PICKUP_68 : (s32)EV_GLOBAL_ITEM_PICKUP_73p;
+	}
+
+	s32 GlobalSound(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_SOUND_68 : (s32)EV_GLOBAL_SOUND_73p;
+	}
+
+	s32 GlobalTeamSound(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_TEAM_SOUND_68 : (s32)EV_GLOBAL_TEAM_SOUND_73p;
+	}
+
+	s32 QL_Overtime(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm73) ? (s32)EV_OVERTIME_73p : -1;
+	}
+
+	s32 QL_GameOver(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm73) ? (s32)EV_GAMEOVER_73p : -1;
+	}
 };
 
 namespace idEntityType

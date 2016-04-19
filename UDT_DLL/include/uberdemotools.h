@@ -2516,6 +2516,7 @@ extern "C"
 	N(WeaponFired) \
 	N(ItemPickup) \
 	N(GlobalItemPickup) \
+	N(GlobalSound) \
 	N(GlobalTeamSound) \
 	N(QL_Overtime) \
 	N(QL_GameOver)

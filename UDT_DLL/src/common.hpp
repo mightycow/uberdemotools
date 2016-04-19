@@ -451,8 +451,8 @@ typedef enum {
 	EV_GRENADE_BOUNCE,		// eventParm will be the soundindex
 
 	EV_GENERAL_SOUND,
-	EV_GLOBAL_SOUND,		// no attenuation
-	EV_GLOBAL_TEAM_SOUND,
+	EV_GLOBAL_SOUND_68,		// no attenuation
+	EV_GLOBAL_TEAM_SOUND_68,
 
 	EV_BULLET_HIT_FLESH,
 	EV_BULLET_HIT_WALL,
@@ -522,6 +522,7 @@ typedef enum {
 	EV_FIRE_WEAPON_73p = 20,
 	EV_USE_ITEM0_73p = 21,
 
+	EV_GLOBAL_SOUND_73p = 43,
 	EV_GLOBAL_TEAM_SOUND_73p = 44,
 	EV_BULLET_HIT_FLESH_73p = 45,
 

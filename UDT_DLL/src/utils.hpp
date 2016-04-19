@@ -86,6 +86,12 @@ namespace idEntityEvent
 {
 	extern s32 Obituary(udtProtocol::Id protocol);
 	extern s32 WeaponFired(udtProtocol::Id protocol);
+	extern s32 ItemPickup(udtProtocol::Id protocol);
+	extern s32 GlobalItemPickup(udtProtocol::Id protocol);
+	extern s32 GlobalSound(udtProtocol::Id protocol);
+	extern s32 GlobalTeamSound(udtProtocol::Id protocol);
+	extern s32 QL_Overtime(udtProtocol::Id protocol);
+	extern s32 QL_GameOver(udtProtocol::Id protocol);
 };
 
 namespace idEntityType

@@ -1353,12 +1353,10 @@ UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol)
 		return -1;
 	}
 
-#define CASE(Name) case udtEntityEvent::Name: return idEntityEvent::Name((udtProtocol::Id)protocol)
+#define CASE(Name) case udtEntityEvent::Name: return idEntityEvent::Name((udtProtocol::Id)protocol);
 	switch((udtEntityEvent::Id)udtEntityEventId)
 	{
-		// @TODO: UDT_ENTITY_EVENT_LIST(CASE)
-		CASE(Obituary);
-		CASE(WeaponFired);
+		UDT_ENTITY_EVENT_LIST(CASE)
 		default: return -1;
 	}
 #undef CASE

@@ -548,7 +548,7 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 		}
 
 		const s32 event = (es->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
-		if(event == EV_GLOBAL_TEAM_SOUND)
+		if(event == EV_GLOBAL_TEAM_SOUND_68)
 		{
 			const s32 soundIndex = es->eventParm;
 			if(soundIndex == 0 || soundIndex == 1)
