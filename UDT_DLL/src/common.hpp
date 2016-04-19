@@ -1219,7 +1219,7 @@ struct idFlagStatus
 	enum Id
 	{
 		InBase,   // In its spot in base.
-		Captured, // Being carried by an enemy player.
+		Carried,  // Being carried by an enemy player.
 		Missing   // Not being carried by anyone but not in its spot either.
 	};
 };

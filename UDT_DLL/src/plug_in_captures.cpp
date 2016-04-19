@@ -474,7 +474,7 @@ void udtParserPlugInCaptures::ProcessCommandMessageCPMA(const udtCommandCallback
 				FlagStatusCPMA& flagStatus = _flagStatusCPMA[i];
 				const TeamInfo& team = _teams[i];
 				const s32 prevTime = flagStatus.ChangeTime;
-				const bool returned = team.PrevFlagState == (u8)idFlagStatus::Captured && team.FlagState == (u8)idFlagStatus::InBase;
+				const bool returned = team.PrevFlagState == (u8)idFlagStatus::Carried && team.FlagState == (u8)idFlagStatus::InBase;
 				if(time == prevTime && returned)
 				{
 					flagStatus.InstantCapture = true;
@@ -709,7 +709,7 @@ bool udtParserPlugInCaptures::WasFlagPickedUpInBase(u32 teamIndex)
 	const TeamInfo& team = _teams[teamIndex];
 	const u8 prevFlagStatus = team.PrevFlagState;
 	const u8 currFlagStatus = team.FlagState;
-	const u8 flagStatus = currFlagStatus == (u8)idFlagStatus::Captured ? prevFlagStatus : currFlagStatus;
+	const u8 flagStatus = currFlagStatus == (u8)idFlagStatus::Carried ? prevFlagStatus : currFlagStatus;
 	const bool inBase = flagStatus == (u8)idFlagStatus::InBase;
 
 	return inBase;
