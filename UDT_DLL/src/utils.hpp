@@ -123,6 +123,35 @@ namespace idConfigStringIndex
 	extern s32 PauseStart(udtProtocol::Id protocol);
 	extern s32 PauseEnd(udtProtocol::Id protocol);
 	extern s32 FlagStatus(udtProtocol::Id protocol);
+	extern s32 ServerInfo(udtProtocol::Id protocol);
+	extern s32 SystemInfo(udtProtocol::Id protocol);
+	extern s32 Scores1(udtProtocol::Id protocol);
+	extern s32 Scores2(udtProtocol::Id protocol);
+	extern s32 VoteTime(udtProtocol::Id protocol);
+	extern s32 VoteString(udtProtocol::Id protocol);
+	extern s32 VoteYes(udtProtocol::Id protocol);
+	extern s32 VoteNo(udtProtocol::Id protocol);
+	extern s32 TeamVoteTime(udtProtocol::Id protocol);
+	extern s32 TeamVoteString(udtProtocol::Id protocol);
+	extern s32 TeamVoteYes(udtProtocol::Id protocol);
+	extern s32 TeamVoteNo(udtProtocol::Id protocol);
+	extern s32 GameVersion(udtProtocol::Id protocol);
+	extern s32 ItemFlags(udtProtocol::Id protocol);
+	extern s32 QL_TimeoutStartTime(udtProtocol::Id protocol);
+	extern s32 QL_TimeoutEndTime(udtProtocol::Id protocol);
+	extern s32 QL_RedTeamTimeoutsLeft(udtProtocol::Id protocol);
+	extern s32 QL_BlueTeamTimeoutsLeft(udtProtocol::Id protocol);
+	extern s32 QL_FirstPlaceClientNumber(udtProtocol::Id protocol);
+	extern s32 QL_SecondPlaceClientNumber(udtProtocol::Id protocol);
+	extern s32 QL_FirstPlaceScore(udtProtocol::Id protocol);
+	extern s32 QL_SecondPlaceScore(udtProtocol::Id protocol);
+	extern s32 QL_ReadTeamClanName(udtProtocol::Id protocol);
+	extern s32 QL_BlueTeamClanName(udtProtocol::Id protocol);
+	extern s32 QL_RedTeamClanTag(udtProtocol::Id protocol);
+	extern s32 QL_BlueTeamClanTag(udtProtocol::Id protocol);
+	extern s32 CPMA_GameInfo(udtProtocol::Id protocol);
+	extern s32 CPMA_RoundInfo(udtProtocol::Id protocol);
+	extern s32 OSP_GamePlay(udtProtocol::Id protocol);
 }
 
 namespace idPowerUpIndex

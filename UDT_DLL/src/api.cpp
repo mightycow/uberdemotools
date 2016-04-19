@@ -1308,19 +1308,10 @@ UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol)
 		return -1;
 	}
 
-#define CASE(Name) case udtConfigStringIndex::Name: return idConfigStringIndex::Name((udtProtocol::Id)protocol)
+#define CASE(Name) case udtConfigStringIndex::Name: return idConfigStringIndex::Name((udtProtocol::Id)protocol);
 	switch((udtConfigStringIndex::Id)udtConfigStringId)
 	{
-		// @TODO: UDT_CONFIG_STRING_LIST(CASE)
-		CASE(FirstPlayer);
-		CASE(Intermission);
-		CASE(LevelStartTime);
-		CASE(WarmUpEndTime);
-		CASE(FirstPlacePlayerName);
-		CASE(SecondPlacePlayerName);
-		CASE(PauseStart);
-		CASE(PauseEnd);
-		CASE(FlagStatus);
+		UDT_CONFIG_STRING_LIST(CASE)
 		default: return -1;
 	}
 #undef CASE

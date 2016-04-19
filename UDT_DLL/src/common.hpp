@@ -94,52 +94,52 @@ typedef enum {
 
 // these are the only configstrings that the system reserves, all the
 // other ones are strictly for servergame to clientgame communication
-#define	CS_SERVERINFO			0		// an info string with all the serverinfo cvars
-#define	CS_SYSTEMINFO			1		// an info string for server system to client system configuration (timescale, etc)
-#define	CS_MUSIC				2
-#define	CS_MESSAGE				3		// from the map worldspawn's message field
-#define	CS_MOTD					4		// g_motd string for server message of the day
-#define	CS_WARMUP				5		// server time when the match will be restarted
-#define	CS_SCORES1				6
-#define	CS_SCORES2				7
-#define CS_VOTE_TIME			8
-#define CS_VOTE_STRING			9
-#define	CS_VOTE_YES				10
-#define	CS_VOTE_NO				11
-#define CS_TEAMVOTE_TIME_68		12		// q3 only
-#define CS_TEAMVOTE_STRING_68	14		// q3 only
-#define	CS_TEAMVOTE_YES_68		16		// q3 only
-#define	CS_TEAMVOTE_NO_68		18		// q3 only
-#define	CS_GAME_VERSION_68		20
-#define	CS_LEVEL_START_TIME_68	21		// so the timer only shows the current level
-#define	CS_INTERMISSION_68		22		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
-#define CS_FLAGSTATUS_68		23		// string indicating flag status in CTF
-#define CS_SHADERSTATE_68		24
-#define CS_BOTINFO_68			25		// q3 only
-#define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
-#define	CS_MODELS_68			32
-#define CS_WARMUP_END           13
-#define CS_PAUSE_START_73p		669		// if this is non-zero, the game is paused
-#define CS_PAUSE_COUNTDOWN_73p	670		// 0 = pause, !0 = timeout
-#define CS_CA_ROUND_INFO        661
-#define CS_CA_ROUND_START       662
-#define	CS_PLAYERS_68           544
-#define CS_RED_CLAN_PLAYERS     663
-#define CS_BLUE_CLAN_PLAYERS    664
-#define CS_FLAG_STATUS_73       658
-#define CS_FIRST_PLACE          659
-#define CS_SECOND_PLACE         660
-#define CS_AD_WAIT              681
-#define	CS_SOUNDS_68			(CS_MODELS_68 + MAX_MODELS)
-#define CS_LOCATIONS_68			(CS_PLAYERS_68 + ID_MAX_CLIENTS)
-#define CS_PARTICLES_68			(CS_LOCATIONS_68 + MAX_LOCATIONS)
-#define CS_PAST_LAST_INDEX_68	(CS_PARTICLES_68 + MAX_LOCATIONS)
+#define CS_SERVERINFO                0 // an info string with all the serverinfo cvars
+#define CS_SYSTEMINFO                1 // an info string for server system to client system configuration (timescale, etc)
+#define CS_MUSIC                     2
+#define CS_MESSAGE                   3 // from the map worldspawn's message field
+#define CS_MOTD                      4 // g_motd string for server message of the day
+#define CS_WARMUP                    5 // server time when the match will be restarted
+#define CS_SCORES1                   6
+#define CS_SCORES2                   7
+#define CS_VOTE_TIME                 8
+#define CS_VOTE_STRING               9
+#define CS_VOTE_YES                 10
+#define CS_VOTE_NO                  11
+#define CS_TEAMVOTE_TIME_48_68      12 // q3 only
+#define CS_WARMUP_END               13
+#define CS_TEAMVOTE_STRING_48_68    14 // q3 only
+#define CS_TEAMVOTE_YES_48_68       16 // q3 only
+#define CS_TEAMVOTE_NO_48_68        18 // q3 only
+#define CS_GAME_VERSION_48_68       20
+#define CS_LEVEL_START_TIME_48_68   21 // so the timer only shows the current level
+#define CS_INTERMISSION_48_68       22 // when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
+#define CS_FLAGSTATUS_48_68         23 // string indicating flag status in CTF
+#define CS_SHADERSTATE_68           24
+#define CS_BOTINFO_68               25 // q3 only
+#define CS_ITEMS_68                 27 // string of 0's and 1's that tell which items are present
+#define CS_MODELS_68                32
+#define CS_PLAYERS_68              544
+#define CS_PAUSE_START_73p         669 // if this is non-zero, the game is paused
+#define CS_PAUSE_COUNTDOWN_73p     670 // 0 = pause, !0 = timeout
+#define CS_CA_ROUND_INFO           661
+#define CS_CA_ROUND_START          662
+#define CS_RED_CLAN_PLAYERS        663
+#define CS_BLUE_CLAN_PLAYERS       664
+#define CS_FLAG_STATUS_73          658
+#define CS_FIRST_PLACE             659
+#define CS_SECOND_PLACE            660
+#define CS_AD_WAIT                 681
+#define CS_SOUNDS_68               (CS_MODELS_68 + MAX_MODELS)
+#define CS_LOCATIONS_68            (CS_PLAYERS_68 + ID_MAX_CLIENTS)
+#define CS_PARTICLES_68            (CS_LOCATIONS_68 + MAX_LOCATIONS)
+#define CS_PAST_LAST_INDEX_68      (CS_PARTICLES_68 + MAX_LOCATIONS)
 
-#define CS_GAME_VERSION_73p               12
-#define CS_LEVEL_START_TIME_73p           13
-#define CS_INTERMISSION_73p               14
-#define CS_ITEMS_73p                      15
-#define CS_MODELS_73p                     17
+#define CS_GAME_VERSION_73p                12
+#define CS_LEVEL_START_TIME_73p            13
+#define CS_INTERMISSION_73p                14
+#define CS_ITEMS_73p                       15
+#define CS_MODELS_73p                      17
 #define CS_SOUNDS_73p                     274
 #define CS_PLAYERS_73p                    529
 #define CS_LOCATIONS_73p                  593
@@ -180,9 +180,10 @@ typedef enum {
 #define CS_READY_UP_TIME_73p              710
 #define CS_NUMBER_OF_RACE_CHECKPOINTS_73p 713
 
-#define CS_LEVEL_START_TIME_3   13
-#define CS_INTERMISSION_3       14
-#define CS_FLAGSTATUS_3         15
+#define CS_GAME_VERSION_3        12
+#define CS_LEVEL_START_TIME_3    13
+#define CS_INTERMISSION_3        14
+#define CS_FLAGSTATUS_3          15
 #define CS_LOCATIONS_3          672
 
 enum idConfigString91

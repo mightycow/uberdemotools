@@ -2579,18 +2579,10 @@ extern "C"
 	N(TeamVoteNo) \
 	N(GameVersion) \
 	N(ItemFlags) \
-	N(ClanArenaRoundInfo) \
-	N(ClanArenaRoundStart) \
-	N(RedPlayers) \
-	N(BluePlayers) \
 	N(QL_TimeoutStartTime) \
 	N(QL_TimeoutEndTime) \
 	N(QL_RedTeamTimeoutsLeft) \
 	N(QL_BlueTeamTimeoutsLeft) \
-	N(QL_FirstPlaceClientNumber) \
-	N(QL_SecondPlaceClientNumber) \
-	N(QL_FirstPlaceScore) \
-	N(QL_SecondPlaceScore) \
 	N(QL_ReadTeamClanName) \
 	N(QL_BlueTeamClanName) \
 	N(QL_RedTeamClanTag) \
