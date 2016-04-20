@@ -76,6 +76,7 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_name = NULL;
 	_resizeCount = 0;
 	_enableReserveOverride = true;
+	_forceFourByteAlignment = true;
 
 	AllocatorTracker.RegisterAllocator(_listNode);
 }
@@ -139,8 +140,11 @@ uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 {
 	UDT_ASSERT_OR_FATAL_MSG(_addressSpaceStart != NULL, "An allocator was not properly initialized.");
 
-	// Make sure the next alignment is 4-byte aligned, just like this one.
-	byteCount = (byteCount + 3) & (~3);
+	if(_forceFourByteAlignment)
+	{
+		// Make sure the next alignment is 4-byte aligned, just like this one.
+		byteCount = (byteCount + 3) & (~3);
+	}
 
 	// We didn't reserve enough address space?
 	if(_usedByteCount + byteCount > _reservedByteCount)
@@ -335,6 +339,11 @@ u8* udtVMLinearAllocator::GetAddressAt(uptr offset) const
 void udtVMLinearAllocator::DisableReserveOverride()
 {
 	_enableReserveOverride = false;
+}
+
+void udtVMLinearAllocator::DisableFourByteAlignment()
+{
+	_forceFourByteAlignment = false;
 }
 
 void udtVMLinearAllocator::Destroy()

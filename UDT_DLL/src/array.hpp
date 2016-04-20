@@ -8,7 +8,7 @@
 
 
 //
-// A resizeable array class that only handles POD data types.
+// A resizeable array class that handles all data types as POD.
 //
 template<typename T>
 struct udtVMArray
@@ -16,18 +16,19 @@ struct udtVMArray
 	udtVMArray(uptr reservedByteCount, const char* allocatorName)
 		: _size(0)
 	{
+		HandleAlignment();
 		_allocator.Init(reservedByteCount, allocatorName);
 	}
-
+	
 	udtVMArray() : 
 		_size(0)
 	{
+		HandleAlignment();
 	}
 
 	~udtVMArray()
 	{
 	}
-
 	
 	void Init(uptr reservedByteCount, const char* allocatorName)
 	{
@@ -185,6 +186,18 @@ struct udtVMArray
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMArray);
+
+	// Very stupid trick to fool the compiler into not emitting a
+	// "conditional expression is constant" warning.
+	static size_t Identity(size_t x) { return x; }
+
+	void HandleAlignment()
+	{
+		if(Identity(sizeof(T)) % 4 != 0)
+		{
+			_allocator.DisableFourByteAlignment();
+		}
+	}
 
 	udtVMLinearAllocator _allocator;
 	u32 _size;

@@ -54,6 +54,7 @@ public:
 	char*       GetWriteStringAt(uptr offset) const;
 	u8*         GetAddressAt(uptr offset) const;
 	void        DisableReserveOverride();
+	void        DisableFourByteAlignment();
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMLinearAllocator);
@@ -72,4 +73,5 @@ private:
 	const char* _name;
 	u32 _resizeCount;
 	bool _enableReserveOverride;
+	bool _forceFourByteAlignment;
 };
