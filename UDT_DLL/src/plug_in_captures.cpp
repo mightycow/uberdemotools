@@ -76,8 +76,9 @@ udtParserPlugInCaptures::~udtParserPlugInCaptures()
 void udtParserPlugInCaptures::InitAllocators(u32 demoCount)
 {
 	const uptr smallByteCount = 1 << 14;
-	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "udtParserPlugInCaptures::Strings");
-	_captures.Init((uptr)demoCount * (uptr)(1 << 16), "udtParserPlugInCaptures::CapturesArray");
+	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInCaptures::Strings");
+	_playerNameAllocator.Init(UDT_KB(4), "ParserPlugInCaptures::PlayerNames");
+	_captures.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInCaptures::CapturesArray");
 }
 
 void udtParserPlugInCaptures::CopyBuffersStruct(void* buffersStruct) const
@@ -108,6 +109,13 @@ void udtParserPlugInCaptures::StartDemoAnalysis()
 	_processGamestate = &udtParserPlugInCaptures::ProcessGamestateMessageDummy;
 	_processCommand = &udtParserPlugInCaptures::ProcessCommandMessageDummy;
 	_processSnapshot = &udtParserPlugInCaptures::ProcessSnapshotMessageDummy;
+
+	_playerNameAllocator.Clear();
+	for(u32 i = 0; i < 64; ++i)
+	{
+		_playerNames[i] = udtString::NewNull();
+		_playerClanNames[i] = udtString::NewNull();
+	}
 }
 
 void udtParserPlugInCaptures::FinishDemoAnalysis()
@@ -172,115 +180,48 @@ void udtParserPlugInCaptures::ProcessGamestateMessageQL(const udtGamestateCallba
 	ProcessGamestateMessageClearStates(arg, parser);
 	_lastCaptureQL.Clear();
 	_playerStateQL.Clear();
+
+	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	for(s32 i = 0; i < 64; ++i)
+	{
+		const udtString cs = parser.GetConfigString(firstPlayerCsIdx + i);
+		if(!udtString::IsNullOrEmpty(cs))
+		{
+			ProcessPlayerConfigStringQL(cs.GetPtr(), parser, i);
+		}
+	}
 }
 
 void udtParserPlugInCaptures::ProcessCommandMessageQL(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
-	{
-		const udtString cs = parser.GetTokenizer().GetArg(2);
-		if(cs.GetLength() >= 2)
-		{
-			_teams[0].PrevFlagState = _teams[0].FlagState;
-			_teams[1].PrevFlagState = _teams[1].FlagState;
-			const char* const csString = cs.GetPtr();
-			_teams[0].FlagState = (u8)(csString[0] - '0');
-			_teams[1].FlagState = (u8)(csString[1] - '0');
-		}
-	}
-
 	if(arg.IsConfigString)
 	{
-		return;
-	}
+		if(arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+		{
+			ProcessFlagStatusCommandQL(arg, parser);
+			return;
+		}
 
-	idTokenizer& tokenizer = parser._context->Tokenizer;
-	tokenizer.Tokenize(arg.String);
-	if(tokenizer.GetArgCount() != 2 || !udtString::EqualsNoCase(tokenizer.GetArg(0), "print"))
+		const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		if(arg.ConfigStringIndex >= firstPlayerCsIdx &&
+		   arg.ConfigStringIndex < firstPlayerCsIdx + 64)
+		{
+			const s32 playerIndex = arg.ConfigStringIndex - firstPlayerCsIdx;
+			ProcessPlayerConfigStringQL(parser.GetTokenizer().GetArgString(2), parser, playerIndex);
+			return;
+		}
+	}
+	else
 	{
-		return;
+		idTokenizer& tokenizer = parser._context->Tokenizer;
+		tokenizer.Tokenize(arg.String);
+		if(tokenizer.GetArgCount() == 2 && 
+		   udtString::EqualsNoCase(tokenizer.GetArg(0), "print"))
+		{
+			ProcessPrintCommandQL(arg, parser);
+			return;
+		}
 	}
-
-	const udtString message = tokenizer.GetArg(1);
-	if(!udtString::ContainsNoCase(message, "CAPTURED the flag!"))
-	{
-		return;
-	}
-
-	const udtString capturedIn = udtString::NewConstRef("captured in");
-	const udtString heldFor = udtString::NewConstRef("held for");
-	u32 capturedInIdx = 0;
-	u32 heldForIdx = 0;
-	const bool capturedInFound = udtString::ContainsNoCase(capturedInIdx, message, "captured in");
-	const bool heldForFound = udtString::ContainsNoCase(heldForIdx, message, "held for");
-	if(!capturedInFound && !heldForFound)
-	{
-		return;
-	}
-
-	u32 leftParenIdx = 0;
-	if(!udtString::FindFirstCharacterMatch(leftParenIdx, message, '('))
-	{
-		return;
-	}
-
-	u32 rightParenIdx = 0;
-	if(!udtString::FindFirstCharacterMatch(rightParenIdx, message, ')', leftParenIdx + 1))
-	{
-		return;
-	}
-
-	const u32 parenTextIdx = capturedInFound ? capturedInIdx : heldForIdx;
-	if(parenTextIdx < leftParenIdx || parenTextIdx > rightParenIdx)
-	{
-		return;
-	}
-
-	const udtString parenText = capturedInFound ? capturedIn : heldFor;
-	udtString playerName = udtString::NewSubstringClone(_stringAllocator, message, leftParenIdx + 1, parenTextIdx - leftParenIdx - 2);
-	udtString::CleanUp(playerName, parser._inProtocol);
-
-	const u32 durationIdx = parenTextIdx + parenText.GetLength() + 1;
-	if(durationIdx > rightParenIdx)
-	{
-		return;
-	}
-
-	udtVMScopedStackAllocator tempAllocatorScope(*TempAllocator);
-	const udtString duration = udtString::NewSubstringClone(*TempAllocator, message, durationIdx, rightParenIdx - durationIdx - 1);
-	s32 captureDuration = 0;
-	if(!ParseDuration(captureDuration, duration))
-	{
-		return;
-	}
-
-	const s32 time = parser._inServerTime;
-	u32 flags = 0;
-	if(capturedInFound)
-	{
-		flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
-	}
-	flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
-
-	f32 distance = -1.0f;
-	
-	if(_lastCaptureQL.IsValid())
-	{	
-		distance = _lastCaptureQL.Distance;
-		flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
-		_lastCaptureQL.Clear();
-	}
-	
-	udtParseDataCapture capture;
-	capture.CaptureTimeMs = time;
-	capture.Distance = distance;
-	capture.Flags = flags;
-	capture.GameStateIndex = _gameStateIndex;
-	WriteStringToApiStruct(capture.MapName, _mapName);
-	capture.PickUpTimeMs = time - captureDuration;
-	capture.PlayerIndex = -1;
-	WriteStringToApiStruct(capture.PlayerName, playerName);
-	_captures.Add(capture);
 }
 
 void udtParserPlugInCaptures::ProcessSnapshotMessageQL(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
@@ -722,4 +663,212 @@ bool udtParserPlugInCaptures::WasFlagPickedUpInBase(u32 teamIndex)
 	const bool inBase = flagStatus == (u8)idFlagStatus::InBase;
 
 	return inBase;
+}
+
+void udtParserPlugInCaptures::ProcessPlayerConfigStringQL(const char* configString, udtBaseParser& parser, s32 playerIndex)
+{
+	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
+
+	udtString name;
+	if(ParseConfigStringValueString(name, *TempAllocator, "n", configString))
+	{
+		_playerNames[playerIndex] = udtString::NewCloneFromRef(_playerNameAllocator, name);
+	}
+	else
+	{
+		_playerNames[playerIndex] = udtString::NewNull();
+	}
+
+	if(parser._inProtocol <= udtProtocol::Dm90)
+	{
+		udtString clan;
+		if(ParseConfigStringValueString(clan, *TempAllocator, "cn", configString))
+		{
+			_playerClanNames[playerIndex] = udtString::NewCloneFromRef(_playerNameAllocator, clan);
+		}
+		else
+		{
+			_playerClanNames[playerIndex] = udtString::NewNull();
+		}
+	}
+}
+
+void udtParserPlugInCaptures::ProcessFlagStatusCommandQL(const udtCommandCallbackArg&, udtBaseParser& parser)
+{
+	const udtString cs = parser.GetTokenizer().GetArg(2);
+	if(cs.GetLength() >= 2)
+	{
+		_teams[0].PrevFlagState = _teams[0].FlagState;
+		_teams[1].PrevFlagState = _teams[1].FlagState;
+		const char* const csString = cs.GetPtr();
+		_teams[0].FlagState = (u8)(csString[0] - '0');
+		_teams[1].FlagState = (u8)(csString[1] - '0');
+	}
+}
+
+void udtParserPlugInCaptures::ProcessPrintCommandQL(const udtCommandCallbackArg&, udtBaseParser& parser)
+{
+	idTokenizer& tokenizer = parser._context->Tokenizer;
+	const udtString message = tokenizer.GetArg(1);
+	if(!udtString::ContainsNoCase(message, "CAPTURED the flag!"))
+	{
+		return;
+	}
+
+	const udtString capturedIn = udtString::NewConstRef("captured in");
+	const udtString heldFor = udtString::NewConstRef("held for");
+	u32 capturedInIdx = 0;
+	u32 heldForIdx = 0;
+	const bool capturedInFound = udtString::ContainsNoCase(capturedInIdx, message, "captured in");
+	const bool heldForFound = udtString::ContainsNoCase(heldForIdx, message, "held for");
+	if(!capturedInFound && !heldForFound)
+	{
+		return;
+	}
+
+	u32 leftParenIdx = 0;
+	if(!udtString::FindFirstCharacterMatch(leftParenIdx, message, '('))
+	{
+		return;
+	}
+
+	u32 rightParenIdx = 0;
+	if(!udtString::FindFirstCharacterMatch(rightParenIdx, message, ')', leftParenIdx + 1))
+	{
+		return;
+	}
+
+	const u32 parenTextIdx = capturedInFound ? capturedInIdx : heldForIdx;
+	if(parenTextIdx < leftParenIdx || parenTextIdx > rightParenIdx)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator tempAllocatorScope(*TempAllocator);
+	const udtString parenText = capturedInFound ? capturedIn : heldFor;
+	const udtString playerName = udtString::NewSubstringClone(*TempAllocator, message, leftParenIdx + 1, parenTextIdx - leftParenIdx - 2);
+	const udtString cleanPlayerName = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, playerName);
+
+	const u32 durationIdx = parenTextIdx + parenText.GetLength() + 1;
+	if(durationIdx > rightParenIdx)
+	{
+		return;
+	}
+
+	const udtString duration = udtString::NewSubstringClone(*TempAllocator, message, durationIdx, rightParenIdx - durationIdx - 1);
+	s32 captureDuration = 0;
+	if(!ParseDuration(captureDuration, duration))
+	{
+		return;
+	}
+
+	const s32 time = parser._inServerTime;
+	u32 flags = 0;
+	if(capturedInFound)
+	{
+		flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
+	}
+	flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
+
+	f32 distance = -1.0f;
+
+	if(_lastCaptureQL.IsValid())
+	{
+		distance = _lastCaptureQL.Distance;
+		flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
+		_lastCaptureQL.Clear();
+	}
+
+	s32 playerIndex = -1;
+	if(ExtractPlayerIndexFromCaptureMessageQL(playerIndex, playerName, parser._inProtocol))
+	{
+		flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
+	}
+
+	udtParseDataCapture capture;
+	capture.CaptureTimeMs = time;
+	capture.Distance = distance;
+	capture.Flags = flags;
+	capture.GameStateIndex = _gameStateIndex;
+	WriteStringToApiStruct(capture.MapName, _mapName);
+	capture.PickUpTimeMs = time - captureDuration;
+	capture.PlayerIndex = -1;
+	WriteStringToApiStruct(capture.PlayerName, cleanPlayerName);
+	_captures.Add(capture);
+}
+
+bool udtParserPlugInCaptures::ExtractPlayerIndexFromCaptureMessageQL(s32& playerIndex, const udtString& playerName, udtProtocol::Id protocol)
+{
+	// dm_73: sprintf(name, "%s %s", cn, n) OR sprintf(name, "%s^7 %s", cn, n)
+	// dm_90: sprintf(name, "%s %s", cn, n) OR sprintf(name, "%s^7 %s", cn, n)
+	// dm_91: sprintf(name, "%s", n)
+
+	if(protocol == udtProtocol::Dm91)
+	{
+		for(s32 i = 0; i < 64; ++i)
+		{
+			if(!_playerNames[i].IsValid())
+			{
+				continue;
+			}
+
+			if(udtString::Equals(_playerNames[i], playerName))
+			{
+				playerIndex = i;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	for(s32 i = 0; i < 64; ++i)
+	{
+		if(!_playerNames[i].IsValid() ||
+		   !_playerClanNames[i].IsValid())
+		{
+			continue;
+		}
+		
+		if(udtString::IsEmpty(_playerClanNames[i]) && 
+		   udtString::Equals(_playerNames[i], playerName))
+		{
+			playerIndex = i;
+			return true;
+		}
+
+		const udtString space = udtString::NewConstRef(" ");
+		const udtString* formattedNameParts[] =
+		{
+			&_playerClanNames[i],
+			&space,
+			&_playerNames[i]
+		};
+
+		udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
+
+		const udtString formattedName = udtString::NewFromConcatenatingMultiple(*TempAllocator, formattedNameParts, UDT_COUNT_OF(formattedNameParts));
+		if(udtString::Equals(formattedName, playerName))
+		{
+			playerIndex = i;
+			return true;
+		}
+		
+		const udtString spaceColor = udtString::NewConstRef("^7 ");
+		const udtString* formattedNamePartsColor[] =
+		{
+			&_playerClanNames[i],
+			&spaceColor,
+			&_playerNames[i]
+		};
+
+		const udtString formattedNameColor = udtString::NewFromConcatenatingMultiple(*TempAllocator, formattedNamePartsColor, UDT_COUNT_OF(formattedNamePartsColor));
+		if(udtString::Equals(formattedNameColor, playerName))
+		{
+			playerIndex = i;
+			return true;
+		}
+	}
+
+	return false;
 }

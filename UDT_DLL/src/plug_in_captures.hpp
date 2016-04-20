@@ -43,6 +43,12 @@ private:
 
 	void ProcessGamestateMessageClearStates(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 
+	bool ExtractPlayerIndexFromCaptureMessageQL(s32& playerIndex, const udtString& playerName, udtProtocol::Id protocol);
+
+	void ProcessPlayerConfigStringQL(const char* configString, udtBaseParser& parser, s32 playerIndex);
+	void ProcessFlagStatusCommandQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessPrintCommandQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+
 	// Teams: 0=red, 1=blue.
 
 	udtString GetPlayerName(s32 playerIndex, udtBaseParser& parser);
@@ -115,12 +121,15 @@ private:
 	ProcessCommandFunc _processCommand;
 	ProcessSnapshotFunc _processSnapshot;
 	udtVMLinearAllocator _stringAllocator;
+	udtVMLinearAllocator _playerNameAllocator; // For QL only.
 	udtVMArray<udtParseDataCapture> _captures;
 	udtParseDataCaptureBuffers _buffers;
 	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
 	PlayerInfo _players[64];
+	udtString _playerNames[64]; // For QL only.
+	udtString _playerClanNames[64]; // For QL only.
 	TeamInfo _teams[2];
 	LastCaptureQL _lastCaptureQL;
 	PlayerStateQL _playerStateQL;
