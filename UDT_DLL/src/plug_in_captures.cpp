@@ -553,12 +553,18 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 			const s32 soundIndex = es->eventParm;
 			if(soundIndex == 0 || soundIndex == 1)
 			{
+				const s32 playerIndex = es->generic1;
+				if(playerIndex < 0 || playerIndex >= 64)
+				{
+					continue;
+				}
+
 				const s32 captureTimeMs = parser._inServerTime;
 				const s32 durationMs = es->time;
 				const s32 pickupTimeMs = captureTimeMs - durationMs;
 
 				TeamInfo& team = _teams[soundIndex];
-				const s32 playerIndex = team.PlayerIndex;
+				const s32 udtPlayerIndex = team.PlayerIndex;
 
 				udtParseDataCapture capture;
 				capture.GameStateIndex = _gameStateIndex;
@@ -567,6 +573,8 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 				capture.PlayerIndex = playerIndex;
 				WriteStringToApiStruct(capture.MapName, _mapName);
 				capture.Flags = 0;
+				capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
+				capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
 				if(playerIndex == _demoTakerIndex)
 				{
 					capture.Flags |= (u32)udtParseDataCaptureFlags::DemoTaker;
@@ -575,16 +583,14 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 				{
 					capture.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
 				}
+				WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
 
 				FlagStatusCPMA& flagStatus = _flagStatusCPMA[soundIndex];
-				if(playerIndex >= 0 && playerIndex < 64)
+				if(udtPlayerIndex == playerIndex)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
-					capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
 					capture.Flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
 					PlayerInfo& player = _players[playerIndex];
 					capture.Distance = Float3::Dist(player.PickupPosition, player.Position);
-					WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
 					if(team.BasePickup && !flagStatus.InstantCapture)
 					{
 						capture.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
@@ -595,7 +601,8 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 				}
 				else
 				{
-					WriteNullStringToApiStruct(capture.PlayerName);
+					// The last player for which we got a pick-up sound event
+					// is not the one the server says.
 					capture.Distance = -1.0f;
 				}
 
@@ -605,24 +612,26 @@ void udtParserPlugInCaptures::ProcessSnapshotMessageCPMA(const udtSnapshotCallba
 			else if(soundIndex == 4 || soundIndex == 5)
 			{
 				const s32 playerIndex = es->generic1;
-				if(playerIndex >= 0 && playerIndex < 64)
+				if(playerIndex < 0 || playerIndex >= 64)
 				{
-					PlayerInfo& player = _players[playerIndex];
-					if(player.Defined && player.PrevDefined)
-					{
-						Float3::Copy(player.PickupPosition, player.Position);
-						player.PickupPositionValid = true;
-					}
-					else
-					{
-						player.PickupPositionValid = false;
-					}
-					
-					const u32 teamIndex = (u32)soundIndex - 4;
-					TeamInfo& team = _teams[teamIndex];
-					team.BasePickup = WasFlagPickedUpInBase(teamIndex);
-					team.PlayerIndex = playerIndex;
+					continue;
 				}
+
+				PlayerInfo& player = _players[playerIndex];
+				if(player.Defined && player.PrevDefined)
+				{
+					Float3::Copy(player.PickupPosition, player.Position);
+					player.PickupPositionValid = true;
+				}
+				else
+				{
+					player.PickupPositionValid = false;
+				}
+
+				const u32 teamIndex = (u32)soundIndex - 4;
+				TeamInfo& team = _teams[teamIndex];
+				team.BasePickup = WasFlagPickedUpInBase(teamIndex);
+				team.PlayerIndex = playerIndex;
 			}
 		}
 	}
