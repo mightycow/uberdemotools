@@ -1,13 +1,13 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-Here you'll learn the principles and basics of UDT's custom parsing API.
+This document will cover the structure of **Quake** demos and the basics of UDT's custom parsing API.
 
-How is a Quake demo structured?
--------------------------------
+Quake Demo Structure
+--------------------
 
 ###### Packets
 
-Quake demos are sequences of message bundles (let's call them packets) that the server sends to the client. It is, in essence, a dump of the client's incoming network stream.  
+**Quake** demos are sequences of message bundles (let's call them packets) that the server sends to the client. It is, in essence, a dump of the client's incoming network stream.  
 
 So, a well-formed demo file/stream is structured like this:
 > [packet header] [packet data] [packet header] [packet data] ... [EoS packet header]
@@ -61,7 +61,7 @@ This command tells the client to replace the config string (hence `cs`) at index
 
 ###### Config strings encoding multiple variables
 
-The player, system info and server info config strings encode multiple "variables" in a single string.
+The player, system info and server info config strings encode multiple "variables" in a single string.  
 The config string is usually created as follows (pseudo-code):
 ```
 cs = string.empty()
@@ -79,14 +79,11 @@ In this specific example:
 * the team (t) is 3 (he's a spectator)
 * the handicap (hc) is 100
 
-Player config strings *can* start with a separator and *can* end with a separator. However, none of that is guaranteed, so **don't ever rely on it** to be the case or not.  
-UDT supplies helper functions to deal with that: `udtParseConfigStringValueAsInteger` and `udtParseConfigStringValueAsString`.
+Player config strings *can* start with a separator and *can* end with a separator. However, none of that is guaranteed, so don't ever rely on it to be the case or not. UDT supplies helper functions to deal with that: `udtParseConfigStringValueAsInteger` and `udtParseConfigStringValueAsString`.
 
 ###### Config strings and the `cs` command
 
-As we've seen earlier, the gamestate message will define a whole bunch of config string values.  
-However, as the variables encoded in config strings change during the game (scores, player names, etc), the config strings will need to be updated as well.  
-For that, the server will send a `cs` command, telling the client to update the config string at a given index to the new supplied value.
+As we've seen earlier, the gamestate message will define a whole bunch of config string values. However, as the variables encoded in config strings change during the game (scores, player names, etc), the server will need to send commands with updated config strings to the client. For that, the server will send a `cs` command, telling the client to update the config string at a given index to the new supplied value.
 
 ###### Config strings and the `bcs0`, `bcs1` and `bcs2` commands
 
@@ -108,36 +105,40 @@ The player state is used for representing the spectated player only. Because it 
 
 ###### Note on the terminology
 
-In the original Quake 3 source code, the message bundles (or packets as I call them) were also called messages.  
-The data structure describing them is called `msg_t`.
+In the original Quake 3 source code, the message bundles (or packets as I call them) were also called messages. The data structure describing them is called `msg_t`.
 
-What problems does it solve for me?
------------------------------------
+Features
+--------
 
-The API will take care of the following for you: 
+The custom parsing API has the following features: 
 
-* It handles all the differences between protocol versions when reading in the packets and messages.
-* It deals with Huffman compression and delta-decoding the entities, only giving you raw decompressed data.
-* It deals with duplication so you don't get the same snapshots, commands or entity events twice.
-* It stores the config string values and updates them upon processing the `cs` and `bcs2` commands.  
-* It gives you access to the latest version of any config string with `udtCuGetConfigString`.
-* It handles the logic for buffering and parsing `bcs0`, `bcs1` and `bcs2` commands and gives you a single `cs` command instead.  
-* It does command tokenization and gives you access to the results.
-* It provides helper functions to parse config string variables: `udtParseConfigStringValueAsInteger` and `udtParseConfigStringValueAsString`.
-* It provides a string clean-up function, `udtCleanUpString`, for getting rid of Quake 3/Live and OSP color codes.
-* It tells you what number id used for a given universal UDT identifier and demo protocol version:
+* No third-party library dependency: the UDT shared library is self-contained
+* Parsing support for *all* **Quake 3** and **Quake Live** demo protocols
+* The user has full flow control: setting up callbacks (fatal error and message printing) is optional
+* The user supplies the input buffers: you can read demo data from any source (hard drive, over the network, etc)
+* Access to the raw decompressed data
+* No duplication: you don't get the same snapshot, command or entity event more than once
+* For each snapshot, you get the list of entities that were added/changed and the numbers of the entities that were removed
+* Access to the latest version of all config strings with `udtCuGetConfigString`
+* The only config string update command you get is `cs`: `bcs0`, `bcs1` and `bcs2` are dealth with transparently
+* Command tokens access: it tokenizes commands and gives you access to the results
+* A helper function for string clean-ups, `udtCleanUpString`, that gets rid of Quake 3/Live and OSP color codes
+* Helper functions to parse config string variables:
+  * `udtParseConfigStringValueAsInteger`
+  * `udtParseConfigStringValueAsString`
+* Helper functions to know what number id used for a given universal UDT identifier and demo protocol version:
   * `udtGetIdConfigStringIndex` for config string indices
-  * `udtGetIdEntityEventId` for entity events
+  * `udtGetIdEntityEventId` for entity event types
   * `udtGetIdEntityType` for entity types
   * `udtGetIdPowerUpIndex` for power-ups (indices for player state, flags for entity state)
   * `udtGetIdPersStatsIndex` for persistent player state stats indices
   * `udtGetIdEntityStateFlag` for entity state flags
-* It tells you what the universal UDT identifier is for a given id number and demo protocol version:
+* Helper functions to know what the universal UDT identifier is for a given id number and demo protocol version:
   * `udtGetUdtWeaponId` for weapons
   * `udtGetUdtMeanOfDeathId` for means of death
 
-How do I use it?
-----------------
+Usage
+-----
 
 ###### Start-up and shut-down
 
@@ -160,7 +161,7 @@ Packet packet;
     udtCuParseMessage(context, packet);
 ```
 
-Sample applications
+Sample Applications
 -------------------
 
 ###### A multi-frag rail cutter [hosted here](https://github.com/mightycow/uberdemotools/blob/develop/UDT_DLL/src/apps/tut_multi_rail.cpp)
@@ -181,7 +182,7 @@ The application
 
 It shows off how to analyze gamestate and command messages.
 
-A note for Windows developers
+A Note for Windows developers
 -----------------------------
 
 Please note that if you want proper support for Unicode file paths, you will have to change 2 things with respect to the sample applications:
@@ -189,12 +190,13 @@ Please note that if you want proper support for Unicode file paths, you will hav
 1. The entry point must be `wmain`, not `main`. The `main` entry point on Windows does *not* get UTF-8 file paths!
 2. Use another API than `fopen` for dealing with files because it does *not* consider the input as UTF-8.
 
-To deal with Unicode, the recommended course of action is to internally do everything with UTF-8 and only convert from/to UTF-16 when dealing with Windows-specific stuff. No extra steps needed on Linux.  
-That's what UDT does for the library and all command-line tools.
+To deal with Unicode, the recommended course of action is to internally do everything with UTF-8 and only convert from/to UTF-16 when dealing with Windows-specific stuff. No extra steps needed on Linux. That's what UDT does for the library and all command-line tools.
 
-Additional resources
+Additional Resources
 --------------------
 
-* [The Quake3 Networking Model](http://trac.bookofhook.com/bookofhook/trac.cgi/wiki/Quake3Networking) by *Brian Hook*, who worked on **Quake 3**
-* [Quake 3 Source Code Review: The Network Model](http://fabiensanglard.net/quake3/network.php) by *Fabien Sanglard*  
+* Article: [The **Quake 3** Networking Model](http://trac.bookofhook.com/bookofhook/trac.cgi/wiki/Quake3Networking) by *Brian Hook*, who worked on **Quake 3**
+* Article: [**Quake 3** Source Code Review: The Network Model](http://fabiensanglard.net/quake3/network.php) by *Fabien Sanglard*  
 Note that Huffman compression wasn't used originally. It was introduced with protocol 66 (*.dm_66 demo files).
+* Source Code: [**Quake 3**](https://github.com/id-Software/Quake-III-Arena) by *id Software*
+* Source Code: [**WolfcamQL**](https://github.com/brugal/wolfcamql) by *Angelo 'brugal' Cano*
