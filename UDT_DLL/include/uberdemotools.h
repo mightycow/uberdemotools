@@ -2758,17 +2758,17 @@ extern "C"
 	/* Gets the Quake player state power-up index from the UDT number. */
 	/* udtPowerUpId is of type udtPowerUpIndex::Id. */
 	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol);
+	UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol);
 
 	/* Gets the Quake player state persistant stats index from the UDT number. */
 	/* udtPersStatsId is of type udtPersStatsIndextype ::Id. */
 	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol);
+	UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol);
 
 	/* Gets the Quake entity state bit mask from the UDT number. */
 	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
 	/* Returns 0 when not available. */
-	UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
+	UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */

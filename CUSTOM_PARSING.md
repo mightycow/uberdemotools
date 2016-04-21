@@ -116,10 +116,25 @@ What problems does it solve for me?
 
 The API will take care of the following for you: 
 
-1. It handles all the differences between protocol versions when reading in the packets and messages.
-2. It deals with Huffman compression and delta-decoding the entities, only giving you raw decompressed data.
-3. It deals with duplication so you don't get the same snapshots, commands or entity events twice.
-4. It stores the config string values and updates them upon processing the `cs` and `bcs2` commands. You can access the latest version of any config string with `udtCuGetConfigString`.
+* It handles all the differences between protocol versions when reading in the packets and messages.
+* It deals with Huffman compression and delta-decoding the entities, only giving you raw decompressed data.
+* It deals with duplication so you don't get the same snapshots, commands or entity events twice.
+* It stores the config string values and updates them upon processing the `cs` and `bcs2` commands.  
+* It gives you access to the latest version of any config string with `udtCuGetConfigString`.
+* It handles the logic for buffering and parsing `bcs0`, `bcs1` and `bcs2` commands and gives you a single `cs` command instead.  
+* It does command tokenization and gives you access to the results.
+* It provides helper functions to parse config string variables: `udtParseConfigStringValueAsInteger` and `udtParseConfigStringValueAsString`.
+* It provides a string clean-up function, `udtCleanUpString`, for getting rid of Quake 3/Live and OSP color codes.
+* It tells you what number id used for a given universal UDT identifier and demo protocol version:
+  * `udtGetIdConfigStringIndex` for config string indices
+  * `udtGetIdEntityEventId` for entity events
+  * `udtGetIdEntityType` for entity types
+  * `udtGetIdPowerUpIndex` for power-ups (indices for player state, flags for entity state)
+  * `udtGetIdPersStatsIndex` for persistent player state stats indices
+  * `udtGetIdEntityStateFlag` for entity state flags
+* It tells you what the universal UDT identifier is for a given id number and demo protocol version:
+  * `udtGetUdtWeaponId` for weapons
+  * `udtGetUdtMeanOfDeathId` for means of death
 
 How do I use it?
 ----------------

@@ -1369,7 +1369,7 @@ UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
 #undef CASE
 }
 
-UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
+UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
@@ -1385,7 +1385,7 @@ UDT_API(s32) udtGetPowerUpIndex(u32 udtPowerUpId, u32 protocol)
 #undef CASE
 }
 
-UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
+UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
@@ -1401,7 +1401,7 @@ UDT_API(s32) udtGetPersStatsIndex(u32 udtPersStatsId, u32 protocol)
 #undef CASE
 }
 
-UDT_API(s32) udtGetEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
+UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
