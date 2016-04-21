@@ -534,12 +534,28 @@ namespace Uber.DemoTools
             return button;
         }
 
-        private static void CopyPathToClipboard(ListView listView)
+        private static T GetListViewItem<T>(ListView listView) where T : class
         {
-            var item = listView.SelectedItem as DemoFolder;
+            var item = listView.SelectedItem as T;
             if(item == null)
             {
+                if(listView.Items.Count == 1)
+                {
+                    return listView.Items[0] as T;
+                }
+
                 NoItemSelected();
+                return null;
+            }
+
+            return item;
+        }
+
+        private static void CopyPathToClipboard(ListView listView)
+        {
+            var item = GetListViewItem<DemoFolder>(listView);
+            if(item == null)
+            {
                 return;
             }
 
@@ -548,10 +564,9 @@ namespace Uber.DemoTools
 
         private static void SetAsInputFolder(ListView listView)
         {
-            var item = listView.SelectedItem as DemoFolder;
+            var item = GetListViewItem<DemoFolder>(listView);
             if(item == null)
             {
-                NoItemSelected();
                 return;
             }
 
@@ -561,10 +576,9 @@ namespace Uber.DemoTools
 
         private static void SetAsOutputFolder(ListView listView)
         {
-            var item = listView.SelectedItem as DemoFolder;
+            var item = GetListViewItem<DemoFolder>(listView);
             if(item == null)
             {
-                NoItemSelected();
                 return;
             }
 
@@ -573,10 +587,9 @@ namespace Uber.DemoTools
 
         private static void OpenDemoPath(ListView listView)
         {
-            var item = listView.SelectedItem as DemoFolder;
+            var item = GetListViewItem<DemoFolder>(listView);
             if(item == null)
             {
-                NoItemSelected();
                 return;
             }
 
@@ -591,10 +604,9 @@ namespace Uber.DemoTools
 
         private static void CopySteamIdToClipboard(ListView listView)
         {
-            var item = listView.SelectedItem as SteamUser;
+            var item = GetListViewItem<SteamUser>(listView);
             if(item == null)
             {
-                NoItemSelected();
                 return;
             }
 
