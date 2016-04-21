@@ -20,6 +20,8 @@ void udtCustomParsingPlugIn::ProcessMessageBundleStart(const udtMessageBundleCal
 {
 	_context->Commands.Clear();
 	_context->CommandStrings.Clear();
+	_context->CommandTokens.Clear();
+	_context->CommandTokenAddresses.Clear();
 	_context->StringAllocator.Clear();
 
 	udtCuMessageOutput& msg = _context->Message;
@@ -41,10 +43,27 @@ void udtCustomParsingPlugIn::ProcessMessageBundleEnd(const udtMessageBundleCallb
 	msg.ServerCommandCount = commandCount;
 	msg.Commands = _context->Commands.GetStartAddress();
 
-	// Patch the addresses.
+	// Patch the command string addresses.
 	for(u32 i = 0; i < commandCount; ++i)
 	{
 		_context->Commands[i].CommandString = _context->CommandStrings[i].GetPtr();
+	}
+
+	// Build the array of command token addresses.
+	const u32 tokenCount = _context->CommandTokens.GetSize();
+	_context->CommandTokenAddresses.Clear();
+	for(u32 i = 0; i < tokenCount; ++i)
+	{
+		_context->CommandTokenAddresses.Add(_context->CommandTokens[i].GetPtr());
+	}
+
+	// Patch the command token addresses.
+	u32 firstTokenIdx = 0;
+	for(u32 i = 0; i < commandCount; ++i)
+	{
+		const u32 count = _context->Commands[i].TokenCount;
+		_context->Commands[i].CommandTokens = &_context->CommandTokenAddresses[firstTokenIdx];
+		firstTokenIdx += count;
 	}
 }
 
@@ -60,17 +79,27 @@ void udtCustomParsingPlugIn::ProcessGamestateMessage(const udtGamestateCallbackA
 	msg.GameStateOrSnapshot.GameState = &_context->GameState;
 }
 
-void udtCustomParsingPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser&)
+void udtCustomParsingPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	const udtString string = udtString::NewClone(_context->StringAllocator, arg.String, arg.StringLength);
 	_context->CommandStrings.Add(string);
+
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	const u32 tokenCount = tokenizer.GetArgCount();
+	for(u32 i = 0; i < tokenCount; ++i)
+	{
+		const udtString token = udtString::NewCloneFromRef(_context->StringAllocator, tokenizer.GetArg(i));
+		_context->CommandTokens.Add(token);
+	}
 
 	udtCuCommandMessage cmd;
 	cmd.CommandSequence = arg.CommandSequence;
 	cmd.CommandString = NULL; // We'll patch the address later in ProcessMessageBundleEnd.
 	cmd.CommandStringLength = string.GetLength();
+	cmd.CommandTokens = NULL; // We'll patch the address later in ProcessMessageBundleEnd.
 	cmd.ConfigStringIndex = arg.ConfigStringIndex;
 	cmd.IsConfigString = arg.IsConfigString;
+	cmd.TokenCount = tokenCount;
 	_context->Commands.Add(cmd);
 }
 

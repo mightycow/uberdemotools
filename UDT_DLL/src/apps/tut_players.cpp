@@ -403,21 +403,21 @@ private:
 			// Not a player config string.
 			return;
 		}
-		
-		const std::string& commandString = command.CommandString;
-		const size_t startQuoteIdx = commandString.find('"');
-		const size_t endQuoteIdx = commandString.rfind('"');
-		if(startQuoteIdx == std::string::npos || 
-		   endQuoteIdx == std::string::npos ||
-		   endQuoteIdx <= startQuoteIdx)
+
+		// Config string update commands always have 3 tokens:
+		// 1. "cs"
+		// 2. The index of the config string to update.
+		// 3. The actual content, in quotes.
+		if(command.TokenCount != 3)
 		{
+			// Not a proper config string command.
 			return;
 		}
 
 		std::string serverTime;
 		FormatServerTime(serverTime, serverTimeMs);
 
-		const std::string configString = commandString.substr(startQuoteIdx + 1, endQuoteIdx - startQuoteIdx - 1);
+		const std::string configString = command.CommandTokens[2];
 		std::string playerName;
 		Player& player = _players[clientNumber];
 		if(configString.empty() || !ExtractPlayerName(playerName, configString, _protocol))

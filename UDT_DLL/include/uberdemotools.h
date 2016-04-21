@@ -2371,8 +2371,8 @@ extern "C"
 		/* Might be NULL. */
 		const char* CommandString;
 
-		/* Ignore this. */
-		const void* Reserved1;
+		/* The tokens in CommandString. */
+		const char** CommandTokens;
 
 		/* Length of CommandString. */
 		u32 CommandStringLength;
@@ -2385,6 +2385,13 @@ extern "C"
 
 		/* If non-zero, this command is for a config string update. */
 		u32 IsConfigString;
+
+		/* The number of tokens in CommandString. */
+		/* Length of the CommandTokens array. */
+		u32 TokenCount;
+
+		/* Ignore this. */
+		s32 Reserved1;
 	}
 	udtCuCommandMessage;
 
