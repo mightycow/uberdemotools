@@ -2802,12 +2802,32 @@ namespace Uber.DemoTools
             return false;
         }
 
+        private static void ScrollListBoxAllTheWayDown(ListBox listBox, object lastItem)
+        {
+            if(VisualTreeHelper.GetChildrenCount(listBox) > 0)
+            {
+                var border = VisualTreeHelper.GetChild(listBox, 0) as Decorator;
+                if(border != null)
+                {
+                    var scrollViewer = border.Child as ScrollViewer;
+                    if(scrollViewer != null)
+                    {
+                        scrollViewer.ScrollToBottom();
+                        return;
+                    }
+                }
+            }
+
+            // No luck, we use the next best thing.
+            listBox.ScrollIntoView(lastItem); 
+        }
+
         private void LogMessageNoColor(string message)
         {
             VoidDelegate itemAdder = delegate 
             {
                 _logListBox.Items.Add(message);
-                _logListBox.ScrollIntoView(message); 
+                ScrollListBoxAllTheWayDown(_logListBox, message);
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
@@ -2831,7 +2851,7 @@ namespace Uber.DemoTools
                 textBlock.Text = message;
                 textBlock.Foreground = new SolidColorBrush(color);
                 _logListBox.Items.Add(textBlock);
-                _logListBox.ScrollIntoView(textBlock);
+                ScrollListBoxAllTheWayDown(_logListBox, textBlock);
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
