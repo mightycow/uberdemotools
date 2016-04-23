@@ -539,6 +539,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	newInfo.ProgressCb = &SingleThreadProgressCallback;
 	newInfo.ProgressContext = &progressContext;
 
+	u64 actualProcessedByteCount = 0;
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
 		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
@@ -553,6 +554,10 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
+		if(success)
+		{
+			actualProcessedByteCount += jobByteCount;
+		}
 	}
 
 	if(!customContext)
@@ -562,7 +567,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 
 	if(info->PerformanceStats != NULL)
 	{
-		PerfStatsAddCurrentThread(info->PerformanceStats, totalByteCount);
+		PerfStatsAddCurrentThread(info->PerformanceStats, actualProcessedByteCount);
 		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedMs());
 	}
 

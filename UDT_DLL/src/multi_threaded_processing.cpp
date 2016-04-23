@@ -233,6 +233,7 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
+	u64 actualProcessedByteCount = 0;
 	for(u32 i = startIdx; i < endIdx; ++i)
 	{
 		if(shared->ParseInfo->CancelOperation != NULL && *shared->ParseInfo->CancelOperation != 0)
@@ -249,13 +250,17 @@ static void ThreadFunction(void* userData)
 		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
+		if(success)
+		{
+			actualProcessedByteCount += currentJobByteCount;
+		}
 	}
 
 	data->Context->UpdatePlugInBufferStructs();
 	
 	if(data->Shared->ParseInfo->PerformanceStats != NULL)
 	{
-		PerfStatsAddCurrentThread(data->Shared->ParseInfo->PerformanceStats, data->TotalByteCount);
+		PerfStatsAddCurrentThread(data->Shared->ParseInfo->PerformanceStats, actualProcessedByteCount);
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
