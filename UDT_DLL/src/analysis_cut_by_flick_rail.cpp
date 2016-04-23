@@ -31,15 +31,18 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const udtCutByPatternArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
+	bool trackedPlayerFound = false;
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
 	if(ps != NULL && ps->clientNum == trackedPlayerIndex)
 	{
+		trackedPlayerFound = true;
 		PlayerInfo& player = _players[ps->clientNum];
 		const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
 		if(arg.ServerTime > prevSnapshot.ServerTimeMs)
 		{
 			SnapshotInfo& snapshot = player.GetWriteSnapshot();
 			snapshot.ServerTimeMs = arg.ServerTime;
+			snapshot.TelePortBit = ps->eFlags & EF_TELEPORT_BIT;
 			Float3::Copy(snapshot.Angles, ps->viewangles);
 			player.IncrementIndex();
 		}
@@ -54,6 +57,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 				continue;
 			}
 
+			trackedPlayerFound = true;
 			PlayerInfo& player = _players[es->clientNum];
 			const SnapshotInfo& prevSnapshot = player.GetMostRecentSnapshot();
 			if(arg.ServerTime > prevSnapshot.ServerTimeMs)
@@ -62,12 +66,18 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 				// However, the delta seems to always be 0, so I'm only using apos.trBase.
 				SnapshotInfo& snapshot = player.GetWriteSnapshot();
 				snapshot.ServerTimeMs = arg.ServerTime;
+				snapshot.TelePortBit = es->eFlags & EF_TELEPORT_BIT;
 				Float3::Copy(snapshot.Angles, es->apos.trBase);
 				player.IncrementIndex();
 			}
 
 			break;
 		}
+	}
+
+	if(!trackedPlayerFound)
+	{
+		return;
 	}
 
 	const s32 obituaryEvtId = idEntityEvent::Obituary(parser._inProtocol);
@@ -113,7 +123,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		PlayerInfo& player = _players[attackerIdx];
 		if(!player.IsValid())
 		{
-			continue;
+			return;
 		}
 
 		const SnapshotInfo& snapNew = player.GetMostRecentSnapshot();
@@ -128,24 +138,41 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		for(u32 j = 0; j < extraInfo.MinSpeedSnapshotCount; ++j)
 		{
 			const SnapshotInfo& snapOld = player.GetMostRecentSnapshot(1 + j);
-			const s32 timeDiff = snapNew.ServerTimeMs - snapOld.ServerTimeMs;
+			if(snapOld.TelePortBit != snapNew.TelePortBit)
+			{
+				break;
+			}
 
+			const s32 timeDiff = snapNew.ServerTimeMs - snapOld.ServerTimeMs;
 			Quat::FromEulerAnglesDeg(temp, snapOld.Angles);
 			Quat::Normalize(quatOld, temp);
-
 			const f32 angleDiff = Quat::AngleDiff(quatNew, quatOld);
 			const f32 speed = angleDiff / ((f32)timeDiff / 1000.0f);
 			fastestSpeed = udt_max(fastestSpeed, speed);
 		}
 
-		const SnapshotInfo& snapOld = player.GetMostRecentSnapshot(extraInfo.MinAngleDeltaSnapshotCount);
-		Quat::FromEulerAnglesDeg(temp, snapOld.Angles);
-		Quat::Normalize(quatOld, temp);
-		const f32 totalAngleDiff = Quat::AngleDiff(quatNew, quatOld);
-
-		if(fastestSpeed < extraInfo.MinSpeed || totalAngleDiff < extraInfo.MinAngleDelta)
+		if(fastestSpeed < extraInfo.MinSpeed)
 		{
-			continue;
+			return;
+		}
+
+		if(extraInfo.MinAngleDelta > 0)
+		{
+			// This doesn't account for the view changing direction.
+			// Seems highly unlikely, but can be done by summing the deltas between consecutive snapshots.
+			const SnapshotInfo& snapOld = player.GetMostRecentSnapshot(extraInfo.MinAngleDeltaSnapshotCount);
+			if(snapOld.TelePortBit != snapNew.TelePortBit)
+			{
+				return;
+			}
+
+			Quat::FromEulerAnglesDeg(temp, snapOld.Angles);
+			Quat::Normalize(quatOld, temp);
+			const f32 totalAngleDiff = Quat::AngleDiff(quatNew, quatOld);
+			if(totalAngleDiff < extraInfo.MinAngleDelta)
+			{
+				return;
+			}
 		}
 
 		udtCutSection cut;

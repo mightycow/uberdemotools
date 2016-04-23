@@ -30,6 +30,7 @@ private:
 	{
 		f32 Angles[3];
 		s32 ServerTimeMs;
+		s32 TelePortBit; // If it's different from the previous snapshot's, we just teleported.
 	};
 
 	struct PlayerInfo

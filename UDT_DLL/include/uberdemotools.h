@@ -1260,7 +1260,7 @@ extern "C"
 		/* Minimum angle change, in radians. */
 		f32 MinAngleDelta;
 
-		/* How many snapshots to take into account for computing the top speed. */
+		/* How many snapshots to take into account for computing the angle difference. */
 		/* Range: [2;4]. */
 		u32 MinAngleDeltaSnapshotCount;
 	}
