@@ -56,6 +56,44 @@ static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSec
 	}
 }
 
+static bool MatchesRule(udtVMLinearAllocator& allocator, const udtString& configStringName, const udtStringMatchingRule& rule, udtProtocol::Id protocol)
+{
+	udtString name = udtString::NewCloneFromRef(allocator, configStringName);
+	udtString value = udtString::NewClone(allocator, rule.Value);
+	if((rule.Flags & (u32)udtStringMatchingRuleFlags::CaseSensitive) == 0)
+	{
+		udtString::MakeLowerCase(name);
+		udtString::MakeLowerCase(value);
+	}
+	if((rule.Flags & (u32)udtStringMatchingRuleFlags::IgnoreColorCodes) != 0)
+	{
+		udtString::CleanUp(name, protocol);
+		udtString::CleanUp(value, protocol);
+	}
+
+	switch((udtStringComparisonMode::Id)rule.ComparisonMode)
+	{
+		case udtStringComparisonMode::Equals: return udtString::Equals(name, value);
+		case udtStringComparisonMode::Contains: return udtString::Contains(name, value);
+		case udtStringComparisonMode::StartsWith: return udtString::StartsWith(name, value);
+		case udtStringComparisonMode::EndsWith: return udtString::EndsWith(name, value);
+		default: return false;
+	}
+}
+
+static bool MatchesRules(udtVMLinearAllocator& allocator, const udtString& name, const udtStringMatchingRule* rules, u32 ruleCount, udtProtocol::Id protocol)
+{
+	for(u32 i = 0; i < ruleCount; ++i)
+	{
+		if(MatchesRule(allocator, name, rules[i], protocol))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase() 
 	: CutSections((uptr)(1 << 16), "CutByPatternAnalyzerBase::CutSectionsArray")
@@ -131,28 +169,17 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 	const udtCutByPatternArg& pi = GetInfo();
 
 	_trackedPlayerIndex = S32_MIN;
-	if(pi.PlayerIndex >= 0 && pi.PlayerIndex < 64)
+	if(pi.PlayerNameRules != NULL)
+	{
+		FindPlayerInConfigStrings(parser);
+	}
+	else if(pi.PlayerIndex >= 0 && pi.PlayerIndex < 64)
 	{
 		_trackedPlayerIndex = pi.PlayerIndex;
 	}
 	else if(pi.PlayerIndex == (s32)udtPlayerIndex::DemoTaker)
 	{
 		_trackedPlayerIndex = info.ClientNum;
-	}
-	else if(!udtString::IsNullOrEmpty(pi.PlayerName))
-	{
-		const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
-		for(s32 i = 0; i < ID_MAX_CLIENTS; ++i)
-		{
-			udtString playerName;
-			if(GetTempPlayerName(playerName, parser, firstPlayerCsIdx + i) &&
-			   !udtString::IsNullOrEmpty(playerName) && 
-			   udtString::Equals(playerName, pi.PlayerName))
-			{
-				_trackedPlayerIndex = i;
-				break;
-			}
-		}
 	}
 
 	for(u32 i = 0, count = _analyzers.GetSize(); i < count; ++i)
@@ -163,13 +190,20 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 
 void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)
 {
-	if(_info->PlayerIndex == (s32)udtPlayerIndex::FirstPersonPlayer)
+	const udtCutByPatternArg pi = GetInfo();
+
+	if(pi.PlayerIndex == (s32)udtPlayerIndex::FirstPersonPlayer)
 	{
 		idPlayerStateBase* const ps = GetPlayerState(info.Snapshot, parser._inProtocol);
 		if(ps != NULL)
 		{
 			_trackedPlayerIndex = ps->clientNum;
 		}
+	}
+	else if(pi.PlayerIndex == S32_MIN &&
+			pi.PlayerNameRules != NULL)
+	{
+		FindPlayerInConfigStrings(parser);
 	}
 
 	for(u32 i = 0, count = _analyzers.GetSize(); i < count; ++i)
@@ -178,37 +212,61 @@ void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 	}
 }
 
-void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
+void udtCutByPatternPlugIn::FindPlayerInConfigStrings(udtBaseParser& parser)
 {
-	const udtString playerName = udtString::NewConstRef(_info->PlayerName);
-	if(_trackedPlayerIndex != S32_MIN || udtString::IsNullOrEmpty(playerName))
-	{
-		return;
-	}
+	const udtCutByPatternArg pi = GetInfo();
 
-	const idTokenizer& tokenizer = parser.GetTokenizer();
-	const int tokenCount = tokenizer.GetArgCount();
-	if(tokenCount != 3 || !udtString::Equals(tokenizer.GetArg(0), "cs"))
+	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	for(s32 i = 0; i < ID_MAX_CLIENTS; ++i)
 	{
-		return;
-	}
+		udtVMScopedStackAllocator allocatorScope(*TempAllocator);
 
-	s32 csIndex = -1;
-	if(!StringParseInt(csIndex, tokenizer.GetArgString(1)))
+		udtString playerName;
+		if(GetPlayerName(playerName, *TempAllocator, parser, firstPlayerCsIdx + i) &&
+		   MatchesRules(*TempAllocator, playerName, pi.PlayerNameRules, pi.PlayerNameRuleCount, parser._inProtocol))
+		{
+			_trackedPlayerIndex = i;
+			break;
+		}
+	}
+}
+
+void udtCutByPatternPlugIn::FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser)
+{
+	const udtCutByPatternArg pi = GetInfo();
+	if(pi.PlayerNameRules == NULL || 
+	   !info.IsConfigString)
 	{
 		return;
 	}
 
 	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
-	const s32 playerIndex = csIndex - firstPlayerCsIdx;
+	const s32 playerIndex = info.ConfigStringIndex - firstPlayerCsIdx;
 	if(playerIndex < 0 || playerIndex >= ID_MAX_CLIENTS)
 	{
 		return;
 	}
 
-	udtString extractedPlayerName;
-	GetTempPlayerName(extractedPlayerName, parser, csIndex);
-	if(!udtString::IsNullOrEmpty(extractedPlayerName) && udtString::Equals(extractedPlayerName, playerName))
+	if(playerIndex == _trackedPlayerIndex && 
+	   info.IsEmptyConfigString)
+	{
+		// The player we had selected just left!
+		// We'll try to find the right player to track next snapshot.
+		_trackedPlayerIndex = S32_MIN;
+		return;
+	}
+
+	if(_trackedPlayerIndex != S32_MIN)
+	{
+		// Avoid switching to another player if the current one is still around.
+		return;
+	}
+
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	udtString playerName;
+	if(GetPlayerName(playerName, *TempAllocator, parser, info.ConfigStringIndex) &&
+	   MatchesRules(*TempAllocator, playerName, pi.PlayerNameRules, pi.PlayerNameRuleCount, parser._inProtocol))
 	{
 		_trackedPlayerIndex = playerIndex;
 	}
@@ -216,7 +274,7 @@ void udtCutByPatternPlugIn::TrackPlayerFromCommandMessage(udtBaseParser& parser)
 
 void udtCutByPatternPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
 {
-	TrackPlayerFromCommandMessage(parser);
+	FindPlayerInServerCommand(info, parser);
 
 	for(u32 i = 0, count = _analyzers.GetSize(); i < count; ++i)
 	{
@@ -311,20 +369,15 @@ s32 udtCutByPatternPlugIn::GetTrackedPlayerIndex() const
 	return _trackedPlayerIndex;
 }
 
-bool udtCutByPatternPlugIn::GetTempPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx)
+bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx)
 {
-	udtVMScopedStackAllocator scopedTempAllocator(*TempAllocator);
-
 	udtString clan;
 	bool hasClan;
-	if(!GetClanAndPlayerName(clan, playerName, hasClan, *TempAllocator, parser._inProtocol, parser._inConfigStrings[csIdx].GetPtr()))
+	if(!GetClanAndPlayerName(clan, playerName, hasClan, allocator, parser._inProtocol, parser._inConfigStrings[csIdx].GetPtr()))
 	{
 		playerName = udtString::NewEmptyConstant();
 		return false;
 	}
-
-	udtString::CleanUp(playerName, parser._inProtocol);
-	udtString::MakeLowerCase(playerName);
 
 	return true;
 }

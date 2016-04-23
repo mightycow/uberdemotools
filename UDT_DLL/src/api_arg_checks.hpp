@@ -87,6 +87,27 @@ static bool IsValid(const udtCutByPatternArg& arg)
 #undef UDT_CUT_PATTERN_ITEM
 	}
 
+	if(arg.PlayerNameRules != NULL)
+	{
+		if(arg.PlayerNameRuleCount == 0)
+		{
+			return false;
+		}
+
+		for(u32 i = 0, count = arg.PlayerNameRuleCount; i < count; ++i)
+		{
+			const udtStringMatchingRule& rule = arg.PlayerNameRules[i];
+			if(rule.Value == NULL || rule.ComparisonMode >= (u32)udtStringComparisonMode::Count)
+			{
+				return false;
+			}
+		}
+	}
+	else if(arg.PlayerIndex < -2 || arg.PlayerIndex >= 64)
+	{
+		return false;
+	}
+
 	return true;
 }
 

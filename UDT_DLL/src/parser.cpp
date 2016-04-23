@@ -497,6 +497,7 @@ tokenize:
 		info.StringLength = commandStringLength;
 		info.ConfigStringIndex = csIndex;
 		info.IsConfigString = isConfigString;
+		info.IsEmptyConfigString = isConfigString ? udtString::IsNullOrEmpty(tokenizer.GetArg(2)) : false;
 
 		for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)
 		{

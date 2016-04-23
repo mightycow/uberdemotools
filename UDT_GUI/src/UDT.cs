@@ -95,7 +95,7 @@ namespace Uber.DemoTools
             public long ByteCount;
             public int FirstFileIndex;
             public int FileCount;
-        };
+        }
 
         public BatchJobRunner(UDT_DLL.udtParseArg parseArg, List<string> filePaths, List<int> fileIndices, int maxBatchSize)
         {
@@ -819,7 +819,7 @@ namespace Uber.DemoTools
             BiggerWins,
             SmallerWins,
             Count
-        };
+        }
 
         public enum udtMatchStatsDataType : uint
         {
@@ -833,7 +833,7 @@ namespace Uber.DemoTools
             Positive,
             Boolean,
             Count
-        };
+        }
 
         enum udtGameTypeFlags : byte
         {
@@ -844,7 +844,7 @@ namespace Uber.DemoTools
             HasFragLimit = 1 << 3,
             HasScoreLimit = 1 << 4,
             HasRoundLimit = 1 << 5
-        };
+        }
 
         private enum udtGameType : uint
         {
@@ -884,7 +884,7 @@ namespace Uber.DemoTools
             Duration,
             Percentage,
             Count
-        };
+        }
 
         [Flags]
         public enum udtParseArgFlags : uint
@@ -942,7 +942,7 @@ namespace Uber.DemoTools
         {
             FirstPersonPlayer = -2,
             DemoTaker = -1
-        };
+        }
 
         [Flags]
         public enum udtCutByPatternArgFlags : uint
@@ -950,18 +950,43 @@ namespace Uber.DemoTools
             MergeCutSections = 1 << 0
         }
 
+        public enum udtStringComparisonMode : uint
+        {
+            Equals,
+            Contains,
+            StartsWith,
+            EndsWith,
+            Count
+        }
+
+        [Flags]
+        public enum udtStringMatchingRuleFlags : uint
+        {
+            CaseSensitive = 1 << 0,
+            IgnoreColorCodes = 1 << 1
+        }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-	    public struct udtCutByPatternArg
-	    {
-		    public IntPtr Patterns; // const udtPatternInfo*
-            public IntPtr PlayerName; // const char*
-		    public UInt32 PatternCount;
-		    public UInt32 StartOffsetSec;
-		    public UInt32 EndOffsetSec;
-		    public Int32 PlayerIndex;
+        struct udtStringMatchingRule
+        {
+            public IntPtr Value; // const char*
+            public IntPtr Reserved1;
+            public UInt32 ComparisonMode;
             public UInt32 Flags;
-            public Int32 Reserved1;
-	    }
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtCutByPatternArg
+        {
+            public IntPtr Patterns; // const udtPatternInfo*
+            public IntPtr PlayerNameRules; // const udtStringMatchingRule*
+            public UInt32 PatternCount;
+            public UInt32 PlayerNameRuleCount;
+            public UInt32 StartOffsetSec;
+            public UInt32 EndOffsetSec;
+            public Int32 PlayerIndex;
+            public UInt32 Flags;
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByTimeArg
@@ -1016,14 +1041,14 @@ namespace Uber.DemoTools
             public UInt32 MinDistance;
             public UInt32 MinAirTimeMs;
             public Int32 Reserved1;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByMultiRailArg
         {
             public UInt32 MinKillCount;
             public Int32 Reserved1;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByFlagCaptureArg
@@ -1032,7 +1057,7 @@ namespace Uber.DemoTools
             public UInt32 MaxCarryTimeMs;
             public UInt32 AllowBaseToBase;
             public UInt32 AllowMissingToBase;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByFlickRailArg
@@ -1048,21 +1073,21 @@ namespace Uber.DemoTools
         {
             public UInt32 MatchStartOffsetMs;
             public UInt32 MatchEndOffsetMs;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtProtocolConversionArg
         {
             public UInt32 OutputProtocol;
             public Int32 Reserved1;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataBufferRange
         {
             public UInt32 FirstIndex;
             public UInt32 Count;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataChat
@@ -1102,7 +1127,7 @@ namespace Uber.DemoTools
             public IntPtr Reserved1;
             public UInt32 ChatMessageCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtMatchInfo
@@ -1120,7 +1145,7 @@ namespace Uber.DemoTools
             public UInt32 NameLength;
             public UInt32 Value; // string offset
             public UInt32 ValueLength;
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtGameStatePlayerInfo
@@ -1131,7 +1156,7 @@ namespace Uber.DemoTools
             public Int32 FirstSnapshotTimeMs;
             public Int32 LastSnapshotTimeMs;
             public UInt32 FirstTeam;
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtParseDataGameState
@@ -1165,7 +1190,7 @@ namespace Uber.DemoTools
             public UInt32 PlayerCount;
             public UInt32 StringBufferSize;
             public Int32 Reserved1;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataObituary
@@ -1184,7 +1209,7 @@ namespace Uber.DemoTools
             public Int32 AttackerTeamIdx;
             public Int32 TargetTeamIdx;
             public Int32 Reserved1;
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataObituaryBuffers
@@ -1195,7 +1220,7 @@ namespace Uber.DemoTools
             public IntPtr Reserved1;
             public UInt32 ObituaryCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtPlayerStats
@@ -1204,7 +1229,7 @@ namespace Uber.DemoTools
             public UInt32 NameLength;
             public UInt32 CleanName; // string offset
             public UInt32 CleanNameLength;
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
 	    struct udtParseDataStats
@@ -1255,7 +1280,7 @@ namespace Uber.DemoTools
             public Int32 CountDownStartTimeMs;
             public Int32 IntermissionEndTimeMs;
             public Int32 Reserved1;
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataStatsBuffers
@@ -1278,7 +1303,7 @@ namespace Uber.DemoTools
             public UInt32 PlayerFieldCount;
             public UInt32 PlayerStatsCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataRawCommand
@@ -1287,7 +1312,7 @@ namespace Uber.DemoTools
             public UInt32 RawCommandLength;
             public Int32 ServerTimeMs;
             public Int32 GameStateIndex;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataRawCommandBuffers
@@ -1298,7 +1323,7 @@ namespace Uber.DemoTools
             public IntPtr Reserved1;
             public UInt32 CommandCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataRawConfigString
@@ -1307,7 +1332,7 @@ namespace Uber.DemoTools
             public UInt32 RawConfigStringLength;
             public UInt32 ConfigStringIndex;
             public Int32 GameStateIndex;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataRawConfigStringBuffers
@@ -1318,7 +1343,7 @@ namespace Uber.DemoTools
             public IntPtr Reserved1;
             public UInt32 ConfigStringCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [Flags]
         enum udtParseDataCaptureFlags : uint
@@ -1329,7 +1354,7 @@ namespace Uber.DemoTools
             PlayerIndexValid = 1 << 3,
 			PlayerNameValid = 1 << 4,
 			DistanceValid = 1 << 5
-	    };
+	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataCapture
@@ -1344,7 +1369,7 @@ namespace Uber.DemoTools
             public float Distance;
             public UInt32 Flags;
             public Int32 PlayerIndex;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtParseDataCaptureBuffers
@@ -1355,14 +1380,14 @@ namespace Uber.DemoTools
             public IntPtr Reserved1;
             public UInt32 CaptureCount;
             public UInt32 StringBufferSize;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtTimeShiftArg
         {
             public Int32 SnapshotCount;
             public Int32 Reserved1;
-        };
+        }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtJSONArg
@@ -2102,11 +2127,6 @@ namespace Uber.DemoTools
             var multiParseArg = CreateMultiParseArg(resources, filePaths);
 
             var playerNameUnmanaged = IntPtr.Zero;
-            if(!string.IsNullOrEmpty(options.PlayerName))
-            {
-                playerNameUnmanaged = StringToHGlobalUTF8(options.PlayerName);
-                resources.GlobalAllocationHandles.Add(playerNameUnmanaged);
-            }
             var pinnedPatterns = new PinnedObject(patterns);
             resources.PinnedObjects.Add(pinnedPatterns);
             var cutByPatternArg = new udtCutByPatternArg();
@@ -2115,11 +2135,29 @@ namespace Uber.DemoTools
             cutByPatternArg.Patterns = pinnedPatterns.Address;
             cutByPatternArg.PatternCount = (UInt32)patterns.Length;
             cutByPatternArg.PlayerIndex = options.PlayerIndex;
-            cutByPatternArg.PlayerName = playerNameUnmanaged;
             cutByPatternArg.Flags = 0;
+            cutByPatternArg.PlayerNameRules = IntPtr.Zero;
+            cutByPatternArg.PlayerNameRuleCount = 0;
             if(options.MergeCutSections)
             {
                 cutByPatternArg.Flags |= (UInt32)udtCutByPatternArgFlags.MergeCutSections;
+            }
+            if(!string.IsNullOrEmpty(options.PlayerName))
+            {
+                playerNameUnmanaged = StringToHGlobalUTF8(options.PlayerName);
+                resources.GlobalAllocationHandles.Add(playerNameUnmanaged);
+
+                var rule = new udtStringMatchingRule();
+                rule.ComparisonMode = (UInt32)udtStringComparisonMode.Equals;
+                rule.Flags = (UInt32)udtStringMatchingRuleFlags.IgnoreColorCodes;
+                rule.Value = playerNameUnmanaged;
+
+                var rules = new udtStringMatchingRule[] { rule };
+                var pinnedRules = new PinnedObject(rules);
+                resources.PinnedObjects.Add(pinnedRules);
+
+                cutByPatternArg.PlayerNameRules = pinnedRules.Address;
+                cutByPatternArg.PlayerNameRuleCount = 1;
             }
 
             var result = udtErrorCode.OperationFailed;

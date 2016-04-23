@@ -52,6 +52,7 @@ struct udtCommandCallbackArg
 	s32 CommandSequence;
 	s32 ConfigStringIndex; // Only valid if IsConfigString is true.
 	bool IsConfigString;
+	bool IsEmptyConfigString;
 };
 
 

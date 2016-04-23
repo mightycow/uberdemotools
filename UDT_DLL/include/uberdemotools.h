@@ -1000,6 +1000,7 @@ extern "C"
 	udtPatternInfo;
 
 #if defined(__cplusplus)
+
 	struct udtPlayerIndex
 	{
 		enum Id
@@ -1016,20 +1017,66 @@ extern "C"
 			MergeCutSections = UDT_BIT(0) /* Enable/disable merging cut sections from different patterns. */
 		};
 	};
+
+	struct udtStringComparisonMode
+	{
+		enum Id
+		{
+			Equals,
+			Contains,
+			StartsWith,
+			EndsWith,
+			Count
+		};
+	};
+
+	struct udtStringMatchingRuleFlags
+	{
+		enum Id
+		{
+			CaseSensitive = UDT_BIT(0),
+			IgnoreColorCodes = UDT_BIT(1)
+		};
+	};
+
 #endif
+
+	typedef struct udtStringMatchingRule_s
+	{
+		/* A null-terminated string containing the player's name. */
+		/* May not be NULL. */
+		const char* Value;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* Of type udtStringComparisonMode::Id. */
+		u32 ComparisonMode;
+
+		/* Check against the bits defined in udtStringMatchingRuleFlags::Id. */
+		u32 Flags;
+	}
+	udtStringMatchingRule;
 
 	typedef struct udtCutByPatternArg_s
 	{
+		/* If the player name rules are valid, they will be used to find the player to track. */
+		/* Otherwise, the PlayerIndex field will be used instead. */
+
 		/* Pointer to an array of filters. */
 		/* May not be NULL. */
 		const udtPatternInfo* Patterns;
 
-		/* A null-terminated lower-case string containing the player's name. */
+		/* Pointer to an array of player name matching rules. */
+		/* The player that will be tracked will be the first one to match any of the rules. */
 		/* May be NULL. */
-		const char* PlayerName;
+		const udtStringMatchingRule* PlayerNameRules;
 
 		/* Number of elements in the array pointed by Patterns. */
 		u32 PatternCount;
+
+		/* Length of the PlayerNameRules array. */
+		u32 PlayerNameRuleCount;
 
 		/* Negative offset from the first matching time, in seconds. */
 		u32 StartOffsetSec;
@@ -1038,14 +1085,13 @@ extern "C"
 		u32 EndOffsetSec;
 
 		/* The index of the player whose action we're tracking. */
-		/* If not in the [0;63] range, is of type udtPlayerIndex::Id. */
+		/* If in the [0;63]  range: the number will be used directly. */
+		/* If in the [-2;-1] range: is of type udtPlayerIndex::Id. */
+		/* Ignored if player name rules are properly defined. */
 		s32 PlayerIndex;
 
 		/* Of type udtCutByPatternArgFlags::Id. */
 		u32 Flags;
-
-		/* Ignore this. */
-		s32 Reserved1;
 	}
 	udtCutByPatternArg;
 

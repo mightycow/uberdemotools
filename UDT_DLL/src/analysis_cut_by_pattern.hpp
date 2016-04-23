@@ -70,8 +70,9 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
 
-	void TrackPlayerFromCommandMessage(udtBaseParser& parser);
-	bool GetTempPlayerName(udtString& playerName, udtBaseParser& parser, s32 csIdx); // Valid until TempAllocator calls Allocate again.
+	void FindPlayerInConfigStrings(udtBaseParser& parser);
+	void FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser);
+	bool GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx);
 
 	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
 	udtVMArray<udtPatternType::Id> _analyzerTypes;
