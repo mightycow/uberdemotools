@@ -26,6 +26,7 @@ void udtCutByFlagCaptureAnalyzer::FinishAnalysis()
 
 	const udtCutByPatternArg& info = PlugIn->GetInfo();
 	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
+	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 	const bool allowBaseToBase = extraInfo.AllowBaseToBase != 0;
 	const bool allowMissingToBase = extraInfo.AllowMissingToBase != 0;
 
@@ -33,6 +34,13 @@ void udtCutByFlagCaptureAnalyzer::FinishAnalysis()
 	for(u32 i = 0; i < count; ++i)
 	{
 		const udtParseDataCapture& capture = _analyzer.Captures[i];
+
+		const bool playerIndexFound = (capture.Flags & (u32)udtParseDataCaptureFlags::PlayerIndexValid) != 0;
+		if(!playerIndexFound ||
+		   capture.PlayerIndex != trackedPlayerIndex)
+		{
+			continue;
+		}
 
 		const bool baseToBase = (capture.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0;
 		const u32 durationMs = capture.CaptureTimeMs - capture.PickUpTimeMs;
