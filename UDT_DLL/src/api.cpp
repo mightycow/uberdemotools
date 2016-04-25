@@ -1417,19 +1417,36 @@ UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
 #undef CASE
 }
 
-UDT_API(s32) udtGetUdtFlagStatus(s32 idNumber, u32 protocol)
+UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol)
 {
 	if(!udtIsValidProtocol(protocol))
 	{
 		return -1;
 	}
 	
-	if(idNumber < 0 || idNumber >= (s32)idFlagStatus::Count)
+	if(idFlagStatusId < 0 || idFlagStatusId >= (s32)idFlagStatus::Count)
 	{
 		return -1;
 	}
 
-	return idNumber;
+	// udtFlagStatus is the same as idFlagStatus.
+	return idFlagStatusId;
+}
+
+UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+	
+	if(idTeamId < 0 || idTeamId >= 4)
+	{
+		return -1;
+	}
+
+	// udtTeam is the same as team_t.
+	return idTeamId;
 }
 
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)

@@ -2834,7 +2834,16 @@ extern "C"
 	/* Each character being one of "0", "1" or "2". Flag status config string example: "01". */
 	/* The first one is for the red flag, the second one for the blue flag. */
 	/* To get the index of that config string, call udtGetIdConfigStringIndex with udtConfigStringIndex::FlagStatus. */
-	UDT_API(s32) udtGetUdtFlagStatus(s32 idFlagStatus, u32 protocol);
+	UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol);
+
+	/* Gets the UDT team number from the Quake number. */
+	/* The result is of type udtTeam::Id. */
+	/* Returns -1 when not available. */
+	/* The team of a player will be found in his config string. */
+	/* The variable is named "t". You can get the value with udtParseConfigStringValueAsInteger. */
+	/* To get the player's config string index:
+	/* call udtGetIdConfigStringIndex with udtConfigStringIndex::FirstPlayer and add the player's client number to that. */
+	UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */
