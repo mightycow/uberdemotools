@@ -1493,7 +1493,7 @@ namespace idPowerUpIndex
 
 	s32 QuadDamage(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REDFLAG : (s32)PW_REDFLAG_91;
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_QUAD : (s32)PW_QUAD_91;
 	}
 
 	s32 BattleSuit(udtProtocol::Id protocol)
