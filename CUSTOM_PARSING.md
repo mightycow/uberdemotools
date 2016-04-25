@@ -81,6 +81,15 @@ In this specific example:
 
 Player config strings *can* start with a separator and *can* end with a separator. However, none of that is guaranteed, so don't ever rely on it to be the case or not. UDT supplies helper functions to deal with that: `udtParseConfigStringValueAsInteger` and `udtParseConfigStringValueAsString`.
 
+###### Config string indices
+
+The index of a config string encoding some specific type of data can change from a protocol version to another.  
+To know what index to use, you can use the helper function `udtGetIdConfigStringIndex`.
+
+However, the first 2 config string indices are reserved:
+* 0 is always for server info
+* 1 is always for system info
+
 ###### Config strings and the `cs` command
 
 As we've seen earlier, the gamestate message will define a whole bunch of config string values. However, as the variables encoded in config strings change during the game (scores, player names, etc), the server will need to send commands with updated config strings to the client. For that, the server will send a `cs` command, telling the client to update the config string at a given index to the new supplied value.
@@ -120,7 +129,7 @@ The custom parsing API has the following features:
 * No duplication: you don't get the same snapshot, command or entity event more than once
 * For each snapshot, you get the list of entities that were added/changed and the numbers of the entities that were removed
 * Access to the latest version of all config strings with `udtCuGetConfigString`
-* The only config string update command you get is `cs`: `bcs0`, `bcs1` and `bcs2` are dealth with transparently
+* The only config string update command you get is `cs`: `bcs0`, `bcs1` and `bcs2` are dealt with transparently
 * Command tokens access: it tokenizes commands and gives you access to the results
 * A helper function for string clean-ups, `udtCleanUpString`, that gets rid of Quake 3/Live and OSP color codes
 * Helper functions to parse config string variables:
@@ -136,6 +145,9 @@ The custom parsing API has the following features:
 * Helper functions to know what the universal UDT identifier is for a given id number and demo protocol version:
   * `udtGetUdtWeaponId` for weapons
   * `udtGetUdtMeanOfDeathId` for means of death
+  * `udtGetUdtFlagStatusId` for flag status
+  * `udtGetUdtTeamId` for teams
+  * `udtGetUdtGameTypeId` for game types
 
 Usage
 -----
