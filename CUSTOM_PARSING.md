@@ -148,6 +148,7 @@ The custom parsing API has the following features:
   * `udtGetUdtFlagStatusId` for flag status
   * `udtGetUdtTeamId` for teams
   * `udtGetUdtGameTypeId` for game types
+  * `udtGetUdtItemId` for items
 
 Usage
 -----

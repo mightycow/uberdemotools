@@ -2732,6 +2732,84 @@ extern "C"
 		};
 	};
 
+	struct udtItem
+	{
+		enum Id
+		{
+			AmmoBFG,
+			AmmoBelt,
+			AmmoBullets,
+			AmmoCells,
+			AmmoGrenades,
+			AmmoHMG,
+			AmmoLightning,
+			AmmoMines,
+			AmmoNails,
+			AmmoPack,
+			AmmoRockets,
+			AmmoShells,
+			AmmoSlugs,
+			HoldableInvulnerability,
+			HoldableKamikaze,
+			HoldableMedkit,
+			HoldablePortal,
+			HoldableTeleporter,
+			ItemAmmoRegen,
+			ItemArmorBody,
+			ItemArmorCombat,
+			ItemArmorJacket,
+			ItemArmorShard,
+			ItemBackpack,
+			ItemBlueCube,
+			ItemDoubler,
+			ItemEnviro,
+			ItemFlight,
+			ItemGuard,
+			ItemHaste,
+			ItemHealth,
+			ItemHealthLarge,
+			ItemHealthMega,
+			ItemHealthSmall,
+			ItemInvis,
+			ItemKeyGold,
+			ItemKeyMaster,
+			ItemKeySilver,
+			ItemQuad,
+			ItemRedCube,
+			ItemRegen,
+			ItemScout,
+			ItemSpawnArmor,
+			FlagBlue,
+			FlagNeutral,
+			FlagRed,
+			WeaponBFG,
+			WeaponChaingun,
+			WeaponGauntlet,
+			WeaponGrapplingHook,
+			WeaponGrenadeLauncher,
+			WeaponHMG,
+			WeaponLightningGun,
+			WeaponMachinegun,
+			WeaponNailgun,
+			WeaponPlasmaGun,
+			WeaponProxLauncher,
+			WeaponRailgun,
+			WeaponRocketLauncher,
+			WeaponShotgun,
+			Count,
+			FirstAmmo = AmmoBFG,
+			LastAmmo = AmmoSlugs,
+			HoldableFirst = HoldableInvulnerability,
+			HoldableLast = HoldableTeleporter,
+			ItemFirst = ItemAmmoRegen,
+			ItemLast = ItemSpawnArmor,
+			FlagFirst = FlagBlue,
+			FlagLast = FlagRed,
+			WeaponFirst = WeaponBFG,
+			WeaponLast = WeaponShotgun
+		};
+	};
+
 #endif
 
 #pragma pack(pop)
@@ -2851,6 +2929,12 @@ extern "C"
 	/* The game type is encoded as "g_gametype" in the server info config string. */
 	/* The server info config string is always at index 0. */
 	UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod);
+
+	/* Gets the UDT item number from the Quake number. */
+	/* The result is of type udtItem::Id. */
+	/* Returns -1 when not available. */
+	/* Item ids are generally found encoded in idEntityStateBase::modelindex. */
+	UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */

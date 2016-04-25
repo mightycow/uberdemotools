@@ -1473,6 +1473,11 @@ UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod)
 	return GetUDTGameTypeFromIdGameType(idGameTypeId, (udtProtocol::Id)protocol, game);
 }
 
+UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol)
+{
+	return GetUDTItemFromIdItem(idItemId, (udtProtocol::Id)protocol);
+}
+
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
 {
 	bufferTooSmall = false;

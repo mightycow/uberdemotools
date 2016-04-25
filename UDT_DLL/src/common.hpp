@@ -1001,6 +1001,7 @@ struct idItem68_CPMA
 		ItemFlight,
 		TeamCTFRedflag,
 		TeamCTFBlueflag,
+		// New with CPMA:
 		ItemArmorJacket,
 		ItemBackpack,
 		TeamCTFNeutralflag,
