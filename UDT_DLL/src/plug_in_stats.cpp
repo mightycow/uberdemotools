@@ -2700,13 +2700,11 @@ void udtParserPlugInStats::AddCurrentStats()
 
 		memcpy(teamFlags, GetTeamFlags(i), UDT_TEAM_STATS_MASK_BYTE_COUNT);
 
-		s32 fieldsWritten = 0;
 		for(s32 j = 0; j < (s32)udtTeamStatsField::Count; ++j)
 		{
 			if(IsBitSet(teamFlags, j))
 			{
 				*teamFields++ = GetTeamFields(i)[j];
-				++fieldsWritten;
 			}
 		}
 
