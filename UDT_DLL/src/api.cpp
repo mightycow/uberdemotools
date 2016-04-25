@@ -1449,6 +1449,30 @@ UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol)
 	return idTeamId;
 }
 
+UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	if(mod >= (u32)udtMod::Count)
+	{
+		return -1;
+	}
+
+	udtGame::Id game = udtGame::QL;
+	switch((udtMod::Id)mod)
+	{
+		case udtMod::None: game = udtGame::Q3; break;
+		case udtMod::CPMA: game = udtGame::CPMA; break;
+		case udtMod::OSP: game = udtGame::OSP; break;
+		default: return -1;
+	}
+
+	return GetUDTGameTypeFromIdGameType(idGameTypeId, (udtProtocol::Id)protocol, game);
+}
+
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
 {
 	bufferTooSmall = false;

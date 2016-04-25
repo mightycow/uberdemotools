@@ -2839,11 +2839,18 @@ extern "C"
 	/* Gets the UDT team number from the Quake number. */
 	/* The result is of type udtTeam::Id. */
 	/* Returns -1 when not available. */
-	/* The team of a player will be found in his config string. */
-	/* The variable is named "t". You can get the value with udtParseConfigStringValueAsInteger. */
+	/* The team of a player is encoded as "t" in his config string. */
 	/* To get the player's config string index:
 	/* call udtGetIdConfigStringIndex with udtConfigStringIndex::FirstPlayer and add the player's client number to that. */
 	UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol);
+
+	/* Gets the UDT game type number from the Quake number. */
+	/* mod is of type udtMod::Id. */
+	/* The result is of type udtGameType::Id. */
+	/* Returns -1 when not available. */
+	/* The game type is encoded as "g_gametype" in the server info config string. */
+	/* The server info config string is always at index 0. */
+	UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */
