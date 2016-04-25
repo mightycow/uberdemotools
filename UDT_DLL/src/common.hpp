@@ -1069,7 +1069,7 @@ struct idItem73
 	};
 };
 
-struct idItem90
+struct idItem90p
 {
 	enum Id
 	{
@@ -1126,10 +1126,14 @@ struct idItem90
 		WeaponNailgun,
 		WeaponProxLauncher,
 		WeaponChaingun,
-		ItemSpawnarmor,
+		// New with dm_90:
+		ItemSpawnArmor,
 		WeaponHMG,
 		AmmoHMG,
 		AmmoPack,
+		ItemKeySilver,
+		ItemKeyGold,
+		ItemKeyMaster,
 		Count
 	};
 };
