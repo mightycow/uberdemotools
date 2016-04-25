@@ -2721,6 +2721,17 @@ extern "C"
 
 #undef UDT_IDENTITY_WITH_COMMA
 
+	struct udtFlagStatus
+	{
+		enum Id
+		{
+			InBase,  /* In its spot in base. */
+			Carried, /* Being carried by an enemy player. */
+			Missing, /* Not being carried by anyone but not in its spot either. */
+			Count
+		};
+	};
+
 #endif
 
 #pragma pack(pop)
@@ -2815,6 +2826,15 @@ extern "C"
 	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
 	/* Returns 0 when not available. */
 	UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
+
+	/* Gets the UDT flag status number from the Quake number. */
+	/* The result is of type udtFlagStatus::Id. */
+	/* Returns -1 when not available. */
+	/* The flag status for both flags is encoded with 2 characters in a config string. */
+	/* Each character being one of "0", "1" or "2". Flag status config string example: "01". */
+	/* The first one is for the red flag, the second one for the blue flag. */
+	/* To get the index of that config string, call udtGetIdConfigStringIndex with udtConfigStringIndex::FlagStatus. */
+	UDT_API(s32) udtGetUdtFlagStatus(s32 idFlagStatus, u32 protocol);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */
