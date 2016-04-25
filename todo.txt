@@ -1,6 +1,4 @@
 To do:
-* DLL: Use FatalError on all the real fatal errors (done for virtual memory allocation)
-* Stats analyzer: support for all known scores/stats commands
 - A "Search" tab for finding demos matching certain criteria? (players, maps, modes, protocol, etc)
 - Player position smoothing for "laggy" demos
 - DLL: Better mid-air detection heuristics?
