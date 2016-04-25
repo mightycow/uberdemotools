@@ -12,11 +12,7 @@ udtAllocatorTracker::udtAllocatorTracker()
 
 udtAllocatorTracker::~udtAllocatorTracker()
 {
-	void* const allocators = _allocatorList.GetData();
-	if(allocators != NULL)
-	{
-		free(allocators);
-	}
+	free(_allocatorList.GetData());
 }
 
 void udtAllocatorTracker::RegisterAllocator(udtIntrusiveListNode& node)
