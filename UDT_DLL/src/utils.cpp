@@ -366,7 +366,7 @@ bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, c
 	}
 
 	int result = 0;
-	if(sscanf(valueString, "%d", &varValue) != 1)
+	if(sscanf(valueString, "%d", &result) != 1)
 	{
 		return false;
 	}
