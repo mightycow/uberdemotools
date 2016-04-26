@@ -31,6 +31,27 @@
 static const char* VersionString = "1.1.0b";
 
 
+static_assert(sizeof(s8) == 1, "sizeof(s8) must be 1");
+static_assert(sizeof(u8) == 1, "sizeof(u8) must be 1");
+static_assert(sizeof(s16) == 2, "sizeof(s16) must be 2");
+static_assert(sizeof(u16) == 2, "sizeof(u16) must be 2");
+static_assert(sizeof(s32) == 4, "sizeof(s32) must be 4");
+static_assert(sizeof(u32) == 4, "sizeof(u32) must be 4");
+static_assert(sizeof(s64) == 8, "sizeof(s64) must be 8");
+static_assert(sizeof(u64) == 8, "sizeof(u64) must be 8");
+static_assert(sizeof(f32) == 4, "sizeof(f32) must be 4");
+static_assert(sizeof(f64) == 8, "sizeof(f64) must be 8");
+#if defined(UDT_X64)
+static_assert(sizeof(sptr) == 8, "sizeof(sptr) must be 8");
+static_assert(sizeof(uptr) == 8, "sizeof(uptr) must be 8");
+static_assert(sizeof(void*) == 8, "sizeof(void*) must be 8");
+#else
+static_assert(sizeof(sptr) == 4, "sizeof(sptr) must be 4");
+static_assert(sizeof(uptr) == 4, "sizeof(uptr) must be 4");
+static_assert(sizeof(void*) == 4, "sizeof(void*) must be 4");
+#endif
+
+
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
 static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
 {
