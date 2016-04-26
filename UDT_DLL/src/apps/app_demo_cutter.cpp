@@ -182,13 +182,13 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 			}
 			else if(udtString::Equals(tokenizer.GetArg(0), "CaseSensitive"))
 			{
-				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.CaseSensitive = true;
-				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.CaseSensitive = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.CaseSensitive = 1;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.CaseSensitive = 0;
 			}
 			else if(udtString::Equals(tokenizer.GetArg(0), "IgnoreColorCodes"))
 			{
-				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.IgnoreColorCodes = true;
-				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.IgnoreColorCodes = false;
+				if(udtString::Equals(tokenizer.GetArg(1), "1")) rule.IgnoreColorCodes = 1;
+				else if(udtString::Equals(tokenizer.GetArg(1), "0")) rule.IgnoreColorCodes = 0;
 			}
 		}
 		else

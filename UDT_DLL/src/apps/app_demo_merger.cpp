@@ -23,7 +23,7 @@ void PrintHelp()
 	printf("specified in the argument list.\n");
 }
 
-static int MergeDemos(char** filePaths, int fileCount)
+static bool MergeDemos(char** filePaths, int fileCount)
 {
 	s32 cancel = 0;
 
