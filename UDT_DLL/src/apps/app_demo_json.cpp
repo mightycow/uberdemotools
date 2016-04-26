@@ -62,9 +62,7 @@ static void CallbackConsoleMessageNoStdOut(s32 logLevel, const char* message)
 		return;
 	}
 
-	fprintf(stderr, logLevel == 2 ? "Error: " : "Fatal: ");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "%s%s\n", logLevel == 2 ? "Error: " : "Fatal: ", message);
 }
 
 static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)

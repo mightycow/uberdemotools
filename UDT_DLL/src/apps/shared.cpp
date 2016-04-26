@@ -30,9 +30,7 @@ extern void PrintHelp();
 
 static void CrashHandler(const char* message)
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "\n%s\n", message);
 
 #if !defined(UDT_WINDOWS)
 	PrintStackTrace(stderr, 3, ExecutableFileName);
@@ -66,10 +64,7 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 		return;
 	}
 
-	FILE* const file = useStdOut ? stdout : stderr;
-	fprintf(file, LogLevels[logLevel]);
-	fprintf(file, message);
-	fprintf(file, "\n");
+	fprintf(useStdOut ? stdout : stderr, "%s%s\n", LogLevels[logLevel], message);
 }
 
 
