@@ -2918,7 +2918,7 @@ extern "C"
 	/* The result is of type udtTeam::Id. */
 	/* Returns -1 when not available. */
 	/* The team of a player is encoded as "t" in his config string. */
-	/* To get the player's config string index:
+	/* To get the player's config string index: */
 	/* call udtGetIdConfigStringIndex with udtConfigStringIndex::FirstPlayer and add the player's client number to that. */
 	UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol);
 
