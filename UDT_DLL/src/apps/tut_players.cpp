@@ -190,7 +190,7 @@ struct FileReader
 
 	void Close()
 	{
-		if(_file == NULL)
+		if(_file != NULL)
 		{
 			fclose(_file);
 			_file = NULL;
@@ -222,10 +222,7 @@ struct PlayerPrinter
 			udtCuDestroyContext(_cuContext);
 		}
 
-		if(_inMsgData != NULL)
-		{
-			free(_inMsgData);
-		}
+		free(_inMsgData);
 	}
 
 	bool Init()
@@ -255,7 +252,7 @@ struct PlayerPrinter
 	{
 		for(u32 i = 0; i < ID_MAX_CLIENTS; ++i)
 		{
-			_players[i].Name = "";
+			_players[i].Name.clear();
 			_players[i].Valid = false;
 		}
 

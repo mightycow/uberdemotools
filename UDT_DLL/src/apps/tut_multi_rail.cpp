@@ -212,7 +212,7 @@ struct FileReader
 
 	void Close()
 	{
-		if(_file == NULL)
+		if(_file != NULL)
 		{
 			fclose(_file);
 			_file = NULL;
@@ -251,10 +251,7 @@ struct MultiFragRailCutter
 			udtDestroyContext(_context);
 		}
 
-		if(_inMsgData != NULL)
-		{
-			free(_inMsgData);
-		}
+		free(_inMsgData);
 	}
 
 	bool Init()
