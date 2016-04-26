@@ -8,8 +8,10 @@
 
 static void DefaultCrashCallback(const char* message)
 {
+	// @NOTE: The "%s" trick is used to avoid bugs in case 
+	// message contains one or more format specifiers.
 	fprintf(stderr, "\n");
-	fprintf(stderr, message);
+	fprintf(stderr, "%s", message);
 	exit(666);
 }
 
