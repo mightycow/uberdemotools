@@ -306,8 +306,6 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 	patternArg.EndOffsetSec = (u32)config.EndOffsetSec;
 	patternArg.PatternCount = 1;
 	patternArg.Patterns = &patternInfo;
-	patternArg.PlayerIndex = -999;
-	patternArg.PlayerName = NULL;
 
 	const s32 result = udtCutDemoFilesByPattern(&parseArg, &threadInfo, &patternArg);
 
@@ -404,8 +402,6 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 	patternArg.EndOffsetSec = (u32)config.EndOffsetSec;
 	patternArg.PatternCount = 1;
 	patternArg.Patterns = &patternInfo;
-	patternArg.PlayerIndex = -999;
-	patternArg.PlayerName = NULL;
 
 	const s32 result = udtCutDemoFilesByPattern(&parseArg, &threadInfo, &patternArg);
 

@@ -103,10 +103,6 @@ static bool IsValid(const udtCutByPatternArg& arg)
 			}
 		}
 	}
-	else if(arg.PlayerIndex < -2 || arg.PlayerIndex >= 64)
-	{
-		return false;
-	}
 
 	return true;
 }
