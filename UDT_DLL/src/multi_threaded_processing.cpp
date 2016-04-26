@@ -316,8 +316,9 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		udtParserContext* const context = contexts + i;
-		const u32 demoCount = threadInfo.Threads[i].FileCount;
-		const u32 firstDemoIdx = threadInfo.Threads[i].FirstFileIndex;
+		udtParsingThreadData& threadData = threadInfo.Threads[i];
+		const u32 demoCount = threadData.FileCount;
+		const u32 firstDemoIdx = threadData.FirstFileIndex;
 		context->InputIndices.Resize(demoCount);
 		for(u32 j = 0; j < demoCount; ++j)
 		{
@@ -326,9 +327,9 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 
 		udtThread& thread = threads[i];
 		new (&thread) udtThread;
-		threadInfo.Threads[i].Context = contexts + i;
-		threadInfo.Threads[i].Shared = &sharedData;
-		if(!thread.CreateAndStart(&ThreadFunction, &threadInfo.Threads[i]))
+		threadData.Context = contexts + i;
+		threadData.Shared = &sharedData;
+		if(!thread.CreateAndStart(&ThreadFunction, &threadData))
 		{
 			success = false;
 			goto thread_clean_up;
