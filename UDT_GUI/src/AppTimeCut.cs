@@ -592,7 +592,12 @@ namespace Uber.DemoTools
                 serverTimeMs += timeOut.EndTimeMs - timeOut.StartTimeMs;
             }
 
-            if(serverTimeMs < match.StartTimeMs || serverTimeMs > match.EndTimeMs)
+            // In some cases, a match time exactly at the first or last second
+            // would be considered out of range.
+            // We extend the allowed range by 1 second on each side
+            // to avoid the inconvenience of having to change the value in the GUI. 
+            if(serverTimeMs < match.StartTimeMs - 1000 || 
+                serverTimeMs > match.EndTimeMs + 1000)
             {
                 SetUnknownServerTime("match time out of range");
                 return;
