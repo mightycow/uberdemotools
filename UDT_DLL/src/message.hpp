@@ -35,7 +35,7 @@ public:
 	void  SetHuffman(bool huffman);
 	void  GoToNextByte();
 	bool  ValidState() const { return Buffer.valid; }
-	void  SetFileName(udtString fileName) { _fileName = fileName; }
+	void  SetFileName(const udtString& fileName) { _fileName = fileName; }
 
 	void  WriteBits(s32 value, s32 bits) { return (this->*_writeBits)(value, bits); }
 	void  WriteByte(s32 c) { WriteBits(c, 8); }

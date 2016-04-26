@@ -270,7 +270,7 @@ static void CreateTimeShiftDemoName(udtString& outputFilePath, udtVMLinearAlloca
 	const udtString shifted = udtString::NewConstRef("_shifted_");
 	const udtString snapCount = udtString::NewConstRef(snapshotCount);
 	const udtString snaps = udtString::NewConstRef(timeShiftArg->SnapshotCount > 1 ? "_snaps" : "_snap");
-	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(protocol));
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol((u32)protocol));
 	const udtString* outputFilePathParts[] =
 	{
 		&outputFilePathStart,
@@ -606,7 +606,7 @@ static void CreateMergedDemoName(udtString& outputFilePath, udtVMLinearAllocator
 	}
 
 	const udtString merged = udtString::NewConstRef("_merged");
-	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(protocol));
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol((u32)protocol));
 	const udtString* outputFilePathParts[] =
 	{
 		&outputFilePathStart,

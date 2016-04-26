@@ -21,8 +21,8 @@ void udtdConverter::ResetForNextDemo(udtStream& input, udtStream* output, udtPro
 	_input = &input;
 	_output = output;
 	_protocol = protocol;
-	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState(protocol);
-	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState(protocol);
+	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState((u32)protocol);
+	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState((u32)protocol);
 
 	_outMsg.InitContext(&_context);
 	_outMsg.InitProtocol(protocol);
@@ -428,7 +428,7 @@ void udtdConverter::MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipT
 	MergeEntities(dest, destOld, source, sourceOld);
 }
 
-static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase cur)
+static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase& cur)
 {
 	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(idVec3)) != 0;
 }
