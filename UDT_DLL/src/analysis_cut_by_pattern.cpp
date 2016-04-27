@@ -12,9 +12,9 @@
 #include <stdlib.h>
 
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) sizeof(AnalyzerType) +
-static const size_t SizeOfAllAnalyzers = UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM) 0;
-#undef UDT_CUT_PATTERN_ITEM
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) sizeof(AnalyzerType) +
+static const size_t SizeOfAllAnalyzers = UDT_PATTERN_LIST(UDT_PATTERN_ITEM) 0;
+#undef UDT_PATTERN_ITEM
 
 
 struct CutSection : public udtCutSection
@@ -95,12 +95,12 @@ static bool MatchesRules(udtVMLinearAllocator& allocator, const udtString& name,
 }
 
 
-udtCutByPatternAnalyzerBase::udtCutByPatternAnalyzerBase() 
+udtPatternSearchAnalyzerBase::udtPatternSearchAnalyzerBase() 
 	: CutSections((uptr)(1 << 16), "CutByPatternAnalyzerBase::CutSectionsArray")
 {
 }
 
-udtCutByPatternPlugIn::udtCutByPatternPlugIn()
+udtPatternSearchPlugIn::udtPatternSearchPlugIn()
 	: _info(NULL)
 	, _trackedPlayerIndex(S32_MIN)
 {
@@ -111,12 +111,12 @@ udtCutByPatternPlugIn::udtCutByPatternPlugIn()
 	_analyzerAllocatorScope.SetAllocator(_analyzerAllocator);
 }
 
-void udtCutByPatternPlugIn::InitAllocators(u32 demoCount)
+void udtPatternSearchPlugIn::InitAllocators(u32 demoCount)
 {
 	CutSections.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByPatternPlugIn::CutSectionsArray");
 }
 
-void udtCutByPatternPlugIn::InitAnalyzerAllocators(u32 demoCount)
+void udtPatternSearchPlugIn::InitAnalyzerAllocators(u32 demoCount)
 {
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
@@ -124,18 +124,18 @@ void udtCutByPatternPlugIn::InitAnalyzerAllocators(u32 demoCount)
 	}
 }
 
-udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo)
+udtPatternSearchAnalyzerBase* udtPatternSearchPlugIn::CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo)
 {
 	if(extraInfo == NULL)
 	{
 		return NULL;
 	}
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = (udtCutByPatternAnalyzerBase*)_analyzerAllocator.GetAddressAt(_analyzerAllocatorScope.NewObject<AnalyzerType>()); break;
-	udtCutByPatternAnalyzerBase* analyzer = NULL;
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: analyzer = (udtPatternSearchAnalyzerBase*)_analyzerAllocator.GetAddressAt(_analyzerAllocatorScope.NewObject<AnalyzerType>()); break;
+	udtPatternSearchAnalyzerBase* analyzer = NULL;
 	switch(patternType)
 	{
-		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 		default: return NULL;
 	}
 #undef UDT_CUT_PATTERN_ITEM
@@ -151,7 +151,7 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::CreateAndAddAnalyzer(udtPatt
 	return analyzer;
 }
 
-udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::GetAnalyzer(udtPatternType::Id patternType)
+udtPatternSearchAnalyzerBase* udtPatternSearchPlugIn::GetAnalyzer(udtPatternType::Id patternType)
 {
 	for(u32 i = 0, count = _analyzers.GetSize(); i < count; ++i)
 	{
@@ -164,9 +164,9 @@ udtCutByPatternAnalyzerBase* udtCutByPatternPlugIn::GetAnalyzer(udtPatternType::
 	return NULL;
 }
 
-void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
+void udtPatternSearchPlugIn::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
-	const udtCutByPatternArg& pi = GetInfo();
+	const udtPatternSearchArg& pi = GetInfo();
 
 	_trackedPlayerIndex = S32_MIN;
 	if(pi.PlayerNameRules != NULL)
@@ -188,9 +188,9 @@ void udtCutByPatternPlugIn::ProcessGamestateMessage(const udtGamestateCallbackAr
 	}
 }
 
-void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)
+void udtPatternSearchPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser)
 {
-	const udtCutByPatternArg pi = GetInfo();
+	const udtPatternSearchArg pi = GetInfo();
 
 	if(pi.PlayerIndex == (s32)udtPlayerIndex::FirstPersonPlayer)
 	{
@@ -212,9 +212,9 @@ void udtCutByPatternPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg&
 	}
 }
 
-void udtCutByPatternPlugIn::FindPlayerInConfigStrings(udtBaseParser& parser)
+void udtPatternSearchPlugIn::FindPlayerInConfigStrings(udtBaseParser& parser)
 {
-	const udtCutByPatternArg pi = GetInfo();
+	const udtPatternSearchArg pi = GetInfo();
 
 	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
 	for(s32 i = 0; i < ID_MAX_CLIENTS; ++i)
@@ -231,9 +231,9 @@ void udtCutByPatternPlugIn::FindPlayerInConfigStrings(udtBaseParser& parser)
 	}
 }
 
-void udtCutByPatternPlugIn::FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser)
+void udtPatternSearchPlugIn::FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser)
 {
-	const udtCutByPatternArg pi = GetInfo();
+	const udtPatternSearchArg pi = GetInfo();
 	if(pi.PlayerNameRules == NULL || 
 	   !info.IsConfigString)
 	{
@@ -272,7 +272,7 @@ void udtCutByPatternPlugIn::FindPlayerInServerCommand(const udtCommandCallbackAr
 	}
 }
 
-void udtCutByPatternPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
+void udtPatternSearchPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)
 {
 	FindPlayerInServerCommand(info, parser);
 
@@ -282,7 +282,7 @@ void udtCutByPatternPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& i
 	}
 }
 
-void udtCutByPatternPlugIn::StartDemoAnalysis()
+void udtPatternSearchPlugIn::StartDemoAnalysis()
 {
 	CutSections.Clear();
 
@@ -293,7 +293,7 @@ void udtCutByPatternPlugIn::StartDemoAnalysis()
 	}
 }
 
-void udtCutByPatternPlugIn::FinishDemoAnalysis()
+void udtPatternSearchPlugIn::FinishDemoAnalysis()
 {
 	if(_analyzers.GetSize() == 0)
 	{
@@ -318,15 +318,12 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	udtVMArray<CutSection> tempCutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
-		udtCutByPatternAnalyzerBase* const analyzer = _analyzers[i];
+		udtPatternSearchAnalyzerBase* const analyzer = _analyzers[i];
 		for(u32 j = 0, cutCount = analyzer->CutSections.GetSize(); j < cutCount; ++j)
 		{
 			const udtCutSection cut = _analyzers[i]->CutSections[j];
 			CutSection newCut;
-			newCut.GameStateIndex = cut.GameStateIndex;
-			newCut.StartTimeMs = cut.StartTimeMs;
-			newCut.EndTimeMs = cut.EndTimeMs;
-			newCut.VeryShortDesc = cut.VeryShortDesc;
+			newCut.udtCutSection::operator=(cut);
 			tempCutSections.Add(newCut);
 		}
 	}
@@ -351,7 +348,7 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	// Create a new list with the sorted data using the final data format
 	// and merge the sections if asked for it.
 	//
-	if((GetInfo().Flags & (u32)udtCutByPatternArgFlags::MergeCutSections) != 0)
+	if((GetInfo().Flags & (u32)udtPatternSearchArgFlags::MergeCutSections) != 0)
 	{
 		udtVMArray<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
 		AppendCutSections(cutSections, tempCutSections);
@@ -364,12 +361,12 @@ void udtCutByPatternPlugIn::FinishDemoAnalysis()
 	}
 }
 
-s32 udtCutByPatternPlugIn::GetTrackedPlayerIndex() const
+s32 udtPatternSearchPlugIn::GetTrackedPlayerIndex() const
 {
 	return _trackedPlayerIndex;
 }
 
-bool udtCutByPatternPlugIn::GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx)
+bool udtPatternSearchPlugIn::GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx)
 {
 	udtString clan;
 	bool hasClan;

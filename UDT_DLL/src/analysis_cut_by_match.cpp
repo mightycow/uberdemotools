@@ -23,27 +23,27 @@ static const char* ShortDescriptions[16] =
 };
 
 
-udtCutByMatchAnalyzer::udtCutByMatchAnalyzer()
+udtMatchPatternAnalyzer::udtMatchPatternAnalyzer()
 {
 }
 
-udtCutByMatchAnalyzer::~udtCutByMatchAnalyzer()
+udtMatchPatternAnalyzer::~udtMatchPatternAnalyzer()
 {
 }
 
-void udtCutByMatchAnalyzer::InitAllocators(u32 /*demoCount*/)
+void udtMatchPatternAnalyzer::InitAllocators(u32 /*demoCount*/)
 {
 	_tempAllocator.Init(1 << 16, "CutByMatchAnalyzer::TempAllocator");
 	_statsAnalyzer.Init(1, _tempAllocator);
 }
 
-void udtCutByMatchAnalyzer::StartAnalysis()
+void udtMatchPatternAnalyzer::StartAnalysis()
 {
 	_statsAnalyzer.ClearMatchList();
 	_statsAnalyzer.StartProcessingDemo();
 }
 
-void udtCutByMatchAnalyzer::FinishAnalysis()
+void udtMatchPatternAnalyzer::FinishAnalysis()
 {
 	_statsAnalyzer.FinishProcessingDemo();
 
@@ -55,7 +55,7 @@ void udtCutByMatchAnalyzer::FinishAnalysis()
 		return;
 	}
 
-	const udtCutByMatchArg& info = GetExtraInfo<udtCutByMatchArg>();
+	const udtMatchPatternArg& info = GetExtraInfo<udtMatchPatternArg>();
 
 	const u32 matchCount = udt_min(statsBuffers.MatchCount, (u32)UDT_COUNT_OF(ShortDescriptions));
 	for(u32 i = 0; i < matchCount; ++i)
@@ -70,21 +70,22 @@ void udtCutByMatchAnalyzer::FinishAnalysis()
 		cut.StartTimeMs = (countDownStartTime < startTime) ? countDownStartTime : (startTime - (s32)info.MatchStartOffsetMs);
 		cut.EndTimeMs = (intermissionEndTime > endTime) ? intermissionEndTime : (endTime + (s32)info.MatchEndOffsetMs);
 		cut.VeryShortDesc = ShortDescriptions[i];
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::Matches);
 		CutSections.Add(cut);
 	}
 }
 
-void udtCutByMatchAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+void udtMatchPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 { 
 	_statsAnalyzer.ProcessGamestateMessage(arg, parser);
 }
 
-void udtCutByMatchAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtMatchPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	_statsAnalyzer.ProcessSnapshotMessage(arg, parser);
 }
 
-void udtCutByMatchAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+void udtMatchPatternAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	_statsAnalyzer.ProcessCommandMessage(arg, parser);
 }

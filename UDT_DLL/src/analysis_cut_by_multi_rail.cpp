@@ -2,31 +2,31 @@
 #include "utils.hpp"
 
 
-udtCutByMultiRailAnalyzer::udtCutByMultiRailAnalyzer() 
+udtMultiRailPatternAnalyzer::udtMultiRailPatternAnalyzer() 
 	: _gameStateIndex(-1)
 {
 }
 
-udtCutByMultiRailAnalyzer::~udtCutByMultiRailAnalyzer()
+udtMultiRailPatternAnalyzer::~udtMultiRailPatternAnalyzer()
 {
 }
 
-void udtCutByMultiRailAnalyzer::StartAnalysis()
+void udtMultiRailPatternAnalyzer::StartAnalysis()
 {
 	_gameStateIndex = -1;
 }
 
-void udtCutByMultiRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
+void udtMultiRailPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
 {
 	++_gameStateIndex;
 }
 
-void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	// @FIXME: It might happen that the obituary entity events don't all appear 
 	// for the first time during the same snapshot.
 
-	const udtCutByMultiRailArg& extraInfo = GetExtraInfo<udtCutByMultiRailArg>();
+	const udtMultiRailPatternArg& extraInfo = GetExtraInfo<udtMultiRailPatternArg>();
 	const u32 minKillCount = extraInfo.MinKillCount;
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
@@ -67,13 +67,14 @@ void udtCutByMultiRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 
 	if(railKillCount >= minKillCount)
 	{
-		const udtCutByPatternArg& info = PlugIn->GetInfo();
+		const udtPatternSearchArg& info = PlugIn->GetInfo();
 
 		udtCutSection cut;
 		cut.VeryShortDesc = "rail";
 		cut.GameStateIndex = _gameStateIndex;
 		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
 		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::MultiFragRails);
 		CutSections.Add(cut);
 	}
 }

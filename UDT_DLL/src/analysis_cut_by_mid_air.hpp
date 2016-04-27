@@ -4,18 +4,18 @@
 #include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByMidAirAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtMidAirPatternAnalyzer : public udtPatternSearchAnalyzerBase
 {
 public:
-	udtCutByMidAirAnalyzer();
-	~udtCutByMidAirAnalyzer();
+	udtMidAirPatternAnalyzer();
+	~udtMidAirPatternAnalyzer();
 
 	void StartAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByMidAirAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtMidAirPatternAnalyzer);
 
 	struct ProjectileInfo;
 	void            AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs);

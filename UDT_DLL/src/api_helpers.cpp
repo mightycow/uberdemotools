@@ -12,6 +12,7 @@
 #include "path.hpp"
 #include "memory_stream.hpp"
 #include "json_export.hpp"
+#include "pattern_search_context.hpp"
 
 
 bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo)
@@ -63,39 +64,53 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		
 		return true;
 	}
-	
-	// Remaining case: udtParsingJobType::CutByPattern
 
-	if(jobSpecificInfo == NULL)
+	if(jobType == udtParsingJobType::CutByPattern ||
+	   jobType == udtParsingJobType::FindPatterns)
 	{
-		return false;
+		if(jobSpecificInfo == NULL)
+		{
+			return false;
+		}
+
+		const u32 plugInId = udtPrivateParserPlugIn::FindPatterns;
+		if(!context.Init(demoCount, &plugInId, 1))
+		{
+			return false;
+		}
+
+		udtBaseParserPlugIn* plugInBase = NULL;
+		context.GetPlugInById(plugInBase, plugInId);
+		if(plugInBase == NULL)
+		{
+			return false;
+		}
+
+		const udtPatternSearchArg* patternInfo = NULL;
+		if(jobType == udtParsingJobType::FindPatterns)
+		{
+			const udtPatternSearchContext* const searchContext = (const udtPatternSearchContext*)jobSpecificInfo;
+			patternInfo = searchContext->PatternInfo;
+		}
+		else
+		{
+			patternInfo = (const udtPatternSearchArg*)jobSpecificInfo;
+		}
+
+		udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
+		plugIn.SetPatternInfo(*patternInfo);
+		for(u32 i = 0; i < patternInfo->PatternCount; ++i)
+		{
+			const udtPatternInfo pi = patternInfo->Patterns[i];
+			plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
+		}
+
+		plugIn.InitAnalyzerAllocators(demoCount);
+
+		return true;
 	}
 
-	const u32 plugInId = udtPrivateParserPlugIn::CutByPattern;
-	if(!context.Init(demoCount, &plugInId, 1))
-	{
-		return false;
-	}
-
-	udtBaseParserPlugIn* plugInBase = NULL;
-	context.GetPlugInById(plugInBase, plugInId);
-	if(plugInBase == NULL)
-	{
-		return false;
-	}
-
-	const udtCutByPatternArg* const patternInfo = (const udtCutByPatternArg*)jobSpecificInfo;
-	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
-	plugIn.SetPatternInfo(*patternInfo);
-	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
-	{
-		const udtPatternInfo pi = patternInfo->Patterns[i];
-		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
-	}
-
-	plugIn.InitAnalyzerAllocators(demoCount);
-
-	return true;
+	return false;
 }
 
 static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
@@ -147,8 +162,8 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	}
 
 	udtBaseParserPlugIn* plugInBase = NULL;
-	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::CutByPattern);
-	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
+	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::FindPatterns);
+	udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
 
 	if(plugIn.CutSections.IsEmpty())
 	{
@@ -198,6 +213,44 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
 
 	return result;
+}
+
+static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, udtPatternSearchContext* searchContext)
+{
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	if(!ParseDemoFile(protocol, context, info, demoFilePath, false))
+	{
+		return false;
+	}
+
+	udtBaseParserPlugIn* plugInBase = NULL;
+	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::FindPatterns);
+	udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
+
+	if(plugIn.CutSections.IsEmpty())
+	{
+		return true;
+	}
+
+	udtVMArray<udtPatternMatch>& cuts = searchContext->Matches;
+	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
+	{
+		const udtCutSection& cut = plugIn.CutSections[i];
+		udtPatternMatch match;
+		match.DemoInputIndex = context->InputIndices[demoIndex];
+		match.GameStateIndex = cut.GameStateIndex;
+		match.StartTimeMs = cut.StartTimeMs;
+		match.EndTimeMs = cut.EndTimeMs;
+		match.Patterns = 0; // @TODO:
+		cuts.Add(match);
+	}
+
+	return true;
 }
 
 static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
@@ -452,6 +505,9 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 
 		case udtParsingJobType::ExportToJSON:
 			return ExportToJSON(context, demoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
+
+		case udtParsingJobType::FindPatterns:
+			return FindPatterns(context, demoIndex, info, demoFilePath, (udtPatternSearchContext*)jobSpecificInfo);
 
 		default:
 			return false;

@@ -5,11 +5,11 @@
 #include "analysis_captures.hpp"
 
 
-struct udtCutByFlagCaptureAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtFlagCapturePatternAnalyzer : public udtPatternSearchAnalyzerBase
 {
 public:
-	udtCutByFlagCaptureAnalyzer();
-	~udtCutByFlagCaptureAnalyzer();
+	udtFlagCapturePatternAnalyzer();
+	~udtFlagCapturePatternAnalyzer();
 
 	void InitAllocators(u32 demoCount) override;
 	void StartAnalysis() override;
@@ -19,7 +19,7 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByFlagCaptureAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtFlagCapturePatternAnalyzer);
 
 	udtCapturesAnalyzer _analyzer;
 };

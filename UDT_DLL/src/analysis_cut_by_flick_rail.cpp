@@ -5,30 +5,30 @@
 #include <math.h>
 
 
-udtCutByFlickRailAnalyzer::udtCutByFlickRailAnalyzer()
+udtFlickRailPatternAnalyzer::udtFlickRailPatternAnalyzer()
 	: _gameStateIndex(-1)
 {
 }
 
-udtCutByFlickRailAnalyzer::~udtCutByFlickRailAnalyzer()
+udtFlickRailPatternAnalyzer::~udtFlickRailPatternAnalyzer()
 {
 }
 
-void udtCutByFlickRailAnalyzer::StartAnalysis()
+void udtFlickRailPatternAnalyzer::StartAnalysis()
 {
 	_gameStateIndex = -1;
 }
 
-void udtCutByFlickRailAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
+void udtFlickRailPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/)
 {
 	++_gameStateIndex;
 	memset(_players, 0, sizeof(_players));
 }
 
-void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const udtCutByFlickRailArg& extraInfo = GetExtraInfo<udtCutByFlickRailArg>();
-	const udtCutByPatternArg& info = PlugIn->GetInfo();
+	const udtFlickRailPatternArg& extraInfo = GetExtraInfo<udtFlickRailPatternArg>();
+	const udtPatternSearchArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	bool trackedPlayerFound = false;
@@ -180,6 +180,7 @@ void udtCutByFlickRailAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 		cut.GameStateIndex = _gameStateIndex;
 		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
 		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::FlickRailFrags);
 		CutSections.Add(cut);
 	}
 }

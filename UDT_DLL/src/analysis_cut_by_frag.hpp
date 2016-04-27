@@ -5,11 +5,11 @@
 #include "analysis_cut_by_pattern.hpp"
 
 
-struct udtCutByFragAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtFragRunPatternAnalyzer : public udtPatternSearchAnalyzerBase
 {
 public:
-	udtCutByFragAnalyzer();
-	~udtCutByFragAnalyzer();
+	udtFragRunPatternAnalyzer();
+	~udtFragRunPatternAnalyzer();
 
 	void InitAllocators(u32 demoCount) override;
 	void StartAnalysis() override;
@@ -19,7 +19,7 @@ public:
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByFragAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtFragRunPatternAnalyzer);
 
 	void AddCurrentSectionIfValid();
 	void AddMatch(const udtParseDataObituary& data);

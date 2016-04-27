@@ -12,7 +12,7 @@
 
 #define UDT_PRIVATE_PLUG_IN_LIST(N) \
 	UDT_PLUG_IN_LIST(N) \
-	N(CutByPattern, "", udtCutByPatternPlugIn,     udtCutSection) \
+	N(FindPatterns, "", udtPatternSearchPlugIn,    udtCutSection) \
 	N(ConvertToUDT, "", udtParserPlugInQuakeToUDT, udtNothing)
 
 #define UDT_PRIVATE_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,

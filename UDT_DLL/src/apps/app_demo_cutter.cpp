@@ -82,7 +82,7 @@ struct CutByChatConfig
 		EndOffsetSec = 10;
 	}
 
-	udtVMArray<udtCutByChatRule> ChatRules;
+	udtVMArray<udtChatPatternRule> ChatRules;
 	udtVMLinearAllocator StringAllocator;
 	const char* CustomOutputFolder;
 	int MaxThreadCount;
@@ -91,7 +91,7 @@ struct CutByChatConfig
 };
 
 
-static void InitRule(udtCutByChatRule& rule)
+static void InitRule(udtChatPatternRule& rule)
 {
 	memset(&rule, 0, sizeof(rule));
 	rule.CaseSensitive = 1;
@@ -115,7 +115,7 @@ static bool CreateConfig(const char* filePath)
 static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinearAllocator& fileAllocator, const char* filePath)
 {
 	bool definingRule = false;
-	udtCutByChatRule rule;
+	udtChatPatternRule rule;
 	InitRule(rule);
 	s32 tempInt;
 
@@ -292,7 +292,7 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 	threadInfo.FileCount = fileCount;
 	threadInfo.MaxThreadCount = (u32)config.MaxThreadCount;
 
-	udtCutByChatArg chatInfo;
+	udtChatPatternArg chatInfo;
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
@@ -300,7 +300,7 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 	patternInfo.Type = (u32)udtPatternType::Chat;
 	patternInfo.TypeSpecificInfo = &chatInfo;
 
-	udtCutByPatternArg patternArg;
+	udtPatternSearchArg patternArg;
 	memset(&patternArg, 0, sizeof(patternArg));
 	patternArg.StartOffsetSec = (u32)config.StartOffsetSec;
 	patternArg.EndOffsetSec = (u32)config.EndOffsetSec;
@@ -388,7 +388,7 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 	threadInfo.FileCount = fileCount;
 	threadInfo.MaxThreadCount = config.MaxThreadCount;
 
-	udtCutByMatchArg matchInfo;
+	udtMatchPatternArg matchInfo;
 	matchInfo.MatchStartOffsetMs = (u32)config.StartOffsetSec * 1000;
 	matchInfo.MatchEndOffsetMs = (u32)config.EndOffsetSec * 1000;
 
@@ -396,7 +396,7 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 	patternInfo.Type = (u32)udtPatternType::Matches;
 	patternInfo.TypeSpecificInfo = &matchInfo;
 
-	udtCutByPatternArg patternArg;
+	udtPatternSearchArg patternArg;
 	memset(&patternArg, 0, sizeof(patternArg));
 	patternArg.StartOffsetSec = (u32)config.StartOffsetSec;
 	patternArg.EndOffsetSec = (u32)config.EndOffsetSec;

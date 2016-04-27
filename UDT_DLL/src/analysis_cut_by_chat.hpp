@@ -8,18 +8,18 @@
 #include "cut_section.hpp"
 
 
-struct udtCutByChatAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtChatPatternAnalyzer : public udtPatternSearchAnalyzerBase
 {
 public:
-	udtCutByChatAnalyzer();
-	~udtCutByChatAnalyzer();
+	udtChatPatternAnalyzer();
+	~udtChatPatternAnalyzer();
 
 	void StartAnalysis() override;
 	void FinishAnalysis() override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByChatAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtChatPatternAnalyzer);
 
 	udtVMArray<udtCutSection> _cutSections; // Local copy, write back to the final array as merged.
 };

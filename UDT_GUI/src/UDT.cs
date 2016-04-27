@@ -934,8 +934,9 @@ namespace Uber.DemoTools
         public struct udtPatternInfo
 	    {
 		    public IntPtr TypeSpecificInfo; // const void*
+            public IntPtr Reserved1; // const void*
 		    public UInt32 Type;
-		    public Int32 Reserved1;
+            public Int32 Reserved2;
 	    }
 
         public enum udtPlayerIndex : int
@@ -976,7 +977,7 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByPatternArg
+        public struct udtPatternSearchArg
         {
             public IntPtr Patterns; // const udtPatternInfo*
             public IntPtr PlayerNameRules; // const udtStringMatchingRule*
@@ -998,9 +999,10 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-	    public struct udtCutByChatRule
+	    public struct udtChatPatternRule
 	    {
 		    public IntPtr Pattern; // const char*
+            public IntPtr Reserved1;
 		    public UInt32 ChatOperator;
 		    public UInt32 CaseSensitive;
 		    public UInt32 IgnoreColorCodes;
@@ -1008,15 +1010,16 @@ namespace Uber.DemoTools
 	    }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-	    public struct udtCutByChatArg
+	    public struct udtChatPatternArg
 	    {
 		    public IntPtr Rules; // const udtCutByChatRule*
+            public IntPtr Reserved1;
 		    public UInt32 RuleCount;
-            public Int32 Reserved1;
+            public Int32 Reserved2;
 	    }
 
         [Flags]
-        public enum udtCutByFragArgFlags : uint
+        public enum udtFragRunPatternArgFlags : uint
         {
             AllowSelfKills = 1 << 0,
             AllowTeamKills = 1 << 1,
@@ -1024,7 +1027,7 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByFragArg
+        public struct udtFragRunPatternArg
         {
             public UInt32 MinFragCount;
             public UInt32 TimeBetweenFragsSec;
@@ -1035,7 +1038,7 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByMidAirArg
+        public struct udtMidAirPatternArg
         {
             public UInt32 AllowedWeapons;
             public UInt32 MinDistance;
@@ -1044,14 +1047,14 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByMultiRailArg
+        public struct udtMultiRailPatternArg
         {
             public UInt32 MinKillCount;
             public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByFlagCaptureArg
+        public struct udtFlagCapturePatternArg
         {
             public UInt32 MinCarryTimeMs;
             public UInt32 MaxCarryTimeMs;
@@ -1060,7 +1063,7 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByFlickRailArg
+        public struct udtFlickRailPatternArg
         {
             public float MinSpeed;
             public UInt32 MinSpeedSnapshotCount;
@@ -1069,7 +1072,7 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct udtCutByMatchArg
+        public struct udtMatchPatternArg
         {
             public UInt32 MatchStartOffsetMs;
             public UInt32 MatchEndOffsetMs;
@@ -1505,7 +1508,7 @@ namespace Uber.DemoTools
         extern static private udtErrorCode udtDestroyContextGroup(udtParserContextGroupRef contextGroup);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
-        extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtCutByPatternArg patternInfo);
+        extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtPatternSearchArg patternInfo);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtConvertDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtProtocolConversionArg conversionInfo);
@@ -1712,23 +1715,23 @@ namespace Uber.DemoTools
             return protocol;
         }
 
-        public static udtCutByFragArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
+        public static udtFragRunPatternArg CreateCutByFragArg(UdtConfig config, UdtPrivateConfig privateConfig)
         {
             UInt32 flags = 0;
             if(config.FragCutAllowAnyDeath)
             {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowDeaths;
+                flags |= (UInt32)UDT_DLL.udtFragRunPatternArgFlags.AllowDeaths;
             }
             if(config.FragCutAllowSelfKills)
             {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowSelfKills;
+                flags |= (UInt32)UDT_DLL.udtFragRunPatternArgFlags.AllowSelfKills;
             }
             if(config.FragCutAllowTeamKills)
             {
-                flags |= (UInt32)UDT_DLL.udtCutByFragArgFlags.AllowTeamKills;
+                flags |= (UInt32)UDT_DLL.udtFragRunPatternArgFlags.AllowTeamKills;
             }
 
-            var rules = new udtCutByFragArg();
+            var rules = new udtFragRunPatternArg();
             rules.MinFragCount = (UInt32)config.FragCutMinFragCount;
             rules.TimeBetweenFragsSec = (UInt32)config.FragCutTimeBetweenFrags;
             rules.TimeMode = 0; // @TODO:
@@ -1738,7 +1741,7 @@ namespace Uber.DemoTools
             return rules;
         }
 
-        public static udtCutByMidAirArg CreateCutByMidAirArg(UdtConfig config)
+        public static udtMidAirPatternArg CreateCutByMidAirArg(UdtConfig config)
         {
             UInt32 weaponFlags = 0;
             if(config.MidAirCutAllowRocket)
@@ -1750,7 +1753,7 @@ namespace Uber.DemoTools
                 weaponFlags |= (UInt32)udtWeaponBits.BFG;
             }
 
-            var rules = new udtCutByMidAirArg();
+            var rules = new udtMidAirPatternArg();
             rules.AllowedWeapons = weaponFlags;
             rules.MinDistance = (UInt32)Math.Max(0, config.MidAirCutMinDistance);
             rules.MinAirTimeMs = (UInt32)Math.Max(0, config.MidAirCutMinAirTimeMs);
@@ -1758,17 +1761,17 @@ namespace Uber.DemoTools
             return rules;
         }
 
-        public static udtCutByMultiRailArg CreateCutByMultiRailArg(UdtConfig config)
+        public static udtMultiRailPatternArg CreateCutByMultiRailArg(UdtConfig config)
         {
-            var rules = new udtCutByMultiRailArg();
+            var rules = new udtMultiRailPatternArg();
             rules.MinKillCount = (UInt32)config.MultiRailCutMinFragCount;
 
             return rules;
         }
 
-        public static udtCutByFlagCaptureArg CreateCutByFlagCaptureArg(UdtConfig config)
+        public static udtFlagCapturePatternArg CreateCutByFlagCaptureArg(UdtConfig config)
         {
-            var rules = new udtCutByFlagCaptureArg();
+            var rules = new udtFlagCapturePatternArg();
             rules.MinCarryTimeMs = (UInt32)config.FlagCaptureMinCarryTimeMs;
             rules.MaxCarryTimeMs = (UInt32)config.FlagCaptureMaxCarryTimeMs;
             rules.AllowBaseToBase = (UInt32)(config.FlagCaptureAllowBaseToBase ? 1 : 0);
@@ -1777,18 +1780,18 @@ namespace Uber.DemoTools
             return rules;
         }
 
-        public static udtCutByMatchArg CreateCutByMatchArg(UdtConfig config)
+        public static udtMatchPatternArg CreateCutByMatchArg(UdtConfig config)
         {
-            var rules = new udtCutByMatchArg();
+            var rules = new udtMatchPatternArg();
             rules.MatchStartOffsetMs = (UInt32)config.MatchCutStartTimeOffsetMs;
             rules.MatchEndOffsetMs = (UInt32)config.MatchCutEndTimeOffsetMs;
 
             return rules;
         }
 
-        public static udtCutByFlickRailArg CreateCutByFlickRailArg(UdtConfig config)
+        public static udtFlickRailPatternArg CreateCutByFlickRailArg(UdtConfig config)
         {
-            var rules = new udtCutByFlickRailArg();
+            var rules = new udtFlickRailPatternArg();
             rules.MinSpeed = (config.FlickRailMinSpeed / 180.0f) * (float)Math.PI;
             rules.MinAngleDelta = (config.FlickRailMinAngleDelta / 180.0f) * (float)Math.PI;
             rules.MinSpeedSnapshotCount = (UInt32)config.FlickRailMinSpeedSnaps;
@@ -1899,7 +1902,7 @@ namespace Uber.DemoTools
                 return false;
             }
 
-            var rulesArray = new UDT_DLL.udtCutByChatRule[rules.Count];
+            var rulesArray = new UDT_DLL.udtChatPatternRule[rules.Count];
             for(var i = 0; i < rules.Count; ++i)
             {
                 rulesArray[i].CaseSensitive = (UInt32)(rules[i].CaseSensitive ? 1 : 0);
@@ -1911,7 +1914,7 @@ namespace Uber.DemoTools
             }
             var pinnedRulesArray = new PinnedObject(rulesArray);
 
-            var cutByChatArg = new udtCutByChatArg();
+            var cutByChatArg = new udtChatPatternArg();
             cutByChatArg.Rules = pinnedRulesArray.Address;
             cutByChatArg.RuleCount = (UInt32)rulesArray.Length;
             var pinnedRules = new PinnedObject(cutByChatArg);
@@ -1925,7 +1928,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateFragPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFragArg rules)
+        public static bool CreateFragPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtFragRunPatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -1936,7 +1939,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateMidAirPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMidAirArg rules)
+        public static bool CreateMidAirPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtMidAirPatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -1947,7 +1950,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateMultiRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMultiRailArg rules)
+        public static bool CreateMultiRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtMultiRailPatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -1958,7 +1961,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateFlagCapturePatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFlagCaptureArg rules)
+        public static bool CreateFlagCapturePatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtFlagCapturePatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -1969,7 +1972,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateFlickRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByFlickRailArg rules)
+        public static bool CreateFlickRailPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtFlickRailPatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -1980,7 +1983,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public static bool CreateMatchPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtCutByMatchArg rules)
+        public static bool CreateMatchPatternInfo(ref udtPatternInfo pattern, ArgumentResources resources, udtMatchPatternArg rules)
         {
             var pinnedRules = new PinnedObject(rules);
             resources.PinnedObjects.Add(pinnedRules);
@@ -2034,7 +2037,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtCutByFragArg rules, CutByPatternOptions options)
+        public static bool CutDemosByFrag(ref udtParseArg parseArg, List<string> filePaths, udtFragRunPatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2046,7 +2049,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByMidAir(ref udtParseArg parseArg, List<string> filePaths, udtCutByMidAirArg rules, CutByPatternOptions options)
+        public static bool CutDemosByMidAir(ref udtParseArg parseArg, List<string> filePaths, udtMidAirPatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2058,7 +2061,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByMultiRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByMultiRailArg rules, CutByPatternOptions options)
+        public static bool CutDemosByMultiRail(ref udtParseArg parseArg, List<string> filePaths, udtMultiRailPatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2070,7 +2073,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByFlagCapture(ref udtParseArg parseArg, List<string> filePaths, udtCutByFlagCaptureArg rules, CutByPatternOptions options)
+        public static bool CutDemosByFlagCapture(ref udtParseArg parseArg, List<string> filePaths, udtFlagCapturePatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2082,7 +2085,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByFlickRail(ref udtParseArg parseArg, List<string> filePaths, udtCutByFlickRailArg rules, CutByPatternOptions options)
+        public static bool CutDemosByFlickRail(ref udtParseArg parseArg, List<string> filePaths, udtFlickRailPatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2094,7 +2097,7 @@ namespace Uber.DemoTools
             return CutDemosByPattern(resources, ref parseArg, filePaths, patterns, options);
         }
 
-        public static bool CutDemosByMatch(ref udtParseArg parseArg, List<string> filePaths, udtCutByMatchArg rules, CutByPatternOptions options)
+        public static bool CutDemosByMatch(ref udtParseArg parseArg, List<string> filePaths, udtMatchPatternArg rules, CutByPatternOptions options)
         {
             var resources = new ArgumentResources();
             var patterns = new udtPatternInfo[1];
@@ -2129,7 +2132,7 @@ namespace Uber.DemoTools
             var playerNameUnmanaged = IntPtr.Zero;
             var pinnedPatterns = new PinnedObject(patterns);
             resources.PinnedObjects.Add(pinnedPatterns);
-            var cutByPatternArg = new udtCutByPatternArg();
+            var cutByPatternArg = new udtPatternSearchArg();
             cutByPatternArg.StartOffsetSec = (UInt32)options.StartOffset;
             cutByPatternArg.EndOffsetSec = (UInt32)options.EndOffset;
             cutByPatternArg.Patterns = pinnedPatterns.Address;

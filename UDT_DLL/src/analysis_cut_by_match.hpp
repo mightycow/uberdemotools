@@ -5,11 +5,11 @@
 #include "plug_in_stats.hpp"
 
 
-struct udtCutByMatchAnalyzer : public udtCutByPatternAnalyzerBase
+struct udtMatchPatternAnalyzer : public udtPatternSearchAnalyzerBase
 {
 public:
-	udtCutByMatchAnalyzer();
-	~udtCutByMatchAnalyzer();
+	udtMatchPatternAnalyzer();
+	~udtMatchPatternAnalyzer();
 
 	void InitAllocators(u32 demoCount) override;
 	void StartAnalysis() override;
@@ -19,7 +19,7 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser) override;
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByMatchAnalyzer);
+	UDT_NO_COPY_SEMANTICS(udtMatchPatternAnalyzer);
 
 	udtParserPlugInStats _statsAnalyzer;
 	udtVMLinearAllocator _tempAllocator;

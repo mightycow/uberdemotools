@@ -260,15 +260,15 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 }
 
 
-udtCutByMidAirAnalyzer::udtCutByMidAirAnalyzer()
+udtMidAirPatternAnalyzer::udtMidAirPatternAnalyzer()
 {
 }
 
-udtCutByMidAirAnalyzer::~udtCutByMidAirAnalyzer()
+udtMidAirPatternAnalyzer::~udtMidAirPatternAnalyzer()
 {
 }
 
-void udtCutByMidAirAnalyzer::StartAnalysis()
+void udtMidAirPatternAnalyzer::StartAnalysis()
 {
 	_protocol = udtProtocol::Invalid;
 	_lastEventSequence = S32_MIN;
@@ -279,7 +279,7 @@ void udtCutByMidAirAnalyzer::StartAnalysis()
 	memset(_players, 0, sizeof(_players));
 }
 
-void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
+void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
 	_protocol = parser._inProtocol;
 
@@ -297,7 +297,7 @@ void udtCutByMidAirAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackA
 	}
 }
 
-void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
@@ -419,7 +419,7 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			continue;
 		}
 
-		const udtCutByMidAirArg& extraInfo = GetExtraInfo<udtCutByMidAirArg>();
+		const udtMidAirPatternArg& extraInfo = GetExtraInfo<udtMidAirPatternArg>();
 		const s32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, _protocol);
 		if(udtWeapon != -1 && !IsAllowedUDTWeapon(udtWeapon, extraInfo.AllowedWeapons))
 		{
@@ -445,17 +445,18 @@ void udtCutByMidAirAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			continue;
 		}
 
-		const udtCutByPatternArg& info = PlugIn->GetInfo();
+		const udtPatternSearchArg& info = PlugIn->GetInfo();
 		udtCutSection cut;
 		cut.VeryShortDesc = "midair";
 		cut.GameStateIndex = _gameStateIndex;
 		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
 		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::MidAirFrags);
 		CutSections.Add(cut);
 	}
 }
 
-void udtCutByMidAirAnalyzer::AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs)
+void udtMidAirPatternAnalyzer::AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs)
 {
 	ProjectileInfo* projectile = NULL;
 	for(u32 i = 0; i < UDT_COUNT_OF(_projectiles); ++i)
@@ -488,7 +489,7 @@ void udtCutByMidAirAnalyzer::AddProjectile(s32 weapon, const f32* position, s32 
 	projectile->IdWeapon = weapon;
 }
 
-udtCutByMidAirAnalyzer::ProjectileInfo* udtCutByMidAirAnalyzer::FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs)
+udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs)
 {
 	f32 targetTravelSpeed = -1.0f;
 	if(udtWeapon == (s32)udtWeapon::BFG)

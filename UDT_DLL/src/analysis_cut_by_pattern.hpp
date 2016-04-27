@@ -8,15 +8,15 @@
 #include "string.hpp"
 
 
-struct udtCutByPatternPlugIn;
+struct udtPatternSearchPlugIn;
 
-struct udtCutByPatternAnalyzerBase
+struct udtPatternSearchAnalyzerBase
 {
 public:
-	friend udtCutByPatternPlugIn;
+	friend udtPatternSearchPlugIn;
 
-	udtCutByPatternAnalyzerBase();
-	virtual ~udtCutByPatternAnalyzerBase() {}
+	udtPatternSearchAnalyzerBase();
+	virtual ~udtPatternSearchAnalyzerBase() {}
 	
 	virtual void InitAllocators(u32 /*demoCount*/) {}
 	virtual void StartAnalysis() {}
@@ -28,7 +28,7 @@ public:
 	udtVMArray<udtCutSection> CutSections;
 
 protected:
-	udtCutByPatternPlugIn* PlugIn;
+	udtPatternSearchPlugIn* PlugIn;
 	const void* ExtraInfo;
 
 	template<typename T>
@@ -38,14 +38,14 @@ protected:
 	}
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByPatternAnalyzerBase);
+	UDT_NO_COPY_SEMANTICS(udtPatternSearchAnalyzerBase);
 };
 
-struct udtCutByPatternPlugIn : udtBaseParserPlugIn
+struct udtPatternSearchPlugIn : udtBaseParserPlugIn
 {
 public:
-	udtCutByPatternPlugIn();
-	~udtCutByPatternPlugIn() {}
+	udtPatternSearchPlugIn();
+	~udtPatternSearchPlugIn() {}
 
 	void InitAllocators(u32 demoCount) override;
 	void StartDemoAnalysis() override;
@@ -55,30 +55,30 @@ public:
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
 	void                         InitAnalyzerAllocators(u32 demoCount);
-	udtCutByPatternAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
-	udtCutByPatternAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
+	udtPatternSearchAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
+	udtPatternSearchAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
 
-	void SetPatternInfo(const udtCutByPatternArg& info) { _info = &info; }
+	void SetPatternInfo(const udtPatternSearchArg& info) { _info = &info; }
 
 	s32 GetTrackedPlayerIndex() const;
-	const udtCutByPatternArg& GetInfo() const { return *_info; }
+	const udtPatternSearchArg& GetInfo() const { return *_info; }
 
 	udtVMLinearAllocator& GetTempAllocator() { return *TempAllocator; }
 
 	udtVMArray<udtCutSection> CutSections; // Final array.
 
 private:
-	UDT_NO_COPY_SEMANTICS(udtCutByPatternPlugIn);
+	UDT_NO_COPY_SEMANTICS(udtPatternSearchPlugIn);
 
 	void FindPlayerInConfigStrings(udtBaseParser& parser);
 	void FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser);
 	bool GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx);
 
-	udtVMArray<udtCutByPatternAnalyzerBase*> _analyzers;
+	udtVMArray<udtPatternSearchAnalyzerBase*> _analyzers;
 	udtVMArray<udtPatternType::Id> _analyzerTypes;
 	udtVMLinearAllocator _analyzerAllocator;
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 
-	const udtCutByPatternArg* _info;
+	const udtPatternSearchArg* _info;
 	s32 _trackedPlayerIndex;
 };

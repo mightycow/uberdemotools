@@ -49,16 +49,16 @@ static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idT
 }
 
 
-udtCutByChatAnalyzer::udtCutByChatAnalyzer() 
+udtChatPatternAnalyzer::udtChatPatternAnalyzer() 
 	: _cutSections(1 << 16, "CutByChatAnalyzer::CutSections")
 {
 }
 
-udtCutByChatAnalyzer::~udtCutByChatAnalyzer()
+udtChatPatternAnalyzer::~udtChatPatternAnalyzer()
 {
 }
 
-void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*commandInfo*/, udtBaseParser& parser)
+void udtChatPatternAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*commandInfo*/, udtBaseParser& parser)
 {
 	const idTokenizer& tokenizer = parser.GetTokenizer();
 	if(tokenizer.GetArgCount() < 2)
@@ -73,7 +73,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		return;
 	}
 
-	const udtCutByChatArg& extraInfo = GetExtraInfo<udtCutByChatArg>();
+	const udtChatPatternArg& extraInfo = GetExtraInfo<udtChatPatternArg>();
 	bool match = false;
 	for(u32 i = 0; i < extraInfo.RuleCount; ++i)
 	{
@@ -95,7 +95,7 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*
 		return;
 	}
 
-	const udtCutByPatternArg& patternInfo = PlugIn->GetInfo();
+	const udtPatternSearchArg& patternInfo = PlugIn->GetInfo();
 	const s32 startTimeMs = parser._inServerTime - (s32)patternInfo.StartOffsetSec * 1000;
 	const s32 endTimeMs = parser._inServerTime + (s32)patternInfo.EndOffsetSec * 1000;
 
@@ -104,15 +104,16 @@ void udtCutByChatAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*
 	cutSection.GameStateIndex = parser._inGameStateIndex;
 	cutSection.StartTimeMs = startTimeMs;
 	cutSection.EndTimeMs = endTimeMs;
+	cutSection.PatternTypes = UDT_BIT((u32)udtPatternType::Chat);
 	_cutSections.Add(cutSection);
 }
 
-void udtCutByChatAnalyzer::StartAnalysis()
+void udtChatPatternAnalyzer::StartAnalysis()
 {
 	_cutSections.Clear();
 }
 
-void udtCutByChatAnalyzer::FinishAnalysis()
+void udtChatPatternAnalyzer::FinishAnalysis()
 {
 	MergeRanges(CutSections, _cutSections);
 }

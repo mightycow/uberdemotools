@@ -100,6 +100,7 @@ typedef double f64;
 
 typedef struct udtParserContext_s udtParserContext;
 typedef struct udtParserContextGroup_s udtParserContextGroup;
+typedef struct udtPatternSearchContext_s udtPatternSearchContext;
 
 #if defined(__cplusplus)
 
@@ -456,25 +457,25 @@ struct udtByteArray
 	};
 };
 
-#define UDT_CUT_PATTERN_LIST(N) \
-	N(Chat, "chat", udtCutByChatArg, udtCutByChatAnalyzer) \
-	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
-	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
-	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer) \
-	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer) \
-	N(Matches, "matches", udtCutByMatchArg, udtCutByMatchAnalyzer)
+#define UDT_PATTERN_LIST(N) \
+	N(Chat, "chat", udtChatPatternArg, udtChatPatternAnalyzer) \
+	N(FragSequences, "frag sequences", udtFragRunPatternArg, udtFragRunPatternAnalyzer) \
+	N(MidAirFrags, "mid-air frags", udtMidAirPatternArg, udtMidAirPatternAnalyzer) \
+	N(MultiFragRails, "multi-frag rails", udtMultiRailPatternArg, udtMultiRailPatternAnalyzer) \
+	N(FlagCaptures, "flag captures", udtFlagCapturePatternArg, udtFlagCapturePatternAnalyzer) \
+	N(FlickRailFrags, "flick rails", udtFlickRailPatternArg, udtFlickRailPatternAnalyzer) \
+	N(Matches, "matches", udtMatchPatternArg, udtMatchPatternAnalyzer)
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
 {
 	enum Id
 	{
-		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 		Count
 	};
 };
-#undef UDT_CUT_PATTERN_ITEM
+#undef UDT_PATTERN_ITEM
 
 struct udtStatsCompMode
 {
@@ -860,6 +861,13 @@ struct udtPerfStatsField
 #define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    32
 
 
+#if defined(__cplusplus)
+#	define UDT_ENFORCE_API_STRUCT_SIZE(x) static_assert(sizeof(x) % 8 == 0, "Invalid struct size!");
+#else
+#	define UDT_ENFORCE_API_STRUCT_SIZE(x) 
+#endif
+
+
 #ifdef __cplusplus
 extern "C" 
 {
@@ -945,6 +953,7 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtParseArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseArg)
 
 	typedef struct udtMultiParseArg_s
 	{
@@ -961,6 +970,7 @@ extern "C"
 		u32 MaxThreadCount;
 	}
 	udtMultiParseArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMultiParseArg)
 	
 	typedef struct udtCut_s
 	{
@@ -984,6 +994,7 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtCut;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCut)
 
 	typedef struct udtPatternInfo_s
 	{
@@ -991,13 +1002,17 @@ extern "C"
 		/* May not be NULL. */
 		const void* TypeSpecificInfo;
 
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Of type udtPatternType::Id. */
 		u32 Type;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtPatternInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternInfo)
 
 #if defined(__cplusplus)
 
@@ -1010,7 +1025,7 @@ extern "C"
 		};
 	};
 
-	struct udtCutByPatternArgFlags
+	struct udtPatternSearchArgFlags
 	{
 		enum Id
 		{
@@ -1057,8 +1072,9 @@ extern "C"
 		u32 Flags;
 	}
 	udtStringMatchingRule;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtStringMatchingRule)
 
-	typedef struct udtCutByPatternArg_s
+	typedef struct udtPatternSearchArg_s
 	{
 		/* If the player name rules are valid, they will be used to find the player to track. */
 		/* Otherwise, the PlayerIndex field will be used instead. */
@@ -1090,10 +1106,52 @@ extern "C"
 		/* Ignored if player name rules are properly defined. */
 		s32 PlayerIndex;
 
-		/* Of type udtCutByPatternArgFlags::Id. */
+		/* Of type udtPatternSearchArgFlags::Id. */
 		u32 Flags;
 	}
-	udtCutByPatternArg;
+	udtPatternSearchArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternSearchArg)
+
+	typedef struct udtPatternMatch_s
+	{
+		/* Index into the input demo file path array. */
+		u32 DemoInputIndex;
+
+		/* The index of the game state. */
+		u32 GameStateIndex;
+
+		/* Server time, in milli-seconds. */
+		s32 StartTimeMs;
+
+		/* Server time, in milli-seconds. */
+		s32 EndTimeMs;
+
+		/* A bit is set for every pattern that matched this result. */
+		/* The bits are indexed with udtPatternType::Id. */
+		u32 Patterns;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtPatternMatch;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternMatch)
+
+	typedef struct udtPatternSearchResults_s
+	{
+		/* Pointer to the array of results. */
+		const udtPatternMatch* Matches;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* Length of the Matches array. */
+		u32 MatchCount;
+
+		/* Ignore this. */
+		s32 Reserved2;
+	}
+	udtPatternSearchResults;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternSearchResults)
 
 	typedef struct udtCutByTimeArg_s
 	{
@@ -1111,11 +1169,15 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtCutByTimeArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCutByTimeArg)
 
-	typedef struct udtCutByChatRule_s
+	typedef struct udtChatPatternRule_s
 	{
 		/* May not be NULL. */
 		const char* Pattern;
+
+		/* Ignore this. */
+		const void* Reserved1;
 
 		/* Of type udtChatOperator::Id. */
 		u32 ChatOperator;
@@ -1129,28 +1191,33 @@ extern "C"
 		/* Non-zero means we search team chat messages too. */
 		u32 SearchTeamChat;
 	}
-	udtCutByChatRule;
+	udtChatPatternRule;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternRule)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::GlobalChat. */
-	typedef struct udtCutByChatArg_s
+	typedef struct udtChatPatternArg_s
 	{
 		/* Pointer to an array of chat cutting rules. */
 		/* Rules are OR'd together. */
 		/* May not be NULL. */
-		const udtCutByChatRule* Rules;
+		const udtChatPatternRule* Rules;
+
+		/* Ignore this. */
+		const void* Reserved1;
 
 		/* Number of elements in the array pointed to by the Rules pointer. */
 		/* May not be 0. */
 		u32 RuleCount;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
-	udtCutByChatArg;
+	udtChatPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternArg)
 
 #if defined(__cplusplus)
-	struct udtCutByFragArgFlags
+	struct udtFragRunPatternArgFlags
 	{
 		enum Id
 		{
@@ -1163,7 +1230,7 @@ extern "C"
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FragSequences. */
-	typedef struct udtCutByFragArg_s
+	typedef struct udtFragRunPatternArg_s
 	{
 		/* The minimum amount of frags in a sequence. */
 		u32 MinFragCount;
@@ -1180,7 +1247,7 @@ extern "C"
 		u32 TimeMode;
 
 		/* Boolean options. */
-		/* See udtCutByFragArgFlags. */
+		/* See udtFragRunPatternArgFlags. */
 		u32 Flags;
 		
 		/* All the allowed weapons. */
@@ -1189,15 +1256,13 @@ extern "C"
 
 		/* Ignore this. */
 		s32 Reserved1;
-
-		/* @TODO: */
-		/*u32 AllowedPowerUps;*/
 	}
-	udtCutByFragArg;
+	udtFragRunPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFragRunPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::MidAirFrags. */
-	typedef struct udtCutByMidAirArg_s
+	typedef struct udtMidAirPatternArg_s
 	{
 		/* All the allowed weapons. */
 		/* See udtWeaponBits::Id. */
@@ -1213,11 +1278,12 @@ extern "C"
 		/* Ignore this. */
 		s32 Reserved1;
 	}
-	udtCutByMidAirArg;
+	udtMidAirPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMidAirPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::MultiRailFrags. */
-	typedef struct udtCutByMultiRailArg_s
+	typedef struct udtMultiRailPatternArg_s
 	{
 		/* The minimum amount of kills with a single rail shot. */
 		/* Must be 2 or greater. */
@@ -1226,11 +1292,12 @@ extern "C"
 		/* Ignore this. */
 		s32 Reserved1;
 	}
-	udtCutByMultiRailArg;
+	udtMultiRailPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMultiRailPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FlagCaptures. */
-	typedef struct udtCutByFlagCaptureArg_s
+	typedef struct udtFlagCapturePatternArg_s
 	{
 		/* Minimum allowed flag carry time, in milli-seconds. */
 		u32 MinCarryTimeMs;
@@ -1244,11 +1311,12 @@ extern "C"
 		/* Non-zero to allow pick-ups that are not from the original flag spot. */
 		u32 AllowMissingToBase;
 	}
-	udtCutByFlagCaptureArg;
+	udtFlagCapturePatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFlagCapturePatternArg)
 	
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FlickRailFrags. */
-	typedef struct udtCutByFlickRailArg_s
+	typedef struct udtFlickRailPatternArg_s
 	{
 		/* Minimum angular velocity, in radians/second. */
 		f32 MinSpeed;
@@ -1264,11 +1332,12 @@ extern "C"
 		/* Range: [2;4]. */
 		u32 MinAngleDeltaSnapshotCount;
 	}
-	udtCutByFlickRailArg;
+	udtFlickRailPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFlickRailPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::Matches. */
-	typedef struct udtCutByMatchArg_s
+	typedef struct udtMatchPatternArg_s
 	{
 		/* If no match count-down was found, */
 		/* start the cut this amount of time before the match's start. */
@@ -1278,7 +1347,8 @@ extern "C"
 		/* end the cut this amount of time after the match's end. */
 		u32 MatchEndOffsetMs;
 	}
-	udtCutByMatchArg;
+	udtMatchPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMatchPatternArg)
 
 	typedef struct udtProtocolConversionArg_s
 	{
@@ -1289,6 +1359,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtProtocolConversionArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtProtocolConversionArg)
 
 	/* Used when extracting analysis data. */
 	typedef struct udtParseDataBufferRange_s
@@ -1300,6 +1371,7 @@ extern "C"
 		u32 Count;
 	}
 	udtParseDataBufferRange;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataBufferRange)
 
 	typedef struct udtChatEventData_s
 	{
@@ -1335,6 +1407,7 @@ extern "C"
 		u32 LocationLength;
 	}
 	udtChatEventData;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatEventData)
 
 	typedef struct udtParseDataChat_s
 	{
@@ -1359,6 +1432,7 @@ extern "C"
 		u32 TeamMessage;
 	}
 	udtParseDataChat;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataChat)
 
 	/* Complete chat data for all demos in a context. */
 	typedef struct udtParseDataChatBuffers_s
@@ -1383,6 +1457,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataChatBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataChatBuffers)
 
 	typedef struct udtMatchInfo_s
 	{
@@ -1405,6 +1480,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtMatchInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMatchInfo)
 
 	typedef struct udtGameStateKeyValuePair_s
 	{
@@ -1421,6 +1497,7 @@ extern "C"
 		u32 ValueLength;
 	}
 	udtGameStateKeyValuePair;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtGameStateKeyValuePair)
 
 	typedef struct udtGameStatePlayerInfo_s
 	{
@@ -1447,6 +1524,7 @@ extern "C"
 		u32 FirstTeam;
 	}
 	udtGameStatePlayerInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtGameStatePlayerInfo)
 
 	typedef struct udtParseDataGameState_s
 	{
@@ -1488,6 +1566,7 @@ extern "C"
 		s32 LastSnapshotTimeMs;
 	}
 	udtParseDataGameState;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataGameState)
 
 	/* Complete gamestate data for all demos in a context. */
 	typedef struct udtParseDataGameStateBuffers_s
@@ -1530,6 +1609,7 @@ extern "C"
 		u32 Reserved1;
 	}
 	udtParseDataGameStateBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataGameStateBuffers)
 
 	typedef struct udtParseDataObituary_s
 	{
@@ -1584,6 +1664,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtParseDataObituary;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataObituary)
 
 	/* Complete obituary data for all demos in a context. */
 	typedef struct udtParseDataObituaryBuffers_s
@@ -1608,6 +1689,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataObituaryBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataObituaryBuffers)
 
 	typedef struct udtPlayerStats_s
 	{
@@ -1627,6 +1709,7 @@ extern "C"
 		u32 CleanNameLength;
 	}
 	udtPlayerStats;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPlayerStats)
 
 	typedef struct udtParseDataStats_s
 	{
@@ -1773,6 +1856,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtParseDataStats;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataStats)
 
 	/* Complete match statistics data for all demos in a context. */
 	typedef struct udtParseDataStatsBuffers_s
@@ -1841,6 +1925,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataStatsBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataStatsBuffers)
 
 	typedef struct udtParseDataRawCommand_s
 	{
@@ -1858,6 +1943,7 @@ extern "C"
 		s32 GameStateIndex;
 	}
 	udtParseDataRawCommand;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawCommand)
 
 	/* Complete server-to-client command data for all demos in a context. */
 	typedef struct udtParseDataRawCommandBuffers_s
@@ -1882,6 +1968,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataRawCommandBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawCommandBuffers)
 
 	typedef struct udtParseDataRawConfigString_s
 	{
@@ -1899,6 +1986,7 @@ extern "C"
 		s32 GameStateIndex;
 	}
 	udtParseDataRawConfigString;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigString)
 
 	/* Complete config string data for all demos in a context. */
 	typedef struct udtParseDataRawConfigStringBuffers_s
@@ -1923,6 +2011,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataRawConfigStringBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigStringBuffers)
 
 #if defined(__cplusplus)
 	struct udtParseDataCaptureFlags
@@ -1978,6 +2067,7 @@ extern "C"
 		s32 PlayerIndex;
 	}
 	udtParseDataCapture;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCapture)
 
 	/* Complete flag capture data for all demos in a context. */
 	typedef struct udtParseDataCaptureBuffers_s
@@ -2002,6 +2092,7 @@ extern "C"
 		u32 StringBufferSize;
 	}
 	udtParseDataCaptureBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCaptureBuffers)
 
 	typedef struct udtTimeShiftArg_s
 	{
@@ -2013,6 +2104,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtTimeShiftArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtTimeShiftArg)
 
 	typedef struct udtJSONArg_s
 	{
@@ -2023,6 +2115,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtJSONArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtJSONArg)
 
 #pragma pack(pop)
 
@@ -2158,7 +2251,16 @@ extern "C"
 	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);
 
 	/* Creates, for each demo, sub-demos around every occurrence of a matching pattern. */
-	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
+	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo);
+
+	/* Creates a list of matches for the requested patterns in the newly created search context. */
+	UDT_API(s32) udtFindPatternsInDemoFiles(udtPatternSearchContext** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo);
+
+	/* Gets the search results from the given search context. */
+	UDT_API(s32) udtGetSearchResults(udtPatternSearchContext* context, udtPatternSearchResults* results);
+
+	/* Releases all the resources associated to the search context. */
+	UDT_API(s32) udtDestroySearchContext(udtPatternSearchContext* context);
 
 	/* Creates, for each demo that isn't in the target protocol, a new demo file with the specified protocol. */
 	UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg);
@@ -2440,6 +2542,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtCuCommandMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuCommandMessage)
 
 	/* Only valid until the next call to udtCuParseMessage. */
 	typedef struct udtCuSnapshotMessage_s
@@ -2480,6 +2583,7 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtCuSnapshotMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuSnapshotMessage)
 
 	/* Only valid until the next call to udtCuParseMessage. */
 	typedef struct udtCuGamestateMessage_s
@@ -2497,6 +2601,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtCuGamestateMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuGamestateMessage)
 	
 	/* UDT will not give you redundant snapshots and commands like Quake demos do. */
 	/* If a snapshot or a command was already processed, it's dropped so you don't have to deal with duplicates. */
@@ -2526,6 +2631,7 @@ extern "C"
 		u32 IsGameState;
 	}
 	udtCuMessageOutput;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuMessageOutput)
 
 	typedef struct udtCuMessageInput_s
 	{
@@ -2542,6 +2648,7 @@ extern "C"
 		u32 BufferByteCount;
 	}
 	udtCuMessageInput;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuMessageInput)
 
 	/* Only valid until the next call to udtCuParseMessage. */
 	typedef struct udtCuConfigString_s
@@ -2559,6 +2666,7 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtCuConfigString;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuConfigString)
 
 #if defined(__cplusplus)
 

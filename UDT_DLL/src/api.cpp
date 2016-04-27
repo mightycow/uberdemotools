@@ -14,6 +14,7 @@
 #include "thread_local_allocators.hpp"
 #include "system.hpp"
 #include "custom_context.hpp"
+#include "pattern_search_context.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -108,13 +109,13 @@ static const char* TeamNames[] =
 };
 #undef UDT_TEAM_ITEM
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Desc,
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Desc,
 static const char* CutPatternNames[] =
 {
-	UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+	UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 	"after last cut pattern"
 };
-#undef UDT_CUT_PATTERN_ITEM
+#undef UDT_PATTERN_ITEM
 
 #define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Desc,
 static const char* GameTypeNames[] =
@@ -1063,7 +1064,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	return GetErrorCode(success, info->CancelOperation);
 }
 
-UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo)
+UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo)
 {
 	if(info == NULL || extraInfo == NULL || patternInfo == NULL ||
 	   !IsValid(*extraInfo) || !IsValid(*patternInfo) || !HasValidOutputOption(*info))
@@ -1072,6 +1073,56 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 	}
 
 	return RunJobWithLocalContextGroup(udtParsingJobType::CutByPattern, info, extraInfo, patternInfo);
+}
+
+UDT_API(s32) udtFindPatternsInDemoFiles(udtPatternSearchContext** contextPtr, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo)
+{
+	if(contextPtr == NULL || info == NULL || extraInfo == NULL || patternInfo == NULL ||
+	   !IsValid(*extraInfo) || !IsValid(*patternInfo))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtPatternSearchContext_s* context = (udtPatternSearchContext_s*)malloc(sizeof(udtPatternSearchContext_s));
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+	new (context) udtPatternSearchContext_s(patternInfo);
+	
+	const s32 result = RunJobWithLocalContextGroup(udtParsingJobType::FindPatterns, info, extraInfo, context);
+	if(result == (s32)udtErrorCode::None || (s32)udtErrorCode::OperationCanceled)
+	{
+		*contextPtr = context;
+	}
+
+	return result;
+}
+
+UDT_API(s32) udtGetSearchResults(udtPatternSearchContext* context, udtPatternSearchResults* results)
+{
+	if(context == NULL || results == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	results->Matches = context->Matches.GetStartAddress();
+	results->MatchCount = context->Matches.GetSize();
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtDestroySearchContext(udtPatternSearchContext* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	context->~udtPatternSearchContext_s();
+	free(context);
+
+	return (s32)udtErrorCode::None;
 }
 
 UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg)

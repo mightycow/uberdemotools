@@ -20,6 +20,10 @@ software using the library at the cost of some verbosity.
 */
 
 
+#define CUT_START_OFFSET_SEC (10)
+#define CUT_END_OFFSET_SEC   (10)
+
+
 static const char* LogLevelPrefixes[4] =
 {
 	"",
@@ -309,7 +313,7 @@ struct MultiFragRailCutter
 			{
 				PrintInfo("- game state #%d, server time %d ms", 
 						  (int)_cutSections[i].GameStateIndex + 1, 
-						  (int)(_cutSections[i].StartTimeMs + _cutSections[i].EndTimeMs) / 2);
+						  (int)(_cutSections[i].StartTimeMs + CUT_START_OFFSET_SEC * 1000));
 			}
 
 			return true;
@@ -470,8 +474,8 @@ private:
 			// Create a 20 seconds long demo cut to keep that sweet frag.
 			udtCut cut;
 			cut.GameStateIndex = _gameStateIndex;
-			cut.StartTimeMs = snapshot.ServerTimeMs - 10 * 1000;
-			cut.EndTimeMs = snapshot.ServerTimeMs + 10 * 1000;
+			cut.StartTimeMs = snapshot.ServerTimeMs - (s32)CUT_START_OFFSET_SEC * (s32)1000;
+			cut.EndTimeMs = snapshot.ServerTimeMs + (s32)CUT_END_OFFSET_SEC * (s32)1000;
 			cut.FilePath = NULL; // Will be fixed up later.
 			_cutSections.push_back(cut);
 

@@ -1,31 +1,31 @@
 #include "analysis_cut_by_flag.hpp"
 
 
-udtCutByFlagCaptureAnalyzer::udtCutByFlagCaptureAnalyzer()
+udtFlagCapturePatternAnalyzer::udtFlagCapturePatternAnalyzer()
 {
 }
 
-udtCutByFlagCaptureAnalyzer::~udtCutByFlagCaptureAnalyzer()
+udtFlagCapturePatternAnalyzer::~udtFlagCapturePatternAnalyzer()
 {
 }
 
-void udtCutByFlagCaptureAnalyzer::InitAllocators(u32 demoCount)
+void udtFlagCapturePatternAnalyzer::InitAllocators(u32 demoCount)
 {
 	_analyzer.Init(demoCount, &PlugIn->GetTempAllocator());
 }
 
-void udtCutByFlagCaptureAnalyzer::StartAnalysis()
+void udtFlagCapturePatternAnalyzer::StartAnalysis()
 {
 	_analyzer.Clear();
 	_analyzer.StartDemoAnalysis();
 }
 
-void udtCutByFlagCaptureAnalyzer::FinishAnalysis()
+void udtFlagCapturePatternAnalyzer::FinishAnalysis()
 {
 	_analyzer.FinishDemoAnalysis();
 
-	const udtCutByPatternArg& info = PlugIn->GetInfo();
-	const udtCutByFlagCaptureArg& extraInfo = GetExtraInfo<udtCutByFlagCaptureArg>();
+	const udtPatternSearchArg& info = PlugIn->GetInfo();
+	const udtFlagCapturePatternArg& extraInfo = GetExtraInfo<udtFlagCapturePatternArg>();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 	const bool allowBaseToBase = extraInfo.AllowBaseToBase != 0;
 	const bool allowMissingToBase = extraInfo.AllowMissingToBase != 0;
@@ -57,21 +57,22 @@ void udtCutByFlagCaptureAnalyzer::FinishAnalysis()
 		cut.GameStateIndex = capture.GameStateIndex;
 		cut.StartTimeMs = capture.PickUpTimeMs - (s32)(info.StartOffsetSec * 1000);
 		cut.EndTimeMs = capture.CaptureTimeMs + (s32)(info.EndOffsetSec * 1000);
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::FlagCaptures);
 		CutSections.Add(cut);
 	}
 }
 
-void udtCutByFlagCaptureAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
+void udtFlagCapturePatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
 	_analyzer.ProcessGamestateMessage(arg, parser);
 }
 
-void udtCutByFlagCaptureAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
+void udtFlagCapturePatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	_analyzer.ProcessSnapshotMessage(arg, parser);
 }
 
-void udtCutByFlagCaptureAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
+void udtFlagCapturePatternAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	_analyzer.ProcessCommandMessage(arg, parser);
 }

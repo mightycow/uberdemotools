@@ -11,7 +11,7 @@ static bool IsValid(const udtCutByTimeArg& arg)
 	return arg.CutCount > 0 && arg.Cuts != NULL;
 }
 
-static bool IsValid(const udtCutByChatArg& arg)
+static bool IsValid(const udtChatPatternArg& arg)
 {
 	if(arg.Rules == NULL || arg.RuleCount == 0)
 	{
@@ -29,27 +29,27 @@ static bool IsValid(const udtCutByChatArg& arg)
 	return true;
 }
 
-static bool IsValid(const udtCutByFragArg& arg)
+static bool IsValid(const udtFragRunPatternArg& arg)
 {
 	return arg.TimeBetweenFragsSec > 0 && arg.MinFragCount >= 2 && arg.AllowedMeansOfDeaths > 0;
 }
 
-static bool IsValid(const udtCutByMidAirArg& arg)
+static bool IsValid(const udtMidAirPatternArg& arg)
 {
 	return arg.AllowedWeapons > 0;
 }
 
-static bool IsValid(const udtCutByMultiRailArg& arg)
+static bool IsValid(const udtMultiRailPatternArg& arg)
 {
 	return arg.MinKillCount >= 2;
 }
 
-static bool IsValid(const udtCutByFlagCaptureArg& arg)
+static bool IsValid(const udtFlagCapturePatternArg& arg)
 {
 	return arg.MaxCarryTimeMs > arg.MinCarryTimeMs && (arg.AllowBaseToBase | arg.AllowMissingToBase) != 0;
 }
 
-static bool IsValid(const udtCutByFlickRailArg& arg)
+static bool IsValid(const udtFlickRailPatternArg& arg)
 {
 	return 
 		arg.MinSpeed >= 0.0f && 
@@ -58,12 +58,12 @@ static bool IsValid(const udtCutByFlickRailArg& arg)
 		(arg.MinAngleDeltaSnapshotCount - 2) <= 2;
 }
 
-static bool IsValid(const udtCutByMatchArg& /*arg*/)
+static bool IsValid(const udtMatchPatternArg& /*arg*/)
 {
 	return true;
 }
 
-static bool IsValid(const udtCutByPatternArg& arg)
+static bool IsValid(const udtPatternSearchArg& arg)
 {
 	if(arg.Patterns == NULL || arg.PatternCount == 0 || arg.StartOffsetSec == 0 || arg.EndOffsetSec == 0)
 	{
@@ -78,13 +78,13 @@ static bool IsValid(const udtCutByPatternArg& arg)
 			return false;
 		}
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false; break;
+#define CASE(Enum, Desc, ArgType, AnalyzerType) case udtPatternType::Enum: if(!IsValid(*(ArgType*)info.TypeSpecificInfo)) return false; break;
 		switch((udtPatternType::Id)info.Type)
 		{
-			UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+			UDT_PATTERN_LIST(CASE)
 			default: return false;
 		}
-#undef UDT_CUT_PATTERN_ITEM
+#undef CASE
 	}
 
 	if(arg.PlayerNameRules != NULL)

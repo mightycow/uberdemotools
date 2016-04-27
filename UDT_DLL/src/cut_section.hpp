@@ -10,6 +10,7 @@ struct udtCutSection
 	s32 GameStateIndex;
 	s32 StartTimeMs;
 	s32 EndTimeMs;
+	u32 PatternTypes; // Bits indexed with udtPatternType::Id.
 };
 
 extern void MergeRanges(udtVMArray<udtCutSection>& result, const udtVMArray<udtCutSection>& ranges);
