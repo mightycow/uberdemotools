@@ -1,4 +1,5 @@
-#include "analysis_cut_by_flag.hpp"
+#include "analysis_pattern_capture.hpp"
+#include "plug_in_pattern_search.hpp"
 
 
 udtFlagCapturePatternAnalyzer::udtFlagCapturePatternAnalyzer()

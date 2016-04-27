@@ -2,44 +2,12 @@
 
 
 #include "parser_plug_in.hpp"
+#include "analysis_pattern_base.hpp"
 #include "array.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "cut_section.hpp"
 #include "string.hpp"
 
-
-struct udtPatternSearchPlugIn;
-
-struct udtPatternSearchAnalyzerBase
-{
-public:
-	friend udtPatternSearchPlugIn;
-
-	udtPatternSearchAnalyzerBase();
-	virtual ~udtPatternSearchAnalyzerBase() {}
-	
-	virtual void InitAllocators(u32 /*demoCount*/) {}
-	virtual void StartAnalysis() {}
-	virtual void FinishAnalysis() {}
-	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
-	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
-	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
-	
-	udtVMArray<udtCutSection> CutSections;
-
-protected:
-	udtPatternSearchPlugIn* PlugIn;
-	const void* ExtraInfo;
-
-	template<typename T>
-	const T& GetExtraInfo() const
-	{
-		return *(T*)ExtraInfo;
-	}
-
-private:
-	UDT_NO_COPY_SEMANTICS(udtPatternSearchAnalyzerBase);
-};
 
 struct udtPatternSearchPlugIn : udtBaseParserPlugIn
 {
@@ -54,7 +22,7 @@ public:
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& info, udtBaseParser& parser) override;
 	void ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser) override;
 
-	void                         InitAnalyzerAllocators(u32 demoCount);
+	void                          InitAnalyzerAllocators(u32 demoCount);
 	udtPatternSearchAnalyzerBase* CreateAndAddAnalyzer(udtPatternType::Id patternType, const void* extraInfo);
 	udtPatternSearchAnalyzerBase* GetAnalyzer(udtPatternType::Id patternType);
 

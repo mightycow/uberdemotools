@@ -1,13 +1,14 @@
 #include "parser_context.hpp"
+#include "analysis_pattern_base.hpp"
 #include "plug_in_chat.hpp"
 #include "plug_in_game_state.hpp"
-#include "analysis_obituaries.hpp"
-#include "analysis_cut_by_pattern.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "plug_in_converter_quake_to_udt.hpp"
 #include "plug_in_stats.hpp"
 #include "plug_in_raw_commands.hpp"
 #include "plug_in_raw_config_strings.hpp"
 #include "plug_in_captures.hpp"
+#include "plug_in_obituaries.hpp"
 
 // For the placement new operator.
 #include <new>

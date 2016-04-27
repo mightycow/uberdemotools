@@ -1,4 +1,5 @@
-#include "analysis_cut_by_chat.hpp"
+#include "analysis_pattern_chat.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "utils.hpp"
 #include "common.hpp"
 #include "scoped_stack_allocator.hpp"

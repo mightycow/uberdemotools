@@ -2,7 +2,7 @@
 
 
 #include "analysis_obituaries.hpp"
-#include "analysis_cut_by_pattern.hpp"
+#include "analysis_pattern_base.hpp"
 
 
 struct udtFragRunPatternAnalyzer : public udtPatternSearchAnalyzerBase

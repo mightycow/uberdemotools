@@ -1,13 +1,13 @@
-#include "analysis_cut_by_pattern.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "utils.hpp"
 #include "cut_section.hpp"
-#include "analysis_cut_by_chat.hpp"
-#include "analysis_cut_by_frag.hpp"
-#include "analysis_cut_by_mid_air.hpp"
-#include "analysis_cut_by_multi_rail.hpp"
-#include "analysis_cut_by_flag.hpp"
-#include "analysis_cut_by_flick_rail.hpp"
-#include "analysis_cut_by_match.hpp"
+#include "analysis_pattern_chat.hpp"
+#include "analysis_pattern_frag_run.hpp"
+#include "analysis_pattern_mid_air.hpp"
+#include "analysis_pattern_multi_rail.hpp"
+#include "analysis_pattern_capture.hpp"
+#include "analysis_pattern_flick_rail.hpp"
+#include "analysis_pattern_match.hpp"
 
 #include <stdlib.h>
 
@@ -94,11 +94,6 @@ static bool MatchesRules(udtVMLinearAllocator& allocator, const udtString& name,
 	return false;
 }
 
-
-udtPatternSearchAnalyzerBase::udtPatternSearchAnalyzerBase() 
-	: CutSections((uptr)(1 << 16), "CutByPatternAnalyzerBase::CutSectionsArray")
-{
-}
 
 udtPatternSearchPlugIn::udtPatternSearchPlugIn()
 	: _info(NULL)

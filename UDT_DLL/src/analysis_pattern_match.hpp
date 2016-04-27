@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "analysis_cut_by_pattern.hpp"
+#include "analysis_pattern_base.hpp"
 #include "plug_in_stats.hpp"
 
 

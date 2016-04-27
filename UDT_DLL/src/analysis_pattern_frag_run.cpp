@@ -1,4 +1,5 @@
-#include "analysis_cut_by_frag.hpp"
+#include "analysis_pattern_frag_run.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "utils.hpp"
 
 

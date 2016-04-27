@@ -1,4 +1,5 @@
-#include "analysis_cut_by_flick_rail.hpp"
+#include "analysis_pattern_flick_rail.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "utils.hpp"
 #include "math.hpp"
 

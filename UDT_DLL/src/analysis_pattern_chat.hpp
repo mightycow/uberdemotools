@@ -3,7 +3,7 @@
 
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
-#include "analysis_cut_by_pattern.hpp"
+#include "analysis_pattern_base.hpp"
 #include "array.hpp"
 #include "cut_section.hpp"
 
