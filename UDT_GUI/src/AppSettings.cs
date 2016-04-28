@@ -76,6 +76,7 @@ namespace Uber.DemoTools
         MatchFilters,
         Modifiers,
         TimeShiftModifier,
+        SearchResults,
         Count
     }
 

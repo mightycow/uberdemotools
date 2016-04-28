@@ -161,12 +161,29 @@ namespace Uber.DemoTools
             cutButton.Margin = new Thickness(5);
             cutButton.Click += (obj, args) => OnCutClicked();
 
+            var searchButton = new Button();
+            searchButton.HorizontalAlignment = HorizontalAlignment.Left;
+            searchButton.VerticalAlignment = VerticalAlignment.Top;
+            searchButton.Content = "Search!";
+            searchButton.Width = 75;
+            searchButton.Height = 25;
+            searchButton.Margin = new Thickness(5);
+            searchButton.Click += (obj, args) => OnSearchClicked();
+
+            var actionsStackPanel = new StackPanel();
+            actionsStackPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            actionsStackPanel.VerticalAlignment = VerticalAlignment.Top;
+            actionsStackPanel.Margin = new Thickness(5);
+            actionsStackPanel.Orientation = Orientation.Vertical;
+            actionsStackPanel.Children.Add(cutButton);
+            actionsStackPanel.Children.Add(searchButton);
+
             var actionsGroupBox = new GroupBox();
             actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
             actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
             actionsGroupBox.Margin = new Thickness(5);
             actionsGroupBox.Header = "Actions";
-            actionsGroupBox.Content = cutButton;
+            actionsGroupBox.Content = actionsStackPanel;
             
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -226,6 +243,16 @@ namespace Uber.DemoTools
         }
 
         private void OnCutClicked()
+        {
+            OnButtonClicked(true);
+        }
+
+        private void OnSearchClicked()
+        {
+            OnButtonClicked(false);
+        }
+
+        private void OnButtonClicked(bool cut)
         {
             var demos = _app.SelectedWriteDemos;
             if(demos == null)
@@ -312,9 +339,16 @@ namespace Uber.DemoTools
             threadArg.Patterns = patterns.ToArray();
             threadArg.Resources = resources;
 
-            _app.StartJobThread(DemoCutThread, threadArg);
+            if(cut)
+            {
+                _app.StartJobThread(DemoCutThread, threadArg);
+            }
+            else
+            {
+                _app.StartJobThread(DemoSearchThread, threadArg);
+            }
         }
-
+        
         private void DemoCutThread(object arg)
         {
             var threadArg = arg as ThreadArg;
@@ -341,6 +375,36 @@ namespace Uber.DemoTools
             catch(Exception exception)
             {
                 _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
+            }
+        }
+
+        private void DemoSearchThread(object arg)
+        {
+            var threadArg = arg as ThreadArg;
+            if(threadArg == null)
+            {
+                _app.LogError("Invalid thread argument type");
+                return;
+            }
+
+            if(threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
+            {
+                _app.LogError("Invalid thread argument data");
+                return;
+            }
+
+            _app.InitParseArg();
+
+            try
+            {
+                var resources = threadArg.Resources;
+                var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
+                var results = UDT_DLL.FindPatternsInDemos(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
+                _app.UpdateSearchResults(results, threadArg.FilePaths);
+            }
+            catch(Exception exception)
+            {
+                _app.LogError("Caught an exception while searching demos: {0}", exception.Message);
             }
         }
     }

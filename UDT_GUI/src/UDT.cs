@@ -8,6 +8,7 @@ using System.Threading;
 
 using udtParserContextRef = System.IntPtr;
 using udtParserContextGroupRef = System.IntPtr;
+using udtPatternSearchContextRef = System.IntPtr;
 
 
 namespace Uber.DemoTools
@@ -990,6 +991,26 @@ namespace Uber.DemoTools
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtPatternMatch
+        {
+            public UInt32 DemoInputIndex;
+            public UInt32 GameStateIndex;
+            public Int32 StartTimeMs;
+            public Int32 EndTimeMs;
+            public UInt32 Patterns;
+            public Int32 Reserved1;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        public struct udtPatternSearchResults
+        {
+            public IntPtr Matches; // const udtPatternMatch*
+            public IntPtr Reserved1;
+            public UInt32 MatchCount;
+            public Int32 Reserved2;
+        }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtCutByTimeArg
         {
             public IntPtr Cuts; // const udtCut*
@@ -1509,6 +1530,15 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCutDemoFilesByPattern(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtPatternSearchArg patternInfo);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtFindPatternsInDemoFiles(ref udtPatternSearchContextRef context, ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtPatternSearchArg patternInfo);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private udtErrorCode udtGetSearchResults(udtPatternSearchContextRef context, ref udtPatternSearchResults results);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+	    extern static private udtErrorCode udtDestroySearchContext(udtPatternSearchContextRef context);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtConvertDemoFiles(ref udtParseArg info, ref udtMultiParseArg extraInfo, ref udtProtocolConversionArg conversionInfo);
@@ -2122,7 +2152,13 @@ namespace Uber.DemoTools
             return result;
         }
 
-        private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        private class SearchJobArguments
+        {
+            public udtMultiParseArg MultiParseArg;
+            public udtPatternSearchArg PatternSearchArg;
+        }
+
+        private static SearchJobArguments CreateSearchJobArguments(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
         {
             parseArg.PlugInCount = 0;
             parseArg.PlugIns = IntPtr.Zero;
@@ -2132,18 +2168,18 @@ namespace Uber.DemoTools
             var playerNameUnmanaged = IntPtr.Zero;
             var pinnedPatterns = new PinnedObject(patterns);
             resources.PinnedObjects.Add(pinnedPatterns);
-            var cutByPatternArg = new udtPatternSearchArg();
-            cutByPatternArg.StartOffsetSec = (UInt32)options.StartOffset;
-            cutByPatternArg.EndOffsetSec = (UInt32)options.EndOffset;
-            cutByPatternArg.Patterns = pinnedPatterns.Address;
-            cutByPatternArg.PatternCount = (UInt32)patterns.Length;
-            cutByPatternArg.PlayerIndex = options.PlayerIndex;
-            cutByPatternArg.Flags = 0;
-            cutByPatternArg.PlayerNameRules = IntPtr.Zero;
-            cutByPatternArg.PlayerNameRuleCount = 0;
+            var patternSearchArg = new udtPatternSearchArg();
+            patternSearchArg.StartOffsetSec = (UInt32)options.StartOffset;
+            patternSearchArg.EndOffsetSec = (UInt32)options.EndOffset;
+            patternSearchArg.Patterns = pinnedPatterns.Address;
+            patternSearchArg.PatternCount = (UInt32)patterns.Length;
+            patternSearchArg.PlayerIndex = options.PlayerIndex;
+            patternSearchArg.Flags = 0;
+            patternSearchArg.PlayerNameRules = IntPtr.Zero;
+            patternSearchArg.PlayerNameRuleCount = 0;
             if(options.MergeCutSections)
             {
-                cutByPatternArg.Flags |= (UInt32)udtCutByPatternArgFlags.MergeCutSections;
+                patternSearchArg.Flags |= (UInt32)udtCutByPatternArgFlags.MergeCutSections;
             }
             if(!string.IsNullOrEmpty(options.PlayerName))
             {
@@ -2159,20 +2195,78 @@ namespace Uber.DemoTools
                 var pinnedRules = new PinnedObject(rules);
                 resources.PinnedObjects.Add(pinnedRules);
 
-                cutByPatternArg.PlayerNameRules = pinnedRules.Address;
-                cutByPatternArg.PlayerNameRuleCount = 1;
+                patternSearchArg.PlayerNameRules = pinnedRules.Address;
+                patternSearchArg.PlayerNameRuleCount = 1;
             }
 
+            var data = new SearchJobArguments();
+            data.MultiParseArg = multiParseArg;
+            data.PatternSearchArg = patternSearchArg;
+
+            return data;
+        }
+
+        private static bool CutDemosByPatternImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        {
+            var data = CreateSearchJobArguments(resources, ref parseArg, filePaths, patterns, options);
             var result = udtErrorCode.OperationFailed;
             try
             {
-                result = udtCutDemoFilesByPattern(ref parseArg, ref multiParseArg, ref cutByPatternArg);
+                result = udtCutDemoFilesByPattern(ref parseArg, ref data.MultiParseArg, ref data.PatternSearchArg);
             }
             finally
             {
             }
 
             return result != udtErrorCode.None;
+        }
+
+        public static List<udtPatternMatch> FindPatternsInDemos(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        {
+            var results = new List<udtPatternMatch>();
+            MultithreadedJob.JobExecuter jobExecuter = delegate(ArgumentResources res, ref udtParseArg pa, List<string> files, List<int> fileIndices)
+            {
+                var localResults = FindPatternsInDemosImpl(res, ref pa, files, patterns, options);
+                if(localResults != null)
+                {
+                    results.AddRange(localResults);
+                }
+            };
+
+            App.Instance.CreateAndProcessJob(ref parseArg, filePaths, options.MaxThreadCount, MaxBatchSizeCutting, jobExecuter);
+            resources.Free();
+
+            return results;
+        }
+
+        private static udtPatternMatch[] FindPatternsInDemosImpl(ArgumentResources resources, ref udtParseArg parseArg, List<string> filePaths, udtPatternInfo[] patterns, CutByPatternOptions options)
+        {
+            var data = CreateSearchJobArguments(resources, ref parseArg, filePaths, patterns, options);
+            udtPatternSearchContextRef context = IntPtr.Zero;
+            try
+            {
+                var errorCode = udtFindPatternsInDemoFiles(ref context, ref parseArg, ref data.MultiParseArg, ref data.PatternSearchArg);
+                if(errorCode != udtErrorCode.None)
+                {
+                    return null;
+                }
+
+                var results = new udtPatternSearchResults();
+                errorCode = udtGetSearchResults(context, ref results);
+                if(errorCode != udtErrorCode.None)
+                {
+                    return null;
+                }
+
+                return MarshalHelper.PtrToStructureArray<udtPatternMatch>(results.Matches, (int)results.MatchCount);
+            }
+            finally
+            {
+                if(context != IntPtr.Zero)
+                {
+                    udtDestroySearchContext(context);
+                }
+            }
         }
 
         public static bool ConvertDemos(ref udtParseArg parseArg, udtProtocol outProtocol, List<string> filePaths, int maxThreadCount)

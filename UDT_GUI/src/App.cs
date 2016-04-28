@@ -473,7 +473,7 @@ namespace Uber.DemoTools
             var cutByPattern = new CutByPatternComponent(this);
             _appComponents.Add(cutByPattern);
             var cutByPatternTab = new TabItem();
-            cutByPatternTab.Header = "Cut by Patterns";
+            cutByPatternTab.Header = "Cut & Find Patterns";
             cutByPatternTab.Content = cutByPattern.RootControl;
 
             var modifiers = new ModifierComponent(this);
@@ -493,6 +493,12 @@ namespace Uber.DemoTools
             var patternsTab = new TabItem();
             patternsTab.Header = "Patterns";
             patternsTab.Content = patterns.RootControl;
+
+            var searchResults = new SearchResultsComponent(this);
+            _appComponents.Add(searchResults);
+            var searchResultsTab = new TabItem();
+            searchResultsTab.Header = "Search Results";
+            searchResultsTab.Content = searchResults.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -505,6 +511,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
             tabControl.Items.Add(modifiersTab);
+            tabControl.Items.Add(searchResultsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -1197,9 +1204,6 @@ namespace Uber.DemoTools
 
         private void OnTabSelectionChanged()
         {
-            // Tabs:
-            // 0: manage -> multiple selection
-            // 1: info   -> single   selection
             var tabIndex = _tabControl.SelectedIndex;
             var multiMode = tabIndex == 0 || tabIndex > 1;
             var tabItems = _tabControl.Items;
@@ -2713,6 +2717,36 @@ namespace Uber.DemoTools
             _currentJob.FreeResources();
 
             return true;
+        }
+
+        public void UpdateSearchResults(List<UDT_DLL.udtPatternMatch> results, List<string> filePaths)
+        {
+            var resultsComponent = _appComponents.Find(c => c is SearchResultsComponent) as SearchResultsComponent;
+            if(resultsComponent == null)
+            {
+                return;
+            }
+
+            VoidDelegate guiUpdater = delegate
+            {
+                resultsComponent.UpdateResults(results, filePaths);
+            };
+            _window.Dispatcher.Invoke(guiUpdater);
+
+            VoidDelegate tabSetter = delegate
+            {
+                var tabIndex = 0;
+                for(var i = 0; i < _tabControl.Items.Count; ++i)
+                {
+                    if(IsMatchingTab(resultsComponent, _tabControl.Items[i]))
+                    {
+                        tabIndex = i;
+                        break;
+                    }
+                }
+                _tabControl.SelectedIndex = tabIndex;
+            };
+            _tabControl.Dispatcher.Invoke(tabSetter);
         }
 
         private void OnCancelJobClicked()

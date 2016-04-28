@@ -96,7 +96,7 @@ typedef double f64;
 #endif
 
 #define UDT_API    UDT_API_DECL
-#define UDT_BIT(x) (1 << x)
+#define UDT_BIT(x) (1 << (x))
 
 typedef struct udtParserContext_s udtParserContext;
 typedef struct udtParserContextGroup_s udtParserContextGroup;

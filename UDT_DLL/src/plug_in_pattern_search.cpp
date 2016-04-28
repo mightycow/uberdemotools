@@ -46,13 +46,7 @@ static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSec
 {
 	for(u32 i = 0, cutCount = source.GetSize(); i < cutCount; ++i)
 	{
-		const CutSection cut = source[i];
-		udtCutSection newCut;
-		newCut.GameStateIndex = cut.GameStateIndex;
-		newCut.StartTimeMs = cut.StartTimeMs;
-		newCut.EndTimeMs = cut.EndTimeMs;
-		newCut.VeryShortDesc = cut.VeryShortDesc;
-		dest.Add(newCut);
+		dest.Add(source[i]);
 	}
 }
 
@@ -133,7 +127,7 @@ udtPatternSearchAnalyzerBase* udtPatternSearchPlugIn::CreateAndAddAnalyzer(udtPa
 		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 		default: return NULL;
 	}
-#undef UDT_CUT_PATTERN_ITEM
+#undef UDT_PATTERN_ITEM
 
 	if(analyzer != NULL)
 	{

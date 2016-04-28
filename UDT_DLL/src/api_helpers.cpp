@@ -247,7 +247,7 @@ static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtPars
 		match.GameStateIndex = cut.GameStateIndex;
 		match.StartTimeMs = cut.StartTimeMs;
 		match.EndTimeMs = cut.EndTimeMs;
-		match.Patterns = 0; // @TODO:
+		match.Patterns = cut.PatternTypes;
 		cuts.Add(match);
 	}
 
