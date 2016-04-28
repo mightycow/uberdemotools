@@ -2781,7 +2781,7 @@ namespace Uber.DemoTools
             return result;
         }
 
-        private void SetProgressThreadSafe(double value)
+        public void SetProgressThreadSafe(double value)
         {
             var elapsedTimeMs = _threadedJobTimer.ElapsedMilliseconds;
             var elapsed = FormatProgressTimeFromSeconds(elapsedTimeMs / 1000);

@@ -566,12 +566,17 @@ namespace Uber.DemoTools
             }
 
             _app.InitParseArg();
+            _app.ParseArg.ProgressCb = (progress, context) => {};
             
             try
             {
+                var progress = 0.0;
+                var fileCount = cuts.FileCuts.Count;
                 foreach(var fileCuts in cuts.FileCuts)
                 {
                     UDT_DLL.CutDemoByTimes(_app.GetMainThreadContext(), ref _app.ParseArg, fileCuts.FilePath, fileCuts.Cuts);
+                    progress += 1.0 / (double)fileCount;
+                    _app.SetProgressThreadSafe(100.0 * progress);
                 }
             }
             catch(Exception exception)
