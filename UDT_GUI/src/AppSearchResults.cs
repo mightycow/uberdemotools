@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -130,9 +131,19 @@ namespace Uber.DemoTools
                 cutMenuItem.Header = "Apply Cut(s)";
                 cutMenuItem.Click += (obj, args) => OnCutCutResultClicked();
 
+                var revealMenuItem = new MenuItem();
+                revealMenuItem.Header = "Reveal in File Explorer";
+                revealMenuItem.Click += (obj, args) => OnRevealCutResultClicked();
+
+                var selectMenuItem = new MenuItem();
+                selectMenuItem.Header = "Select in Demo List";
+                selectMenuItem.Click += (obj, args) => OnSelectCutResultClicked();
+
                 var contextMenu = new ContextMenu();
                 contextMenu.Items.Add(copyMenuItem);
                 contextMenu.Items.Add(cutMenuItem);
+                contextMenu.Items.Add(revealMenuItem);
+                contextMenu.Items.Add(selectMenuItem);
 
                 var demo = demos[(int)index];
                 var fileName = Path.GetFileNameWithoutExtension(demo.FilePath);
@@ -201,9 +212,19 @@ namespace Uber.DemoTools
             cutMenuItem.Header = "Apply Cut(s)";
             cutMenuItem.Click += (obj, args) => OnCutFileResultClicked();
 
+            var revealMenuItem = new MenuItem();
+            revealMenuItem.Header = "Reveal in File Explorer";
+            revealMenuItem.Click += (obj, args) => OnRevealFileResultClicked();
+
+            var selectMenuItem = new MenuItem();
+            selectMenuItem.Header = "Select in Demo List";
+            selectMenuItem.Click += (obj, args) => OnSelectFileResultClicked();
+
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(copyMenuItem);
             contextMenu.Items.Add(cutMenuItem);
+            contextMenu.Items.Add(revealMenuItem);
+            contextMenu.Items.Add(selectMenuItem);
 
             var fileIndex = results[0].DemoInputIndex;
             var demo = demos[(int)fileIndex];
@@ -430,6 +451,82 @@ namespace Uber.DemoTools
         private void OnCutFileResultClicked()
         {
             OnCutClicked(true);
+        }
+
+        private void OnRevealFileResultClicked()
+        {
+            try
+            {
+                var items = _fileResultsListView.SelectedItems;
+                if(items.Count != 1)
+                {
+                    return;
+                }
+                var item = items[0];
+                var listViewItem = item as ListViewItem;
+                var displayInfo = listViewItem.Content as SearchResultFileDisplayInfo;
+                Process.Start("explorer.exe", "/select," + _resultDemos[(int)displayInfo.FileIndex].FilePath);
+            }
+            catch(Exception)
+            {
+            }
+        }
+
+        private void OnRevealCutResultClicked()
+        {
+            try
+            {
+                var items = _fileResultsListView.SelectedItems;
+                if(items.Count != 1)
+                {
+                    return;
+                }
+                var item = items[0];
+                var listViewItem = item as ListViewItem;
+                var displayInfo = listViewItem.Content as SearchResultCutDisplayInfo;
+                Process.Start("explorer.exe", "/select," + _resultDemos[(int)displayInfo.Match.DemoInputIndex].FilePath);
+            }
+            catch(Exception)
+            {
+            }
+        }
+
+        private void OnSelectFileResultClicked()
+        {
+            try
+            {
+                var demos = new HashSet<DemoInfo>();
+                var items = _fileResultsListView.SelectedItems;
+                foreach(var item in items)
+                {
+                    var listViewItem = item as ListViewItem;
+                    var displayInfo = listViewItem.Content as SearchResultFileDisplayInfo;
+                    demos.Add(displayInfo.Demo);
+                }
+                _app.SelectDemos(demos);
+            }
+            catch(Exception)
+            {
+            }
+        }
+
+        private void OnSelectCutResultClicked()
+        {
+            try
+            {
+                var demos = new HashSet<DemoInfo>();
+                var items = _cutResultsListView.SelectedItems;
+                foreach(var item in items)
+                {
+                    var listViewItem = item as ListViewItem;
+                    var displayInfo = listViewItem.Content as SearchResultCutDisplayInfo;
+                    demos.Add(displayInfo.Demo);
+                }
+                _app.SelectDemos(demos);
+            }
+            catch(Exception)
+            {
+            }
         }
 
         private void OnCutClicked(bool fileMode)

@@ -3,10 +3,21 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Threading;
 
 
 namespace Uber
 {
+    public static class WpfExtensionMethods
+    {
+        private static Action EmptyDelegate = delegate() { };
+
+        public static void Refresh(this UIElement uiElement)
+        {
+            uiElement.Dispatcher.Invoke(DispatcherPriority.Render, EmptyDelegate);
+        }
+    }
+
     public static class WpfHelper
     {
         public class WrapPanelNewLine : FrameworkElement

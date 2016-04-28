@@ -3063,6 +3063,46 @@ namespace Uber.DemoTools
             return itemList;
         }
 
+        public void SelectDemos(IEnumerable<DemoInfo> demos)
+        {
+            var selectedItems = new List<ListViewItem>();
+            foreach(var item in _demoListView.Items)
+            {
+                var listViewItem = item as ListViewItem;
+                if(listViewItem == null)
+                {
+                    continue;
+                }
+
+                var displayInfo = listViewItem.Content as DemoDisplayInfo;
+                if(displayInfo == null)
+                {
+                    continue;
+                }
+
+                foreach(var demo in demos)
+                {
+                    if(demo == displayInfo.Demo)
+                    {
+                        selectedItems.Add(listViewItem);
+                        break;
+                    }
+                }
+            }
+
+            if(selectedItems.Count == 0)
+            {
+                return;
+            }
+
+            _demoListView.SelectedItems.Clear();
+            foreach(var selectedItem in selectedItems)
+            {
+                _demoListView.SelectedItems.Add(selectedItem);
+            }
+            _demoListView.Refresh();
+        }
+
         private void CopyLogSelection()
         {
             var stringBuilder = new StringBuilder();
