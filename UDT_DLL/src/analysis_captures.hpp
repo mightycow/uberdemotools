@@ -26,9 +26,9 @@ private:
 	typedef void (udtCapturesAnalyzer::*ProcessCommandFunc)(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 	typedef void (udtCapturesAnalyzer::*ProcessSnapshotFunc)(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
-	void ProcessGamestateMessageQL(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
-	void ProcessCommandMessageQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessSnapshotMessageQL(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
+	void ProcessGamestateMessageQLorOSP(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
+	void ProcessCommandMessageQLorOSP(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 
 	void ProcessGamestateMessageCPMA(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessageCPMA(const udtCommandCallbackArg& arg, udtBaseParser& parser);
@@ -40,11 +40,11 @@ private:
 
 	void ProcessGamestateMessageClearStates(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 
-	bool ExtractPlayerIndexFromCaptureMessageQL(s32& playerIndex, const udtString& playerName, udtProtocol::Id protocol);
+	bool ExtractPlayerIndexFromCaptureMessageQLorOSP(s32& playerIndex, const udtString& playerName, udtProtocol::Id protocol);
 
-	void ProcessPlayerConfigStringQL(const char* configString, udtBaseParser& parser, s32 playerIndex);
-	void ProcessFlagStatusCommandQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
-	void ProcessPrintCommandQL(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessPlayerConfigStringQLorOSP(const char* configString, udtBaseParser& parser, s32 playerIndex);
+	void ProcessFlagStatusCommandQLorOSP(const udtCommandCallbackArg& arg, udtBaseParser& parser);
+	void ProcessPrintCommandQLorOSP(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
 	// Teams: 0=red, 1=blue.
 
