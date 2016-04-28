@@ -243,7 +243,7 @@ static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtPars
 	{
 		const udtCutSection& cut = plugIn.CutSections[i];
 		udtPatternMatch match;
-		match.DemoInputIndex = context->InputIndices[demoIndex];
+		match.DemoInputIndex = demoIndex;
 		match.GameStateIndex = cut.GameStateIndex;
 		match.StartTimeMs = cut.StartTimeMs;
 		match.EndTimeMs = cut.EndTimeMs;
@@ -488,7 +488,7 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 	return true;
 }
 
-bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
+bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 contextDemoIndex, u32 inputDemoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
 {
 	switch(jobType)
 	{
@@ -505,10 +505,10 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
 
 		case udtParsingJobType::ExportToJSON:
-			return ExportToJSON(context, demoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
+			return ExportToJSON(context, contextDemoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
 
 		case udtParsingJobType::FindPatterns:
-			return FindPatterns(context, demoIndex, info, demoFilePath, (udtPatternSearchContext*)jobSpecificInfo);
+			return FindPatterns(context, inputDemoIndex, info, demoFilePath, (udtPatternSearchContext*)jobSpecificInfo);
 
 		default:
 			return false;
@@ -607,7 +607,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const bool success = ProcessSingleDemoFile(jobType, context, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
+		const bool success = ProcessSingleDemoFile(jobType, context, i, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;

@@ -227,9 +227,10 @@ namespace Uber.DemoTools
 
         private class ThreadArg
         {
-            public List<string> FilePaths = null;
-            public UDT_DLL.udtPatternInfo[] Patterns = null;
-            public ArgumentResources Resources = null;
+            public List<DemoInfo> Demos;
+            public List<string> FilePaths;
+            public UDT_DLL.udtPatternInfo[] Patterns;
+            public ArgumentResources Resources;
         }
 
         private static UInt32 GetBit(UDT_DLL.udtPatternType type)
@@ -335,6 +336,7 @@ namespace Uber.DemoTools
             }
 
             var threadArg = new ThreadArg();
+            threadArg.Demos = demos;
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();
             threadArg.Resources = resources;
@@ -387,7 +389,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            if(threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
+            if(threadArg.Demos == null || threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
             {
                 _app.LogError("Invalid thread argument data");
                 return;
@@ -400,7 +402,7 @@ namespace Uber.DemoTools
                 var resources = threadArg.Resources;
                 var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
                 var results = UDT_DLL.FindPatternsInDemos(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
-                _app.UpdateSearchResults(results, threadArg.FilePaths);
+                _app.UpdateSearchResults(results, threadArg.Demos);
             }
             catch(Exception exception)
             {

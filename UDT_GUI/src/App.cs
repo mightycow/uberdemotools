@@ -473,7 +473,7 @@ namespace Uber.DemoTools
             var cutByPattern = new CutByPatternComponent(this);
             _appComponents.Add(cutByPattern);
             var cutByPatternTab = new TabItem();
-            cutByPatternTab.Header = "Cut & Find Patterns";
+            cutByPatternTab.Header = "Pattern Search";
             cutByPatternTab.Content = cutByPattern.RootControl;
 
             var modifiers = new ModifierComponent(this);
@@ -2719,7 +2719,7 @@ namespace Uber.DemoTools
             return true;
         }
 
-        public void UpdateSearchResults(List<UDT_DLL.udtPatternMatch> results, List<string> filePaths)
+        public void UpdateSearchResults(List<UDT_DLL.udtPatternMatch> results, List<DemoInfo> demos)
         {
             var resultsComponent = _appComponents.Find(c => c is SearchResultsComponent) as SearchResultsComponent;
             if(resultsComponent == null)
@@ -2729,7 +2729,7 @@ namespace Uber.DemoTools
 
             VoidDelegate guiUpdater = delegate
             {
-                resultsComponent.UpdateResults(results, filePaths);
+                resultsComponent.UpdateResults(results, demos);
             };
             _window.Dispatcher.Invoke(guiUpdater);
 

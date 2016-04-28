@@ -1896,6 +1896,48 @@ namespace Uber.DemoTools
             return success;
         }
 
+        public class Cut
+        {
+            public int GameStateIndex;
+            public int StartTimeMs;
+            public int EndTimeMs;
+        }
+
+        public static bool CutDemoByTimes(udtParserContextRef context, ref udtParseArg parseArg, string filePath, List<Cut> newCuts)
+        {
+            if(context == IntPtr.Zero || newCuts.Count == 0)
+            {
+                return false;
+            }
+
+            parseArg.PlugInCount = 0;
+            parseArg.PlugIns = IntPtr.Zero;
+
+            var cutCount = newCuts.Count;
+            var cuts = new udtCut[cutCount];
+            for(var i = 0; i < cutCount; ++i)
+            {
+                var cut = new udtCut();
+                cut.FilePath = IntPtr.Zero;
+                cut.GameStateIndex = (Int32)newCuts[i].GameStateIndex;
+                cut.StartTimeMs = newCuts[i].StartTimeMs;
+                cut.EndTimeMs = newCuts[i].EndTimeMs;
+                cuts[i] = cut;
+            }
+
+            var pinnedCuts = new PinnedObject(cuts);
+            var cutInfo = new udtCutByTimeArg();
+            cutInfo.Cuts = pinnedCuts.Address;
+            cutInfo.CutCount = (UInt32)cutCount;
+
+            var filePathPtr = StringToHGlobalUTF8(filePath);
+            var success = udtCutDemoFileByTime(context, ref parseArg, ref cutInfo, filePathPtr) == udtErrorCode.None;
+            Marshal.FreeHGlobal(filePathPtr);
+            pinnedCuts.Free();
+
+            return success;
+        }
+
         public static bool MergeDemos(ref udtParseArg parseArg, List<string> filePaths)
         {
             var resources = new ArgumentResources();
@@ -2229,7 +2271,13 @@ namespace Uber.DemoTools
                 var localResults = FindPatternsInDemosImpl(res, ref pa, files, patterns, options);
                 if(localResults != null)
                 {
-                    results.AddRange(localResults);
+                    // Add results with fixed up indices.
+                    foreach(var localResult in localResults)
+                    {
+                        var result = localResult;
+                        result.DemoInputIndex = (uint)fileIndices[(int)result.DemoInputIndex];
+                        results.Add(result);
+                    }
                 }
             };
 

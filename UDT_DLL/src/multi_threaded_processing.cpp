@@ -241,13 +241,13 @@ static void ThreadFunction(void* userData)
 			break;
 		}
 
-		const u32 errorCodeIdx = data->Context->InputIndices[i - startIdx];
+		const u32 originalInputIdx = data->Context->InputIndices[i - startIdx];
 		const u64 currentJobByteCount = shared->FileSizes[i];
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
 		const udtParsingJobType::Id jobType = (udtParsingJobType::Id)shared->JobType;
-		const bool success = ProcessSingleDemoFile(jobType, data->Context, i - startIdx, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
-		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
+		const bool success = ProcessSingleDemoFile(jobType, data->Context, i - startIdx, originalInputIdx, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
+		errorCodes[originalInputIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
 		if(success)

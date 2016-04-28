@@ -12,37 +12,43 @@ namespace Uber.DemoTools
 {
     public class SearchResultFileDisplayInfo
     {
-        public SearchResultFileDisplayInfo(string fileName, string matchCount, string patterns)
+        public SearchResultFileDisplayInfo(string fileName, string matchCount, string patterns, uint fileIndex, DemoInfo demo)
         {
             FileName = fileName;
             MatchCount = matchCount;
             Patterns = patterns;
+            FileIndex = fileIndex;
+            Demo = demo;
         }
 
         public override string ToString()
         {
-            return "@TODO:";
+            return string.Format("{0}: [{1}] ({2})", FileName, MatchCount, Patterns);
         }
 
         public string FileName { get; set; }
         public string MatchCount { get; set; }
         public string Patterns { get; set; }
+        public uint FileIndex { get; private set; }
+        public DemoInfo Demo { get; private set; }
     }
 
     public class SearchResultCutDisplayInfo
     {
-        public SearchResultCutDisplayInfo(string fileName, string gs, string start, string end, string patterns)
+        public SearchResultCutDisplayInfo(string fileName, string gs, string start, string end, string patterns, UDT_DLL.udtPatternMatch match, DemoInfo demo)
         {
             FileName = fileName;
             GSIndex = gs;
             StartTime = start;
             EndTime = end;
             Patterns = patterns;
+            Match = match;
+            Demo = demo;
         }
 
         public override string ToString()
         {
-            return "@TODO:";
+            return string.Format("{0}: [{1}] {2} - {3} ({4})", FileName, GSIndex, StartTime, EndTime, Patterns);
         }
 
         public string FileName { get; set; }
@@ -50,16 +56,23 @@ namespace Uber.DemoTools
         public string StartTime { get; set; }
         public string EndTime { get; set; }
         public string Patterns { get; set; }
+        public UDT_DLL.udtPatternMatch Match { get; private set; }
+        public DemoInfo Demo { get; private set; }
     }
 
     public class SearchResultsComponent : AppComponent
     {
+        private static RoutedCommand _copyCutCommand = new RoutedCommand();
+        private static RoutedCommand _copyFileCommand = new RoutedCommand();
+
         private App _app;
         private TextBlock _noResultsTextBlock;
         private DemoInfoListView _fileResultsListView;
         private DemoInfoListView _cutResultsListView;
         private RadioButton _displayFilesRadioButton;
         private ScrollViewer _scrollViewer;
+        private List<UDT_DLL.udtPatternMatch> _results;
+        private List<DemoInfo> _resultDemos;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _fileResultsListView, _cutResultsListView }; } }
@@ -88,7 +101,7 @@ namespace Uber.DemoTools
             // Nothing to do.
         }
 
-        public void UpdateResults(List<UDT_DLL.udtPatternMatch> results, List<string> filePaths)
+        public void UpdateResults(List<UDT_DLL.udtPatternMatch> results, List<DemoInfo> demos)
         {
             _cutResultsListView.Items.Clear();
             _fileResultsListView.Items.Clear();
@@ -97,22 +110,40 @@ namespace Uber.DemoTools
             results.StableSort((a, b) => a.GameStateIndex.CompareTo(b.GameStateIndex));
             results.StableSort((a, b) => a.DemoInputIndex.CompareTo(b.DemoInputIndex));
 
+            _results = results;
+            _resultDemos = demos;
+
             foreach(var result in results)
             {
                 var index = result.DemoInputIndex;
-                if(index >= filePaths.Count)
+                if(index >= demos.Count)
                 {
                     continue;
                 }
 
-                var fileName = Path.GetFileNameWithoutExtension(filePaths[(int)index]);
+                var copyMenuItem = new MenuItem();
+                copyMenuItem.Header = "Copy to Clipboard (Ctrl+C)";
+                copyMenuItem.Command = _copyCutCommand;
+                copyMenuItem.Click += (obj, args) => OnCopyCutResultToClipboardClicked();
+
+                var cutMenuItem = new MenuItem();
+                cutMenuItem.Header = "Apply Cut(s)";
+                cutMenuItem.Click += (obj, args) => OnCutCutResultClicked();
+
+                var contextMenu = new ContextMenu();
+                contextMenu.Items.Add(copyMenuItem);
+                contextMenu.Items.Add(cutMenuItem);
+
+                var demo = demos[(int)index];
+                var fileName = Path.GetFileNameWithoutExtension(demo.FilePath);
                 var gs = result.GameStateIndex.ToString();
                 var start = App.FormatMinutesSeconds(result.StartTimeMs / 1000);
                 var end = App.FormatMinutesSeconds(result.EndTimeMs / 1000);
                 var patterns = FormatPatterns(result.Patterns);
-                var cutResult = new SearchResultCutDisplayInfo(fileName, gs, start, end, patterns);
+                var cutResult = new SearchResultCutDisplayInfo(fileName, gs, start, end, patterns, result, demo);
                 var cutItem = new ListViewItem();
                 cutItem.Content = cutResult;
+                cutItem.ContextMenu = contextMenu;
                 _cutResultsListView.Items.Add(cutItem);
             }
 
@@ -121,7 +152,7 @@ namespace Uber.DemoTools
             foreach(var result in results)
             {
                 var index = result.DemoInputIndex;
-                if(index >= filePaths.Count)
+                if(index >= demos.Count)
                 {
                     continue;
                 }
@@ -130,7 +161,7 @@ namespace Uber.DemoTools
                 {
                     if(fileResults.Count > 0)
                     {
-                        AddSingleFileResult(fileResults, filePaths);
+                        AddSingleFileResult(fileResults, demos);
                         fileResults.Clear();
                     }
                 }
@@ -139,7 +170,7 @@ namespace Uber.DemoTools
             }
             if(fileResults.Count > 0)
             {
-                AddSingleFileResult(fileResults, filePaths);
+                AddSingleFileResult(fileResults, demos);
             }
 
             var fileMode = _displayFilesRadioButton.IsChecked ?? false;
@@ -153,7 +184,7 @@ namespace Uber.DemoTools
             }
         }
 
-        private void AddSingleFileResult(List<UDT_DLL.udtPatternMatch> results, List<string> filePaths)
+        private void AddSingleFileResult(List<UDT_DLL.udtPatternMatch> results, List<DemoInfo> demos)
         {
             uint patternBits = 0;
             foreach(var result in results)
@@ -161,12 +192,28 @@ namespace Uber.DemoTools
                 patternBits |= result.Patterns;
             }
 
-            var fileName = Path.GetFileNameWithoutExtension(filePaths[(int)results[0].DemoInputIndex]);
+            var copyMenuItem = new MenuItem();
+            copyMenuItem.Header = "Copy to Clipboard (Ctrl+C)";
+            copyMenuItem.Command = _copyFileCommand;
+            copyMenuItem.Click += (obj, args) => OnCopyFileResultToClipboardClicked();
+
+            var cutMenuItem = new MenuItem();
+            cutMenuItem.Header = "Apply Cut(s)";
+            cutMenuItem.Click += (obj, args) => OnCutFileResultClicked();
+
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(copyMenuItem);
+            contextMenu.Items.Add(cutMenuItem);
+
+            var fileIndex = results[0].DemoInputIndex;
+            var demo = demos[(int)fileIndex];
+            var fileName = Path.GetFileNameWithoutExtension(demo.FilePath);
             var matches = results.Count.ToString();
             var patterns = FormatPatterns(patternBits);
-            var cutResult = new SearchResultFileDisplayInfo(fileName, matches, patterns);
+            var cutResult = new SearchResultFileDisplayInfo(fileName, matches, patterns, fileIndex, demo);
             var fileItem = new ListViewItem();
             fileItem.Content = cutResult;
+            fileItem.ContextMenu = contextMenu;
             _fileResultsListView.Items.Add(fileItem);
         }
 
@@ -298,6 +345,8 @@ namespace Uber.DemoTools
             scrollViewer.VerticalScrollBarVisibility = ScrollBarVisibility.Auto;
             scrollViewer.Content = rootPanel;
 
+            InitListViewBindings();
+
             return scrollViewer;
         }
 
@@ -355,6 +404,192 @@ namespace Uber.DemoTools
             var posDelta = (double)info.Delta;
             var curPos = _scrollViewer.VerticalOffset;
             _scrollViewer.ScrollToVerticalOffset(curPos - posDelta);
+        }
+
+        private void InitListViewBindings()
+        {
+            App.AddKeyBinding(_cutResultsListView, Key.C, _copyCutCommand, (obj, args) => OnCopyCutResultToClipboardClicked());
+            App.AddKeyBinding(_fileResultsListView, Key.C, _copyFileCommand, (obj, args) => OnCopyFileResultToClipboardClicked());
+        }
+
+        private void OnCopyCutResultToClipboardClicked()
+        {
+            App.CopyListViewRowsToClipboard(_cutResultsListView);
+        }
+
+        private void OnCopyFileResultToClipboardClicked()
+        {
+            App.CopyListViewRowsToClipboard(_fileResultsListView);
+        }
+
+        private void OnCutCutResultClicked()
+        {
+            OnCutClicked(false);
+        }
+
+        private void OnCutFileResultClicked()
+        {
+            OnCutClicked(true);
+        }
+
+        private void OnCutClicked(bool fileMode)
+        {
+            var cutLists = fileMode ? GetFileMatches() : GetCutMatches();
+            if(cutLists.FileCuts.Count == 0)
+            {
+                _app.LogError("No cut/file selected or none has a protocol that can be written");
+                return;
+            }
+
+            _app.SaveBothConfigs();
+            _app.DisableUiNonThreadSafe();
+            _app.JoinJobThread();
+
+            _app.StartJobThread(DemoCutThread, cutLists);
+        }
+
+        private class FileCuts
+        {
+            public string FilePath;
+            public readonly List<UDT_DLL.Cut> Cuts = new List<UDT_DLL.Cut>();
+        }
+
+        private class CutLists
+        {
+            public readonly List<FileCuts> FileCuts = new List<FileCuts>();
+        }
+
+        private void DemoCutThread(object arg)
+        {
+            var cuts = arg as CutLists;
+            if(cuts == null)
+            {
+                _app.LogError("Invalid thread argument");
+                return;
+            }
+
+            _app.InitParseArg();
+            
+            try
+            {
+                foreach(var fileCuts in cuts.FileCuts)
+                {
+                    UDT_DLL.CutDemoByTimes(_app.GetMainThreadContext(), ref _app.ParseArg, fileCuts.FilePath, fileCuts.Cuts);
+                }
+            }
+            catch(Exception exception)
+            {
+                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
+            }
+        }
+
+        private CutLists GetFileMatches()
+        {
+            var items = _fileResultsListView.SelectedItems;
+            if(items.Count == 0)
+            {
+                return null;
+            }
+
+            var result = new CutLists();
+            foreach(var item in items)
+            {
+                var listViewItem = item as ListViewItem;
+                if(listViewItem == null)
+                {
+                    continue;
+                }
+
+                var displayInfo = listViewItem.Content as SearchResultFileDisplayInfo;
+                if(displayInfo == null)
+                {
+                    continue;
+                }
+
+                if(displayInfo.FileIndex >= (uint)_resultDemos.Count)
+                {
+                    continue;
+                }
+
+                var filePath = _resultDemos[(int)displayInfo.FileIndex].FilePath;
+                if(!App.IsValidWriteProtocol(App.GetProtocolFromFilePath(filePath)))
+                {
+                    continue;
+                }
+
+                var matches = _results.FindAll(c => c.DemoInputIndex == displayInfo.FileIndex);
+                var fileCuts = new FileCuts();
+                fileCuts.FilePath = filePath;
+                foreach(var match in matches)
+                {
+                    var cut = new UDT_DLL.Cut();
+                    cut.GameStateIndex = (int)match.GameStateIndex;
+                    cut.StartTimeMs = match.StartTimeMs;
+                    cut.EndTimeMs = match.EndTimeMs;
+                    fileCuts.Cuts.Add(cut);
+                }
+                result.FileCuts.Add(fileCuts);
+            }
+
+            return result;
+        }
+
+        private CutLists GetCutMatches()
+        {
+            var items = _cutResultsListView.SelectedItems;
+            if(items.Count == 0)
+            {
+                return null;
+            }
+
+            uint currentFileIndex = uint.MaxValue;
+            var fileCuts = new FileCuts();
+            var result = new CutLists();
+            foreach(var item in items)
+            {
+                var listViewItem = item as ListViewItem;
+                if(listViewItem == null)
+                {
+                    continue;
+                }
+
+                var displayInfo = listViewItem.Content as SearchResultCutDisplayInfo;
+                if(displayInfo == null)
+                {
+                    continue;
+                }
+
+                var match = displayInfo.Match;
+                if(match.DemoInputIndex >= (uint)_resultDemos.Count)
+                {
+                    continue;
+                }
+
+                if(currentFileIndex != match.DemoInputIndex)
+                {
+                    if(fileCuts.Cuts.Count > 0)
+                    {
+                        fileCuts.FilePath = _resultDemos[(int)currentFileIndex].FilePath;
+                        result.FileCuts.Add(fileCuts);
+                        fileCuts = new FileCuts();
+                    }
+                }
+
+                var cut = new UDT_DLL.Cut();
+                cut.GameStateIndex = (int)match.GameStateIndex;
+                cut.StartTimeMs = match.StartTimeMs;
+                cut.EndTimeMs = match.EndTimeMs;
+                fileCuts.Cuts.Add(cut);
+
+                currentFileIndex = match.DemoInputIndex;
+            }
+            if(fileCuts.Cuts.Count > 0)
+            {
+                fileCuts.FilePath = _resultDemos[(int)currentFileIndex].FilePath;
+                result.FileCuts.Add(fileCuts);
+            }
+
+            return result;
         }
     }
 }
