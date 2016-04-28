@@ -721,7 +721,7 @@ u32 CleanUpString(char* string, udtProtocol::Id protocol)
 	char c;
 	while((c = *source) != 0)
 	{
-		if(IsLongOSPColorString(udtString::NewConstRef(string, (u32)(source - start))))
+		if(IsLongOSPColorString(udtString::NewConstRef(source)))
 		{
 			source += 7;
 		}
