@@ -898,7 +898,12 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 		}
 	}
 
-	return MergeDemosNoInputCheck(info, filePaths, fileCount, protocol);
+	if(!MergeDemosNoInputCheck(info, filePaths, fileCount, protocol))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
 }
 
 UDT_API(udtParserContext*) udtCreateContext()
