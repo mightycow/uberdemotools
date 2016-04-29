@@ -61,11 +61,46 @@ namespace Uber.DemoTools
         public DemoInfo Demo { get; private set; }
     }
 
+    public class CommandBindingWrapper
+    {
+        private RoutedCommand _command = new RoutedCommand();
+        private CommandBinding _commandBinding;
+        private KeyBinding _keyBinding;
+
+        public delegate bool CanExecuteDelegate();
+        public delegate void OnClickDelegate();
+
+        public RoutedCommand RoutedCommand { get { return _command; } }
+        public CommandBinding CommandBinding { get { return _commandBinding; } }
+        public KeyBinding KeyBinding { get { return _keyBinding; } }
+
+        public CommandBindingWrapper(UIElement uiElement, Key key, CanExecuteDelegate canExecute, OnClickDelegate onClick)
+        {
+            var keyGesture = new KeyGesture(key, ModifierKeys.Control);
+            var keyBinding = new KeyBinding(_command, keyGesture);
+            _keyBinding = keyBinding;
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _command;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = canExecute(); };
+            commandBinding.Executed += (obj, args) => onClick();
+            _commandBinding = commandBinding;
+            uiElement.CommandBindings.Add(_commandBinding);
+            uiElement.InputBindings.Add(_keyBinding);
+        }
+
+        public CommandBindingWrapper(UIElement uiElement, CanExecuteDelegate canExecute, OnClickDelegate onClick)
+        {
+            var commandBinding = new CommandBinding();
+            commandBinding.Command = _command;
+            commandBinding.CanExecute += (obj, args) => { args.CanExecute = canExecute(); };
+            commandBinding.Executed += (obj, args) => onClick();
+            _commandBinding = commandBinding;
+            uiElement.CommandBindings.Add(_commandBinding);
+        }
+    }
+
     public class SearchResultsComponent : AppComponent
     {
-        private static RoutedCommand _copyCutCommand = new RoutedCommand();
-        private static RoutedCommand _copyFileCommand = new RoutedCommand();
-
         private App _app;
         private TextBlock _resultsTextBlock;
         private TextBlock _noResultsTextBlock;
@@ -75,6 +110,14 @@ namespace Uber.DemoTools
         private ScrollViewer _scrollViewer;
         private List<UDT_DLL.udtPatternMatch> _results;
         private List<DemoInfo> _resultDemos;
+        private CommandBindingWrapper _fileCopyCommand;
+        private CommandBindingWrapper _fileCutCommand;
+        private CommandBindingWrapper _fileRevealCommand;
+        private CommandBindingWrapper _fileSelectCommand;
+        private CommandBindingWrapper _cutCopyCommand;
+        private CommandBindingWrapper _cutCutCommand;
+        private CommandBindingWrapper _cutRevealCommand;
+        private CommandBindingWrapper _cutSelectCommand;
 
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _fileResultsListView, _cutResultsListView }; } }
@@ -124,27 +167,27 @@ namespace Uber.DemoTools
                 }
 
                 var copyMenuItem = new MenuItem();
-                copyMenuItem.Header = "Copy to Clipboard (Ctrl+C)";
-                copyMenuItem.Command = _copyCutCommand;
-                copyMenuItem.Click += (obj, args) => OnCopyCutResultToClipboardClicked();
+                copyMenuItem.Header = App.CreateContextMenuHeader("Copy to Clipboard", "(Ctrl+C)");
+                copyMenuItem.Command = _cutCopyCommand.RoutedCommand;
 
                 var cutMenuItem = new MenuItem();
                 cutMenuItem.Header = "Apply Cut(s)";
-                cutMenuItem.Click += (obj, args) => OnCutCutResultClicked();
+                cutMenuItem.Command = _cutCutCommand.RoutedCommand;
 
                 var revealMenuItem = new MenuItem();
                 revealMenuItem.Header = "Reveal in File Explorer";
-                revealMenuItem.Click += (obj, args) => OnRevealCutResultClicked();
+                revealMenuItem.Command = _cutRevealCommand.RoutedCommand;
 
                 var selectMenuItem = new MenuItem();
                 selectMenuItem.Header = "Select in Demo List";
-                selectMenuItem.Click += (obj, args) => OnSelectCutResultClicked();
+                selectMenuItem.Command = _cutSelectCommand.RoutedCommand;
 
                 var contextMenu = new ContextMenu();
                 contextMenu.Items.Add(copyMenuItem);
-                contextMenu.Items.Add(cutMenuItem);
-                contextMenu.Items.Add(revealMenuItem);
                 contextMenu.Items.Add(selectMenuItem);
+                contextMenu.Items.Add(cutMenuItem);
+                contextMenu.Items.Add(new Separator());
+                contextMenu.Items.Add(revealMenuItem);
 
                 var demo = demos[(int)index];
                 var fileName = Path.GetFileNameWithoutExtension(demo.FilePath);
@@ -210,27 +253,27 @@ namespace Uber.DemoTools
             }
 
             var copyMenuItem = new MenuItem();
-            copyMenuItem.Header = "Copy to Clipboard (Ctrl+C)";
-            copyMenuItem.Command = _copyFileCommand;
-            copyMenuItem.Click += (obj, args) => OnCopyFileResultToClipboardClicked();
+            copyMenuItem.Header = App.CreateContextMenuHeader("Copy to Clipboard", "(Ctrl+C)");
+            copyMenuItem.Command = _fileCopyCommand.RoutedCommand;
 
             var cutMenuItem = new MenuItem();
             cutMenuItem.Header = "Apply Cut(s)";
-            cutMenuItem.Click += (obj, args) => OnCutFileResultClicked();
+            cutMenuItem.Command = _fileCutCommand.RoutedCommand;
 
             var revealMenuItem = new MenuItem();
             revealMenuItem.Header = "Reveal in File Explorer";
-            revealMenuItem.Click += (obj, args) => OnRevealFileResultClicked();
+            revealMenuItem.Command = _fileRevealCommand.RoutedCommand;
 
             var selectMenuItem = new MenuItem();
             selectMenuItem.Header = "Select in Demo List";
-            selectMenuItem.Click += (obj, args) => OnSelectFileResultClicked();
+            selectMenuItem.Command = _fileSelectCommand.RoutedCommand;
 
             var contextMenu = new ContextMenu();
             contextMenu.Items.Add(copyMenuItem);
-            contextMenu.Items.Add(cutMenuItem);
-            contextMenu.Items.Add(revealMenuItem);
             contextMenu.Items.Add(selectMenuItem);
+            contextMenu.Items.Add(cutMenuItem);
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(revealMenuItem);
 
             var fileIndex = results[0].DemoInputIndex;
             var demo = demos[(int)fileIndex];
@@ -445,8 +488,15 @@ namespace Uber.DemoTools
 
         private void InitListViewBindings()
         {
-            App.AddKeyBinding(_cutResultsListView, Key.C, _copyCutCommand, (obj, args) => OnCopyCutResultToClipboardClicked());
-            App.AddKeyBinding(_fileResultsListView, Key.C, _copyFileCommand, (obj, args) => OnCopyFileResultToClipboardClicked());
+            _fileCopyCommand = new CommandBindingWrapper(_fileResultsListView, Key.C, () => true, OnCopyFileResultToClipboardClicked);
+            _fileCutCommand = new CommandBindingWrapper(_fileResultsListView, () => true, OnCutFileResultClicked);
+            _fileRevealCommand = new CommandBindingWrapper(_fileResultsListView, CanExecuteFileRevealCommand, OnRevealFileResultClicked);
+            _fileSelectCommand = new CommandBindingWrapper(_fileResultsListView, () => true, OnSelectFileResultClicked);
+
+            _cutCopyCommand = new CommandBindingWrapper(_cutResultsListView, Key.C, () => true, OnCopyCutResultToClipboardClicked);
+            _cutCutCommand = new CommandBindingWrapper(_cutResultsListView, () => true, OnCutCutResultClicked);
+            _cutRevealCommand = new CommandBindingWrapper(_cutResultsListView, CanExecuteCutRevealCommand, OnRevealCutResultClicked);
+            _cutSelectCommand = new CommandBindingWrapper(_cutResultsListView, () => true, OnSelectCutResultClicked);
         }
 
         private void OnCopyCutResultToClipboardClicked()
@@ -492,7 +542,7 @@ namespace Uber.DemoTools
         {
             try
             {
-                var items = _fileResultsListView.SelectedItems;
+                var items = _cutResultsListView.SelectedItems;
                 if(items.Count != 1)
                 {
                     return;
@@ -708,6 +758,20 @@ namespace Uber.DemoTools
             }
 
             return result;
+        }
+
+        private bool CanExecuteFileRevealCommand()
+        {
+            var items = _fileResultsListView.SelectedItems;
+
+            return items != null && items.Count == 1;
+        }
+
+        private bool CanExecuteCutRevealCommand()
+        {
+            var items = _cutResultsListView.SelectedItems;
+
+            return items != null && items.Count == 1;
         }
     }
 }

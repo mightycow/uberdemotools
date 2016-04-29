@@ -847,7 +847,7 @@ namespace Uber.DemoTools
             AddDemos(filePaths, folderPaths);
         }
 
-        private FrameworkElement CreateContextMenuHeader(string left, string right)
+        public static FrameworkElement CreateContextMenuHeader(string left, string right)
         {
             var leftItem = new TextBlock { Text = left, Margin = new Thickness(0, 0, 10, 0) };
             var rightItem = new TextBlock { Text = right, HorizontalAlignment = HorizontalAlignment.Right };
