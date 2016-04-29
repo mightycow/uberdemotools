@@ -2684,7 +2684,7 @@ namespace Uber.DemoTools
         {
             var stringBuilder = new StringBuilder();
 
-            var items = CreateSortedList(listView.SelectedItems);
+            var items = CreateSortedList(listView.SelectedItems, listView.Items);
             foreach(var item in items)
             {
                 var listViewItem = item as ListViewItem;
@@ -3049,7 +3049,7 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(GetLog(), true);
         }
 
-        public static List<object> CreateSortedList(System.Collections.IList items)
+        public static List<object> CreateSortedList(System.Collections.IList items, System.Collections.IList originalItems)
         {
             var itemList = new List<object>();
             itemList.Capacity = items.Count;
@@ -3057,8 +3057,8 @@ namespace Uber.DemoTools
             {
                 itemList.Add(item);
             }
-            
-            itemList.Sort((a, b) => items.IndexOf(b).CompareTo(items.IndexOf(a)));
+
+            itemList.Sort((a, b) => originalItems.IndexOf(a).CompareTo(originalItems.IndexOf(b)));
 
             return itemList;
         }
@@ -3107,7 +3107,7 @@ namespace Uber.DemoTools
         {
             var stringBuilder = new StringBuilder();
 
-            var items = CreateSortedList(_logListBox.SelectedItems);
+            var items = CreateSortedList(_logListBox.SelectedItems, _logListBox.Items);
             foreach(var item in items)
             {
                 var line = GetTextFromLogItem(item);
