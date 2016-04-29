@@ -1,3 +1,20 @@
+0.7.0 (??.??.2016)
+ADD: Searching for patterns and displaying the results in a new tab: "Search Results"
+CHG: Many performance and memory usage improvements, parsing is now roughly 2x faster
+CHG: The flag captures analyzer now obtains its data in much more reliable ways (supporting QL, CPMA and OSP)
+CHG: The cut/search by pattern player tracking based on names is more robust (doesn't give up the search after a gamestate, handles disconnects)
+CHG: The default thread count is now 1 because we can't rely on all users having SSDs
+CHG: Improved the scroll to bottom implementation of the log list box
+FIX: Not reserving enough memory address space is no longer going to trigger a fatal error anywhere
+FIX: Exceptions thrown by UDT.dll can now be caught, regardless of the final thread count decided
+FIX: Flick rail false positives when teleporting before a rail frag
+FIX: The app will now check that demos selected for write operations have a compatible protocol
+FIX: Fixed a few errors in the way performance stats were collected and merged
+FIX: Unsuccessful calls to malloc will now invoke the fatal error handler instead of having the library crash later
+FIX: The "Copy to Clipboard" commands were keeping selection order instead of using display order
+FIX: In the "Steam Info" dialog, if the only item of a list view is not selected, the app uses it automatically instead of complaining about the lack of selection
+FIX: In the "Cut by Time" converter: in some cases, a match time exactly at the first or last second would be considered out of range
+
 0.6.0 (10.11.2015)
 ADD: An updater and the option to run it at start-up to look for new releases
 ADD: A Steam info dialog showing Steam users, Steam installation folders, game folders and demo folders

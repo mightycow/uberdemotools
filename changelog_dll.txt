@@ -1,3 +1,22 @@
+1.2.0 (??.??.2016)
+ADD: Searching for patterns with udtFindPatternsInDemoFiles
+ADD: Custom parsing API to help develop other analysis tools (or a 2D viewer?)
+ADD: PGO-enabled builds for Visual C++ (PGO: Profile-Guided Optimizations)
+CHG: Many performance and memory usage improvements, parsing is now roughly 2x faster
+CHG: The flag captures analyzer now obtains its data in much more reliable ways (supporting QL, CPMA and OSP)
+CHG: The cut/search by pattern functions can now have several rules for selecting the player index by name
+CHG: The cut/search by pattern player tracking based on names is more robust (doesn't give up the search after a gamestate, handles disconnects)
+CHG: UDT_captures: will output the same JSON data no matter the number of threads used
+CHG: UDT_captures: -b=N now keeps the captures of the top N times, not the top N captures
+CHG: The default thread count is now 1 in all command-line tools because we can't rely on all users having SSDs
+FIX: Not reserving enough memory address space is no longer going to trigger a fatal error anywhere
+FIX: Flick rail false positives when teleporting before a rail frag
+FIX: Fixed a few errors in the way performance stats were collected and merged
+FIX: Unsuccessful calls to malloc will now invoke the fatal error handler instead of having the library crash later
+FIX: Can now build the command-line tools with MingW GCC (wmain entry point support)
+FIX: The udtMergeDemoFiles function was returning incorrect error codes
+FIX: All sorts of bugs and vulnerabilities
+
 1.1.0b (23.11.2015)
 FIX: Reserving more address space for the raw commands' array allocator
 
