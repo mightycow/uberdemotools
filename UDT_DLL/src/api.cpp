@@ -29,9 +29,6 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "1.1.0b";
-
-
 static_assert(sizeof(s8) == 1, "sizeof(s8) must be 1");
 static_assert(sizeof(u8) == 1, "sizeof(u8) must be 1");
 static_assert(sizeof(s16) == 2, "sizeof(s16) must be 2");
@@ -246,9 +243,23 @@ static const u8 GameTypeFlagsArray[] =
 #undef UDT_GAME_TYPE_ITEM
 
 
+UDT_API(s32) udtGetVersionNumbers(u32* major, u32* minor, u32* revision)
+{
+	if(major == NULL || minor == NULL || revision == NULL)
+	{
+		return 0;
+	}
+
+	*major = UDT_VERSION_MAJOR;
+	*minor = UDT_VERSION_MINOR;
+	*revision = UDT_VERSION_REVISION;
+
+	return 1;
+}
+
 UDT_API(const char*) udtGetVersionString()
 {
-	return VersionString;
+	return UDT_VERSION_STRING;
 }
 
 UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)

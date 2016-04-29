@@ -456,16 +456,22 @@ private:
 
 int main(int argc, char** argv)
 {
+	if(!udtSameVersion())
+	{
+		PrintError("Compiled with header for version %s, but linked against version %s", UDT_VERSION_STRING, udtGetVersionString());
+		return 1;
+	}
+
 	if(argc < 2)
 	{
 		PrintHelp();
-		return 1;
+		return 2;
 	}
 
 	if(!IsValidFilePath(argv[1]))
 	{
 		PrintHelp();
-		return 2;
+		return 3;
 	}
 
 	udtInitLibrary();

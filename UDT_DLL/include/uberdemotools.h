@@ -1,6 +1,16 @@
 #pragma once
 
 
+#define  UDT_VERSION_MAJOR     1
+#define  UDT_VERSION_MINOR     2
+#define  UDT_VERSION_REVISION  0
+
+#define  UDT_QUOTE(name)            #name
+#define  UDT_STR(macro)             UDT_QUOTE(macro)
+#define  UDT_MAKE_VERSION(a, b, c)  UDT_STR(a)"."UDT_STR(b)"."UDT_STR(c)
+#define  UDT_VERSION_STRING         UDT_MAKE_VERSION(UDT_VERSION_MAJOR, UDT_VERSION_MINOR, UDT_VERSION_REVISION)
+
+
 #if defined(_MSC_VER)
 #	define UDT_MSVC
 #	define UDT_MSVC_VER _MSC_VER
@@ -2123,9 +2133,23 @@ extern "C"
 	A bunch of simple stand-alone helper functions.
 	*/
 
+	/* Returns the version numbers. */
+	/* Returns zero if any argument is NULL. */
+	UDT_API(s32) udtGetVersionNumbers(u32* major, u32* minor, u32* revision);
+
 	/* Returns a null-terminated string describing the library's version. */
 	/* Never returns NULL. */
 	UDT_API(const char*) udtGetVersionString();
+
+	/* Checks if this header file is compatible with the library you're linking against. */
+	/* Returns zero if not exactly the same version. */
+#if defined(__cplusplus)
+	inline s32 udtSameVersion()
+	{
+		u32 maj, min, rev; udtGetVersionNumbers(&maj, &min, &rev);
+		return (maj == UDT_VERSION_MAJOR && min == UDT_VERSION_MINOR && rev == UDT_VERSION_REVISION) ? (s32)1 : (s32)0;
+	};
+#endif
 
 	/* Returns a null-terminated string describing the error. */
 	/* Never returns NULL. */
