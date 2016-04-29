@@ -67,6 +67,7 @@ namespace Uber.DemoTools
         private static RoutedCommand _copyFileCommand = new RoutedCommand();
 
         private App _app;
+        private TextBlock _resultsTextBlock;
         private TextBlock _noResultsTextBlock;
         private DemoInfoListView _fileResultsListView;
         private DemoInfoListView _cutResultsListView;
@@ -184,6 +185,11 @@ namespace Uber.DemoTools
                 AddSingleFileResult(fileResults, demos);
             }
 
+            var cutCount = _cutResultsListView.Items.Count;
+            var fileCount = _fileResultsListView.Items.Count;
+            _resultsTextBlock.Text = string.Format("Found {0} match{1} in {2} demo file{3}.", 
+                cutCount, cutCount > 1 ? "es" : "", fileCount, fileCount > 1 ? "s" : "");
+
             var fileMode = _displayFilesRadioButton.IsChecked ?? false;
             if(fileMode)
             {
@@ -290,9 +296,9 @@ namespace Uber.DemoTools
 
             var fileResultsGridView = new GridView();
             fileResultsGridView.AllowsColumnReorder = false;
-            fileResultsGridView.Columns.Add(CreateColumn(300, "File Name", "FileName"));
-            fileResultsGridView.Columns.Add(CreateColumn(75, "Matches", "MatchCount"));
-            fileResultsGridView.Columns.Add(CreateColumn(200, "Patterns", "Patterns"));
+            fileResultsGridView.Columns.Add(CreateColumn(380, "File Name", "FileName"));
+            fileResultsGridView.Columns.Add(CreateColumn(40, "Cuts", "MatchCount"));
+            fileResultsGridView.Columns.Add(CreateColumn(130, "Patterns", "Patterns"));
 
             var fileResultsListView = new DemoInfoListView();
             _fileResultsListView = fileResultsListView;
@@ -304,11 +310,11 @@ namespace Uber.DemoTools
 
             var cutResultsGridView = new GridView();
             cutResultsGridView.AllowsColumnReorder = false;
-            cutResultsGridView.Columns.Add(CreateColumn(300, "File Name", "FileName"));
+            cutResultsGridView.Columns.Add(CreateColumn(330, "File Name", "FileName"));
             cutResultsGridView.Columns.Add(CreateColumn(40, "GS", "GSIndex", "GameState Index"));
             cutResultsGridView.Columns.Add(CreateColumn(50, "Start", "StartTime"));
             cutResultsGridView.Columns.Add(CreateColumn(50, "End", "EndTime"));
-            cutResultsGridView.Columns.Add(CreateColumn(150, "Patterns", "Patterns"));
+            cutResultsGridView.Columns.Add(CreateColumn(80, "Patterns", "Patterns"));
 
             var cutResultsListView = new DemoInfoListView();
             _cutResultsListView = cutResultsListView;
@@ -330,12 +336,20 @@ namespace Uber.DemoTools
             noResultsTextBlock.Margin = new Thickness(5);
             noResultsTextBlock.Text = "Nothing was found!";
 
+            var resultsTextBlock = new TextBlock();
+            _resultsTextBlock = resultsTextBlock;
+            resultsTextBlock.HorizontalAlignment = HorizontalAlignment.Left;
+            resultsTextBlock.VerticalAlignment = VerticalAlignment.Center;
+            resultsTextBlock.Margin = new Thickness(5);
+            resultsTextBlock.Text = "";
+
             var resultsStackPanel = new StackPanel();
             resultsStackPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             resultsStackPanel.VerticalAlignment = VerticalAlignment.Stretch;
             resultsStackPanel.Margin = new Thickness(5);
             resultsStackPanel.Orientation = Orientation.Vertical;
             resultsStackPanel.Children.Add(noResultsTextBlock);
+            resultsStackPanel.Children.Add(resultsTextBlock);
             resultsStackPanel.Children.Add(fileResultsListView);
             resultsStackPanel.Children.Add(cutResultsListView);
 
@@ -396,6 +410,7 @@ namespace Uber.DemoTools
         private void OnFileModeChecked()
         {
             var hasResults = _cutResultsListView.Items.Count > 0 && _fileResultsListView.Items.Count > 0;
+            _resultsTextBlock.Visibility = hasResults ? Visibility.Visible : Visibility.Collapsed;
             _noResultsTextBlock.Visibility = hasResults ? Visibility.Collapsed : Visibility.Visible;
             _fileResultsListView.Visibility = hasResults ? Visibility.Visible : Visibility.Collapsed;
             _cutResultsListView.Visibility = Visibility.Collapsed;
@@ -404,6 +419,7 @@ namespace Uber.DemoTools
         private void OnCutModeChecked()
         {
             var hasResults = _cutResultsListView.Items.Count > 0 && _fileResultsListView.Items.Count > 0;
+            _resultsTextBlock.Visibility = hasResults ? Visibility.Visible : Visibility.Collapsed;
             _noResultsTextBlock.Visibility = hasResults ? Visibility.Collapsed : Visibility.Visible;
             _fileResultsListView.Visibility = Visibility.Collapsed;
             _cutResultsListView.Visibility = hasResults ? Visibility.Visible : Visibility.Collapsed;
