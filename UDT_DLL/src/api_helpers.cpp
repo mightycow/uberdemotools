@@ -434,7 +434,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 
 	runner.FinishParsing();
 
-	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
+	return runner.WasSuccess();
 }
 
 static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& allocator, const udtString& inputFilePath, const char* outputFolderPath)
