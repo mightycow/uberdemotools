@@ -1683,6 +1683,8 @@ namespace Uber.DemoTools
                 "\nOn the other hand, cutting at specific timestamps does requires that all messages be decoded in order and re-encoded accordingly and is therefore a much more costly operation.";
 
             var helpGroupBox = new GroupBox();
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;

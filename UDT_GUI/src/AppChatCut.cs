@@ -157,6 +157,8 @@ namespace Uber.DemoTools
                 "\ncreate_cut = match(message, rule_1) OR match(message, rule_2) OR ... OR match(message, rule_N)";
 
             var helpGroupBox = new GroupBox();
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;

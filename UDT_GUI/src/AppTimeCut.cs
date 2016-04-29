@@ -254,10 +254,10 @@ namespace Uber.DemoTools
             _gameStateIndexRow = optionsPanel.Children[2] as FrameworkElement;
 
             var cutOptionsGroupBox = new GroupBox();
-            cutOptionsGroupBox.Header = "Cut Configuration";
-            cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
             cutOptionsGroupBox.Margin = new Thickness(5);
+            cutOptionsGroupBox.Header = "Cut Configuration";
             cutOptionsGroupBox.Content = optionsPanel;
 
             var cutButton = new Button();
@@ -364,6 +364,8 @@ namespace Uber.DemoTools
                 "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"General\" tab under \"Info\".";
 
             var helpGroupBox = new GroupBox();
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;
