@@ -48,6 +48,7 @@ void udtMatchPatternAnalyzer::FinishAnalysis()
 	_statsAnalyzer.FinishProcessingDemo();
 
 	udtParseDataStatsBuffers statsBuffers;
+	_statsAnalyzer.UpdateBufferStruct();
 	_statsAnalyzer.CopyBuffersStruct(&statsBuffers);
 	const udtParseDataStats* const matches = statsBuffers.MatchStats;
 	if(matches == NULL)
