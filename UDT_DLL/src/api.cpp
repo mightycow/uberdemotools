@@ -558,17 +558,22 @@ UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfSta
 
 	destPerfStats[udtPerfStatsField::ThreadCount] = sourcePerfStats[udtPerfStatsField::ThreadCount];
 	destPerfStats[udtPerfStatsField::AllocatorCount] = sourcePerfStats[udtPerfStatsField::AllocatorCount];
-
 	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
 	destPerfStats[udtPerfStatsField::Duration] += sourcePerfStats[udtPerfStatsField::Duration];
-	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	if(destPerfStats[udtPerfStatsField::Duration] > 0)
+	{
+		destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	}
 
 	if(sourcePerfStats[udtPerfStatsField::MemoryReserved] > destPerfStats[udtPerfStatsField::MemoryReserved])
 	{
 		destPerfStats[udtPerfStatsField::MemoryReserved] = sourcePerfStats[udtPerfStatsField::MemoryReserved];
 		destPerfStats[udtPerfStatsField::MemoryCommitted] = sourcePerfStats[udtPerfStatsField::MemoryCommitted];
 		destPerfStats[udtPerfStatsField::MemoryUsed] = sourcePerfStats[udtPerfStatsField::MemoryUsed];
-		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+		if(destPerfStats[udtPerfStatsField::MemoryCommitted] > 0)
+		{
+			destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+		}
 	}
 
 	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
@@ -587,12 +592,18 @@ UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStat
 	destPerfStats[udtPerfStatsField::AllocatorCount] += sourcePerfStats[udtPerfStatsField::AllocatorCount];
 	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
 	destPerfStats[udtPerfStatsField::Duration] = udt_max(destPerfStats[udtPerfStatsField::Duration], sourcePerfStats[udtPerfStatsField::Duration]);
-	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
 	destPerfStats[udtPerfStatsField::MemoryReserved] += sourcePerfStats[udtPerfStatsField::MemoryReserved];
 	destPerfStats[udtPerfStatsField::MemoryCommitted] += sourcePerfStats[udtPerfStatsField::MemoryCommitted];
 	destPerfStats[udtPerfStatsField::MemoryUsed] += sourcePerfStats[udtPerfStatsField::MemoryUsed];
-	destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
 	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+	if(destPerfStats[udtPerfStatsField::Duration] > 0)
+	{
+		destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	}
+	if(destPerfStats[udtPerfStatsField::MemoryCommitted] > 0)
+	{
+		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+	}
 
 	return (s32)udtErrorCode::None;
 }
