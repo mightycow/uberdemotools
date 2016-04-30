@@ -1423,6 +1423,9 @@ namespace Uber.DemoTools
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private IntPtr udtGetVersionNumbers(ref UInt32 major, ref UInt32 minor, ref UInt32 revision);
+
 	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 	    extern static private Int32 udtIsValidProtocol(udtProtocol protocol);
 
@@ -1698,6 +1701,45 @@ namespace Uber.DemoTools
             }
 
             return Marshal.PtrToStringAnsi(version) ?? "N/A";
+        }
+
+        public class Version
+        {
+            public Version(uint maj, uint min, uint rev)
+            {
+                Major = maj;
+                Minor = min;
+                Revision = rev;
+            }
+
+            public uint AsSingleNumber()
+            {
+                return Major * 100 + Minor * 10 + Revision;
+            }
+
+            public int CompareTo(Version other)
+            {
+                return AsSingleNumber().CompareTo(other.AsSingleNumber());
+            }
+
+            public override string ToString()
+            {
+                return string.Format("{0}.{1}.{2}", Major, Minor, Revision);
+            }
+
+            public uint Major { get; private set; }
+            public uint Minor { get; private set; }
+            public uint Revision { get; private set; }
+        }
+
+        public static Version GetVersionNumbers()
+        {
+            uint maj = 0;
+            uint min = 0;
+            uint rev = 0;
+            udtGetVersionNumbers(ref maj, ref min, ref rev);
+
+            return new Version(maj, min, rev);
         }
 
         public static bool Crash(udtCrashType crashType)

@@ -177,7 +177,10 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.6.0";
+        private const string GuiVersion = "0.7.0";
+        private const uint MinimumDllVersionMajor = 1;
+        private const uint MinimumDllVersionMinor = 2;
+        private const uint MinimumDllVersionRevision = 0;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -424,6 +427,21 @@ namespace Uber.DemoTools
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
             UDT_DLL.InitLibrary();
+
+            var desiredVersion = new UDT_DLL.Version(MinimumDllVersionMajor, MinimumDllVersionMinor, MinimumDllVersionRevision);
+            var dllVersion = UDT_DLL.GetVersionNumbers();
+            var displayVersionWarning = false;
+            var dllVersionComparison = dllVersion.CompareTo(desiredVersion);
+            if(dllVersionComparison < 0)
+            {
+                var message = string.Format("UDT.dll version is {0} but {1} is required at a minimum.", DllVersion, desiredVersion.ToString());
+                MessageBox.Show(message, "UDT_GUI: UDT.dll too old", MessageBoxButton.OK, MessageBoxImage.Error);
+                Process.GetCurrentProcess().Kill();
+            }
+            else if(dllVersionComparison > 0)
+            {
+                displayVersionWarning = true;
+            }
 
             _cancelOperation = Marshal.AllocHGlobal(4);
             Marshal.WriteInt32(_cancelOperation, 0);
@@ -801,6 +819,10 @@ namespace Uber.DemoTools
             LogInfo("UDT {0} is now operational!", arch);
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
+            if(displayVersionWarning)
+            {
+                LogWarning("Expected DLL version was {0}. Compatibility is not guaranteed.", desiredVersion.ToString());
+            }
 
             ProcessCommandLine(cmdLineArgs);
 
