@@ -170,7 +170,7 @@ local function ApplyTutorialProjectSettings()
 		linkoptions { "/ENTRY:mainCRTStartup" }
 		
 	filter "action:gmake"
-		buildoptions { "-pedantic" }
+		buildoptions { "-std=c++11 -pedantic" }
 
 end
 

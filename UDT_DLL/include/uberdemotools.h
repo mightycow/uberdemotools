@@ -2148,7 +2148,7 @@ extern "C"
 	{
 		u32 maj, min, rev; udtGetVersionNumbers(&maj, &min, &rev);
 		return (maj == UDT_VERSION_MAJOR && min == UDT_VERSION_MINOR && rev == UDT_VERSION_REVISION) ? (s32)1 : (s32)0;
-	};
+	}
 #endif
 
 	/* Returns a null-terminated string describing the error. */
