@@ -7,7 +7,7 @@
 
 #define  UDT_QUOTE(name)            #name
 #define  UDT_STR(macro)             UDT_QUOTE(macro)
-#define  UDT_MAKE_VERSION(a, b, c)  UDT_STR(a)"."UDT_STR(b)"."UDT_STR(c)
+#define  UDT_MAKE_VERSION(a, b, c)  UDT_STR(a) "." UDT_STR(b) "." UDT_STR(c)
 #define  UDT_VERSION_STRING         UDT_MAKE_VERSION(UDT_VERSION_MAJOR, UDT_VERSION_MINOR, UDT_VERSION_REVISION)
 
 
