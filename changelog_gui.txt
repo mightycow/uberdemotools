@@ -1,4 +1,4 @@
-0.7.0 (??.??.2016)
+0.7.0 (30.04.2016)
 ADD: Searching for patterns and displaying the results in a new tab: "Search Results"
 CHG: Many performance and memory usage improvements, parsing is now roughly 2x faster
 CHG: The flag captures analyzer now obtains its data in much more reliable ways (supporting QL, CPMA and OSP)

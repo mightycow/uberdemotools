@@ -1,4 +1,4 @@
-1.2.0 (??.??.2016)
+1.2.0 (30.04.2016)
 ADD: Searching for patterns with udtFindPatternsInDemoFiles
 ADD: Custom parsing API to help develop other analysis tools (or a 2D viewer?)
 ADD: PGO-enabled builds for Visual C++ (PGO: Profile-Guided Optimizations)
