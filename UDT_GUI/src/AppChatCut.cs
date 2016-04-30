@@ -132,21 +132,7 @@ namespace Uber.DemoTools
             chatRulesGroupBox.Margin = new Thickness(5);
             chatRulesGroupBox.Content = chatRulesHorPanel;
 
-            var cutButton = new Button();
-            cutButton.HorizontalAlignment = HorizontalAlignment.Left;
-            cutButton.VerticalAlignment = VerticalAlignment.Top;
-            cutButton.Content = "Cut!";
-            cutButton.Width = 75;
-            cutButton.Height = 25;
-            cutButton.Margin = new Thickness(5);
-            cutButton.Click += (obj, args) => OnCutByChatClicked();
-
-            var actionsGroupBox = new GroupBox();
-            actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            actionsGroupBox.Margin = new Thickness(5);
-            actionsGroupBox.Header = "Actions";
-            actionsGroupBox.Content = cutButton;
+            var actionsGroupBox = CutByPatternComponent.CreateActionsGroupBox(UDT_DLL.udtPatternType.Chat);
 
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -181,54 +167,6 @@ namespace Uber.DemoTools
             scrollViewer.Content = rootPanel;
 
             return scrollViewer; 
-        }
-
-        private void OnCutByChatClicked()
-        {
-            var demos = _app.SelectedWriteDemos;
-            if(demos == null)
-            {
-                return;
-            }
-
-            _app.SaveConfig();
-            if(_app.Config.ChatRules.Count == 0)
-            {
-                _app.LogError("Not chat matching rules defined. Please add at least one to proceed.");
-            }
-
-            _app.DisableUiNonThreadSafe();
-            _app.JoinJobThread();
-
-            var filePaths = new List<string>();
-            foreach(var demo in demos)
-            {
-                filePaths.Add(demo.FilePath);
-            }
-
-            _app.StartJobThread(DemoCutByChatThread, filePaths);
-        }
-
-        private void DemoCutByChatThread(object arg)
-        {
-            var filePaths = arg as List<string>;
-            if(filePaths == null)
-            {
-                _app.LogError("Invalid thread argument type");
-                return;
-            }
-
-            _app.InitParseArg();
-
-            try
-            {
-                var config = _app.Config;
-                UDT_DLL.CutDemosByChat(ref _app.ParseArg, filePaths, config.ChatRules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
-            }
-            catch(Exception exception)
-            {
-                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
-            }
         }
 
         private void OnAddChatRuleClicked()
