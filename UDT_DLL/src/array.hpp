@@ -8,90 +8,131 @@
 
 
 //
-// A resizeable array class that:
-// - only handles POD data types
-// - never deallocates memory
-// - never does array copies
+// A resizeable array class that handles all data types as POD.
 //
 template<typename T>
 struct udtVMArray
 {
-	explicit udtVMArray(udtVMLinearAllocator& allocator)
-		: _allocator(&allocator)
-		, _objects((T*)allocator.GetStartAddress())
-		, _size(0)
+	udtVMArray(uptr reservedByteCount, const char* allocatorName)
+		: _size(0)
 	{
+		HandleAlignment();
+		_allocator.Init(reservedByteCount, allocatorName);
+	}
+	
+	udtVMArray() : 
+		_size(0)
+	{
+		HandleAlignment();
 	}
 
-	udtVMArray()
-		: _allocator(NULL)
-		, _objects(NULL)
-		, _size(0)
+	~udtVMArray()
 	{
 	}
-
-	virtual ~udtVMArray()
+	
+	void Init(uptr reservedByteCount, const char* allocatorName)
 	{
+		_allocator.Init(reservedByteCount, allocatorName);
 	}
 
-	void SetAllocator(udtVMLinearAllocator& allocator)
+	void InitNoOverride(uptr reservedByteCount, const char* allocatorName)
 	{
-		assert(_allocator == NULL);
-		assert(_objects == NULL);
-		assert(allocator.GetStartAddress() != NULL); // The allocator is not initialized yet?
-
-		_allocator = &allocator;
-		_objects = (T*)allocator.GetStartAddress();
+		_allocator.InitNoOverride(reservedByteCount, allocatorName);
 	}
 
 	T& operator[](u32 index)
 	{
-		return _objects[index];
+		return *((T*)_allocator.GetStartAddress() + index);
 	}
 
 	const T& operator[](u32 index) const
 	{
-		return _objects[index];
+		return *((const T*)_allocator.GetStartAddress() + index);
 	}
 
 	T* GetStartAddress()
 	{
-		return _objects;
+		return (T*)_allocator.GetStartAddress();
 	}
 
 	const T* GetStartAddress() const
 	{
-		return _objects;
+		return (const T*)_allocator.GetStartAddress();
 	}
 
 	T* GetEndAddress()
 	{
-		return _objects + _size;
+		return (T*)_allocator.GetStartAddress() + _size;
 	}
 
 	const T* GetEndAddress() const
 	{
-		return _objects + _size;
+		return (const T*)_allocator.GetStartAddress() + _size;
 	}
 
 	void Add(const T& object)
 	{
-		T* const objectPtr = (T*)_allocator->Allocate((uptr)sizeof(T));
+		T* const objectPtr = (T*)_allocator.AllocateAndGetAddress((uptr)sizeof(T));
 		*objectPtr = object;
 		++_size;
 	}
 
 	void Clear()
 	{
-		_allocator->Clear();
+		_allocator.Clear();
 		_size = 0;
 	}
 
-	void Resize(u32 newObjectCount)
+	void Resize(u32 newSize)
 	{
-		_allocator->Clear();
-		_allocator->Allocate((uptr)sizeof(T) * (uptr)newObjectCount);
-		_size = newObjectCount;
+		const u32 oldSize = _size;
+		if(newSize == oldSize)
+		{
+			return;
+		}
+
+		if(newSize < oldSize)
+		{
+			_allocator.SetCurrentByteCount((uptr)sizeof(T) * (uptr)newSize);
+			_size = newSize;
+			return;
+		}
+
+		_allocator.DisableReserveOverride();
+		_allocator.Allocate((uptr)sizeof(T) * (uptr)(newSize - oldSize));
+		_size = newSize;
+	}
+
+	T* Extend(u32 itemsToAdd)
+	{
+		const u32 oldSize = GetSize();
+		Resize(oldSize + itemsToAdd);
+
+		return GetStartAddress() + oldSize;
+	}
+
+	T* ExtendAndMemset(u32 itemsToAdd, u8 value)
+	{
+		const u32 oldSize = GetSize();
+		Resize(oldSize + itemsToAdd);
+		T* const firstNewItem = GetStartAddress() + oldSize;
+		memset(firstNewItem, (int)value, (size_t)itemsToAdd * sizeof(T));
+
+		return firstNewItem;
+	}
+
+	void ExtendAndSet(u32 itemsToAdd, T value)
+	{
+		const u32 oldSize = GetSize();
+		const u32 newSize = oldSize + itemsToAdd;
+		Resize(newSize);
+		T* const items = GetStartAddress();
+		for(u32 i = oldSize; i < newSize; ++i)
+		{
+			items[i] = value;
+		}
+
+		return items + oldSize;
 	}
 
 	void RemoveUnordered(u32 index)
@@ -101,9 +142,10 @@ struct udtVMArray
 			return;
 		}
 
-		_objects[index] = _objects[_size - 1];
+		T* const objects = (T*)_allocator.GetStartAddress();
+		objects[index] = objects[_size - 1];
 		--_size;
-		_allocator->Pop((uptr)sizeof(T));
+		_allocator.Pop((uptr)sizeof(T));
 	}
 
 	void Remove(u32 index)
@@ -116,13 +158,14 @@ struct udtVMArray
 		if(index == _size - 1)
 		{
 			--_size;
-			_allocator->Pop((uptr)sizeof(T));
+			_allocator.Pop((uptr)sizeof(T));
 			return;
 		}
 
-		memmove(_objects + index, _objects + index + 1, (size_t)(_size - 1 - index) * sizeof(T));
+		T* const objects = (T*)_allocator.GetStartAddress();
+		memmove(objects + index, objects + index + 1, (size_t)(_size - 1 - index) * sizeof(T));
 		--_size;
-		_allocator->Pop((uptr)sizeof(T));
+		_allocator.Pop((uptr)sizeof(T));
 	}
 
 	// The array's size, i.e. the number of elements.
@@ -133,7 +176,7 @@ struct udtVMArray
 
 	uptr GetReservedByteCount() const
 	{
-		return _allocator->GetCommittedByteCount();
+		return _allocator.GetCommittedByteCount();
 	}
 
 	bool IsEmpty() const
@@ -144,33 +187,18 @@ struct udtVMArray
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMArray);
 
-	udtVMLinearAllocator* _allocator;
-	T* _objects;
-	u32 _size;
-};
+	// Very stupid trick to fool the compiler into not emitting a
+	// "conditional expression is constant" warning.
+	static size_t Identity(size_t x) { return x; }
 
-template<typename T>
-struct udtVMArrayWithAlloc : public udtVMArray<T>
-{
-public:
-	explicit udtVMArrayWithAlloc(uptr reservedByteCount, const char* allocatorName)
+	void HandleAlignment()
 	{
-		_allocator.Init(reservedByteCount, allocatorName);
-		udtVMArray<T>::SetAllocator(_allocator);
+		if(Identity(sizeof(T)) % 4 != 0)
+		{
+			_allocator.DisableFourByteAlignment();
+		}
 	}
-
-	udtVMArrayWithAlloc()
-	{
-	}
-
-	void Init(uptr reservedByteCount, const char* allocatorName)
-	{
-		_allocator.Init(reservedByteCount, allocatorName);
-		udtVMArray<T>::SetAllocator(_allocator);
-	}
-
-private:
-	UDT_NO_COPY_SEMANTICS(udtVMArrayWithAlloc);
 
 	udtVMLinearAllocator _allocator;
+	u32 _size;
 };

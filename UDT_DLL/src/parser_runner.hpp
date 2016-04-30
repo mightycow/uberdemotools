@@ -23,10 +23,10 @@ private:
 	udtMessage _inMsg;
 	udtTimer _timer;
 	u64 _fileStartOffset;
+	u64 _fileOffset;
 	u64 _maxByteCount;
 	udtBaseParser* _parser;
 	udtStream* _file;
-	u8* _inMsgData;
 	const s32* _cancelOperation;
 	bool _success;
 };

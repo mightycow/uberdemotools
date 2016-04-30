@@ -16,7 +16,6 @@ public:
 	void SetOutputStream(udtStream* output);
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override { return 0; }
 
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;

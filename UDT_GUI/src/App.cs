@@ -36,7 +36,7 @@ namespace Uber.DemoTools
         public bool SkipChatOffsetsDialog = false;
         public bool SkipScanFoldersRecursivelyDialog = false;
         public bool ScanFoldersRecursively = false;
-        public int MaxThreadCount = 8;
+        public int MaxThreadCount = 1;
         public bool MergeCutSectionsFromDifferentPatterns = true;
         public string InputFolder = "";
         public bool UseInputFolderAsDefaultBrowsingLocation = false;
@@ -50,7 +50,6 @@ namespace Uber.DemoTools
         public int MidAirCutMinDistance = 300;
         public int MidAirCutMinAirTimeMs = 800;
         public bool MidAirCutAllowRocket = true;
-        public bool MidAirCutAllowGrenade = true;
         public bool MidAirCutAllowBFG = true;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
@@ -178,7 +177,10 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.6.0";
+        private const string GuiVersion = "0.7.0";
+        private const uint MinimumDllVersionMajor = 1;
+        private const uint MinimumDllVersionMinor = 2;
+        private const uint MinimumDllVersionRevision = 0;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -219,6 +221,16 @@ namespace Uber.DemoTools
             { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
             { ".dm_90", UDT_DLL.udtProtocol.Dm90 },
             { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
+        };
+
+        private static readonly List<UDT_DLL.udtProtocol> ValidWriteProtocols = new List<UDT_DLL.udtProtocol>
+        {
+            { UDT_DLL.udtProtocol.Dm66 },
+            { UDT_DLL.udtProtocol.Dm67 },
+            { UDT_DLL.udtProtocol.Dm68 },
+            { UDT_DLL.udtProtocol.Dm73 },
+            { UDT_DLL.udtProtocol.Dm90 },
+            { UDT_DLL.udtProtocol.Dm91 }
         };
 
         private class ConfigStringDisplayInfo
@@ -341,6 +353,33 @@ namespace Uber.DemoTools
             }
         }
 
+        public List<DemoInfo> SelectedWriteDemos
+        {
+            get
+            {
+                return GetSelectedWriteDemos(false);
+            }
+        }
+
+        public List<DemoInfo> GetSelectedWriteDemos(bool silent)
+        {
+            var demos = SelectedDemos;
+            if(demos == null)
+            {
+                if(!silent) LogError("No demo was selected");
+                return null;
+            }
+
+            demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
+            if(demos.Count == 0)
+            {
+                if(!silent) LogError("No selected demo had a protocol version compatible with the requested operation");
+                return null;
+            }
+
+            return demos;
+        }
+
         private static Color MultiplyRGBSpace(Color color, float value)
         {
             var rF = Math.Min((color.R / 255.0f) * value, 1.0f);
@@ -388,6 +427,21 @@ namespace Uber.DemoTools
 
             UDT_DLL.SetFatalErrorHandler(FatalErrorHandler);
             UDT_DLL.InitLibrary();
+
+            var desiredVersion = new UDT_DLL.Version(MinimumDllVersionMajor, MinimumDllVersionMinor, MinimumDllVersionRevision);
+            var dllVersion = UDT_DLL.GetVersionNumbers();
+            var displayVersionWarning = false;
+            var dllVersionComparison = dllVersion.CompareTo(desiredVersion);
+            if(dllVersionComparison < 0)
+            {
+                var message = string.Format("UDT.dll version is {0} but {1} is required at a minimum.", DllVersion, desiredVersion.ToString());
+                MessageBox.Show(message, "UDT_GUI: UDT.dll too old", MessageBoxButton.OK, MessageBoxImage.Error);
+                Process.GetCurrentProcess().Kill();
+            }
+            else if(dllVersionComparison > 0)
+            {
+                displayVersionWarning = true;
+            }
 
             _cancelOperation = Marshal.AllocHGlobal(4);
             Marshal.WriteInt32(_cancelOperation, 0);
@@ -437,7 +491,7 @@ namespace Uber.DemoTools
             var cutByPattern = new CutByPatternComponent(this);
             _appComponents.Add(cutByPattern);
             var cutByPatternTab = new TabItem();
-            cutByPatternTab.Header = "Cut by Patterns";
+            cutByPatternTab.Header = "Pattern Search";
             cutByPatternTab.Content = cutByPattern.RootControl;
 
             var modifiers = new ModifierComponent(this);
@@ -457,6 +511,12 @@ namespace Uber.DemoTools
             var patternsTab = new TabItem();
             patternsTab.Header = "Patterns";
             patternsTab.Content = patterns.RootControl;
+
+            var searchResults = new SearchResultsComponent(this);
+            _appComponents.Add(searchResults);
+            var searchResultsTab = new TabItem();
+            searchResultsTab.Header = "Search Results";
+            searchResultsTab.Content = searchResults.RootControl;
             
             var tabControl = new TabControl();
             _tabControl = tabControl;
@@ -469,6 +529,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(cutByPatternTab);
             tabControl.Items.Add(patternsTab);
             tabControl.Items.Add(modifiersTab);
+            tabControl.Items.Add(searchResultsTab);
             tabControl.Items.Add(settingsTab);
             tabControl.SelectionChanged += (obj, args) => OnTabSelectionChanged();
 
@@ -758,6 +819,10 @@ namespace Uber.DemoTools
             LogInfo("UDT {0} is now operational!", arch);
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
+            if(displayVersionWarning)
+            {
+                LogWarning("Expected DLL version was {0}. Compatibility is not guaranteed.", desiredVersion.ToString());
+            }
 
             ProcessCommandLine(cmdLineArgs);
 
@@ -804,7 +869,7 @@ namespace Uber.DemoTools
             AddDemos(filePaths, folderPaths);
         }
 
-        private FrameworkElement CreateContextMenuHeader(string left, string right)
+        public static FrameworkElement CreateContextMenuHeader(string left, string right)
         {
             var leftItem = new TextBlock { Text = left, Margin = new Thickness(0, 0, 10, 0) };
             var rightItem = new TextBlock { Text = right, HorizontalAlignment = HorizontalAlignment.Right };
@@ -995,7 +1060,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteMergeCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null)
             {
                 return false;
@@ -1052,7 +1117,7 @@ namespace Uber.DemoTools
 
         private bool CanExecuteSplitCommand()
         {
-            var demos = SelectedDemos;
+            var demos = GetSelectedWriteDemos(true);
             if(demos == null || demos.Count > 1)
             {
                 return false;
@@ -1151,15 +1216,16 @@ namespace Uber.DemoTools
         private void OnQuit()
         {
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             SaveConfig();
             _application.Shutdown();
         }
 
         private void OnTabSelectionChanged()
         {
-            // Tabs:
-            // 0: manage -> multiple selection
-            // 1: info   -> single   selection
             var tabIndex = _tabControl.SelectedIndex;
             var multiMode = tabIndex == 0 || tabIndex > 1;
             var tabItems = _tabControl.Items;
@@ -1639,6 +1705,8 @@ namespace Uber.DemoTools
                 "\nOn the other hand, cutting at specific timestamps does requires that all messages be decoded in order and re-encoded accordingly and is therefore a much more costly operation.";
 
             var helpGroupBox = new GroupBox();
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;
@@ -1908,11 +1976,14 @@ namespace Uber.DemoTools
 
         private void OnMergeDemosClicked()
         {
-            var demos = SelectedDemos;
-            if(demos == null || demos.Count < 2)
+            var demos = SelectedWriteDemos;
+            if(demos == null)
+            {
+                return;
+            }
+            if(demos.Count < 2)
             {
                 LogError("No enough demos selected. Please select at least two to proceed.");
-                return;
             }
 
             var firstProtocol = demos[0].ProtocolNumber;
@@ -2037,7 +2108,7 @@ namespace Uber.DemoTools
             var outputFolder = GetOutputFolder();
             Marshal.WriteInt32(_cancelOperation, 0);
             ParseArg.CancelOperation = _cancelOperation;
-            ParseArg.PerformanceStats = UDT_DLL.BatchPerfStats;
+            ParseArg.PerformanceStats = IntPtr.Zero; // @TODO: Do we really want stats for the small jobs?
             ParseArg.MessageCb = DemoLoggingCallback;
             ParseArg.ProgressCb = DemoProgressCallback;
             ParseArg.ProgressContext = IntPtr.Zero;
@@ -2089,6 +2160,11 @@ namespace Uber.DemoTools
 
             foreach(var newDemo in newDemos)
             {
+                if(newDemo == null)
+                {
+                    continue;
+                }
+
                 var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
                 demos[i].ChatEvents = newDemo.ChatEvents;
@@ -2444,6 +2520,12 @@ namespace Uber.DemoTools
                 return;
             }
 
+            if(!IsValidWriteProtocol(demo.ProtocolNumber))
+            {
+                LogError("The selected demo is using a protocol that UDT can't write.");
+                return;
+            }
+
             if(demo.Analyzed && demo.GameStateFileOffsets.Count == 1)
             {
                 LogError("The selected demo only has 1 game state message. There's nothing to split.");
@@ -2626,7 +2708,8 @@ namespace Uber.DemoTools
         {
             var stringBuilder = new StringBuilder();
 
-            foreach(var item in listView.SelectedItems)
+            var items = CreateSortedList(listView.SelectedItems, listView.Items);
+            foreach(var item in items)
             {
                 var listViewItem = item as ListViewItem;
                 if(listViewItem == null)
@@ -2649,9 +2732,55 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(allRowsFixed, true);
         }
 
+        private MultithreadedJob _currentJob;
+
+        public bool CreateAndProcessJob(ref UDT_DLL.udtParseArg parseArg, List<string> filePaths, int maxThreadCount, int maxBatchSize, MultithreadedJob.JobExecuter jobExecuter)
+        {
+            _currentJob = new MultithreadedJob();
+            _currentJob.Process(ref parseArg, filePaths, maxThreadCount, maxBatchSize, jobExecuter);
+            _currentJob.FreeResources();
+
+            return true;
+        }
+
+        public void UpdateSearchResults(List<UDT_DLL.udtPatternMatch> results, List<DemoInfo> demos)
+        {
+            var resultsComponent = _appComponents.Find(c => c is SearchResultsComponent) as SearchResultsComponent;
+            if(resultsComponent == null)
+            {
+                return;
+            }
+
+            VoidDelegate guiUpdater = delegate
+            {
+                resultsComponent.UpdateResults(results, demos);
+            };
+            _window.Dispatcher.Invoke(guiUpdater);
+
+            VoidDelegate tabSetter = delegate
+            {
+                var tabIndex = 0;
+                for(var i = 0; i < _tabControl.Items.Count; ++i)
+                {
+                    if(IsMatchingTab(resultsComponent, _tabControl.Items[i]))
+                    {
+                        tabIndex = i;
+                        break;
+                    }
+                }
+                _tabControl.SelectedIndex = tabIndex;
+            };
+            _tabControl.Dispatcher.Invoke(tabSetter);
+        }
+
         private void OnCancelJobClicked()
         {
+            // @NOTE: Not all job types will require an instance of MultithreadedJob.
             Marshal.WriteInt32(_cancelOperation, 1);
+            if(_currentJob != null)
+            {
+                _currentJob.Cancel();
+            }
             LogWarning("Job canceled!");
         }
 
@@ -2676,7 +2805,7 @@ namespace Uber.DemoTools
             return result;
         }
 
-        private void SetProgressThreadSafe(double value)
+        public void SetProgressThreadSafe(double value)
         {
             var elapsedTimeMs = _threadedJobTimer.ElapsedMilliseconds;
             var elapsed = FormatProgressTimeFromSeconds(elapsedTimeMs / 1000);
@@ -2718,12 +2847,45 @@ namespace Uber.DemoTools
             return ProtocolFileExtDic[extension];
         }
 
+        public static bool IsValidWriteProtocol(UDT_DLL.udtProtocol protocol)
+        {
+            foreach(var writeProtocol in ValidWriteProtocols)
+            {
+                if(writeProtocol == protocol)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ScrollListBoxAllTheWayDown(ListBox listBox, object lastItem)
+        {
+            if(VisualTreeHelper.GetChildrenCount(listBox) > 0)
+            {
+                var border = VisualTreeHelper.GetChild(listBox, 0) as Decorator;
+                if(border != null)
+                {
+                    var scrollViewer = border.Child as ScrollViewer;
+                    if(scrollViewer != null)
+                    {
+                        scrollViewer.ScrollToBottom();
+                        return;
+                    }
+                }
+            }
+
+            // No luck, we use the next best thing.
+            listBox.ScrollIntoView(lastItem); 
+        }
+
         private void LogMessageNoColor(string message)
         {
             VoidDelegate itemAdder = delegate 
             {
                 _logListBox.Items.Add(message);
-                _logListBox.ScrollIntoView(message); 
+                ScrollListBoxAllTheWayDown(_logListBox, message);
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
@@ -2747,7 +2909,7 @@ namespace Uber.DemoTools
                 textBlock.Text = message;
                 textBlock.Foreground = new SolidColorBrush(color);
                 _logListBox.Items.Add(textBlock);
-                _logListBox.ScrollIntoView(textBlock);
+                ScrollListBoxAllTheWayDown(_logListBox, textBlock);
             };
 
             _logListBox.Dispatcher.Invoke(itemAdder);
@@ -2911,11 +3073,65 @@ namespace Uber.DemoTools
             Clipboard.SetDataObject(GetLog(), true);
         }
 
+        public static List<object> CreateSortedList(System.Collections.IList items, System.Collections.IList originalItems)
+        {
+            var itemList = new List<object>();
+            itemList.Capacity = items.Count;
+            foreach(var item in items)
+            {
+                itemList.Add(item);
+            }
+
+            itemList.Sort((a, b) => originalItems.IndexOf(a).CompareTo(originalItems.IndexOf(b)));
+
+            return itemList;
+        }
+
+        public void SelectDemos(IEnumerable<DemoInfo> demos)
+        {
+            var selectedItems = new List<ListViewItem>();
+            foreach(var item in _demoListView.Items)
+            {
+                var listViewItem = item as ListViewItem;
+                if(listViewItem == null)
+                {
+                    continue;
+                }
+
+                var displayInfo = listViewItem.Content as DemoDisplayInfo;
+                if(displayInfo == null)
+                {
+                    continue;
+                }
+
+                foreach(var demo in demos)
+                {
+                    if(demo == displayInfo.Demo)
+                    {
+                        selectedItems.Add(listViewItem);
+                        break;
+                    }
+                }
+            }
+
+            if(selectedItems.Count == 0)
+            {
+                return;
+            }
+
+            _demoListView.SelectedItems.Clear();
+            foreach(var selectedItem in selectedItems)
+            {
+                _demoListView.SelectedItems.Add(selectedItem);
+            }
+            _demoListView.Refresh();
+        }
+
         private void CopyLogSelection()
         {
             var stringBuilder = new StringBuilder();
 
-            var items = _logListBox.SelectedItems;
+            var items = CreateSortedList(_logListBox.SelectedItems, _logListBox.Items);
             foreach(var item in items)
             {
                 var line = GetTextFromLogItem(item);
@@ -2980,6 +3196,22 @@ namespace Uber.DemoTools
             var data = udtData as JobThreadData;
             if(data == null)
             {
+                return;
+            }
+
+            if(Debugger.IsAttached)
+            {
+                data.UserFunction(data.UserData);
+
+                EnableUiThreadSafe();
+
+                VoidDelegate uiResetter = delegate
+                {
+                    _window.Title = "UDT";
+                    _demoListView.Focus();
+                };
+                _window.Dispatcher.Invoke(uiResetter);
+
                 return;
             }
 

@@ -34,30 +34,6 @@ can sometimes be a '.' instead of ' '...
 */
 
 
-static void StringRemoveEmCharacter(udtString& string)
-{
-	if(string.ReservedBytes == 0)
-	{
-		return;
-	}
-
-	char* d = string.String;
-	char* s = string.String;
-	while(*s != '\0')
-	{
-		const char c = *s++;
-		if(c == '\x19')
-		{
-			continue;
-		}
-
-		*d++ = c;
-	}
-	*d = '\0';
-	string.Length = (u32)(d - string.String);
-}
-
-
 udtParserPlugInChat::udtParserPlugInChat()
 {
 	_gameStateIndex = -1;
@@ -69,9 +45,27 @@ udtParserPlugInChat::~udtParserPlugInChat()
 
 void udtParserPlugInChat::InitAllocators(u32 demoCount)
 {
-	_chatStringAllocator.Init(ComputeReservedByteCount(1 << 15, 1 << 17, 16, demoCount), "ParserPlugInChat::Strings");
-	FinalAllocator.Init(ComputeReservedByteCount(1 << 15, 1 << 17, 16, demoCount), "ParserPlugInChat::ChatMessagesArray");
-	ChatEvents.SetAllocator(FinalAllocator);
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(7), "ParserPlugInChat::Strings");
+	ChatEvents.InitNoOverride(demoCount * UDT_KB(5), "ParserPlugInChat::ChatMessagesArray");
+}
+
+void udtParserPlugInChat::CopyBuffersStruct(void* buffersStruct) const
+{
+	*(udtParseDataChatBuffers*)buffersStruct = _buffers;
+}
+
+void udtParserPlugInChat::UpdateBufferStruct()
+{
+	_buffers.ChatMessageCount = ChatEvents.GetSize();
+	_buffers.ChatMessageRanges = BufferRanges.GetStartAddress();
+	_buffers.ChatMessages = ChatEvents.GetStartAddress();
+	_buffers.StringBuffer = _stringAllocator.GetStartAddress();
+	_buffers.StringBufferSize = (u32)_stringAllocator.GetCurrentByteCount();
+}
+
+u32 udtParserPlugInChat::GetItemCount() const
+{
+	return ChatEvents.GetSize();
 }
 
 void udtParserPlugInChat::StartDemoAnalysis()
@@ -143,13 +137,13 @@ void udtParserPlugInChat::ProcessPlayerConfigString(udtBaseParser& parser, const
 	udtVMScopedStackAllocator allocScope(*TempAllocator);
 
 	udtString playerName;
-	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs.String))
+	if(!ParseConfigStringValueString(playerName, *TempAllocator, "n", cs.GetPtr()))
 	{
 		_cleanPlayerNames[playerIndex] = udtString::NewEmptyConstant();
 		return;
 	}
 
-	_cleanPlayerNames[playerIndex] = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, playerName);
+	_cleanPlayerNames[playerIndex] = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, playerName);
 }
 
 void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
@@ -157,22 +151,19 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	udtVMScopedStackAllocator allocScope(*TempAllocator);
 
 	udtParseDataChat chatEvent;
-	memset(&chatEvent, 0, sizeof(chatEvent));
-	chatEvent.GameStateIndex = _gameStateIndex;
-	chatEvent.ServerTimeMs = parser._inServerTime;
-	chatEvent.PlayerIndex = -1;
+	InitChatEvent(chatEvent, parser._inServerTime);
 
 	const idTokenizer& tokenizer = parser.GetTokenizer();
-	const udtString originalCommand = udtString::NewClone(_chatStringAllocator, tokenizer.GetOriginalCommand());
-	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, originalCommand);
-	chatEvent.Strings[0].OriginalCommand = originalCommand.String;
-	chatEvent.Strings[1].OriginalCommand = cleanCommand.String;
+	const udtString originalCommand = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
+	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, originalCommand);
+	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, originalCommand);
+	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanCommand);
 
 	udtString argument1[2];
 	argument1[0] = udtString::NewCloneFromRef(*TempAllocator, tokenizer.GetArg(1));
 	argument1[1] = udtString::NewCleanCloneFromRef(*TempAllocator, parser._inProtocol, argument1[0]);
-	StringRemoveEmCharacter(argument1[0]);
-	StringRemoveEmCharacter(argument1[1]);
+	udtString::RemoveEmCharacter(argument1[0]);
+	udtString::RemoveEmCharacter(argument1[1]);
 
 	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
@@ -183,12 +174,12 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 		{
 			u32 colon;
 			if(!udtString::FindFirstCharacterMatch(colon, argument1[i], ':') ||
-			   colon + 2 >= argument1[i].Length)
+			   colon + 2 >= argument1[i].GetLength())
 			{
 				continue;
 			}
 
-			chatEvent.Strings[i].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[i], colon + 2).String;
+			WriteStringToApiStruct(chatEvent.Strings[i].Message, udtString::NewSubstringClone(_stringAllocator, argument1[i], colon + 2));
 		}
 	}
 	else
@@ -204,24 +195,21 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 	udtVMScopedStackAllocator allocScope(*TempAllocator);
 
 	udtParseDataChat chatEvent;
-	memset(&chatEvent, 0, sizeof(chatEvent));
-	chatEvent.GameStateIndex = _gameStateIndex;
-	chatEvent.ServerTimeMs = parser._inServerTime;
-	chatEvent.PlayerIndex = -1;
+	InitChatEvent(chatEvent, parser._inServerTime);
 	chatEvent.TeamMessage = 1;
 
 	const idTokenizer& tokenizer = parser.GetTokenizer();
-	const udtString originalCommand = udtString::NewClone(_chatStringAllocator, tokenizer.GetOriginalCommand());
-	udtString cleanedUpCommand = udtString::NewCloneFromRef(_chatStringAllocator, originalCommand);
+	const udtString originalCommand = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
+	udtString cleanedUpCommand = udtString::NewCloneFromRef(_stringAllocator, originalCommand);
 	udtString::CleanUp(cleanedUpCommand, parser._inProtocol);
-	chatEvent.Strings[0].OriginalCommand = originalCommand.String;
-	chatEvent.Strings[1].OriginalCommand = cleanedUpCommand.String;
+	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, originalCommand);
+	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanedUpCommand);
 
 	udtString argument1[2];
 	argument1[0] = udtString::NewCloneFromRef(*TempAllocator, tokenizer.GetArg(1));
 	argument1[1] = udtString::NewCleanCloneFromRef(*TempAllocator, parser._inProtocol, argument1[0]);
-	StringRemoveEmCharacter(argument1[0]);
-	StringRemoveEmCharacter(argument1[1]);
+	udtString::RemoveEmCharacter(argument1[0]);
+	udtString::RemoveEmCharacter(argument1[1]);
 
 	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
 	if(qlFormat)
@@ -244,12 +232,12 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 			   udtString::FindFirstCharacterMatch(rightParen2, arg1, ')', leftParen2 + 1) &&
 			   rightParen2 < colon)
 			{
-				const udtString location = udtString::NewSubstringClone(_chatStringAllocator, arg1, leftParen2 + 1, rightParen2 - leftParen2 - 1);
-				chatEvent.Strings[i].Location = location.String;
+				const udtString location = udtString::NewSubstringClone(_stringAllocator, arg1, leftParen2 + 1, rightParen2 - leftParen2 - 1);
+				WriteStringToApiStruct(chatEvent.Strings[i].Location, location);
 			}
 
-			const udtString message = udtString::NewSubstringClone(_chatStringAllocator, arg1, colon + 2);
-			chatEvent.Strings[i].Message = message.String;
+			const udtString message = udtString::NewSubstringClone(_stringAllocator, arg1, colon + 2);
+			WriteStringToApiStruct(chatEvent.Strings[i].Message, message);
 		}
 	}
 	else
@@ -270,14 +258,14 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 			   udtString::FindFirstCharacterMatch(rightParen2, arg1, ')', leftParen2 + 1) &&
 			   rightParen2 < colon)
 			{
-				const udtString location = udtString::NewSubstringClone(_chatStringAllocator, arg1, leftParen2 + 1, rightParen2 - leftParen2 - 1);
-				chatEvent.Strings[i].Location = location.String;
+				const udtString location = udtString::NewSubstringClone(_stringAllocator, arg1, leftParen2 + 1, rightParen2 - leftParen2 - 1);
+				WriteStringToApiStruct(chatEvent.Strings[i].Location, location);
 			}
 
-			const udtString playerName = udtString::NewSubstringClone(_chatStringAllocator, arg1, leftParen1 + 1, rightParen1 - leftParen1 - 1);
-			const udtString message = udtString::NewSubstringClone(_chatStringAllocator, arg1, colon + 2);
-			chatEvent.Strings[i].PlayerName = playerName.String;
-			chatEvent.Strings[i].Message = message.String;
+			const udtString playerName = udtString::NewSubstringClone(_stringAllocator, arg1, leftParen1 + 1, rightParen1 - leftParen1 - 1);
+			const udtString message = udtString::NewSubstringClone(_stringAllocator, arg1, colon + 2);
+			WriteStringToApiStruct(chatEvent.Strings[i].PlayerName, playerName);
+			WriteStringToApiStruct(chatEvent.Strings[i].Message, message);
 		}
 	}
 
@@ -296,9 +284,7 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	}
 
 	udtParseDataChat chatEvent;
-	memset(&chatEvent, 0, sizeof(chatEvent));
-	chatEvent.GameStateIndex = _gameStateIndex;
-	chatEvent.ServerTimeMs = parser._inServerTime;
+	InitChatEvent(chatEvent, parser._inServerTime);
 	chatEvent.PlayerIndex = clientNumber;
 	chatEvent.TeamMessage = 1;
 
@@ -312,36 +298,36 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 		const udtString& cs = parser.GetConfigString(CS_LOCATIONS_68 + locationIdx);
 		if(!udtString::IsNull(cs))
 		{
-			const udtString location = udtString::NewCloneFromRef(_chatStringAllocator, cs);
-			udtString cleanLocation = udtString::NewCloneFromRef(_chatStringAllocator, location);
+			const udtString location = udtString::NewCloneFromRef(_stringAllocator, cs);
+			udtString cleanLocation = udtString::NewCloneFromRef(_stringAllocator, location);
 			udtString::CleanUp(cleanLocation, protocol);
-			chatEvent.Strings[0].Location = location.String;
-			chatEvent.Strings[1].Location = cleanLocation.String;
+			WriteStringToApiStruct(chatEvent.Strings[0].Location, location);
+			WriteStringToApiStruct(chatEvent.Strings[1].Location, cleanLocation);
 		}
 	}
 
-	const udtString message = udtString::NewCloneFromRef(_chatStringAllocator, tokenizer.GetArg(3));
-	udtString cleanMessage = udtString::NewCloneFromRef(_chatStringAllocator, message);
+	const udtString message = udtString::NewCloneFromRef(_stringAllocator, tokenizer.GetArg(3));
+	udtString cleanMessage = udtString::NewCloneFromRef(_stringAllocator, message);
 	udtString::CleanUp(cleanMessage, protocol);
-	chatEvent.Strings[0].Message = message.String;
-	chatEvent.Strings[1].Message = cleanMessage.String;
+	WriteStringToApiStruct(chatEvent.Strings[0].Message, message);
+	WriteStringToApiStruct(chatEvent.Strings[1].Message, cleanMessage);
 
 	udtString playerName;
 	const s32 firstPlayerIndex = idConfigStringIndex::FirstPlayer(protocol);
 	if(firstPlayerIndex != -1 &&
-	   ParseConfigStringValueString(playerName, _chatStringAllocator, "n", parser._inConfigStrings[firstPlayerIndex + clientNumber].String))
+	   ParseConfigStringValueString(playerName, _stringAllocator, "n", parser._inConfigStrings[firstPlayerIndex + clientNumber].GetPtr()))
 	{
-		udtString cleanPlayerName = udtString::NewCloneFromRef(_chatStringAllocator, playerName);
+		udtString cleanPlayerName = udtString::NewCloneFromRef(_stringAllocator, playerName);
 		udtString::CleanUp(cleanMessage, protocol);
-		chatEvent.Strings[0].PlayerName = playerName.String;
-		chatEvent.Strings[1].PlayerName = cleanPlayerName.String;
+		WriteStringToApiStruct(chatEvent.Strings[0].PlayerName, playerName);
+		WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, cleanPlayerName);
 	}
 	
-	const udtString command = udtString::NewClone(_chatStringAllocator, tokenizer.GetOriginalCommand());
-	udtString cleanCommand = udtString::NewCloneFromRef(_chatStringAllocator, command);
+	const udtString command = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
+	udtString cleanCommand = udtString::NewCloneFromRef(_stringAllocator, command);
 	udtString::CleanUp(cleanMessage, protocol);
-	chatEvent.Strings[0].OriginalCommand = command.String;
-	chatEvent.Strings[1].OriginalCommand = cleanCommand.String;
+	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, command);
+	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanCommand);
 
 	ChatEvents.Add(chatEvent);
 }
@@ -349,7 +335,7 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser)
 {
 	s32 playerIndex = -1;
-	if(!StringParseInt(playerIndex, argument1.String) ||
+	if(!StringParseInt(playerIndex, argument1.GetPtr()) ||
 	   playerIndex < 0 ||
 	   playerIndex >= 64)
 	{
@@ -358,7 +344,7 @@ void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEv
 
 	chatEvent.PlayerIndex = playerIndex;
 
-	const char* const cs = parser._inConfigStrings[idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex].String;
+	const char* const cs = parser._inConfigStrings[idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex].GetPtr();
 	udtString clan, player;
 	bool hasClan;
 	if(!GetClanAndPlayerName(clan, player, hasClan, *TempAllocator, parser._inProtocol, cs))
@@ -366,12 +352,14 @@ void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEv
 		return;
 	}
 
-	chatEvent.Strings[0].PlayerName = udtString::NewCloneFromRef(_chatStringAllocator, player).String;
-	chatEvent.Strings[1].PlayerName = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, player).String;
+	WriteStringToApiStruct(chatEvent.Strings[0].PlayerName, udtString::NewCloneFromRef(_stringAllocator, player));
+	WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, player));
 	if(hasClan)
 	{
-		chatEvent.Strings[0].ClanName = udtString::NewCloneFromRef(_chatStringAllocator, clan).String;
-		chatEvent.Strings[1].ClanName = udtString::NewCleanCloneFromRef(_chatStringAllocator, parser._inProtocol, clan).String;
+		const udtString raw = udtString::NewCloneFromRef(_stringAllocator, clan);
+		const udtString clean = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, clan);
+		WriteStringToApiStruct(chatEvent.Strings[0].ClanName, raw);
+		WriteStringToApiStruct(chatEvent.Strings[1].ClanName, clean);
 	}
 }
 
@@ -384,32 +372,32 @@ void udtParserPlugInChat::ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const
 	// If not possible: name="A" message="B: C" will be the default.
 	//
 
-	char* firstColonPtr1 = strstr(argument1[1].String, ": ");
-	u32 firstColon1 = (u32)(firstColonPtr1 - argument1[1].String);
-	if(firstColonPtr1 == NULL || firstColon1 + 2 >= argument1[1].Length)
+	const char* firstColonPtr1 = strstr(argument1[1].GetPtr(), ": ");
+	u32 firstColon1 = (u32)(firstColonPtr1 - argument1[1].GetPtr());
+	if(firstColonPtr1 == NULL || firstColon1 + 2 >= argument1[1].GetLength())
 	{
 		return;
 	}
 
-	char* colonPtr1 = firstColonPtr1;
+	const char* colonPtr1 = firstColonPtr1;
 	u32 colon1 = firstColon1;
 	for(;;)
 	{
 		const udtString name = udtString::NewSubstringClone(*TempAllocator, argument1[1], 0, colon1);
 		if(IsPlayerCleanName(name))
 		{
-			chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], 0, colon1).String;
-			chatEvent.Strings[1].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], colon1 + 2).String;
+			WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, udtString::NewSubstringClone(_stringAllocator, argument1[1], 0, colon1));
+			WriteStringToApiStruct(chatEvent.Strings[1].Message, udtString::NewSubstringClone(_stringAllocator, argument1[1], colon1 + 2));
 			break;
 		}
 
 		colonPtr1 = strstr(colonPtr1 + 2, ": ");
-		colon1 = (u32)(colonPtr1 - argument1[1].String);
-		if(colonPtr1 == NULL || colon1 + 2 >= argument1[1].Length)
+		colon1 = (u32)(colonPtr1 - argument1[1].GetPtr());
+		if(colonPtr1 == NULL || colon1 + 2 >= argument1[1].GetLength())
 		{
 			// The search ended unsuccessfully, so roll back to the default scenario.
-			chatEvent.Strings[1].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], 0, firstColon1).String;
-			chatEvent.Strings[1].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[1], firstColon1 + 2).String;
+			WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, udtString::NewSubstringClone(_stringAllocator, argument1[1], 0, firstColon1));
+			WriteStringToApiStruct(chatEvent.Strings[1].Message, udtString::NewSubstringClone(_stringAllocator, argument1[1], firstColon1 + 2));
 			colon1 = firstColon1;
 			break;
 		}
@@ -425,13 +413,13 @@ void udtParserPlugInChat::ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const
 	u32 colonCount = 1;
 	for(u32 i = 0; i < colon1; ++i)
 	{
-		if(argument1[1].String[i] == ':')
+		if(argument1[1].GetPtr()[i] == ':')
 		{
 			++colonCount;
 		}
 	}
 
-	char* colonPtr0 = argument1[0].String - 1;
+	const char* colonPtr0 = argument1[0].GetPtr() - 1;
 	for(u32 i = 0; i < colonCount; ++i)
 	{
 		colonPtr0 = strchr(colonPtr0 + 1, ':');
@@ -441,14 +429,14 @@ void udtParserPlugInChat::ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const
 		}
 	}
 
-	const u32 colon0 = (u32)(colonPtr0 - argument1[0].String);
-	if(colon0 + 2 >= argument1[0].Length)
+	const u32 colon0 = (u32)(colonPtr0 - argument1[0].GetPtr());
+	if(colon0 + 2 >= argument1[0].GetLength())
 	{
 		return;
 	}
 
-	chatEvent.Strings[0].PlayerName = udtString::NewSubstringClone(_chatStringAllocator, argument1[0], 0, colon0).String;
-	chatEvent.Strings[0].Message = udtString::NewSubstringClone(_chatStringAllocator, argument1[0], colon0 + 2).String;
+	 WriteStringToApiStruct(chatEvent.Strings[0].PlayerName, udtString::NewSubstringClone(_stringAllocator, argument1[0], 0, colon0));
+	 WriteStringToApiStruct(chatEvent.Strings[0].Message, udtString::NewSubstringClone(_stringAllocator, argument1[0], colon0 + 2));
 }
 
 bool udtParserPlugInChat::IsPlayerCleanName(const udtString& cleanName)
@@ -462,4 +450,13 @@ bool udtParserPlugInChat::IsPlayerCleanName(const udtString& cleanName)
 	}
 
 	return false;
+}
+
+void udtParserPlugInChat::InitChatEvent(udtParseDataChat& chatEvent, s32 serverTimeMs)
+{
+	memset(&chatEvent, 0, sizeof(chatEvent));
+	chatEvent.GameStateIndex = _gameStateIndex;
+	chatEvent.ServerTimeMs = serverTimeMs;
+	chatEvent.PlayerIndex = -1;
+	memset(chatEvent.Strings, -1, sizeof(chatEvent.Strings));
 }

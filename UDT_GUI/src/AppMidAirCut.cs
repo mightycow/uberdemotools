@@ -40,7 +40,6 @@ namespace Uber.DemoTools
             }
 
             config.MidAirCutAllowRocket = _allowRocketsCheckBox.IsChecked ?? false;
-            config.MidAirCutAllowGrenade = _allowGrenadesCheckBox.IsChecked ?? false;
             config.MidAirCutAllowBFG = _allowBFGsCheckBox.IsChecked ?? false;
         }
 
@@ -53,7 +52,6 @@ namespace Uber.DemoTools
         private TextBox _minDistanceEditBox;
         private TextBox _minAirTimeEditBox;
         private CheckBox _allowRocketsCheckBox;
-        private CheckBox _allowGrenadesCheckBox;
         private CheckBox _allowBFGsCheckBox;
 
         private FrameworkElement CreateTab()
@@ -76,12 +74,6 @@ namespace Uber.DemoTools
             allowRocketsCheckBox.VerticalAlignment = VerticalAlignment.Center;
             allowRocketsCheckBox.IsChecked = _app.Config.MidAirCutAllowRocket;
 
-            var allowGrenadesCheckBox = new CheckBox();
-            _allowGrenadesCheckBox = allowGrenadesCheckBox;
-            allowGrenadesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
-            allowGrenadesCheckBox.VerticalAlignment = VerticalAlignment.Center;
-            allowGrenadesCheckBox.IsChecked = _app.Config.MidAirCutAllowGrenade;
-
             var allowBFGsCheckBox = new CheckBox();
             _allowBFGsCheckBox = allowBFGsCheckBox;
             allowBFGsCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -90,7 +82,6 @@ namespace Uber.DemoTools
 
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Allow Rockets?", allowRocketsCheckBox));
-            //rulesPanelList.Add(App.CreateTuple("Allow Grenades?", allowGrenadesCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow BFG?", allowBFGsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Min. Distance", minDistanceEditBox));
             rulesPanelList.Add(App.CreateTuple("Min. Air Time [ms]", minAirTimeEditBox));
@@ -106,21 +97,7 @@ namespace Uber.DemoTools
             rulesGroupBox.Margin = new Thickness(5);
             rulesGroupBox.Content = rulesPanel;
 
-            var cutButton = new Button();
-            cutButton.HorizontalAlignment = HorizontalAlignment.Left;
-            cutButton.VerticalAlignment = VerticalAlignment.Top;
-            cutButton.Content = "Cut!";
-            cutButton.Width = 75;
-            cutButton.Height = 25;
-            cutButton.Margin = new Thickness(5);
-            cutButton.Click += (obj, args) => OnCutClicked();
-
-            var actionsGroupBox = new GroupBox();
-            actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            actionsGroupBox.Margin = new Thickness(5);
-            actionsGroupBox.Header = "Actions";
-            actionsGroupBox.Content = cutButton;
+            var actionsGroupBox = CutByPatternComponent.CreateActionsGroupBox(UDT_DLL.udtPatternType.MidAirFrags);
             
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -156,59 +133,6 @@ namespace Uber.DemoTools
             scrollViewer.Content = rootPanel;
 
             return scrollViewer;
-        }
-
-        private void OnCutClicked()
-        {
-            var demos = _app.SelectedDemos;
-            if(demos == null)
-            {
-                _app.LogError("No demo was selected. Please select one to proceed.");
-                return;
-            }
-
-            _app.SaveBothConfigs();
-
-            var config = _app.Config;
-            if(!config.MidAirCutAllowRocket && !config.MidAirCutAllowGrenade && !config.MidAirCutAllowBFG)
-            {
-                _app.LogError("You didn't check any weapon. Please check at least one to proceed.");
-                return;
-            }
-
-            _app.DisableUiNonThreadSafe();
-            _app.JoinJobThread();
-
-            var filePaths = new List<string>();
-            foreach(var demo in demos)
-            {
-                filePaths.Add(demo.FilePath);
-            }
-
-            _app.StartJobThread(DemoCutThread, filePaths);
-        }
-
-        private void DemoCutThread(object arg)
-        {
-            var filePaths = arg as List<string>;
-            if(filePaths == null)
-            {
-                _app.LogError("Invalid thread argument");
-                return;
-            }
-
-            _app.InitParseArg();
-
-            try
-            {
-                var config = _app.Config;
-                var rules = UDT_DLL.CreateCutByMidAirArg(config);
-                UDT_DLL.CutDemosByMidAir(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
-            }
-            catch(Exception exception)
-            {
-                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
-            }
         }
     }
 }

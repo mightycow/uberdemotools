@@ -60,7 +60,8 @@ void udtdEntityTimeShifterPlugIn::AnalyzeConfigString(s32 index, const char* con
 	if(index == CS_SERVERINFO)
 	{
 		s32 snaps = 0;
-		if(ParseConfigStringValueInt(snaps, _tempAllocator, "sv_fps", configString))
+		if(ParseConfigStringValueInt(snaps, _tempAllocator, "sv_fps", configString) && 
+		   snaps > 0)
 		{
 			_snapshotDuration = 1000 / snaps;
 		}

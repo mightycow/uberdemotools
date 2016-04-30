@@ -12,15 +12,27 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 
 void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
 {
-	const uptr smallByteCount = 192 * 1024;
-	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawCommands::CommandsArray");
-	_stringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInRawCommands::Strings");
-	_commands.SetAllocator(FinalAllocator);
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(50), "ParserPlugInRawCommands::Strings");
+	_commands.InitNoOverride(demoCount * UDT_KB(10), "ParserPlugInRawCommands::CommandsArray");
 }
 
-u32 udtParserPlugInRawCommands::GetElementSize() const
+void udtParserPlugInRawCommands::CopyBuffersStruct(void* buffersStruct) const
 {
-	return (u32)sizeof(udtParseDataRawCommand);
+	*(udtParseDataRawCommandBuffers*)buffersStruct = _buffers;
+}
+
+void udtParserPlugInRawCommands::UpdateBufferStruct()
+{
+	_buffers.CommandCount = _commands.GetSize();
+	_buffers.CommandRanges = BufferRanges.GetStartAddress();
+	_buffers.Commands = _commands.GetStartAddress();
+	_buffers.StringBuffer = _stringAllocator.GetStartAddress();
+	_buffers.StringBufferSize = (u32)_stringAllocator.GetCurrentByteCount();
+}
+
+u32 udtParserPlugInRawCommands::GetItemCount() const
+{
+	return _commands.GetSize();
 }
 
 void udtParserPlugInRawCommands::StartDemoAnalysis()
@@ -40,13 +52,11 @@ void udtParserPlugInRawCommands::ProcessGamestateMessage(const udtGamestateCallb
 void udtParserPlugInRawCommands::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
 	const udtString rawCommand = udtString::NewClone(_stringAllocator, arg.String, arg.StringLength);
-	const udtString cleanCommand = udtString::NewCleanClone(_stringAllocator, parser._inProtocol, arg.String, arg.StringLength);
 
 	udtParseDataRawCommand info;
 	info.GameStateIndex = _gameStateIndex;
 	info.ServerTimeMs = parser._inServerTime;
-	info.RawCommand = rawCommand.String;
-	info.CleanCommand = cleanCommand.String;
+	WriteStringToApiStruct(info.RawCommand, rawCommand);
 	_commands.Add(info);
 }
 

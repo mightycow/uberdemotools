@@ -254,10 +254,10 @@ namespace Uber.DemoTools
             _gameStateIndexRow = optionsPanel.Children[2] as FrameworkElement;
 
             var cutOptionsGroupBox = new GroupBox();
-            cutOptionsGroupBox.Header = "Cut Configuration";
-            cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-            cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
+            cutOptionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            cutOptionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
             cutOptionsGroupBox.Margin = new Thickness(5);
+            cutOptionsGroupBox.Header = "Cut Configuration";
             cutOptionsGroupBox.Content = optionsPanel;
 
             var cutButton = new Button();
@@ -364,6 +364,8 @@ namespace Uber.DemoTools
                 "\n\nTo see the range of usable time values for a specific GameState index, check out the \"Server Time Range\" row(s) in the \"General\" tab under \"Info\".";
 
             var helpGroupBox = new GroupBox();
+            helpGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            helpGroupBox.VerticalAlignment = VerticalAlignment.Top;
             helpGroupBox.Margin = new Thickness(5);
             helpGroupBox.Header = "Help";
             helpGroupBox.Content = helpTextBlock;
@@ -395,6 +397,12 @@ namespace Uber.DemoTools
             if(demo == null)
             {
                 _app.LogError("No demo was selected. Please select one to proceed.");
+                return;
+            }
+
+            if(!App.IsValidWriteProtocol(demo.ProtocolNumber))
+            {
+                _app.LogError("Can't write demos of that protocol");
                 return;
             }
 
@@ -586,7 +594,12 @@ namespace Uber.DemoTools
                 serverTimeMs += timeOut.EndTimeMs - timeOut.StartTimeMs;
             }
 
-            if(serverTimeMs < match.StartTimeMs || serverTimeMs > match.EndTimeMs)
+            // In some cases, a match time exactly at the first or last second
+            // would be considered out of range.
+            // We extend the allowed range by 1 second on each side
+            // to avoid the inconvenience of having to change the value in the GUI. 
+            if(serverTimeMs < match.StartTimeMs - 1000 || 
+                serverTimeMs > match.EndTimeMs + 1000)
             {
                 SetUnknownServerTime("match time out of range");
                 return;

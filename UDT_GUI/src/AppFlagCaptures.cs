@@ -177,7 +177,7 @@ namespace Uber.DemoTools
             commandsListView.SelectionMode = SelectionMode.Extended;
 
             var infoPanelGroupBox = new GroupBox();
-            infoPanelGroupBox.Header = "Config Strings and Commands";
+            infoPanelGroupBox.Header = "Flag Capture Events";
             infoPanelGroupBox.HorizontalAlignment = HorizontalAlignment.Stretch;
             infoPanelGroupBox.VerticalAlignment = VerticalAlignment.Stretch;
             infoPanelGroupBox.Margin = new Thickness(5);

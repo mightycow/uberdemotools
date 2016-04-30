@@ -98,12 +98,12 @@ static s32 ConvertPowerUpIndex73or90to91(s32 index)
 
 static void ConvertPowerUps73or90to91(idPlayerStateBase& out, const idPlayerStateBase& in)
 {
-	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; ++i)
 	{
 		out.powerups[i] = 0;
 	}
 
-	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; ++i)
 	{
 		const s32 p = ConvertPowerUpIndex73or90to91(i);
 		if(p >= 0)
@@ -116,7 +116,7 @@ static void ConvertPowerUps73or90to91(idPlayerStateBase& out, const idPlayerStat
 static s32 ConvertPowerUpFlags73or90to91(s32 oldFlags)
 {
 	s32 flags = 0;
-	for(s32 i = 0; i < MAX_POWERUPS; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; ++i)
 	{
 		if((oldFlags & (1 << i)) == 0)
 		{
@@ -147,12 +147,12 @@ static s32 ConvertPersistStatIndex73or90to91(s32 index)
 
 static void ConvertPersistStat73or90to91(idPlayerStateBase& out, const idPlayerStateBase& in)
 {
-	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
 	{
 		out.persistant[i] = 0;
 	}
 
-	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
 	{
 		const s32 p = ConvertPersistStatIndex73or90to91(i);
 		if(p >= 0)
@@ -215,7 +215,7 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 {
 	const udtString separator = udtString::NewConstRef("\\");
 	result = udtString::NewEmpty(allocator, BIG_INFO_STRING);
-	const char* key = input.String + 1;
+	const char* key = input.GetPtr() + 1;
 	const char* value = NULL;
 	for(;;)
 	{
@@ -235,7 +235,7 @@ static void ProcessConfigString(udtString& result, udtVMLinearAllocator& allocat
 		const char* sepBeforeNextKey = strchr(value, '\\');
 		if(sepBeforeNextKey == NULL)
 		{
-			sepBeforeNextKey = input.String + input.Length;
+			sepBeforeNextKey = input.GetPtr() + input.GetLength();
 			done = true;
 		}
 
@@ -294,8 +294,7 @@ void udtProtocolConverterIdentity::ConvertConfigString(udtConfigStringConversion
 {
 	result.NewString = false;
 	result.Index = inIndex;
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 }
 
 void udtProtocolConverter90to91::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
@@ -340,16 +339,14 @@ void udtProtocolConverter90to91::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }
 
@@ -395,16 +392,14 @@ void udtProtocolConverter73to91::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex73or90to91(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue73or90to91, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }
 
@@ -447,16 +442,14 @@ void udtProtocolConverter48to68::ConvertConfigString(udtConfigStringConversion& 
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex48to68(inIndex, _protocolNumber);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 	
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 
 		s32 protocol;
 		if(ParseConfigStringValueInt(protocol, allocator, "protocol", configString))
@@ -543,8 +536,8 @@ namespace udt_private
 
 static s32 ConvertEntityEventNumber3to68(s32 eventId)
 {
-	const s32 eventSequenceBits = eventId & EV_EVENT_BITS;
-	const s32 newEventId = udt_private::ConvertEntityEventNumber3to68_helper(eventId & (~EV_EVENT_BITS));
+	const s32 eventSequenceBits = eventId & ID_ES_EVENT_BITS;
+	const s32 newEventId = udt_private::ConvertEntityEventNumber3to68_helper(eventId & (~ID_ES_EVENT_BITS));
 
 	return newEventId | eventSequenceBits;
 }
@@ -572,7 +565,7 @@ void udtProtocolConverter3to68::ConvertSnapshot(idLargestClientSnapshot& outSnap
 	idPlayerStateBase& psOut = *GetPlayerState((idClientSnapshotBase*)&outSnapshot, udtProtocol::Dm68);
 	psOut = psIn;
 
-	for(s32 i = 0; i < MAX_PERSISTANT; ++i)
+	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
 	{
 		const s32 newIndex = ConvertPersistIndex3to68(i);
 		psOut.persistant[i] = newIndex >= 0 ? psIn.persistant[newIndex] : 0;
@@ -594,15 +587,13 @@ void udtProtocolConverter3to68::ConvertConfigString(udtConfigStringConversion& r
 {
 	result.NewString = false;
 	result.Index = ConvertConfigStringIndex3to68(inIndex);
-	result.String = configString;
-	result.StringLength = configStringLength;
+	result.String = udtString::NewConstRef(configString, configStringLength);
 
 	if(inIndex == CS_SERVERINFO)
 	{
 		udtString newString;
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
-		result.String = newString.String;
-		result.StringLength = newString.Length;
+		result.String = newString;
 	}
 }

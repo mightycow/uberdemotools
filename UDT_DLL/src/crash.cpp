@@ -8,8 +8,10 @@
 
 static void DefaultCrashCallback(const char* message)
 {
+	// @NOTE: The "%s" trick is used to avoid bugs in case 
+	// message contains one or more format specifiers.
 	fprintf(stderr, "\n");
-	fprintf(stderr, message);
+	fprintf(stderr, "%s", message);
 	exit(666);
 }
 
@@ -26,7 +28,7 @@ void FatalError(const char* file, int line, const char* function, UDT_PRINTF_FOR
 	const char* fileName = file;
 	u32 sepIdx = 0;
 	if(udtString::FindLastCharacterListMatch(sepIdx, fileString, udtString::NewConstRef("/\\")) && 
-	   sepIdx < fileString.Length - 1)
+	   sepIdx < fileString.GetLength() - 1)
 	{
 		fileName = file + sepIdx + 1;
 	}

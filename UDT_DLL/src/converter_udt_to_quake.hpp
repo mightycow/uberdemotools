@@ -74,14 +74,14 @@ private:
 
 	u8 _inBaselineEntities[MAX_GENTITIES * sizeof(idLargestEntityState)]; // 1 KB * a lot
 	u8 _inReadEntities[MAX_GENTITIES * sizeof(idLargestEntityState)]; // 1 KB * a lot
-	u8 _outMsgData[MAX_MSGLEN]; // 16 KB
+	u8 _outMsgData[ID_MAX_MSG_LENGTH]; // 16 KB
 	char _inStringData[BIG_INFO_STRING]; // 8 KB
 	s32 _inRemovedEntities[MAX_GENTITIES]; // 4 KB
 	udtdSnapshotData _snapshots[2];
 	u8 _areaMask[32];
 	udtMessage _outMsg;
 	udtContext _context;
-	udtVMArrayWithAlloc<udtdConverterPlugIn*> _plugIns;
+	udtVMArray<udtdConverterPlugIn*> _plugIns;
 	udtStream* _input; // The user owns this.
 	udtStream* _output; // The user owns this. Optional.
 	udtProtocol::Id _protocol;

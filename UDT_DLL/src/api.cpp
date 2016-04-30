@@ -12,6 +12,9 @@
 #include "analysis_splitter.hpp"
 #include "path.hpp"
 #include "thread_local_allocators.hpp"
+#include "system.hpp"
+#include "custom_context.hpp"
+#include "pattern_search_context.hpp"
 
 // For malloc and free.
 #include <stdlib.h>
@@ -26,7 +29,25 @@
 #define UDT_API UDT_API_DEF
 
 
-static const char* VersionString = "1.1.0a";
+static_assert(sizeof(s8) == 1, "sizeof(s8) must be 1");
+static_assert(sizeof(u8) == 1, "sizeof(u8) must be 1");
+static_assert(sizeof(s16) == 2, "sizeof(s16) must be 2");
+static_assert(sizeof(u16) == 2, "sizeof(u16) must be 2");
+static_assert(sizeof(s32) == 4, "sizeof(s32) must be 4");
+static_assert(sizeof(u32) == 4, "sizeof(u32) must be 4");
+static_assert(sizeof(s64) == 8, "sizeof(s64) must be 8");
+static_assert(sizeof(u64) == 8, "sizeof(u64) must be 8");
+static_assert(sizeof(f32) == 4, "sizeof(f32) must be 4");
+static_assert(sizeof(f64) == 8, "sizeof(f64) must be 8");
+#if defined(UDT_X64)
+static_assert(sizeof(sptr) == 8, "sizeof(sptr) must be 8");
+static_assert(sizeof(uptr) == 8, "sizeof(uptr) must be 8");
+static_assert(sizeof(void*) == 8, "sizeof(void*) must be 8");
+#else
+static_assert(sizeof(sptr) == 4, "sizeof(sptr) must be 4");
+static_assert(sizeof(uptr) == 4, "sizeof(uptr) must be 4");
+static_assert(sizeof(void*) == 4, "sizeof(void*) must be 4");
+#endif
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -85,13 +106,13 @@ static const char* TeamNames[] =
 };
 #undef UDT_TEAM_ITEM
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Desc,
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Desc,
 static const char* CutPatternNames[] =
 {
-	UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+	UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 	"after last cut pattern"
 };
-#undef UDT_CUT_PATTERN_ITEM
+#undef UDT_PATTERN_ITEM
 
 #define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Desc,
 static const char* GameTypeNames[] =
@@ -222,9 +243,23 @@ static const u8 GameTypeFlagsArray[] =
 #undef UDT_GAME_TYPE_ITEM
 
 
+UDT_API(s32) udtGetVersionNumbers(u32* major, u32* minor, u32* revision)
+{
+	if(major == NULL || minor == NULL || revision == NULL)
+	{
+		return 0;
+	}
+
+	*major = UDT_VERSION_MAJOR;
+	*minor = UDT_VERSION_MINOR;
+	*revision = UDT_VERSION_REVISION;
+
+	return 1;
+}
+
 UDT_API(const char*) udtGetVersionString()
 {
-	return VersionString;
+	return UDT_VERSION_STRING;
 }
 
 UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
@@ -240,6 +275,16 @@ UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
 UDT_API(s32) udtIsValidProtocol(u32 protocol)
 {
 	return (protocol >= (u32)udtProtocol::AfterLastProtocol || protocol < 1) ? 0 : 1;
+}
+
+UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return 0;
+	}
+
+	return protocol >= (u32)udtProtocol::Dm66 ? 1 : 0;
 }
 
 UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
@@ -506,20 +551,77 @@ UDT_API(s32) udtGetStatsConstants(u32* playerMaskByteCount, u32* teamMaskByteCou
 
 UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
 {
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
 	destPerfStats[udtPerfStatsField::ThreadCount] = sourcePerfStats[udtPerfStatsField::ThreadCount];
 	destPerfStats[udtPerfStatsField::AllocatorCount] = sourcePerfStats[udtPerfStatsField::AllocatorCount];
-
 	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
 	destPerfStats[udtPerfStatsField::Duration] += sourcePerfStats[udtPerfStatsField::Duration];
-	destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	if(destPerfStats[udtPerfStatsField::Duration] > 0)
+	{
+		destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	}
 
 	if(sourcePerfStats[udtPerfStatsField::MemoryReserved] > destPerfStats[udtPerfStatsField::MemoryReserved])
 	{
 		destPerfStats[udtPerfStatsField::MemoryReserved] = sourcePerfStats[udtPerfStatsField::MemoryReserved];
 		destPerfStats[udtPerfStatsField::MemoryCommitted] = sourcePerfStats[udtPerfStatsField::MemoryCommitted];
 		destPerfStats[udtPerfStatsField::MemoryUsed] = sourcePerfStats[udtPerfStatsField::MemoryUsed];
+		if(destPerfStats[udtPerfStatsField::MemoryCommitted] > 0)
+		{
+			destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
+		}
+	}
+
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStats)
+{
+	if(destPerfStats == NULL || sourcePerfStats == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	destPerfStats[udtPerfStatsField::ThreadCount] += sourcePerfStats[udtPerfStatsField::ThreadCount];
+	destPerfStats[udtPerfStatsField::AllocatorCount] += sourcePerfStats[udtPerfStatsField::AllocatorCount];
+	destPerfStats[udtPerfStatsField::DataProcessed] += sourcePerfStats[udtPerfStatsField::DataProcessed];
+	destPerfStats[udtPerfStatsField::Duration] = udt_max(destPerfStats[udtPerfStatsField::Duration], sourcePerfStats[udtPerfStatsField::Duration]);
+	destPerfStats[udtPerfStatsField::MemoryReserved] += sourcePerfStats[udtPerfStatsField::MemoryReserved];
+	destPerfStats[udtPerfStatsField::MemoryCommitted] += sourcePerfStats[udtPerfStatsField::MemoryCommitted];
+	destPerfStats[udtPerfStatsField::MemoryUsed] += sourcePerfStats[udtPerfStatsField::MemoryUsed];
+	destPerfStats[udtPerfStatsField::ResizeCount] += sourcePerfStats[udtPerfStatsField::ResizeCount];
+	if(destPerfStats[udtPerfStatsField::Duration] > 0)
+	{
+		destPerfStats[udtPerfStatsField::DataThroughput] = (1000 * destPerfStats[udtPerfStatsField::DataProcessed]) / destPerfStats[udtPerfStatsField::Duration];
+	}
+	if(destPerfStats[udtPerfStatsField::MemoryCommitted] > 0)
+	{
 		destPerfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * destPerfStats[udtPerfStatsField::MemoryUsed]) / destPerfStats[udtPerfStatsField::MemoryCommitted];
 	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount)
+{
+	if(cpuCoreCount == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	u32 count;
+	if(!GetProcessorCoreCount(count))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+	
+	*cpuCoreCount = count;
 
 	return (s32)udtErrorCode::None;
 }
@@ -585,13 +687,13 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
-	char* newFilePath = AllocateSpaceForString(tempAllocator, UDT_MAX_PATH_LENGTH);
-	sprintf(newFilePath, "%s_SPLIT_%u%s", outputFilePathStart.String, index + 1, udtGetFileExtensionByProtocol(protocol));
+	udtString newFilePath = udtString::NewEmpty(tempAllocator, UDT_MAX_PATH_LENGTH);
+	sprintf(newFilePath.GetWritePtr(), "%s_SPLIT_%u%s", outputFilePathStart.GetPtr(), index + 1, udtGetFileExtensionByProtocol((u32)protocol));
 
-	context.LogInfo("Writing demo %s...", newFilePath);
+	context.LogInfo("Writing demo %s...", newFilePath.GetPtr());
 
 	udtFileStream outputFile;
-	if(!outputFile.Open(newFilePath, udtFileOpenMode::Write))
+	if(!outputFile.Open(newFilePath.GetPtr(), udtFileOpenMode::Write))
 	{
 		context.LogError("Could not open file");
 		return false;
@@ -763,9 +865,14 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		const udtCut& cut = cutInfo->Cuts[i];
 		if(cut.StartTimeMs < cut.EndTimeMs)
 		{
-			context->Parser.AddCut(
-				info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, 
-				&CallbackCutDemoFileStreamCreation, NULL, &streamInfo);
+			if(cut.FilePath != NULL)
+			{
+				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, cut.FilePath);
+			}
+			else
+			{
+				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileNameCreation, NULL, &streamInfo);
+			}
 		}
 	}
 
@@ -813,7 +920,12 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 		}
 	}
 
-	return MergeDemosNoInputCheck(info, filePaths, fileCount, protocol);
+	if(!MergeDemosNoInputCheck(info, filePaths, fileCount, protocol))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
 }
 
 UDT_API(udtParserContext*) udtCreateContext()
@@ -844,15 +956,14 @@ UDT_API(s32) udtDestroyContext(udtParserContext* context)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count)
+UDT_API(s32) udtGetContextPlugInBuffers(udtParserContext* context, u32 plugInId, void* buffersStruct)
 {
-	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffer == NULL || count == NULL ||
-	   demoIdx >= context->DemoCount)
+	if(context == NULL || plugInId >= (u32)udtParserPlugIn::Count || buffersStruct == NULL)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!context->GetDataInfo(demoIdx, plugInId, buffer, count))
+	if(!context->CopyBuffersStruct(plugInId, buffersStruct))
 	{
 		return udtErrorCode::OperationFailed;
 	}
@@ -980,7 +1091,7 @@ UDT_API(s32) udtParseDemoFiles(udtParserContextGroup** contextGroup, const udtPa
 	return GetErrorCode(success, info->CancelOperation);
 }
 
-UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo)
+UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo)
 {
 	if(info == NULL || extraInfo == NULL || patternInfo == NULL ||
 	   !IsValid(*extraInfo) || !IsValid(*patternInfo) || !HasValidOutputOption(*info))
@@ -989,6 +1100,56 @@ UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiPar
 	}
 
 	return RunJobWithLocalContextGroup(udtParsingJobType::CutByPattern, info, extraInfo, patternInfo);
+}
+
+UDT_API(s32) udtFindPatternsInDemoFiles(udtPatternSearchContext** contextPtr, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo)
+{
+	if(contextPtr == NULL || info == NULL || extraInfo == NULL || patternInfo == NULL ||
+	   !IsValid(*extraInfo) || !IsValid(*patternInfo))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtPatternSearchContext_s* context = (udtPatternSearchContext_s*)malloc(sizeof(udtPatternSearchContext_s));
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+	new (context) udtPatternSearchContext_s(patternInfo);
+	
+	const s32 result = RunJobWithLocalContextGroup(udtParsingJobType::FindPatterns, info, extraInfo, context);
+	if(result == (s32)udtErrorCode::None || (s32)udtErrorCode::OperationCanceled)
+	{
+		*contextPtr = context;
+	}
+
+	return result;
+}
+
+UDT_API(s32) udtGetSearchResults(udtPatternSearchContext* context, udtPatternSearchResults* results)
+{
+	if(context == NULL || results == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	results->Matches = context->Matches.GetStartAddress();
+	results->MatchCount = context->Matches.GetSize();
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtDestroySearchContext(udtPatternSearchContext* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	context->~udtPatternSearchContext_s();
+	free(context);
+
+	return (s32)udtErrorCode::None;
 }
 
 UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg)
@@ -1089,6 +1250,434 @@ UDT_API(s32) udtGetDemoInputIndex(udtParserContext* context, u32 demoIdx, u32* d
 	}
 
 	*demoInputIdx = context->InputIndices[demoIdx];
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(udtCuContext*) udtCuCreateContext()
+{
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	udtCuContext* const context = (udtCuContext*)malloc(sizeof(udtCuContext));
+	if(context == NULL)
+	{
+		return NULL;
+	}
+
+	new (context) udtCuContext;
+
+	if(!context->Context.Init(1, NULL, 0))
+	{
+		udtCuDestroyContext(context);
+		return NULL;
+	}
+
+	context->PlugIn.InitAllocators(0);
+
+	return context;
+}
+
+UDT_API(s32) udtCuSetMessageCallback(udtCuContext* context, udtMessageCallback callback)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(!context->Context.Context.SetCallbacks(callback, NULL, NULL))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuStartParsing(udtCuContext* context, u32 protocol)
+{
+	if(context == NULL || udtIsValidProtocol(protocol) == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const udtProtocol::Id protocolId = (udtProtocol::Id)protocol;
+	context->Context.ResetForNextDemo(false);
+	udtMessage& message = context->InMessage;
+	message.InitContext(&context->Context.Context);
+	message.InitProtocol(protocolId);
+	if(!context->Context.Parser.Init(&context->Context.Context, protocolId, protocolId, 0, true))
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuParseMessage(udtCuContext* context, udtCuMessageOutput* messageOutput, u32* continueParsing, const udtCuMessageInput* messageInput)
+{
+	if(context == NULL || messageOutput == NULL || continueParsing == NULL || messageInput == NULL ||
+	   messageInput->Buffer == NULL || messageInput->BufferByteCount == 0)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	udtMessage& message = context->InMessage;
+	message.Init((u8*)messageInput->Buffer, ID_MAX_MSG_LENGTH);
+	message.Buffer.cursize = (s32)messageInput->BufferByteCount;
+	context->Context.Parser.PlugIns.Clear();
+	context->Context.Parser.PlugIns.Add(&context->PlugIn);
+	const bool cont = context->Context.Parser.ParseNextMessage(message, messageInput->MessageSequence, 0);
+	*messageOutput = context->Message;
+	*continueParsing = cont ? 1 : 0;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuGetConfigString(udtCuContext* context, udtCuConfigString* configString, u32 configStringIndex)
+{
+	if(context == NULL || configString == NULL || configStringIndex >= (u32)MAX_CONFIGSTRINGS)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	const udtString cs = context->Context.Parser._inConfigStrings[configStringIndex];
+	configString->ConfigString = cs.GetPtr();
+	configString->ConfigStringLength = cs.GetLength();
+
+	return (s32)udtErrorCode::None;
+}
+
+static s32 GetEntity(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex, bool baseLine)
+{
+	if(context == NULL || entityState == NULL || entityIndex >= (u32)ID_MAX_PARSE_ENTITIES)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	if(baseLine)
+	{
+		*entityState = context->Context.Parser.GetBaseline((s32)entityIndex);
+	}
+	else
+	{
+		*entityState = context->Context.Parser.GetEntity((s32)entityIndex);
+	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCuGetEntityBaseline(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex)
+{
+	return GetEntity(context, entityState, entityIndex, true);
+}
+
+UDT_API(s32) udtCuGetEntityState(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex)
+{
+	return GetEntity(context, entityState, entityIndex, false);
+}
+
+UDT_API(s32) udtCuDestroyContext(udtCuContext* context)
+{
+	if(context == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @NOTE: We don't use the standard operator new approach to avoid C++ exceptions.
+	context->~udtCuContext();
+	free(context);
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtCleanUpString(char* string, u32 protocol)
+{
+	if(string == NULL || !udtIsValidProtocol(protocol))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	CleanUpString(string, (udtProtocol::Id)protocol);
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+#define CASE(Name) case udtConfigStringIndex::Name: return idConfigStringIndex::Name((udtProtocol::Id)protocol);
+	switch((udtConfigStringIndex::Id)udtConfigStringId)
+	{
+		UDT_CONFIG_STRING_LIST(CASE)
+		default: return -1;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	return GetUDTWeaponFromIdWeapon(idWeaponId, (udtProtocol::Id)protocol);
+}
+
+UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	return GetUDTModFromIdMod(idModId, (udtProtocol::Id)protocol);
+}
+
+UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+#define CASE(Name) case udtEntityEvent::Name: return idEntityEvent::Name((udtProtocol::Id)protocol);
+	switch((udtEntityEvent::Id)udtEntityEventId)
+	{
+		UDT_ENTITY_EVENT_LIST(CASE)
+		default: return -1;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+#define CASE(Name) case udtEntityType::Name: return idEntityType::Name((udtProtocol::Id)protocol);
+	switch((udtEntityType::Id)udtEntityTypeId)
+	{
+		UDT_ENTITY_TYPE_LIST(CASE)
+		default: return -1;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+#define CASE(Name, Enum, Bit) case udtPowerUpIndex::Name: return idPowerUpIndex::Name((udtProtocol::Id)protocol);
+	switch((udtPowerUpIndex::Id)udtPowerUpId)
+	{
+		UDT_POWER_UP_LIST(CASE)
+		default: return -1;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+#define CASE(Name) case udtPersStatsIndex::Name: return idPersStatsIndex::Name((udtProtocol::Id)protocol);
+	switch((udtPersStatsIndex::Id)udtPersStatsId)
+	{
+		UDT_PERSISTENT_STATS_LIST(CASE)
+		default: return -1;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return 0;
+	}
+
+#define CASE(Name) case udtEntityStateFlags::Name: return idEntityStateFlag::Name((udtProtocol::Id)protocol);
+	switch((udtEntityStateFlags::Id)udtEntityStateFlagId)
+	{
+		UDT_ENTITY_STATE_FLAG_LIST(CASE)
+		default: return 0;
+	}
+#undef CASE
+}
+
+UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+	
+	if(idFlagStatusId < 0 || idFlagStatusId >= (s32)idFlagStatus::Count)
+	{
+		return -1;
+	}
+
+	// udtFlagStatus is the same as idFlagStatus.
+	return idFlagStatusId;
+}
+
+UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+	
+	if(idTeamId < 0 || idTeamId >= 4)
+	{
+		return -1;
+	}
+
+	// udtTeam is the same as team_t.
+	return idTeamId;
+}
+
+UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod)
+{
+	if(!udtIsValidProtocol(protocol))
+	{
+		return -1;
+	}
+
+	if(mod >= (u32)udtMod::Count)
+	{
+		return -1;
+	}
+
+	udtGame::Id game = udtGame::QL;
+	switch((udtMod::Id)mod)
+	{
+		case udtMod::None: game = udtGame::Q3; break;
+		case udtMod::CPMA: game = udtGame::CPMA; break;
+		case udtMod::OSP: game = udtGame::OSP; break;
+		default: return -1;
+	}
+
+	return GetUDTGameTypeFromIdGameType(idGameTypeId, (udtProtocol::Id)protocol, game);
+}
+
+UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol)
+{
+	return GetUDTItemFromIdItem(idItemId, (udtProtocol::Id)protocol);
+}
+
+static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)
+{
+	bufferTooSmall = false;
+
+	const u32 nameLength = (u32)strlen(variableName);
+	const u32 csLength = (u32)strlen(configString);
+	if(csLength > nameLength && 
+	   strstr(configString, variableName) == configString && 
+	   configString[nameLength] == '\\')
+	{
+		// Variable found at the start.
+		return configString + nameLength + 1;
+	}
+
+	const u32 patternLength = nameLength + 2;
+	const u32 patternByteCount = patternLength + 1;
+	if(tempBytes < patternByteCount)
+	{
+		// The buffer's not large enough.
+		bufferTooSmall = true;
+		return NULL;
+	}
+
+	sprintf(tempBuf, "\\%s\\", variableName);
+	const char* const keySepAddress = strstr(configString, tempBuf);
+	if(keySepAddress == NULL)
+	{
+		// Variable not found.
+		return NULL;
+	}
+
+	return keySepAddress + patternLength;
+}
+
+UDT_API(s32) udtParseConfigStringValueAsInteger(s32* res, char* tempBuf, u32 tempBytes, const char* varName, const char* configString)
+{
+	if(res == NULL || tempBuf == NULL || tempBytes == 0 || varName == NULL || configString == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	bool bufferTooSmall = false;
+	const char* const valueAddress = FindConfigStringValueAddress(bufferTooSmall, tempBuf, tempBytes, varName, configString);
+	if(bufferTooSmall)
+	{
+		return (s32)udtErrorCode::InsufficientBufferSize;
+	}
+	else if(valueAddress == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	int result = 0;
+	if(sscanf(valueAddress, "%d", &result) != 1)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	*res = (s32)result;
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString)
+{
+	if(resBuf == NULL || resBytes == 0 || tempBuf == NULL || tempBytes == 0 || varName == NULL || configString == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	bool bufferTooSmall = false;
+	const char* const valueAddress = FindConfigStringValueAddress(bufferTooSmall, tempBuf, tempBytes, varName, configString);
+	if(bufferTooSmall)
+	{
+		return (s32)udtErrorCode::InsufficientBufferSize;
+	}
+	else if(valueAddress == NULL)
+	{
+		return (s32)udtErrorCode::OperationFailed;
+	}
+
+	const char* const sepAfterValue = strchr(valueAddress, '\\');
+	if(sepAfterValue == NULL)
+	{
+		const u32 length = (u32)strlen(valueAddress);
+		if(resBytes < length + 1)
+		{
+			return (s32)udtErrorCode::InsufficientBufferSize;
+		}
+		strcpy(resBuf, valueAddress);
+	}
+	else
+	{
+		const u32 length = (u32)(sepAfterValue - valueAddress);
+		if(resBytes < length + 1)
+		{
+			return (s32)udtErrorCode::InsufficientBufferSize;
+		}
+		memcpy(resBuf, valueAddress, length);
+		resBuf[length] = '\0';
+	}
 
 	return (s32)udtErrorCode::None;
 }

@@ -77,21 +77,7 @@ namespace Uber.DemoTools
             rulesGroupBox.Margin = new Thickness(5);
             rulesGroupBox.Content = rulesPanel;
 
-            var cutButton = new Button();
-            cutButton.HorizontalAlignment = HorizontalAlignment.Left;
-            cutButton.VerticalAlignment = VerticalAlignment.Top;
-            cutButton.Content = "Cut!";
-            cutButton.Width = 75;
-            cutButton.Height = 25;
-            cutButton.Margin = new Thickness(5);
-            cutButton.Click += (obj, args) => OnCutClicked();
-
-            var actionsGroupBox = new GroupBox();
-            actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            actionsGroupBox.Margin = new Thickness(5);
-            actionsGroupBox.Header = "Actions";
-            actionsGroupBox.Content = cutButton;
+            var actionsGroupBox = CutByPatternComponent.CreateActionsGroupBox(UDT_DLL.udtPatternType.Matches);
 
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -126,51 +112,6 @@ namespace Uber.DemoTools
             scrollViewer.Content = rootPanel;
 
             return scrollViewer;
-        }
-
-        private void OnCutClicked()
-        {
-            var demos = _app.SelectedDemos;
-            if(demos == null)
-            {
-                _app.LogError("No demo was selected. Please select one to proceed.");
-                return;
-            }
-
-            _app.SaveBothConfigs();
-            _app.DisableUiNonThreadSafe();
-            _app.JoinJobThread();
-
-            var filePaths = new List<string>();
-            foreach(var demo in demos)
-            {
-                filePaths.Add(demo.FilePath);
-            }
-
-            _app.StartJobThread(DemoCutThread, filePaths);
-        }
-
-        private void DemoCutThread(object arg)
-        {
-            var filePaths = arg as List<string>;
-            if(filePaths == null)
-            {
-                _app.LogError("Invalid thread argument");
-                return;
-            }
-
-            _app.InitParseArg();
-
-            try
-            {
-                var config = _app.Config;
-                var rules = UDT_DLL.CreateCutByMatchArg(config);
-                UDT_DLL.CutDemosByMatch(ref _app.ParseArg, filePaths, rules, UDT_DLL.CreateCutByPatternOptions(config, _app.PrivateConfig));
-            }
-            catch(Exception exception)
-            {
-                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
-            }
         }
     }
 }

@@ -1,6 +1,7 @@
 #!/bin/bash
+set -e
+
 cd ../.build/gmake
-make clean
 
 UDT_ARCH=""
 options=("x86", "x64")
@@ -31,6 +32,7 @@ done
 UDT_CONFIG="$UDT_TARGET"_"$UDT_ARCH"
 echo Selected config: $UDT_CONFIG
 
+make clean
 make UDT config=$UDT_CONFIG
 make UDT_c89 config=$UDT_CONFIG
 make UDT_cutter config=$UDT_CONFIG
@@ -40,3 +42,5 @@ make UDT_merger config=$UDT_CONFIG
 make UDT_json config=$UDT_CONFIG
 make UDT_captures config=$UDT_CONFIG
 make UDT_converter config=$UDT_CONFIG
+make tut_players config=$UDT_CONFIG
+make tut_multi_rail config=$UDT_CONFIG

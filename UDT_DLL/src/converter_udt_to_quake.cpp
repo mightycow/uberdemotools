@@ -21,8 +21,8 @@ void udtdConverter::ResetForNextDemo(udtStream& input, udtStream* output, udtPro
 	_input = &input;
 	_output = output;
 	_protocol = protocol;
-	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState(protocol);
-	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState(protocol);
+	_protocolSizeOfEntityState = udtGetSizeOfIdEntityState((u32)protocol);
+	_protocolSizeOfPlayerState = udtGetSizeOfIdPlayerState((u32)protocol);
 
 	_outMsg.InitContext(&_context);
 	_outMsg.InitProtocol(protocol);
@@ -428,9 +428,9 @@ void udtdConverter::MergeEntitiesFrom(const udtdConverter& sourceConv, u32 flipT
 	MergeEntities(dest, destOld, source, sourceOld);
 }
 
-static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase cur)
+static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase& cur)
 {
-	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(vec3_t)) != 0;
+	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(idVec3)) != 0;
 }
 
 static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
@@ -499,7 +499,7 @@ static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequenc
 	es.groundEntityNum = ps.groundEntityNum;
 
 	es.powerups = 0;
-	for(s32 i = 0; i < MAX_POWERUPS; i++)
+	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; i++)
 	{
 		if(ps.powerups[i])
 		{

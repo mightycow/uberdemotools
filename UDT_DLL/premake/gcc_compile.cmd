@@ -32,4 +32,11 @@ cd ..\.build\gmake
 @echo on
 mingw32-make.exe clean
 mingw32-make.exe config=%gmake_config% UDT
+mingw32-make.exe config=%gmake_config% UDT_captures
+mingw32-make.exe config=%gmake_config% UDT_converter
+mingw32-make.exe config=%gmake_config% UDT_cutter
+mingw32-make.exe config=%gmake_config% UDT_json
+mingw32-make.exe config=%gmake_config% UDT_merger
+mingw32-make.exe config=%gmake_config% UDT_splitter
+mingw32-make.exe config=%gmake_config% UDT_timeshifter
 pause

@@ -12,11 +12,6 @@
 extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
 
 
-typedef f32 vec_t;
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
-
 // angle indexes
 #define	PITCH				0		// up / down
 #define	YAW					1		// left / right
@@ -67,135 +62,9 @@ typedef vec_t vec4_t[4];
 // if entityState->solid == SOLID_BMODEL, modelindex is an inline model number
 #define	SOLID_BMODEL	0xffffff
 
-typedef enum {
-	TR_STATIONARY,
-	TR_INTERPOLATE,				// non-parametric, but interpolate between snapshots
-	TR_LINEAR,
-	TR_LINEAR_STOP,
-	TR_SINE,					// value = base + sin( time / duration ) * delta
-	TR_GRAVITY
-} trType_t;
-
-struct idTrajectoryBase
-{
-	trType_t	trType;
-	s32			trTime;
-	s32			trDuration;			// if non 0, trTime + trDuration = stop time
-	vec3_t		trBase;
-	vec3_t		trDelta;			// velocity, etc
-};
-
-// This is the information conveyed from the server
-// in an update message about entities that the client will
-// need to render in some way.
-// Different eTypes may use the information in different ways.
-// The messages are delta compressed, so it doesn't really matter if
-// the structure size is fairly large.
-struct idEntityStateBase
-{
-	s32		number;			// entity index
-	s32		eType;			// entityType_t
-	s32		eFlags;
-
-	idTrajectoryBase	pos;
-	idTrajectoryBase	apos;
-
-	s32		time;
-	s32		time2;
-
-	vec3_t	origin;
-	vec3_t	origin2;
-
-	vec3_t	angles;
-	vec3_t	angles2;
-
-	s32		otherEntityNum;	// shotgun sources, etc
-	s32		otherEntityNum2;
-
-	s32		groundEntityNum;// ENTITYNUM_NONE = in air
-
-	s32		constantLight;	// r + (g<<8) + (b<<16) + (intensity<<24)
-	s32		loopSound;		// constantly loop this sound
-
-	s32		modelindex;
-	s32		modelindex2;
-	s32		clientNum;		// 0 to (MAX_CLIENTS - 1), for players and corpses
-	s32		frame;
-
-	s32		solid;			// for client side prediction, trap_linkentity sets this properly
-
-	s32		event;			// impulse events -- muzzle flashes, footsteps, etc
-	s32		eventParm;
-
-	// for players
-	s32		powerups;		// bit flags
-	s32		weapon;			// determines weapon and flash model, etc
-	s32		legsAnim;		// mask off ANIM_TOGGLEBIT
-	s32		torsoAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32		generic1;
-};
-
-struct idEntityState3 : idEntityStateBase
-{
-};
-
-struct idEntityState48 : idEntityStateBase
-{
-};
-
-struct idEntityState66 : idEntityStateBase
-{
-};
-
-struct idEntityState67 : idEntityStateBase
-{
-};
-
-struct idEntityState68 : idEntityStateBase
-{
-};
-
-struct idEntityState73 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-};
-
-struct idEntityState90 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-
-	// New in dm_90.
-	s32		jumpTime;
-	s32		doubleJumped; // qboolean
-};
-
-struct idEntityState91 : idEntityStateBase
-{
-	// New in dm_73.
-	s32		pos_gravity;  // part of idEntityStateBase::pos trajectory
-	s32		apos_gravity; // part of idEntityStateBase::apos trajectory
-
-	// New in dm_90.
-	s32		jumpTime;
-	s32		doubleJumped; // qboolean
-
-	// New in dm_91.
-	s32		health;
-	s32		armor;
-	s32		location;
-};
-
-typedef idEntityState91 idLargestEntityState;
-
 //
 // per-level limits
 //
-#define	MAX_CLIENTS			64		// absolute limit
 #define MAX_LOCATIONS		64
 
 #define	GENTITYNUM_BITS		10		// don't need to send any more
@@ -225,52 +94,52 @@ typedef enum {
 
 // these are the only configstrings that the system reserves, all the
 // other ones are strictly for servergame to clientgame communication
-#define	CS_SERVERINFO			0		// an info string with all the serverinfo cvars
-#define	CS_SYSTEMINFO			1		// an info string for server system to client system configuration (timescale, etc)
-#define	CS_MUSIC				2
-#define	CS_MESSAGE				3		// from the map worldspawn's message field
-#define	CS_MOTD					4		// g_motd string for server message of the day
-#define	CS_WARMUP				5		// server time when the match will be restarted
-#define	CS_SCORES1				6
-#define	CS_SCORES2				7
-#define CS_VOTE_TIME			8
-#define CS_VOTE_STRING			9
-#define	CS_VOTE_YES				10
-#define	CS_VOTE_NO				11
-#define CS_TEAMVOTE_TIME_68		12		// q3 only
-#define CS_TEAMVOTE_STRING_68	14		// q3 only
-#define	CS_TEAMVOTE_YES_68		16		// q3 only
-#define	CS_TEAMVOTE_NO_68		18		// q3 only
-#define	CS_GAME_VERSION_68		20
-#define	CS_LEVEL_START_TIME_68	21		// so the timer only shows the current level
-#define	CS_INTERMISSION_68		22		// when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
-#define CS_FLAGSTATUS_68		23		// string indicating flag status in CTF
-#define CS_SHADERSTATE_68		24
-#define CS_BOTINFO_68			25		// q3 only
-#define	CS_ITEMS_68				27		// string of 0's and 1's that tell which items are present
-#define	CS_MODELS_68			32
-#define CS_WARMUP_END           13
-#define CS_PAUSE_START_73p		669		// if this is non-zero, the game is paused
-#define CS_PAUSE_COUNTDOWN_73p	670		// 0 = pause, !0 = timeout
-#define CS_CA_ROUND_INFO        661
-#define CS_CA_ROUND_START       662
-#define	CS_PLAYERS_68           544
-#define CS_RED_CLAN_PLAYERS     663
-#define CS_BLUE_CLAN_PLAYERS    664
-#define CS_FLAG_STATUS_73       658
-#define CS_FIRST_PLACE          659
-#define CS_SECOND_PLACE         660
-#define CS_AD_WAIT              681
-#define	CS_SOUNDS_68			(CS_MODELS_68 + MAX_MODELS)
-#define CS_LOCATIONS_68			(CS_PLAYERS_68 + MAX_CLIENTS)
-#define CS_PARTICLES_68			(CS_LOCATIONS_68 + MAX_LOCATIONS)
-#define CS_PAST_LAST_INDEX_68	(CS_PARTICLES_68 + MAX_LOCATIONS)
+#define CS_SERVERINFO                0 // an info string with all the serverinfo cvars
+#define CS_SYSTEMINFO                1 // an info string for server system to client system configuration (timescale, etc)
+#define CS_MUSIC                     2
+#define CS_MESSAGE                   3 // from the map worldspawn's message field
+#define CS_MOTD                      4 // g_motd string for server message of the day
+#define CS_WARMUP                    5 // server time when the match will be restarted
+#define CS_SCORES1                   6
+#define CS_SCORES2                   7
+#define CS_VOTE_TIME                 8
+#define CS_VOTE_STRING               9
+#define CS_VOTE_YES                 10
+#define CS_VOTE_NO                  11
+#define CS_TEAMVOTE_TIME_48_68      12 // q3 only
+#define CS_WARMUP_END               13
+#define CS_TEAMVOTE_STRING_48_68    14 // q3 only
+#define CS_TEAMVOTE_YES_48_68       16 // q3 only
+#define CS_TEAMVOTE_NO_48_68        18 // q3 only
+#define CS_GAME_VERSION_48_68       20
+#define CS_LEVEL_START_TIME_48_68   21 // so the timer only shows the current level
+#define CS_INTERMISSION_48_68       22 // when 1, fraglimit/timelimit has been hit and intermission will start in a second or two
+#define CS_FLAGSTATUS_48_68         23 // string indicating flag status in CTF
+#define CS_SHADERSTATE_68           24
+#define CS_BOTINFO_68               25 // q3 only
+#define CS_ITEMS_68                 27 // string of 0's and 1's that tell which items are present
+#define CS_MODELS_68                32
+#define CS_PLAYERS_68              544
+#define CS_PAUSE_START_73p         669 // if this is non-zero, the game is paused
+#define CS_PAUSE_COUNTDOWN_73p     670 // 0 = pause, !0 = timeout
+#define CS_CA_ROUND_INFO           661
+#define CS_CA_ROUND_START          662
+#define CS_RED_CLAN_PLAYERS        663
+#define CS_BLUE_CLAN_PLAYERS       664
+#define CS_FLAG_STATUS_73          658
+#define CS_FIRST_PLACE             659
+#define CS_SECOND_PLACE            660
+#define CS_AD_WAIT                 681
+#define CS_SOUNDS_68               (CS_MODELS_68 + MAX_MODELS)
+#define CS_LOCATIONS_68            (CS_PLAYERS_68 + ID_MAX_CLIENTS)
+#define CS_PARTICLES_68            (CS_LOCATIONS_68 + MAX_LOCATIONS)
+#define CS_PAST_LAST_INDEX_68      (CS_PARTICLES_68 + MAX_LOCATIONS)
 
-#define CS_GAME_VERSION_73p               12
-#define CS_LEVEL_START_TIME_73p           13
-#define CS_INTERMISSION_73p               14
-#define CS_ITEMS_73p                      15
-#define CS_MODELS_73p                     17
+#define CS_GAME_VERSION_73p                12
+#define CS_LEVEL_START_TIME_73p            13
+#define CS_INTERMISSION_73p                14
+#define CS_ITEMS_73p                       15
+#define CS_MODELS_73p                      17
 #define CS_SOUNDS_73p                     274
 #define CS_PLAYERS_73p                    529
 #define CS_LOCATIONS_73p                  593
@@ -311,9 +180,10 @@ typedef enum {
 #define CS_READY_UP_TIME_73p              710
 #define CS_NUMBER_OF_RACE_CHECKPOINTS_73p 713
 
-#define CS_LEVEL_START_TIME_3   13
-#define CS_INTERMISSION_3       14
-#define CS_FLAGSTATUS_3         15
+#define CS_GAME_VERSION_3        12
+#define CS_LEVEL_START_TIME_3    13
+#define CS_INTERMISSION_3        14
+#define CS_FLAGSTATUS_3          15
 #define CS_LOCATIONS_3          672
 
 enum idConfigString91
@@ -386,142 +256,6 @@ enum idConfigString91
 // OSP
 #define CS_OSP_GAMEPLAY         806
 
-#define	RESERVED_CONFIGSTRINGS	2	// game can't modify below this, only the system can
-
-#define	MAX_GAMESTATE_CHARS	16000
-
-//=========================================================
-
-// bit field limits
-#define	MAX_STATS				16
-#define	MAX_PERSISTANT			16
-#define	MAX_POWERUPS			16
-#define	MAX_WEAPONS				16
-
-#define	MAX_PS_EVENTS			2
-
-#define PS_PMOVEFRAMECOUNTBITS	6
-
-// playerState_t is the information needed by both the client and server
-// to predict player motion and actions
-// nothing outside of pmove should modify these, or some degree of prediction error
-// will occur
-
-// you can't add anything to this without modifying the code in msg.c
-
-// playerState_t is a full superset of entityState_t as it is used by players,
-// so if a playerState_t is transmitted, the entityState_t can be fully derived
-// from it.
-struct idPlayerStateBase
-{
-	s32			commandTime;	// cmd->serverTime of last executed command
-	s32			pm_type;
-	s32			bobCycle;		// for view bobbing and footstep generation
-	s32			pm_flags;		// ducked, jump_held, etc
-	s32			pm_time;
-
-	vec3_t		origin;
-	vec3_t		velocity;
-	s32			weaponTime;
-	s32			gravity;
-	s32			speed;
-	s32			delta_angles[3];	// add to command angles to get view direction
-									// changed by spawns, rotating objects, and teleporters
-
-	s32			groundEntityNum;// ENTITYNUM_NONE = in air
-
-	s32			legsTimer;		// don't change low priority animations until this runs out
-	s32			legsAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32			torsoTimer;		// don't change low priority animations until this runs out
-	s32			torsoAnim;		// mask off ANIM_TOGGLEBIT
-
-	s32			movementDir;	// a number 0 to 7 that represents the reletive angle
-								// of movement to the view angle (axial and diagonals)
-								// when at rest, the value will remain unchanged
-								// used to twist the legs during strafing
-
-	vec3_t		grapplePoint;	// location of grapple to pull towards if PMF_GRAPPLE_PULL
-
-	s32			eFlags;			// copied to entityState_t->eFlags
-
-	s32			eventSequence;	// pmove generated events
-	s32			events[MAX_PS_EVENTS];
-	s32			eventParms[MAX_PS_EVENTS];
-
-	s32			externalEvent;	// events set on player from another source
-	s32			externalEventParm;
-	s32			externalEventTime;
-
-	s32			clientNum;		// ranges from 0 to MAX_CLIENTS-1
-	s32			weapon;			// copied to entityState_t->weapon
-	s32			weaponstate;
-
-	vec3_t		viewangles;		// for fixed views
-	s32			viewheight;
-
-	// damage feedback
-	s32			damageEvent;	// when it changes, latch the other parms
-	s32			damageYaw;
-	s32			damagePitch;
-	s32			damageCount;
-
-	s32			stats[MAX_STATS];
-	s32			persistant[MAX_PERSISTANT];	// stats that aren't cleared on death
-	s32			powerups[MAX_POWERUPS];	// level.time that the powerup runs out
-	s32			ammo[MAX_WEAPONS];
-
-	s32			generic1;
-	s32			loopSound;
-	s32			jumppad_ent;	// jumppad entity hit this frame
-};
-
-struct idPlayerState3 : idPlayerStateBase
-{
-};
-
-struct idPlayerState48 : idPlayerStateBase
-{
-};
-
-struct idPlayerState66 : idPlayerStateBase
-{
-};
-
-struct idPlayerState67 : idPlayerStateBase
-{
-};
-
-struct idPlayerState68 : idPlayerStateBase
-{
-};
-
-struct idPlayerState73 : idPlayerStateBase
-{
-};
-
-struct idPlayerState90 : idPlayerStateBase
-{
-	s32 doubleJumped; // qboolean
-	s32 jumpTime;
-};
-
-struct idPlayerState91 : idPlayerStateBase
-{
-	s32 doubleJumped; // qboolean
-	s32 jumpTime;
-	s32 weaponPrimary;
-	s32 crouchTime;
-	s32 crouchSlideTime;
-	s32 location;
-	s32 fov;
-	s32 forwardmove;
-	s32 rightmove;
-	s32 upmove;
-};
-
-typedef idPlayerState91 idLargestPlayerState;
-
 /*
 ==============================================================
 
@@ -537,8 +271,6 @@ NET
 #define	MAX_PACKET_USERCMDS		32		// max number of usercmd_t in a packet
 
 #define	MAX_RELIABLE_COMMANDS	64			// max string commands buffered for restransmit
-
-#define MAX_MSGLEN 16384 // max length of a message, which may be fragmented into multiple packets
 
 // server to client
 // the svc_strings[] array in cl_parse.c should mirror this
@@ -568,7 +300,7 @@ struct idClientSnapshotBase
 	s32  serverTime;                   // server time the message is valid for (in msec)
 	s32  messageNum;                   // copied from netchan->incoming_sequence
 	s32  deltaNum;                     // messageNum the delta is from
-	s32  cmdNum;                       // the next cmdNum the server is expecting
+	//s32  cmdNum;                     // the next cmdNum the server is expecting
 	s32  numEntities;                  // all of the entities that need to be presented
 	s32  parseEntitiesNum;             // at the time of this snapshot
 	s32  serverCommandNum;             // execute all commands up to this before making the snapshot current
@@ -639,28 +371,14 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 #define	CMD_BACKUP		64
 #define	CMD_MASK		(CMD_BACKUP - 1)
 
-/*
-=============================================================================
-
-the clientActive_t structure is wiped completely at every
-new gamestate_t, potentially several times during an established connection
-
-=============================================================================
-*/
-
-// the parseEntities array must be large enough to hold PACKET_BACKUP frames of
-// entities, so that when a delta compressed message arives from the server
-// it can be un-deltad from the original 
-#define	MAX_PARSE_ENTITIES	2048
-
-// two bits at the top of the entityState->event field
+// Two bits at the top of the idEntityStateBase::event field
 // will be incremented with each change in the event so
 // that an identical event started twice in a row can
-// be distinguished.  And off the value with ~EV_EVENT_BITS
-// to retrieve the actual event number
-#define	EV_EVENT_BIT1		0x00000100
-#define	EV_EVENT_BIT2		0x00000200
-#define	EV_EVENT_BITS		(EV_EVENT_BIT1|EV_EVENT_BIT2)
+// be distinguished.
+// And off the value with (~EV_EVENT_BITS) to retrieve the actual event number.
+#define	ID_ES_EVENT_BIT_1    0x00000100
+#define	ID_ES_EVENT_BIT_2    0x00000200
+#define	ID_ES_EVENT_BITS     (ID_ES_EVENT_BIT_1 | ID_ES_EVENT_BIT_2)
 
 #define	EVENT_VALID_MSEC	300
 
@@ -734,8 +452,8 @@ typedef enum {
 	EV_GRENADE_BOUNCE,		// eventParm will be the soundindex
 
 	EV_GENERAL_SOUND,
-	EV_GLOBAL_SOUND,		// no attenuation
-	EV_GLOBAL_TEAM_SOUND,
+	EV_GLOBAL_SOUND_68,		// no attenuation
+	EV_GLOBAL_TEAM_SOUND_68,
 
 	EV_BULLET_HIT_FLESH,
 	EV_BULLET_HIT_WALL,
@@ -805,6 +523,8 @@ typedef enum {
 	EV_FIRE_WEAPON_73p = 20,
 	EV_USE_ITEM0_73p = 21,
 
+	EV_GLOBAL_SOUND_73p = 43,
+	EV_GLOBAL_TEAM_SOUND_73p = 44,
 	EV_BULLET_HIT_FLESH_73p = 45,
 
 	EV_DEATH1_73p = 54,
@@ -1067,6 +787,25 @@ typedef enum {
 
 typedef enum
 {
+	PERS_SCORE_3,					// !!! MUST NOT CHANGE, SERVER AND GAME BOTH REFERENCE !!!
+	PERS_HITS_3,					// total points damage inflicted so damage beeps can sound on change
+	PERS_RANK_3,
+	PERS_TEAM_3,
+	PERS_SPAWN_COUNT_3,				// incremented every respawn
+	PERS_REWARD_COUNT_3,			// incremented for each reward sound
+	PERS_REWARD_3,					// a reward_t
+	PERS_ATTACKER_3,				// clientnum of last damage inflicter
+	PERS_KILLED_3,					// count of the number of times you died
+	// these were added for single player awards tracking
+	PERS_IMPRESSIVE_COUNT_3,
+	PERS_EXCELLENT_COUNT_3,
+	PERS_GAUNTLET_FRAG_COUNT_3,
+	PERS_ACCURACY_SHOTS_3,
+	PERS_ACCURACY_HITS_3
+} persEnum_3_t;
+
+typedef enum
+{
 	PERS_SCORE_73p = 0,
 	PERS_HITS_73p = 1,
 	PERS_RANK_73p = 2,
@@ -1086,10 +825,10 @@ typedef enum
 
 // entityState_t->eFlags
 #define	EF_DEAD				0x00000001		// don't draw a foe marker over players with EF_DEAD
-#define EF_TICKING_73		0x00000002		// used to make players play the prox mine ticking sound
+#define EF_TICKING_48p		0x00000002		// used to make players play the prox mine ticking sound
 #define	EF_TELEPORT_BIT		0x00000004		// toggled every time the origin abruptly changes
 #define	EF_AWARD_EXCELLENT	0x00000008		// draw an excellent sprite
-#define EF_PLAYER_EVENT		0x00000010
+#define EF_PLAYER_EVENT_66p	0x00000010
 #define	EF_BOUNCE			0x00000010		// for missiles
 #define	EF_BOUNCE_HALF		0x00000020		// for missiles
 #define	EF_AWARD_GAUNTLET	0x00000040		// draw a gauntlet sprite
@@ -1100,12 +839,14 @@ typedef enum
 #define EF_AWARD_CAP		0x00000800		// draw the capture sprite
 #define	EF_TALK				0x00001000		// draw a talk balloon
 #define	EF_CONNECTION		0x00002000		// draw a connection trouble sprite
-#define	EF_VOTED			0x00004000		// already cast a vote
+#define	EF_VOTED_3_90		0x00004000		// already cast a vote
+#define EF_GLOBAL_SPEC_91	0x00004000		// read client-side to determine if this player is truely a spectator(not on a team), even if in follow cam.
 #define	EF_AWARD_IMPRESSIVE	0x00008000		// draw an impressive sprite
-#define	EF_AWARD_DEFEND		0x00010000		// draw a defend sprite
-#define	EF_AWARD_ASSIST		0x00020000		// draw a assist sprite
-#define EF_AWARD_DENIED		0x00040000		// denied
-#define EF_TEAMVOTED		0x00080000		// already cast a team votetypedef enum 
+#define	EF_AWARD_DEFEND_48p	0x00010000		// draw a defend sprite
+#define	EF_AWARD_ASSIST_48p	0x00020000		// draw a assist sprite
+#define EF_AWARD_DENIED_48p	0x00040000		// denied
+#define EF_TEAMVOTED_48_90	0x00080000		// already cast a team votetypedef enum 
+#define EF_BOUNCE_MULTI_91	0x00100000		// for missiles
 
 struct idWeapon68
 {
@@ -1260,6 +1001,7 @@ struct idItem68_CPMA
 		ItemFlight,
 		TeamCTFRedflag,
 		TeamCTFBlueflag,
+		// New with CPMA:
 		ItemArmorJacket,
 		ItemBackpack,
 		TeamCTFNeutralflag,
@@ -1328,7 +1070,7 @@ struct idItem73
 	};
 };
 
-struct idItem90
+struct idItem90p
 {
 	enum Id
 	{
@@ -1385,10 +1127,14 @@ struct idItem90
 		WeaponNailgun,
 		WeaponProxLauncher,
 		WeaponChaingun,
-		ItemSpawnarmor,
+		// New with dm_90:
+		ItemSpawnArmor,
 		WeaponHMG,
 		AmmoHMG,
 		AmmoPack,
+		ItemKeySilver,
+		ItemKeyGold,
+		ItemKeyMaster,
 		Count
 	};
 };
@@ -1477,8 +1223,9 @@ struct idFlagStatus
 {
 	enum Id
 	{
-		InBase,   // In its spot in base.
-		Captured, // Being carried by an enemy player.
-		Missing   // Not being carried by anyone but not in its spot either.
+		InBase,  // In its spot in base.
+		Carried, // Being carried by an enemy player.
+		Missing, // Not being carried by anyone but not in its spot either.
+		Count
 	};
 };

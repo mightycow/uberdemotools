@@ -55,6 +55,8 @@ udtGeneralAnalyzer::udtGeneralAnalyzer()
 	_parser = NULL;
 	_tempAllocator = NULL;
 	_processingGameState = false;
+	_modVersion = udtString::NewNull();
+	_mapName = udtString::NewNull();
 }
 
 udtGeneralAnalyzer::~udtGeneralAnalyzer()
@@ -69,8 +71,8 @@ void udtGeneralAnalyzer::InitAllocators(udtVMLinearAllocator& tempAllocator, u32
 
 void udtGeneralAnalyzer::ResetForNextDemo()
 {
-	_modVersion = NULL;
-	_mapName = NULL;
+	_modVersion = udtString::NewNull();
+	_mapName = udtString::NewNull();
 	_gameStateIndex = -1;
 	_matchStartTime = S32_MIN;
 	_matchEndTime = S32_MIN;
@@ -140,7 +142,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 		}
 		else
 		{
-			ProcessQ3ServerInfoConfigStringOnce(parser._inConfigStrings[CS_SERVERINFO].String);
+			ProcessQ3ServerInfoConfigStringOnce(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 			ProcessModNameAndVersionOnce();
 		}
 	}
@@ -150,27 +152,27 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 
 	ProcessMapNameOnce();
-	ProcessGameTypeFromServerInfo(parser._inConfigStrings[CS_SERVERINFO].String);
+	ProcessGameTypeFromServerInfo(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 
 	if(_game == udtGame::CPMA)
 	{
-		ProcessCPMAGameInfoConfigString(parser._inConfigStrings[CS_CPMA_GAME_INFO].String);
+		ProcessCPMAGameInfoConfigString(parser._inConfigStrings[CS_CPMA_GAME_INFO].GetPtr());
 	}
 	else if(_game == udtGame::QL)
 	{
-		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
-		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
+		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
+		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 		const s32 startIdx = idConfigStringIndex::PauseStart(_protocol);
 		const s32 endIdx = idConfigStringIndex::PauseEnd(_protocol);
 		if(startIdx != -1 && endIdx != -1)
 		{
-			ProcessQLPauseStartConfigString(parser._inConfigStrings[startIdx].String);
-			ProcessQLPauseEndConfigString(parser._inConfigStrings[endIdx].String);
+			ProcessQLPauseStartConfigString(parser._inConfigStrings[startIdx].GetPtr());
+			ProcessQLPauseEndConfigString(parser._inConfigStrings[endIdx].GetPtr());
 		}
 	}
 	else if(_game == udtGame::Q3 || _game == udtGame::OSP)
 	{
-		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].String);
+		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 		UpdateMatchStartTime();
 		const s32 warmUpEndTime = GetWarmUpEndTime();
 		const bool noIntermission = !IsIntermission();
@@ -187,7 +189,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 
 		if(_game == udtGame::OSP)
 		{
-			ProcessOSPGamePlayConfigString(parser._inConfigStrings[CS_OSP_GAMEPLAY].String);
+			ProcessOSPGamePlayConfigString(parser._inConfigStrings[CS_OSP_GAMEPLAY].GetPtr());
 		}
 	}
 
@@ -364,6 +366,11 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 	}
 }
 
+void udtGeneralAnalyzer::ClearStringAllocator()
+{
+	_stringAllocator.Clear();
+}
+
 void udtGeneralAnalyzer::SetIntermissionEndTime()
 {
 	_intermissionEndTime = _parser->_inServerTime;
@@ -470,12 +477,12 @@ udtGamePlay::Id udtGeneralAnalyzer::GamePlay() const
 	return _gamePlay;
 }
 
-const char* udtGeneralAnalyzer::ModVersion() const
+udtString udtGeneralAnalyzer::ModVersion() const
 {
 	return _modVersion;
 }
 
-const char* udtGeneralAnalyzer::MapName() const
+udtString udtGeneralAnalyzer::MapName() const
 {
 	return _mapName;
 }
@@ -963,7 +970,7 @@ void udtGeneralAnalyzer::ProcessQLPauseEndConfigString(const char* configString)
 void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 {
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].String;
+	const char* const serverInfo = _parser->_inConfigStrings[CS_SERVERINFO].GetPtr();
 
 	u32 charIndex = 0;
 	udtString varValue;
@@ -975,7 +982,7 @@ void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 		if(serverInfo != NULL &&
 		   ParseConfigStringValueString(varValue, *_tempAllocator, "gameversion", serverInfo))
 		{
-			_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+			_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue);
 		}
 	}
 	else if(_game == udtGame::OSP)
@@ -993,17 +1000,17 @@ void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 			   openParen < closeParen)
 			{
 				// OSP TourneyBlaBla v($(version))
-				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, openParen + 1, closeParen - openParen - 1).String;
+				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, openParen + 1, closeParen - openParen - 1);
 			}
 			else if(udtString::FindFirstCharacterMatch(vIndex, varValue, 'v'))
 			{
 				// OSP v$(version)
-				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, vIndex + 1).String;
+				_modVersion = udtString::NewSubstringClone(_stringAllocator, varValue, vIndex + 1);
 			}
 			else
 			{
 				// Unknown OSP version format.
-				_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+				_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue);
 			}
 		}
 	}
@@ -1018,20 +1025,21 @@ void udtGeneralAnalyzer::ProcessModNameAndVersionOnce()
 			if(ParseConfigStringValueString(varValue, *_tempAllocator, "defrag_vers", serverInfo))
 			{
 				s32 version = 0;
-				if(varValue.Length == 5 && 
-				   StringParseInt(version, varValue.String) &&
+				if(varValue.GetLength() == 5 && 
+				   StringParseInt(version, varValue.GetPtr()) &&
 				   version >= 10000 &&
 				   version < 100000)
 				{
 					// Example: "19123" becomes "1.91.23"
 					char stringVersion[16];
-					sprintf(stringVersion, "%c.%c%c.%c%c", varValue.String[0], varValue.String[1], varValue.String[2], varValue.String[3], varValue.String[4]);
-					_modVersion = udtString::NewClone(_stringAllocator, stringVersion).String;
+					const char* const s = varValue.GetPtr();
+					sprintf(stringVersion, "%c.%c%c.%c%c", s[0], s[1], s[2], s[3], s[4]);
+					_modVersion = udtString::NewClone(_stringAllocator, stringVersion);
 				}
 				else
 				{
 					// Unknown DeFRaG version format.
-					_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue).String;
+					_modVersion = udtString::NewCloneFromRef(_stringAllocator, varValue);
 				}
 			}
 		}
@@ -1045,9 +1053,9 @@ void udtGeneralAnalyzer::ProcessMapNameOnce()
 	const udtString& cs = _parser->GetConfigString(CS_SERVERINFO);
 	udtString mapName;
 	if(!udtString::IsNullOrEmpty(cs) &&
-	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", cs.String))
+	   ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", cs.GetPtr()))
 	{
-		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName).String;
+		_mapName = udtString::NewCloneFromRef(_stringAllocator, mapName);
 	}
 }
 
@@ -1061,7 +1069,7 @@ s32 udtGeneralAnalyzer::GetLevelStartTime()
 	}
 
 	s32 matchStartTimeMs = S32_MIN;
-	if(!StringParseInt(matchStartTimeMs, cs.String))
+	if(!StringParseInt(matchStartTimeMs, cs.GetPtr()))
 	{
 		return S32_MIN;
 	}
@@ -1085,13 +1093,13 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 	}
 
 	s32 warmUpEndTimeMs = S32_MIN;
-	if(StringParseInt(warmUpEndTimeMs, cs.String))
+	if(StringParseInt(warmUpEndTimeMs, cs.GetPtr()))
 	{
 		return warmUpEndTimeMs;
 	}
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
-	if(ParseConfigStringValueInt(warmUpEndTimeMs, *_tempAllocator, "time", cs.String))
+	if(ParseConfigStringValueInt(warmUpEndTimeMs, *_tempAllocator, "time", cs.GetPtr()))
 	{
 		return warmUpEndTimeMs;
 	}

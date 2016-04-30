@@ -7,6 +7,13 @@ using System.Windows.Controls;
 
 namespace Uber.DemoTools
 {
+    public enum PatternAction
+    {
+        Search,
+        Cut,
+        Count
+    }
+
     public class CutByPatternComponent : AppComponent
     {
         public FrameworkElement RootControl { get; private set; }
@@ -132,7 +139,7 @@ namespace Uber.DemoTools
             manualNamePlayerSelectionRow.Orientation = Orientation.Horizontal;
             manualNamePlayerSelectionRow.HorizontalAlignment = HorizontalAlignment.Stretch;
             manualNamePlayerSelectionRow.VerticalAlignment = VerticalAlignment.Stretch;
-            manualNamePlayerSelectionRow.ToolTip = "Name comparisons are case insensitive\nThe name must contain no color codes";
+            manualNamePlayerSelectionRow.ToolTip = "Name comparisons are case insensitive and color codes are ignored";
             manualNamePlayerSelectionRow.Children.Add(manualNamePlayerSelectionRadioButton);
             manualNamePlayerSelectionRow.Children.Add(playerNameTextBox);
 
@@ -152,21 +159,7 @@ namespace Uber.DemoTools
             playerSelectionGroupBox.VerticalAlignment = VerticalAlignment.Top;
             playerSelectionGroupBox.Content = playerSelectionPanel;
 
-            var cutButton = new Button();
-            cutButton.HorizontalAlignment = HorizontalAlignment.Left;
-            cutButton.VerticalAlignment = VerticalAlignment.Top;
-            cutButton.Content = "Cut!";
-            cutButton.Width = 75;
-            cutButton.Height = 25;
-            cutButton.Margin = new Thickness(5);
-            cutButton.Click += (obj, args) => OnCutClicked();
-
-            var actionsGroupBox = new GroupBox();
-            actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
-            actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
-            actionsGroupBox.Margin = new Thickness(5);
-            actionsGroupBox.Header = "Actions";
-            actionsGroupBox.Content = cutButton;
+            var actionsGroupBox = CreateActionsGroupBox(DoAction);
             
             var helpTextBlock = new TextBlock();
             helpTextBlock.Margin = new Thickness(5);
@@ -210,9 +203,10 @@ namespace Uber.DemoTools
 
         private class ThreadArg
         {
-            public List<string> FilePaths = null;
-            public UDT_DLL.udtPatternInfo[] Patterns = null;
-            public UDT_DLL.ArgumentResources Resources = null;
+            public List<DemoInfo> Demos;
+            public List<string> FilePaths;
+            public UDT_DLL.udtPatternInfo[] Patterns;
+            public ArgumentResources Resources;
         }
 
         private static UInt32 GetBit(UDT_DLL.udtPatternType type)
@@ -225,31 +219,88 @@ namespace Uber.DemoTools
             return (patterns & GetBit(type)) != 0;
         }
 
-        private void OnCutClicked()
+        public delegate void ActionDelegate(PatternAction action);
+
+        public static GroupBox CreateActionsGroupBox(UDT_DLL.udtPatternType pattern)
         {
-            var demos = _app.SelectedDemos;
+            return CreateActionsGroupBox((action) => CutByPatternComponent.DoAction(action, pattern));
+        }
+
+        private static GroupBox CreateActionsGroupBox(ActionDelegate action)
+        {
+            var cutButton = new Button();
+            cutButton.HorizontalAlignment = HorizontalAlignment.Left;
+            cutButton.VerticalAlignment = VerticalAlignment.Top;
+            cutButton.Content = "Cut!";
+            cutButton.Width = 75;
+            cutButton.Height = 25;
+            cutButton.Margin = new Thickness(5);
+            cutButton.Click += (obj, args) => action(PatternAction.Cut);
+
+            var searchButton = new Button();
+            searchButton.HorizontalAlignment = HorizontalAlignment.Left;
+            searchButton.VerticalAlignment = VerticalAlignment.Top;
+            searchButton.Content = "Search!";
+            searchButton.Width = 75;
+            searchButton.Height = 25;
+            searchButton.Margin = new Thickness(5);
+            searchButton.Click += (obj, args) => action(PatternAction.Search);
+
+            var actionsStackPanel = new StackPanel();
+            actionsStackPanel.HorizontalAlignment = HorizontalAlignment.Left;
+            actionsStackPanel.VerticalAlignment = VerticalAlignment.Top;
+            actionsStackPanel.Margin = new Thickness(5);
+            actionsStackPanel.Orientation = Orientation.Vertical;
+            actionsStackPanel.Children.Add(cutButton);
+            actionsStackPanel.Children.Add(searchButton);
+
+            var actionsGroupBox = new GroupBox();
+            actionsGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
+            actionsGroupBox.VerticalAlignment = VerticalAlignment.Top;
+            actionsGroupBox.Margin = new Thickness(5);
+            actionsGroupBox.Header = "Actions";
+            actionsGroupBox.Content = actionsStackPanel;
+
+            return actionsGroupBox;
+        }
+
+        private void DoAction(PatternAction action)
+        {
+            _app.SaveBothConfigs();
+            DoAction(action, (uint)_app.Config.PatternsSelectionBitMask, false);
+        }
+
+        static private void DoAction(PatternAction action, UDT_DLL.udtPatternType pattern)
+        {
+            DoAction(action, GetBit(pattern), true);
+        }
+
+        static private void DoAction(PatternAction action, uint selectedPatterns, bool saveConfigs)
+        {
+            var app = App.Instance;
+
+            var demos = app.SelectedWriteDemos;
             if(demos == null)
             {
-                _app.LogError("No demo was selected. Please select at least one to proceed.");
                 return;
             }
 
-            _app.SaveBothConfigs();
-            var config = _app.Config;
-            if(config.PatternsSelectionBitMask == 0)
+            if(selectedPatterns == 0)
             {
-                _app.LogError("You didn't check any pattern. Please check at least one to proceed.");
+                app.LogError("You didn't check any pattern. Please check at least one to proceed.");
                 return;
             }
 
-            var privateConfig = _app.PrivateConfig;
+            if(saveConfigs)
+            {
+                app.SaveBothConfigs();
+            }
+            var privateConfig = app.PrivateConfig;
             if(privateConfig.PatternCutPlayerIndex == int.MinValue && string.IsNullOrEmpty(privateConfig.PatternCutPlayerName))
             {
-                _app.LogWarning("The selected player name is empty. Please specify a player name or select a different matching method to proceed.");
+                app.LogError("The selected player name is empty. Please specify a player name or select a different matching method to proceed.");
+                return;
             }
-
-            _app.DisableUiNonThreadSafe();
-            _app.JoinJobThread();
 
             var filePaths = new List<string>();
             foreach(var demo in demos)
@@ -257,12 +308,18 @@ namespace Uber.DemoTools
                 filePaths.Add(demo.FilePath);
             }
 
-            var selectedPatterns = (UInt32)config.PatternsSelectionBitMask;
+            var config = app.Config;
             var patterns = new List<UDT_DLL.udtPatternInfo>();
-            var resources = new UDT_DLL.ArgumentResources();
+            var resources = new ArgumentResources();
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Chat))
             {
+                if(config.ChatRules.Count == 0)
+                {
+                    app.LogError("[chat] No chat matching rule defined. Please add at least one to proceed.");
+                    return;
+                }
+
                 var pattern = new UDT_DLL.udtPatternInfo();
                 UDT_DLL.CreateChatPatternInfo(ref pattern, resources, config.ChatRules);
                 patterns.Add(pattern);
@@ -270,14 +327,36 @@ namespace Uber.DemoTools
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FragSequences))
             {
+                if(privateConfig.FragCutAllowedMeansOfDeaths == 0)
+                {
+                    app.LogError("[frag sequence] You didn't check any Mean of Death. Please check at least one to proceed.");
+                    return;
+                }
+                if(config.FragCutMinFragCount < 2)
+                {
+                    app.LogError("[frag sequence] 'Min. Frag Count' must be 2 or higher.");
+                    return;
+                }
+                if(config.FragCutTimeBetweenFrags < 1)
+                {
+                    app.LogError("[frag sequence] 'Time Between Frags' must be strictly positive.");
+                    return;
+                }
+
                 var pattern = new UDT_DLL.udtPatternInfo();
-                var rules = UDT_DLL.CreateCutByFragArg(config, _app.PrivateConfig);                
+                var rules = UDT_DLL.CreateCutByFragArg(config, app.PrivateConfig);                
                 UDT_DLL.CreateFragPatternInfo(ref pattern, resources, rules);
                 patterns.Add(pattern);
             }
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MidAirFrags))
             {
+                if(!config.MidAirCutAllowRocket && !config.MidAirCutAllowBFG)
+                {
+                    app.LogError("[mid-air frags] You didn't check any weapon. Please check at least one to proceed.");
+                    return;
+                }
+
                 var pattern = new UDT_DLL.udtPatternInfo();
                 var rules = UDT_DLL.CreateCutByMidAirArg(config);
                 UDT_DLL.CreateMidAirPatternInfo(ref pattern, resources, rules);
@@ -294,6 +373,12 @@ namespace Uber.DemoTools
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FlagCaptures))
             {
+                if(!config.FlagCaptureAllowBaseToBase && !config.FlagCaptureAllowMissingToBase)
+                {
+                    app.LogError("[flag captures] You disabled both base and non-base pick-ups. Please enable at least one of them to proceed.");
+                    return;
+                }
+
                 var pattern = new UDT_DLL.udtPatternInfo();
                 var rules = UDT_DLL.CreateCutByFlagCaptureArg(config);
                 UDT_DLL.CreateFlagCapturePatternInfo(ref pattern, resources, rules);
@@ -302,46 +387,108 @@ namespace Uber.DemoTools
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.FlickRails))
             {
+                if(config.FlickRailMinSpeed <= 0.0f && config.FlickRailMinAngleDelta <= 0.0f)
+                {
+                    app.LogError("[flick rails] Both thresholds are negative or zero, which will match all railgun frags.");
+                    return;
+                }
+
                 var pattern = new UDT_DLL.udtPatternInfo();
                 var rules = UDT_DLL.CreateCutByFlickRailArg(config);
                 UDT_DLL.CreateFlickRailPatternInfo(ref pattern, resources, rules);
                 patterns.Add(pattern);
             }
 
+            if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.Matches))
+            {
+                var pattern = new UDT_DLL.udtPatternInfo();
+                var rules = UDT_DLL.CreateCutByMatchArg(config);
+                UDT_DLL.CreateMatchPatternInfo(ref pattern, resources, rules);
+                patterns.Add(pattern);
+            }
+
             var threadArg = new ThreadArg();
+            threadArg.Demos = demos;
             threadArg.FilePaths = filePaths;
             threadArg.Patterns = patterns.ToArray();
             threadArg.Resources = resources;
 
-            _app.StartJobThread(DemoCutThread, threadArg);
-        }
+            app.DisableUiNonThreadSafe();
+            app.JoinJobThread();
 
-        private void DemoCutThread(object arg)
+            switch(action)
+            {
+                case PatternAction.Cut:
+                    app.StartJobThread(DemoCutThread, threadArg);
+                    break;
+
+                case PatternAction.Search:
+                    app.StartJobThread(DemoSearchThread, threadArg);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        
+        static private void DemoCutThread(object arg)
         {
+            var app = App.Instance;
             var threadArg = arg as ThreadArg;
             if(threadArg == null)
             {
-                _app.LogError("Invalid thread argument type");
+                app.LogError("Invalid thread argument type");
                 return;
             }
 
             if(threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
             {
-                _app.LogError("Invalid thread argument data");
+                app.LogError("Invalid thread argument data");
                 return;
             }
 
-            _app.InitParseArg();
+            app.InitParseArg();
 
             try
             {
                 var resources = threadArg.Resources;
-                var options = UDT_DLL.CreateCutByPatternOptions(_app.Config, _app.PrivateConfig);
-                UDT_DLL.CutDemosByPattern(resources, ref _app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
+                var options = UDT_DLL.CreateCutByPatternOptions(app.Config, app.PrivateConfig);
+                UDT_DLL.CutDemosByPattern(resources, ref app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
             }
             catch(Exception exception)
             {
-                _app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
+                app.LogError("Caught an exception while cutting demos: {0}", exception.Message);
+            }
+        }
+
+        static private void DemoSearchThread(object arg)
+        {
+            var app = App.Instance;
+            var threadArg = arg as ThreadArg;
+            if(threadArg == null)
+            {
+                app.LogError("Invalid thread argument type");
+                return;
+            }
+
+            if(threadArg.Demos == null || threadArg.FilePaths == null || threadArg.Patterns == null || threadArg.Resources == null)
+            {
+                app.LogError("Invalid thread argument data");
+                return;
+            }
+
+            app.InitParseArg();
+
+            try
+            {
+                var resources = threadArg.Resources;
+                var options = UDT_DLL.CreateCutByPatternOptions(app.Config, app.PrivateConfig);
+                var results = UDT_DLL.FindPatternsInDemos(resources, ref app.ParseArg, threadArg.FilePaths, threadArg.Patterns, options);
+                app.UpdateSearchResults(results, threadArg.Demos);
+            }
+            catch(Exception exception)
+            {
+                app.LogError("Caught an exception while searching demos: {0}", exception.Message);
             }
         }
     }

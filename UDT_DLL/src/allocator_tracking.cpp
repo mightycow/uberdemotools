@@ -1,4 +1,5 @@
 #include "allocator_tracking.hpp"
+#include "memory.hpp"
 
 #include <stdlib.h>
 #include <new>
@@ -11,11 +12,7 @@ udtAllocatorTracker::udtAllocatorTracker()
 
 udtAllocatorTracker::~udtAllocatorTracker()
 {
-	void* const allocators = _allocatorList.GetData();
-	if(allocators != NULL)
-	{
-		free(allocators);
-	}
+	free(_allocatorList.GetData());
 }
 
 void udtAllocatorTracker::RegisterAllocator(udtIntrusiveListNode& node)
@@ -23,18 +20,15 @@ void udtAllocatorTracker::RegisterAllocator(udtIntrusiveListNode& node)
 	udtIntrusiveList* allocators = (udtIntrusiveList*)_allocatorList.GetData();
 	if(allocators == NULL)
 	{
-		allocators = (udtIntrusiveList*)malloc(sizeof(udtIntrusiveList));
-		if(allocators != NULL)
+		allocators = (udtIntrusiveList*)udt_malloc(sizeof(udtIntrusiveList));
+		if(!_allocatorList.SetData(allocators))
 		{
-			if(!_allocatorList.SetData(allocators))
-			{
-				free(allocators);
-				allocators = NULL;
-			}
-			else
-			{
-				new (allocators) udtIntrusiveList;
-			}
+			free(allocators);
+			allocators = NULL;
+		}
+		else
+		{
+			new (allocators)udtIntrusiveList;
 		}
 	}
 

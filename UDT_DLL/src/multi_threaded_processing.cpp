@@ -59,7 +59,7 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Get file sizes and make sure we have enough data to process
 	// to even consider launching new threads.
-	udtVMArrayWithAlloc<FileInfo> files((uptr)sizeof(FileInfo) * (uptr)fileCount, "DemoThreadAllocator::Process::FilesArray");
+	udtVMArray<FileInfo> files((uptr)sizeof(FileInfo) * (uptr)fileCount, "DemoThreadAllocator::Process::FilesArray");
 	u64 totalByteCount = 0;
 	files.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -233,6 +233,7 @@ static void ThreadFunction(void* userData)
 		return;
 	}
 
+	u64 actualProcessedByteCount = 0;
 	for(u32 i = startIdx; i < endIdx; ++i)
 	{
 		if(shared->ParseInfo->CancelOperation != NULL && *shared->ParseInfo->CancelOperation != 0)
@@ -240,20 +241,26 @@ static void ThreadFunction(void* userData)
 			break;
 		}
 
-		const u32 errorCodeIdx = data->Context->InputIndices[i - startIdx];
+		const u32 originalInputIdx = data->Context->InputIndices[i - startIdx];
 		const u64 currentJobByteCount = shared->FileSizes[i];
 		progressContext.CurrentJobByteCount = currentJobByteCount;
 
 		const udtParsingJobType::Id jobType = (udtParsingJobType::Id)shared->JobType;
-		const bool success = ProcessSingleDemoFile(jobType, data->Context, i - startIdx, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
-		errorCodes[errorCodeIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
+		const bool success = ProcessSingleDemoFile(jobType, data->Context, i - startIdx, originalInputIdx, &newParseInfo, shared->FilePaths[i], shared->JobSpecificInfo);
+		errorCodes[originalInputIdx] = GetErrorCode(success, shared->ParseInfo->CancelOperation);
 
 		progressContext.ProcessedByteCount += currentJobByteCount;
+		if(success)
+		{
+			actualProcessedByteCount += currentJobByteCount;
+		}
 	}
+
+	data->Context->UpdatePlugInBufferStructs();
 	
 	if(data->Shared->ParseInfo->PerformanceStats != NULL)
 	{
-		PerfStatsAddCurrentThread(data->Shared->ParseInfo->PerformanceStats, data->TotalByteCount);
+		PerfStatsAddCurrentThread(data->Shared->ParseInfo->PerformanceStats, actualProcessedByteCount);
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
@@ -304,13 +311,14 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 
 	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	bool success = true;
-	udtVMArrayWithAlloc<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
+	udtVMArray<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
 	threads.Resize(threadCount);
 	for(u32 i = 0; i < threadCount; ++i)
 	{
 		udtParserContext* const context = contexts + i;
-		const u32 demoCount = threadInfo.Threads[i].FileCount;
-		const u32 firstDemoIdx = threadInfo.Threads[i].FirstFileIndex;
+		udtParsingThreadData& threadData = threadInfo.Threads[i];
+		const u32 demoCount = threadData.FileCount;
+		const u32 firstDemoIdx = threadData.FirstFileIndex;
 		context->InputIndices.Resize(demoCount);
 		for(u32 j = 0; j < demoCount; ++j)
 		{
@@ -319,9 +327,9 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 
 		udtThread& thread = threads[i];
 		new (&thread) udtThread;
-		threadInfo.Threads[i].Context = contexts + i;
-		threadInfo.Threads[i].Shared = &sharedData;
-		if(!thread.CreateAndStart(&ThreadFunction, &threadInfo.Threads[i]))
+		threadData.Context = contexts + i;
+		threadData.Shared = &sharedData;
+		if(!thread.CreateAndStart(&ThreadFunction, &threadData))
 		{
 			success = false;
 			goto thread_clean_up;

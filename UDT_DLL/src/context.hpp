@@ -3,7 +3,6 @@
 
 #include "uberdemotools.h"
 #include "macros.hpp"
-#include "huffman.hpp"
 #include "tokenizer.hpp"
 #include "linear_allocator.hpp"
 #include "protocol_conversion.hpp"

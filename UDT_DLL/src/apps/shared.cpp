@@ -30,9 +30,7 @@ extern void PrintHelp();
 
 static void CrashHandler(const char* message)
 {
-	fprintf(stderr, "\n");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "\n%s\n", message);
 
 #if !defined(UDT_WINDOWS)
 	PrintStackTrace(stderr, 3, ExecutableFileName);
@@ -66,10 +64,7 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 		return;
 	}
 
-	FILE* const file = useStdOut ? stdout : stderr;
-	fprintf(file, LogLevels[logLevel]);
-	fprintf(file, message);
-	fprintf(file, "\n");
+	fprintf(useStdOut ? stdout : stderr, "%s%s\n", LogLevels[logLevel], message);
 }
 
 
@@ -108,12 +103,15 @@ static void FindExecutableFileName(const char* exeFilePath)
 	u32 slashIndex = 0;
 	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
 	if(udtString::FindLastCharacterListMatch(slashIndex, exeFilePathString, udtString::NewConstRef("/\\")) &&
-	   slashIndex + 1 < exeFilePathString.Length)
+	   slashIndex + 1 < exeFilePathString.GetLength())
 	{
-		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+		ExecutableFileName = exeFilePath + slashIndex + 1;
 	}
 }
 
+#if defined(UDT_MINGWIN)
+extern "C"
+#endif
 int wmain(int argc, wchar_t** argvWide)
 {
 	udtSetCrashHandler(&CrashHandler);
@@ -124,13 +122,19 @@ int wmain(int argc, wchar_t** argvWide)
 		argc = UDT_MAX_ARG_COUNT;
 	}
 
-	udtVMLinearAllocator& allocator = udtThreadLocalAllocators::GetTempAllocator();
-	udtVMScopedStackAllocator allocatorScope(allocator);
+	udtVMLinearAllocator stringAllocator;
+	stringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "wmain::String");
+
+	u32 argvOffsets[UDT_MAX_ARG_COUNT];
+	for(int i = 0; i < argc; ++i)
+	{
+		argvOffsets[i] = udtString::NewFromUTF16(stringAllocator, argvWide[i]).GetOffset();
+	}
 
 	char* argv[UDT_MAX_ARG_COUNT];
 	for(int i = 0; i < argc; ++i)
 	{
-		argv[i] = udtString::NewFromUTF16(allocator, argvWide[i]).String;
+		argv[i] = stringAllocator.GetWriteStringAt(argvOffsets[i]);
 	}
 
 	if(argc == 2)
@@ -169,9 +173,9 @@ static void FindExecutableFileName(const char* exeFilePath)
 	u32 slashIndex = 0;
 	const udtString exeFilePathString = udtString::NewConstRef(exeFilePath);
 	if(udtString::FindLastCharacterMatch(slashIndex, exeFilePathString, '/') &&
-	   slashIndex + 1 < exeFilePathString.Length)
+	   slashIndex + 1 < exeFilePathString.GetLength())
 	{
-		ExecutableFileName = exeFilePathString.String + slashIndex + 1;
+		ExecutableFileName = exeFilePath + slashIndex + 1;
 	}
 }
 

@@ -7,7 +7,7 @@ udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
 	_allocator.Init((uptr)sizeof(udtdData), "ParserPlugInQuakeToUDT::Data");
-	_data = (udtdData*)_allocator.Allocate((uptr)sizeof(udtdData));
+	_data = (udtdData*)_allocator.AllocateAndGetAddress((uptr)sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
 	_protocolSizeOfEntityState = 0;
@@ -77,16 +77,17 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 		const udtString& cs = parser._inConfigStrings[i];
 		if(!udtString::IsNullOrEmpty(cs))
 		{
+			const u32 length = cs.GetLength();
 			_outputFile->Write(&i, 4, 1);
-			_outputFile->Write(&cs.Length, 4, 1);
-			_outputFile->Write(cs.String, cs.Length, 1);
+			_outputFile->Write(&length, 4, 1);
+			_outputFile->Write(cs.GetPtr(), length, 1);
 		}
 	}
 
 	idLargestEntityState nullState;
 	memset(&nullState, 0, sizeof(nullState));
 	s32 baselineEntityCount = 0;
-	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
+	for(s32 i = 0; i < ID_MAX_PARSE_ENTITIES; ++i)
 	{
 		const idEntityStateBase& es = *parser.GetBaseline(i);
 		if(memcmp(&nullState, &es, (size_t)_protocolSizeOfEntityState))
@@ -96,7 +97,7 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 	}
 
 	_outputFile->Write(&baselineEntityCount, 4, 1);
-	for(s32 i = 0; i < MAX_PARSE_ENTITIES; ++i)
+	for(s32 i = 0; i < ID_MAX_PARSE_ENTITIES; ++i)
 	{
 		const idEntityStateBase& es = *parser.GetBaseline(i);
 		if(memcmp(&nullState, &es, (size_t)_protocolSizeOfEntityState))
@@ -130,7 +131,7 @@ void udtParserPlugInQuakeToUDT::ProcessSnapshotMessage(const udtSnapshotCallback
 
 	for(s32 i = 0, count = arg.Snapshot->numEntities; i < count; ++i)
 	{
-		const s32 index = (arg.Snapshot->parseEntitiesNum + i) & (MAX_PARSE_ENTITIES - 1);
+		const s32 index = (arg.Snapshot->parseEntitiesNum + i) & (ID_MAX_PARSE_ENTITIES - 1);
 		idEntityStateBase& entity = *parser.GetEntity(index);
 		const s32 number = entity.number;
 		snapshot.Entities[number].Valid = true;

@@ -22,7 +22,7 @@ void PrintHelp()
 	printf("-o=p  set the output folder path to p         (default: the input's folder)\n");
 	printf("-c    output to the console/terminal          (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
-	printf("-t=N  set the maximum number of threads to N  (default: 4)\n");
+	printf("-t=N  set the maximum number of threads to N  (default: 1)\n");
 	printf("-a=   select analyzers                        (default: all enabled)\n");
 	printf("        g: Game states         s: Stats\n");
 	printf("        m: chat Messages       r: Raw commands\n");
@@ -62,20 +62,18 @@ static void CallbackConsoleMessageNoStdOut(s32 logLevel, const char* message)
 		return;
 	}
 
-	fprintf(stderr, logLevel == 2 ? "Error: " : "Fatal: ");
-	fprintf(stderr, message);
-	fprintf(stderr, "\n");
+	fprintf(stderr, "%s%s\n", logLevel == 2 ? "Error: " : "Fatal: ", message);
 }
 
 static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)
 {
-	udtVMArrayWithAlloc<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
-	udtVMArrayWithAlloc<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
+	udtVMArray<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
+	udtVMArray<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
-		filePaths[i] = files[i].Path;
+		filePaths[i] = files[i].Path.GetPtr();
 	}
 
 	if(consoleOutput)
@@ -106,7 +104,7 @@ static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fi
 			tempAllocator.Clear();
 			udtPath::GetFileName(fileName, tempAllocator, udtString::NewConstRef(filePaths[i]));
 
-			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.String != NULL ? fileName.String : "?", udtGetErrorCodeString(errorCodes[i]));
+			fprintf(stderr, "Processing of file %s failed with error: %s\n", fileName.GetPtrSafe("?"), udtGetErrorCodeString(errorCodes[i]));
 		}
 	}
 
@@ -164,7 +162,7 @@ int udt_main(int argc, char** argv)
 	}
 
 	const char* customOutputPath = NULL;
-	u32 maxThreadCount = 4;
+	u32 maxThreadCount = 1;
 	u32 analyzerCount = (u32)udtParserPlugIn::Count;
 	u32 analyzers[udtParserPlugIn::Count];
 	bool recursive = false;
@@ -177,7 +175,7 @@ int udt_main(int argc, char** argv)
 
 	for(int i = 1; i < argc - 1; ++i)
 	{
-		s32 localMaxThreads = 4;
+		s32 localMaxThreads = 1;
 
 		const udtString arg = udtString::NewConstRef(argv[i]);
 		if(udtString::Equals(arg, "-r"))
@@ -189,21 +187,21 @@ int udt_main(int argc, char** argv)
 			consoleOutput = true;
 		}
 		else if(udtString::StartsWith(arg, "-o=") && 
-				arg.Length >= 4 &&
+				arg.GetLength() >= 4 &&
 				IsValidDirectory(argv[i] + 3))
 		{
 			customOutputPath = argv[i] + 3;
 		}
 		else if(udtString::StartsWith(arg, "-t=") && 
-				arg.Length >= 4 && 
-				StringParseInt(localMaxThreads, arg.String + 3) &&
+				arg.GetLength() >= 4 &&
+				StringParseInt(localMaxThreads, arg.GetPtr() + 3) &&
 				localMaxThreads >= 1 &&
 				localMaxThreads <= 16)
 		{
 			maxThreadCount = (u32)localMaxThreads;
 		}
 		else if(udtString::StartsWith(arg, "-a=") &&
-				arg.Length >= 4)
+				arg.GetLength() >= 4)
 		{
 			analyzerCount = 0;
 			const char* s = argv[i] + 3;
@@ -228,38 +226,26 @@ int udt_main(int argc, char** argv)
 	if(fileMode)
 	{
 		udtFileInfo fileInfo;
-		fileInfo.Name = NULL;
+		fileInfo.Name = udtString::NewNull();
+		fileInfo.Path = udtString::NewConstRef(inputPath);
 		fileInfo.Size = 0;
-		fileInfo.Path = inputPath;
 
 		return ProcessMultipleDemos(&fileInfo, 1, customOutputPath, consoleOutput, maxThreadCount, analyzers, analyzerCount) ? 0 : 1;
 	}
 
-	udtVMArrayWithAlloc<udtFileInfo> files(1 << 16, "udt_main::FilesArray");
-	udtVMLinearAllocator persistAlloc;
-	udtVMLinearAllocator folderArrayAlloc;
-	udtVMLinearAllocator tempAlloc;
-	persistAlloc.Init(1 << 24, "udt_main::Persistent");
-	folderArrayAlloc.Init(1 << 24, "udt_main::FolderArray");
-	tempAlloc.Init(1 << 20, "udt_main::Temp");
-
 	udtFileListQuery query;
-	memset(&query, 0, sizeof(query));
+	query.InitAllocators(256);
 	query.FileFilter = &KeepOnlyDemoFiles;
-	query.Files = &files;
-	query.FolderArrayAllocator = &folderArrayAlloc;
-	query.FolderPath = inputPath;
-	query.PersistAllocator = &persistAlloc;
+	query.FolderPath = udtString::NewConstRef(inputPath);
 	query.Recursive = recursive;
-	query.TempAllocator = &tempAlloc;
 	GetDirectoryFileList(query);
-	if(files.IsEmpty())
+	if(query.Files.IsEmpty())
 	{
 		fprintf(stderr, "No demo file found.\n");
 		return 1;
 	}
 
-	if(!ProcessMultipleDemos(files.GetStartAddress(), files.GetSize(), customOutputPath, false, maxThreadCount, analyzers, analyzerCount))
+	if(!ProcessMultipleDemos(query.Files.GetStartAddress(), query.Files.GetSize(), customOutputPath, false, maxThreadCount, analyzers, analyzerCount))
 	{
 		return 1;
 	}

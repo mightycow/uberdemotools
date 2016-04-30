@@ -26,7 +26,7 @@ struct udtDemoStreamCreatorArg
 };
 
 struct udtBaseParser;
-typedef udtStream* (*udtDemoStreamCreator)(udtString& filePath, const udtDemoStreamCreatorArg& info);
+typedef udtString (*udtDemoNameCreator)(const udtDemoStreamCreatorArg& info);
 
 
 // Don't ever allocate an instance of this on the stack.
@@ -47,7 +47,8 @@ public:
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
 	void	FinishParsing(bool success);
 
-	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoStreamCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
+	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
+	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath);
 	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
 
 	const udtString       GetConfigString(s32 csIndex) const;
@@ -66,28 +67,20 @@ private:
 	bool                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
 	void                  EmitPacketEntities(idClientSnapshotBase* from, idClientSnapshotBase* to);
 	bool                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, bool unchanged);
-	char*                 AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength = 0, u32* outStringLength = NULL);
 	void                  ResetForGamestateMessage();
-	const char*           GetFileName() { return (_inFileName.String != NULL) ? _inFileName.String : "N/A"; }
 
 public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
 	idEntityStateBase*    GetBaseline(s32 idx) const { return (idEntityStateBase*)&_inEntityBaselines[idx * _inProtocolSizeOfEntityState]; }
 	idClientSnapshotBase* GetClientSnapshot(s32 idx) const { return (idClientSnapshotBase*)&_inSnapshots[idx * _inProtocolSizeOfClientSnapshot]; }
 	const idTokenizer&    GetTokenizer() { return _tokenizer; }
-	
-	// You don't have to deallocate the object, but you will have to call the destructor manually yourself.
-	template<class T>
-	T* CreatePersistentObject()
-	{
-		return new (_persistentAllocator.Allocate((u32)sizeof(T))) T;
-	}
+	const char*           GetFileNamePtr() { return _inFileName.GetPtrSafe("N/A"); }
 	
 public:
 	struct udtCutInfo
 	{
-		udtDemoStreamCreator StreamCreator;
-		udtStream* Stream; // Requires manual destruction.
+		const char* FilePath;
+		udtDemoNameCreator StreamCreator;
 		void* UserData;
 		const char* VeryShortDesc;
 		s32 GameStateIndex;
@@ -110,7 +103,7 @@ public:
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
-	udtVMArrayWithAlloc<udtBaseParserPlugIn*> PlugIns;
+	udtVMArray<udtBaseParserPlugIn*> PlugIns;
 	bool EnablePlugIns;
 
 	// Input.
@@ -127,22 +120,24 @@ public:
 	s32 _inServerTime;
 	s32 _inGameStateIndex;
 	s32 _inLastSnapshotMessageNumber;
-	u8 _inEntityBaselines[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
-	u8 _inParseEntities[MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
+	u8 _inMsgData[ID_MAX_MSG_LENGTH];
+	u8 _inEntityBaselines[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
+	u8 _inParseEntities[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
 	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.
 	udtString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
-	udtVMArrayWithAlloc<u32> _inGameStateFileOffsets;
-	udtVMArrayWithAlloc<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
-	udtVMArrayWithAlloc<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArray<u32> _inGameStateFileOffsets;
+	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
+	udtVMArray<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
+	udtFileStream _outFile;
 	udtString _outFilePath;
 	udtString _outFileName;
-	udtVMArrayWithAlloc<udtCutInfo> _cuts;
-	u8 _outMsgData[MAX_MSGLEN];
+	udtVMArray<udtCutInfo> _cuts;
+	u8 _outMsgData[ID_MAX_MSG_LENGTH];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;
 	s32 _outSnapshotsWritten;

@@ -19,6 +19,11 @@ struct udtChangedEntity
 	bool IsNewEvent;
 };
 
+struct udtMessageBundleCallbackArg
+{
+	s32 ReliableSequenceAcknowledge;
+};
+
 struct udtGamestateCallbackArg
 {
 	s32 ServerCommandSequence;
@@ -36,6 +41,8 @@ struct udtSnapshotCallbackArg
 	u32 EntityCount;
 	u32 RemovedEntityCount;
 	s32 ServerTime;
+	s32 CommandNumber;
+	s32 MessageNumber;
 };
 
 struct udtCommandCallbackArg
@@ -45,6 +52,7 @@ struct udtCommandCallbackArg
 	s32 CommandSequence;
 	s32 ConfigStringIndex; // Only valid if IsConfigString is true.
 	bool IsConfigString;
+	bool IsEmptyConfigString;
 };
 
 
@@ -52,9 +60,8 @@ struct udtBaseParserPlugIn
 {
 	udtBaseParserPlugIn() 
 		: TempAllocator(NULL)
-		, CurrentArrayStartAddress(NULL)
 		, DemoCount(0)
-		, DemoIndex(0)
+		, StartItemCount(0)
 	{
 	}
 
@@ -67,9 +74,7 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		ArraysAllocator.Init((uptr)demoCount * (uptr)sizeof(ArrayInfo), "ParserPlugIn::ArraysArray");
-		Arrays.SetAllocator(ArraysAllocator);
-		Arrays.Resize(demoCount);
+		BufferRanges.Init((uptr)(demoCount * (u32)sizeof(udtParseDataBufferRange)), "BaseParserPlugIn::BufferRangesArray");
 		InitAllocators(demoCount);
 	}
 
@@ -77,7 +82,8 @@ struct udtBaseParserPlugIn
 	void StartProcessingDemo()
 	{
 		TempAllocator->Clear();
-		CurrentArrayStartAddress = FinalAllocator.GetCurrentAddress();
+
+		StartItemCount = GetItemCount();
 
 		StartDemoAnalysis();
 	}
@@ -87,40 +93,24 @@ struct udtBaseParserPlugIn
 	{
 		FinishDemoAnalysis();
 
-		if(FinalAllocator.GetStartAddress() != NULL)
-		{
-			// For Analyzer plug-ins.
-			u8* const endAddress = FinalAllocator.GetCurrentAddress();
-			Arrays[DemoIndex].StartAddress = CurrentArrayStartAddress;
-			Arrays[DemoIndex].ElementCount = (u32)(endAddress - CurrentArrayStartAddress) / GetElementSize();
-		}
-		else
-		{
-			// For Modifier plug-ins.
-			Arrays[DemoIndex].StartAddress = NULL;
-			Arrays[DemoIndex].ElementCount = 0;
-		}
-
-		++DemoIndex;
-	}
-
-	void* GetFirstElementAddress(u32 demoIndex) const
-	{
-		assert(demoIndex < DemoCount);
-
-		return Arrays[demoIndex].StartAddress;
-	}
-
-	u32 GetElementCount(u32 demoIndex) const
-	{ 
-		assert(demoIndex < DemoCount);
-
-		return Arrays[demoIndex].ElementCount;
+		const u32 firstIndex = StartItemCount;
+		const u32 lastIndex = GetItemCount();
+		const u32 count = lastIndex - firstIndex;
+		udtParseDataBufferRange range;
+		range.FirstIndex = firstIndex;
+		range.Count = count;
+		BufferRanges.Add(range);
 	}
 
 	virtual void InitAllocators(u32 demoCount) = 0; // Initialize your private allocators, including FinalAllocator.
-	virtual u32  GetElementSize() const = 0;
 
+	// Only needed for analysis plug-ins.
+	virtual void CopyBuffersStruct(void* /*buffersStruct*/) const {}
+	virtual void UpdateBufferStruct() {}
+	virtual u32  GetItemCount() const { return 0; }
+
+	virtual void ProcessMessageBundleStart(const udtMessageBundleCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
+	virtual void ProcessMessageBundleEnd(const udtMessageBundleCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
@@ -129,19 +119,10 @@ protected:
 	virtual void StartDemoAnalysis() {}
 	virtual void FinishDemoAnalysis() {}
 
-	udtVMLinearAllocator FinalAllocator; // The allocator that will allocate the final array.
 	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
+	udtVMArray<udtParseDataBufferRange> BufferRanges;
 	
 private:
-	struct ArrayInfo
-	{
-		u8* StartAddress;
-		u32 ElementCount;
-	};
-
-	udtVMArray<ArrayInfo> Arrays;         // Final size: DemoCount.
-	udtVMLinearAllocator ArraysAllocator; // The allocator used by Arrays.
-	u8* CurrentArrayStartAddress;
 	u32 DemoCount;
-	u32 DemoIndex;
+	u32 StartItemCount;
 };

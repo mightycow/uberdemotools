@@ -23,7 +23,8 @@ local function ApplyTargetAndLinkSettings()
 	filter { "configurations:Release", "platforms:x32" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
 		
-	filter { "configurations:Release", "platforms:x64" }
+	-- Release, ReleaseInst, ReleaseOpt
+	filter { "configurations:Release*", "platforms:x64" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
 
 end
@@ -44,13 +45,20 @@ local function ApplyProjectSettings()
 
 	rtti "Off"
 	exceptionhandling "Off"
-	flags { "Unicode", "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
+	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
+	
+	-- The PG instrumented and PG optimized builds need to share their .obj files.
+	filter "configurations:ReleaseInst"
+		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
+	filter "configurations:ReleaseOpt"
+		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
 		flags { }
 
-	filter "configurations:Release"
+	-- Release, ReleaseInst, ReleaseOpt
+	filter "configurations:Release*"
 		defines { "NDEBUG" }
 		flags -- others: NoIncrementalLink NoCopyLocal NoImplicitLink NoBufferSecurityChecks
 		{ 
@@ -80,36 +88,90 @@ local function ApplyProjectSettings()
 	-- Some build options:
 	-- /GT  => Support Fiber-Safe Thread-Local Storage
 	-- /GS- => Buffer Security Check disabled
+	-- /GL  => Whole Program Optimization
 	
 	filter "action:vs*"
+		flags { "Symbols" }
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 		
 	filter { "action:vs*", "kind:ConsoleApp" }
-		linkoptions { "/ENTRY:wmainCRTStartup" } -- Directly passed to the linker.
+		linkoptions { "/ENTRY:wmainCRTStartup" }
 	
 	filter { "action:vs*", "configurations:Debug" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		buildoptions { "" }
+		linkoptions { "" }
 		
 	filter { "action:vs*", "configurations:Release" }
-		buildoptions { "/GS-" } -- Directly passed to the compiler.
-		linkoptions { "/OPT:REF", "/OPT:ICF" } -- Directly passed to the linker.
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF" }
+		
+	filter { "action:vs*", "configurations:ReleaseInst" }
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGINSTRUMENT" }
+		
+	filter { "action:vs*", "configurations:ReleaseOpt" }
+		buildoptions { "/GS-", "/GL" }
+		linkoptions { "/OPT:REF", "/OPT:ICF", "/LTCG:PGOPTIMIZE" }
+		
+	filter "action:vs2015"
+		buildoptions { "/wd4577" --[[ noexcept --]] }
+		linkoptions { "" }
 		
 	--
 	-- GCC
 	--
+
+	filter { "action:gmake", "system:windows" }
+		buildoptions { "" }
+		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
+		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
+
 	filter "action:gmake"
-		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" } -- Directly passed to the compiler.
-		linkoptions { "-rdynamic" } -- Directly passed to the linker.
-	
+		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" }
+		linkoptions { "" }
+		
 	filter { "action:gmake", "configurations:Debug" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		buildoptions { "" }
+		linkoptions { "" }
 		
 	filter { "action:gmake", "configurations:Release" }
-		buildoptions { "" } -- Directly passed to the compiler.
-		linkoptions { "" } -- Directly passed to the linker.
+		buildoptions { "" }
+		linkoptions { "" }
+
+end
+
+local function ApplyTutorialProjectSettings()
+
+	filter { }
+	kind "ConsoleApp"
+	language "C++"
+	location ( path_build.."/".._ACTION )
+	includedirs { path_src_apps, path_inc }
+	rtti "Off"
+	exceptionhandling "On"
+	flags { "Symbols", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings" }
+	links { "UDT" }
 	
+	filter "configurations:Debug"
+		defines { "DEBUG", "_DEBUG" }
+		
+	filter "configurations:Release"
+		defines { "NDEBUG" }
+		
+	ApplyTargetAndLinkSettings()
+	
+	filter "system:windows"
+		defines { "WIN32" }
+		
+	filter "action:vs*"
+		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		
+	filter { "action:vs*", "kind:ConsoleApp" }
+		linkoptions { "/ENTRY:mainCRTStartup" }
+		
+	filter "action:gmake"
+		buildoptions { "-std=c++11 -pedantic" }
+
 end
 
 os.mkdir(path_bin)
@@ -118,7 +180,7 @@ solution "UDT"
 
 	location ( path_build.."/".._ACTION )
 	platforms { "x32", "x64" }
-	configurations { "Debug", "Release" }
+	configurations { "Debug", "Release", "ReleaseInst", "ReleaseOpt" }
 
 	project "UDT"
 	
@@ -204,7 +266,20 @@ solution "UDT"
 			defines { "WIN32" }
 		filter "action:vs*"
 			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+			--buildoptions { "/Za" } -- /Za: disable language extensions
 		filter { "action:vs*", "kind:ConsoleApp" }
 			linkoptions { "/ENTRY:mainCRTStartup" }
 		filter "action:gmake"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
+			
+	project "tut_multi_rail"
+	
+		filter { }
+		files { path_src_apps.."/tut_multi_rail.cpp" }
+		ApplyTutorialProjectSettings()
+		
+	project "tut_players"
+	
+		filter { }
+		files { path_src_apps.."/tut_players.cpp" }
+		ApplyTutorialProjectSettings()

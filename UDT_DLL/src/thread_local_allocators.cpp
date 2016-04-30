@@ -1,6 +1,7 @@
 #include "thread_local_allocators.hpp"
 #include "thread_local_storage.hpp"
-#include "crash.hpp"
+#include "assert_or_fatal.hpp"
+#include "memory.hpp"
 
 #include <stdlib.h>
 #include <new>
@@ -30,10 +31,8 @@ void udtThreadLocalAllocators::Init()
 
 	new (ThreadLocalStorageBytes) udtThreadLocalStorage();
 	ThreadLocalStorage = (udtThreadLocalStorage*)ThreadLocalStorageBytes;
-	if(!ThreadLocalStorage->AllocateSlot())
-	{
-		FatalError(__FILE__, __LINE__, __FUNCTION__, "Failed to allocate thread-local storage for allocators.");
-	}
+	const bool slotAllocated = ThreadLocalStorage->AllocateSlot();
+	UDT_ASSERT_OR_FATAL_MSG(slotAllocated, "Failed to allocate thread-local storage for allocators.");
 }
 
 void udtThreadLocalAllocators::Destroy()
@@ -50,10 +49,7 @@ void udtThreadLocalAllocators::Destroy()
 
 udtVMLinearAllocator& udtThreadLocalAllocators::GetTempAllocator()
 {
-	if(ThreadLocalStorage == NULL)
-	{
-		FatalError(__FILE__, __LINE__, __FUNCTION__, "You forgot to call udtInitLibrary.");
-	}
+	UDT_ASSERT_OR_FATAL_MSG(ThreadLocalStorage != NULL, "You forgot to call udtInitLibrary.");
 
 	ThreadLocalData* data = (ThreadLocalData*)ThreadLocalStorage->GetData();
 	if(data != NULL)
@@ -61,12 +57,7 @@ udtVMLinearAllocator& udtThreadLocalAllocators::GetTempAllocator()
 		return data->TempAllocator;
 	}
 
-	data = (ThreadLocalData*)malloc(sizeof(ThreadLocalData));
-	if(data == NULL)
-	{
-		FatalError(__FILE__, __LINE__, __FUNCTION__, "Failed to allocate memory for thread-local allocators.");
-	}
-
+	data = (ThreadLocalData*)udt_malloc(sizeof(ThreadLocalData));
 	new (data) ThreadLocalData();
 	ThreadLocalStorage->SetData(data);
 
@@ -75,10 +66,7 @@ udtVMLinearAllocator& udtThreadLocalAllocators::GetTempAllocator()
 
 void udtThreadLocalAllocators::ReleaseThreadLocalAllocators()
 {
-	if(ThreadLocalStorage == NULL)
-	{
-		FatalError(__FILE__, __LINE__, __FUNCTION__, "You forgot to call udtInitLibrary.");
-	}
+	UDT_ASSERT_OR_FATAL_MSG(ThreadLocalStorage != NULL, "You forgot to call udtInitLibrary.");
 
 	ThreadLocalData* const data = (ThreadLocalData*)ThreadLocalStorage->GetData();
 	if(data == NULL)

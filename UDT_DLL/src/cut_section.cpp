@@ -14,10 +14,11 @@ void MergeRanges(udtVMArray<udtCutSection>& result, const udtVMArray<udtCutSecti
 	udtCutSection current = ranges[0];
 	for(u32 i = 1, count = ranges.GetSize(); i < count; ++i)
 	{
-		const udtCutSection it = ranges[i];
+		const udtCutSection& it = ranges[i];
 		if(current.EndTimeMs >= it.StartTimeMs && current.GameStateIndex == it.GameStateIndex)
 		{
 			current.EndTimeMs = udt_max(current.EndTimeMs, it.EndTimeMs);
+			current.PatternTypes |= it.PatternTypes;
 		}
 		else
 		{

@@ -26,12 +26,14 @@ udtString udtString::NewClone(udtVMLinearAllocator& allocator, const char* input
 		inputLength = (u32)strlen(input);
 	}
 
-	char* const clone = (char*)allocator.Allocate((uptr)(inputLength + 1));
+	const u32 cloneOffset = (u32)allocator.Allocate((uptr)(inputLength + 1));
+	char* const clone = (char*)allocator.GetStartAddress() + cloneOffset;
 	memcpy(clone, input, inputLength);
 	clone[inputLength] = '\0';
 
 	udtString string;
-	string.String = clone;
+	string.Allocator = &allocator;
+	string.Offset = cloneOffset;
 	string.Length = inputLength;
 	string.ReservedBytes = inputLength + 1;
 
@@ -40,7 +42,17 @@ udtString udtString::NewClone(udtVMLinearAllocator& allocator, const char* input
 
 udtString udtString::NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input)
 {
-	return NewClone(allocator, input.String, input.Length);
+	// @NOTE: Can't forward the call to the other version because if 
+	// allocator is the same as input.Allocator, then input might get relocated
+	// after a call to allocator.Allocate.
+	const u32 inputLength = input.GetLength();
+	udtString clone = NewEmpty(allocator, inputLength + 1);
+	char* const clonePtr = clone.GetWritePtr();
+	memcpy(clonePtr, input.GetPtr(), inputLength);
+	clonePtr[inputLength] = '\0';
+	clone.Length = inputLength;
+
+	return clone;
 }
 
 udtString udtString::NewCleanClone(udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* input, u32 inputLength)
@@ -62,7 +74,8 @@ udtString udtString::NewCleanCloneFromRef(udtVMLinearAllocator& allocator, udtPr
 udtString udtString::NewEmptyConstant()
 {
 	udtString string;
-	string.String = (char*)""; // We're being naughty.
+	string.Allocator = (udtVMLinearAllocator*)""; // We're being naughty.
+	string.Offset = 0;
 	string.Length = 0;
 	string.ReservedBytes = 0;
 
@@ -72,19 +85,10 @@ udtString udtString::NewEmptyConstant()
 udtString udtString::NewConstRef(const char* readOnlyString, u32 length)
 {
 	udtString string;
-	string.String = (char*)readOnlyString; // We're being naughty.
+	string.Allocator = (udtVMLinearAllocator*)readOnlyString; // We're being naughty.
+	string.Offset = 0;
 	string.Length = (readOnlyString != NULL) ? (length == (u32)InvalidLength ? (u32)strlen(readOnlyString) : length) : 0;
 	string.ReservedBytes = 0;
-
-	return string;
-}
-
-udtString udtString::NewRef(const char* readOnlyString, u32 length, u32 reservedBytes)
-{
-	udtString string;
-	string.String = (char*)readOnlyString; // We're being naughty.
-	string.Length = length;
-	string.ReservedBytes = reservedBytes;
 
 	return string;
 }
@@ -93,11 +97,13 @@ udtString udtString::NewEmpty(udtVMLinearAllocator& allocator, u32 reservedBytes
 {
 	UDT_ASSERT_OR_RETURN_VALUE(reservedBytes > 0, NewEmptyConstant());
 
-	char* const memory = (char*)allocator.Allocate((uptr)reservedBytes);
+	const u32 offset = (u32)allocator.Allocate((uptr)reservedBytes);
+	char* const memory = (char*)allocator.GetStartAddress() + offset;
 	*memory = '\0';
 
 	udtString string;
-	string.String = memory;
+	string.Allocator = &allocator;
+	string.Offset = offset;
 	string.Length = 0;
 	string.ReservedBytes = reservedBytes;
 
@@ -132,49 +138,9 @@ udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocato
 	return result;
 }
 
-udtString udtString::NewFromConcatenatingMultiple(udtVMLinearAllocator& allocator, const char** strings, u32 stringCount)
-{
-	UDT_ASSERT_OR_RETURN_VALUE(strings != NULL && stringCount > 0, NewEmptyConstant());
-
-	u32 newLength = 0;
-	for(u32 i = 0; i < stringCount; ++i)
-	{
-		if(strings[i] == NULL)
-		{
-			continue;
-		}
-
-		newLength += (u32)strlen(strings[i]);
-	}
-
-	char* const newStringBuffer = (char*)allocator.Allocate((u32)newLength + 1);
-	UDT_ASSERT_OR_RETURN_VALUE(newStringBuffer != NULL, NewEmptyConstant());
-
-	char* newStringIter = newStringBuffer;
-	for(u32 i = 0; i < stringCount; ++i)
-	{
-		if(strings[i] == NULL)
-		{
-			continue;
-		}
-
-		const u32 length = (u32)strlen(strings[i]);
-		memcpy(newStringIter, strings[i], (size_t)length);
-		newStringIter += length;
-	}
-	*newStringIter = '\0';
-
-	udtString result;
-	result.String = newStringBuffer;
-	result.Length = newLength;
-	result.ReservedBytes = newLength + 1;
-
-	return result;
-}
-
 udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 length)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, NewEmptyConstant());
+	UDT_ASSERT_OR_RETURN_VALUE(input.GetPtr() != NULL, NewEmptyConstant());
 	if(offset >= input.Length)
 	{
 		return NewEmptyConstant();
@@ -190,16 +156,27 @@ udtString udtString::NewSubstringRef(const udtString& input, u32 offset, u32 len
 	}
 
 	udtString string;
-	string.String = input.String + offset;
-	string.Length = length;
-	string.ReservedBytes = input.ReservedBytes - offset;
+	if(input.IsReadOnly())
+	{
+		string.Allocator = (udtVMLinearAllocator*)((char*)input.Allocator + offset);
+		string.Offset = 0;
+		string.Length = length;
+		string.ReservedBytes = 0;
+	}
+	else
+	{
+		string.Allocator = input.Allocator;
+		string.Offset = input.Offset + offset;
+		string.Length = length;
+		string.ReservedBytes = input.ReservedBytes - offset;
+	}
 
 	return string;
 }
 
 udtString udtString::NewSubstringClone(udtVMLinearAllocator& allocator, const udtString& input, u32 offset, u32 length)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, NewEmptyConstant());
+	UDT_ASSERT_OR_RETURN_VALUE(input.GetPtr() != NULL, NewEmptyConstant());
 	if(offset >= input.Length)
 	{
 		return NewEmptyConstant();
@@ -214,15 +191,73 @@ udtString udtString::NewSubstringClone(udtVMLinearAllocator& allocator, const ud
 		return NewEmptyConstant();
 	}
 
-	return udtString::NewClone(allocator, input.String + offset, length);
+	if(input.Allocator != &allocator)
+	{
+		return udtString::NewClone(allocator, input.GetPtr() + offset, length);
+	}
+
+	udtString clone = NewEmpty(allocator, length + 1);
+	char* const clonePtr = clone.GetWritePtr();
+	memcpy(clonePtr, input.GetPtr() + offset, length);
+	clonePtr[length] = '\0';
+	clone.Length = length;
+
+	return clone;
+}
+
+udtString udtString::NewNull()
+{
+	udtString string;
+	string.Allocator = NULL;
+	string.Offset = 0;
+	string.Length = 0;
+	string.ReservedBytes = 0;
+
+	return string;
+}
+
+udtString udtString::NewCamelCaseClone(udtVMLinearAllocator& allocator, const udtString& name)
+{
+	if(udtString::IsNullOrEmpty(name))
+	{
+		return name;
+	}
+
+	udtString fixed = udtString::NewCloneFromRef(allocator, name);
+	char* const start = fixed.GetWritePtr();
+	char* dest = start;
+	const char* src = start;
+	*dest++ = (char)::tolower((int)*src++);
+	while(*src)
+	{
+		if(src[0] != ' ')
+		{
+			*dest++ = *src++;
+			continue;
+		}
+
+		if(src[1] == '\0')
+		{
+			break;
+		}
+
+		*dest++ = (char)::toupper((int)src[1]);
+		src += 2;
+	}
+
+	*dest = '\0';
+	fixed.Length = (u32)(dest - start);
+
+	return fixed;
 }
 
 void udtString::Append(udtString& result, const udtString& input)
 {
 	UDT_ASSERT_OR_RETURN(result.Length + input.Length + 1 <= result.ReservedBytes);
 
-	memcpy(result.String + result.Length, input.String, (size_t)input.Length);
-	result.String[result.Length + input.Length] = '\0';
+	char* const resultString = result.GetWritePtr();
+	memcpy(resultString + result.Length, input.GetPtr(), (size_t)input.Length);
+	resultString[result.Length + input.Length] = '\0';
 	result.Length += input.Length;
 }
 
@@ -243,7 +278,7 @@ void udtString::AppendMultiple(udtString& result, const udtString** strings, u32
 
 	UDT_ASSERT_OR_RETURN(result.Length + extraLength + 1 <= result.ReservedBytes);
 
-	char* newStringIter = result.String + result.Length;
+	char* newStringIter = result.GetWritePtr() + result.Length;
 	for(u32 i = 0; i < stringCount; ++i)
 	{
 		if(strings[i] == NULL)
@@ -252,7 +287,7 @@ void udtString::AppendMultiple(udtString& result, const udtString** strings, u32
 		}
 
 		const u32 length = strings[i]->Length;
-		memcpy(newStringIter, strings[i]->String, (size_t)length);
+		memcpy(newStringIter, strings[i]->GetPtr(), (size_t)length);
 		newStringIter += length;
 	}
 	*newStringIter = '\0';
@@ -264,7 +299,7 @@ void udtString::MakeLowerCase(udtString& result)
 {
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes != 0);
 
-	char* s = result.String;
+	char* s = result.GetWritePtr();
 	while(*s)
 	{
 		*s = (char)::tolower((int)*s);
@@ -276,7 +311,7 @@ void udtString::MakeUpperCase(udtString& result)
 { 
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes != 0);
 
-	char* s = result.String;
+	char* s = result.GetWritePtr();
 	while(*s)
 	{
 		*s = (char)::toupper((int)*s);
@@ -286,7 +321,9 @@ void udtString::MakeUpperCase(udtString& result)
 
 bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
 	if(pattern.Length > input.Length)
 	{
@@ -297,15 +334,15 @@ bool udtString::ContainsNoCase(u32& charIndex, const udtString& input, const udt
 	for(u32 i = 0; i <= iend; ++i)
 	{
 		u32 j = 0;
-		for(; pattern.String[j]; ++j)
+		for(; patternString[j]; ++j)
 		{
-			if(::tolower(input.String[i + j]) != ::tolower(pattern.String[j]))
+			if(::tolower(inputString[i + j]) != ::tolower(patternString[j]))
 			{
 				break;
 			}
 		}
 
-		if(pattern.String[j] == '\0')
+		if(patternString[j] == '\0')
 		{
 			charIndex = i;
 			return true;
@@ -324,7 +361,9 @@ bool udtString::ContainsNoCase(const udtString& input, const udtString& pattern)
 
 bool udtString::StartsWithNoCase(const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
 	if(pattern.Length > input.Length)
 	{
@@ -332,15 +371,15 @@ bool udtString::StartsWithNoCase(const udtString& input, const udtString& patter
 	}
 
 	u32 j = 0;
-	for(; pattern.String[j]; ++j)
+	for(; patternString[j]; ++j)
 	{
-		if(::tolower(input.String[j]) != ::tolower(pattern.String[j]))
+		if(::tolower(inputString[j]) != ::tolower(patternString[j]))
 		{
 			break;
 		}
 	}
 
-	if(pattern.String[j] == '\0')
+	if(patternString[j] == '\0')
 	{
 		return true;
 	}
@@ -350,7 +389,9 @@ bool udtString::StartsWithNoCase(const udtString& input, const udtString& patter
 
 bool udtString::EndsWithNoCase(const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
 	if(pattern.Length > input.Length)
 	{
@@ -359,9 +400,9 @@ bool udtString::EndsWithNoCase(const udtString& input, const udtString& pattern)
 
 	u32 i = input.Length - pattern.Length;
 	u32 j = 0;
-	for(; pattern.String[j]; ++j)
+	for(; patternString[j]; ++j)
 	{
-		if(::tolower(input.String[i + j]) != ::tolower(pattern.String[j]))
+		if(::tolower(inputString[i + j]) != ::tolower(patternString[j]))
 		{
 			return false;
 		}
@@ -372,7 +413,9 @@ bool udtString::EndsWithNoCase(const udtString& input, const udtString& pattern)
 
 bool udtString::EqualsNoCase(const udtString& a, const udtString& b)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(a.String != NULL && b.String != NULL, false);
+	const char* const aString = a.GetPtr();
+	const char* const bString = b.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(aString != NULL && bString != NULL, false);
 
 	if(a.Length != b.Length)
 	{
@@ -381,7 +424,7 @@ bool udtString::EqualsNoCase(const udtString& a, const udtString& b)
 
 	for(u32 i = 0, end = a.Length; i < end; ++i)
 	{
-		if(::tolower(a.String[i]) != ::tolower(b.String[i]))
+		if(::tolower(aString[i]) != ::tolower(bString[i]))
 		{
 			return false;
 		}
@@ -392,13 +435,15 @@ bool udtString::EqualsNoCase(const udtString& a, const udtString& b)
 
 bool udtString::Contains(u32& charIndex, const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
-	const char* const patternAddress = strstr(input.String, pattern.String);
+	const char* const patternAddress = strstr(inputString, patternString);
 	const bool found = patternAddress != NULL;
 	if(found)
 	{
-		charIndex = (u32)(patternAddress - input.String);
+		charIndex = (u32)(patternAddress - inputString);
 	}
 
 	return found;
@@ -406,14 +451,18 @@ bool udtString::Contains(u32& charIndex, const udtString& input, const udtString
 
 bool udtString::Contains(const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
-	return strstr(input.String, pattern.String) != NULL;
+	return strstr(inputString, patternString) != NULL;
 }
 
 bool udtString::StartsWith(const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
 	if(pattern.Length > input.Length)
 	{
@@ -422,7 +471,7 @@ bool udtString::StartsWith(const udtString& input, const udtString& pattern)
 
 	for(u32 i = 0, end = pattern.Length; i < end; ++i)
 	{
-		if(input.String[i] != pattern.String[i])
+		if(inputString[i] != patternString[i])
 		{
 			return false;
 		}
@@ -433,7 +482,9 @@ bool udtString::StartsWith(const udtString& input, const udtString& pattern)
 
 bool udtString::EndsWith(const udtString& input, const udtString& pattern)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && pattern.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const patternString = pattern.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && patternString != NULL, false);
 
 	if(pattern.Length > input.Length)
 	{
@@ -442,9 +493,9 @@ bool udtString::EndsWith(const udtString& input, const udtString& pattern)
 
 	u32 i = input.Length - pattern.Length;
 	u32 j = 0;
-	for(; pattern.String[j]; ++j)
+	for(; patternString[j]; ++j)
 	{
-		if(input.String[i + j] != pattern.String[j])
+		if(inputString[i + j] != patternString[j])
 		{
 			return false;
 		}
@@ -455,7 +506,9 @@ bool udtString::EndsWith(const udtString& input, const udtString& pattern)
 
 bool udtString::Equals(const udtString& a, const udtString& b)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(a.String != NULL && b.String != NULL, false);
+	const char* const aString = a.GetPtr();
+	const char* const bString = b.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(aString != NULL && bString != NULL, false);
 
 	if(a.Length != b.Length)
 	{
@@ -464,7 +517,7 @@ bool udtString::Equals(const udtString& a, const udtString& b)
 
 	for(u32 i = 0, end = a.Length; i < end; ++i)
 	{
-		if(a.String[i] != b.String[i])
+		if(aString[i] != bString[i])
 		{
 			return false;
 		}
@@ -529,13 +582,15 @@ bool udtString::Equals(const udtString& a, const char* b)
 
 bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, const udtString& charList, u32 offset)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && charList.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const charListString = charList.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && charListString != NULL, false);
 
 	for(u32 i = offset; i < input.Length; ++i)
 	{
 		for(u32 j = 0; j < charList.Length; ++j)
 		{
-			if(input.String[i] == charList.String[j])
+			if(inputString[i] == charListString[j])
 			{
 				index = i;
 				return true;
@@ -548,13 +603,15 @@ bool udtString::FindFirstCharacterListMatch(u32& index, const udtString& input, 
 
 bool udtString::FindLastCharacterListMatch(u32& index, const udtString& input, const udtString& charList)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL && charList.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	const char* const charListString = charList.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL && charListString != NULL, false);
 
 	for(s32 i = (s32)input.Length - 1; i >= 0; --i)
 	{
 		for(u32 j = 0; j < charList.Length; ++j)
 		{
-			if(input.String[i] == charList.String[j])
+			if(inputString[i] == charListString[j])
 			{
 				index = (u32)i;
 				return true;
@@ -567,11 +624,12 @@ bool udtString::FindLastCharacterListMatch(u32& index, const udtString& input, c
 
 bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char pattern, u32 offset)
 {
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL, false);
 
 	for(u32 i = offset; i < input.Length; ++i)
 	{
-		if(input.String[i] == pattern)
+		if(inputString[i] == pattern)
 		{
 			index = i;
 			return true;
@@ -583,11 +641,12 @@ bool udtString::FindFirstCharacterMatch(u32& index, const udtString& input, char
 
 bool udtString::FindLastCharacterMatch(u32& index, const udtString& input, char pattern)
 { 
-	UDT_ASSERT_OR_RETURN_VALUE(input.String != NULL, false);
+	const char* const inputString = input.GetPtr();
+	UDT_ASSERT_OR_RETURN_VALUE(inputString != NULL, false);
 
 	for(s32 i = (s32)input.Length - 1; i >= 0; --i)
 	{
-		if(input.String[i] == pattern)
+		if(inputString[i] == pattern)
 		{
 			index = (u32)i;
 			return true;
@@ -599,7 +658,9 @@ bool udtString::FindLastCharacterMatch(u32& index, const udtString& input, char 
 
 bool udtString::IsNullOrEmpty(const udtString& string)
 {
-	return string.String == NULL || *string.String == '\0';
+	const char* const s = string.GetPtr();
+
+	return s == NULL || *s == '\0';
 }
 
 bool udtString::IsNullOrEmpty(const char* string)
@@ -609,12 +670,14 @@ bool udtString::IsNullOrEmpty(const char* string)
 
 bool udtString::IsNull(const udtString& string)
 {
-	return string.String == NULL;
+	return string.GetPtr() == NULL;
 }
 
 bool udtString::IsEmpty(const udtString& string)
 {
-	return string.String != NULL && *string.String == '\0';
+	const char* const s = string.GetPtr();
+
+	return s != NULL && *s == '\0';
 }
 
 static UDT_FORCE_INLINE bool IsColorString(const char* s)
@@ -632,8 +695,8 @@ static bool IsHexChar(char c)
 
 static bool IsLongOSPColorString(const udtString& string)
 {
-	const char* const s = string.String;
-	if(string.Length < 8 || s[0] != '^' || (char)::tolower(s[1]) != 'x')
+	const char* const s = string.GetPtr();
+	if(string.GetLength() < 8 || s[0] != '^' || (char)::tolower(s[1]) != 'x')
 	{
 		return false;
 	}
@@ -649,6 +712,38 @@ static bool IsLongOSPColorString(const udtString& string)
 	return true;
 }
 
+u32 CleanUpString(char* string, udtProtocol::Id protocol)
+{
+	u32 newLength = 0;
+	char* const start = string;
+	char* dest = start;
+	char* source = start;
+	char c;
+	while((c = *source) != 0)
+	{
+		if(IsLongOSPColorString(udtString::NewConstRef(source)))
+		{
+			source += 7;
+		}
+		else if(IsColorString(source))
+		{
+			source++;
+		}
+		// Protocols up to 90 : only keep printable codes.
+		// Protocols 91 and up: keep everything.
+		else if(protocol >= udtProtocol::Dm91 ||
+				(c >= 0x20 && c <= 0x7E))
+		{
+			*dest++ = c;
+			newLength++;
+		}
+		source++;
+	}
+	*dest = '\0';
+
+	return newLength;
+}
+
 void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 {
 	if(IsNullOrEmpty(result))
@@ -659,33 +754,7 @@ void udtString::CleanUp(udtString& result, udtProtocol::Id protocol)
 	// Make sure we're not trying to modify a read-only string.
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
 
-	u32 newLength = 0;
-	char* dest = result.String;
-	char* source = result.String;
-	char c;
-	while((c = *source) != 0)
-	{
-		if(IsLongOSPColorString(udtString::NewSubstringRef(result, (u32)(source - result.String))))
-		{
-			source += 7;
-		}
-		else if(IsColorString(source))
-		{
-			source++;
-		}
-		// Protocols up to 90 : only keep printable codes.
-		// Protocols 91 and up: keep everything.
-		else if(protocol >= udtProtocol::Dm91 || 
-				(c >= 0x20 && c <= 0x7E))
-		{
-			*dest++ = c;
-			newLength++;
-		}
-		source++;
-	}
-	*dest = '\0';
-
-	result.Length = newLength;
+	result.Length = CleanUpString(result.GetWritePtr(), protocol);
 }
 
 void udtString::RemoveCharacter(udtString& result, char toRemove)
@@ -699,8 +768,9 @@ void udtString::RemoveCharacter(udtString& result, char toRemove)
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
 
 	u32 newLength = 0;
-	char* dest = result.String;
-	char* source = result.String;
+	char* const start = result.GetWritePtr();
+	char* dest = start;
+	char* source = start;
 	char c;
 	while((c = *source) != 0)
 	{
@@ -726,8 +796,9 @@ void udtString::TrimTrailingCharacter(udtString& result, char toRemove)
 	// Make sure we're not trying to modify a read-only string.
 	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
 
-	char* it = result.String;
-	char* lastChar = result.String;
+	char* const start = result.GetWritePtr();
+	char* it = start;
+	char* lastChar = start;
 	while(*it != 0)
 	{
 		if(*it != toRemove)
@@ -738,7 +809,34 @@ void udtString::TrimTrailingCharacter(udtString& result, char toRemove)
 	}
 
 	lastChar[1] = '\0';
-	result.Length = (u32)(lastChar + 1 - result.String);
+	result.Length = (u32)(lastChar + 1 - start);
+}
+
+void udtString::RemoveEmCharacter(udtString& result)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	char* const start = result.GetWritePtr();
+	char* d = start;
+	char* s = start;
+	while(*s != '\0')
+	{
+		const char c = *s++;
+		if(c == '\x19')
+		{
+			continue;
+		}
+
+		*d++ = c;
+	}
+	*d = '\0';
+	result.Length = (u32)(d - start);
 }
 
 #if defined(UDT_WINDOWS)
@@ -776,7 +874,8 @@ udtString udtString::NewFromUTF16(udtVMLinearAllocator& allocator, const wchar_t
 
 	const uptr allocatorOffset = allocator.GetCurrentByteCount();
 	const u32 charCount = UTF16toUTF8_GetCharCount(utf16String);
-	char* const utf8String = (char*)allocator.Allocate((uptr)charCount);
+	const u32 offset = (u32)allocator.Allocate((uptr)charCount);
+	char* const utf8String = (char*)allocator.GetStartAddress() + offset;
 	if(!UTF16toUTF8_Convert(utf8String, charCount, utf16String))
 	{
 		allocator.SetCurrentByteCount(allocatorOffset);
@@ -784,7 +883,8 @@ udtString udtString::NewFromUTF16(udtVMLinearAllocator& allocator, const wchar_t
 	}
 
 	udtString string;
-	string.String = utf8String;
+	string.Allocator = &allocator;
+	string.Offset = offset;
 	string.Length = charCount - 1;
 	string.ReservedBytes = charCount;
 
@@ -799,10 +899,10 @@ wchar_t* udtString::ConvertToUTF16(udtVMLinearAllocator& allocator, const udtStr
 	}
 
 	const uptr allocatorOffset = allocator.GetCurrentByteCount();
-	const u32 charCount = UTF8toUTF16_GetCharCount(utf8String.String);
+	const u32 charCount = UTF8toUTF16_GetCharCount(utf8String.GetPtr());
 	const u32 allocCharCount = charCount;
-	wchar_t* const utf16String = (wchar_t*)allocator.Allocate((uptr)allocCharCount * (uptr)sizeof(wchar_t));
-	if(!UTF8toUTF16_Convert(utf16String, charCount, utf8String.String))
+	wchar_t* const utf16String = (wchar_t*)allocator.AllocateAndGetAddress((uptr)allocCharCount * (uptr)sizeof(wchar_t));
+	if(!UTF8toUTF16_Convert(utf16String, charCount, utf8String.GetPtr()))
 	{
 		allocator.SetCurrentByteCount(allocatorOffset);
 		return NULL;

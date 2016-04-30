@@ -1,6 +1,16 @@
 #pragma once
 
 
+#define  UDT_VERSION_MAJOR     1
+#define  UDT_VERSION_MINOR     2
+#define  UDT_VERSION_REVISION  0
+
+#define  UDT_QUOTE(name)            #name
+#define  UDT_STR(macro)             UDT_QUOTE(macro)
+#define  UDT_MAKE_VERSION(a, b, c)  UDT_STR(a) "." UDT_STR(b) "." UDT_STR(c)
+#define  UDT_VERSION_STRING         UDT_MAKE_VERSION(UDT_VERSION_MAJOR, UDT_VERSION_MINOR, UDT_VERSION_REVISION)
+
+
 #if defined(_MSC_VER)
 #	define UDT_MSVC
 #	define UDT_MSVC_VER _MSC_VER
@@ -96,10 +106,11 @@ typedef double f64;
 #endif
 
 #define UDT_API    UDT_API_DECL
-#define UDT_BIT(x) (1 << x)
+#define UDT_BIT(x) (1 << (x))
 
 typedef struct udtParserContext_s udtParserContext;
 typedef struct udtParserContextGroup_s udtParserContextGroup;
+typedef struct udtPatternSearchContext_s udtPatternSearchContext;
 
 #if defined(__cplusplus)
 
@@ -108,7 +119,8 @@ typedef struct udtParserContextGroup_s udtParserContextGroup;
 	N(InvalidArgument, "invalid argument") \
 	N(OperationFailed, "operation failed") \
 	N(OperationCanceled, "operation canceled") \
-	N(Unprocessed, "unprocessed job")
+	N(Unprocessed, "unprocessed job") \
+	N(InsufficientBufferSize, "insufficient buffer size")
 
 #define UDT_ERROR_ITEM(Enum, Desc) Enum,
 struct udtErrorCode
@@ -177,13 +189,13 @@ Macro arguments:
 4. plug-in output class type (for reading back the results of Analyzer plug-ins)
 */
 #define UDT_PLUG_IN_LIST(N) \
-	N(Chat,             "chat messages",      udtParserPlugInChat,             udtParseDataChat) \
-	N(GameState,        "game states",        udtParserPlugInGameState,        udtParseDataGameState) \
-	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituary) \
-	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStats) \
-	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommand) \
-	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigString) \
-	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCapture)
+	N(Chat,             "chat messages",      udtParserPlugInChat,             udtParseDataChatBuffers) \
+	N(GameState,        "game states",        udtParserPlugInGameState,        udtParseDataGameStateBuffers) \
+	N(Obituaries,       "obituaries",         udtParserPlugInObituaries,       udtParseDataObituaryBuffers) \
+	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStatsBuffers) \
+	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommandBuffers) \
+	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigStringBuffers) \
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -455,25 +467,25 @@ struct udtByteArray
 	};
 };
 
-#define UDT_CUT_PATTERN_LIST(N) \
-	N(Chat, "chat", udtCutByChatArg, udtCutByChatAnalyzer) \
-	N(FragSequences, "frag sequences", udtCutByFragArg, udtCutByFragAnalyzer) \
-	N(MidAirFrags, "mid-air frags", udtCutByMidAirArg, udtCutByMidAirAnalyzer) \
-	N(MultiFragRails, "multi-frag rails", udtCutByMultiRailArg, udtCutByMultiRailAnalyzer) \
-	N(FlagCaptures, "flag captures", udtCutByFlagCaptureArg, udtCutByFlagCaptureAnalyzer) \
-	N(FlickRailFrags, "flick rails", udtCutByFlickRailArg, udtCutByFlickRailAnalyzer) \
-	N(Matches, "matches", udtCutByMatchArg, udtCutByMatchAnalyzer)
+#define UDT_PATTERN_LIST(N) \
+	N(Chat, "chat", udtChatPatternArg, udtChatPatternAnalyzer) \
+	N(FragSequences, "frag sequences", udtFragRunPatternArg, udtFragRunPatternAnalyzer) \
+	N(MidAirFrags, "mid-air frags", udtMidAirPatternArg, udtMidAirPatternAnalyzer) \
+	N(MultiFragRails, "multi-frag rails", udtMultiRailPatternArg, udtMultiRailPatternAnalyzer) \
+	N(FlagCaptures, "flag captures", udtFlagCapturePatternArg, udtFlagCapturePatternAnalyzer) \
+	N(FlickRailFrags, "flick rails", udtFlickRailPatternArg, udtFlickRailPatternAnalyzer) \
+	N(Matches, "matches", udtMatchPatternArg, udtMatchPatternAnalyzer)
 
-#define UDT_CUT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
+#define UDT_PATTERN_ITEM(Enum, Desc, ArgType, AnalyzerType) Enum,
 struct udtPatternType
 {
 	enum Id
 	{
-		UDT_CUT_PATTERN_LIST(UDT_CUT_PATTERN_ITEM)
+		UDT_PATTERN_LIST(UDT_PATTERN_ITEM)
 		Count
 	};
 };
-#undef UDT_CUT_PATTERN_ITEM
+#undef UDT_PATTERN_ITEM
 
 struct udtStatsCompMode
 {
@@ -837,7 +849,8 @@ struct udtPerfStatsDataType
 	N(MemoryReserved, "memory reserved", Bytes) \
 	N(MemoryCommitted, "memory committed", Bytes) \
 	N(MemoryUsed, "memory used", Bytes) \
-	N(MemoryEfficiency, "memory usage efficiency", Percentage)
+	N(MemoryEfficiency, "memory usage efficiency", Percentage) \
+	N(ResizeCount, "buffer relocation count", Generic)
 
 #define UDT_PERF_STATS_ITEM(Enum, Desc, Type) Enum,
 struct udtPerfStatsField
@@ -856,6 +869,13 @@ struct udtPerfStatsField
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
 #define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
 #define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    32
+
+
+#if defined(__cplusplus)
+#	define UDT_ENFORCE_API_STRUCT_SIZE(x) static_assert(sizeof(x) % 8 == 0, "Invalid struct size!");
+#else
+#	define UDT_ENFORCE_API_STRUCT_SIZE(x) 
+#endif
 
 
 #ifdef __cplusplus
@@ -943,6 +963,7 @@ extern "C"
 		s32 Reserved2;
 	}
 	udtParseArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseArg)
 
 	typedef struct udtMultiParseArg_s
 	{
@@ -959,9 +980,17 @@ extern "C"
 		u32 MaxThreadCount;
 	}
 	udtMultiParseArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMultiParseArg)
 	
 	typedef struct udtCut_s
 	{
+		/* Output file path. */
+		/* May be NULL, in which case udtParseArg::OutputFolderPath is used. */
+		const char* FilePath;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Cut start time in milli-seconds. */
 		s32 StartTimeMs;
 
@@ -972,9 +1001,10 @@ extern "C"
 		s32 GameStateIndex;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtCut;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCut)
 
 	typedef struct udtPatternInfo_s
 	{
@@ -982,15 +1012,20 @@ extern "C"
 		/* May not be NULL. */
 		const void* TypeSpecificInfo;
 
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Of type udtPatternType::Id. */
 		u32 Type;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtPatternInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternInfo)
 
 #if defined(__cplusplus)
+
 	struct udtPlayerIndex
 	{
 		enum Id
@@ -1000,27 +1035,74 @@ extern "C"
 		};
 	};
 
-	struct udtCutByPatternArgFlags
+	struct udtPatternSearchArgFlags
 	{
 		enum Id
 		{
 			MergeCutSections = UDT_BIT(0) /* Enable/disable merging cut sections from different patterns. */
 		};
 	};
+
+	struct udtStringComparisonMode
+	{
+		enum Id
+		{
+			Equals,
+			Contains,
+			StartsWith,
+			EndsWith,
+			Count
+		};
+	};
+
+	struct udtStringMatchingRuleFlags
+	{
+		enum Id
+		{
+			CaseSensitive = UDT_BIT(0),
+			IgnoreColorCodes = UDT_BIT(1)
+		};
+	};
+
 #endif
 
-	typedef struct udtCutByPatternArg_s
+	typedef struct udtStringMatchingRule_s
 	{
+		/* A null-terminated string containing the player's name. */
+		/* May not be NULL. */
+		const char* Value;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* Of type udtStringComparisonMode::Id. */
+		u32 ComparisonMode;
+
+		/* Check against the bits defined in udtStringMatchingRuleFlags::Id. */
+		u32 Flags;
+	}
+	udtStringMatchingRule;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtStringMatchingRule)
+
+	typedef struct udtPatternSearchArg_s
+	{
+		/* If the player name rules are valid, they will be used to find the player to track. */
+		/* Otherwise, the PlayerIndex field will be used instead. */
+
 		/* Pointer to an array of filters. */
 		/* May not be NULL. */
 		const udtPatternInfo* Patterns;
 
-		/* A null-terminated lower-case string containing the player's name. */
+		/* Pointer to an array of player name matching rules. */
+		/* The player that will be tracked will be the first one to match any of the rules. */
 		/* May be NULL. */
-		const char* PlayerName;
+		const udtStringMatchingRule* PlayerNameRules;
 
 		/* Number of elements in the array pointed by Patterns. */
 		u32 PatternCount;
+
+		/* Length of the PlayerNameRules array. */
+		u32 PlayerNameRuleCount;
 
 		/* Negative offset from the first matching time, in seconds. */
 		u32 StartOffsetSec;
@@ -1029,16 +1111,57 @@ extern "C"
 		u32 EndOffsetSec;
 
 		/* The index of the player whose action we're tracking. */
-		/* If not in the [0;63] range, is of type udtPlayerIndex::Id. */
+		/* If in the [0;63]  range: the number will be used directly. */
+		/* If in the [-2;-1] range: is of type udtPlayerIndex::Id. */
+		/* Ignored if player name rules are properly defined. */
 		s32 PlayerIndex;
 
-		/* Of type udtCutByPatternArgFlags::Id. */
+		/* Of type udtPatternSearchArgFlags::Id. */
 		u32 Flags;
+	}
+	udtPatternSearchArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternSearchArg)
+
+	typedef struct udtPatternMatch_s
+	{
+		/* Index into the input demo file path array. */
+		u32 DemoInputIndex;
+
+		/* The index of the game state. */
+		u32 GameStateIndex;
+
+		/* Server time, in milli-seconds. */
+		s32 StartTimeMs;
+
+		/* Server time, in milli-seconds. */
+		s32 EndTimeMs;
+
+		/* A bit is set for every pattern that matched this result. */
+		/* The bits are indexed with udtPatternType::Id. */
+		u32 Patterns;
 
 		/* Ignore this. */
 		s32 Reserved1;
 	}
-	udtCutByPatternArg;
+	udtPatternMatch;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternMatch)
+
+	typedef struct udtPatternSearchResults_s
+	{
+		/* Pointer to the array of results. */
+		const udtPatternMatch* Matches;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* Length of the Matches array. */
+		u32 MatchCount;
+
+		/* Ignore this. */
+		s32 Reserved2;
+	}
+	udtPatternSearchResults;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPatternSearchResults)
 
 	typedef struct udtCutByTimeArg_s
 	{
@@ -1046,18 +1169,25 @@ extern "C"
 		/* May not be NULL. */
 		const udtCut* Cuts;
 
+		/* Ignore this. */
+		const void* Reserved1;
+
 		/* Number of elements in the array pointed by Cuts. */
 		u32 CutCount;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
 	udtCutByTimeArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCutByTimeArg)
 
-	typedef struct udtCutByChatRule_s
+	typedef struct udtChatPatternRule_s
 	{
 		/* May not be NULL. */
 		const char* Pattern;
+
+		/* Ignore this. */
+		const void* Reserved1;
 
 		/* Of type udtChatOperator::Id. */
 		u32 ChatOperator;
@@ -1071,28 +1201,33 @@ extern "C"
 		/* Non-zero means we search team chat messages too. */
 		u32 SearchTeamChat;
 	}
-	udtCutByChatRule;
+	udtChatPatternRule;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternRule)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::GlobalChat. */
-	typedef struct udtCutByChatArg_s
+	typedef struct udtChatPatternArg_s
 	{
 		/* Pointer to an array of chat cutting rules. */
 		/* Rules are OR'd together. */
 		/* May not be NULL. */
-		const udtCutByChatRule* Rules;
+		const udtChatPatternRule* Rules;
+
+		/* Ignore this. */
+		const void* Reserved1;
 
 		/* Number of elements in the array pointed to by the Rules pointer. */
 		/* May not be 0. */
 		u32 RuleCount;
 
 		/* Ignore this. */
-		s32 Reserved1;
+		s32 Reserved2;
 	}
-	udtCutByChatArg;
+	udtChatPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternArg)
 
 #if defined(__cplusplus)
-	struct udtCutByFragArgFlags
+	struct udtFragRunPatternArgFlags
 	{
 		enum Id
 		{
@@ -1105,7 +1240,7 @@ extern "C"
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FragSequences. */
-	typedef struct udtCutByFragArg_s
+	typedef struct udtFragRunPatternArg_s
 	{
 		/* The minimum amount of frags in a sequence. */
 		u32 MinFragCount;
@@ -1122,7 +1257,7 @@ extern "C"
 		u32 TimeMode;
 
 		/* Boolean options. */
-		/* See udtCutByFragArgFlags. */
+		/* See udtFragRunPatternArgFlags. */
 		u32 Flags;
 		
 		/* All the allowed weapons. */
@@ -1131,15 +1266,13 @@ extern "C"
 
 		/* Ignore this. */
 		s32 Reserved1;
-
-		/* @TODO: */
-		/*u32 AllowedPowerUps;*/
 	}
-	udtCutByFragArg;
+	udtFragRunPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFragRunPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::MidAirFrags. */
-	typedef struct udtCutByMidAirArg_s
+	typedef struct udtMidAirPatternArg_s
 	{
 		/* All the allowed weapons. */
 		/* See udtWeaponBits::Id. */
@@ -1155,11 +1288,12 @@ extern "C"
 		/* Ignore this. */
 		s32 Reserved1;
 	}
-	udtCutByMidAirArg;
+	udtMidAirPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMidAirPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::MultiRailFrags. */
-	typedef struct udtCutByMultiRailArg_s
+	typedef struct udtMultiRailPatternArg_s
 	{
 		/* The minimum amount of kills with a single rail shot. */
 		/* Must be 2 or greater. */
@@ -1168,11 +1302,12 @@ extern "C"
 		/* Ignore this. */
 		s32 Reserved1;
 	}
-	udtCutByMultiRailArg;
+	udtMultiRailPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMultiRailPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FlagCaptures. */
-	typedef struct udtCutByFlagCaptureArg_s
+	typedef struct udtFlagCapturePatternArg_s
 	{
 		/* Minimum allowed flag carry time, in milli-seconds. */
 		u32 MinCarryTimeMs;
@@ -1186,11 +1321,12 @@ extern "C"
 		/* Non-zero to allow pick-ups that are not from the original flag spot. */
 		u32 AllowMissingToBase;
 	}
-	udtCutByFlagCaptureArg;
+	udtFlagCapturePatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFlagCapturePatternArg)
 	
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::FlickRailFrags. */
-	typedef struct udtCutByFlickRailArg_s
+	typedef struct udtFlickRailPatternArg_s
 	{
 		/* Minimum angular velocity, in radians/second. */
 		f32 MinSpeed;
@@ -1202,15 +1338,16 @@ extern "C"
 		/* Minimum angle change, in radians. */
 		f32 MinAngleDelta;
 
-		/* How many snapshots to take into account for computing the top speed. */
+		/* How many snapshots to take into account for computing the angle difference. */
 		/* Range: [2;4]. */
 		u32 MinAngleDeltaSnapshotCount;
 	}
-	udtCutByFlickRailArg;
+	udtFlickRailPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtFlickRailPatternArg)
 
 	/* Used as udtPatternInfo::TypeSpecificInfo */
 	/* when udtPatternInfo::Type is udtPatternType::Matches. */
-	typedef struct udtCutByMatchArg_s
+	typedef struct udtMatchPatternArg_s
 	{
 		/* If no match count-down was found, */
 		/* start the cut this amount of time before the match's start. */
@@ -1220,7 +1357,8 @@ extern "C"
 		/* end the cut this amount of time after the match's end. */
 		u32 MatchEndOffsetMs;
 	}
-	udtCutByMatchArg;
+	udtMatchPatternArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMatchPatternArg)
 
 	typedef struct udtProtocolConversionArg_s
 	{
@@ -1231,33 +1369,55 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtProtocolConversionArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtProtocolConversionArg)
+
+	/* Used when extracting analysis data. */
+	typedef struct udtParseDataBufferRange_s
+	{
+		/* Index of the first item in the buffer. */
+		u32 FirstIndex;
+
+		/* The number of items starting at index FirstIndex. */
+		u32 Count;
+	}
+	udtParseDataBufferRange;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataBufferRange)
 
 	typedef struct udtChatEventData_s
 	{
-		/* All C string pointers can be NULL if extraction failed. */
+		/* String offset. The original, unmodified command string. */
+		u32 OriginalCommand;
 
-		/* The original, unmodified command string. */
-		const char* OriginalCommand;
+		/* String length. */
+		u32 OriginalCommandLength;
 
-		/* The player's active clan name at the time the demo was recorded. */
+		/* String offset. The player's active clan name at the time the demo was recorded. */
 		/* Not available in protocol version 68. */
-		/* Points to a null string if not available. */
-		const char* ClanName;
+		u32 ClanName;
 
-		/* The player's name. */
-		const char* PlayerName;
+		/* String length. */
+		u32 ClanNameLength;
 
-		/* The message itself. */
-		const char* Message;
+		/* String offset. The player's name. */
+		u32 PlayerName;
 
-		/* For team messages, where the player was. */
-		/* May be NULL if unavailable. */
-		const char* Location;
+		/* String length. */
+		u32 PlayerNameLength;
 
-		/* Ignore this. */
-		const char* Reserved1;
+		/* String offset. The message itself. */
+		u32 Message;
+
+		/* String length. */
+		u32 MessageLength;
+
+		/* String offset. For team messages, where the player was. */
+		u32 Location;
+
+		/* String length. */
+		u32 LocationLength;
 	}
 	udtChatEventData;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtChatEventData)
 
 	typedef struct udtParseDataChat_s
 	{
@@ -1282,6 +1442,32 @@ extern "C"
 		u32 TeamMessage;
 	}
 	udtParseDataChat;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataChat)
+
+	/* Complete chat data for all demos in a context. */
+	typedef struct udtParseDataChatBuffers_s
+	{
+		/* The chat messages. */
+		const udtParseDataChat* ChatMessages;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of ChatMessages to use. */
+		const udtParseDataBufferRange* ChatMessageRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the ChatMessages array. */
+		u32 ChatMessageCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataChatBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataChatBuffers)
 
 	typedef struct udtMatchInfo_s
 	{
@@ -1304,23 +1490,34 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtMatchInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtMatchInfo)
 
 	typedef struct udtGameStateKeyValuePair_s
 	{
-		/* The name of the config string variable. */
-		const char* Name;
+		/* String offset. The name of the config string variable. */
+		u32 Name;
 
-		/* The value of the config string variable. */
-		const char* Value;
+		/* String length. */
+		u32 NameLength;
+
+		/* String offset. The value of the config string variable. */
+		u32 Value;
+
+		/* String length. */
+		u32 ValueLength;
 	}
 	udtGameStateKeyValuePair;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtGameStateKeyValuePair)
 
 	typedef struct udtGameStatePlayerInfo_s
 	{
-		/* The player's name without color codes. */
+		/* String offset. The player's name without color codes. */
 		/* If QL, the only name. */
 		/* If Q3, may have renamed later. */
-		const char* FirstName;
+		u32 FirstName;
+
+		/* String length. */
+		u32 FirstNameLength;
 
 		/* The client number. */
 		/* Range: [0;63]. */
@@ -1337,28 +1534,32 @@ extern "C"
 		u32 FirstTeam;
 	}
 	udtGameStatePlayerInfo;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtGameStatePlayerInfo)
 
 	typedef struct udtParseDataGameState_s
 	{
-		/* Pointer to an array of match information. */
-		const udtMatchInfo* Matches;
+		/* String offset. Name of the player who recorded the demo without color codes. */
+		u32 DemoTakerName;
 
-		/* Pointer to an array of string key/value pairs. */
-		const udtGameStateKeyValuePair* KeyValuePairs;
+		/* String length. */
+		u32 DemoTakerNameLength;
 
-		/* Pointer to an array of player information. */
-		const udtGameStatePlayerInfo* Players;
+		/* The index of the first match in udtParseDataGameStateBuffers::Matches. */
+		u32 FirstMatchIndex;
 
-		/* Name of the player who recorded the demo without color codes. */
-		const char* DemoTakerName;
-
-		/* Number of elements in the array pointed to by the Matches pointer. */
+		/* The match count for this gamestate. */
 		u32 MatchCount;
 
-		/* Number of elements in the array pointed to by the KeyValuePairs pointer. */
+		/* The index of the first pair in udtParseDataGameStateBuffers::KeyValuePairs. */
+		u32 FirstKeyValuePairIndex;
+
+		/* The key/value pair count for this gamestate. */
 		u32 KeyValuePairCount;
 
-		/* Number of elements in the array pointed to by the Players pointer. */
+		/* The index of the first player in udtParseDataGameStateBuffers::Players. */
+		u32 FirstPlayerIndex;
+
+		/* The player count for this gamestate. */
 		u32 PlayerCount;
 
 		/* Index the player who recorded the demo. */
@@ -1375,23 +1576,70 @@ extern "C"
 		s32 LastSnapshotTimeMs;
 	}
 	udtParseDataGameState;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataGameState)
+
+	/* Complete gamestate data for all demos in a context. */
+	typedef struct udtParseDataGameStateBuffers_s
+	{
+		/* The gamestate descriptors. */
+		const udtParseDataGameState* GameStates;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of GameStates to use. */
+		const udtParseDataBufferRange* GameStateRanges;
+
+		/* The match descriptors. */
+		const udtMatchInfo* Matches;
+
+		/* The string key/value pairs from gamestate config strings 0 and 1. */
+		const udtGameStateKeyValuePair* KeyValuePairs;
+
+		/* The player descriptors. */
+		const udtGameStatePlayerInfo* Players;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* The length of the GameStates array. */
+		u32 GameStateCount;
+
+		/* The length of the Matches array. */
+		u32 MatchCount;
+
+		/* The length of the KeyValuePairs array. */
+		u32 KeyValuePairCount;
+
+		/* The length of the Players array. */
+		u32 PlayerCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+
+		/* Ignore this. */
+		u32 Reserved1;
+	}
+	udtParseDataGameStateBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataGameStateBuffers)
 
 	typedef struct udtParseDataObituary_s
 	{
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* AttackerName;
+		/* String offset. The name of the attacker or another string. */
+		u32 AttackerName;
 
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* TargetName;
+		/* String length. */
+		u32 AttackerNameLength;
 
-		/* The name of the attacker or another string. */
-		/* Never NULL. */
-		const char* MeanOfDeathName;
+		/* String offset. The name of the attacker or another string. */
+		u32 TargetName;
 
-		/* Ignore this. */
-		const char* Reserved1;
+		/* String length. */
+		u32 TargetNameLength;
+
+		/* String offset. The name of the attacker or another string. */
+		u32 MeanOfDeathName;
+
+		/* String length. */
+		u32 MeanOfDeathNameLength;
 
 		/* The index of the last gamestate message after which this death event occurred. */
 		/* Negative if invalid or not available. */
@@ -1421,24 +1669,57 @@ extern "C"
 		/* Of type udtTeam::Id. */
 		/* Negative if not available. */
 		s32 TargetTeamIdx;
-		
+
 		/* Ignore this. */
-		s32 Reserved2;
+		s32 Reserved1;
 	}
 	udtParseDataObituary;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataObituary)
+
+	/* Complete obituary data for all demos in a context. */
+	typedef struct udtParseDataObituaryBuffers_s
+	{
+		/* The obituary descriptors. */
+		const udtParseDataObituary* Obituaries;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of Obituaries to use. */
+		const udtParseDataBufferRange* ObituaryRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Obituaries array. */
+		u32 ObituaryCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataObituaryBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataObituaryBuffers)
 
 	typedef struct udtPlayerStats_s
 	{
-		/* The player's name at the time the stats were given by the server. */
-		/* May be NULL. */
-		const char* Name;
+		/* String offset. The player's name at the time the stats were given by the server. */
+		/* May be invalid. */
+		u32 Name;
 
-		/* The player's name at the time the stats were given by the server. */
+		/* String length. */
+		u32 NameLength;
+
+		/* String offset. The player's name at the time the stats were given by the server. */
 		/* This version has color codes stripped out for clarity. */
-		/* May be NULL. */
-		const char* CleanName;
+		/* May be invalid. */
+		u32 CleanName;
+
+		/* String length. */
+		u32 CleanNameLength;
 	}
 	udtPlayerStats;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtPlayerStats)
 
 	typedef struct udtParseDataStats_s
 	{
@@ -1448,49 +1729,60 @@ extern "C"
 		/* A bit mask describing which players are valid. */
 		u64 ValidPlayers;
 
-		/* A bit set describing which team stats fields are valid. */
-		/* Array length: popcnt(ValidTeams) * UDT_TEAM_STATS_MASK_BYTE_COUNT bytes. */
-		/* See udtTeamStatsField::Id. */
-		const u8* TeamFlags;
+		/* String offset. */
+		u32 ModVersion;
 
-		/* A bit set describing which players stats fields are valid. */
-		/* Array length: popcnt(ValidPlayers) * UDT_PLAYER_STATS_MASK_BYTE_COUNT bytes. */
-		/* See udtPlayerStatsField::Id. */
-		const u8* PlayerFlags;
+		/* String length. */
+		u32 ModVersionLength;
 
-		/* The team stats. */
-		/* Array length: popcnt(RedTeam.Flags) + popcnt(BlueTeam.Flags) */
-		const s32* TeamFields;
+		/* String offset. */
+		u32 MapName;
 
-		/* The player stats. */
-		/* Array length: popcnt(Player1.Flags) + ... + popcnt(PlayerN.Flags) */
-		const s32* PlayerFields;
+		/* String length. */
+		u32 MapNameLength;
 
-		/* The length of the array is the number of bits set in ValidPlayers. */
-		/* The player's client numbers will correspond to the indices of the bits set in ValidPlayers. */
-		const udtPlayerStats* PlayerStats;
+		/* String offset. Name of the first place player or team name. */
+		u32 FirstPlaceName;
 
-		/* NULL if nothing was found. */
-		const char* ModVersion;
+		/* String length. */
+		u32 FirstPlaceNameLength;
 
-		/* NULL if nothing was found. */
-		const char* Map;
+		/* String offset. Name of the second place player or team name. */
+		u32 SecondPlaceName;
 
-		/* Name of the first place player or team name. */
-		const char* FirstPlaceName;
+		/* String length. */
+		u32 SecondPlaceNameLength;
 
-		/* Name of the second place player or team name. */
-		const char* SecondPlaceName;
+		/* String offset. Custom red team name. */
+		u32 CustomRedName;
 
-		/* Custom red team name or NULL if not available. */
-		const char* CustomRedName;
+		/* String length. */
+		u32 CustomRedNameLength;
 
-		/* Custom blue team name or NULL if not available. */
-		const char* CustomBlueName;
+		/* String offset. Custom blue team name. */
+		u32 CustomBlueName;
 
-		/* Start and end times for each time-out. */
-		/* Order: start0, end0, start1, end1, etc. */
-		const s32* TimeOutStartAndEndTimes;
+		/* String length. */
+		u32 CustomBlueNameLength;
+
+		/* The index of the first time-out in udtParseDataStatsBuffers::TimeOutStartAndEndTimes. */
+		/* It is the index into the s32 integers pair array, not the s32 integers array. */
+		u32 FirstTimeOutRangeIndex;
+
+		/* The index of the first team flag in udtParseDataStatsBuffers::TeamFlags. */
+		u32 FirstTeamFlagIndex;
+
+		/* The index of the first player flag in udtParseDataStatsBuffers::PlayerFlags. */
+		u32 FirstPlayerFlagIndex;
+
+		/* The index of the first team field in udtParseDataStatsBuffers::TeamFields. */
+		u32 FirstTeamFieldIndex;
+
+		/* The index of the first player field in udtParseDataStatsBuffers::PlayerFields. */
+		u32 FirstPlayerFieldIndex;
+
+		/* The index of the first player stats descriptor in udtParseDataStatsBuffers::PlayerStats. */
+		u32 FirstPlayerStatsIndex;
 
 		/* Of type udtGameType::Id. */
 		/* Defaults to (u32)-1 when invalid or uninitialized. */
@@ -1574,14 +1866,84 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtParseDataStats;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataStats)
+
+	/* Complete match statistics data for all demos in a context. */
+	typedef struct udtParseDataStatsBuffers_s
+	{
+		/* The match statistics descriptors. */
+		const udtParseDataStats* MatchStats;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of MatchStats to use. */
+		const udtParseDataBufferRange* MatchStatsRanges;
+
+		/* Start and end times for each time-out. */
+		/* Order: start0, end0, start1, end1, etc. */
+		const s32* TimeOutStartAndEndTimes;
+
+		/* A bit set describing which team stats fields are valid. */
+		/* Array length: popcnt(ValidTeams) * UDT_TEAM_STATS_MASK_BYTE_COUNT bytes. */
+		/* See udtTeamStatsField::Id. */
+		const u8* TeamFlags;
+
+		/* A bit set describing which players stats fields are valid. */
+		/* Array length: popcnt(ValidPlayers) * UDT_PLAYER_STATS_MASK_BYTE_COUNT bytes. */
+		/* See udtPlayerStatsField::Id. */
+		const u8* PlayerFlags;
+
+		/* The team stats. */
+		/* Array length: popcnt(RedTeam.Flags) + popcnt(BlueTeam.Flags) */
+		const s32* TeamFields;
+
+		/* The player stats. */
+		/* Array length: popcnt(Player1.Flags) + ... + popcnt(PlayerN.Flags) */
+		const s32* PlayerFields;
+
+		/* The length of the array is the number of bits set in ValidPlayers. */
+		/* The player's client numbers will correspond to the indices of the bits set in ValidPlayers. */
+		const udtPlayerStats* PlayerStats;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The match count for this match statistics descriptor. */
+		u32 MatchCount;
+
+		/* The time-out range count for this match statistics descriptor (i.e. the number of s32 values over 2). */
+		u32 TimeOutRangeCount;
+
+		/* The team flag count for this match statistics descriptor. */
+		u32 TeamFlagCount;
+
+		/* The player flag count for this match statistics descriptor. */
+		u32 PlayerFlagCount;
+
+		/* The team field count for this match statistics descriptor. */
+		u32 TeamFieldCount;
+
+		/* The player field count for this match statistics descriptor. */
+		u32 PlayerFieldCount;
+
+		/* The player statistics count for this match statistics descriptor. */
+		u32 PlayerStatsCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataStatsBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataStatsBuffers)
 
 	typedef struct udtParseDataRawCommand_s
 	{
-		/* The raw command, as it was sent from the server. */
-		const char* RawCommand;
+		/* String offset. The raw command, as it was sent from the server. */
+		u32 RawCommand;
 
-		/* The command with no color codes etc. */
-		const char* CleanCommand;
+		/* String length. */
+		u32 RawCommandLength;
 
 		/* The time at which the server command was sent from the client. */
 		s32 ServerTimeMs;
@@ -1591,14 +1953,40 @@ extern "C"
 		s32 GameStateIndex;
 	}
 	udtParseDataRawCommand;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawCommand)
+
+	/* Complete server-to-client command data for all demos in a context. */
+	typedef struct udtParseDataRawCommandBuffers_s
+	{
+		/* The command descriptors. */
+		const udtParseDataRawCommand* Commands;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of CommandRanges to use. */
+		const udtParseDataBufferRange* CommandRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Commands array. */
+		u32 CommandCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataRawCommandBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawCommandBuffers)
 
 	typedef struct udtParseDataRawConfigString_s
 	{
-		/* The raw config string, as it was sent from the server. */
-		const char* RawConfigString;
+		/* String Offset. The raw config string, as it was sent from the server. */
+		u32 RawConfigString;
 
-		/* The config string with no color codes etc. */
-		const char* CleanConfigString;
+		/* String length. */
+		u32 RawConfigStringLength;
 
 		/* The index of the config string. */
 		u32 ConfigStringIndex;
@@ -1608,26 +1996,63 @@ extern "C"
 		s32 GameStateIndex;
 	}
 	udtParseDataRawConfigString;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigString)
+
+	/* Complete config string data for all demos in a context. */
+	typedef struct udtParseDataRawConfigStringBuffers_s
+	{
+		/* The config string descriptors. */
+		const udtParseDataRawConfigString* ConfigStrings;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of ConfigStringRanges to use. */
+		const udtParseDataBufferRange* ConfigStringRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the ConfigStrings array. */
+		u32 ConfigStringCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataRawConfigStringBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigStringBuffers)
 
 #if defined(__cplusplus)
 	struct udtParseDataCaptureFlags
 	{
 		enum Id
 		{
-			BaseToBase = UDT_BIT(0),       /* Flag picked up from its default return position. */
-			DemoTaker = UDT_BIT(1),        /* Flag captured by the player who recorded the demo. */
-			FirstPersonPlayer = UDT_BIT(2) /* Flag captured by a player being spectated by whoever recorded the demo. */
+			BaseToBase = UDT_BIT(0),        /* Flag picked up from its default return position. */
+			DemoTaker = UDT_BIT(1),         /* Flag captured by the player who recorded the demo. */
+			FirstPersonPlayer = UDT_BIT(2), /* Flag captured by a player being spectated by whoever recorded the demo. */
+			PlayerIndexValid = UDT_BIT(3),  /* The PlayerIndex field is valid. */
+			PlayerNameValid = UDT_BIT(4),   /* The PlayerName and PlayerNameLength fields are valid. */
+			DistanceValid = UDT_BIT(5)      /* The Distance field is valid. */
 		};
 	};
 #endif
 
 	typedef struct udtParseDataCapture_s
 	{
-		/* Name of the map. Can't be NULL. */
-		const char* MapName;
+		/* String offset. Name of the map. */
+		u32 MapName;
 
-		/* Name of the player who capped. */
-		const char* PlayerName;
+		/* String length. */
+		u32 MapNameLength;
+
+		/* String offset. Name of the player who capped. */
+		/* Not always available: check for the PlayerNameValid bit of Flags. */
+		u32 PlayerName;
+
+		/* String length. */
+		/* Not always available: check for the PlayerNameValid bit of Flags. */
+		u32 PlayerNameLength;
 
 		/* The index of the gamestate message this config string was in. */
 		/* Negative if invalid or not available. */
@@ -1641,15 +2066,43 @@ extern "C"
 
 		/* Distance between the pick-up spot and the capture spot, in Quake units. */
 		/* This is not the distance traveled by the capping player. */
+		/* Not always available: check for the DistanceValid bit of Flags. */
 		f32 Distance;
 
 		/* Check the bits against values in udtParseDataCaptureFlags::Id. */
 		u32 Flags;
 
 		/* Index of the player who capped (the "client number"). */
+		/* Not always available: check for the PlayerIndexValid bit of Flags. */
 		s32 PlayerIndex;
 	}
 	udtParseDataCapture;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCapture)
+
+	/* Complete flag capture data for all demos in a context. */
+	typedef struct udtParseDataCaptureBuffers_s
+	{
+		/* The flag capture descriptors. */
+		const udtParseDataCapture* Captures;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of CaptureRanges to use. */
+		const udtParseDataBufferRange* CaptureRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Captures array. */
+		u32 CaptureCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataCaptureBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCaptureBuffers)
 
 	typedef struct udtTimeShiftArg_s
 	{
@@ -1661,6 +2114,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtTimeShiftArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtTimeShiftArg)
 
 	typedef struct udtJSONArg_s
 	{
@@ -1671,6 +2125,7 @@ extern "C"
 		s32 Reserved1;
 	}
 	udtJSONArg;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtJSONArg)
 
 #pragma pack(pop)
 
@@ -1678,9 +2133,23 @@ extern "C"
 	A bunch of simple stand-alone helper functions.
 	*/
 
+	/* Returns the version numbers. */
+	/* Returns zero if any argument is NULL. */
+	UDT_API(s32) udtGetVersionNumbers(u32* major, u32* minor, u32* revision);
+
 	/* Returns a null-terminated string describing the library's version. */
 	/* Never returns NULL. */
 	UDT_API(const char*) udtGetVersionString();
+
+	/* Checks if this header file is compatible with the library you're linking against. */
+	/* Returns zero if not exactly the same version. */
+#if defined(__cplusplus)
+	inline s32 udtSameVersion()
+	{
+		u32 maj, min, rev; udtGetVersionNumbers(&maj, &min, &rev);
+		return (maj == UDT_VERSION_MAJOR && min == UDT_VERSION_MINOR && rev == UDT_VERSION_REVISION) ? (s32)1 : (s32)0;
+	}
+#endif
 
 	/* Returns a null-terminated string describing the error. */
 	/* Never returns NULL. */
@@ -1689,6 +2158,10 @@ extern "C"
 	/* Returns zero if not a valid protocol. */
 	/* The protocol argument is of type udtProtocol::Id. */
 	UDT_API(s32) udtIsValidProtocol(u32 protocol);
+
+	/* Returns zero if the protocol is invalid or UDT doesn't support writing demos in that protocol. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol);
 
 	/* Returns zero if not a valid protocol. */
 	/* The protocol argument is of type udtProtocol::Id. */
@@ -1727,6 +2200,12 @@ extern "C"
 	/* Merges/add/replaces the stats of both arrays and writes the result to destPerfStats. */
 	UDT_API(s32) udtMergeBatchPerfStats(u64* destPerfStats, const u64* sourcePerfStats);
 
+	/* Adds the stats of both arrays and writes the result to destPerfStats. */
+	UDT_API(s32) udtAddThreadPerfStats(u64* destPerfStats, const u64* sourcePerfStats);
+
+	/* Gets the processor core count. */
+	UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount);
+
 	/*
 	Init and shut down functions.
 	*/
@@ -1762,9 +2241,10 @@ extern "C"
 	/* The maximum amount of demos merged (i.e. the maximum value of fileCount) is UDT_MAX_MERGE_DEMO_COUNT. */
 	UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, u32 fileCount);
 
-	/* Gets the address and element count for the requested parse data type. */
-	/* The "plugInId" argument is of type udtParserPlugIn::Id. */
-	UDT_API(s32) udtGetDemoDataInfo(udtParserContext* context, u32 demoIdx, u32 plugInId, void** buffer, u32* count);
+	/* For a given plug-in id, gets the complete buffer descriptor table for all demos in the context. */
+	/* The buffersStruct argument points to a data structure of type udtParseData*Buffers which corresponds to the plug-in type. */
+	/* All strings are UTF-8 encoded and string lengths represent the number of bytes (not characters) excluding the terminating NULL byte. */
+	UDT_API(s32) udtGetContextPlugInBuffers(udtParserContext* context, u32 plugInId, void* buffersStruct);
 
 	/*
 	The configurable API for fine-grained task selection.
@@ -1795,7 +2275,16 @@ extern "C"
 	UDT_API(s32) udtDestroyContextGroup(udtParserContextGroup* contextGroup);
 
 	/* Creates, for each demo, sub-demos around every occurrence of a matching pattern. */
-	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtCutByPatternArg* patternInfo);
+	UDT_API(s32) udtCutDemoFilesByPattern(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo);
+
+	/* Creates a list of matches for the requested patterns in the newly created search context. */
+	UDT_API(s32) udtFindPatternsInDemoFiles(udtPatternSearchContext** context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtPatternSearchArg* patternInfo);
+
+	/* Gets the search results from the given search context. */
+	UDT_API(s32) udtGetSearchResults(udtPatternSearchContext* context, udtPatternSearchResults* results);
+
+	/* Releases all the resources associated to the search context. */
+	UDT_API(s32) udtDestroySearchContext(udtPatternSearchContext* context);
 
 	/* Creates, for each demo that isn't in the target protocol, a new demo file with the specified protocol. */
 	UDT_API(s32) udtConvertDemoFiles(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtProtocolConversionArg* conversionArg);
@@ -1805,6 +2294,789 @@ extern "C"
 
 	/* Creates, for each demo, a .JSON file with the data from all the selected plug-ins. */
 	UDT_API(s32) udtSaveDemoFilesAnalysisDataToJSON(const udtParseArg* info, const udtMultiParseArg* extraInfo, const udtJSONArg* jsonInfo);
+
+	/*
+	Custom parsing constants and data structures.
+	*/
+
+#define	ID_MAX_PS_STATS		       16
+#define	ID_MAX_PS_PERSISTANT       16
+#define	ID_MAX_PS_POWERUPS         16
+#define	ID_MAX_PS_WEAPONS	       16
+#define	ID_MAX_PS_EVENTS	        2
+#define	ID_MAX_PARSE_ENTITIES    2048
+#define	ID_MAX_CLIENTS	           64 /* max player count */
+#define ID_MAX_MSG_LENGTH       16384 /* max length of a message, which may be fragmented into multiple packets */
+
+	typedef f32   idVec;
+	typedef idVec idVec2[2];
+	typedef idVec idVec3[3];
+	typedef idVec idVec4[4];
+
+#pragma pack(push, 1)
+
+	typedef enum
+	{
+		TR_STATIONARY,
+		TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
+		TR_LINEAR,
+		TR_LINEAR_STOP,
+		TR_SINE,        /* value = base + sin( time / duration ) * delta */
+		TR_GRAVITY
+	}
+	idTrajectoryType;
+
+	typedef struct idTrajectoryBase_s
+	{
+		idTrajectoryType trType;
+		s32 trTime;
+		s32 trDuration; /* if non 0, trTime + trDuration = stop time */
+		idVec3 trBase;
+		idVec3 trDelta; /* velocity, etc */
+	}
+	idTrajectoryBase;
+
+	/*
+	/This is the information conveyed from the server in an update message about entities that 
+	the client will need to render in some way. 
+	Different eTypes may use the information in different ways.
+	The messages are delta compressed, so it doesn't really matter if the structure size is fairly large.
+	*/
+	typedef struct idEntityStateBase_s
+	{
+		s32 number;	/* entity index */
+		s32 eType;  /* entityType_t */
+		s32 eFlags;
+		idTrajectoryBase pos;
+		idTrajectoryBase apos;
+		s32 time;
+		s32	time2;
+		idVec3 origin;
+		idVec3 origin2;
+		idVec3 angles;
+		idVec3 angles2;
+		s32 otherEntityNum;  /* shotgun sources, etc */
+		s32 otherEntityNum2;
+		s32 groundEntityNum; /* ENTITYNUM_NONE = in air */
+		s32 constantLight;   /* r + (g<<8) + (b<<16) + (intensity<<24) */
+		s32 loopSound;       /* constantly loop this sound */
+		s32 modelindex;
+		s32 modelindex2;
+		s32 clientNum; /* 0 to (MAX_CLIENTS - 1), for players and corpses */
+		s32 frame;
+		s32 solid;     /* for client side prediction, trap_linkentity sets this properly */
+		s32 event;     /* impulse events -- muzzle flashes, footsteps, etc */
+		s32 eventParm;
+		s32 powerups;  /* bit flags */
+		s32 weapon;    /* determines weapon and flash model, etc */
+		s32 legsAnim;  /* mask off ANIM_TOGGLEBIT */
+		s32 torsoAnim; /* mask off ANIM_TOGGLEBIT */
+		s32 generic1;
+	}
+	idEntityStateBase;
+
+#if defined(__cplusplus)
+
+	struct idEntityState3 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState48 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState66 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState67 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState68 : idEntityStateBase
+	{
+	};
+
+	struct idEntityState73 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+	};
+
+	struct idEntityState90 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+		s32 jumpTime;
+		s32 doubleJumped; /* qboolean */
+	};
+
+	struct idEntityState91 : idEntityStateBase
+	{
+		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
+		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
+		s32 jumpTime;
+		s32 doubleJumped; /* qboolean */
+		s32 health;
+		s32 armor;
+		s32 location;
+	};
+
+	typedef idEntityState91 idLargestEntityState;
+
+#endif
+
+	/*
+	This is the information needed by both the client and server to predict player motion and actions.
+	Nothing outside of pmove should modify these, or some degree of prediction error will occur.
+
+	This is a full superset of idEntityState as it is used by players,
+	so if an idPlayerState is transmitted, the idEntityState can be fully derived from it.
+	*/
+	typedef struct idPlayerStateBase_s
+	{
+		s32 commandTime; /* cmd->serverTime of last executed command */
+		s32 pm_type;
+		s32 bobCycle;    /* for view bobbing and footstep generation */
+		s32 pm_flags;    /* ducked, jump_held, etc */
+		s32 pm_time;
+		idVec3 origin;
+		idVec3 velocity;
+		s32 weaponTime;
+		s32 gravity;
+		s32 speed;
+		/* add to command angles to get view direction */
+		/* changed by spawns, rotating objects, and teleporters */
+		s32 delta_angles[3]; 
+		s32 groundEntityNum; /* ENTITYNUM_NONE = in air */
+		s32 legsTimer;       /* don't change low priority animations until this runs out */
+		s32 legsAnim;        /* mask off ANIM_TOGGLEBIT */
+		s32 torsoTimer;      /* don't change low priority animations until this runs out */
+		s32 torsoAnim;       /* mask off ANIM_TOGGLEBIT */
+		/* a number 0 to 7 that represents the relative angle */
+		/* of movement to the view angle (axial and diagonals) */
+		/* when at rest, the value will remain unchanged */
+		/* used to twist the legs during strafing */
+		s32 movementDir;
+		idVec3 grapplePoint; /* location of grapple to pull towards if PMF_GRAPPLE_PULL */
+		s32 eFlags;          /* copied to entityState_t->eFlags */
+		s32 eventSequence;   /* pmove generated events */
+		s32 events[ID_MAX_PS_EVENTS];
+		s32 eventParms[ID_MAX_PS_EVENTS];
+		s32 externalEvent;   /* events set on player from another source */
+		s32 externalEventParm;
+		s32 externalEventTime;
+		s32 clientNum; /* ranges from 0 to MAX_CLIENTS-1 */
+		s32 weapon;    /* copied to entityState_t->weapon */
+		s32 weaponstate;
+		idVec3 viewangles; /* for fixed views */
+		s32 viewheight;
+		s32 damageEvent;   /* when it changes, latch the other parms */
+		s32 damageYaw;
+		s32 damagePitch;
+		s32 damageCount;
+		s32 stats[ID_MAX_PS_STATS];
+		s32 persistant[ID_MAX_PS_PERSISTANT]; /* stats that aren't cleared on death */
+		s32 powerups[ID_MAX_PS_POWERUPS];     /* level.time that the powerup runs out */
+		s32 ammo[ID_MAX_PS_WEAPONS];
+		s32 generic1;
+		s32 loopSound;
+		s32 jumppad_ent; /* jumppad entity hit this frame */
+	}
+	idPlayerStateBase;
+
+#if defined(__cplusplus)
+
+	struct idPlayerState3 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState48 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState66 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState67 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState68 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState73 : idPlayerStateBase
+	{
+	};
+
+	struct idPlayerState90 : idPlayerStateBase
+	{
+		s32 doubleJumped; /* qboolean */
+		s32 jumpTime;
+	};
+
+	struct idPlayerState91 : idPlayerStateBase
+	{
+		s32 doubleJumped; /* qboolean */
+		s32 jumpTime;
+		s32 weaponPrimary;
+		s32 crouchTime;
+		s32 crouchSlideTime;
+		s32 location;
+		s32 fov;
+		s32 forwardmove;
+		s32 rightmove;
+		s32 upmove;
+	};
+
+	typedef idPlayerState91 idLargestPlayerState;
+
+#endif
+
+	typedef struct udtCuContext_s udtCuContext;
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuCommandMessage_s
+	{
+		/* Might be NULL. */
+		const char* CommandString;
+
+		/* The tokens in CommandString. */
+		const char** CommandTokens;
+
+		/* Length of CommandString. */
+		u32 CommandStringLength;
+
+		/* The sequence number that uniquely identifies this command. */
+		s32 CommandSequence;
+
+		/* Only valid if IsConfigString is true. */
+		s32 ConfigStringIndex;
+
+		/* If non-zero, this command is for a config string update. */
+		u32 IsConfigString;
+
+		/* The number of tokens in CommandString. */
+		/* Length of the CommandTokens array. */
+		u32 TokenCount;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtCuCommandMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuCommandMessage)
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuSnapshotMessage_s
+	{
+		/* Portal area visibility bits. */
+		u8 AreaMask[32];
+
+		/* Pointer to the player state. */
+		const idPlayerStateBase* PlayerState;
+
+		/* An array of pointers to the entity states that changed or were added. */
+		const idEntityStateBase** ChangedEntities;
+
+		/* An array of numbers for the entities that were removed. */
+		const s32* RemovedEntities;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The server time the message is valid for. */
+		s32 ServerTimeMs;
+
+		/* The message sequence number. */
+		s32 MessageNumber;
+
+		/* Execute all commands up to this sequence number before making the snapshot current. */
+		s32 CommandNumber;
+
+		/* How many entities have been transmitted. */
+		/* Length of the ChangedEntities array and the ChangedEntityFlags array. */
+		u32 EntityCount;
+
+		/* How many entities were removed. */
+		/* Length of the RemovedEntities array. */
+		u32 RemovedEntityCount;
+
+		/* Ignore this. */
+		s32 Reserved2;
+	}
+	udtCuSnapshotMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuSnapshotMessage)
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuGamestateMessage_s
+	{
+		/* A game state message always marks the start of a server command sequence. */
+		s32 ServerCommandSequence;
+
+		/* The client number of the player who recorded the demo file. */
+		s32 ClientNumber;
+
+		/* The checksum feed of the server that the client will have to use. */
+		s32 ChecksumFeed;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtCuGamestateMessage;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuGamestateMessage)
+	
+	/* UDT will not give you redundant snapshots and commands like Quake demos do. */
+	/* If a snapshot or a command was already processed, it's dropped so you don't have to deal with duplicates. */
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuMessageOutput_s
+	{
+		/* Can be NULL. */
+		/* There are 3 possible scenarios: */
+		/* 1. 1 game state and no snapshot */
+		/* 2. 1 snapshot and no game state */
+		/* 3. no game state and no snapshot */
+		union 
+		{
+			const udtCuGamestateMessage* GameState;
+			const udtCuSnapshotMessage* Snapshot;
+		}
+		GameStateOrSnapshot;
+
+		/* An array of server-to-client string commands. */
+		const udtCuCommandMessage* Commands;
+
+		/* Length of the ServerCommandCount array. */
+		u32 ServerCommandCount;
+
+		/* When non-zero, use GameStateOrSnapshot::GameState. */
+		/* Else, use GameStateOrSnapshot::Snapshot. */
+		u32 IsGameState;
+	}
+	udtCuMessageOutput;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuMessageOutput)
+
+	typedef struct udtCuMessageInput_s
+	{
+		/* The raw Quake message buffer. */
+		const void* Buffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The message sequence number. */
+		s32 MessageSequence;
+
+		/* The byte size of the buffer pointed to by Buffer. */
+		u32 BufferByteCount;
+	}
+	udtCuMessageInput;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuMessageInput)
+
+	/* Only valid until the next call to udtCuParseMessage. */
+	typedef struct udtCuConfigString_s
+	{
+		/* NULL if not defined. */
+		const char* ConfigString;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of ConfigString. */
+		u32 ConfigStringLength;
+
+		/* Ignore this. */
+		s32 Reserved2;
+	}
+	udtCuConfigString;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtCuConfigString)
+
+#if defined(__cplusplus)
+
+#define UDT_IDENTITY_WITH_COMMA(x) x,
+
+#define UDT_ENTITY_EVENT_LIST(N) \
+	N(Obituary) \
+	N(WeaponFired) \
+	N(ItemPickup) \
+	N(GlobalItemPickup) \
+	N(GlobalSound) \
+	N(GlobalTeamSound) \
+	N(QL_Overtime) \
+	N(QL_GameOver)
+
+	struct udtEntityEvent
+	{
+		enum Id
+		{
+			UDT_ENTITY_EVENT_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
+#define UDT_ENTITY_TYPE_LIST(N) \
+	N(Event) \
+	N(General) \
+	N(Player) \
+	N(Item) \
+	N(Missile) \
+	N(Mover) \
+	N(Beam) \
+	N(Portal) \
+	N(Speaker) \
+	N(PushTrigger) \
+	N(TeleportTrigger) \
+	N(Invisible) \
+	N(Grapple) \
+	N(Team)
+
+	struct udtEntityType
+	{
+		enum Id
+		{
+			UDT_ENTITY_TYPE_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
+#define UDT_CONFIG_STRING_LIST(N) \
+	N(FirstPlayer) \
+	N(Intermission) \
+	N(LevelStartTime) \
+	N(WarmUpEndTime) \
+	N(FirstPlacePlayerName) \
+	N(SecondPlacePlayerName) \
+	N(PauseStart) \
+	N(PauseEnd) \
+	N(FlagStatus) \
+	N(ServerInfo) \
+	N(SystemInfo) \
+	N(Scores1) \
+	N(Scores2) \
+	N(VoteTime) \
+	N(VoteString) \
+	N(VoteYes) \
+	N(VoteNo) \
+	N(TeamVoteTime) \
+	N(TeamVoteString) \
+	N(TeamVoteYes) \
+	N(TeamVoteNo) \
+	N(GameVersion) \
+	N(ItemFlags) \
+	N(QL_TimeoutStartTime) \
+	N(QL_TimeoutEndTime) \
+	N(QL_RedTeamTimeoutsLeft) \
+	N(QL_BlueTeamTimeoutsLeft) \
+	N(QL_ReadTeamClanName) \
+	N(QL_BlueTeamClanName) \
+	N(QL_RedTeamClanTag) \
+	N(QL_BlueTeamClanTag) \
+	N(CPMA_GameInfo) \
+	N(CPMA_RoundInfo) \
+	N(OSP_GamePlay)
+	
+	struct udtConfigStringIndex
+	{
+		enum Id
+		{
+			/* ItemFlags: A string of 0's and 1's that tell which items are present. */
+			UDT_CONFIG_STRING_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum,
+	struct udtPowerUpIndex
+	{
+		enum Id
+		{
+			UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
+			Count
+		};
+	};
+#undef UDT_POWER_UP_ITEM
+
+#define UDT_PERSISTENT_STATS_LIST(N) \
+	N(FlagCaptures) \
+	N(Score) \
+	N(DamageGiven) \
+	N(Rank) \
+	N(Team) \
+	N(SpawnCount) \
+	N(LastAttacker) \
+	N(LastTargetHealthAndArmor) \
+	N(Deaths) \
+	N(Impressives) \
+	N(Excellents) \
+	N(Defends) \
+	N(Assists) \
+	N(Humiliations)
+
+	struct udtPersStatsIndex
+	{
+		enum Id
+		{
+			UDT_PERSISTENT_STATS_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
+#define UDT_ENTITY_STATE_FLAG_LIST(N) \
+	N(Dead) \
+	N(TeleportBit) \
+	N(AwardExcellent) \
+	N(PlayerEvent) \
+	N(AwardHumiliation) \
+	N(NoDraw) \
+	N(Firing) \
+	N(AwardCapture) \
+	N(Chatting) \
+	N(ConnectionInterrupted) \
+	N(HasVoted) \
+	N(AwardImpressive) \
+	N(AwardDefense) \
+	N(AwardAssist) \
+	N(AwardDenied) \
+	N(HasTeamVoted)
+
+	struct udtEntityStateFlags
+	{
+		enum Id
+		{
+			/* TeleportBit: Toggled every time the origin abruptly changes. */
+			/* Firing: For the LG. */
+			UDT_ENTITY_STATE_FLAG_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
+#undef UDT_IDENTITY_WITH_COMMA
+
+	struct udtFlagStatus
+	{
+		enum Id
+		{
+			InBase,  /* In its spot in base. */
+			Carried, /* Being carried by an enemy player. */
+			Missing, /* Not being carried by anyone but not in its spot either. */
+			Count
+		};
+	};
+
+	struct udtItem
+	{
+		enum Id
+		{
+			AmmoBFG,
+			AmmoBelt,
+			AmmoBullets,
+			AmmoCells,
+			AmmoGrenades,
+			AmmoHMG,
+			AmmoLightning,
+			AmmoMines,
+			AmmoNails,
+			AmmoPack,
+			AmmoRockets,
+			AmmoShells,
+			AmmoSlugs,
+			HoldableInvulnerability,
+			HoldableKamikaze,
+			HoldableMedkit,
+			HoldablePortal,
+			HoldableTeleporter,
+			ItemAmmoRegen,
+			ItemArmorBody,
+			ItemArmorCombat,
+			ItemArmorJacket,
+			ItemArmorShard,
+			ItemBackpack,
+			ItemBlueCube,
+			ItemDoubler,
+			ItemEnviro,
+			ItemFlight,
+			ItemGuard,
+			ItemHaste,
+			ItemHealth,
+			ItemHealthLarge,
+			ItemHealthMega,
+			ItemHealthSmall,
+			ItemInvis,
+			ItemKeyGold,
+			ItemKeyMaster,
+			ItemKeySilver,
+			ItemQuad,
+			ItemRedCube,
+			ItemRegen,
+			ItemScout,
+			ItemSpawnArmor,
+			FlagBlue,
+			FlagNeutral,
+			FlagRed,
+			WeaponBFG,
+			WeaponChaingun,
+			WeaponGauntlet,
+			WeaponGrapplingHook,
+			WeaponGrenadeLauncher,
+			WeaponHMG,
+			WeaponLightningGun,
+			WeaponMachinegun,
+			WeaponNailgun,
+			WeaponPlasmaGun,
+			WeaponProxLauncher,
+			WeaponRailgun,
+			WeaponRocketLauncher,
+			WeaponShotgun,
+			Count,
+			FirstAmmo = AmmoBFG,
+			LastAmmo = AmmoSlugs,
+			HoldableFirst = HoldableInvulnerability,
+			HoldableLast = HoldableTeleporter,
+			ItemFirst = ItemAmmoRegen,
+			ItemLast = ItemSpawnArmor,
+			FlagFirst = FlagBlue,
+			FlagLast = FlagRed,
+			WeaponFirst = WeaponBFG,
+			WeaponLast = WeaponShotgun
+		};
+	};
+
+#endif
+
+#pragma pack(pop)
+
+	/*
+	The API for custom parsing.
+	With this API, you still have to call udtInitLibrary first and udtShutDownLibrary last.
+	To set the crash handler, use udtSetCrashHandler.
+	*/
+
+	/* Creates a custom parsing context. */
+	/* The same context can be used to parse multiple demos. */
+	UDT_API(udtCuContext*) udtCuCreateContext();
+
+	/* Sets the message printing callback. */
+	/* The callback argument can be NULL. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuSetMessageCallback(udtCuContext* context, udtMessageCallback callback);
+
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuStartParsing(udtCuContext* context, u32 protocol);
+
+	/* Parses a demo message and outputs the results into messageOutput. */
+	/* If you should continue parsing, continueParsing will be set to a non-zero value. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuParseMessage(udtCuContext* context, udtCuMessageOutput* messageOutput, u32* continueParsing, const udtCuMessageInput* messageInput);
+
+	/* Gets a config string descriptor. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetConfigString(udtCuContext* context, udtCuConfigString* configString, u32 configStringIndex);
+
+	/* Returns a pointer to a baseline entity. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetEntityBaseline(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex);
+
+	/* Returns a pointer to a parsed entity entity. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuGetEntityState(udtCuContext* context, idEntityStateBase** entityState, u32 entityIndex);
+
+	/* Frees all the resources allocated by the custom parsing context. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCuDestroyContext(udtCuContext* context);
+
+	/*
+	The API for custom parsing.
+	Helper functions.
+	*/
+
+	/* Will clean up the string for printing by: */
+	/* - getting rid of Quake 3/Live and OSP color codes */
+	/* - removing unprintable characters for protocols <= 90 (no UTF-8 support) */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtCleanUpString(char* string, u32 protocol);
+
+	/* Gets the Quake config string index from the UDT index. */
+	/* udtConfigStringId is of type udtConfigStringIndex::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol);
+
+	/* Gets the UDT weapon number from the Quake number. */
+	/* The result is of type udtWeapon::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol);
+
+	/* Gets the UDT mean of death number from the Quake number. */
+	/* The result is of type udtMeanOfDeath::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol);
+
+	/* Gets the Quake entity event number from the UDT number. */
+	/* udtEntityEventId is of type udtEntityEvent::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol);
+
+	/* Gets the Quake entity type number from the UDT number. */
+	/* udtEntityType is of type udtEntityType::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdEntityType(u32 udtEntityType, u32 protocol);
+
+	/* Gets the Quake player state power-up index from the UDT number. */
+	/* udtPowerUpId is of type udtPowerUpIndex::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol);
+
+	/* Gets the Quake player state persistant stats index from the UDT number. */
+	/* udtPersStatsId is of type udtPersStatsIndextype ::Id. */
+	/* Returns -1 when not available. */
+	UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol);
+
+	/* Gets the Quake entity state bit mask from the UDT number. */
+	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
+	/* Returns 0 when not available. */
+	UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
+
+	/* Gets the UDT flag status number from the Quake number. */
+	/* The result is of type udtFlagStatus::Id. */
+	/* Returns -1 when not available. */
+	/* The flag status for both flags is encoded with 2 characters in a config string. */
+	/* Each character being one of "0", "1" or "2". Flag status config string example: "01". */
+	/* The first one is for the red flag, the second one for the blue flag. */
+	/* To get the index of that config string, call udtGetIdConfigStringIndex with udtConfigStringIndex::FlagStatus. */
+	UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol);
+
+	/* Gets the UDT team number from the Quake number. */
+	/* The result is of type udtTeam::Id. */
+	/* Returns -1 when not available. */
+	/* The team of a player is encoded as "t" in his config string. */
+	/* To get the player's config string index: */
+	/* call udtGetIdConfigStringIndex with udtConfigStringIndex::FirstPlayer and add the player's client number to that. */
+	UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol);
+
+	/* Gets the UDT game type number from the Quake number. */
+	/* mod is of type udtMod::Id. */
+	/* The result is of type udtGameType::Id. */
+	/* Returns -1 when not available. */
+	/* The game type is encoded as "g_gametype" in the server info config string. */
+	/* The server info config string is always at index 0. */
+	UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod);
+
+	/* Gets the UDT item number from the Quake number. */
+	/* The result is of type udtItem::Id. */
+	/* Returns -1 when not available. */
+	/* Item ids are generally found encoded in idEntityStateBase::modelindex. */
+	UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol);
+
+	/* Reads the integer value of a config string variable. */
+	/* The temp buffer is used for constructing a search string. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtParseConfigStringValueAsInteger(s32* res, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
+
+	/* Reads the string value of a config string variable. */
+	/* The temp buffer is used for constructing a search string. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
 
 #ifdef __cplusplus
 }

@@ -44,11 +44,13 @@ bool udtPath::HasValidDemoFileExtension(const char* filePath)
 bool udtPath::Combine(udtString& combinedPath, udtVMLinearAllocator& allocator, const udtString& folderPath, const udtString& extra)
 {
 	const bool isSeparatorNeeded = !HasTrailingSeparator(folderPath);
-	const char* strings[] =
+	const udtString path = udtString::IsNullOrEmpty(folderPath) ? udtString::NewConstRef(".") : folderPath;
+	const udtString separator = isSeparatorNeeded ? udtString::NewConstRef(GetSeparator()) : udtString::NewEmptyConstant();
+	const udtString* strings[] =
 	{
-		udtString::IsNullOrEmpty(folderPath) ? "." : folderPath.String,
-		isSeparatorNeeded ? GetSeparator() : "",
-		extra.String
+		&path,
+		&separator,
+		&extra
 	};
 
 	combinedPath = udtString::NewFromConcatenatingMultiple(allocator, strings, (u32)UDT_COUNT_OF(strings));

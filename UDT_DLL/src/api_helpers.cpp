@@ -4,14 +4,16 @@
 #include "scoped_stack_allocator.hpp"
 #include "utils.hpp"
 #include "timer.hpp"
-#include "analysis_cut_by_chat.hpp"
-#include "analysis_cut_by_frag.hpp"
+#include "analysis_pattern_chat.hpp"
+#include "analysis_pattern_frag_run.hpp"
+#include "plug_in_pattern_search.hpp"
 #include "plug_in_converter_quake_to_udt.hpp"
 #include "parser_runner.hpp"
 #include "converter_entity_timer_shifter.hpp"
 #include "path.hpp"
 #include "memory_stream.hpp"
 #include "json_export.hpp"
+#include "pattern_search_context.hpp"
 
 
 bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, u32 demoCount, udtParsingJobType::Id jobType, const void* jobSpecificInfo)
@@ -28,8 +30,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 			}
 		}
 
-		context.Init(demoCount, info.PlugIns, info.PlugInCount);
-		return true;
+		return context.Init(demoCount, info.PlugIns, info.PlugInCount);
 	}
 
 	if(jobType == udtParsingJobType::Conversion)
@@ -39,8 +40,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 			return false;
 		}
 
-		context.Init(demoCount, NULL, 0);
-		return true;
+		return context.Init(demoCount, NULL, 0);
 	}
 
 	if(jobType == udtParsingJobType::TimeShift)
@@ -51,7 +51,10 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		}
 
 		const u32 plugInId = udtPrivateParserPlugIn::ConvertToUDT;
-		context.Init(demoCount, &plugInId, 1);
+		if(!context.Init(demoCount, &plugInId, 1))
+		{
+			return false;
+		}
 
 		udtBaseParserPlugIn* plugInBase = NULL;
 		context.GetPlugInById(plugInBase, plugInId);
@@ -62,36 +65,53 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 		
 		return true;
 	}
-	
-	// Remaining case: udtParsingJobType::CutByPattern
 
-	if(jobSpecificInfo == NULL)
+	if(jobType == udtParsingJobType::CutByPattern ||
+	   jobType == udtParsingJobType::FindPatterns)
 	{
-		return false;
+		if(jobSpecificInfo == NULL)
+		{
+			return false;
+		}
+
+		const u32 plugInId = udtPrivateParserPlugIn::FindPatterns;
+		if(!context.Init(demoCount, &plugInId, 1))
+		{
+			return false;
+		}
+
+		udtBaseParserPlugIn* plugInBase = NULL;
+		context.GetPlugInById(plugInBase, plugInId);
+		if(plugInBase == NULL)
+		{
+			return false;
+		}
+
+		const udtPatternSearchArg* patternInfo = NULL;
+		if(jobType == udtParsingJobType::FindPatterns)
+		{
+			const udtPatternSearchContext* const searchContext = (const udtPatternSearchContext*)jobSpecificInfo;
+			patternInfo = searchContext->PatternInfo;
+		}
+		else
+		{
+			patternInfo = (const udtPatternSearchArg*)jobSpecificInfo;
+		}
+
+		udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
+		plugIn.SetPatternInfo(*patternInfo);
+		for(u32 i = 0; i < patternInfo->PatternCount; ++i)
+		{
+			const udtPatternInfo pi = patternInfo->Patterns[i];
+			plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
+		}
+
+		plugIn.InitAnalyzerAllocators(demoCount);
+
+		return true;
 	}
 
-	const u32 plugInId = udtPrivateParserPlugIn::CutByPattern;
-	context.Init(demoCount, &plugInId, 1);
-
-	udtBaseParserPlugIn* plugInBase = NULL;
-	context.GetPlugInById(plugInBase, plugInId);
-	if(plugInBase == NULL)
-	{
-		return false;
-	}
-
-	const udtCutByPatternArg* const patternInfo = (const udtCutByPatternArg*)jobSpecificInfo;
-	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
-	plugIn.SetPatternInfo(*patternInfo);
-	for(u32 i = 0; i < patternInfo->PatternCount; ++i)
-	{
-		const udtPatternInfo pi = patternInfo->Patterns[i];
-		plugIn.CreateAndAddAnalyzer((udtPatternType::Id)pi.Type, pi.TypeSpecificInfo);
-	}
-
-	plugIn.InitAnalyzerAllocators(demoCount);
-
-	return true;
+	return false;
 }
 
 static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
@@ -102,11 +122,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(file, demoFilePath, context);
 
 	if(!context->Parser.Init(&context->Context, protocol, protocol))
 	{
@@ -147,8 +163,8 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	}
 
 	udtBaseParserPlugIn* plugInBase = NULL;
-	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::CutByPattern);
-	udtCutByPatternPlugIn& plugIn = *(udtCutByPatternPlugIn*)plugInBase;
+	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::FindPatterns);
+	udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
 
 	if(plugIn.CutSections.IsEmpty())
 	{
@@ -161,21 +177,12 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
-
 	const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
 	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
-	if(fileOffset > 0 && file.Seek((s32)fileOffset, udtSeekOrigin::Start) != 0)
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
 	// Save the cut sections in a temporary array.
-	udtVMArrayWithAlloc<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
+	udtVMArray<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
 	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
 		sections.Add(plugIn.CutSections[i]);
@@ -197,7 +204,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		const udtCutSection& section = sections[i];
 		context->Parser.AddCut(
 			section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, 
-			&CallbackCutDemoFileStreamCreation, section.VeryShortDesc, &cutCbInfo);
+			&CallbackCutDemoFileNameCreation, section.VeryShortDesc, &cutCbInfo);
 	}
 
 	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
@@ -207,6 +214,44 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
 
 	return result;
+}
+
+static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, udtPatternSearchContext* searchContext)
+{
+	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	if(protocol == udtProtocol::Invalid)
+	{
+		return false;
+	}
+
+	if(!ParseDemoFile(protocol, context, info, demoFilePath, false))
+	{
+		return false;
+	}
+
+	udtBaseParserPlugIn* plugInBase = NULL;
+	context->GetPlugInById(plugInBase, udtPrivateParserPlugIn::FindPatterns);
+	udtPatternSearchPlugIn& plugIn = *(udtPatternSearchPlugIn*)plugInBase;
+
+	if(plugIn.CutSections.IsEmpty())
+	{
+		return true;
+	}
+
+	udtVMArray<udtPatternMatch>& cuts = searchContext->Matches;
+	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
+	{
+		const udtCutSection& cut = plugIn.CutSections[i];
+		udtPatternMatch match;
+		match.DemoInputIndex = demoIndex;
+		match.GameStateIndex = cut.GameStateIndex;
+		match.StartTimeMs = cut.StartTimeMs;
+		match.EndTimeMs = cut.EndTimeMs;
+		match.Patterns = cut.PatternTypes;
+		cuts.Add(match);
+	}
+
+	return true;
 }
 
 static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
@@ -229,11 +274,7 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 		return false;
 	}
 
-	udtFileStream file;
-	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(file, demoFilePath, context);
 
 	if(!context->Parser.Init(&context->Context, protocol, (udtProtocol::Id)conversionInfo->OutputProtocol))
 	{
@@ -246,8 +287,8 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
-	context->Parser.AddCut(0, S32_MIN, S32_MAX, &CallbackConvertedDemoFileStreamCreation, "", &cutCbInfo);
-
+	context->Parser.AddCut(0, S32_MIN, S32_MAX, &CallbackConvertedDemoFileNameCreation, "", &cutCbInfo);
+	
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
 		return false;
@@ -280,13 +321,17 @@ static void CreateTimeShiftDemoName(udtString& outputFilePath, udtVMLinearAlloca
 	char snapshotCount[16];
 	sprintf(snapshotCount, "%d", (int)timeShiftArg->SnapshotCount);
 
-	const char* outputFilePathParts[] =
+	const udtString shifted = udtString::NewConstRef("_shifted_");
+	const udtString snapCount = udtString::NewConstRef(snapshotCount);
+	const udtString snaps = udtString::NewConstRef(timeShiftArg->SnapshotCount > 1 ? "_snaps" : "_snap");
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol((u32)protocol));
+	const udtString* outputFilePathParts[] =
 	{
-		outputFilePathStart.String,
-		"_shifted_",
-		snapshotCount,
-		timeShiftArg->SnapshotCount > 1 ? "_snaps" : "_snap",
-		udtGetFileExtensionByProtocol(protocol)
+		&outputFilePathStart,
+		&shifted,
+		&snapCount,
+		&snaps,
+		&proto
 	};
 
 	outputFilePath = udtString::NewFromConcatenatingMultiple(allocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
@@ -307,11 +352,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 		return false;
 	}
 
-	udtFileStream input;
-	if(!input.Open(demoFilePath, udtFileOpenMode::Read))
-	{
-		return false;
-	}
+	UDT_INIT_DEMO_FILE_READER(input, demoFilePath, context);
 
 	context->ModifierContext.ResetForNextDemo();
 
@@ -319,7 +360,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	CreateTimeShiftDemoName(outputFilePath, context->ModifierContext.TempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath, timeShiftArg, protocol);
 
 	udtFileStream output;
-	if(!output.Open(outputFilePath.String, udtFileOpenMode::Write))
+	if(!output.Open(outputFilePath.GetPtr(), udtFileOpenMode::Write))
 	{
 		return false;
 	}
@@ -363,7 +404,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	converterToUDT.SetOutputStream(&tempWrite);
 	converterToQuake.SetStreams(tempRead, &output);
 
-	context->Context.LogInfo("Writing time-shifted demo: %s", outputFilePath.String);
+	context->Context.LogInfo("Writing time-shifted demo: %s", outputFilePath.GetPtr());
 
 	for(;;)
 	{
@@ -393,7 +434,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 
 	runner.FinishParsing();
 
-	return runner.WasSuccess() && messageType == udtdMessageType::EndOfFile;
+	return runner.WasSuccess();
 }
 
 static void CreateJSONFilePath(udtString& outputFilePath, udtVMLinearAllocator& allocator, const udtString& inputFilePath, const char* outputFolderPath)
@@ -435,9 +476,10 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 	{
 		udtString jsonFilePath;
 		CreateJSONFilePath(jsonFilePath, tempAllocator, udtString::NewConstRef(demoFilePath), info->OutputFolderPath);
-		outputFilePath = jsonFilePath.String;
+		outputFilePath = jsonFilePath.GetPtr();
 	}
 	
+	context->UpdatePlugInBufferStructs();
 	if(!ExportPlugInsDataToJSON(context, demoIndex, outputFilePath))
 	{
 		return false;
@@ -446,7 +488,7 @@ static bool ExportToJSON(udtParserContext* context, u32 demoIndex, const udtPars
 	return true;
 }
 
-bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
+bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 contextDemoIndex, u32 inputDemoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo)
 {
 	switch(jobType)
 	{
@@ -463,7 +505,10 @@ bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* cont
 			return TimeShiftDemo(context, info, demoFilePath, (const udtTimeShiftArg*)jobSpecificInfo);
 
 		case udtParsingJobType::ExportToJSON:
-			return ExportToJSON(context, demoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
+			return ExportToJSON(context, contextDemoIndex, info, demoFilePath, (const udtJSONArg*)jobSpecificInfo);
+
+		case udtParsingJobType::FindPatterns:
+			return FindPatterns(context, inputDemoIndex, info, demoFilePath, (udtPatternSearchContext*)jobSpecificInfo);
 
 		default:
 			return false;
@@ -520,7 +565,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	udtTimer progressTimer;
 	progressTimer.Start();
 
-	udtVMArrayWithAlloc<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
+	udtVMArray<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
 	fileSizes.Resize(extraInfo->FileCount);
 
 	u64 totalByteCount = 0;
@@ -551,6 +596,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	newInfo.ProgressCb = &SingleThreadProgressCallback;
 	newInfo.ProgressContext = &progressContext;
 
+	u64 actualProcessedByteCount = 0;
 	for(u32 i = 0; i < extraInfo->FileCount; ++i)
 	{
 		if(info->CancelOperation != NULL && *info->CancelOperation != 0)
@@ -561,15 +607,24 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 		const u64 jobByteCount = fileSizes[i];
 		progressContext.CurrentJobByteCount = jobByteCount;
 
-		const bool success = ProcessSingleDemoFile(jobType, context, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
+		const bool success = ProcessSingleDemoFile(jobType, context, i, i, &newInfo, extraInfo->FilePaths[i], jobSpecificInfo);
 		extraInfo->OutputErrorCodes[i] = GetErrorCode(success, info->CancelOperation);
 
 		progressContext.ProcessedByteCount += jobByteCount;
+		if(success)
+		{
+			actualProcessedByteCount += jobByteCount;
+		}
+	}
+
+	if(!customContext)
+	{
+		context->UpdatePlugInBufferStructs();
 	}
 
 	if(info->PerformanceStats != NULL)
 	{
-		PerfStatsAddCurrentThread(info->PerformanceStats, totalByteCount);
+		PerfStatsAddCurrentThread(info->PerformanceStats, actualProcessedByteCount);
 		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedMs());
 	}
 
@@ -607,11 +662,13 @@ static void CreateMergedDemoName(udtString& outputFilePath, udtVMLinearAllocator
 		udtPath::Combine(outputFilePathStart, allocator, inputFolderPath, inputFileName);
 	}
 
-	const char* outputFilePathParts[] =
+	const udtString merged = udtString::NewConstRef("_merged");
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol((u32)protocol));
+	const udtString* outputFilePathParts[] =
 	{
-		outputFilePathStart.String,
-		"_merged",
-		udtGetFileExtensionByProtocol(protocol)
+		&outputFilePathStart,
+		&merged,
+		&proto
 	};
 
 	outputFilePath = udtString::NewFromConcatenatingMultiple(allocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
@@ -666,7 +723,7 @@ struct DemoMerger
 		CreateMergedDemoName(outputFilePath, tempAllocator, udtString::NewConstRef(filePaths[0]), info->OutputFolderPath, protocol);
 
 		udtFileStream output;
-		if(!output.Open(outputFilePath.String, udtFileOpenMode::Write))
+		if(!output.Open(outputFilePath.GetPtr(), udtFileOpenMode::Write))
 		{
 			return false;
 		}
@@ -676,9 +733,16 @@ struct DemoMerger
 			DemoData& demo = _demos[i];
 
 			demo.Context = udtCreateContext();
+			if(demo.Context == NULL)
+			{
+				return false;
+			}
 
 			const u32 plugInId = udtPrivateParserPlugIn::ConvertToUDT;
-			demo.Context->Init(1, &plugInId, 1);
+			if(!demo.Context->Init(1, &plugInId, 1))
+			{
+				return false;
+			}
 
 			udtBaseParserPlugIn* plugInBase = NULL;
 			demo.Context->GetPlugInById(plugInBase, plugInId);
@@ -728,7 +792,7 @@ struct DemoMerger
 		udtdMessageType::Id messageType = udtdMessageType::Invalid;
 		udtdConverter::SnapshotInfo snapshotInfo;
 
-		firstDemo.Context->Context.LogInfo("Writing merged demo: %s", outputFilePath.String);
+		firstDemo.Context->Context.LogInfo("Writing merged demo: %s", outputFilePath.GetPtr());
 
 		for(;;)
 		{
@@ -852,7 +916,8 @@ bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32
 	udtVMLinearAllocator allocator;
 	allocator.Init(1 << 24, "MergeDemosNoInputCheck::Temp");
 	udtVMScopedStackAllocator allocatorScope(allocator);
-	DemoMerger* const merger = allocatorScope.NewObject<DemoMerger>();
+	const uptr mergerOffset = allocatorScope.NewObject<DemoMerger>();
+	DemoMerger* const merger = (DemoMerger*)allocator.GetAddressAt(mergerOffset);
 
 	return merger->MergeDemos(info, filePaths, fileCount, protocol);
 }

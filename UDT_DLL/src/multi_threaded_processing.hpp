@@ -37,10 +37,10 @@ struct udtDemoThreadAllocator
 	// Returns true if more than 1 thread should be launched.
 	bool Process(const char** filePaths, u32 fileCount, u32 maxThreadCount);
 
-	udtVMArrayWithAlloc<const char*> FilePaths;
-	udtVMArrayWithAlloc<u64> FileSizes;
-	udtVMArrayWithAlloc<u32> InputIndices;
-	udtVMArrayWithAlloc<udtParsingThreadData> Threads;
+	udtVMArray<const char*> FilePaths;
+	udtVMArray<u64> FileSizes;
+	udtVMArray<u32> InputIndices;
+	udtVMArray<udtParsingThreadData> Threads;
 };
 
 struct udtMultiThreadedParsing

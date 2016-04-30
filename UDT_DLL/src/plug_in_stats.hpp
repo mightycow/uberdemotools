@@ -14,7 +14,9 @@ public:
 	~udtParserPlugInStats();
 
 	void InitAllocators(u32 demoCount) override;
-	u32  GetElementSize() const override;
+	void CopyBuffersStruct(void* buffersStruct) const override;
+	void UpdateBufferStruct() override;
+	u32  GetItemCount() const override;
 	void StartDemoAnalysis() override;
 	void FinishDemoAnalysis() override;
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser) override;
@@ -139,7 +141,8 @@ private:
 
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
-	udtVMArray<udtParseDataStats> _statsArray; // The final array.
+	udtVMArray<udtParseDataStats> _statsArray;
+	udtParseDataStatsBuffers _buffers;
 	udtParseDataStats _stats;
 	udtCPMAPrintStats _cpmaPrintStats;
 	udtPlayerStats _playerStats[64];
@@ -148,12 +151,19 @@ private:
 	s32 _teamFields[2][udtTeamStatsField::Count];
 	u8 _playerFlags[64][UDT_PLAYER_STATS_MASK_BYTE_COUNT];
 	u8 _teamFlags[2][UDT_TEAM_STATS_MASK_BYTE_COUNT];
-	udtVMLinearAllocator _allocator;
+	udtVMLinearAllocator _stringAllocator;
+	udtString _redString;  // Allocated with _stringAllocator.
+	udtString _blueString; // Allocated with _stringAllocator.
+	udtVMArray<u8> _teamFlagsArray;
+	udtVMArray<u8> _playerFlagsArray;
+	udtVMArray<s32> _teamFieldsArray;
+	udtVMArray<s32> _playerFieldsArray;
+	udtVMArray<udtPlayerStats> _playerStatsArray;
+	udtVMArray<s32> _timeOutTimes;
 	const idTokenizer* _tokenizer;
 	idTokenizer* _plugInTokenizer;
 	udtProtocol::Id _protocol;
 	s32 _followedClientNumber;
-	u32 _maxAllowedStats;
 	s32 _firstPlaceClientNumber;
 	s32 _secondPlaceClientNumber;
 	s32 _cpmaScoreRed;

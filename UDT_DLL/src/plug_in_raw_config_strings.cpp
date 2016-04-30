@@ -12,14 +12,27 @@ udtParserPlugInRawConfigStrings::~udtParserPlugInRawConfigStrings()
 
 void udtParserPlugInRawConfigStrings::InitAllocators(u32 demoCount)
 {
-	FinalAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInRawConfigStrings::ConfigStringsArray");
-	_stringAllocator.Init(ComputeReservedByteCount(1 << 16, 1 << 18, 16, demoCount), "ParserPlugInRawConfigStrings::Strings");
-	_configStrings.SetAllocator(FinalAllocator);
+	_stringAllocator.InitNoOverride(demoCount * UDT_KB(16), "ParserPlugInRawConfigStrings::Strings");
+	_configStrings.InitNoOverride(demoCount * 800, "ParserPlugInRawConfigStrings::ConfigStringsArray");
 }
 
-u32 udtParserPlugInRawConfigStrings::GetElementSize() const
+void udtParserPlugInRawConfigStrings::CopyBuffersStruct(void* buffersStruct) const
 {
-	return (u32)sizeof(udtParseDataRawConfigString);
+	*(udtParseDataRawConfigStringBuffers*)buffersStruct = _buffers;
+}
+
+void udtParserPlugInRawConfigStrings::UpdateBufferStruct()
+{
+	_buffers.ConfigStringCount = _configStrings.GetSize();
+	_buffers.ConfigStringRanges = BufferRanges.GetStartAddress();
+	_buffers.ConfigStrings = _configStrings.GetStartAddress();
+	_buffers.StringBuffer = _stringAllocator.GetStartAddress();
+	_buffers.StringBufferSize = (u32)_stringAllocator.GetCurrentByteCount();
+}
+
+u32 udtParserPlugInRawConfigStrings::GetItemCount() const
+{
+	return _configStrings.GetSize();
 }
 
 void udtParserPlugInRawConfigStrings::StartDemoAnalysis()
@@ -42,12 +55,13 @@ void udtParserPlugInRawConfigStrings::ProcessGamestateMessage(const udtGamestate
 		{
 			continue;
 		}
-		
+
+		const udtString rawConfigString = udtString::NewCloneFromRef(_stringAllocator, string);		
+
 		udtParseDataRawConfigString cs;
 		cs.GameStateIndex = _gameStateIndex;
 		cs.ConfigStringIndex = i;
-		cs.RawConfigString = udtString::NewCloneFromRef(_stringAllocator, string).String;
-		cs.CleanConfigString = udtString::NewCleanCloneFromRef(_stringAllocator, parser._inProtocol, string).String;
+		WriteStringToApiStruct(cs.RawConfigString, rawConfigString);
 		_configStrings.Add(cs);
 	}
 }

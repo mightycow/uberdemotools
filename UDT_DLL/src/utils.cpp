@@ -20,11 +20,10 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 #undef UDT_MEAN_OF_DEATH_ITEM
 
 
-udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
+udtString CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
 	udtBaseParser* const parser = arg.Parser;
 	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
@@ -46,10 +45,8 @@ udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoS
 		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
-	char* startTime = NULL;
-	char* endTime = NULL;
-	FormatTimeForFileName(startTime, tempAllocator, arg.StartTimeMs);
-	FormatTimeForFileName(endTime, tempAllocator, arg.EndTimeMs);
+	const udtString startTime = FormatTimeForFileName(tempAllocator, arg.StartTimeMs);
+	const udtString endTime = FormatTimeForFileName(tempAllocator, arg.EndTimeMs);
 
 	const int gsIndex = parser->_inGameStateIndex;
 	const bool outputGsIndex = gsIndex > 0;
@@ -65,35 +62,33 @@ udtStream* CallbackCutDemoFileStreamCreation(udtString& filePath, const udtDemoS
 		sprintf(shortDesc, "_%s", arg.VeryShortDesc);
 	}
 
-	const char* outputFilePathParts[] = 
-	{ 
-		outputFilePathStart.String, 
-		"_CUT_", 
-		outputGsIndex ? gsIndexStr : "",
-		startTime, 
-		"_", 
-		endTime, 
-		arg.VeryShortDesc != NULL ? shortDesc : "",
-		udtGetFileExtensionByProtocol(parser->_inProtocol)
-	};
-	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
-
-	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
+	const udtString cut = udtString::NewConstRef("_CUT_");
+	const udtString us = udtString::NewConstRef("_");
+	const udtString gsIdx = udtString::NewConstRef(outputGsIndex ? gsIndexStr : "");
+	const udtString desc = udtString::NewConstRef(arg.VeryShortDesc != NULL ? shortDesc : "");
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(parser->_inProtocol));
+	const udtString* outputFilePathParts[] =
 	{
-		return NULL;
-	}
+		&outputFilePathStart,
+		&cut,
+		&gsIdx,
+		&startTime,
+		&us,
+		&endTime,
+		&desc,
+		&proto
+	};
+	const udtString filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
-	parser->_context->LogInfo("Writing cut demo: %s", filePath.String);
+	parser->_context->LogInfo("Writing cut demo: %s", filePath.GetPtr());
 
-	return stream;
+	return filePath;
 }
 
-udtStream* CallbackConvertedDemoFileStreamCreation(udtString& filePath, const udtDemoStreamCreatorArg& arg)
+udtString CallbackConvertedDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
 	udtBaseParser* const parser = arg.Parser;
 	udtVMLinearAllocator& tempAllocator = *arg.TempAllocator;
-	udtVMScopedStackAllocator scopedTempAllocator(tempAllocator);
 	CallbackCutDemoFileStreamCreationInfo* const info = (CallbackCutDemoFileStreamCreationInfo*)arg.UserData;
 
 	udtString inputFileName;
@@ -115,22 +110,17 @@ udtStream* CallbackConvertedDemoFileStreamCreation(udtString& filePath, const ud
 		udtPath::Combine(outputFilePathStart, tempAllocator, inputFolderPath, inputFileName);
 	}
 
-	const char* outputFilePathParts[] =
+	const udtString proto = udtString::NewConstRef(udtGetFileExtensionByProtocol(parser->_outProtocol));
+	const udtString* outputFilePathParts[] =
 	{
-		outputFilePathStart.String,
-		udtGetFileExtensionByProtocol(parser->_outProtocol)
+		&outputFilePathStart,
+		&proto
 	};
-	filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
+	const udtString filePath = udtString::NewFromConcatenatingMultiple(*arg.FilePathAllocator, outputFilePathParts, (u32)UDT_COUNT_OF(outputFilePathParts));
 
-	udtFileStream* const stream = parser->CreatePersistentObject<udtFileStream>();
-	if(stream == NULL || !stream->Open(filePath.String, udtFileOpenMode::Write))
-	{
-		return NULL;
-	}
+	parser->_context->LogInfo("Writing converted demo: %s", filePath.GetPtr());
 
-	parser->_context->LogInfo("Writing converted demo: %s", filePath.String);
-
-	return stream;
+	return filePath;
 }
 
 bool StringParseInt(s32& output, const char* string)
@@ -138,9 +128,9 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
-bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
+bool StringMatchesCutByChatRule(const udtString& string, const udtChatPatternRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
 {
-	if(string.String == NULL || rule.Pattern == NULL)
+	if(!string.IsValid() || rule.Pattern == NULL)
 	{
 		return false;
 	}
@@ -176,24 +166,20 @@ bool StringMatchesCutByChatRule(const udtString& string, const udtCutByChatRule&
 	return false;
 }
 
-bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutText)
+bool StringSplitLines(udtVMArray<udtString>& lines, udtString& inOutText)
 {
-	const u32 length = (s32)inOutText.Length;
-
-	udtString tempString;
-	tempString.ReservedBytes = 0;
-	tempString.Length = 0;
+	const u32 length = inOutText.GetLength();
+	char* const inOutTextPtr = inOutText.GetWritePtr();
 
 	u32 lastStart = 0;
 	for(u32 i = 0; i < length; ++i)
 	{
-		if(inOutText.String[i] == '\r' || inOutText.String[i] == '\n')
+		if(inOutTextPtr[i] == '\r' || inOutTextPtr[i] == '\n')
 		{
-			inOutText.String[i] = '\0';
+			inOutTextPtr[i] = '\0';
 			if(i - lastStart > 0)
 			{
-				tempString.String = inOutText.String + lastStart;
-				lines.Add(tempString);
+				lines.Add(udtString::NewConstRef(inOutTextPtr + lastStart));
 			}
 			lastStart = i + 1;
 		}
@@ -201,14 +187,13 @@ bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutTex
 
 	if(lastStart < length)
 	{
-		tempString.String = inOutText.String + lastStart;
-		lines.Add(tempString);
+		lines.Add(udtString::NewConstRef(inOutTextPtr + lastStart));
 	}
 
 	// Fix line lengths.
 	for(u32 i = 0, end = lines.GetSize(); i < end; ++i)
 	{
-		lines[i] = udtString::NewConstRef(lines[i].String);
+		lines[i] = udtString::NewConstRef(lines[i].GetPtr());
 	}
 
 	inOutText = udtString::NewEmptyConstant();
@@ -216,7 +201,7 @@ bool StringSplitLines(udtVMArrayWithAlloc<udtString>& lines, udtString& inOutTex
 	return true;
 }
 
-bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator, s32 timeMs)
+udtString FormatTimeForFileName(udtVMLinearAllocator& allocator, s32 timeMs)
 {
 	bool negative = false;
 	if(timeMs < 0)
@@ -237,23 +222,19 @@ bool FormatTimeForFileName(char*& formattedTime, udtVMLinearAllocator& allocator
 		minutesCopy /= 10;
 	}
 
-	formattedTime = AllocateSpaceForString(allocator, minutesDigits + 2 + (negative ? 1 : 0));
-	if(formattedTime == NULL)
-	{
-		return false;
-	}
+	const u32 length = minutesDigits + 2 + (negative ? 1 : 0);
+	udtString formattedTime = udtString::NewEmpty(allocator, length + 1);
+	sprintf(formattedTime.GetWritePtr(), "%s%d%02d", negative ? "-" : "", minutes, seconds);
+	formattedTime.SetLength(length);
 
-	sprintf(formattedTime, "%s%d%02d", negative ? "-" : "", minutes, seconds);
-
-	return true;
+	return formattedTime;
 }
 
-bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byteCount)
+udtString FormatBytes(udtVMLinearAllocator& allocator, u64 byteCount)
 {
 	if(byteCount == 0)
 	{
-		formattedSize = AllocateString(allocator, "0 byte");
-		return true;
+		return udtString::NewClone(allocator, "0 byte");
 	}
 
 	const char* const units[] = { "bytes", "KB", "MB", "GB", "TB" };
@@ -270,10 +251,10 @@ bool FormatBytes(char*& formattedSize, udtVMLinearAllocator& allocator, u64 byte
 
 	const f64 number = (f64)prev / 1024.0f;
 
-	formattedSize = (char*)allocator.Allocate(64);
-	sprintf(formattedSize, "%.3f %s", number, units[unitIndex]);
+	udtString formattedSize = udtString::NewEmpty(allocator, 64);
+	sprintf(formattedSize.GetWritePtr(), "%.3f %s", number, units[unitIndex]);
 
-	return true;
+	return formattedSize;
 }
 
 bool StringParseSeconds(s32& duration, const char* buffer)
@@ -298,7 +279,7 @@ bool StringParseSeconds(s32& duration, const char* buffer)
 bool CopyFileRange(udtStream& input, udtStream& output, udtVMLinearAllocator& allocator, u32 startOffset, u32 endOffset)
 {
 	const u32 chunkSize = 64 * 1024;
-	u8* const chunk = allocator.Allocate(chunkSize);
+	u8* const chunk = allocator.AllocateAndGetAddress(chunkSize);
 
 	const u32 fullChunkCount = (endOffset - startOffset) / chunkSize;
 	const u32 lastChunkSize = (endOffset - startOffset) % chunkSize;
@@ -344,41 +325,18 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 	return runner.WasSuccess();
 }
 
-char* AllocateString(udtVMLinearAllocator& allocator, const char* string, u32 stringLength)
-{
-	if(string == NULL)
-	{
-		return NULL;
-	}
-
-	if(stringLength == 0)
-	{
-		stringLength = (u32)strlen(string);
-	}
-
-	char* newString = (char*)allocator.Allocate(stringLength + 1);
-	memcpy(newString, string, stringLength);
-	newString[stringLength] = '\0';
-
-	return newString;
-}
-
-char* AllocateSpaceForString(udtVMLinearAllocator& allocator, u32 stringLength)
-{
-	return (char*)allocator.Allocate(stringLength + 1);
-}
-
 static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator, const char* varName, const char* configString)
 {
 	// The format is the following: "key1\value1\key2\value2"
 	// We work with no guarantee of a leading or trailing backslash.
-	// @NOTE: Config strings 0 and 1 have a leading backslash, but player config strings don't.
 
 	const udtString inputString = udtString::NewConstRef(configString);
 	const udtString varNameString = udtString::NewConstRef(varName);
-	if(udtString::StartsWith(inputString, varNameString) && configString[varNameString.Length] == '\\')
+	if(inputString.GetLength() > varNameString.GetLength() && 
+	   udtString::StartsWith(inputString, varNameString) &&
+	   configString[varNameString.GetLength()] == '\\')
 	{
-		return configString + varNameString.Length + 1;
+		return configString + varNameString.GetLength() + 1;
 	}
 
 	const udtString separator = udtString::NewConstRef("\\");
@@ -388,7 +346,7 @@ static const char* FindConfigStringValueAddress(udtVMLinearAllocator& allocator,
 	u32 charIndex = 0;
 	if(udtString::Contains(charIndex, inputString, pattern))
 	{
-		return configString + charIndex + pattern.Length;
+		return configString + charIndex + pattern.GetLength();
 	}
 
 	return NULL;
@@ -402,12 +360,20 @@ bool ParseConfigStringValueInt(s32& varValue, udtVMLinearAllocator& allocator, c
 	}
 
 	const char* const valueString = FindConfigStringValueAddress(allocator, varName, configString);
-	if(valueString == NULL)
+	if(valueString == NULL || *valueString == '\0')
 	{
 		return false;
 	}
 
-	return sscanf(valueString, "%d", &varValue) == 1;
+	int result = 0;
+	if(sscanf(valueString, "%d", &result) != 1)
+	{
+		return false;
+	}
+
+	varValue = (s32)result;
+
+	return true;
 }
 
 bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& allocator, const char* varName, const char* configString)
@@ -417,6 +383,7 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 		return false;
 	}
 
+	// @NOTE: An empty string can be a valid value.
 	const char* const valueStart = FindConfigStringValueAddress(allocator, varName, configString);
 	if(valueStart == NULL)
 	{
@@ -424,12 +391,7 @@ bool ParseConfigStringValueString(udtString& varValue, udtVMLinearAllocator& all
 	}
 
 	const char* const separatorAfterValue = strchr(valueStart, '\\');
-	if(separatorAfterValue == NULL)
-	{
-		return false;
-	}
-
-	const u32 length = (separatorAfterValue == NULL) ? 0 : (u32)(separatorAfterValue - valueStart);
+	const u32 length = separatorAfterValue == NULL ? u32(udtString::InvalidLength) : u32(separatorAfterValue - valueStart);
 	varValue = udtString::NewClone(allocator, valueStart, length);
 
 	return true;
@@ -743,17 +705,19 @@ s32 GetUDTGameTypeFromIdGameType(s32 gt, udtProtocol::Id protocol, udtGame::Id g
 void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tempAllocator)
 {
 	u32 allocatorCount = 256;
-	udtVMLinearAllocator** const allocators = (udtVMLinearAllocator**)tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * allocatorCount);
+	const uptr allocatorListOffset = tempAllocator.Allocate((uptr)sizeof(udtVMLinearAllocator*) * (uptr)allocatorCount);
+	udtVMLinearAllocator** allocators = (udtVMLinearAllocator**)tempAllocator.GetAddressAt(allocatorListOffset);
 	udtVMLinearAllocator::GetThreadAllocators(allocatorCount, allocators);
 
-	char* unusedMemory = NULL;
-	char* reservedMemory = NULL;
+	udtString unusedMemory;
+	udtString reservedMemory;
 	uptr totalUnused = 0;
 	uptr totalReserved = 0;
 	uptr unusedPc = 0;
 	context.LogInfo("Thread allocator count: %u", allocatorCount);
 	for(u32 i = 0; i < allocatorCount; ++i)
 	{
+		allocators = (udtVMLinearAllocator**)tempAllocator.GetAddressAt(allocatorListOffset);
 		udtVMLinearAllocator& allocator = *allocators[i];
 		if(allocator.GetReservedByteCount() == 0)
 		{
@@ -771,24 +735,28 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 		totalReserved += allocator.GetReservedByteCount();
 		unusedPc = (100 * lowestUnusedByteCount) / allocator.GetReservedByteCount();
 
+		// Use allocator before any new allocations calls before it could be relocated by FormatBytes.
+		const u64 reservedByteCount = allocator.GetReservedByteCount();
+		const u32 resizeCount = allocator.GetResizeCount();
+
 		udtVMScopedStackAllocator tempAllocScope(tempAllocator);
-		FormatBytes(unusedMemory, tempAllocator, (u64)lowestUnusedByteCount);
-		FormatBytes(reservedMemory, tempAllocator, (u64)allocator.GetReservedByteCount());
-		context.LogInfo("- %s: reserved %s - unused %s (%u%%)", name, reservedMemory, unusedMemory, (u32)unusedPc);
+		unusedMemory = FormatBytes(tempAllocator, (u64)lowestUnusedByteCount);
+		reservedMemory = FormatBytes(tempAllocator, (u64)reservedByteCount);
+		context.LogInfo("- %s: reserved %s - unused %s (%u%%) - resized %u", name, reservedMemory.GetPtr(), unusedMemory.GetPtr(), (u32)unusedPc, resizeCount);
 	}
 
 	unusedPc = (100 * totalUnused) / totalReserved;
-	FormatBytes(unusedMemory, tempAllocator, (u64)totalUnused);
-	FormatBytes(reservedMemory, tempAllocator, (u64)totalReserved);
-	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory, (u32)unusedPc);
-	context.LogInfo("Thread reserved byte count: %s", reservedMemory);
+	unusedMemory = FormatBytes(tempAllocator, (u64)totalUnused);
+	reservedMemory = FormatBytes(tempAllocator, (u64)totalReserved);
+	context.LogInfo("Thread unused byte count: %s (%u%%)", unusedMemory.GetPtr(), (u32)unusedPc);
+	context.LogInfo("Thread reserved byte count: %s", reservedMemory.GetPtr());
 }
 
 bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
 {
 	const s32 obituaryEvtId = idEntityEvent::Obituary(protocol);
 	const s32 eventTypeId = idEntityType::Event(protocol);
-	const s32 eventType = entity.eType & (~EV_EVENT_BITS);
+	const s32 eventType = entity.eType & (~ID_ES_EVENT_BITS);
 	if(eventType != eventTypeId + obituaryEvtId)
 	{
 		return false;
@@ -796,14 +764,14 @@ bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, ud
 
 	// The target must always be a player.
 	const s32 targetIdx = entity.otherEntityNum;
-	if(targetIdx < 0 || targetIdx >= MAX_CLIENTS)
+	if(targetIdx < 0 || targetIdx >= ID_MAX_CLIENTS)
 	{
 		return false;
 	}
 
 	// The attacker can be the world, though.
 	s32 attackerIdx = entity.otherEntityNum2;
-	if(attackerIdx < 0 || attackerIdx >= MAX_CLIENTS)
+	if(attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 	{
 		attackerIdx = -1;
 	}
@@ -904,6 +872,140 @@ const char* GetUDTModName(s32 mod)
 	return MeansOfDeathNames[mod];
 }
 
+s32 GetUDTItemFromIdItem(s32 idItem, udtProtocol::Id protocol)
+{
+	if(udtIsValidProtocol(protocol) == 0)
+	{
+		return -1;
+	}
+
+	// @NOTE: idItem90p is a superset of idItem73.
+	if(protocol == udtProtocol::Dm73 &&
+	   idItem >= (s32)idItem73::Count)
+	{
+		return -1;
+	}
+
+	// @NOTE: idItem68_CPMA is a superset of idItem68_baseq3.
+	if(protocol <= udtProtocol::Dm68 &&
+	   idItem >= (s32)idItem68_baseq3::Count)
+	{
+		return -1;
+	}
+	
+	if(protocol >= udtProtocol::Dm73)
+	{
+		switch((idItem90p::Id)idItem)
+		{
+			case idItem90p::ItemArmorShard: return (s32)udtItem::ItemArmorShard;
+			case idItem90p::ItemArmorCombat: return (s32)udtItem::ItemArmorCombat;
+			case idItem90p::ItemArmorBody: return (s32)udtItem::ItemArmorBody;
+			case idItem90p::ItemArmorJacket: return (s32)udtItem::ItemArmorJacket;
+			case idItem90p::ItemHealthSmall: return (s32)udtItem::ItemHealthSmall;
+			case idItem90p::ItemHealth: return (s32)udtItem::ItemHealth;
+			case idItem90p::ItemHealthLarge: return (s32)udtItem::ItemHealthLarge;
+			case idItem90p::ItemHealthMega: return (s32)udtItem::ItemHealthMega;
+			case idItem90p::WeaponGauntlet: return (s32)udtItem::WeaponGauntlet;
+			case idItem90p::WeaponShotgun: return (s32)udtItem::WeaponShotgun;
+			case idItem90p::WeaponMachinegun: return (s32)udtItem::WeaponMachinegun;
+			case idItem90p::WeaponGrenadelauncher: return (s32)udtItem::WeaponGrenadeLauncher;
+			case idItem90p::WeaponRocketlauncher: return (s32)udtItem::WeaponRocketLauncher;
+			case idItem90p::WeaponLightning: return (s32)udtItem::WeaponLightningGun;
+			case idItem90p::WeaponRailgun: return (s32)udtItem::WeaponRailgun;
+			case idItem90p::WeaponPlasmagun: return (s32)udtItem::WeaponPlasmaGun;
+			case idItem90p::WeaponBFG: return (s32)udtItem::WeaponBFG;
+			case idItem90p::WeaponGrapplinghook: return (s32)udtItem::WeaponGrapplingHook;
+			case idItem90p::AmmoShells: return (s32)udtItem::AmmoShells;
+			case idItem90p::AmmoBullets: return (s32)udtItem::AmmoBullets;
+			case idItem90p::AmmoGrenades: return (s32)udtItem::AmmoGrenades;
+			case idItem90p::AmmoCells: return (s32)udtItem::AmmoCells;
+			case idItem90p::AmmoLightning: return (s32)udtItem::AmmoLightning;
+			case idItem90p::AmmoRockets: return (s32)udtItem::AmmoRockets;
+			case idItem90p::AmmoSlugs: return (s32)udtItem::AmmoSlugs;
+			case idItem90p::AmmoBFG: return (s32)udtItem::AmmoBFG;
+			case idItem90p::HoldableTeleporter: return (s32)udtItem::HoldableTeleporter;
+			case idItem90p::HoldableMedkit: return (s32)udtItem::HoldableMedkit;
+			case idItem90p::ItemQuad: return (s32)udtItem::ItemQuad;
+			case idItem90p::ItemEnviro: return (s32)udtItem::ItemEnviro;
+			case idItem90p::ItemHaste: return (s32)udtItem::ItemHaste;
+			case idItem90p::ItemInvis: return (s32)udtItem::ItemInvis;
+			case idItem90p::ItemRegen: return (s32)udtItem::ItemRegen;
+			case idItem90p::ItemFlight: return (s32)udtItem::ItemFlight;
+			case idItem90p::TeamCTFRedflag: return (s32)udtItem::FlagRed;
+			case idItem90p::TeamCTFBlueflag: return (s32)udtItem::FlagBlue;
+			case idItem90p::HoldableKamikaze: return (s32)udtItem::HoldableKamikaze;
+			case idItem90p::HoldablePortal: return (s32)udtItem::HoldablePortal;
+			case idItem90p::HoldableInvulnerability: return (s32)udtItem::HoldableInvulnerability;
+			case idItem90p::AmmoNails: return (s32)udtItem::AmmoNails;
+			case idItem90p::AmmoMines: return (s32)udtItem::AmmoMines;
+			case idItem90p::AmmoBelt: return (s32)udtItem::AmmoBelt;
+			case idItem90p::ItemScout: return (s32)udtItem::ItemScout;
+			case idItem90p::ItemGuard: return (s32)udtItem::ItemGuard;
+			case idItem90p::ItemDoubler: return (s32)udtItem::ItemDoubler;
+			case idItem90p::ItemAmmoregen: return (s32)udtItem::ItemAmmoRegen;
+			case idItem90p::TeamCTFNeutralflag: return (s32)udtItem::FlagNeutral;
+			case idItem90p::ItemRedcube: return (s32)udtItem::ItemRedCube;
+			case idItem90p::ItemBluecube: return (s32)udtItem::ItemBlueCube;
+			case idItem90p::WeaponNailgun: return (s32)udtItem::WeaponNailgun;
+			case idItem90p::WeaponProxLauncher: return (s32)udtItem::WeaponProxLauncher;
+			case idItem90p::WeaponChaingun: return (s32)udtItem::WeaponChaingun;
+			case idItem90p::ItemSpawnArmor: return (s32)udtItem::ItemSpawnArmor;
+			case idItem90p::WeaponHMG: return (s32)udtItem::WeaponHMG;
+			case idItem90p::AmmoHMG: return (s32)udtItem::AmmoHMG;
+			case idItem90p::AmmoPack: return (s32)udtItem::AmmoPack;
+			case idItem90p::ItemKeySilver: return (s32)udtItem::ItemKeySilver;
+			case idItem90p::ItemKeyGold: return (s32)udtItem::ItemKeyGold;
+			case idItem90p::ItemKeyMaster: return (s32)udtItem::ItemKeyMaster;
+			default: return -1;
+		}
+	}
+	else
+	{
+		switch((idItem68_CPMA::Id)idItem)
+		{
+			case idItem68_CPMA::ItemArmorShard: return (s32)udtItem::ItemArmorShard;
+			case idItem68_CPMA::ItemArmorCombat: return (s32)udtItem::ItemArmorCombat;
+			case idItem68_CPMA::ItemArmorBody: return (s32)udtItem::ItemArmorBody;
+			case idItem68_CPMA::ItemHealthSmall: return (s32)udtItem::ItemHealthSmall;
+			case idItem68_CPMA::ItemHealth: return (s32)udtItem::ItemHealth;
+			case idItem68_CPMA::ItemHealthLarge: return (s32)udtItem::ItemHealthLarge;
+			case idItem68_CPMA::ItemHealthMega: return (s32)udtItem::ItemHealthMega;
+			case idItem68_CPMA::WeaponGauntlet: return (s32)udtItem::WeaponGauntlet;
+			case idItem68_CPMA::WeaponShotgun: return (s32)udtItem::WeaponShotgun;
+			case idItem68_CPMA::WeaponMachinegun: return (s32)udtItem::WeaponMachinegun;
+			case idItem68_CPMA::WeaponGrenadelauncher: return (s32)udtItem::WeaponGrenadeLauncher;
+			case idItem68_CPMA::WeaponRocketlauncher: return (s32)udtItem::WeaponRocketLauncher;
+			case idItem68_CPMA::WeaponLightning: return (s32)udtItem::WeaponLightningGun;
+			case idItem68_CPMA::WeaponRailgun: return (s32)udtItem::WeaponRailgun;
+			case idItem68_CPMA::WeaponPlasmagun: return (s32)udtItem::WeaponPlasmaGun;
+			case idItem68_CPMA::WeaponBFG: return (s32)udtItem::WeaponBFG;
+			case idItem68_CPMA::WeaponGrapplinghook: return (s32)udtItem::WeaponGrapplingHook;
+			case idItem68_CPMA::AmmoShells: return (s32)udtItem::AmmoShells;
+			case idItem68_CPMA::AmmoBullets: return (s32)udtItem::AmmoBullets;
+			case idItem68_CPMA::AmmoGrenades: return (s32)udtItem::AmmoGrenades;
+			case idItem68_CPMA::AmmoCells: return (s32)udtItem::AmmoCells;
+			case idItem68_CPMA::AmmoLightning: return (s32)udtItem::AmmoLightning;
+			case idItem68_CPMA::AmmoRockets: return (s32)udtItem::AmmoRockets;
+			case idItem68_CPMA::AmmoSlugs: return (s32)udtItem::AmmoSlugs;
+			case idItem68_CPMA::AmmoBFG: return (s32)udtItem::AmmoBFG;
+			case idItem68_CPMA::HoldableTeleporter: return (s32)udtItem::HoldableTeleporter;
+			case idItem68_CPMA::HoldableMedkit: return (s32)udtItem::HoldableMedkit;
+			case idItem68_CPMA::ItemQuad: return (s32)udtItem::ItemQuad;
+			case idItem68_CPMA::ItemEnviro: return (s32)udtItem::ItemEnviro;
+			case idItem68_CPMA::ItemHaste: return (s32)udtItem::ItemHaste;
+			case idItem68_CPMA::ItemInvis: return (s32)udtItem::ItemInvis;
+			case idItem68_CPMA::ItemRegen: return (s32)udtItem::ItemRegen;
+			case idItem68_CPMA::ItemFlight: return (s32)udtItem::ItemFlight;
+			case idItem68_CPMA::TeamCTFRedflag: return (s32)udtItem::FlagRed;
+			case idItem68_CPMA::TeamCTFBlueflag: return (s32)udtItem::FlagBlue;
+			case idItem68_CPMA::ItemArmorJacket: return (s32)udtItem::ItemArmorJacket;
+			case idItem68_CPMA::ItemBackpack: return (s32)udtItem::ItemBackpack;
+			case idItem68_CPMA::TeamCTFNeutralflag: return (s32)udtItem::FlagNeutral;
+			default: return -1;
+		}
+	}
+}
+
 bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString)
 {
 	if(configString == NULL)
@@ -998,20 +1100,38 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 {
 	udtVMLinearAllocator::Stats allocStats;
 	udtVMLinearAllocator::GetThreadStats(allocStats);
-	const uptr extraByteCount = (uptr)sizeof(udtParserContext);
 	perfStats[udtPerfStatsField::MemoryReserved] += (u64)allocStats.ReservedByteCount;
-	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)(allocStats.CommittedByteCount + extraByteCount);
-	perfStats[udtPerfStatsField::MemoryUsed] += (u64)(allocStats.UsedByteCount + extraByteCount);
+	perfStats[udtPerfStatsField::MemoryCommitted] += (u64)allocStats.CommittedByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += (u64)allocStats.UsedByteCount;
 	perfStats[udtPerfStatsField::AllocatorCount] += allocStats.AllocatorCount;
 	perfStats[udtPerfStatsField::DataProcessed] += totalDemoByteCount;
+	perfStats[udtPerfStatsField::ResizeCount] += (u64)allocStats.ResizeCount;
 }
 
 void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
 {
+	const u64 extraByteCount = (u64)sizeof(udtParserContext) * (u64)threadCount;
+	perfStats[udtPerfStatsField::MemoryReserved] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryCommitted] += extraByteCount;
+	perfStats[udtPerfStatsField::MemoryUsed] += extraByteCount;
 	perfStats[udtPerfStatsField::Duration] = durationMs;
 	perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
 	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
 	perfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted];
+}
+
+void WriteStringToApiStruct(u32& offset, const udtString& string)
+{
+	u32* const offsetAndLength = &offset;
+	offsetAndLength[0] = string.GetOffset();
+	offsetAndLength[1] = string.GetLength();
+}
+
+void WriteNullStringToApiStruct(u32& offset)
+{
+	u32* const offsetAndLength = &offset;
+	offsetAndLength[0] = U32_MAX;
+	offsetAndLength[1] = 0;
 }
 
 namespace idEntityEvent
@@ -1020,14 +1140,14 @@ namespace idEntityEvent
 	{
 		switch(protocol)
 		{
-			case udtProtocol::Dm3:  return (s32)EV_OBITUARY_3;
-			case udtProtocol::Dm48: return (s32)EV_OBITUARY_48;
+			case udtProtocol::Dm3:  return EV_OBITUARY_3;
+			case udtProtocol::Dm48: return EV_OBITUARY_48;
 			case udtProtocol::Dm66:
 			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return (s32)EV_OBITUARY_68;
+			case udtProtocol::Dm68: return EV_OBITUARY_68;
 			case udtProtocol::Dm73:
 			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return (s32)EV_OBITUARY_73p;
+			case udtProtocol::Dm91: return EV_OBITUARY_73p;
 			default: return -1;
 		}
 	}
@@ -1036,10 +1156,105 @@ namespace idEntityEvent
 	{
 		return (protocol <= udtProtocol::Dm68) ? (s32)EV_FIRE_WEAPON_68 : (s32)EV_FIRE_WEAPON_73p;
 	}
+
+	s32 ItemPickup(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_ITEM_PICKUP_68 : (s32)EV_ITEM_PICKUP_73p;
+	}
+
+	s32 GlobalItemPickup(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_ITEM_PICKUP_68 : (s32)EV_GLOBAL_ITEM_PICKUP_73p;
+	}
+
+	s32 GlobalSound(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_SOUND_68 : (s32)EV_GLOBAL_SOUND_73p;
+	}
+
+	s32 GlobalTeamSound(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)EV_GLOBAL_TEAM_SOUND_68 : (s32)EV_GLOBAL_TEAM_SOUND_73p;
+	}
+
+	s32 QL_Overtime(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm73) ? EV_OVERTIME_73p : -1;
+	}
+
+	s32 QL_GameOver(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm73) ? EV_GAMEOVER_73p : -1;
+	}
 };
 
 namespace idEntityType
 {
+	s32 General(udtProtocol::Id)
+	{
+		return ET_GENERAL;
+	}
+
+	s32 Player(udtProtocol::Id)
+	{
+		return ET_PLAYER;
+	}
+
+	s32 Item(udtProtocol::Id)
+	{
+		return ET_ITEM;
+	}
+
+	s32 Missile(udtProtocol::Id)
+	{
+		return ET_MISSILE;
+	}
+
+	s32 Mover(udtProtocol::Id)
+	{
+		return ET_MOVER;
+	}
+
+	s32 Beam(udtProtocol::Id)
+	{
+		return ET_BEAM;
+	}
+
+	s32 Portal(udtProtocol::Id)
+	{
+		return ET_PORTAL;
+	}
+
+	s32 Speaker(udtProtocol::Id)
+	{
+		return ET_SPEAKER;
+	}
+
+	s32 PushTrigger(udtProtocol::Id)
+	{
+		return ET_PUSH_TRIGGER;
+	}
+
+	s32 TeleportTrigger(udtProtocol::Id)
+	{
+		return ET_TELEPORT_TRIGGER;
+	}
+
+	s32 Invisible(udtProtocol::Id)
+	{
+		return ET_INVISIBLE;
+	}
+
+	s32 Grapple(udtProtocol::Id)
+	{
+		return ET_GRAPPLE;
+	}
+
+	s32 Team(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? ET_TEAM : -1;
+	}
+
 	s32 Event(udtProtocol::Id protocol)
 	{
 		return (protocol == udtProtocol::Dm3) ? (s32)ET_EVENTS_3 : (s32)ET_EVENTS;
@@ -1050,21 +1265,21 @@ namespace idConfigStringIndex
 {
 	s32 FirstPlayer(udtProtocol::Id protocol)
 	{
-		return (protocol <= udtProtocol::Dm68) ? (s32)CS_PLAYERS_68 : (s32)CS_PLAYERS_73p;
+		return (protocol <= udtProtocol::Dm68) ? CS_PLAYERS_68 : CS_PLAYERS_73p;
 	}
 
 	s32 Intermission(udtProtocol::Id protocol)
 	{
 		switch(protocol)
 		{
-			case udtProtocol::Dm3:  return (s32)CS_INTERMISSION_3;
+			case udtProtocol::Dm3:  return CS_INTERMISSION_3;
 			case udtProtocol::Dm48:
 			case udtProtocol::Dm66:
 			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return (s32)CS_INTERMISSION_68;
+			case udtProtocol::Dm68: return CS_INTERMISSION_48_68;
 			case udtProtocol::Dm73:
 			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return (s32)CS_INTERMISSION_73p;
+			case udtProtocol::Dm91: return CS_INTERMISSION_73p;
 			default: return -1;
 		}
 	}
@@ -1073,51 +1288,187 @@ namespace idConfigStringIndex
 	{
 		switch(protocol)
 		{
-			case udtProtocol::Dm3:  return (s32)CS_LEVEL_START_TIME_3;
+			case udtProtocol::Dm3:  return CS_LEVEL_START_TIME_3;
 			case udtProtocol::Dm48:
 			case udtProtocol::Dm66:
 			case udtProtocol::Dm67:
-			case udtProtocol::Dm68: return (s32)CS_LEVEL_START_TIME_68;
+			case udtProtocol::Dm68: return CS_LEVEL_START_TIME_48_68;
 			case udtProtocol::Dm73:
 			case udtProtocol::Dm90:
-			case udtProtocol::Dm91: return (s32)CS_LEVEL_START_TIME_73p;
+			case udtProtocol::Dm91: return CS_LEVEL_START_TIME_73p;
 			default: return -1;
 		}
 	}
 
-	s32 WarmUpEndTime(udtProtocol::Id /*protocol*/)
+	s32 WarmUpEndTime(udtProtocol::Id)
 	{
-		return (s32)CS_WARMUP;
+		return CS_WARMUP;
 	}
 
 	s32 FirstPlacePlayerName(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES1PLAYER_91 : -1;
+		return protocol >= udtProtocol::Dm91 ? CS_SCORES1PLAYER_91 : -1;
 	}
 
 	s32 SecondPlacePlayerName(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm91 ? (s32)CS_SCORES2PLAYER_91 : -1;
+		return protocol >= udtProtocol::Dm91 ? CS_SCORES2PLAYER_91 : -1;
 	}
 
 	s32 PauseStart(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm73 ? (s32)CS_PAUSE_START_73p : -1;
+		return protocol >= udtProtocol::Dm73 ? CS_PAUSE_START_73p : -1;
 	}
 
 	s32 PauseEnd(udtProtocol::Id protocol)
 	{
-		return protocol >= udtProtocol::Dm73 ? (s32)CS_PAUSE_COUNTDOWN_73p : -1;
+		return protocol >= udtProtocol::Dm73 ? CS_PAUSE_COUNTDOWN_73p : -1;
 	}
 
 	s32 FlagStatus(udtProtocol::Id protocol)
 	{
 		if(protocol == udtProtocol::Dm3)
 		{
-			return (s32)CS_FLAGSTATUS_3;
+			return CS_FLAGSTATUS_3;
 		}
 
-		return protocol >= udtProtocol::Dm73 ? (s32)CS_FLAGSTATUS_73p : (s32)CS_FLAGSTATUS_68;
+		return protocol >= udtProtocol::Dm73 ? CS_FLAGSTATUS_73p : CS_FLAGSTATUS_48_68;
+	}
+
+	s32 ServerInfo(udtProtocol::Id)
+	{
+		return CS_SERVERINFO;
+	}
+
+	s32 SystemInfo(udtProtocol::Id)
+	{
+		return CS_SYSTEMINFO;
+	}
+
+	s32 Scores1(udtProtocol::Id)
+	{
+		return CS_SCORES1;
+	}
+
+	s32 Scores2(udtProtocol::Id)
+	{
+		return CS_SCORES2;
+	}
+
+	s32 VoteTime(udtProtocol::Id)
+	{
+		return CS_VOTE_TIME;
+	}
+
+	s32 VoteString(udtProtocol::Id)
+	{
+		return CS_VOTE_STRING;
+	}
+
+	s32 VoteYes(udtProtocol::Id)
+	{
+		return CS_VOTE_YES;
+	}
+
+	s32 VoteNo(udtProtocol::Id)
+	{
+		return CS_VOTE_NO;
+	}
+
+	s32 TeamVoteTime(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68) ? CS_TEAMVOTE_TIME_48_68 : -1;
+	}
+
+	s32 TeamVoteString(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68) ? CS_TEAMVOTE_STRING_48_68 : -1;
+	}
+
+	s32 TeamVoteYes(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68) ? CS_TEAMVOTE_YES_48_68 : -1;
+	}
+
+	s32 TeamVoteNo(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68) ? CS_TEAMVOTE_NO_48_68 : -1;
+	}
+
+	s32 GameVersion(udtProtocol::Id protocol)
+	{
+		switch(protocol)
+		{
+			case udtProtocol::Dm3:  return CS_GAME_VERSION_3;
+			case udtProtocol::Dm48:
+			case udtProtocol::Dm66:
+			case udtProtocol::Dm67:
+			case udtProtocol::Dm68: return CS_GAME_VERSION_48_68;
+			case udtProtocol::Dm73:
+			case udtProtocol::Dm90:
+			case udtProtocol::Dm91: return CS_GAME_VERSION_73p;
+			default: return -1;
+		}
+	}
+
+	s32 ItemFlags(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? CS_ITEMS_68 : CS_ITEMS_73p;
+	}
+
+	s32 QL_TimeoutStartTime(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_TIMEOUT_BEGIN_TIME_73p : -1;
+	}
+
+	s32 QL_TimeoutEndTime(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_TIMEOUT_END_TIME_73p : -1;
+	}
+
+	s32 QL_RedTeamTimeoutsLeft(udtProtocol::Id protocol)
+	{
+		return (protocol == udtProtocol::Dm91) ? CS_TIMEOUTS_RED_91 : -1;
+	}
+
+	s32 QL_BlueTeamTimeoutsLeft(udtProtocol::Id protocol)
+	{
+		return (protocol == udtProtocol::Dm91) ? CS_TIMEOUTS_BLUE_91 : -1;
+	}
+
+	s32 QL_ReadTeamClanName(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_RED_TEAM_CLAN_NAME_73p : -1;
+	}
+
+	s32 QL_BlueTeamClanName(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_BLUE_TEAM_CLAN_NAME_73p : -1;
+	}
+
+	s32 QL_RedTeamClanTag(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_RED_TEAM_CLAN_TAG_73p : -1;
+	}
+
+	s32 QL_BlueTeamClanTag(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? CS_BLUE_TEAM_CLAN_TAG_73p : -1;
+	}
+
+	s32 CPMA_GameInfo(udtProtocol::Id)
+	{
+		return CS_CPMA_GAME_INFO;
+	}
+
+	s32 CPMA_RoundInfo(udtProtocol::Id)
+	{
+		return CS_CPMA_ROUND_INFO;
+	}
+
+	s32 OSP_GamePlay(udtProtocol::Id)
+	{
+		return CS_OSP_GAMEPLAY;
 	}
 }
 
@@ -1139,6 +1490,71 @@ namespace idPowerUpIndex
 
 		return (protocol <= udtProtocol::Dm90) ? (s32)PW_NEUTRALFLAG : (s32)PW_NEUTRALFLAG_91;
 	}
+
+	s32 QuadDamage(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_QUAD : (s32)PW_QUAD_91;
+	}
+
+	s32 BattleSuit(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_BATTLESUIT : (s32)PW_BATTLESUIT_91;
+	}
+
+	s32 Haste(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_HASTE : (s32)PW_HASTE_91;
+	}
+
+	s32 Invisibility(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVIS : (s32)PW_INVIS_91;
+	}
+
+	s32 Regeneration(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_REGEN : (s32)PW_REGEN_91;
+	}
+
+	s32 Flight(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_FLIGHT : (s32)PW_FLIGHT_91;
+	}
+
+	s32 Scout(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_SCOUT : (s32)NOTPW_SCOUT_91;
+	}
+
+	s32 Guard(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_GUARD : (s32)NOTPW_GUARD_91;
+	}
+
+	s32 Doubler(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_DOUBLER : (s32)NOTPW_DOUBLER_91;
+	}
+
+	s32 ArmorRegeneration(udtProtocol::Id protocol)
+	{
+		if(protocol <= udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_AMMOREGEN : (s32)NOTPW_ARMORREGEN_91;
+	}
+
+	s32 Invulnerability(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm90) ? (s32)PW_INVULNERABILITY : (s32)PW_INVULNERABILITY_91;
+	}
 }
 
 namespace idPersStatsIndex
@@ -1148,5 +1564,176 @@ namespace idPersStatsIndex
 		if(protocol == udtProtocol::Dm3) return -1; // @NOTE: dm3 doesn't have a flag captures slot.
 
 		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_CAPTURES_68 : (s32)PERS_CAPTURES_73p;
+	}
+
+	s32 Score(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SCORE_68 : (s32)PERS_SCORE_73p;
+	}
+
+	s32 Hits(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
+	}
+
+	s32 Rank(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_RANK_68 : (s32)PERS_RANK_73p;
+	}
+
+	s32 Team(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_TEAM_68 : (s32)PERS_TEAM_73p;
+	}
+
+	s32 SpawnCount(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_SPAWN_COUNT_68 : (s32)PERS_SPAWN_COUNT_73p;
+	}
+
+	s32 Deaths(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_KILLED_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_KILLED_68 : (s32)PERS_KILLED_73p;
+	}
+
+	s32 LastAttacker(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_ATTACKER_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKER_68 : (s32)PERS_ATTACKER_73p;
+	}
+
+	s32 DamageGiven(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_HITS_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_HITS_68 : (s32)PERS_HITS_73p;
+	}
+
+	s32 LastTargetHealthAndArmor(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ATTACKEE_ARMOR_68 : (s32)PERS_ATTACKEE_ARMOR_73p;
+	}
+
+	s32 Impressives(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_IMPRESSIVE_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_IMPRESSIVE_COUNT_68 : (s32)PERS_IMPRESSIVE_COUNT_73p;
+	}
+
+	s32 Excellents(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_EXCELLENT_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_EXCELLENT_COUNT_68 : (s32)PERS_EXCELLENT_COUNT_73p;
+	}
+
+	s32 Defends(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_DEFEND_COUNT_68 : (s32)PERS_DEFEND_COUNT_73p;
+	}
+
+	s32 Assists(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return -1;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_ASSIST_COUNT_68 : (s32)PERS_ASSIST_COUNT_73p;
+	}
+
+	s32 Humiliations(udtProtocol::Id protocol)
+	{
+		if(protocol == udtProtocol::Dm3) return PERS_GAUNTLET_FRAG_COUNT_3;
+
+		return (protocol <= udtProtocol::Dm68) ? (s32)PERS_GAUNTLET_FRAG_COUNT_68 : (s32)PERS_GAUNTLET_FRAG_COUNT_73p;
+	}
+}
+
+namespace idEntityStateFlag
+{
+	s32 Dead(udtProtocol::Id)
+	{
+		return EF_DEAD;
+	}
+
+	s32 TeleportBit(udtProtocol::Id)
+	{
+		return EF_TELEPORT_BIT;
+	}
+
+	s32 AwardExcellent(udtProtocol::Id)
+	{
+		return EF_AWARD_EXCELLENT;
+	}
+
+	s32 PlayerEvent(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm66) ? EF_PLAYER_EVENT_66p : 0;
+	}
+
+	s32 AwardHumiliation(udtProtocol::Id)
+	{
+		return EF_AWARD_GAUNTLET;
+	}
+
+	s32 NoDraw(udtProtocol::Id)
+	{
+		return EF_NODRAW;
+	}
+
+	s32 Firing(udtProtocol::Id)
+	{
+		return EF_FIRING;
+	}
+
+	s32 AwardCapture(udtProtocol::Id)
+	{
+		return EF_AWARD_CAP;
+	}
+
+	s32 Chatting(udtProtocol::Id)
+	{
+		return EF_TALK;
+	}
+
+	s32 ConnectionInterrupted(udtProtocol::Id)
+	{
+		return EF_CONNECTION;
+	}
+
+	s32 HasVoted(udtProtocol::Id protocol)
+	{
+		return (protocol <= udtProtocol::Dm90) ? EF_VOTED_3_90 : 0;
+	}
+
+	s32 AwardImpressive(udtProtocol::Id)
+	{
+		return EF_AWARD_IMPRESSIVE;
+	}
+
+	s32 AwardDefense(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? EF_AWARD_DEFEND_48p : 0;
+	}
+
+	s32 AwardAssist(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? EF_AWARD_ASSIST_48p : 0;
+	}
+
+	s32 AwardDenied(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48) ? EF_AWARD_DENIED_48p : 0;
+	}
+
+	s32 HasTeamVoted(udtProtocol::Id protocol)
+	{
+		return (protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm90) ? EF_TEAMVOTED_48_90 : 0;
 	}
 }
