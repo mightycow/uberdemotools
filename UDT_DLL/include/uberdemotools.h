@@ -834,7 +834,7 @@ struct udtPerfStatsDataType
 		Generic,    /* Format as a normal unsigned integer. */
 		Bytes,      /* Data size, in bytes. */
 		Throughput, /* Data throughput, in bytes/second. */
-		Duration,   /* Duration in milli-seconds. */
+		Duration,   /* Duration in micro-seconds. */
 		Percentage, /* Percentage multiplied by 10. */
 		Count
 	};

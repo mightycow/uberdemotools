@@ -1108,33 +1108,19 @@ void PerfStatsAddCurrentThread(u64* perfStats, u64 totalDemoByteCount)
 	perfStats[udtPerfStatsField::ResizeCount] += (u64)allocStats.ResizeCount;
 }
 
-void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationMs)
+void PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durationUs)
 {
 	const u64 extraByteCount = (u64)sizeof(udtParserContext) * (u64)threadCount;
 	perfStats[udtPerfStatsField::MemoryReserved] += extraByteCount;
 	perfStats[udtPerfStatsField::MemoryCommitted] += extraByteCount;
 	perfStats[udtPerfStatsField::MemoryUsed] += extraByteCount;
-	perfStats[udtPerfStatsField::Duration] = durationMs;
+	perfStats[udtPerfStatsField::Duration] = durationUs;
 	perfStats[udtPerfStatsField::ThreadCount] = (u64)threadCount;
 	perfStats[udtPerfStatsField::MemoryEfficiency] = 0;
-
-	if(durationMs > 0)
-	{
-		perfStats[udtPerfStatsField::DataThroughput] = (1000 * perfStats[udtPerfStatsField::DataProcessed]) / durationMs;
-	}
-	else
-	{
-		perfStats[udtPerfStatsField::DataThroughput] = 0;
-	}
-
-	if(perfStats[udtPerfStatsField::MemoryCommitted] > 0)
-	{
-		perfStats[udtPerfStatsField::MemoryEfficiency] = (1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted];
-	}
-	else
-	{
-		perfStats[udtPerfStatsField::MemoryEfficiency] = 0;
-	}
+	perfStats[udtPerfStatsField::DataThroughput] = (durationUs > 0) ? 
+		((1000000 * perfStats[udtPerfStatsField::DataProcessed]) / durationUs) : 0;
+	perfStats[udtPerfStatsField::MemoryEfficiency] = (perfStats[udtPerfStatsField::MemoryCommitted] > 0) ?
+		((1000 * perfStats[udtPerfStatsField::MemoryUsed]) / perfStats[udtPerfStatsField::MemoryCommitted]) : 0;
 }
 
 void WriteStringToApiStruct(u32& offset, const udtString& string)

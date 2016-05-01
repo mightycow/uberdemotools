@@ -3326,6 +3326,16 @@ namespace Uber.DemoTools
             return number.ToString("F3") + " " + units[unitIndex];
         }
 
+        private static string FormatThroughput(ulong bytesPerSecond)
+        {
+            if(bytesPerSecond == 0)
+            {
+                return "N/A";
+            }
+
+            return FormatBytes(bytesPerSecond) + "/s";
+        }
+
         public static string SafeGetUTF8String(IntPtr address, string onError)
         {
             if(address == IntPtr.Zero)
@@ -3530,7 +3540,8 @@ namespace Uber.DemoTools
 
             if(BitManip.IsBitSet(config.CSharpPerfStatsEnabled, (int)CSharpPerfStats.Duration))
             {
-                App.GlobalLogInfo("- Duration (C#): " + App.FormatPerformanceTime(timer.ElapsedMilliseconds));
+                var microSeconds = 1000000.0 * ((double)timer.ElapsedTicks / (double)Stopwatch.Frequency);
+                App.GlobalLogInfo("- Duration (C#): " + App.FormatPerformanceTimeUs((long)microSeconds));
             }
         }
 
@@ -3539,13 +3550,13 @@ namespace Uber.DemoTools
             switch(type)
             {
                 case udtPerfStatsDataType.Duration:
-                    return App.FormatPerformanceTime((long)value);
+                    return App.FormatPerformanceTimeUs((long)value);
 
                 case udtPerfStatsDataType.Bytes:
                     return FormatBytes(value);
 
                 case udtPerfStatsDataType.Throughput:
-                    return FormatBytes(value) + "/s";
+                    return FormatThroughput(value);
 
                 case udtPerfStatsDataType.Percentage:
                     return ((float)value / 10.0f).ToString() + @"%";
