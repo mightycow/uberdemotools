@@ -3,7 +3,7 @@
 
 #define  UDT_VERSION_MAJOR     1
 #define  UDT_VERSION_MINOR     2
-#define  UDT_VERSION_REVISION  0
+#define  UDT_VERSION_REVISION  1
 
 #define  UDT_QUOTE(name)            #name
 #define  UDT_STR(macro)             UDT_QUOTE(macro)
@@ -834,7 +834,7 @@ struct udtPerfStatsDataType
 		Generic,    /* Format as a normal unsigned integer. */
 		Bytes,      /* Data size, in bytes. */
 		Throughput, /* Data throughput, in bytes/second. */
-		Duration,   /* Duration in milli-seconds. */
+		Duration,   /* Duration in micro-seconds. */
 		Percentage, /* Percentage multiplied by 10. */
 		Count
 	};

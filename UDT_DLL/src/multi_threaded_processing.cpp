@@ -392,7 +392,7 @@ thread_clean_up:
 	if(success && parseInfo->PerformanceStats != NULL)
 	{
 		PerfStatsAddCurrentThread(parseInfo->PerformanceStats, 0);
-		PerfStatsFinalize(parseInfo->PerformanceStats, threadCount, jobTimer.GetElapsedMs());
+		PerfStatsFinalize(parseInfo->PerformanceStats, threadCount, jobTimer.GetElapsedUs());
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)

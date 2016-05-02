@@ -177,10 +177,10 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.7.0";
+        private const string GuiVersion = "0.7.1";
         private const uint MinimumDllVersionMajor = 1;
         private const uint MinimumDllVersionMinor = 2;
-        private const uint MinimumDllVersionRevision = 0;
+        private const uint MinimumDllVersionRevision = 1;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -2278,24 +2278,34 @@ namespace Uber.DemoTools
             }
         }
 
-        public static string FormatPerformanceTime(long elapsedMs)
+        public static string FormatPerformanceTimeUs(long elapsedUs)
         {
-            var msecTotal = elapsedMs;
-            if(msecTotal < 1000)
+            if(elapsedUs <= 0)
             {
-                return msecTotal.ToString() + "ms";
+                return "< 1ms";
             }
 
-            var secTotal = msecTotal / 1000;
+            var usecTotal = elapsedUs;
+            if(usecTotal < 1000)
+            {
+                return (usecTotal / 1000.0).ToString("0.0") + "ms";
+            }
+
+            if(usecTotal < 1000000)
+            {
+                return (usecTotal / 1000).ToString() + "ms";
+            }
+
+            var secTotal = usecTotal / 1000000;
             if(secTotal < 10)
             {
-                var secs = msecTotal / 1000.0;
+                var secs = usecTotal / 1000000.0;
                 return secs.ToString(".00") + "s";
             }
 
             if(secTotal < 100)
             {
-                var secs = msecTotal / 1000.0;
+                var secs = usecTotal / 1000000.0;
                 return secs.ToString(".0") + "s";
             }
 

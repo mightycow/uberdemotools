@@ -1,3 +1,6 @@
+1.2.1 (01.05.2016)
+FIX: Divide by 0 exception when no memory was committed or the total job duration is less than 1 ms
+
 1.2.0 (30.04.2016)
 ADD: Searching for patterns with udtFindPatternsInDemoFiles
 ADD: Custom parsing API to help develop other analysis tools (or a 2D viewer?)

@@ -625,7 +625,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	if(info->PerformanceStats != NULL)
 	{
 		PerfStatsAddCurrentThread(info->PerformanceStats, actualProcessedByteCount);
-		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedMs());
+		PerfStatsFinalize(info->PerformanceStats, 1, jobTimer.GetElapsedUs());
 	}
 
 #if defined(UDT_DEBUG) && defined(UDT_LOG_ALLOCATOR_DEBUG_STATS)
