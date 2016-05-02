@@ -138,13 +138,16 @@ If you have a standard hard drive and not an SSD, make sure to leave the `Maximu
 
 Here are the throughputs (in MB/s), for each thread count, when parsing with all analyzers enabled:
 
-| Machine Config         | 1    | 2     | 3     | 4     |
-|:-----------------------|-----:|------:|------:|------:|
-| i7 2600k<sup>[1]</sup> | 51   | 101   | 141   | 169   |
-| i7 3770k<sup>[2]</sup> | 60   | 120   | 167   | 216   |
+| Machine Config         | 1    | 2     | 3     | 4     | 5     | 6     | 7     | 8                  |
+|:-----------------------|-----:|------:|------:|------:|------:|------:|------:|-------------------:|
+| i7 2600K<sup>[1]</sup> | 51   | 101   | 141   | 169   |       |       |       |                    |
+| i7 3770K<sup>[2]</sup> | 60   | 120   | 167   | 216   |       |       |       |                    |
+| i7 5960X<sup>[3]</sup> | 61   | 122   | 180   | 235   | 306   | 347   | 382   | 400+<sup>[4]</sup> |
 
 1) Intel Core i7 2600K CPU (4 cores) + Intel X25-M SSD  
 2) Intel Core i7 3770K CPU (4 cores) + Samsung 850 EVO SSD  
+3) Intel Core i7 5960X CPU (8 cores) + Samsung 850 EVO SSD  
+4) The SSD seems to freeze for a bit thus slowing things down
 
 Build date: April 18, 2016.
 
