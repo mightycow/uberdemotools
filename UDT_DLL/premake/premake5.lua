@@ -19,8 +19,9 @@ local function ApplyTargetAndLinkSettings()
 		
 	filter { "configurations:Debug", "platforms:x64" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/debug" )
-		
-	filter { "configurations:Release", "platforms:x32" }
+	
+	-- Release, ReleaseInst, ReleaseOpt	
+	filter { "configurations:Release*", "platforms:x32" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
 		
 	-- Release, ReleaseInst, ReleaseOpt
@@ -48,10 +49,14 @@ local function ApplyProjectSettings()
 	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
 	
 	-- The PG instrumented and PG optimized builds need to share their .obj files.
-	filter "configurations:ReleaseInst"
-		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
-	filter "configurations:ReleaseOpt"
-		objdir "!../.build/vs/obj/x64/ReleaseInst/%{prj.name}"
+	filter { "configurations:ReleaseInst", "platforms:x32" }
+		objdir "!../.build/vs_pgo/obj/x32/ReleaseInst/%{prj.name}"
+	filter { "configurations:ReleaseOpt", "platforms:x32" }
+		objdir "!../.build/vs_pgo/obj/x32/ReleaseInst/%{prj.name}"
+	filter { "configurations:ReleaseInst", "platforms:x64" }
+		objdir "!../.build/vs_pgo/obj/x64/ReleaseInst/%{prj.name}"
+	filter { "configurations:ReleaseOpt", "platforms:x64" }
+		objdir "!../.build/vs_pgo/obj/x64/ReleaseInst/%{prj.name}"
 	
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
