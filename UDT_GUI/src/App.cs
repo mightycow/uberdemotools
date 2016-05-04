@@ -78,6 +78,10 @@ namespace Uber.DemoTools
         public string PatternCutPlayerName = "";
         public UInt32 FragCutAllowedMeansOfDeaths = 0;
         public UDT_DLL.udtProtocol ConversionOutputProtocol = UDT_DLL.udtProtocol.Invalid;
+        public bool QuitAfterFirstJob = false;
+        public bool ForceAnalyzeOnLoad = false;
+        public bool ForceSkipFolderScanDialog = false;
+        public bool ForceScanFoldersRecursively = false;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -856,6 +860,22 @@ namespace Uber.DemoTools
                 {
                     folderPaths.Add(Path.GetFullPath(arg));
                 }
+                else if(arg.ToLower() == "/quitafterfirstjob")
+                {
+                    _privateConfig.QuitAfterFirstJob = true;
+                }
+                else if(arg.ToLower() == "/forceanalyzeonload")
+                {
+                    _privateConfig.ForceAnalyzeOnLoad = true;
+                }
+                else if(arg.ToLower() == "/forceskipfolderscandialog")
+                {
+                    _privateConfig.ForceSkipFolderScanDialog = true;
+                }
+                else if(arg.ToLower() == "/forcescanfoldersrecursively")
+                {
+                    _privateConfig.ForceScanFoldersRecursively = true;
+                }
             }
 
             if(cmdLineArgs.Length == 0 && 
@@ -980,9 +1000,9 @@ namespace Uber.DemoTools
             {
                 var recursive = false;
 
-                if(_config.SkipScanFoldersRecursivelyDialog)
+                if(_privateConfig.ForceSkipFolderScanDialog || _config.SkipScanFoldersRecursivelyDialog)
                 {
-                    recursive = _config.ScanFoldersRecursively;
+                    recursive = _privateConfig.ForceScanFoldersRecursively || _config.ScanFoldersRecursively;
                 }
                 else
                 {
@@ -1903,12 +1923,10 @@ namespace Uber.DemoTools
                 _demoListView.SelectedIndex = 0;
             }
 
-            if(!_config.AnalyzeOnLoad)
+            if(_privateConfig.ForceAnalyzeOnLoad || _config.AnalyzeOnLoad)
             {
-                return;
+                AnalyzeDemos(newDemos);
             }
-
-            AnalyzeDemos(newDemos);
         }
 
         private void AnalyzeDemos(List<DemoInfo> demos)
@@ -3241,6 +3259,10 @@ namespace Uber.DemoTools
                 {
                     _window.Title = "UDT";
                     _demoListView.Focus();
+                    if(_privateConfig.QuitAfterFirstJob)
+                    {
+                        OnQuit();
+                    }
                 };
                 _window.Dispatcher.Invoke(uiResetter);
             }
