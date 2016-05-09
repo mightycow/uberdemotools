@@ -117,7 +117,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	ProcessDemoTakerName(info.ClientNum, parser._inConfigStrings, parser._inProtocol);
 	ProcessSystemAndServerInfo(systemAndServerString);
 
-	const s32 playerCSBaseIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 playerCSBaseIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
@@ -152,7 +152,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 		return;
 	}
 
-	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(_protocol);
+	const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol);
 	if(csIndex >= firstPlayerCsIndex && csIndex < firstPlayerCsIndex + 64)
 	{
 		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex]);
@@ -244,7 +244,7 @@ void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtSt
 		return;
 	}
 
-	const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(protocol);
+	const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, protocol);
 	const udtString& cs = configStrings[firstPlayerCsIndex + playerIndex];
 	if(udtString::IsNullOrEmpty(cs))
 	{

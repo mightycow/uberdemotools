@@ -87,7 +87,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 	   udtString::Equals(command, "cs"))
 	{
 		s32 csIndex = -1;
-		const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 		if(StringParseInt(csIndex, tokenizer.GetArgString(1)) &&
 		   csIndex >= firstPlayerCsIndex &&
 		   csIndex < firstPlayerCsIndex + 64)
@@ -118,7 +118,7 @@ void udtParserPlugInChat::ProcessGamestateMessage(const udtGamestateCallbackArg&
 
 	if(parser._inProtocol <= udtProtocol::Dm68)
 	{
-		const s32 firstPlayerCsIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 		for(s32 i = 0; i < 64; ++i)
 		{
 			ProcessPlayerConfigString(parser, parser.GetConfigString(firstPlayerCsIndex + i), i);
@@ -295,7 +295,7 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	   locationIdx >= 0 &&
 	   locationIdx < MAX_LOCATIONS)
 	{
-		const udtString& cs = parser.GetConfigString(CS_LOCATIONS_68 + locationIdx);
+		const udtString& cs = parser.GetConfigString(608 + locationIdx);
 		if(!udtString::IsNull(cs))
 		{
 			const udtString location = udtString::NewCloneFromRef(_stringAllocator, cs);
@@ -313,7 +313,7 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	WriteStringToApiStruct(chatEvent.Strings[1].Message, cleanMessage);
 
 	udtString playerName;
-	const s32 firstPlayerIndex = idConfigStringIndex::FirstPlayer(protocol);
+	const s32 firstPlayerIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, protocol);
 	if(firstPlayerIndex != -1 &&
 	   ParseConfigStringValueString(playerName, _stringAllocator, "n", parser._inConfigStrings[firstPlayerIndex + clientNumber].GetPtr()))
 	{
@@ -344,7 +344,7 @@ void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEv
 
 	chatEvent.PlayerIndex = playerIndex;
 
-	const char* const cs = parser._inConfigStrings[idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex].GetPtr();
+	const char* const cs = parser._inConfigStrings[GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol) + playerIndex].GetPtr();
 	udtString clan, player;
 	bool hasClan;
 	if(!GetClanAndPlayerName(clan, player, hasClan, *TempAllocator, parser._inProtocol, cs))

@@ -1,4 +1,5 @@
 #include "converter_udt_to_quake.hpp"
+#include "utils.hpp"
 
 
 udtdConverter::udtdConverter()
@@ -433,94 +434,18 @@ static bool IsMoving(const idEntityStateBase& old, const idEntityStateBase& cur)
 	return memcmp(old.pos.trBase, cur.pos.trBase, sizeof(idVec3)) != 0;
 }
 
-static void PlayerStateToEntityState(idEntityStateBase& es, s32 lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
-{
-	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
-	if(ps.pm_type == PM_INTERMISSION || ps.pm_type == PM_SPECTATOR)
-	{
-		es.eType = ET_INVISIBLE;
-	}
-	else if(ps.stats[healthStatIdx] <= GIB_HEALTH)
-	{
-		es.eType = ET_INVISIBLE;
-	}
-	else
-	{
-		es.eType = ET_PLAYER;
-	}
-
-	es.number = ps.clientNum;
-
-	Float3::Copy(es.pos.trBase, ps.origin);
-	Float3::Copy(es.pos.trDelta, ps.velocity); // set the trDelta for flag direction
-	if(extrapolate)
-	{
-		es.pos.trType = TR_LINEAR_STOP;
-		es.pos.trTime = serverTimeMs; // set the time for linear prediction
-		es.pos.trDuration = 50; // set maximum extrapolation time: 1000 / sv_fps (default = 20)
-	}
-	else
-	{
-		es.pos.trType = TR_INTERPOLATE;
-	}
-
-	es.apos.trType = TR_INTERPOLATE;
-	Float3::Copy(es.apos.trBase, ps.viewangles);
-
-	es.angles2[YAW] = (f32)ps.movementDir;
-	es.legsAnim = ps.legsAnim;
-	es.torsoAnim = ps.torsoAnim;
-	es.clientNum = ps.clientNum;
-	// ET_PLAYER looks here instead of at number
-	// so corpses can also reference the proper config
-	es.eFlags = ps.eFlags;
-	if(ps.stats[healthStatIdx] <= 0)
-	{
-		es.eFlags |= EF_DEAD;
-	}
-	else
-	{
-		es.eFlags &= ~EF_DEAD;
-	}
-
-	if(ps.eventSequence != lastEventSequence)
-	{
-		const s32 seq = (ps.eventSequence & 1) ^ 1;
-		es.event = ps.events[seq];
-		es.eventParm = ps.eventParms[seq];
-	}
-	else
-	{
-		es.event = 0;
-		es.eventParm = 0;
-	}
-
-	es.weapon = ps.weapon;
-	es.groundEntityNum = ps.groundEntityNum;
-
-	es.powerups = 0;
-	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; i++)
-	{
-		if(ps.powerups[i])
-		{
-			es.powerups |= 1 << i;
-		}
-	}
-
-	es.loopSound = ps.loopSound;
-	es.generic1 = ps.generic1;
-}
-
 void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& destOld, const udtdSnapshotData& source, const udtdSnapshotData& sourceOld)
 {
+	const s32 idEntityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, _protocol);
+	const s32 idEntityTypeItemId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Item, _protocol);
 	for(u32 i = 0; i < MAX_GENTITIES; ++i)
 	{
 		const idEntityStateBase& sourceEnt = source.Entities[i].EntityState;
-		if(sourceEnt.eType == ET_PLAYER)
+		if(sourceEnt.eType == idEntityTypePlayerId)
 		{
 			MergePlayerEntity(dest, destOld, source, sourceOld, i);
 		}
-		else if(sourceEnt.eType == ET_ITEM)
+		else if(sourceEnt.eType == idEntityTypeItemId)
 		{
 			MergeItemEntity(dest, destOld, source, sourceOld, i);
 		}
@@ -537,16 +462,18 @@ void udtdConverter::MergeEntities(udtdSnapshotData& dest, udtdSnapshotData& dest
 	const s32 firstPersonNumber = source.PlayerState.clientNum;
 
 	dest.Entities[firstPersonNumber].Valid = true;
-	PlayerStateToEntityState(dest.Entities[firstPersonNumber].EntityState, sourceOld.PlayerState.eventSequence, source.PlayerState, false, dest.ServerTime, _protocol);
+	s32 eventSeqCopy = sourceOld.PlayerState.eventSequence;
+	PlayerStateToEntityState(dest.Entities[firstPersonNumber].EntityState, eventSeqCopy, source.PlayerState, false, dest.ServerTime, _protocol);
 }
 
 bool udtdConverter::IsPlayerAlreadyDefined(const udtdSnapshotData& snapshot, s32 clientNum, s32 entityNumber)
 {
+	const s32 idEntityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, _protocol);
 	for(s32 i = 0; i < MAX_GENTITIES; ++i)
 	{
 		if(snapshot.Entities[i].Valid &&
 		   i != entityNumber &&
-		   snapshot.Entities[i].EntityState.eType == ET_PLAYER &&
+		   snapshot.Entities[i].EntityState.eType == idEntityTypePlayerId &&
 		   snapshot.Entities[i].EntityState.clientNum == clientNum)
 		{
 			return true;

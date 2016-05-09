@@ -460,7 +460,7 @@ static bool CutByMatchSingleFile(udtParseArg& parseArg, const char* filePath, co
 
 static bool HasCuttableDemoFileExtension(const udtString& filePath)
 {
-	for(u32 i = (u32)udtProtocol::FirstCuttableProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
+	for(u32 i = (u32)udtProtocol::FirstCuttableProtocol; i < (u32)udtProtocol::Count; ++i)
 	{
 		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
 		if(udtString::EndsWithNoCase(filePath, extension))

@@ -56,11 +56,8 @@ void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		{
 			continue;
 		}
-		
-		// @NOTE: eventInfo.MeanOfDeath is of type udtMeanOfDeath::Id.
-		const s32 idMeanOfDeath = arg.Entities[i].Entity->eventParm;
-		const u32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, parser._inProtocol);
-		if(udtWeapon == udtWeapon::Railgun)
+
+		if(eventInfo.MeanOfDeath == (u32)udtMeanOfDeath::Railgun)
 		{
 			++railKillCount;
 		}

@@ -1,5 +1,6 @@
 #include "plug_in_custom_parser.hpp"
 #include "custom_context.hpp"
+#include "utils.hpp"
 
 
 udtCustomParsingPlugIn::udtCustomParsingPlugIn()
@@ -103,15 +104,16 @@ void udtCustomParsingPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& 
 	_context->Commands.Add(cmd);
 }
 
-void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser&)
+void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const u32 entityCount = arg.EntityCount;
+	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
 	udtVMArray<const idEntityStateBase*>& changedEntities = _context->ChangedEntities;
 	changedEntities.Clear();
 	for(u32 i = 0; i < entityCount; ++i)
 	{
 		idEntityStateBase* const ent = arg.Entities[i].Entity;
-		if(ent->eType >= ET_EVENTS)
+		if(ent->eType >= entityTypeEventId)
 		{
 			if(!arg.Entities[i].IsNewEvent)
 			{
@@ -120,8 +122,8 @@ void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			}
 
 			// Simplify stuff for our user a bit.
-			ent->event = (ent->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
-			ent->eType = ET_EVENTS;
+			ent->event = (ent->eType - entityTypeEventId) & (~ID_ES_EVENT_BITS);
+			ent->eType = entityTypeEventId;
 		}
 
 		changedEntities.Add(arg.Entities[i].Entity);

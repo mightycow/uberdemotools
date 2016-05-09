@@ -162,8 +162,8 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	{
 		ProcessQ3AndQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 		ProcessQLServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
-		const s32 startIdx = idConfigStringIndex::PauseStart(_protocol);
-		const s32 endIdx = idConfigStringIndex::PauseEnd(_protocol);
+		const s32 startIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::PauseStart, _protocol);
+		const s32 endIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::PauseEnd, _protocol);
 		if(startIdx != -1 && endIdx != -1)
 		{
 			ProcessQLPauseStartConfigString(parser._inConfigStrings[startIdx].GetPtr());
@@ -316,11 +316,13 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 	{
 		ProcessCPMARoundInfoConfigString(configString);
 	}
-	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
+	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && 
+			csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::LevelStartTime, _protocol))
 	{
 		UpdateMatchStartTime();
 	}
-	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && csIndex == idConfigStringIndex::WarmUpEndTime(_protocol))
+	else if((_game == udtGame::Q3 || _game == udtGame::OSP) && 
+			csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::WarmUpEndTime, _protocol))
 	{
 		const s32 warmUpEndTime = GetWarmUpEndTime();
 		if(warmUpEndTime > 0)
@@ -328,7 +330,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 			_warmUpEndTime = _parser->_inServerTime;
 		}
 	}
-	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::LevelStartTime(_protocol))
+	else if(_game == udtGame::QL && csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::LevelStartTime, _protocol))
 	{
 		if(_timeOutCount == 0 && !_timeOut)
 		{
@@ -340,7 +342,7 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 			_totalTimeOutDuration = shiftedStartTime - _matchStartTime;
 		}
 	}
-	else if(_game != udtGame::CPMA && csIndex == idConfigStringIndex::Intermission(_protocol))
+	else if(_game != udtGame::CPMA && csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Intermission, _protocol))
 	{	
 		ProcessIntermissionConfigString(tokenizer.GetArg(2));
 	}
@@ -348,19 +350,19 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 	{
 		ProcessOSPGamePlayConfigString(configString);
 	}
-	else if(csIndex == CS_SCORES2)
+	else if(csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores2, _protocol))
 	{
 		ProcessScores2(configString);
 	}
-	else if(csIndex == idConfigStringIndex::SecondPlacePlayerName(_protocol))
+	else if(csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::SecondPlacePlayerName, _protocol))
 	{
 		ProcessScores2Player(configString);
 	}
-	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::PauseStart(_protocol))
+	else if(_game == udtGame::QL && csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::PauseStart, _protocol))
 	{
 		ProcessQLPauseStartConfigString(configString);
 	}
-	else if(_game == udtGame::QL && csIndex == idConfigStringIndex::PauseEnd(_protocol))
+	else if(_game == udtGame::QL && csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::PauseEnd, _protocol))
 	{
 		ProcessQLPauseEndConfigString(configString);
 	}
@@ -602,15 +604,15 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		   (u32)_gameType < gameTypeCount)
 		{
 			const u8 flags = gameTypeFlags[_gameType];
-			if(flags & (u8)udtGameTypeFlags::HasCaptureLimit)
+			if(flags & (u8)udtGameTypeFlag::HasCaptureLimit)
 			{
 				_captureLimit = sl;
 			}
-			else if(flags & (u8)udtGameTypeFlags::HasFragLimit)
+			else if(flags & (u8)udtGameTypeFlag::HasFragLimit)
 			{
 				_fragLimit = sl;
 			}
-			else if(flags & (u8)udtGameTypeFlags::HasRoundLimit)
+			else if(flags & (u8)udtGameTypeFlag::HasRoundLimit)
 			{
 				_roundLimit = sl;
 			}
@@ -808,8 +810,16 @@ void udtGeneralAnalyzer::ProcessGameTypeFromServerInfo(const char* configString)
 		return;
 	}
 
-	const s32 udtGT = GetUDTGameTypeFromIdGameType(gameType, _protocol, _game);
-	if(udtGT >= 0 && udtGT < (s32)udtGameType::Count)
+	udtMod::Id mod;
+	switch(_game)
+	{
+		case udtGame::CPMA: mod = udtMod::CPMA; break;
+		case udtGame::OSP: mod = udtMod::OSP; break;
+		default: mod = udtMod::None; break;
+	}
+
+	u32 udtGT;
+	if(GetUDTNumber(udtGT, udtMagicNumberType::GameType, gameType, _protocol, mod))
 	{
 		_gameType = (udtGameType::Id)udtGT;
 	}
@@ -1061,7 +1071,7 @@ void udtGeneralAnalyzer::ProcessMapNameOnce()
 
 s32 udtGeneralAnalyzer::GetLevelStartTime()
 {
-	const s32 csIndex = idConfigStringIndex::LevelStartTime(_protocol);
+	const s32 csIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::LevelStartTime, _protocol);
 	const udtString& cs = _parser->GetConfigString(csIndex);
 	if(udtString::IsNullOrEmpty(cs))
 	{
@@ -1085,7 +1095,7 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 	// When a game starts, the config string gets cleared ("" string).
 	// It can either be encoded as "$(time)" or "\time\$(time)". :-(
 	// When "\time\$(time)", 0 and -1 have a different meaning it seems.
-	const s32 csIndex = idConfigStringIndex::WarmUpEndTime(_protocol);
+	const s32 csIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::WarmUpEndTime, _protocol);
 	const udtString& cs = _parser->GetConfigString(csIndex);
 	if(udtString::IsNullOrEmpty(cs))
 	{
@@ -1109,7 +1119,7 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 
 bool udtGeneralAnalyzer::IsIntermission()
 {
-	const s32 csIndex = idConfigStringIndex::Intermission(_protocol);
+	const s32 csIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Intermission, _protocol);
 	const udtString& cs = _parser->GetConfigString(csIndex);
 	if(udtString::IsNullOrEmpty(cs))
 	{

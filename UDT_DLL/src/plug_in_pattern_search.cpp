@@ -54,12 +54,12 @@ static bool MatchesRule(udtVMLinearAllocator& allocator, const udtString& config
 {
 	udtString name = udtString::NewCloneFromRef(allocator, configStringName);
 	udtString value = udtString::NewClone(allocator, rule.Value);
-	if((rule.Flags & (u32)udtStringMatchingRuleFlags::CaseSensitive) == 0)
+	if((rule.Flags & (u32)udtStringMatchingRuleFlag::CaseSensitive) == 0)
 	{
 		udtString::MakeLowerCase(name);
 		udtString::MakeLowerCase(value);
 	}
-	if((rule.Flags & (u32)udtStringMatchingRuleFlags::IgnoreColorCodes) != 0)
+	if((rule.Flags & (u32)udtStringMatchingRuleFlag::IgnoreColorCodes) != 0)
 	{
 		udtString::CleanUp(name, protocol);
 		udtString::CleanUp(value, protocol);
@@ -205,7 +205,7 @@ void udtPatternSearchPlugIn::FindPlayerInConfigStrings(udtBaseParser& parser)
 {
 	const udtPatternSearchArg pi = GetInfo();
 
-	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < ID_MAX_CLIENTS; ++i)
 	{
 		udtVMScopedStackAllocator allocatorScope(*TempAllocator);
@@ -229,7 +229,7 @@ void udtPatternSearchPlugIn::FindPlayerInServerCommand(const udtCommandCallbackA
 		return;
 	}
 
-	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	const s32 playerIndex = info.ConfigStringIndex - firstPlayerCsIdx;
 	if(playerIndex < 0 || playerIndex >= ID_MAX_CLIENTS)
 	{
@@ -337,7 +337,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	// Create a new list with the sorted data using the final data format
 	// and merge the sections if asked for it.
 	//
-	if((GetInfo().Flags & (u32)udtPatternSearchArgFlags::MergeCutSections) != 0)
+	if((GetInfo().Flags & (u32)udtPatternSearchArgFlag::MergeCutSections) != 0)
 	{
 		udtVMArray<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
 		AppendCutSections(cutSections, tempCutSections);

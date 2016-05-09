@@ -212,7 +212,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 	ClearStats(true);
 
-	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
+	const s32 firstPlayerCs = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		ProcessPlayerConfigString(parser.GetConfigString(firstPlayerCs + i).GetPtr(), i);
@@ -225,8 +225,10 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	}
 	else
 	{
-		ProcessConfigString(CS_SCORES1, parser.GetConfigString(CS_SCORES1));
-		ProcessConfigString(CS_SCORES2, parser.GetConfigString(CS_SCORES2));
+		const s32 scores1Id = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores1, _protocol);
+		const s32 scores2Id = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores2, _protocol);
+		ProcessConfigString(scores1Id, parser.GetConfigString(scores1Id));
+		ProcessConfigString(scores2Id, parser.GetConfigString(scores2Id));
 	}
 }
 
@@ -348,7 +350,7 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 		return;
 	}
 
-	const s32 firstPlayerCs = idConfigStringIndex::FirstPlayer(_protocol);
+	const s32 firstPlayerCs = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol);
 	if(csIndex >= firstPlayerCs && csIndex < firstPlayerCs + 64)
 	{
 		ProcessPlayerConfigString(configString.GetPtr(), csIndex - firstPlayerCs);
@@ -408,7 +410,8 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 			_stats.SecondPlaceWon = 1;
 		}
 	}
-	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES1)
+	else if(_analyzer.Mod() != udtMod::CPMA && 
+			csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores1, _protocol))
 	{
 		s32 score = -1;
 		if(StringParseInt(score, configString.GetPtr()))
@@ -425,7 +428,8 @@ void udtParserPlugInStats::ProcessConfigString(s32 csIndex, const udtString& con
 			}
 		}
 	}
-	else if(_analyzer.Mod() != udtMod::CPMA && csIndex == CS_SCORES2)
+	else if(_analyzer.Mod() != udtMod::CPMA && 
+			csIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores2, _protocol))
 	{
 		s32 score = -1;
 		if(StringParseInt(score, configString.GetPtr()))
@@ -2578,8 +2582,12 @@ void udtParserPlugInStats::AddCurrentStats()
 	{
 		// Fix the weapon index.
 		s32& bestWeapon = GetPlayerFields(i)[udtPlayerStatsField::BestWeapon];
-		bestWeapon = GetUDTWeaponFromIdWeapon(bestWeapon, _protocol);
-		if(bestWeapon == -1)
+		u32 udtWeaponId;
+		if(GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, bestWeapon, _protocol))
+		{
+			bestWeapon = (s32)udtWeaponId;
+		}
+		else
 		{
 			bestWeapon = (s32)udtWeapon::Gauntlet;
 		}
@@ -2889,19 +2897,19 @@ void udtParserPlugInStats::AddCurrentStats()
 	   (u32)_stats.GameType < gameTypeCount)
 	{
 		const u8 flags = gameTypeFlags[_stats.GameType];
-		if((flags & (u8)udtGameTypeFlags::HasScoreLimit) == 0)
+		if((flags & (u8)udtGameTypeFlag::HasScoreLimit) == 0)
 		{
 			scoreLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlags::HasFragLimit) == 0)
+		if((flags & (u8)udtGameTypeFlag::HasFragLimit) == 0)
 		{
 			fragLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlags::HasCaptureLimit) == 0)
+		if((flags & (u8)udtGameTypeFlag::HasCaptureLimit) == 0)
 		{
 			captureLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlags::HasRoundLimit) == 0)
+		if((flags & (u8)udtGameTypeFlag::HasRoundLimit) == 0)
 		{
 			roundLimit = 0;
 		}

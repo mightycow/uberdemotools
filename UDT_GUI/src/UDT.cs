@@ -704,7 +704,6 @@ namespace Uber.DemoTools
 
         public enum udtProtocol : uint
         {
-            Invalid,
             Dm3,
             Dm48,
             Dm66,
@@ -712,7 +711,9 @@ namespace Uber.DemoTools
             Dm68,
             Dm73,
             Dm90,
-            Dm91
+            Dm91,
+            Count,
+            Invalid
         }
 
         public enum udtErrorCode : int
@@ -752,7 +753,7 @@ namespace Uber.DemoTools
             Count
         }
 
-        public enum udtWeaponBits : uint
+        public enum udtWeaponMask : uint
         {
             Gauntlet = 1 << 0,
             MachineGun = 1 << 1,
@@ -1818,11 +1819,11 @@ namespace Uber.DemoTools
             UInt32 weaponFlags = 0;
             if(config.MidAirCutAllowRocket)
             {
-                weaponFlags |= (UInt32)udtWeaponBits.Rocket;
+                weaponFlags |= (UInt32)udtWeaponMask.Rocket;
             }
             if(config.MidAirCutAllowBFG)
             {
-                weaponFlags |= (UInt32)udtWeaponBits.BFG;
+                weaponFlags |= (UInt32)udtWeaponMask.BFG;
             }
 
             var rules = new udtMidAirPatternArg();

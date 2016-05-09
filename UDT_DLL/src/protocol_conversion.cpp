@@ -32,43 +32,43 @@ Different:
 
 static s32 ConvertConfigStringIndex73or90to91(s32 index)
 {
-	if(index <= CS_SHADERSTATE_73p ||
-	   (index >= CS_TIMEOUT_BEGIN_TIME_73p && index <= CS_BLUE_TEAM_TIMEOUTS_LEFT_73p))
+	if(index <= 665 ||
+	   (index >= 669 && index <= 672))
 	{
 		return index;
 	}
 
 	switch(index)
 	{
-		case CS_MAP_CREATOR_73p: return (s32)CS_AUTHOR_91;
-		case CS_ORIGINAL_MAP_CREATOR_73p: return (s32)CS_AUTHOR2_91;
-		case CS_PMOVE_SETTINGS_73p: return (s32)CS_PMOVEINFO_91;
-		case CS_ARMOR_TIERED_73p: return (s32)CS_ARMORINFO_91;
-		case CS_WEAPON_SETTINGS_73p: return (s32)CS_WEAPONINFO_91;
-		case CS_CUSTOM_PLAYER_MODELS_73p: return (s32)CS_PLAYERINFO_91;
-		case CS_FIRST_PLACE_CLIENT_NUM_73p: return (s32)CS_CLIENTNUM1STPLAYER_91;
-		case CS_SECOND_PLACE_CLIENT_NUM_73p: return (s32)CS_CLIENTNUM2NDPLAYER_91;
-		case CS_FIRST_PLACE_SCORE_73p: return (s32)CS_SCORE1STPLAYER_91;
-		case CS_SECOND_PLACE_SCORE_73p: return (s32)CS_SCORE2NDPLAYER_91;
-		case CS_MOST_DAMAGE_DEALT_73p: return (s32)CS_MOST_DAMAGEDEALT_PLYR_91;
-		case CS_MOST_ACCURATE_73p: return (s32)CS_MOST_ACCURATE_PLYR_91;
-		case CS_BEST_ITEM_CONTROL_73p: return (s32)CS_BEST_ITEMCONTROL_PLYR_91;
-		case CS_RED_TEAM_CLAN_NAME_73p: return (s32)CS_REDTEAMBASE_91;
-		case CS_BLUE_TEAM_CLAN_NAME_73p: return (s32)CS_BLUETEAMBASE_91;
-		case CS_RED_TEAM_CLAN_TAG_73p: return (s32)CS_REDTEAMBASE_91;
-		case CS_BLUE_TEAM_CLAN_TAG_73p: return (s32)CS_BLUETEAMBASE_91;
-		case CS_MVP_OFFENSE_73p: return (s32)CS_MOST_VALUABLE_OFFENSIVE_PLYR_91;
-		case CS_MVP_DEFENSE_73p: return (s32)CS_MOST_VALUABLE_DEFENSIVE_PLYR_91;
-		case CS_MVP_73p: return (s32)CS_MOST_VALUABLE_PLYR_91;
-		case CS_DOMINATION_RED_POINTS_73p: return (s32)CS_GENERIC_COUNT_RED_91;
-		case CS_DOMINATION_BLUE_POINTS_73p: return (s32)CS_GENERIC_COUNT_BLUE_91;
-		case CS_ROUND_WINNERS_73p: return (s32)CS_ROUND_WINNER_91;
-		case CS_CUSTOM_SERVER_SETTINGS_73p: return (s32)CS_CUSTOM_SETTINGS_91;
-		case CS_MAP_VOTE_INFO_73p: return (s32)CS_ROTATIONMAPS_91;
-		case CS_MAP_VOTE_COUNT_73p: return (s32)CS_ROTATIONVOTES_91;
-		case CS_DISABLE_MAP_VOTE_73p: return (s32)CS_DISABLE_VOTE_UI_91;
-		case CS_READY_UP_TIME_73p: return (s32)CS_ALLREADY_TIME_91;
-		case CS_NUMBER_OF_RACE_CHECKPOINTS_73p: return (s32)CS_RACE_POINTS_91;
+		case 679: return (s32)678;
+		case 680: return (s32)679;
+		case 682: return (s32)681;
+		case 683: return (s32)682;
+		case 684: return (s32)683;
+		case 685: return (s32)684;
+		case 686: return (s32)687;
+		case 687: return (s32)688;
+		case 688: return (s32)685;
+		case 689: return (s32)686;
+		case 691: return (s32)692;
+		case 692: return (s32)693;
+		case 697: return (s32)696;
+		case 693: return (s32)694;
+		case 694: return (s32)695;
+		case 695: return (s32)694;
+		case 696: return (s32)695;
+		case 699: return (s32)697;
+		case 700: return (s32)698;
+		case 701: return (s32)699;
+		case 702: return (s32)700;
+		case 703: return (s32)701;
+		case 705: return (s32)703;
+		case 706: return (s32)704;
+		case 707: return (s32)705;
+		case 708: return (s32)706;
+		case 709: return (s32)707;
+		case 710: return (s32)708;
+		case 713: return (s32)710;
 		default: return -1;
 	}
 }
@@ -412,7 +412,7 @@ static s32 ConvertConfigStringIndex48to68(s32 index, s32 protocolNumber)
 
 	// It seems that the only thing that dm_48 with real protocol 43 has in common with dm3
 	// is that MAX_CLIENTS is 128 and there's nothing above or at index 736+.
-	if(index >= CS_LOCATIONS_3 && index < CS_LOCATIONS_3 + MAX_LOCATIONS)
+	if(index >= 672 && index < 672 + MAX_LOCATIONS)
 	{
 		return index - 64;
 	}
@@ -461,7 +461,7 @@ void udtProtocolConverter48to68::ConvertConfigString(udtConfigStringConversion& 
 
 static s32 ConvertConfigStringIndex3to68(s32 index)
 {
-	if(index <= 11 || (index >= 27 && index < CS_LOCATIONS_3 - 64))
+	if(index <= 11 || (index >= 27 && index < 672 - 64))
 	{
 		return index;
 	}
@@ -472,7 +472,7 @@ static s32 ConvertConfigStringIndex3to68(s32 index)
 	}
 
 	// dm3 had MAX_CLIENTS set as 128!
-	if(index >= CS_LOCATIONS_3 && index < CS_LOCATIONS_3 + MAX_LOCATIONS)
+	if(index >= 672 && index < 672 + MAX_LOCATIONS)
 	{
 		return index - 64;
 	}
@@ -549,12 +549,12 @@ static s32 ConvertEntityType3to68(s32 index)
 		return index;
 	}
 
-	if(index >= ET_EVENTS_3)
+	if(index >= 12)
 	{
-		return ET_EVENTS + udt_private::ConvertEntityEventNumber3to68_helper(index - ET_EVENTS_3);
+		return 13 + udt_private::ConvertEntityEventNumber3to68_helper(index - 12);
 	}
 
-	return ET_GENERAL;
+	return 0;
 }
 
 void udtProtocolConverter3to68::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)

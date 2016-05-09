@@ -31,6 +31,7 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	const udtFlickRailPatternArg& extraInfo = GetExtraInfo<udtFlickRailPatternArg>();
 	const udtPatternSearchArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
+	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlagBit::TeleportBit, parser._inProtocol);
 
 	bool trackedPlayerFound = false;
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);
@@ -43,17 +44,18 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		{
 			SnapshotInfo& snapshot = player.GetWriteSnapshot();
 			snapshot.ServerTimeMs = arg.ServerTime;
-			snapshot.TelePortBit = ps->eFlags & EF_TELEPORT_BIT;
+			snapshot.TelePortBit = ps->eFlags & entityFlagTeleportBit;
 			Float3::Copy(snapshot.Angles, ps->viewangles);
 			player.IncrementIndex();
 		}
 	}
 	else
 	{
+		const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
 		for(u32 i = 0; i < arg.EntityCount; ++i)
 		{
 			idEntityStateBase* const es = arg.Entities[i].Entity;
-			if(es->eType != ET_PLAYER || es->clientNum != trackedPlayerIndex)
+			if(es->eType != entityTypePlayerId || es->clientNum != trackedPlayerIndex)
 			{
 				continue;
 			}
@@ -67,7 +69,7 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 				// However, the delta seems to always be 0, so I'm only using apos.trBase.
 				SnapshotInfo& snapshot = player.GetWriteSnapshot();
 				snapshot.ServerTimeMs = arg.ServerTime;
-				snapshot.TelePortBit = es->eFlags & EF_TELEPORT_BIT;
+				snapshot.TelePortBit = es->eFlags & entityFlagTeleportBit;
 				Float3::Copy(snapshot.Angles, es->apos.trBase);
 				player.IncrementIndex();
 			}
@@ -80,8 +82,8 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	{
 		return;
 	}
-
-	const s32 obituaryEvtId = idEntityEvent::Obituary(parser._inProtocol);
+	
+	udtObituaryEvent obituary;
 	for(u32 i = 0; i < arg.EntityCount; ++i)
 	{
 		if(!arg.Entities[i].IsNewEvent)
@@ -89,29 +91,26 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 			continue;
 		}
 
-		const idEntityStateBase* const ent = arg.Entities[i].Entity;
-		const s32 eventType = ent->eType & (~ID_ES_EVENT_BITS);
-		if(eventType != (s32)(ET_EVENTS + obituaryEvtId))
+		if(!IsObituaryEvent(obituary, *arg.Entities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
 
-		const s32 targetIdx = ent->otherEntityNum;
-		const s32 attackerIdx = ent->otherEntityNum2;
+		const s32 targetIdx = obituary.TargetIndex;
+		const s32 attackerIdx = obituary.AttackerIndex;
 		if(targetIdx < 0 || targetIdx >= ID_MAX_CLIENTS || 
 		   attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 		{
 			continue;
 		}
 
-		if(attackerIdx != trackedPlayerIndex || targetIdx == trackedPlayerIndex)
+		if(attackerIdx != trackedPlayerIndex || 
+		   targetIdx == trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const s32 meanOfDeath = ent->eventParm;
-		const u32 udtWeapon = GetUDTWeaponFromIdMod(meanOfDeath, parser._inProtocol);
-		if(udtWeapon != udtWeapon::Railgun)
+		if(obituary.MeanOfDeath != (u32)udtMeanOfDeath::Railgun)
 		{
 			continue;
 		}

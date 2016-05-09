@@ -68,7 +68,7 @@ udtString udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 p
 		return udtString::NewClone(_stringAllocator, "world");
 	}
 
-	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].GetPtr();
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
@@ -85,7 +85,7 @@ udtString udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 p
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 csFirstPlayerIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		const udtString& cs = parser.GetConfigString(csFirstPlayerIdx + i);
@@ -112,7 +112,7 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 csFirstPlayerIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	const s32 playerIdx = csIndex - csFirstPlayerIdx;
 	if(playerIdx < 0 || playerIdx >= 64)
 	{

@@ -18,8 +18,8 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtMidAirPatternAnalyzer);
 
 	struct ProjectileInfo;
-	void            AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs);
-	ProjectileInfo* FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs);
+	void            AddProjectile(s32 idWeapon, const f32* position, s32 serverTimeMs);
+	ProjectileInfo* FindBestProjectileMatch(u32 udtWeapon, const f32* targetPosition, s32 serverTimeMs);
 
 	struct ProjectileInfo
 	{

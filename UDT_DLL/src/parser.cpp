@@ -1192,7 +1192,8 @@ bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 
 		if(addedOrChanged)
 		{
-			const bool isNewEvent = (state->eType >= ET_EVENTS) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
+			const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, _inProtocol);
+			const bool isNewEvent = (state->eType >= entityTypeEventId) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
 			udtChangedEntity info;
 			info.Entity = state;
 			info.IsNewEvent = isNewEvent;

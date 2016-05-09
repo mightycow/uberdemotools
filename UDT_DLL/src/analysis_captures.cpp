@@ -172,7 +172,7 @@ void udtCapturesAnalyzer::ProcessGamestateMessageQLorOSP(const udtGamestateCallb
 	_lastCaptureQL.Clear();
 	_playerStateQL.Clear();
 
-	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		const udtString cs = parser.GetConfigString(firstPlayerCsIdx + i);
@@ -187,13 +187,13 @@ void udtCapturesAnalyzer::ProcessCommandMessageQLorOSP(const udtCommandCallbackA
 {
 	if(arg.IsConfigString)
 	{
-		if(arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+		if(arg.ConfigStringIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FlagStatus, parser._inProtocol))
 		{
 			ProcessFlagStatusCommandQLorOSP(arg, parser);
 			return;
 		}
 
-		const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+		const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 		if(arg.ConfigStringIndex >= firstPlayerCsIdx &&
 		   arg.ConfigStringIndex < firstPlayerCsIdx + 64)
 		{
@@ -243,12 +243,13 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 		player.Defined = false;
 	}
 
+	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
 	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
 	{
 		idEntityStateBase* const es = arg.Entities[i].Entity;
 		if(arg.Entities[i].IsNewEvent ||
 		   es == NULL ||
-		   es->eType != ET_PLAYER ||
+		   es->eType != entityTypePlayerId ||
 		   es->clientNum < 0 ||
 		   es->clientNum >= 64)
 		{
@@ -266,9 +267,9 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 
 	if(ps->clientNum >= 0 && ps->clientNum < 64)
 	{
-		const s32 redFlagIdx = idPowerUpIndex::RedFlag(parser._inProtocol);
-		const s32 blueFlagIdx = idPowerUpIndex::BlueFlag(parser._inProtocol);
-		const s32 captureCountPersIdx = idPersStatsIndex::FlagCaptures(parser._inProtocol);
+		const s32 redFlagIdx = GetIdNumber(udtMagicNumberType::PowerUpIndex, udtPowerUpIndex::RedFlag, parser._inProtocol);
+		const s32 blueFlagIdx = GetIdNumber(udtMagicNumberType::PowerUpIndex, udtPowerUpIndex::BlueFlag, parser._inProtocol);
+		const s32 captureCountPersIdx = GetIdNumber(udtMagicNumberType::PersStatsIndex, udtPersStatsIndex::FlagCaptures, parser._inProtocol);
 
 		PlayerInfo& player = _players[ps->clientNum];
 		const bool hasFlag = ps->powerups[redFlagIdx] != 0 || ps->powerups[blueFlagIdx] != 0;
@@ -293,11 +294,11 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 				{
 					const f32 distance = Float3::Dist(player.PickupPosition, player.Position);
 					capture.Distance = distance;
-					capture.Flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
-					capture.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
+					capture.Flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
+					capture.Flags |= (u32)udtParseDataCaptureFlag::FirstPersonPlayer;
 					if(ps->clientNum == _demoTakerIndex)
 					{
-						capture.Flags |= (u32)udtParseDataCaptureFlags::DemoTaker;
+						capture.Flags |= (u32)udtParseDataCaptureFlag::DemoTaker;
 					}
 				}
 			}
@@ -305,18 +306,20 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 		}
 	}
 
+	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
+	const s32 globalTeamSoundId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::GlobalTeamSound, parser._inProtocol);
 	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
 	{
 		idEntityStateBase* const es = arg.Entities[i].Entity;
 		if(!arg.Entities[i].IsNewEvent ||
 		   es == NULL ||
-		   es->eType <= ET_EVENTS)
+		   es->eType <= entityTypeEventId)
 		{
 			continue;
 		}
 
-		const s32 event = (es->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
-		if(event == EV_GLOBAL_TEAM_SOUND_73p)
+		const s32 event = (es->eType - entityTypeEventId) & (~ID_ES_EVENT_BITS);
+		if(event == globalTeamSoundId)
 		{
 			const s32 soundIndex = es->eventParm;
 			if(soundIndex == 0 || soundIndex == 1)
@@ -389,7 +392,7 @@ void udtCapturesAnalyzer::ProcessGamestateMessageCPMA(const udtGamestateCallback
 
 void udtCapturesAnalyzer::ProcessCommandMessageCPMA(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
-	if(arg.IsConfigString && arg.ConfigStringIndex == idConfigStringIndex::FlagStatus(parser._inProtocol))
+	if(arg.IsConfigString && arg.ConfigStringIndex == GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FlagStatus, parser._inProtocol))
 	{
 		const udtString cs = parser.GetTokenizer().GetArg(2);
 		if(cs.GetLength() >= 2)
@@ -448,12 +451,13 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 		player.Defined = false;
 	}
 
+	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
 	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
 	{
 		idEntityStateBase* const es = arg.Entities[i].Entity;
 		if(arg.Entities[i].IsNewEvent ||
 		   es == NULL ||
-		   es->eType != ET_PLAYER ||
+		   es->eType != entityTypePlayerId ||
 		   es->clientNum < 0 ||
 		   es->clientNum >= 64)
 		{
@@ -469,18 +473,20 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 	// Step 2: handle pick-up and capture events
 	//
 
+	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
+	const s32 globalTeamSoundId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::GlobalTeamSound, parser._inProtocol);
 	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
 	{
 		idEntityStateBase* const es = arg.Entities[i].Entity;
 		if(!arg.Entities[i].IsNewEvent ||
 		   es == NULL ||
-		   es->eType <= ET_EVENTS)
+		   es->eType <= entityTypeEventId)
 		{
 			continue;
 		}
 
-		const s32 event = (es->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
-		if(event == EV_GLOBAL_TEAM_SOUND_68)
+		const s32 event = (es->eType - entityTypeEventId) & (~ID_ES_EVENT_BITS);
+		if(event == globalTeamSoundId)
 		{
 			const s32 soundIndex = es->eventParm;
 			if(soundIndex == 0 || soundIndex == 1)
@@ -505,27 +511,27 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 				capture.PlayerIndex = playerIndex;
 				WriteStringToApiStruct(capture.MapName, _mapName);
 				capture.Flags = 0;
-				capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
-				capture.Flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
+				capture.Flags |= (u32)udtParseDataCaptureFlag::PlayerIndexValid;
+				capture.Flags |= (u32)udtParseDataCaptureFlag::PlayerNameValid;
 				if(playerIndex == _demoTakerIndex)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlags::DemoTaker;
+					capture.Flags |= (u32)udtParseDataCaptureFlag::DemoTaker;
 				}
 				else if(playerIndex == ps->clientNum)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlags::FirstPersonPlayer;
+					capture.Flags |= (u32)udtParseDataCaptureFlag::FirstPersonPlayer;
 				}
 				WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
 
 				FlagStatusCPMA& flagStatus = _flagStatusCPMA[soundIndex];
 				if(udtPlayerIndex == playerIndex)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
+					capture.Flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
 					PlayerInfo& player = _players[playerIndex];
 					capture.Distance = Float3::Dist(player.PickupPosition, player.Position);
 					if(team.BasePickup && !flagStatus.InstantCapture)
 					{
-						capture.Flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
+						capture.Flags |= (u32)udtParseDataCaptureFlag::BaseToBase;
 					}
 					player.PickupPositionValid = false;
 					team.BasePickup = false;
@@ -605,7 +611,7 @@ void udtCapturesAnalyzer::ProcessGamestateMessageClearStates(const udtGamestateC
 		team.BasePickup = false;
 	}
 
-	const s32 flagStatusIdx = idConfigStringIndex::FlagStatus(parser._inProtocol);
+	const s32 flagStatusIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FlagStatus, parser._inProtocol);
 	if(flagStatusIdx >= 0)
 	{
 		const udtString cs = parser.GetConfigString(flagStatusIdx);
@@ -629,7 +635,7 @@ udtString udtCapturesAnalyzer::GetPlayerName(s32 playerIndex, udtBaseParser& par
 
 	udtVMScopedStackAllocator allocScope(*_tempAllocator);
 
-	const s32 csIndex = idConfigStringIndex::FirstPlayer(parser._inProtocol) + playerIndex;
+	const s32 csIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol) + playerIndex;
 
 	udtString playerName;
 	if(!ParseConfigStringValueString(playerName, *_tempAllocator, "n", parser.GetConfigString(csIndex).GetPtr()))
@@ -777,23 +783,23 @@ void udtCapturesAnalyzer::ProcessPrintCommandQLorOSP(const udtCommandCallbackArg
 	u32 flags = 0;
 	if(capturedInFound)
 	{
-		flags |= (u32)udtParseDataCaptureFlags::BaseToBase;
+		flags |= (u32)udtParseDataCaptureFlag::BaseToBase;
 	}
-	flags |= (u32)udtParseDataCaptureFlags::PlayerNameValid;
+	flags |= (u32)udtParseDataCaptureFlag::PlayerNameValid;
 
 	f32 distance = -1.0f;
 
 	if(_lastCaptureQL.IsValid())
 	{
 		distance = _lastCaptureQL.Distance;
-		flags |= (u32)udtParseDataCaptureFlags::DistanceValid;
+		flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
 		_lastCaptureQL.Clear();
 	}
 
 	s32 playerIndex = -1;
 	if(ExtractPlayerIndexFromCaptureMessageQLorOSP(playerIndex, playerName, parser._inProtocol))
 	{
-		flags |= (u32)udtParseDataCaptureFlags::PlayerIndexValid;
+		flags |= (u32)udtParseDataCaptureFlag::PlayerIndexValid;
 	}
 
 	udtParseDataCapture capture;

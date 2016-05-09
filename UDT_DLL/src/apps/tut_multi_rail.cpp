@@ -147,9 +147,11 @@ static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity,
 {	
 	// Ideally, you should get and test those once before parsing instead of 
 	// querying those values and over.
-	const s32 obituaryEvtId = udtGetIdEntityEventId((u32)udtEntityEvent::Obituary, (u32)protocol);
-	const s32 eventTypeId = udtGetIdEntityType((u32)udtEntityType::Event, (u32)protocol);
-	if(obituaryEvtId < 0 || eventTypeId < 0)
+	
+	s32 obituaryEvtId;
+	s32 eventTypeId;
+	if(!udtGetIdMagicNumber(&obituaryEvtId, udtMagicNumberType::EntityEvent, (u32)udtEntityEvent::Obituary, protocol, udtMod::None) ||
+	   !udtGetIdMagicNumber(&eventTypeId, udtMagicNumberType::EntityType, (u32)udtEntityType::Event, protocol, udtMod::None))
 	{
 		return false;
 	}
@@ -175,9 +177,15 @@ static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity,
 		attackerIdx = -1;
 	}
 
+	s32 udtMod;
+	if(!udtGetUDTMagicNumber(&udtMod, (u32)udtMagicNumberType::MeanOfDeath, entity.eventParm, (u32)protocol, (u32)udtMod::None))
+	{
+		return false;
+	}
+
 	obituary.AttackerIndex = attackerIdx;
 	obituary.TargetIndex = targetIdx;
-	obituary.MeanOfDeath = udtGetUdtMeanOfDeathId(entity.eventParm, (u32)protocol);
+	obituary.MeanOfDeath = udtMod;
 	
 	return true;
 }

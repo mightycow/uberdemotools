@@ -59,7 +59,7 @@ static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
 #undef UDT_ERROR_ITEM
 
 #define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
-static const char* DemoFileExtensions[udtProtocol::AfterLastProtocol + 1] =
+static const char* DemoFileExtensions[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 	".after_last"
@@ -85,7 +85,7 @@ static const char* PowerUpNames[] =
 #define UDT_MOD_ITEM(Enum, Desc, Bit) Desc,
 static const char* MeansOfDeathNames[] =
 {
-	UDT_MOD_LIST(UDT_MOD_ITEM)
+	UDT_MEAN_OF_DEATH_LIST(UDT_MOD_ITEM)
 	"after last MoD"
 };
 #undef UDT_MOD_ITEM
@@ -274,7 +274,7 @@ UDT_API(const char*) udtGetErrorCodeString(s32 errorCode)
 
 UDT_API(s32) udtIsValidProtocol(u32 protocol)
 {
-	return (protocol >= (u32)udtProtocol::AfterLastProtocol || protocol < 1) ? 0 : 1;
+	return (protocol >= (u32)udtProtocol::Count) ? 0 : 1;
 }
 
 UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol)
@@ -348,7 +348,7 @@ UDT_API(const char*) udtGetFileExtensionByProtocol(u32 protocol)
 UDT_API(u32) udtGetProtocolByFilePath(const char* filePath)
 {
 	const udtString filePathString = udtString::NewConstRef(filePath);
-	for(u32 i = (u32)udtProtocol::Invalid + 1; i < (u32)udtProtocol::AfterLastProtocol; ++i)
+	for(u32 i = 0; i < (u32)udtProtocol::Count; ++i)
 	{
 		if(udtString::EndsWithNoCase(filePathString, DemoFileExtensions[i]))
 		{
@@ -621,6 +621,7 @@ UDT_API(s32) udtGetProcessorCoreCount(u32* cpuCoreCount)
 UDT_API(s32) udtInitLibrary()
 {
 	udtThreadLocalAllocators::Init();
+	BuildLookUpTables();
 
 	return (s32)udtErrorCode::None;
 }
@@ -1392,181 +1393,42 @@ UDT_API(s32) udtCleanUpString(char* string, u32 protocol)
 	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol)
+UDT_API(s32) udtGetIdMagicNumber(s32* idNumber, u32 magicNumberTypeId, s32 udtNumber, u32 protocol, u32 mod)
 {
-	if(!udtIsValidProtocol(protocol))
+	if(idNumber == NULL || 
+	   magicNumberTypeId >= (u32)udtMagicNumberType::Count || 
+	   mod >= (u32)udtMod::Count ||
+	   !udtIsValidProtocol(protocol))
 	{
-		return -1;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-#define CASE(Name) case udtConfigStringIndex::Name: return idConfigStringIndex::Name((udtProtocol::Id)protocol);
-	switch((udtConfigStringIndex::Id)udtConfigStringId)
+	if(!GetIdNumber(*idNumber, (udtMagicNumberType::Id)magicNumberTypeId, (u32)udtNumber, (udtProtocol::Id)protocol), (udtMod::Id)mod)
 	{
-		UDT_CONFIG_STRING_LIST(CASE)
-		default: return -1;
+		return (s32)udtErrorCode::OperationFailed;
 	}
-#undef CASE
+
+	return (s32)udtErrorCode::None;
 }
 
-UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol)
+UDT_API(s32) udtGetUDTMagicNumber(s32* udtNumber, u32 magicNumberTypeId, s32 idNumber, u32 protocol, u32 mod)
 {
-	if(!udtIsValidProtocol(protocol))
+	if(udtNumber == NULL || 
+	   magicNumberTypeId >= (u32)udtMagicNumberType::Count || 
+	   mod >= (u32)udtMod::Count ||
+	   !udtIsValidProtocol(protocol))
 	{
-		return -1;
+		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	return GetUDTWeaponFromIdWeapon(idWeaponId, (udtProtocol::Id)protocol);
-}
-
-UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
+	u32 result;
+	if(!GetUDTNumber(result, (udtMagicNumberType::Id)magicNumberTypeId, (s32)idNumber, (udtProtocol::Id)protocol), (udtMod::Id)mod)
 	{
-		return -1;
+		return (s32)udtErrorCode::OperationFailed;
 	}
+	*udtNumber = result;
 
-	return GetUDTModFromIdMod(idModId, (udtProtocol::Id)protocol);
-}
-
-UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-
-#define CASE(Name) case udtEntityEvent::Name: return idEntityEvent::Name((udtProtocol::Id)protocol);
-	switch((udtEntityEvent::Id)udtEntityEventId)
-	{
-		UDT_ENTITY_EVENT_LIST(CASE)
-		default: return -1;
-	}
-#undef CASE
-}
-
-UDT_API(s32) udtGetIdEntityType(u32 udtEntityTypeId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-
-#define CASE(Name) case udtEntityType::Name: return idEntityType::Name((udtProtocol::Id)protocol);
-	switch((udtEntityType::Id)udtEntityTypeId)
-	{
-		UDT_ENTITY_TYPE_LIST(CASE)
-		default: return -1;
-	}
-#undef CASE
-}
-
-UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-
-#define CASE(Name, Enum, Bit) case udtPowerUpIndex::Name: return idPowerUpIndex::Name((udtProtocol::Id)protocol);
-	switch((udtPowerUpIndex::Id)udtPowerUpId)
-	{
-		UDT_POWER_UP_LIST(CASE)
-		default: return -1;
-	}
-#undef CASE
-}
-
-UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-
-#define CASE(Name) case udtPersStatsIndex::Name: return idPersStatsIndex::Name((udtProtocol::Id)protocol);
-	switch((udtPersStatsIndex::Id)udtPersStatsId)
-	{
-		UDT_PERSISTENT_STATS_LIST(CASE)
-		default: return -1;
-	}
-#undef CASE
-}
-
-UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return 0;
-	}
-
-#define CASE(Name) case udtEntityStateFlags::Name: return idEntityStateFlag::Name((udtProtocol::Id)protocol);
-	switch((udtEntityStateFlags::Id)udtEntityStateFlagId)
-	{
-		UDT_ENTITY_STATE_FLAG_LIST(CASE)
-		default: return 0;
-	}
-#undef CASE
-}
-
-UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-	
-	if(idFlagStatusId < 0 || idFlagStatusId >= (s32)idFlagStatus::Count)
-	{
-		return -1;
-	}
-
-	// udtFlagStatus is the same as idFlagStatus.
-	return idFlagStatusId;
-}
-
-UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-	
-	if(idTeamId < 0 || idTeamId >= 4)
-	{
-		return -1;
-	}
-
-	// udtTeam is the same as team_t.
-	return idTeamId;
-}
-
-UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod)
-{
-	if(!udtIsValidProtocol(protocol))
-	{
-		return -1;
-	}
-
-	if(mod >= (u32)udtMod::Count)
-	{
-		return -1;
-	}
-
-	udtGame::Id game = udtGame::QL;
-	switch((udtMod::Id)mod)
-	{
-		case udtMod::None: game = udtGame::Q3; break;
-		case udtMod::CPMA: game = udtGame::CPMA; break;
-		case udtMod::OSP: game = udtGame::OSP; break;
-		default: return -1;
-	}
-
-	return GetUDTGameTypeFromIdGameType(idGameTypeId, (udtProtocol::Id)protocol, game);
-}
-
-UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol)
-{
-	return GetUDTItemFromIdItem(idItemId, (udtProtocol::Id)protocol);
+	return (s32)udtErrorCode::None;
 }
 
 static const char* FindConfigStringValueAddress(bool& bufferTooSmall, char* tempBuf, u32 tempBytes, const char* variableName, const char* configString)

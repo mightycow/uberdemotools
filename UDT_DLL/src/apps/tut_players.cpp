@@ -265,10 +265,11 @@ struct PlayerPrinter
 
 		udtCuContext* const cuContext = _cuContext;
 		const u32 protocol = udtGetProtocolByFilePath(filePath);
-		const s32 firstPlayerIdx = udtGetIdConfigStringIndex((u32)udtConfigStringIndex::FirstPlayer, protocol);
-		if(firstPlayerIdx < 0)
+
+		s32 firstPlayerIdx;
+		if(!udtGetIdMagicNumber(&firstPlayerIdx, (u32)udtMagicNumberType::ConfigStringIndex, (s32)udtConfigStringIndex::FirstPlayer, protocol, (u32)udtMod::None))
 		{
-			PrintError("Failed to get the first index of player config strings");
+			PrintError("Failed to get the index of the first player config string");
 			return false;
 		}
 
