@@ -221,7 +221,7 @@ private:
 		for(u32 i = 0; i < captureCount; ++i)
 		{
 			const udtParseDataCapture& capture = captures[i];
-			if((capture.Flags & (u32)udtParseDataCaptureFlag::DemoTaker) == 0)
+			if((capture.Flags & (u32)udtParseDataCaptureMask::DemoTaker) == 0)
 			{
 				continue;
 			}
@@ -231,10 +231,10 @@ private:
 			udtString mapName = udtString::NewClone(_stringAllocator, (const char*)buffers.StringBuffer + capture.MapName);
 			udtString::MakeLowerCase(mapName);
 
-			const bool distanceValid = (capture.Flags & (u32)udtParseDataCaptureFlag::DistanceValid) != 0;
+			const bool distanceValid = (capture.Flags & (u32)udtParseDataCaptureMask::DistanceValid) != 0;
 
 			CaptureInfo cap;
-			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureFlag::BaseToBase) != 0;
+			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureMask::BaseToBase) != 0;
 			cap.CaptureTimeMs = capture.CaptureTimeMs;
 			cap.Distance = capture.Distance;
 			cap.DistanceAndSpeedValid = distanceValid && durationMs > 0;

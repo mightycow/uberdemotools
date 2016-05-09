@@ -31,7 +31,7 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	const udtFlickRailPatternArg& extraInfo = GetExtraInfo<udtFlickRailPatternArg>();
 	const udtPatternSearchArg& info = PlugIn->GetInfo();
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
-	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlagBit::TeleportBit, parser._inProtocol);
+	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlag::TeleportBit, parser._inProtocol);
 
 	bool trackedPlayerFound = false;
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, parser._inProtocol);

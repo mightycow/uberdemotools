@@ -696,7 +696,7 @@ struct udtTeamStatsField
 };
 #undef UDT_TEAM_STATS_ITEM
 
-struct udtGameTypeFlag
+struct udtGameTypeMask
 {
 	enum Id
 	{
@@ -713,24 +713,24 @@ struct udtGameTypeFlag
 /* @TODO: investigate obelisk harvester domination */
 /* The first team mode is always TDM. */
 #define UDT_GAME_TYPE_LIST(N) \
-	N(SP, "SP", "Single Player", udtGameTypeFlag::HasFragLimit) \
-	N(FFA, "FFA", "Free for All", udtGameTypeFlag::HasFragLimit) \
-	N(Duel, "1v1", "Duel", udtGameTypeFlag::HasFragLimit) \
-	N(Race, "race", "Race", udtGameTypeFlag::None) \
-	N(HM, "HM", "HoonyMode", udtGameTypeFlag::HasRoundLimit | udtGameTypeFlag::RoundBased) \
-	N(RedRover, "RR", "Red Rover", udtGameTypeFlag::HasRoundLimit | udtGameTypeFlag::RoundBased) \
-	N(TDM, "TDM", "Team DeathMatch", udtGameTypeFlag::HasFragLimit | udtGameTypeFlag::Team) \
-	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch", udtGameTypeFlag::HasFragLimit | udtGameTypeFlag::Team) \
-	N(CA, "CA", "Clan Arena", udtGameTypeFlag::HasRoundLimit | udtGameTypeFlag::Team | udtGameTypeFlag::RoundBased) \
-	N(CTF, "CTF", "Capture The Flag", udtGameTypeFlag::Team | udtGameTypeFlag::HasCaptureLimit) \
-	N(OneFlagCTF, "1FCTF", "One Flag CTF", udtGameTypeFlag::Team | udtGameTypeFlag::HasCaptureLimit) \
-	N(Obelisk, "OB", "Obelisk", udtGameTypeFlag::HasScoreLimit | udtGameTypeFlag::Team) \
-	N(Harvester, "HAR", "Harvester", udtGameTypeFlag::HasScoreLimit | udtGameTypeFlag::Team) \
-	N(Domination, "DOM", "Domination", udtGameTypeFlag::HasScoreLimit | udtGameTypeFlag::Team) \
-	N(CTFS, "CTFS", "Capture Strike", udtGameTypeFlag::HasScoreLimit | udtGameTypeFlag::Team | udtGameTypeFlag::RoundBased) \
-	N(NTF, "NTF", "Not Team Fortress", udtGameTypeFlag::Team | udtGameTypeFlag::HasCaptureLimit) \
-	N(TwoVsTwo, "2v2", "2v2 TDM", udtGameTypeFlag::HasFragLimit | udtGameTypeFlag::Team) \
-	N(FT, "FT", "Freeze Tag", udtGameTypeFlag::HasRoundLimit | udtGameTypeFlag::Team | udtGameTypeFlag::RoundBased)
+	N(SP, "SP", "Single Player", udtGameTypeMask::HasFragLimit) \
+	N(FFA, "FFA", "Free for All", udtGameTypeMask::HasFragLimit) \
+	N(Duel, "1v1", "Duel", udtGameTypeMask::HasFragLimit) \
+	N(Race, "race", "Race", udtGameTypeMask::None) \
+	N(HM, "HM", "HoonyMode", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::RoundBased) \
+	N(RedRover, "RR", "Red Rover", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::RoundBased) \
+	N(TDM, "TDM", "Team DeathMatch", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(CA, "CA", "Clan Arena", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased) \
+	N(CTF, "CTF", "Capture The Flag", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(OneFlagCTF, "1FCTF", "One Flag CTF", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(Obelisk, "OB", "Obelisk", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(Harvester, "HAR", "Harvester", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(Domination, "DOM", "Domination", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(CTFS, "CTFS", "Capture Strike", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased) \
+	N(NTF, "NTF", "Not Team Fortress", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(TwoVsTwo, "2v2", "2v2 TDM", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(FT, "FT", "Freeze Tag", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased)
 	
 #define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Enum,
 struct udtGameType
@@ -926,7 +926,7 @@ extern "C"
 		/* Unused in batch operations. */
 		u32 FileOffset;
 
-		/* Of type udtParseArgFlag::Id. */
+		/* See udtParseArgFlag::Id. */
 		u32 Flags;
 
 		/* Minimum duration, in milli-seconds, between 2 consecutive calls to ProgressCb. */
@@ -1008,7 +1008,7 @@ extern "C"
 		};
 	};
 
-	struct udtPatternSearchArgFlag
+	struct udtPatternSearchArgMask
 	{
 		enum Id
 		{
@@ -1028,7 +1028,7 @@ extern "C"
 		};
 	};
 
-	struct udtStringMatchingRuleFlag
+	struct udtStringMatchingRuleMask
 	{
 		enum Id
 		{
@@ -1051,7 +1051,7 @@ extern "C"
 		/* Of type udtStringComparisonMode::Id. */
 		u32 ComparisonMode;
 
-		/* Check against the bits defined in udtStringMatchingRuleFlags::Id. */
+		/* See udtStringMatchingRuleMask::Id. */
 		u32 Flags;
 	}
 	udtStringMatchingRule;
@@ -1089,7 +1089,7 @@ extern "C"
 		/* Ignored if player name rules are properly defined. */
 		s32 PlayerIndex;
 
-		/* Of type udtPatternSearchArgFlags::Id. */
+		/* See udtPatternSearchArgMask::Id. */
 		u32 Flags;
 	}
 	udtPatternSearchArg;
@@ -1200,7 +1200,7 @@ extern "C"
 	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternArg)
 
 #if defined(__cplusplus)
-	struct udtFragRunPatternArgFlag
+	struct udtFragRunPatternArgMask
 	{
 		enum Id
 		{
@@ -1230,7 +1230,7 @@ extern "C"
 		u32 TimeMode;
 
 		/* Boolean options. */
-		/* See udtFragRunPatternArgFlags. */
+		/* See udtFragRunPatternArgMask. */
 		u32 Flags;
 		
 		/* All the allowed weapons. */
@@ -1997,7 +1997,7 @@ extern "C"
 	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigStringBuffers)
 
 #if defined(__cplusplus)
-	struct udtParseDataCaptureFlag
+	struct udtParseDataCaptureMask
 	{
 		enum Id
 		{
@@ -2042,7 +2042,7 @@ extern "C"
 		/* Not always available: check for the DistanceValid bit of Flags. */
 		f32 Distance;
 
-		/* Check the bits against values in udtParseDataCaptureFlags::Id. */
+		/* See udtParseDataCaptureFlags::Id. */
 		u32 Flags;
 
 		/* Index of the player who capped (the "client number"). */
@@ -2290,12 +2290,13 @@ extern "C"
 
 	typedef enum
 	{
-		TR_STATIONARY,
-		TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
-		TR_LINEAR,
-		TR_LINEAR_STOP,
-		TR_SINE,        /* value = base + sin( time / duration ) * delta */
-		TR_GRAVITY
+		ID_TR_STATIONARY,
+		ID_TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
+		ID_TR_LINEAR,
+		ID_TR_LINEAR_STOP,
+		ID_TR_SINE,        /* value = base + sin( time / duration ) * delta */
+		ID_TR_GRAVITY,
+		ID_TR_TYPE_COUNT
 	}
 	idTrajectoryType;
 
@@ -2814,8 +2815,7 @@ extern "C"
 	N(HasTeamVoted) \
 	N(Spectator)
 
-	/* The UDT number is the bit index, not the mask value. */
-	struct udtEntityFlagBit
+	struct udtEntityFlag
 	{
 		enum Id
 		{
@@ -2924,7 +2924,7 @@ extern "C"
 			PowerUpIndex,
 			PersStatsIndex,
 			EntityType,
-			EntityFlagBit,
+			EntityFlag,
 			EntityEvent,
 			ConfigStringIndex,
 			Team,

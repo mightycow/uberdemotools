@@ -36,14 +36,14 @@ void udtFlagCapturePatternAnalyzer::FinishAnalysis()
 	{
 		const udtParseDataCapture& capture = _analyzer.Captures[i];
 
-		const bool playerIndexFound = (capture.Flags & (u32)udtParseDataCaptureFlag::PlayerIndexValid) != 0;
+		const bool playerIndexFound = (capture.Flags & (u32)udtParseDataCaptureMask::PlayerIndexValid) != 0;
 		if(!playerIndexFound ||
 		   capture.PlayerIndex != trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const bool baseToBase = (capture.Flags & (u32)udtParseDataCaptureFlag::BaseToBase) != 0;
+		const bool baseToBase = (capture.Flags & (u32)udtParseDataCaptureMask::BaseToBase) != 0;
 		const u32 durationMs = capture.CaptureTimeMs - capture.PickUpTimeMs;
 		if(durationMs < extraInfo.MinCarryTimeMs ||
 		   durationMs > extraInfo.MaxCarryTimeMs ||

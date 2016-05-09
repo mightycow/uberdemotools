@@ -294,11 +294,11 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 				{
 					const f32 distance = Float3::Dist(player.PickupPosition, player.Position);
 					capture.Distance = distance;
-					capture.Flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
-					capture.Flags |= (u32)udtParseDataCaptureFlag::FirstPersonPlayer;
+					capture.Flags |= (u32)udtParseDataCaptureMask::DistanceValid;
+					capture.Flags |= (u32)udtParseDataCaptureMask::FirstPersonPlayer;
 					if(ps->clientNum == _demoTakerIndex)
 					{
-						capture.Flags |= (u32)udtParseDataCaptureFlag::DemoTaker;
+						capture.Flags |= (u32)udtParseDataCaptureMask::DemoTaker;
 					}
 				}
 			}
@@ -511,27 +511,27 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 				capture.PlayerIndex = playerIndex;
 				WriteStringToApiStruct(capture.MapName, _mapName);
 				capture.Flags = 0;
-				capture.Flags |= (u32)udtParseDataCaptureFlag::PlayerIndexValid;
-				capture.Flags |= (u32)udtParseDataCaptureFlag::PlayerNameValid;
+				capture.Flags |= (u32)udtParseDataCaptureMask::PlayerIndexValid;
+				capture.Flags |= (u32)udtParseDataCaptureMask::PlayerNameValid;
 				if(playerIndex == _demoTakerIndex)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlag::DemoTaker;
+					capture.Flags |= (u32)udtParseDataCaptureMask::DemoTaker;
 				}
 				else if(playerIndex == ps->clientNum)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlag::FirstPersonPlayer;
+					capture.Flags |= (u32)udtParseDataCaptureMask::FirstPersonPlayer;
 				}
 				WriteStringToApiStruct(capture.PlayerName, GetPlayerName(playerIndex, parser));
 
 				FlagStatusCPMA& flagStatus = _flagStatusCPMA[soundIndex];
 				if(udtPlayerIndex == playerIndex)
 				{
-					capture.Flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
+					capture.Flags |= (u32)udtParseDataCaptureMask::DistanceValid;
 					PlayerInfo& player = _players[playerIndex];
 					capture.Distance = Float3::Dist(player.PickupPosition, player.Position);
 					if(team.BasePickup && !flagStatus.InstantCapture)
 					{
-						capture.Flags |= (u32)udtParseDataCaptureFlag::BaseToBase;
+						capture.Flags |= (u32)udtParseDataCaptureMask::BaseToBase;
 					}
 					player.PickupPositionValid = false;
 					team.BasePickup = false;
@@ -783,23 +783,23 @@ void udtCapturesAnalyzer::ProcessPrintCommandQLorOSP(const udtCommandCallbackArg
 	u32 flags = 0;
 	if(capturedInFound)
 	{
-		flags |= (u32)udtParseDataCaptureFlag::BaseToBase;
+		flags |= (u32)udtParseDataCaptureMask::BaseToBase;
 	}
-	flags |= (u32)udtParseDataCaptureFlag::PlayerNameValid;
+	flags |= (u32)udtParseDataCaptureMask::PlayerNameValid;
 
 	f32 distance = -1.0f;
 
 	if(_lastCaptureQL.IsValid())
 	{
 		distance = _lastCaptureQL.Distance;
-		flags |= (u32)udtParseDataCaptureFlag::DistanceValid;
+		flags |= (u32)udtParseDataCaptureMask::DistanceValid;
 		_lastCaptureQL.Clear();
 	}
 
 	s32 playerIndex = -1;
 	if(ExtractPlayerIndexFromCaptureMessageQLorOSP(playerIndex, playerName, parser._inProtocol))
 	{
-		flags |= (u32)udtParseDataCaptureFlag::PlayerIndexValid;
+		flags |= (u32)udtParseDataCaptureMask::PlayerIndexValid;
 	}
 
 	udtParseDataCapture capture;

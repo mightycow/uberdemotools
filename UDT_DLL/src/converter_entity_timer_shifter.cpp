@@ -78,8 +78,8 @@ void udtdEntityTimeShifterPlugIn::CopySnapshot(udtdSnapshotData& dest, const udt
 void udtdEntityTimeShifterPlugIn::FixSnapshot(udtdSnapshotData& dest, const udtdSnapshotData& source)
 {
 	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, _protocol);
-	const s32 entityFlagDead = GetIdEntityStateFlagMask(udtEntityFlagBit::Dead, _protocol);
-	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlagBit::TeleportBit, _protocol);
+	const s32 entityFlagDead = GetIdEntityStateFlagMask(udtEntityFlag::Dead, _protocol);
+	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlag::TeleportBit, _protocol);
 	for(s32 i = 0; i < MAX_GENTITIES; ++i)
 	{
 		const udtdClientEntity& sourceEntity = source.Entities[i];

@@ -89,9 +89,9 @@ void udtFragRunPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallback
 	const udtFragRunPatternArg& extraInfo = GetExtraInfo<udtFragRunPatternArg>();
 	const s32 maxIntervalMs = extraInfo.TimeBetweenFragsSec * 1000;
 	const s32 playerIndex = PlugIn->GetTrackedPlayerIndex();
-	const bool allowSelfKills = (extraInfo.Flags & (u32)udtFragRunPatternArgFlag::AllowSelfKills) != 0;
-	const bool allowTeamKills = (extraInfo.Flags & (u32)udtFragRunPatternArgFlag::AllowTeamKills) != 0;
-	const bool allowAnyDeath = (extraInfo.Flags & (u32)udtFragRunPatternArgFlag::AllowDeaths) != 0;
+	const bool allowSelfKills = (extraInfo.Flags & (u32)udtFragRunPatternArgMask::AllowSelfKills) != 0;
+	const bool allowTeamKills = (extraInfo.Flags & (u32)udtFragRunPatternArgMask::AllowTeamKills) != 0;
+	const bool allowAnyDeath = (extraInfo.Flags & (u32)udtFragRunPatternArgMask::AllowDeaths) != 0;
 
 	for(u32 i = 0; i < obituaryCount; ++i)
 	{

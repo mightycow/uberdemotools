@@ -2897,19 +2897,19 @@ void udtParserPlugInStats::AddCurrentStats()
 	   (u32)_stats.GameType < gameTypeCount)
 	{
 		const u8 flags = gameTypeFlags[_stats.GameType];
-		if((flags & (u8)udtGameTypeFlag::HasScoreLimit) == 0)
+		if((flags & (u8)udtGameTypeMask::HasScoreLimit) == 0)
 		{
 			scoreLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlag::HasFragLimit) == 0)
+		if((flags & (u8)udtGameTypeMask::HasFragLimit) == 0)
 		{
 			fragLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlag::HasCaptureLimit) == 0)
+		if((flags & (u8)udtGameTypeMask::HasCaptureLimit) == 0)
 		{
 			captureLimit = 0;
 		}
-		if((flags & (u8)udtGameTypeFlag::HasRoundLimit) == 0)
+		if((flags & (u8)udtGameTypeMask::HasRoundLimit) == 0)
 		{
 			roundLimit = 0;
 		}

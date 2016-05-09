@@ -571,7 +571,7 @@ bool IsTeamMode(udtGameType::Id gameType)
 		return false;
 	}
 
-	return (gameTypeFlags[gameType] & (u8)udtGameTypeFlag::Team) != 0;
+	return (gameTypeFlags[gameType] & (u8)udtGameTypeMask::Team) != 0;
 }
 
 bool IsRoundBasedMode(udtGameType::Id gameType)
@@ -584,7 +584,7 @@ bool IsRoundBasedMode(udtGameType::Id gameType)
 		return false;
 	}
 
-	return (gameTypeFlags[gameType] & (u8)udtGameTypeFlag::RoundBased) != 0;
+	return (gameTypeFlags[gameType] & (u8)udtGameTypeMask::RoundBased) != 0;
 }
 
 void PerfStatsInit(u64* perfStats)
@@ -647,23 +647,23 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 	Float3::Copy(es.pos.trDelta, ps.velocity); // set the trDelta for flag direction
 	if(extrapolate)
 	{
-		es.pos.trType = TR_LINEAR_STOP;
+		es.pos.trType = ID_TR_LINEAR_STOP;
 		es.pos.trTime = serverTimeMs; // set the time for linear prediction
 		es.pos.trDuration = 50; // set maximum extrapolation time: 1000 / sv_fps (default = 20)
 	}
 	else
 	{
-		es.pos.trType = TR_INTERPOLATE;
+		es.pos.trType = ID_TR_INTERPOLATE;
 	}
 
-	es.apos.trType = TR_INTERPOLATE;
+	es.apos.trType = ID_TR_INTERPOLATE;
 	Float3::Copy(es.apos.trBase, ps.viewangles);
 	es.angles2[YAW] = (f32)ps.movementDir;
 	es.legsAnim = ps.legsAnim;
 	es.torsoAnim = ps.torsoAnim;
 	es.clientNum = ps.clientNum;
 
-	const s32 entityFlagDead = GetIdEntityStateFlagMask(udtEntityFlagBit::Dead, protocol);
+	const s32 entityFlagDead = GetIdEntityStateFlagMask(udtEntityFlag::Dead, protocol);
 	es.eFlags = ps.eFlags;
 	if(ps.stats[healthStatIdx] <= 0)
 	{

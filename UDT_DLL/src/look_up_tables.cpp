@@ -184,96 +184,96 @@ static const s16* EntityTypeTables[udtProtocol::Count * 3] =
 	EntityTypes_48p, EntityTypes_48p_U2Q, EntityTypes_48p_Q2U
 };
 
-static s16 EntityFlagBits_3_U2Q[udtEntityFlagBit::Count];
-static s16 EntityFlagBits_3_Q2U[udtEntityFlagBit::Count * 2];
-static const s16 EntityFlagBits_3[udtEntityFlagBit::Count * 2] =
+static s16 EntityFlagBits_3_U2Q[udtEntityFlag::Count];
+static s16 EntityFlagBits_3_Q2U[udtEntityFlag::Count * 2];
+static const s16 EntityFlagBits_3[udtEntityFlag::Count * 2] =
 {
-	(s16)udtEntityFlagBit::Dead, 0,
-	(s16)udtEntityFlagBit::TeleportBit, 2,
-	(s16)udtEntityFlagBit::AwardExcellent, 3,
-	(s16)udtEntityFlagBit::PlayerEvent, UNDEFINED,
-	(s16)udtEntityFlagBit::AwardHumiliation, 6,
-	(s16)udtEntityFlagBit::NoDraw, 7,
-	(s16)udtEntityFlagBit::Firing, 8,
-	(s16)udtEntityFlagBit::AwardCapture, 11,
-	(s16)udtEntityFlagBit::Chatting, 12,
-	(s16)udtEntityFlagBit::ConnectionInterrupted, 13,
-	(s16)udtEntityFlagBit::HasVoted, 14,
-	(s16)udtEntityFlagBit::AwardImpressive, 15,
-	(s16)udtEntityFlagBit::AwardDefense, UNDEFINED,
-	(s16)udtEntityFlagBit::AwardAssist, UNDEFINED,
-	(s16)udtEntityFlagBit::AwardDenied, UNDEFINED,
-	(s16)udtEntityFlagBit::HasTeamVoted, UNDEFINED,
-	(s16)udtEntityFlagBit::Spectator, UNDEFINED
+	(s16)udtEntityFlag::Dead, 0,
+	(s16)udtEntityFlag::TeleportBit, 2,
+	(s16)udtEntityFlag::AwardExcellent, 3,
+	(s16)udtEntityFlag::PlayerEvent, UNDEFINED,
+	(s16)udtEntityFlag::AwardHumiliation, 6,
+	(s16)udtEntityFlag::NoDraw, 7,
+	(s16)udtEntityFlag::Firing, 8,
+	(s16)udtEntityFlag::AwardCapture, 11,
+	(s16)udtEntityFlag::Chatting, 12,
+	(s16)udtEntityFlag::ConnectionInterrupted, 13,
+	(s16)udtEntityFlag::HasVoted, 14,
+	(s16)udtEntityFlag::AwardImpressive, 15,
+	(s16)udtEntityFlag::AwardDefense, UNDEFINED,
+	(s16)udtEntityFlag::AwardAssist, UNDEFINED,
+	(s16)udtEntityFlag::AwardDenied, UNDEFINED,
+	(s16)udtEntityFlag::HasTeamVoted, UNDEFINED,
+	(s16)udtEntityFlag::Spectator, UNDEFINED
 };
 
-static s16 EntityFlagBits_48_U2Q[udtEntityFlagBit::Count];
-static s16 EntityFlagBits_48_Q2U[udtEntityFlagBit::Count * 2];
-static const s16 EntityFlagBits_48[udtEntityFlagBit::Count * 2] =
+static s16 EntityFlagBits_48_U2Q[udtEntityFlag::Count];
+static s16 EntityFlagBits_48_Q2U[udtEntityFlag::Count * 2];
+static const s16 EntityFlagBits_48[udtEntityFlag::Count * 2] =
 {
-	(s16)udtEntityFlagBit::Dead, 0,
-	(s16)udtEntityFlagBit::TeleportBit, 2,
-	(s16)udtEntityFlagBit::AwardExcellent, 3,
-	(s16)udtEntityFlagBit::PlayerEvent, UNDEFINED,
-	(s16)udtEntityFlagBit::AwardHumiliation, 6,
-	(s16)udtEntityFlagBit::NoDraw, 7,
-	(s16)udtEntityFlagBit::Firing, 8,
-	(s16)udtEntityFlagBit::AwardCapture, 11,
-	(s16)udtEntityFlagBit::Chatting, 12,
-	(s16)udtEntityFlagBit::ConnectionInterrupted, 13,
-	(s16)udtEntityFlagBit::HasVoted, 14,
-	(s16)udtEntityFlagBit::AwardImpressive, 15,
-	(s16)udtEntityFlagBit::AwardDefense, 16,
-	(s16)udtEntityFlagBit::AwardAssist, 17,
-	(s16)udtEntityFlagBit::AwardDenied, 18,
-	(s16)udtEntityFlagBit::HasTeamVoted, 19,
-	(s16)udtEntityFlagBit::Spectator, UNDEFINED
+	(s16)udtEntityFlag::Dead, 0,
+	(s16)udtEntityFlag::TeleportBit, 2,
+	(s16)udtEntityFlag::AwardExcellent, 3,
+	(s16)udtEntityFlag::PlayerEvent, UNDEFINED,
+	(s16)udtEntityFlag::AwardHumiliation, 6,
+	(s16)udtEntityFlag::NoDraw, 7,
+	(s16)udtEntityFlag::Firing, 8,
+	(s16)udtEntityFlag::AwardCapture, 11,
+	(s16)udtEntityFlag::Chatting, 12,
+	(s16)udtEntityFlag::ConnectionInterrupted, 13,
+	(s16)udtEntityFlag::HasVoted, 14,
+	(s16)udtEntityFlag::AwardImpressive, 15,
+	(s16)udtEntityFlag::AwardDefense, 16,
+	(s16)udtEntityFlag::AwardAssist, 17,
+	(s16)udtEntityFlag::AwardDenied, 18,
+	(s16)udtEntityFlag::HasTeamVoted, 19,
+	(s16)udtEntityFlag::Spectator, UNDEFINED
 };
 
-static s16 EntityFlagBits_66_90_U2Q[udtEntityFlagBit::Count];
-static s16 EntityFlagBits_66_90_Q2U[udtEntityFlagBit::Count * 2];
-static const s16 EntityFlagBits_66_90[udtEntityFlagBit::Count * 2] =
+static s16 EntityFlagBits_66_90_U2Q[udtEntityFlag::Count];
+static s16 EntityFlagBits_66_90_Q2U[udtEntityFlag::Count * 2];
+static const s16 EntityFlagBits_66_90[udtEntityFlag::Count * 2] =
 {
-	(s16)udtEntityFlagBit::Dead, 0,
-	(s16)udtEntityFlagBit::TeleportBit, 2,
-	(s16)udtEntityFlagBit::AwardExcellent, 3,
-	(s16)udtEntityFlagBit::PlayerEvent, 4,
-	(s16)udtEntityFlagBit::AwardHumiliation, 6,
-	(s16)udtEntityFlagBit::NoDraw, 7,
-	(s16)udtEntityFlagBit::Firing, 8,
-	(s16)udtEntityFlagBit::AwardCapture, 11,
-	(s16)udtEntityFlagBit::Chatting, 12,
-	(s16)udtEntityFlagBit::ConnectionInterrupted, 13,
-	(s16)udtEntityFlagBit::HasVoted, 14,
-	(s16)udtEntityFlagBit::AwardImpressive, 15,
-	(s16)udtEntityFlagBit::AwardDefense, 16,
-	(s16)udtEntityFlagBit::AwardAssist, 17,
-	(s16)udtEntityFlagBit::AwardDenied, 18,
-	(s16)udtEntityFlagBit::HasTeamVoted, 19,
-	(s16)udtEntityFlagBit::Spectator, UNDEFINED
+	(s16)udtEntityFlag::Dead, 0,
+	(s16)udtEntityFlag::TeleportBit, 2,
+	(s16)udtEntityFlag::AwardExcellent, 3,
+	(s16)udtEntityFlag::PlayerEvent, 4,
+	(s16)udtEntityFlag::AwardHumiliation, 6,
+	(s16)udtEntityFlag::NoDraw, 7,
+	(s16)udtEntityFlag::Firing, 8,
+	(s16)udtEntityFlag::AwardCapture, 11,
+	(s16)udtEntityFlag::Chatting, 12,
+	(s16)udtEntityFlag::ConnectionInterrupted, 13,
+	(s16)udtEntityFlag::HasVoted, 14,
+	(s16)udtEntityFlag::AwardImpressive, 15,
+	(s16)udtEntityFlag::AwardDefense, 16,
+	(s16)udtEntityFlag::AwardAssist, 17,
+	(s16)udtEntityFlag::AwardDenied, 18,
+	(s16)udtEntityFlag::HasTeamVoted, 19,
+	(s16)udtEntityFlag::Spectator, UNDEFINED
 };
 
-static s16 EntityFlagBits_91_U2Q[udtEntityFlagBit::Count];
-static s16 EntityFlagBits_91_Q2U[udtEntityFlagBit::Count * 2];
-static const s16 EntityFlagBits_91[udtEntityFlagBit::Count * 2] =
+static s16 EntityFlagBits_91_U2Q[udtEntityFlag::Count];
+static s16 EntityFlagBits_91_Q2U[udtEntityFlag::Count * 2];
+static const s16 EntityFlagBits_91[udtEntityFlag::Count * 2] =
 {
-	(s16)udtEntityFlagBit::Dead, 0,
-	(s16)udtEntityFlagBit::TeleportBit, 2,
-	(s16)udtEntityFlagBit::AwardExcellent, 3,
-	(s16)udtEntityFlagBit::PlayerEvent, 4,
-	(s16)udtEntityFlagBit::AwardHumiliation, 6,
-	(s16)udtEntityFlagBit::NoDraw, 7,
-	(s16)udtEntityFlagBit::Firing, 8,
-	(s16)udtEntityFlagBit::AwardCapture, 11,
-	(s16)udtEntityFlagBit::Chatting, 12,
-	(s16)udtEntityFlagBit::ConnectionInterrupted, 13,
-	(s16)udtEntityFlagBit::HasVoted, UNDEFINED,
-	(s16)udtEntityFlagBit::AwardImpressive, 15,
-	(s16)udtEntityFlagBit::AwardDefense, 16,
-	(s16)udtEntityFlagBit::AwardAssist, 17,
-	(s16)udtEntityFlagBit::AwardDenied, 18,
-	(s16)udtEntityFlagBit::HasTeamVoted, UNDEFINED,
-	(s16)udtEntityFlagBit::Spectator, 14
+	(s16)udtEntityFlag::Dead, 0,
+	(s16)udtEntityFlag::TeleportBit, 2,
+	(s16)udtEntityFlag::AwardExcellent, 3,
+	(s16)udtEntityFlag::PlayerEvent, 4,
+	(s16)udtEntityFlag::AwardHumiliation, 6,
+	(s16)udtEntityFlag::NoDraw, 7,
+	(s16)udtEntityFlag::Firing, 8,
+	(s16)udtEntityFlag::AwardCapture, 11,
+	(s16)udtEntityFlag::Chatting, 12,
+	(s16)udtEntityFlag::ConnectionInterrupted, 13,
+	(s16)udtEntityFlag::HasVoted, UNDEFINED,
+	(s16)udtEntityFlag::AwardImpressive, 15,
+	(s16)udtEntityFlag::AwardDefense, 16,
+	(s16)udtEntityFlag::AwardAssist, 17,
+	(s16)udtEntityFlag::AwardDenied, 18,
+	(s16)udtEntityFlag::HasTeamVoted, UNDEFINED,
+	(s16)udtEntityFlag::Spectator, 14
 };
 
 static const s16* EntityFlagBitTables[udtProtocol::Count * 3] =
@@ -1008,7 +1008,7 @@ static const MagicNumberTableGroup MagicNumberTables[udtMagicNumberType::Count] 
 	MagicNumberTableGroup(udtMagicNumberType::PowerUpIndex, PowerUpTables, udtPowerUpIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::PersStatsIndex, PersStatsTables, udtPersStatsIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityType, EntityTypeTables, udtEntityType::Count),
-	MagicNumberTableGroup(udtMagicNumberType::EntityFlagBit, EntityFlagBitTables, udtEntityFlagBit::Count),
+	MagicNumberTableGroup(udtMagicNumberType::EntityFlag, EntityFlagBitTables, udtEntityFlag::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityEvent, EntityEventTables, udtEntityEvent::Count),
 	MagicNumberTableGroup(udtMagicNumberType::ConfigStringIndex, ConfigStringIndexTables, udtConfigStringIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::Team, TeamTables, udtTeam::Count),
@@ -1271,9 +1271,9 @@ s32 GetIdNumber(udtMagicNumberType::Id numberType, u32 udtNumber, udtProtocol::I
 	return idNumber;
 }
 
-s32 GetIdEntityStateFlagMask(udtEntityFlagBit::Id udtFlagId, udtProtocol::Id protocol)
+s32 GetIdEntityStateFlagMask(udtEntityFlag::Id udtFlagId, udtProtocol::Id protocol)
 {
-	const s32 flagBit = GetIdNumber(udtMagicNumberType::EntityFlagBit, (u32)udtFlagId, protocol);
+	const s32 flagBit = GetIdNumber(udtMagicNumberType::EntityFlag, (u32)udtFlagId, protocol);
 	if(flagBit == UDT_S32_MIN)
 	{
 		return 0;

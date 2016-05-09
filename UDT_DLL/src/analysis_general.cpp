@@ -604,15 +604,15 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		   (u32)_gameType < gameTypeCount)
 		{
 			const u8 flags = gameTypeFlags[_gameType];
-			if(flags & (u8)udtGameTypeFlag::HasCaptureLimit)
+			if(flags & (u8)udtGameTypeMask::HasCaptureLimit)
 			{
 				_captureLimit = sl;
 			}
-			else if(flags & (u8)udtGameTypeFlag::HasFragLimit)
+			else if(flags & (u8)udtGameTypeMask::HasFragLimit)
 			{
 				_fragLimit = sl;
 			}
-			else if(flags & (u8)udtGameTypeFlag::HasRoundLimit)
+			else if(flags & (u8)udtGameTypeMask::HasRoundLimit)
 			{
 				_roundLimit = sl;
 			}

@@ -48,11 +48,11 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 	const idTrajectoryBase& tr = ent->pos;
 	switch(tr.trType)
 	{
-		case TR_LINEAR:
+		case ID_TR_LINEAR:
 			Float3::Mad(result, tr.trBase, tr.trDelta, (atTime - tr.trTime) * 0.001f);
 			break;
 
-		case TR_SINE:
+		case ID_TR_SINE:
 			{
 				const f32 deltaTime = (atTime - tr.trTime) / (f32)tr.trDuration;
 				const f32 phase = sinf(deltaTime * UDT_PI * 2.0f);
@@ -60,7 +60,7 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_LINEAR_STOP:
+		case ID_TR_LINEAR_STOP:
 			{
 				if(atTime > tr.trTime + tr.trDuration)
 				{
@@ -77,7 +77,7 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_GRAVITY:
+		case ID_TR_GRAVITY:
 			{
 				const f32 gravity = (f32)GetEntityStateGravitySafe(ent, protocol);
 				const f32 deltaTime = (atTime - tr.trTime) * 0.001f;
@@ -86,8 +86,8 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_STATIONARY:
-		case TR_INTERPOLATE:
+		case ID_TR_STATIONARY:
+		case ID_TR_INTERPOLATE:
 		default:
 			Float3::Copy(result, tr.trBase);
 			break;
