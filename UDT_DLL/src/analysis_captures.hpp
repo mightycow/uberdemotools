@@ -73,7 +73,7 @@ private:
 	{
 		void Clear()
 		{
-			ChangeTime = S32_MIN;
+			ChangeTime = UDT_S32_MIN;
 			InstantCapture = false;
 		}
 
@@ -85,12 +85,12 @@ private:
 	{
 		bool IsValid() const
 		{
-			return Time != S32_MIN && Distance > 0.0f;
+			return Time != UDT_S32_MIN && Distance > 0.0f;
 		}
 
 		void Clear()
 		{
-			Time = S32_MIN;
+			Time = UDT_S32_MIN;
 			Distance = -1.0f;
 		}
 

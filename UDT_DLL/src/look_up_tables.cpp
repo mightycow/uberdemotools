@@ -1090,7 +1090,7 @@ static s32 GetUDTGameTypeCPMA(s32 gt)
 		case idGameType68_CPMA::CTFS: return (s32)udtGameType::CTFS;
 		case idGameType68_CPMA::NTF: return (s32)udtGameType::NTF;
 		case idGameType68_CPMA::TwoVsTwo: return (s32)udtGameType::TwoVsTwo;
-		default: return S32_MIN;
+		default: return UDT_S32_MIN;
 	}
 }
 
@@ -1109,7 +1109,7 @@ static s32 GetIdGameTypeCPMA(s32 gt)
 		case udtGameType::CTFS: return (s32)idGameType68_CPMA::CTFS;
 		case udtGameType::NTF: return (s32)idGameType68_CPMA::NTF;
 		case udtGameType::TwoVsTwo: return (s32)idGameType68_CPMA::TwoVsTwo;
-		default: return S32_MIN;
+		default: return UDT_S32_MIN;
 	}
 }
 
@@ -1130,7 +1130,7 @@ static s32 GetIdExtraItemCPMA(s32 item)
 		case udtItem::ItemArmorJacket: return (s32)idItem68_CPMA::ItemArmorJacket;
 		case udtItem::ItemBackpack: return (s32)idItem68_CPMA::ItemBackpack;
 		case udtItem::FlagNeutral: return (s32)idItem68_CPMA::TeamCTFNeutralflag;
-		default: return S32_MIN;
+		default: return UDT_S32_MIN;
 	}
 }
 
@@ -1141,7 +1141,7 @@ static s32 GetUDTExtraItemCPMA(s32 item)
 		case idItem68_CPMA::ItemArmorJacket: return (s32)udtItem::ItemArmorJacket;
 		case idItem68_CPMA::ItemBackpack: return (s32)udtItem::ItemBackpack;
 		case idItem68_CPMA::TeamCTFNeutralflag: return (s32)udtItem::FlagNeutral;
-		default: return S32_MIN;
+		default: return UDT_S32_MIN;
 	}
 }
 
@@ -1158,7 +1158,7 @@ bool GetIdNumber(s32& idNumber, udtMagicNumberType::Id numberType, u32 udtNumber
 	   mod == udtMod::CPMA)
 	{
 		const s32 result = GetIdGameTypeCPMA((s32)udtNumber);
-		const bool success = result != S32_MIN;
+		const bool success = result != UDT_S32_MIN;
 		if(success) idNumber = result;
 		return success;
 	}
@@ -1168,7 +1168,7 @@ bool GetIdNumber(s32& idNumber, udtMagicNumberType::Id numberType, u32 udtNumber
 	   mod == udtMod::CPMA)
 	{
 		const s32 result = GetIdExtraItemCPMA((s32)udtNumber);
-		if(result != S32_MIN)
+		if(result != UDT_S32_MIN)
 		{
 			idNumber = result;
 			return true;
@@ -1219,7 +1219,7 @@ bool GetUDTNumber(u32& udtNumber, udtMagicNumberType::Id numberType, s32 idNumbe
 	   mod == udtMod::CPMA)
 	{
 		const s32 result = GetUDTGameTypeCPMA(idNumber);
-		const bool success = result != S32_MIN;
+		const bool success = result != UDT_S32_MIN;
 		if(success) udtNumber = (u32)result;
 		return success;
 	}
@@ -1229,7 +1229,7 @@ bool GetUDTNumber(u32& udtNumber, udtMagicNumberType::Id numberType, s32 idNumbe
 	   mod == udtMod::CPMA)
 	{
 		const s32 result = GetUDTExtraItemCPMA(idNumber);
-		if(result != S32_MIN)
+		if(result != UDT_S32_MIN)
 		{
 			udtNumber = (u32)result;
 			return true;
@@ -1265,7 +1265,7 @@ bool GetUDTNumber(u32& udtNumber, udtMagicNumberType::Id numberType, s32 idNumbe
 
 s32 GetIdNumber(udtMagicNumberType::Id numberType, u32 udtNumber, udtProtocol::Id protocol, udtMod::Id mod)
 {
-	s32 idNumber = S32_MIN;
+	s32 idNumber = UDT_S32_MIN;
 	GetIdNumber(idNumber, numberType, udtNumber, protocol, mod);
 
 	return idNumber;
@@ -1274,7 +1274,7 @@ s32 GetIdNumber(udtMagicNumberType::Id numberType, u32 udtNumber, udtProtocol::I
 s32 GetIdEntityStateFlagMask(udtEntityFlagBit::Id udtFlagId, udtProtocol::Id protocol)
 {
 	const s32 flagBit = GetIdNumber(udtMagicNumberType::EntityFlagBit, (u32)udtFlagId, protocol);
-	if(flagBit == S32_MIN)
+	if(flagBit == UDT_S32_MIN)
 	{
 		return 0;
 	}

@@ -593,7 +593,7 @@ void udtCapturesAnalyzer::ProcessGamestateMessageClearStates(const udtGamestateC
 	for(u32 i = 0; i < 64; ++i)
 	{
 		PlayerInfo& player = _players[i];
-		player.PickupTime = S32_MIN;
+		player.PickupTime = UDT_S32_MIN;
 		player.Defined = false;
 		player.PrevDefined = false;
 		player.PickupPositionValid = false;

@@ -83,11 +83,11 @@
 typedef float  f32;
 typedef double f64;
 
-#define S16_MIN (-32768)
-#define S16_MAX (32767)
-#define S32_MIN (-2147483647 - 1)
-#define S32_MAX (2147483647)
-#define U32_MAX (0xFFFFFFFF)
+#define UDT_S16_MIN (-32768)
+#define UDT_S16_MAX (32767)
+#define UDT_S32_MIN (-2147483647 - 1)
+#define UDT_S32_MAX (2147483647)
+#define UDT_U32_MAX (0xFFFFFFFF)
 
 #if defined(UDT_MSVC)
 #	if defined(UDT_CREATE_DLL)

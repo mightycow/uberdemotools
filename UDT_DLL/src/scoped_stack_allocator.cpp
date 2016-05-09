@@ -5,14 +5,14 @@
 
 udtVMScopedStackAllocator::udtVMScopedStackAllocator(udtVMLinearAllocator& linearAllocator)
 	: _linearAllocator(&linearAllocator)
-	, _finalizerList(U32_MAX)
+	, _finalizerList(UDT_U32_MAX)
 	, _oldUsedByteCount(linearAllocator.GetCurrentByteCount())
 {
 }
 
 udtVMScopedStackAllocator::udtVMScopedStackAllocator()
 	: _linearAllocator(NULL)
-	, _finalizerList(U32_MAX)
+	, _finalizerList(UDT_U32_MAX)
 	, _oldUsedByteCount(0)
 {
 }
@@ -20,7 +20,7 @@ udtVMScopedStackAllocator::udtVMScopedStackAllocator()
 udtVMScopedStackAllocator::~udtVMScopedStackAllocator()
 {
 	uptr finalizerOffset = _finalizerList;
-	while(finalizerOffset != U32_MAX)
+	while(finalizerOffset != UDT_U32_MAX)
 	{
 		Finalizer* const finalizer = (Finalizer*)_linearAllocator->GetAddressAt(finalizerOffset);
 		(*finalizer->Destructor)(GetObjectFromFinalizer(finalizer));

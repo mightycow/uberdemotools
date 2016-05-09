@@ -287,7 +287,7 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
-	context->Parser.AddCut(0, S32_MIN, S32_MAX, &CallbackConvertedDemoFileNameCreation, "", &cutCbInfo);
+	context->Parser.AddCut(0, UDT_S32_MIN, UDT_S32_MAX, &CallbackConvertedDemoFileNameCreation, "", &cutCbInfo);
 	
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
@@ -788,7 +788,7 @@ struct DemoMerger
 		}
 
 		DemoData& firstDemo = _demos[0];
-		s32 firstTime = S32_MIN;
+		s32 firstTime = UDT_S32_MIN;
 		udtdMessageType::Id messageType = udtdMessageType::Invalid;
 		udtdConverter::SnapshotInfo snapshotInfo;
 
@@ -834,7 +834,7 @@ struct DemoMerger
 
 	void SynchronizeDemos(s32 firstTime)
 	{
-		if(firstTime == S32_MIN)
+		if(firstTime == UDT_S32_MIN)
 		{
 			// We haven't read the first snapshot yet.
 			return;

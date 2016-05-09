@@ -100,7 +100,7 @@ udtParserPlugInStats::udtParserPlugInStats()
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_disableStatsOverrides = false;
-	_lastMatchEndTime = S32_MIN;
+	_lastMatchEndTime = UDT_S32_MIN;
 	ClearStats();
 }
 
@@ -165,7 +165,7 @@ void udtParserPlugInStats::StartDemoAnalysis()
 	_protocol = udtProtocol::Invalid;
 	_followedClientNumber = -1;
 	_disableStatsOverrides = false;
-	_lastMatchEndTime = S32_MIN;
+	_lastMatchEndTime = UDT_S32_MIN;
 	ClearStats();
 }
 
@@ -208,7 +208,7 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_cpmaRoundScoreBlue = 0;
 	_firstPlaceScore = 0;
 	_secondPlaceScore = 0;
-	_lastMatchEndTime = S32_MIN;
+	_lastMatchEndTime = UDT_S32_MIN;
 
 	ClearStats(true);
 
@@ -2334,7 +2334,7 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 	s32 clientNumber = -1;
 	for(u32 i = 0; i < 64; ++i)
 	{
-		if(_playerStats[i].CleanName != U32_MAX &&
+		if(_playerStats[i].CleanName != UDT_U32_MAX &&
 		   udtString::Equals(playerName, _stringAllocator.GetStringAt(_playerStats[i].CleanName)))
 		{
 			clientNumber = (s32)i;
@@ -2499,7 +2499,7 @@ s32 udtParserPlugInStats::GetValue(s32 index)
 	s32 result = 0;
 	const bool success = StringParseInt(result, _tokenizer->GetArgString((u32)index));
 
-	return success ? result : S32_MIN;
+	return success ? result : UDT_S32_MIN;
 }
 
 bool udtParserPlugInStats::AreStatsValid()
@@ -2794,8 +2794,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	}
 	else
 	{
-		s32 firstPlaceScore = S32_MIN;
-		s32 secondPlaceScore = S32_MIN;
+		s32 firstPlaceScore = UDT_S32_MIN;
+		s32 secondPlaceScore = UDT_S32_MIN;
 		s32 firstPlaceIndex = -1;
 		s32 secondPlaceIndex = -1;
 		for(s32 i = 0; i < 64; ++i)
@@ -2837,8 +2837,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
 			_stats.SecondPlaceNameLength = _playerStats[_secondPlaceClientNumber].CleanNameLength;
 		}
-		else if(firstPlaceScore != S32_MIN &&
-				secondPlaceScore != S32_MIN &&
+		else if(firstPlaceScore != UDT_S32_MIN &&
+				secondPlaceScore != UDT_S32_MIN &&
 				firstPlaceIndex != -1 &&
 				secondPlaceIndex != -1)
 		{
@@ -2877,11 +2877,11 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		else
 		{
-			_stats.FirstPlaceScore = S32_MIN;
-			_stats.SecondPlaceScore = S32_MIN;
-			_stats.FirstPlaceName = U32_MAX;
+			_stats.FirstPlaceScore = UDT_S32_MIN;
+			_stats.SecondPlaceScore = UDT_S32_MIN;
+			_stats.FirstPlaceName = UDT_U32_MAX;
 			_stats.FirstPlaceNameLength = 0;
-			_stats.SecondPlaceName = U32_MAX;
+			_stats.SecondPlaceName = UDT_U32_MAX;
 			_stats.SecondPlaceNameLength = 0;
 		}
 	}
@@ -2938,8 +2938,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.StartTimeMs = _analyzer.MatchStartTime();
 	_stats.EndTimeMs = _analyzer.MatchEndTime();
 	_stats.GameStateIndex = (u32)_analyzer.GameStateIndex();
-	_stats.CountDownStartTimeMs = countDownStartTime != S32_MIN ? countDownStartTime : _stats.StartTimeMs;
-	_stats.IntermissionEndTimeMs = intermissionEndTime != S32_MIN ? intermissionEndTime : _stats.EndTimeMs;
+	_stats.CountDownStartTimeMs = countDownStartTime != UDT_S32_MIN ? countDownStartTime : _stats.StartTimeMs;
+	_stats.IntermissionEndTimeMs = intermissionEndTime != UDT_S32_MIN ? intermissionEndTime : _stats.EndTimeMs;
 	_statsArray.Add(_stats);
 
 	_lastMatchEndTime = _analyzer.MatchEndTime();
@@ -2964,12 +2964,12 @@ void udtParserPlugInStats::ClearStats(bool newGameState)
 		memset(&_stats, 0, sizeof(_stats));
 		memset(_playerStats, 0, sizeof(_playerStats));
 		_stats.GameType = (u32)udtGameType::Invalid;
-		_stats.CustomBlueName = U32_MAX;
-		_stats.CustomRedName = U32_MAX;
-		_stats.FirstPlaceName = U32_MAX;
-		_stats.MapName = U32_MAX;
-		_stats.ModVersion = U32_MAX;
-		_stats.SecondPlaceName = U32_MAX;
+		_stats.CustomBlueName = UDT_U32_MAX;
+		_stats.CustomRedName = UDT_U32_MAX;
+		_stats.FirstPlaceName = UDT_U32_MAX;
+		_stats.MapName = UDT_U32_MAX;
+		_stats.ModVersion = UDT_U32_MAX;
+		_stats.SecondPlaceName = UDT_U32_MAX;
 		for(s32 i = 0; i < 64; ++i)
 		{
 			_playerTeamIndices[i] = -1;

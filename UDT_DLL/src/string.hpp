@@ -128,7 +128,7 @@ struct udtString
 
 	u32 GetOffset() const
 	{
-		return IsNull(*this) ? U32_MAX : Offset;
+		return IsNull(*this) ? UDT_U32_MAX : Offset;
 	}
 
 	u32 GetLength() const

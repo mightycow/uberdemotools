@@ -196,7 +196,7 @@ udtMidAirPatternAnalyzer::~udtMidAirPatternAnalyzer()
 void udtMidAirPatternAnalyzer::StartAnalysis()
 {
 	_protocol = udtProtocol::Invalid;
-	_lastEventSequence = S32_MIN;
+	_lastEventSequence = UDT_S32_MIN;
 	_gameStateIndex = -1;
 	_rocketSpeed = -1.0f;
 	_bfgSpeed = -1.0f;
@@ -212,9 +212,9 @@ void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbac
 
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_players); ++i)
 	{
-		_players[i].LastUpdateTime = S32_MIN;
-		_players[i].LastGroundContactTime = S32_MIN;
-		_players[i].LastZDirChangeTime = S32_MIN;
+		_players[i].LastUpdateTime = UDT_S32_MIN;
+		_players[i].LastGroundContactTime = UDT_S32_MIN;
+		_players[i].LastZDirChangeTime = UDT_S32_MIN;
 		_players[i].ZDir = 0;
 		_players[i].Position[0] = 0.0f;
 		_players[i].Position[1] = 0.0f;
@@ -405,7 +405,7 @@ void udtMidAirPatternAnalyzer::AddProjectile(s32 idWeapon, const f32* position, 
 	if(projectile == NULL)
 	{
 		// We didn't find a free slot, find and pick the oldest one.
-		s32 oldestTimeMs = S32_MAX;
+		s32 oldestTimeMs = UDT_S32_MAX;
 		projectile = &_projectiles[0];
 		for(u32 i = 0; i < UDT_COUNT_OF(_projectiles); ++i)
 		{

@@ -91,7 +91,7 @@ static bool MatchesRules(udtVMLinearAllocator& allocator, const udtString& name,
 
 udtPatternSearchPlugIn::udtPatternSearchPlugIn()
 	: _info(NULL)
-	, _trackedPlayerIndex(S32_MIN)
+	, _trackedPlayerIndex(UDT_S32_MIN)
 {
 	_analyzers.Init(1 << 12, "CutByPatternPlugIn::AnalyzersArray");
 	_analyzerTypes.Init(1 << 12, "CutByPatternPlugIn::AnalyzerTypesArray");
@@ -157,7 +157,7 @@ void udtPatternSearchPlugIn::ProcessGamestateMessage(const udtGamestateCallbackA
 {
 	const udtPatternSearchArg& pi = GetInfo();
 
-	_trackedPlayerIndex = S32_MIN;
+	_trackedPlayerIndex = UDT_S32_MIN;
 	if(pi.PlayerNameRules != NULL)
 	{
 		FindPlayerInConfigStrings(parser);
@@ -189,7 +189,7 @@ void udtPatternSearchPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			_trackedPlayerIndex = ps->clientNum;
 		}
 	}
-	else if(pi.PlayerIndex == S32_MIN &&
+	else if(pi.PlayerIndex == UDT_S32_MIN &&
 			pi.PlayerNameRules != NULL)
 	{
 		FindPlayerInConfigStrings(parser);
@@ -241,11 +241,11 @@ void udtPatternSearchPlugIn::FindPlayerInServerCommand(const udtCommandCallbackA
 	{
 		// The player we had selected just left!
 		// We'll try to find the right player to track next snapshot.
-		_trackedPlayerIndex = S32_MIN;
+		_trackedPlayerIndex = UDT_S32_MIN;
 		return;
 	}
 
-	if(_trackedPlayerIndex != S32_MIN)
+	if(_trackedPlayerIndex != UDT_S32_MIN)
 	{
 		// Avoid switching to another player if the current one is still around.
 		return;

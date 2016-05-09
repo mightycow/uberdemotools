@@ -74,11 +74,11 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_modVersion = udtString::NewNull();
 	_mapName = udtString::NewNull();
 	_gameStateIndex = -1;
-	_matchStartTime = S32_MIN;
-	_matchEndTime = S32_MIN;
-	_prevMatchStartTime = S32_MIN;
-	_warmUpEndTime = S32_MIN;
-	_intermissionEndTime = S32_MIN;
+	_matchStartTime = UDT_S32_MIN;
+	_matchEndTime = UDT_S32_MIN;
+	_prevMatchStartTime = UDT_S32_MIN;
+	_warmUpEndTime = UDT_S32_MIN;
+	_intermissionEndTime = UDT_S32_MIN;
 	_overTimeCount = 0;
 	_timeOutCount = 0;
 	_totalTimeOutDuration = 0;
@@ -102,14 +102,14 @@ void udtGeneralAnalyzer::ResetForNextDemo()
 	_serverPause = false;
 	for(u32 i = 0; i < (u32)Constants::MaxTimeOutCount; ++i)
 	{
-		_timeOutStartAndEndTimes[i].StartTime = S32_MIN;
-		_timeOutStartAndEndTimes[i].EndTime = S32_MIN;
+		_timeOutStartAndEndTimes[i].StartTime = UDT_S32_MIN;
+		_timeOutStartAndEndTimes[i].EndTime = UDT_S32_MIN;
 	}
 }
 
 void udtGeneralAnalyzer::FinishDemoAnalysis()
 {
-	if(_gameState == udtGameState::InProgress && _matchStartTime != S32_MIN)
+	if(_gameState == udtGameState::InProgress && _matchStartTime != UDT_S32_MIN)
 	{
 		_matchEndTime = _parser->_inServerTime;
 	}
@@ -176,7 +176,7 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 		UpdateMatchStartTime();
 		const s32 warmUpEndTime = GetWarmUpEndTime();
 		const bool noIntermission = !IsIntermission();
-		const bool noWarmUpEndTime = warmUpEndTime == S32_MIN || warmUpEndTime < _matchStartTime;
+		const bool noWarmUpEndTime = warmUpEndTime == UDT_S32_MIN || warmUpEndTime < _matchStartTime;
 		if(noIntermission && noWarmUpEndTime)
 		{
 			UpdateGameState(udtGameState::InProgress);
@@ -396,8 +396,8 @@ void udtGeneralAnalyzer::ResetForNextMatch()
 	_serverPause = false;
 	for(u32 i = 0; i < (u32)Constants::MaxTimeOutCount; ++i)
 	{
-		_timeOutStartAndEndTimes[i].StartTime = S32_MIN;
-		_timeOutStartAndEndTimes[i].EndTime = S32_MIN;
+		_timeOutStartAndEndTimes[i].StartTime = UDT_S32_MIN;
+		_timeOutStartAndEndTimes[i].EndTime = UDT_S32_MIN;
 	}
 }
 
@@ -436,7 +436,7 @@ s32 udtGeneralAnalyzer::MatchStartTime() const
 
 s32 udtGeneralAnalyzer::MatchEndTime() const
 {
-	return _matchEndTime != S32_MIN ? _matchEndTime : _parser->_inServerTime;
+	return _matchEndTime != UDT_S32_MIN ? _matchEndTime : _parser->_inServerTime;
 }
 
 s32 udtGeneralAnalyzer::GameStateIndex() const
@@ -503,7 +503,7 @@ s32 udtGeneralAnalyzer::GetTimeOutStartTime(u32 index) const
 {
 	if(index >= (u32)Constants::MaxTimeOutCount)
 	{
-		return S32_MIN;
+		return UDT_S32_MIN;
 	}
 
 	return _timeOutStartAndEndTimes[index].StartTime;
@@ -513,7 +513,7 @@ s32 udtGeneralAnalyzer::GetTimeOutEndTime(u32 index) const
 {
 	if(index >= (u32)Constants::MaxTimeOutCount)
 	{
-		return S32_MIN;
+		return UDT_S32_MIN;
 	}
 
 	return _timeOutStartAndEndTimes[index].EndTime;
@@ -660,7 +660,7 @@ void udtGeneralAnalyzer::ProcessCPMAGameInfoConfigString(const char* configStrin
 		if(tw == 0)
 		{
 			UpdateGameState(udtGameState::InProgress);
-			if(_matchStartTime == S32_MIN)
+			if(_matchStartTime == UDT_S32_MIN)
 			{
 				_prevMatchStartTime = _matchStartTime;
 				_matchStartTime = ts;
@@ -900,7 +900,7 @@ void udtGeneralAnalyzer::ProcessScores2(const char* configString)
 	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
 
 	s32 score = 0;
-	if(_matchStartTime != S32_MIN &&
+	if(_matchStartTime != UDT_S32_MIN &&
 		matchTime >= 1000 &&
 	   _gameState == udtGameState::InProgress &&
 	   StringParseInt(score, configString) &&
@@ -922,7 +922,7 @@ void udtGeneralAnalyzer::ProcessScores2Player(const char* configString)
 	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
 
 	// The 2nd place player's name gets cleared during a game?
-	if(_matchStartTime != S32_MIN &&
+	if(_matchStartTime != UDT_S32_MIN &&
 	   matchTime >= 1000 &&
 	   _gameState == udtGameState::InProgress &&
 	   configString[0] == '\0')
@@ -1075,13 +1075,13 @@ s32 udtGeneralAnalyzer::GetLevelStartTime()
 	const udtString& cs = _parser->GetConfigString(csIndex);
 	if(udtString::IsNullOrEmpty(cs))
 	{
-		return S32_MIN;
+		return UDT_S32_MIN;
 	}
 
-	s32 matchStartTimeMs = S32_MIN;
+	s32 matchStartTimeMs = UDT_S32_MIN;
 	if(!StringParseInt(matchStartTimeMs, cs.GetPtr()))
 	{
-		return S32_MIN;
+		return UDT_S32_MIN;
 	}
 
 	return matchStartTimeMs;
@@ -1099,10 +1099,10 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 	const udtString& cs = _parser->GetConfigString(csIndex);
 	if(udtString::IsNullOrEmpty(cs))
 	{
-		return S32_MIN;
+		return UDT_S32_MIN;
 	}
 
-	s32 warmUpEndTimeMs = S32_MIN;
+	s32 warmUpEndTimeMs = UDT_S32_MIN;
 	if(StringParseInt(warmUpEndTimeMs, cs.GetPtr()))
 	{
 		return warmUpEndTimeMs;
@@ -1114,7 +1114,7 @@ s32 udtGeneralAnalyzer::GetWarmUpEndTime()
 		return warmUpEndTimeMs;
 	}
 
-	return S32_MIN;
+	return UDT_S32_MIN;
 }
 
 bool udtGeneralAnalyzer::IsIntermission()
@@ -1132,7 +1132,7 @@ bool udtGeneralAnalyzer::IsIntermission()
 void udtGeneralAnalyzer::UpdateMatchStartTime()
 {
 	const s32 newStartTime = GetLevelStartTime();
-	if(_matchEndTime == S32_MIN || newStartTime < _matchEndTime)
+	if(_matchEndTime == UDT_S32_MIN || newStartTime < _matchEndTime)
 	{
 		_prevMatchStartTime = _matchStartTime;
 		_matchStartTime = newStartTime;
@@ -1142,11 +1142,11 @@ void udtGeneralAnalyzer::UpdateMatchStartTime()
 void udtGeneralAnalyzer::ResetForNextGameState()
 {
 	ResetForNextMatch();
-	_matchStartTime = S32_MIN;
-	_matchEndTime = S32_MIN;
-	_prevMatchStartTime = S32_MIN;
-	_warmUpEndTime = S32_MIN;
-	_intermissionEndTime = S32_MIN;
+	_matchStartTime = UDT_S32_MIN;
+	_matchEndTime = UDT_S32_MIN;
+	_prevMatchStartTime = UDT_S32_MIN;
+	_warmUpEndTime = UDT_S32_MIN;
+	_intermissionEndTime = UDT_S32_MIN;
 	_gameState = udtGameState::WarmUp;
 	_lastGameState = udtGameState::WarmUp;
 }
@@ -1164,7 +1164,7 @@ void udtGeneralAnalyzer::SetTimeOutEndTime(s32 endTime)
 	if(_timeOutCount < (u32)Constants::MaxTimeOutCount)
 	{
 		s32& endTimeRef = _timeOutStartAndEndTimes[_timeOutCount].EndTime;
-		if(endTimeRef == S32_MIN && endTime != 0)
+		if(endTimeRef == UDT_S32_MIN && endTime != 0)
 		{
 			endTimeRef = endTime;
 		}
@@ -1178,5 +1178,5 @@ s32 udtGeneralAnalyzer::GetTimeOutStartTime() const
 		return _timeOutStartAndEndTimes[_timeOutCount].StartTime;
 	}
 
-	return S32_MIN;
+	return UDT_S32_MIN;
 }

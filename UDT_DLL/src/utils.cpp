@@ -629,7 +629,7 @@ void WriteStringToApiStruct(u32& offset, const udtString& string)
 void WriteNullStringToApiStruct(u32& offset)
 {
 	u32* const offsetAndLength = &offset;
-	offsetAndLength[0] = U32_MAX;
+	offsetAndLength[0] = UDT_U32_MAX;
 	offsetAndLength[1] = 0;
 }
 

@@ -24,8 +24,8 @@ udtBaseParser::udtBaseParser()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
-	_inServerTime = S32_MIN;
-	_inLastSnapshotMessageNumber = S32_MIN;
+	_inServerTime = UDT_S32_MIN;
+	_inLastSnapshotMessageNumber = UDT_S32_MIN;
 
 	_outFileName = udtString::NewEmptyConstant();
 	_outFilePath = udtString::NewEmptyConstant();
@@ -114,8 +114,8 @@ void udtBaseParser::ResetForGamestateMessage()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
-	_inServerTime = S32_MIN;
-	_inLastSnapshotMessageNumber = S32_MIN;
+	_inServerTime = UDT_S32_MIN;
+	_inLastSnapshotMessageNumber = UDT_S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -127,7 +127,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	memset(_inConfigStrings, 0, sizeof(_inConfigStrings));
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inEntityEventTimesMs); ++i)
 	{
-		_inEntityEventTimesMs[i] = S32_MIN;
+		_inEntityEventTimesMs[i] = UDT_S32_MIN;
 	}
 
 	_configStringAllocator.Clear();

@@ -161,7 +161,7 @@ uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
 			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
-			return U32_MAX;
+			return UDT_U32_MAX;
 		}
 		_committedByteCount += newByteCount;
 	}
@@ -184,7 +184,7 @@ uptr udtVMLinearAllocator::AllocateWithRelocation(uptr byteCount)
 	if(data == NULL)
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
-		return U32_MAX;
+		return UDT_U32_MAX;
 	}
 
 	// Commit just enough for the new used size.
@@ -194,7 +194,7 @@ uptr udtVMLinearAllocator::AllocateWithRelocation(uptr byteCount)
 	if(!VirtualMemoryCommit(data, newCommitByteCount))
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
-		return U32_MAX;
+		return UDT_U32_MAX;
 	}
 
 	// Copy the old data to the new location.

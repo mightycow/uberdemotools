@@ -163,10 +163,10 @@ void udtParserPlugInGameState::ClearPlayerInfos()
 {
 	for(s32 i = 0; i < 64; ++i)
 	{
-		_playerInfos[i].FirstName = U32_MAX;
+		_playerInfos[i].FirstName = UDT_U32_MAX;
 		_playerInfos[i].FirstNameLength = 0;
-		_playerInfos[i].FirstSnapshotTimeMs = S32_MAX;
-		_playerInfos[i].LastSnapshotTimeMs = S32_MIN;
+		_playerInfos[i].FirstSnapshotTimeMs = UDT_S32_MAX;
+		_playerInfos[i].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[i].Index = -1;
 		_playerInfos[i].FirstTeam = (u32)-1;
 	}
@@ -175,8 +175,8 @@ void udtParserPlugInGameState::ClearPlayerInfos()
 void udtParserPlugInGameState::ClearGameState()
 {
 	_currentGameState.FileOffset = 0;
-	_currentGameState.FirstSnapshotTimeMs = S32_MAX;
-	_currentGameState.LastSnapshotTimeMs = S32_MIN;
+	_currentGameState.FirstSnapshotTimeMs = UDT_S32_MAX;
+	_currentGameState.LastSnapshotTimeMs = UDT_S32_MIN;
 	_currentGameState.FirstMatchIndex = 0;
 	_currentGameState.MatchCount = 0;
 	_currentGameState.FirstKeyValuePairIndex = 0;
@@ -197,7 +197,7 @@ void udtParserPlugInGameState::AddCurrentMatchIfValid(bool addIfInProgress)
 	udtMatchInfo match;
 	match.MatchStartTimeMs = _analyzer.MatchStartTime();
 	match.MatchEndTimeMs = _analyzer.MatchEndTime();
-	match.WarmUpEndTimeMs = S32_MIN;
+	match.WarmUpEndTimeMs = UDT_S32_MIN;
 	
 	if(_currentGameState.MatchCount > 0 &&
 	   _matches[_matches.GetSize() - 1].MatchEndTimeMs >= match.MatchStartTimeMs)
@@ -236,7 +236,7 @@ void udtParserPlugInGameState::AddCurrentGameState()
 void udtParserPlugInGameState::ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol)
 {
 	_currentGameState.DemoTakerPlayerIndex = playerIndex;
-	_currentGameState.DemoTakerName = U32_MAX; // Not available in all demo protocols.
+	_currentGameState.DemoTakerName = UDT_U32_MAX; // Not available in all demo protocols.
 	_currentGameState.DemoTakerNameLength = 0;
 
 	if(playerIndex < 0 || playerIndex >= ID_MAX_CLIENTS)
@@ -337,10 +337,10 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		++_currentGameState.PlayerCount;
 
 		_playerInfos[playerIndex].Index = -1;
-		_playerInfos[playerIndex].FirstName = U32_MAX;
+		_playerInfos[playerIndex].FirstName = UDT_U32_MAX;
 		_playerInfos[playerIndex].FirstNameLength = 0;
-		_playerInfos[playerIndex].FirstSnapshotTimeMs = S32_MAX;
-		_playerInfos[playerIndex].LastSnapshotTimeMs = S32_MIN;
+		_playerInfos[playerIndex].FirstSnapshotTimeMs = UDT_S32_MAX;
+		_playerInfos[playerIndex].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[playerIndex].FirstTeam = (u32)-1;
 	}
 }
