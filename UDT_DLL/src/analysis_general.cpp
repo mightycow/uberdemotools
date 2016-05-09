@@ -47,7 +47,7 @@ CPMA:
 */
 
 
-#define FIRST_SNAPSHOT_TIME (S32_MIN + 1)
+#define FIRST_SNAPSHOT_TIME (UDT_S32_MIN + 1)
 
 
 udtGeneralAnalyzer::udtGeneralAnalyzer()

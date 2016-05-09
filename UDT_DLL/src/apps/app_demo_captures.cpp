@@ -312,7 +312,7 @@ private:
 		udtString currentSectionMap = udtString::NewConstRef("__invalid__");
 		bool previousBaseToBase = false;
 		u32 mapTimeIndex = 0;
-		s32 previousMapTimeMs = S32_MIN;
+		s32 previousMapTimeMs = UDT_S32_MIN;
 		bool hasAtLeastOneObject = false;
 
 		const u32 captureCount = _captures.GetSize();
@@ -335,7 +335,7 @@ private:
 
 					hasAtLeastOneObject = true;
 					mapTimeIndex = 0;
-					previousMapTimeMs = S32_MIN;
+					previousMapTimeMs = UDT_S32_MIN;
 					writer.StartObject();
 					writer.WriteStringValue("map", cap.MapName.GetPtr());
 					writer.StartArray("captures");

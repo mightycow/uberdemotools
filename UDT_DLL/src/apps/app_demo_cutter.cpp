@@ -506,8 +506,8 @@ struct ProgramOptions
 	const char* OutputFolderPath = NULL; // -o=
 	u32 MaxThreadCount = 1; // -t=
 	u32 GameStateIndex = 0; // -g=
-	s32 StartTimeSec = S32_MIN; // -s=
-	s32 EndTimeSec = S32_MIN; // -e=
+	s32 StartTimeSec = UDT_S32_MIN; // -s=
+	s32 EndTimeSec = UDT_S32_MIN; // -e=
 	bool Recursive = false;	 // -r
 };
 
@@ -647,13 +647,13 @@ int udt_main(int argc, char** argv)
 			return 1;
 		}
 
-		if(options.StartTimeSec == S32_MIN)
+		if(options.StartTimeSec == UDT_S32_MIN)
 		{
 			fprintf(stderr, "The start time was not specified.\n");
 			return 1;
 		}
 
-		if(options.EndTimeSec == S32_MIN)
+		if(options.EndTimeSec == UDT_S32_MIN)
 		{
 			fprintf(stderr, "The end time was not specified.\n");
 			return 1;

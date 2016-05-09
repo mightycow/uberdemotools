@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#define    UNDEFINED    S16_MIN
+#define UNDEFINED UDT_S16_MIN
 
 
 static s16 PowerUps_3_90_U2Q[udtPowerUpIndex::Count];
