@@ -476,8 +476,8 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
-	udtInitLibrary();
 	udtSetCrashHandler(&CrashCallback);
+	udtInitLibrary();
 
 	PlayerPrinter printer;
 	if(printer.Init())
