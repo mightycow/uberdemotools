@@ -15,6 +15,7 @@ void udtModifierContext::ResetForNextDemo()
 	InitIfNeeded();
 
 	TempAllocator.Clear();
+	WriteStream.Clear();
 }
 
 void udtModifierContext::InitIfNeeded()
