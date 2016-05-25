@@ -133,7 +133,7 @@ void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 	memcpy(snap.AreaMask, arg.Snapshot->areamask, 32);
 	snap.ChangedEntities = changedEntities.GetStartAddress();
 	snap.CommandNumber = arg.CommandNumber;
-	snap.EntityCount = entityCount;
+	snap.EntityCount = changedEntities.GetSize();
 	snap.MessageNumber = arg.MessageNumber;
 	snap.PlayerState = GetPlayerState(arg.Snapshot, _context->Context.Parser._inProtocol);
 	snap.RemovedEntities = arg.RemovedEntities;
