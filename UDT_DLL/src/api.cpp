@@ -1403,7 +1403,7 @@ UDT_API(s32) udtGetIdMagicNumber(s32* idNumber, u32 magicNumberTypeId, s32 udtNu
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!GetIdNumber(*idNumber, (udtMagicNumberType::Id)magicNumberTypeId, (u32)udtNumber, (udtProtocol::Id)protocol), (udtMod::Id)mod)
+	if(!GetIdNumber(*idNumber, (udtMagicNumberType::Id)magicNumberTypeId, (u32)udtNumber, (udtProtocol::Id)protocol, (udtMod::Id)mod))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -1422,7 +1422,7 @@ UDT_API(s32) udtGetUDTMagicNumber(s32* udtNumber, u32 magicNumberTypeId, s32 idN
 	}
 
 	u32 result;
-	if(!GetUDTNumber(result, (udtMagicNumberType::Id)magicNumberTypeId, (s32)idNumber, (udtProtocol::Id)protocol), (udtMod::Id)mod)
+	if(!GetUDTNumber(result, (udtMagicNumberType::Id)magicNumberTypeId, (s32)idNumber, (udtProtocol::Id)protocol, (udtMod::Id)mod))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -1532,6 +1532,20 @@ UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char*
 		memcpy(resBuf, valueAddress, length);
 		resBuf[length] = '\0';
 	}
+
+	return (s32)udtErrorCode::None;
+}
+
+UDT_API(s32) udtPlayerStateToEntityState(idEntityStateBase* es, const idPlayerStateBase* ps, u32 extrapolate, s32 serverTimeMs, u32 protocol)
+{
+	if(es == NULL || ps == NULL || !udtIsValidProtocol(protocol))
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	// @TODO: deal with the lastEventSequence business.
+	s32 dummy = 0;
+	PlayerStateToEntityState(*es, dummy, *ps, extrapolate != 0, serverTimeMs, (udtProtocol::Id)protocol);
 
 	return (s32)udtErrorCode::None;
 }

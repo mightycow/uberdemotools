@@ -27,7 +27,7 @@ void udtCustomParsingPlugIn::ProcessMessageBundleStart(const udtMessageBundleCal
 
 	udtCuMessageOutput& msg = _context->Message;
 	msg.Commands = NULL;
-	msg.ServerCommandCount = 0;
+	msg.CommandCount = 0;
 	msg.GameStateOrSnapshot.GameState = NULL;
 	msg.IsGameState = 0;
 }
@@ -41,7 +41,7 @@ void udtCustomParsingPlugIn::ProcessMessageBundleEnd(const udtMessageBundleCallb
 	}
 
 	udtCuMessageOutput& msg = _context->Message;
-	msg.ServerCommandCount = commandCount;
+	msg.CommandCount = commandCount;
 	msg.Commands = _context->Commands.GetStartAddress();
 
 	// Patch the command string addresses.

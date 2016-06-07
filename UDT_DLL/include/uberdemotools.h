@@ -2621,8 +2621,8 @@ extern "C"
 		/* An array of server-to-client string commands. */
 		const udtCuCommandMessage* Commands;
 
-		/* Length of the ServerCommandCount array. */
-		u32 ServerCommandCount;
+		/* Length of the Commands array. */
+		u32 CommandCount;
 
 		/* When non-zero, use GameStateOrSnapshot::GameState. */
 		/* Else, use GameStateOrSnapshot::Snapshot. */
@@ -2997,14 +2997,14 @@ extern "C"
 	/* The magicNumberTypeId argument is of type udtMagicNumberType::Id. */
 	/* The protocol argument is of type udtProtocol::Id. */
 	/* The mod argument is of type udtMod::Id. */
-	/* The return value is non-zero when successful. */
+	/* The return value is of type udtErrorCode::Id. */
 	UDT_API(s32) udtGetIdMagicNumber(s32* idNumber, u32 magicNumberTypeId, s32 udtNumber, u32 protocol, u32 mod);
 
 	/* Finds the Quake number for a given UDT number. */
 	/* The magicNumberTypeId argument is of type udtMagicNumberType::Id. */
 	/* The protocol argument is of type udtProtocol::Id. */
 	/* The mod argument is of type udtMod::Id. */
-	/* The return value is non-zero when successful. */
+	/* The return value is of type udtErrorCode::Id. */
 	UDT_API(s32) udtGetUDTMagicNumber(s32* udtNumber, u32 magicNumberTypeId, s32 idNumber, u32 protocol, u32 mod);
 
 	/* Reads the integer value of a config string variable. */
@@ -3016,6 +3016,12 @@ extern "C"
 	/* The temp buffer is used for constructing a search string. */
 	/* The return value is of type udtErrorCode::Id. */
 	UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
+
+	/* Converts a player state to an entity state. */
+	/* Set extrapolate to a non-zero value to enable extrapolation. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtPlayerStateToEntityState(idEntityStateBase* es, const idPlayerStateBase* ps, u32 extrapolate, s32 serverTimeMs, u32 protocol);
 
 #ifdef __cplusplus
 }
