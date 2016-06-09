@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include "macros.hpp"
 #include "parser.hpp"
 #include "linear_allocator.hpp"
 #include "array.hpp"
@@ -28,6 +29,27 @@ template<typename T>
 T udt_clamp(const T x, const T a, const T b)
 {
 	return udt_min(udt_max(x, a), b);
+}
+
+bool UDT_INLINE IsBitSet(const void* bits, u32 index)
+{
+	const u32 byteIndex = index >> 3;
+	const u32 bitIndex = index & 7;
+	return (((const u8*)bits)[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0;
+}
+
+void UDT_INLINE SetBit(void* bits, u32 index)
+{
+	const u32 byteIndex = index >> 3;
+	const u32 bitIndex = index & 7;
+	((u8*)bits)[byteIndex] |= (u8)1 << (u8)bitIndex;
+}
+
+void UDT_INLINE ClearBit(void* bits, u32 index)
+{
+	const u32 byteIndex = index >> 3;
+	const u32 bitIndex = index & 7;
+	((u8*)bits)[byteIndex] &= ~((u8)1 << (u8)bitIndex);
 }
 
 

@@ -233,9 +233,7 @@ static void WriteTeamStats(s32& fieldsRead, udtJSONExporter& writer, const u8* f
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
 	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if(IsBitSet(flags, (u32)i))
 		{
 			writer.WriteIntValue(fieldNames[i], fields[fieldIdx++]);
 		}
@@ -257,9 +255,7 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONExporter& writer, const udt
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
 	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if(IsBitSet(flags, (u32)i))
 		{
 			const s32 field = fields[fieldIdx++];
 			switch((udtPlayerStatsField::Id)i)

@@ -16,22 +16,6 @@ CPMA stats/scores commands:
 */
 
 
-static bool IsBitSet(const u8* flags, s32 index)
-{
-	const s32 byteIndex = index >> 3;
-	const s32 bitIndex = index & 7;
-
-	return (flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0;
-}
-
-static void SetBit(u8* flags, s32 index)
-{
-	const s32 byteIndex = index >> 3;
-	const s32 bitIndex = index & 7;
-
-	flags[byteIndex] |= (u8)1 << (u8)bitIndex;
-}
-
 static s32 CPMACharToInt(char c)
 {
 	if(c >= 'A'  &&  c <= 'Z')
