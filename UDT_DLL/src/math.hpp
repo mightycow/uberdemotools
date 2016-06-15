@@ -14,11 +14,16 @@ namespace Float3
 {
 	extern void Copy(f32* dest, const f32* src);
 	extern f32  Dot(const f32* a, const f32* b);
+	extern f32  SquaredDist(const f32* a, const f32* b);
 	extern f32  Dist(const f32* a, const f32* b);
 	extern f32  SquaredLength(const f32* a);
 	extern f32  Length(const f32* a);
 	extern void Add(f32* result, const f32* a, const f32* b);
+	extern void Sub(f32* result, const f32* a, const f32* b);
+	extern void Direction(f32* result, const f32* a, const f32* b); // The result is normalized.
+	extern void Normalize(f32* result, const f32* a);
 	extern void Mad(f32* result, const f32* a, const f32* b, f32 s);
+	extern void Lerp(f32* result, const f32* a, const f32* b, f32 t);
 	extern void Zero(f32* result);
 	extern void Increment(f32* result, const f32* a);
 	extern void EulerAnglesToAxisVector(f32* result, const f32* angles);

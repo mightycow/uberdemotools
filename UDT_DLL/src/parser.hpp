@@ -130,6 +130,8 @@ public:
 	udtVMArray<u32> _inGameStateFileOffsets;
 	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
 	udtVMArray<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArray<idEntityStateBase*> _inEntities; // All entities that were read in the last call to ParsePacketEntities.
+	udtVMArray<u8> _inEntityFlags;
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.

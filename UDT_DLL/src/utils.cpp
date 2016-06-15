@@ -635,7 +635,9 @@ void WriteNullStringToApiStruct(u32& offset)
 
 void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
 {
-	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
+	// @TODO: Get STAT_HEALTH with GetIdNumber
+	// @TODO: Get PM_INTERMISSION and PM_SPECTATOR with GetIdNumber
+	const u32 healthStatIdx = (protocol <= udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
 	const bool isPlayerInvisible = 
 		ps.pm_type == PM_INTERMISSION ||
 		ps.pm_type == PM_SPECTATOR ||

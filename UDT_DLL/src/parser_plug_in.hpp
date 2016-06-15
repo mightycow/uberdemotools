@@ -35,11 +35,14 @@ struct udtSnapshotCallbackArg
 {
 	idClientSnapshotBase* Snapshot; // Never NULL.
 	idClientSnapshotBase* OldSnapshot; // May be NULL.
-	udtChangedEntity* Entities;
+	idEntityStateBase** Entities;
+	u8* EntityFlags;
+	udtChangedEntity* ChangedEntities;
 	s32* RemovedEntities;
 	s32 SnapshotArrayIndex;
-	u32 EntityCount;
+	u32 ChangedEntityCount;
 	u32 RemovedEntityCount;
+	u32 EntityCount;
 	s32 ServerTime;
 	s32 CommandNumber;
 	s32 MessageNumber;

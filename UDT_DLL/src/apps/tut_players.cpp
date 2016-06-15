@@ -349,12 +349,12 @@ private:
 		{
 			AnalyzeGameState(*message.GameStateOrSnapshot.GameState);
 		}
-		else if(message.ServerCommandCount > 0 && 
+		else if(message.CommandCount > 0 && 
 				message.Commands != NULL && 
 				message.GameStateOrSnapshot.Snapshot != NULL)
 		{
 			const s32 serverTimeMs = message.GameStateOrSnapshot.Snapshot->ServerTimeMs;
-			for(u32 i = 0; i < message.ServerCommandCount; ++i)
+			for(u32 i = 0; i < message.CommandCount; ++i)
 			{
 				AnalyzeCommand(message.Commands[i], serverTimeMs);
 			}

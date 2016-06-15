@@ -22,15 +22,15 @@ void udtObituariesAnalyzer::ResetForNextDemo()
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
 		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}

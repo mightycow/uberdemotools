@@ -106,16 +106,16 @@ void udtCustomParsingPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& 
 
 void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const u32 entityCount = arg.EntityCount;
+	const u32 entityCount = arg.ChangedEntityCount;
 	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
 	udtVMArray<const idEntityStateBase*>& changedEntities = _context->ChangedEntities;
 	changedEntities.Clear();
 	for(u32 i = 0; i < entityCount; ++i)
 	{
-		idEntityStateBase* const ent = arg.Entities[i].Entity;
+		idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
 		if(ent->eType >= entityTypeEventId)
 		{
-			if(!arg.Entities[i].IsNewEvent)
+			if(!arg.ChangedEntities[i].IsNewEvent)
 			{
 				// Don't give our user any duplicate event.
 				continue;
@@ -126,14 +126,17 @@ void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg
 			ent->eType = entityTypeEventId;
 		}
 
-		changedEntities.Add(arg.Entities[i].Entity);
+		changedEntities.Add(arg.ChangedEntities[i].Entity);
 	}
 
 	udtCuSnapshotMessage& snap = _context->Snapshot;
 	memcpy(snap.AreaMask, arg.Snapshot->areamask, 32);
 	snap.ChangedEntities = changedEntities.GetStartAddress();
 	snap.CommandNumber = arg.CommandNumber;
-	snap.EntityCount = changedEntities.GetSize();
+	snap.ChangedEntityCount = changedEntities.GetSize();
+	snap.Entities = (const idEntityStateBase**)arg.Entities;
+	snap.EntityCount = arg.EntityCount;
+	snap.EntityFlags = arg.EntityFlags;
 	snap.MessageNumber = arg.MessageNumber;
 	snap.PlayerState = GetPlayerState(arg.Snapshot, _context->Context.Parser._inProtocol);
 	snap.RemovedEntities = arg.RemovedEntities;

@@ -100,7 +100,10 @@ local function ApplyProjectSettings()
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 		
 	filter { "action:vs*", "kind:ConsoleApp" }
-		linkoptions { "/ENTRY:wmainCRTStartup" }
+		entrypoint "wmainCRTStartup"
+		
+	filter { "action:vs*", "kind:WindowedApp" }
+		flags "WinMain"
 	
 	filter { "action:vs*", "configurations:Debug" }
 		buildoptions { "" }
@@ -170,9 +173,6 @@ local function ApplyTutorialProjectSettings()
 		
 	filter "action:vs*"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
-		
-	filter { "action:vs*", "kind:ConsoleApp" }
-		linkoptions { "/ENTRY:mainCRTStartup" }
 		
 	filter "action:gmake"
 		buildoptions { "-std=c++11 -pedantic" }
@@ -272,8 +272,6 @@ solution "UDT"
 		filter "action:vs*"
 			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 			--buildoptions { "/Za" } -- /Za: disable language extensions
-		filter { "action:vs*", "kind:ConsoleApp" }
-			linkoptions { "/ENTRY:mainCRTStartup" }
 		filter "action:gmake"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
 			
@@ -288,3 +286,23 @@ solution "UDT"
 		filter { }
 		files { path_src_apps.."/tut_players.cpp" }
 		ApplyTutorialProjectSettings()
+		
+	project "UDT_viewer"
+	
+		kind "WindowedApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_core.."/viewer/*.cpp" }
+		files { path_src_core.."/viewer/*.hpp" }
+		ApplyProjectSettings()
+		filter "system:windows"
+			links { "D3D11" }
+		
+	project "viewer_data_gen"
+	
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_core.."/viewer_data_gen/*.cpp" }
+		files { path_src_core.."/viewer_data_gen/*.hpp" }
+		files { path_src_apps.."/shared.cpp" }
+		includedirs { path_src_core.."/viewer" }
+		ApplyProjectSettings()
