@@ -837,7 +837,11 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	}
 	idLargestEntityState es;
 	udtPlayerStateToEntityState(&es, snapshot.PlayerState, 0, snapshot.ServerTimeMs, _protocol);
-	ProcessPlayer(es, snapshot.ServerTimeMs, true);
+	if(es.eType == _protocolNumbers.EntityTypePlayer)
+	{
+		// @NOTE: The resulting entity can be of type "Invisible".
+		ProcessPlayer(es, snapshot.ServerTimeMs, true);
+	}
 	const u32 playerCount = _tempPlayers.GetSize();
 	assert(playerCount <= 64);
 	newSnap.PlayerCount = playerCount;
@@ -1020,31 +1024,19 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed)
 {
 	if(player.clientNum < 0 ||
-	   player.clientNum >= 64)
-	{
-		return false;
-	}
-
-	if(IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagNoDraw) ||
-	   _players[player.clientNum].Team == udtTeam::Spectators)
+	   player.clientNum >= 64 ||
+	   IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagNoDraw) ||
+	   _players[player.clientNum].Team == udtTeam::Spectators ||
+	   (IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagDead) && player.pos.trType == ID_TR_GRAVITY))
 	{
 		return false;
 	}
 	
 	s32 udtWeaponId;
 	udtGetUDTMagicNumber(&udtWeaponId, udtMagicNumberType::Weapon, player.weapon, _protocol, _mod);
-	
-	
-	// @TODO: investigate this case where the dead body has a ID_TR_GRAVITY trajectory
-	// and keeps falling and being visible for so damn long.
 
 	Player p;
 	ComputeTrajectoryPosition(p.Position, player.pos, serverTimeMs);
-	if(p.Position[2] <= _min[2] || p.Position[2] >= _max[2])
-	{
-		return false; // @FIXME: hacky work-around :(
-	}
-
 	p.Angle = ComputePlayerAngle(player, serverTimeMs);
 	p.WeaponId = (u8)udtWeaponId;
 	p.IdClientNumber = (u8)player.clientNum;
