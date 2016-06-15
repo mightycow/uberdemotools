@@ -562,7 +562,7 @@ struct Platform
 						_drawRequested = false;
 					}
 				}
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 
 			case WM_LBUTTONDOWN:
 			case WM_MBUTTONDOWN:
@@ -575,7 +575,7 @@ struct Platform
 				event.CursorPos[0] = (s32)GET_X_LPARAM(lParam);
 				event.CursorPos[1] = (s32)GET_Y_LPARAM(lParam);
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_LBUTTONUP:
@@ -589,7 +589,7 @@ struct Platform
 				event.CursorPos[0] = (s32)GET_X_LPARAM(lParam);
 				event.CursorPos[1] = (s32)GET_Y_LPARAM(lParam);
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_MOUSEMOVE:
@@ -600,7 +600,7 @@ struct Platform
 				event.CursorPos[0] = (s32)GET_X_LPARAM(lParam);
 				event.CursorPos[1] = (s32)GET_Y_LPARAM(lParam);
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_NCMOUSEMOVE:
@@ -613,7 +613,7 @@ struct Platform
 				event.CursorPos[0] = (s32)point.x;
 				event.CursorPos[1] = (s32)point.y;
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_MOUSEWHEEL:
@@ -626,20 +626,17 @@ struct Platform
 				event.CursorPos[0] = (s32)GET_X_LPARAM(lParam);
 				event.CursorPos[1] = (s32)GET_Y_LPARAM(lParam);
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_KEYDOWN:
 			{
-				if(!IsBitSet(&lParam, 30)) // Filters out repeats.
-				{
-					Event event;
-					ZeroMemory(&event, sizeof(event));
-					event.Type = EventType::KeyDown;
-					event.VirtualKeyId = GetKeyId(wParam);
-					_viewer->ProcessEvent(event);
-				}
-				return DefWindowProcW(_window, message, wParam, lParam);
+				Event event;
+				ZeroMemory(&event, sizeof(event));
+				event.Type = IsBitSet(&lParam, 30) ? EventType::KeyDownRepeat : EventType::KeyDown;
+				event.VirtualKeyId = GetKeyId(wParam);
+				_viewer->ProcessEvent(event);
+				return 0;
 			}
 
 			case WM_KEYUP:
@@ -649,7 +646,7 @@ struct Platform
 				event.Type = EventType::KeyUp;
 				event.VirtualKeyId = GetKeyId(wParam);
 				_viewer->ProcessEvent(event);
-				return DefWindowProcW(_window, message, wParam, lParam);
+				return 0;
 			}
 
 			case WM_DROPFILES:

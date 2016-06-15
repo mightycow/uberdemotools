@@ -377,7 +377,11 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 	else if(event.Type == EventType::KeyDown)
 	{
-		OnKeyPressed(event.VirtualKeyId);
+		OnKeyPressed(event.VirtualKeyId, false);
+	}
+	else if(event.Type == EventType::KeyDownRepeat)
+	{
+		OnKeyPressed(event.VirtualKeyId, true);
 	}
 
 	if(_demoProgressBar.HasDragJustStarted())
@@ -807,27 +811,11 @@ void Viewer::SetPlaybackProgress(f32 progress)
 	Platform_RequestDraw(_platform);
 }
 
-void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId)
+void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat)
 {
+	// Actions with repeat allowed.
 	switch(virtualKeyId)
 	{
-		case VirtualKey::Escape:
-			Platform_RequestQuit(_platform);
-			break;
-
-		case VirtualKey::Space:
-		case VirtualKey::P:
-			TogglePlayback();
-			break;
-
-		case VirtualKey::R:
-			ReversePlayback();
-			break;
-
-		case VirtualKey::S:
-			StopPlayback();
-			break;
-
 		case VirtualKey::LeftArrow:
 			OffsetSnapshot(-1);
 			break;
@@ -850,6 +838,35 @@ void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId)
 
 		case VirtualKey::PageDown:
 			OffsetTimeMs(-10000);
+			break;
+
+		default:
+			break;
+	}
+
+	if(repeat)
+	{
+		return;
+	}
+
+	// Actions with repeat not allowed.
+	switch(virtualKeyId)
+	{
+		case VirtualKey::Escape:
+			Platform_RequestQuit(_platform);
+			break;
+
+		case VirtualKey::Space:
+		case VirtualKey::P:
+			TogglePlayback();
+			break;
+
+		case VirtualKey::R:
+			ReversePlayback();
+			break;
+
+		case VirtualKey::S:
+			StopPlayback();
 			break;
 
 		default:

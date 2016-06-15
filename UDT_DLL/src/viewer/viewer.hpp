@@ -68,7 +68,7 @@ private:
 	void StopPlayback();
 	void ReversePlayback();
 	void SetPlaybackProgress(f32 progress);
-	void OnKeyPressed(VirtualKey::Id virtualKeyId);
+	void OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat);
 	void OffsetSnapshot(s32 snapshotCount);
 	void OffsetTimeMs(s32 durationMs);
 

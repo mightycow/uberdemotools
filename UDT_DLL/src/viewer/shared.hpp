@@ -22,6 +22,7 @@ struct EventType
 		FilesDropped,
 		KeyDown,
 		KeyUp,
+		KeyDownRepeat,
 		Count
 	};
 };
