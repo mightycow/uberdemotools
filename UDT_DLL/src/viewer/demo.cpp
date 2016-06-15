@@ -544,11 +544,11 @@ void Demo::WriteSnapshot(const Snapshot& snapshot)
 	Write(snapshot.PlayerCount);
 	Write(snapshot.Players, snapshot.PlayerCount * (u32)sizeof(Player));
 
-	assert(staticItemCount <= MAX_DYN_ITEMS);
+	assert(snapshot.DynamicItemCount <= MAX_DYN_ITEMS);
 	Write(snapshot.DynamicItemCount);
 	Write(snapshot.DynamicItems, snapshot.DynamicItemCount * (u32)sizeof(DynamicItem));
 
-	assert(staticItemCount <= MAX_RAIL_BEAMS);
+	assert(snapshot.RailBeamCount <= MAX_RAIL_BEAMS);
 	Write(snapshot.RailBeamCount);
 	Write(snapshot.RailBeams, snapshot.RailBeamCount * (u32)sizeof(RailBeam));
 
@@ -739,18 +739,14 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	{
 		return true;
 	}
-	
-	const udtCuSnapshotMessage& snapshot = *message.GameStateOrSnapshot.Snapshot;
-	auto& snapshots = _snapshots[_writeIndex];
-	SnapshotDesc snapDesc;
-	snapDesc.Offset = (u32)_snapshotAllocators[_writeIndex].GetCurrentByteCount();
-	snapDesc.ServerTimeMs = snapshot.ServerTimeMs;
-	snapshots.Add(snapDesc);
 
 	_tempPlayers.Clear();
 	_tempDynamicItems.Clear();
 	_tempBeams.Clear();
 	_tempShaftImpacts.Clear();
+
+	const udtCuSnapshotMessage& snapshot = *message.GameStateOrSnapshot.Snapshot;
+	auto& snapshots = _snapshots[_writeIndex];
 
 	for(u32 i = 0; i < snapshot.ChangedEntityCount; ++i)
 	{
