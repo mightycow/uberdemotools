@@ -2985,7 +2985,6 @@ extern "C"
 	{
 		enum Id
 		{
-			
 			PowerUpIndex,   /* idPlayerStateBase::powerups */
 			LifeStatsIndex, /* idPlayerStateBase::stats */
 			PersStatsIndex, /* idPlayerStateBase::persistant */
