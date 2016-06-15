@@ -641,10 +641,10 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 		healthStatIdx = 0;
 	}
 
-	// @TODO: Get PM_INTERMISSION and PM_SPECTATOR with GetIdNumber
 	const bool isPlayerInvisible = 
-		ps.pm_type == PM_INTERMISSION ||
-		ps.pm_type == PM_SPECTATOR ||
+		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::Intermission, protocol, udtMod::None) ||
+		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::SPIntermission, protocol, udtMod::None) ||
+		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::Spectator, protocol, udtMod::None) ||
 		ps.stats[healthStatIdx] <= GIB_HEALTH;
 	es.eType = GetIdNumber(udtMagicNumberType::EntityType, isPlayerInvisible ? udtEntityType::Invisible : udtEntityType::Player, protocol);
 	es.number = ps.clientNum;

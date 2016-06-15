@@ -2966,10 +2966,26 @@ extern "C"
 		};
 	};
 
+	struct udtPlayerMovementType
+	{
+		enum Id
+		{
+			Normal,         /* can accelerate and turn */
+			NoClip,         /* no collision at all */
+			Spectator,      /* still run into walls */
+			Dead,           /* no acceleration or turning, but free falling */
+			Freeze,         /* stuck in place with no control */
+			Intermission,   /* no movement or status bar */
+			SPIntermission, /* no movement or status bar */
+			Count
+		};
+	};
+
 	struct udtMagicNumberType
 	{
 		enum Id
 		{
+			
 			PowerUpIndex,   /* idPlayerStateBase::powerups */
 			LifeStatsIndex, /* idPlayerStateBase::stats */
 			PersStatsIndex, /* idPlayerStateBase::persistant */
@@ -2980,9 +2996,10 @@ extern "C"
 			Team,
 			GameType,
 			FlagStatus,
-			Weapon, /* idPlayerStateBase::weapon and idEntityStateBase::weapon */
+			Weapon,             /* idPlayerStateBase::weapon and idEntityStateBase::weapon */
 			MeanOfDeath,
-			Item,   /* idEntityStateBase::modelindex */
+			Item,               /* idEntityStateBase::modelindex */
+			PlayerMovementType, /* idPlayerStateBase::pm_type */
 			Count
 		};
 	};

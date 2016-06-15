@@ -1062,6 +1062,31 @@ static const s16* ItemTables[udtProtocol::Count * 3] =
 	Items_90p, Items_90p_U2Q, Items_90p_Q2U
 };
 
+static s16 PMTypes_U2Q[udtPlayerMovementType::Count];
+static s16 PMTypes_Q2U[udtPlayerMovementType::Count * 2];
+static const s16 PMTypes[udtPlayerMovementType::Count * 2] =
+{
+	(s16)udtPlayerMovementType::Normal, 0,
+	(s16)udtPlayerMovementType::NoClip, 1,
+	(s16)udtPlayerMovementType::Spectator, 2,
+	(s16)udtPlayerMovementType::Dead, 3,
+	(s16)udtPlayerMovementType::Freeze, 4,
+	(s16)udtPlayerMovementType::Intermission, 5,
+	(s16)udtPlayerMovementType::SPIntermission, 6
+};
+
+static const s16* PMTypeTables[udtProtocol::Count * 3] =
+{
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U
+};
+
 struct MagicNumberTableGroup
 {
 	MagicNumberTableGroup(udtMagicNumberType::Id type, const s16** tables, u32 count)
@@ -1090,7 +1115,8 @@ static const MagicNumberTableGroup MagicNumberTables[udtMagicNumberType::Count] 
 	MagicNumberTableGroup(udtMagicNumberType::FlagStatus, FlagStatusTables, udtFlagStatus::Count),
 	MagicNumberTableGroup(udtMagicNumberType::Weapon, WeaponTables, udtWeapon::Count),
 	MagicNumberTableGroup(udtMagicNumberType::MeanOfDeath, MeanOfDeathTables, udtMeanOfDeath::Count),
-	MagicNumberTableGroup(udtMagicNumberType::Item, ItemTables, udtItem::Count)
+	MagicNumberTableGroup(udtMagicNumberType::Item, ItemTables, udtItem::Count),
+	MagicNumberTableGroup(udtMagicNumberType::PlayerMovementType, PMTypeTables, udtPlayerMovementType::Count)
 };
 
 
