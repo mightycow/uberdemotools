@@ -98,6 +98,13 @@ struct RailBeam
 	f32 Alpha;
 };
 
+struct SnapshotCore
+{
+	s16 FollowedHealth;
+	s16 FollowedArmor;
+	// @TODO: scores!
+};
+
 #define  MAX_STATIC_ITEMS  64
 #define  MAX_DYN_ITEMS     64
 #define  MAX_RAIL_BEAMS    16
@@ -108,6 +115,7 @@ struct Snapshot
 	StaticItem StaticItems[MAX_STATIC_ITEMS];
 	DynamicItem DynamicItems[MAX_DYN_ITEMS];
 	RailBeam RailBeams[MAX_RAIL_BEAMS];
+	SnapshotCore Core;
 	u32 PlayerCount;
 	u32 StaticItemCount;
 	u32 DynamicItemCount;
@@ -144,6 +152,8 @@ struct idProtocolNumbers
 	s32 EntityEventMissileMiss;
 	s32 EntityEventMissileMissMetal;
 	s32 EntityEventRailTrail;
+	s32 PlayerStatsHealth;
+	s32 PlayerStatsArmor;
 };
 
 struct Demo
@@ -190,7 +200,7 @@ private:
 	bool ProcessMessage_Mod(const udtCuMessageOutput& message);
 	bool ProcessMessage_StaticItems(const udtCuMessageOutput& message);
 	bool ProcessMessage_FinalPass(const udtCuMessageOutput& message);
-	void ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed);
+	bool ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed);
 	void ProcessPlayerConfigString(u32 csIndex, u32 playerIndex);
 	void RegisterStaticItem(const idEntityStateBase& item, s32 itemId);
 	bool IsSame(const idEntityStateBase& a, const StaticItem& b, s32 udtItemId);

@@ -575,6 +575,18 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	Platform_NVGEndFrame(_platform);
 	Platform_NVGBeginFrame(_platform);
 
+	for(u32 p = 0; p < _snapshot.PlayerCount; ++p)
+	{
+		const Player& player = _snapshot.Players[p];
+		if(!IsBitSet(&player.Flags, PlayerFlags::Dead))
+		{
+			continue;
+		}
+
+		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
+	}
+
+	// @TODO: follow message
 	{
 		u32 name = u32(-1);
 		for(u32 i = 0; i < _snapshot.PlayerCount; ++i)
@@ -589,7 +601,7 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		if(name != u32(-1))
 		{
 			char msg[256];
-			sprintf(msg, "Following %s", _demo.GetString(name));
+			sprintf(msg, "Following %s - HP %d - armor %d", _demo.GetString(name), _snapshot.Core.FollowedHealth, _snapshot.Core.FollowedArmor);
 			NVGcontext* const ctx = renderParams.NVGContext;
 			nvgBeginPath(ctx);
 			nvgFontSize(ctx, 16.0f);
@@ -599,17 +611,6 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 			nvgFill(ctx);
 			nvgClosePath(ctx);
 		}
-	}
-
-	for(u32 p = 0; p < _snapshot.PlayerCount; ++p)
-	{
-		const Player& player = _snapshot.Players[p];
-		if(!IsBitSet(&player.Flags, PlayerFlags::Dead))
-		{
-			continue;
-		}
-
-		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
 	}
 }
 
@@ -665,6 +666,7 @@ void Viewer::Render(RenderParams& renderParams)
 
 	_activeWidgets.Draw(renderParams.NVGContext);
 
+	// @TODO: timer, showing either match time or true server time
 	{
 		const int totalSec = (int)_demoPlaybackTimer.GetElapsedSec();
 		//const int totalSec = ((int)_demoPlaybackTimer.GetElapsedMs() + (int)_demo.GetFirstSnapshotTimeMs()) / 1000;

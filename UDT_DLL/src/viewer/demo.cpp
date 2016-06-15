@@ -299,6 +299,8 @@ void idProtocolNumbers::GetNumbers(u32 protocol, u32 mod)
 	udtGetIdMagicNumber(&EntityEventMissileMiss, udtMagicNumberType::EntityEvent, udtEntityEvent::MissileMiss, protocol, mod);
 	udtGetIdMagicNumber(&EntityEventMissileMissMetal, udtMagicNumberType::EntityEvent, udtEntityEvent::MissileMissMetal, protocol, mod);
 	udtGetIdMagicNumber(&EntityEventRailTrail, udtMagicNumberType::EntityEvent, udtEntityEvent::RailTrail, protocol, mod);
+	udtGetIdMagicNumber(&PlayerStatsHealth, udtMagicNumberType::LifeStatsIndex, udtLifeStatsIndex::Health, protocol, mod);
+	udtGetIdMagicNumber(&PlayerStatsArmor, udtMagicNumberType::LifeStatsIndex, udtLifeStatsIndex::Armor, protocol, mod);
 
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(DynamicItemIds); ++i)
 	{
@@ -490,6 +492,8 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 	assert(snapshot.RailBeamCount <= MAX_RAIL_BEAMS);
 	Read(offset, snapshot.RailBeams, snapshot.RailBeamCount * (u32)sizeof(RailBeam));
 
+	Read(offset, snapshot.Core);
+
 	return true;
 }
 
@@ -536,6 +540,8 @@ void Demo::WriteSnapshot(const Snapshot& snapshot)
 	assert(staticItemCount <= MAX_RAIL_BEAMS);
 	Write(snapshot.RailBeamCount);
 	Write(snapshot.RailBeams, snapshot.RailBeamCount * (u32)sizeof(RailBeam));
+
+	Write(snapshot.Core);
 }
 
 void Demo::Read(uptr& offset, void* data, u32 byteCount) const
@@ -756,6 +762,9 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 			ProcessPlayerConfigString(cmd.ConfigStringIndex, cmd.ConfigStringIndex - idCSIndexFirstPlayer);
 		}
 	}
+
+	// @TODO: write everything to a temporary Snapshot instance
+	// and then call WriteSnapshot.
 
 	//
 	// Server time.
@@ -998,22 +1007,30 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	assert(beamCount <= MAX_STATIC_ITEMS);
 	Write(_tempBeams.GetStartAddress(), beamCount * (u32)sizeof(RailBeam));
 
+	//
+	// Core.
+	//
+
+	SnapshotCore snapshotCore;
+	snapshotCore.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
+	snapshotCore.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
+	Write(snapshotCore);
+
 	return true;
 }
 
-void Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed)
+bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed)
 {
-	// @FIXME: player.number >= 64
 	if(player.clientNum < 0 ||
 	   player.clientNum >= 64)
 	{
-		return;
+		return false;
 	}
 
 	if(IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagNoDraw) ||
 	   _players[player.clientNum].Team == udtTeam::Spectators)
 	{
-		return;
+		return false;
 	}
 	
 	s32 udtWeaponId;
@@ -1045,6 +1062,8 @@ void Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 		ComputeLGEndPoint(p, player.pos.trBase, player.apos.trBase);
 	}
 	_tempPlayers.Add(p);
+
+	return true;
 }
 
 void Demo::ProcessPlayerConfigString(u32 csIndex, u32 playerIndex)
