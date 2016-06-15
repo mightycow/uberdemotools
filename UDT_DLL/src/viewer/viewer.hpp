@@ -84,7 +84,6 @@ private:
 	int _sprites[Sprite::Count];
 	Demo _demo;
 	Config _config;
-	Snapshot _snapshot;
 	udtTimer _demoPlaybackTimer;
 	DemoProgressBar _demoProgressBar;
 	ButtonBar _playbackButtonBar;
@@ -100,6 +99,7 @@ private:
 	Platform& _platform;
 	PlatformReadOnly* _sharedReadOnly = nullptr;
 	PlatformReadWrite* _sharedReadWrite = nullptr;
+	Snapshot* _snapshot = nullptr;
 	int _map = InvalidTextureId;
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;

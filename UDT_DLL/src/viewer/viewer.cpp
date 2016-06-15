@@ -105,17 +105,21 @@ Viewer::Viewer(Platform& platform)
 Viewer::~Viewer()
 {
 	udtShutDownLibrary();
+	free(_snapshot);
 }
 
 bool Viewer::Init(int argc, char** argv)
 {
-	if(!_demo.Init() ||
+	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
+	if(snapshot == nullptr ||
+	   !_demo.Init() ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
 	   nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"\\Roboto-Regular.ttf") == FONS_INVALID)
 	{
 		return false;
 	}
+	_snapshot = snapshot;
 
 	if(argc >= 2 && udtFileStream::Exists(argv[1]))
 	{
@@ -467,17 +471,18 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	params.X = mapDisplayX;
 	params.Y = mapDisplayY;
 
-	for(u32 i = 0; i < _snapshot.StaticItemCount; ++i)
+	const Snapshot& snapshot = *_snapshot;
+	for(u32 i = 0; i < snapshot.StaticItemCount; ++i)
 	{
 		// @NOTE: DrawSpriteAt will check if the sprite ID is valid.
-		const StaticItem& item = _snapshot.StaticItems[i];
+		const StaticItem& item = snapshot.StaticItems[i];
 		const s32 spriteId = GetSpriteIdFromItemId(item.Id);
 		DrawMapSpriteAt(params, (u32)spriteId, item.Position, 16.0f, _config.StaticZScale, 0.0f);
 	}
 
-	for(u32 i = 0; i < _snapshot.DynamicItemCount; ++i)
+	for(u32 i = 0; i < snapshot.DynamicItemCount; ++i)
 	{
-		const DynamicItem& item = _snapshot.DynamicItems[i];
+		const DynamicItem& item = snapshot.DynamicItems[i];
 		if(item.Id == DynamicItemType::ProjectileRocket)
 		{
 			DrawMapSpriteAt(params, (u32)Sprite::rocket, item.Position, 24.0f, _config.DynamicZScale, item.Angle);
@@ -497,9 +502,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		}
 	}
 	
-	for(u32 b = 0; b < _snapshot.RailBeamCount; ++b)
+	for(u32 b = 0; b < snapshot.RailBeamCount; ++b)
 	{
-		const RailBeam& beam = _snapshot.RailBeams[b];
+		const RailBeam& beam = snapshot.RailBeams[b];
 		const f32 x0 = _mapRect.Left() + (beam.StartPosition[0] - _mapMin[0]) * mapScale;
 		const f32 y0 = _mapRect.Bottom() - (beam.StartPosition[1] - _mapMin[1]) * mapScale;
 		const f32 z0 = 1.0f + 4.0f * ((beam.StartPosition[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
@@ -509,9 +514,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		DrawRailBeam(renderParams.NVGContext, x0, y0, z0, x1, y1, z1, beam.Alpha);
 	}
 
-	for(u32 p = 0; p < _snapshot.PlayerCount; ++p)
+	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
 	{
-		const Player& player = _snapshot.Players[p];
+		const Player& player = snapshot.Players[p];
 		if(IsBitSet(&player.Flags, PlayerFlags::Dead) ||
 		   !IsBitSet(&player.Flags, PlayerFlags::Firing) ||
 		   player.WeaponId != udtWeapon::LightningGun)
@@ -528,9 +533,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		DrawShaftBeam(renderParams.NVGContext, x0, y0, z0, x1, y1, z1);
 	}
 	
-	for(u32 p = 0; p < _snapshot.PlayerCount; ++p)
+	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
 	{
-		const Player& player = _snapshot.Players[p];
+		const Player& player = snapshot.Players[p];
 		if(IsBitSet(&player.Flags, PlayerFlags::Dead))
 		{
 			continue;
@@ -545,9 +550,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	Platform_NVGEndFrame(_platform);
 	Platform_NVGBeginFrame(_platform);
 	nvgBlendMode(renderParams.NVGContext, NVG_BLEND_MODE_ADDITIVE);
-	for(u32 i = 0; i < _snapshot.DynamicItemCount; ++i)
+	for(u32 i = 0; i < snapshot.DynamicItemCount; ++i)
 	{
-		const DynamicItem& item = _snapshot.DynamicItems[i];
+		const DynamicItem& item = snapshot.DynamicItems[i];
 		if(item.Id == DynamicItemType::ImpactPlasma)
 		{
 			DrawMapSpriteAt(params, (u32)Sprite::impact_plasma, item.Position, 8.0f, _config.DynamicZScale, 0.0f);
@@ -575,9 +580,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	Platform_NVGEndFrame(_platform);
 	Platform_NVGBeginFrame(_platform);
 
-	for(u32 p = 0; p < _snapshot.PlayerCount; ++p)
+	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
 	{
-		const Player& player = _snapshot.Players[p];
+		const Player& player = snapshot.Players[p];
 		if(!IsBitSet(&player.Flags, PlayerFlags::Dead))
 		{
 			continue;
@@ -589,11 +594,11 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	// @TODO: follow message
 	{
 		u32 name = u32(-1);
-		for(u32 i = 0; i < _snapshot.PlayerCount; ++i)
+		for(u32 i = 0; i < snapshot.PlayerCount; ++i)
 		{
-			if(IsBitSet(&_snapshot.Players[i].Flags, PlayerFlags::Followed))
+			if(IsBitSet(&snapshot.Players[i].Flags, PlayerFlags::Followed))
 			{
-				name = _snapshot.Players[i].Name;
+				name = snapshot.Players[i].Name;
 				break;
 			}
 		}
@@ -601,7 +606,7 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		if(name != u32(-1))
 		{
 			char msg[256];
-			sprintf(msg, "Following %s - HP %d - armor %d", _demo.GetString(name), _snapshot.Core.FollowedHealth, _snapshot.Core.FollowedArmor);
+			sprintf(msg, "Following %s - HP %d - armor %d", _demo.GetString(name), snapshot.Core.FollowedHealth, snapshot.Core.FollowedArmor);
 			NVGcontext* const ctx = renderParams.NVGContext;
 			nvgBeginPath(ctx);
 			nvgFontSize(ctx, 16.0f);
@@ -633,7 +638,7 @@ void Viewer::RenderNoDemo(RenderParams& renderParams)
 void Viewer::Render(RenderParams& renderParams)
 {
 	const u32 snapshotIndex = GetCurrentSnapshotIndex();
-	if(!_demo.GetSnapshotData(_snapshot, snapshotIndex))
+	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
 	{
 		RenderNoDemo(renderParams);
 		return;
