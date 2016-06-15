@@ -505,15 +505,14 @@ struct Platform
 						{
 							SetPaused(false);
 							ResizeBuffersFromWindowProc();
-							ReDraw();
-							_drawRequested = false;
 						}
 						else if(!_resizing)
 						{
 							ResizeBuffersFromWindowProc();
-							ReDraw();
-							_drawRequested = false;
+							
 						}
+						ReDraw();
+						_drawRequested = false;
 					}
 				}
 				return 0;
@@ -529,6 +528,23 @@ struct Platform
 				ResizeBuffersFromWindowProc();
 				ReDraw();
 				_drawRequested = false;
+				return 0;
+
+				// wParam
+				// 0   => FALSE or WM_INACTIVE
+				// 1,2 => TRUE or WM_ACTIVE or WM_CLICKACTIVE
+			case WM_ACTIVATE:
+			case WM_ACTIVATEAPP:
+				if(wParam == 0)
+				{
+					SetPaused(true);
+				}
+				else if(wParam == 1 || wParam == 2)
+				{
+					SetPaused(false);
+					ReDraw();
+					_drawRequested = false;
+				}
 				return 0;
 
 			case WM_GETMINMAXINFO:
