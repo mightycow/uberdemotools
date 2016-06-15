@@ -16,6 +16,7 @@ struct PlayerFlags
 		Firing,
 		ShortLGBeam,
 		Followed,
+		TelePortBit,
 		Count
 	};
 };
@@ -146,6 +147,7 @@ struct idProtocolNumbers
 	s32 EntityFlagFiring;
 	s32 EntityFlagNoDraw;
 	s32 EntityFlagPlayerEvent;
+	s32 EntityFlagTelePortBit;
 	s32 EntityEventBulletHitFlesh;
 	s32 EntityEventBulletHitWall;
 	s32 EntityEventMissileHit;

@@ -293,6 +293,7 @@ void idProtocolNumbers::GetNumbers(u32 protocol, u32 mod)
 	udtGetIdMagicNumber(&EntityFlagFiring, udtMagicNumberType::EntityFlag, udtEntityFlag::Firing, protocol, mod);
 	udtGetIdMagicNumber(&EntityFlagNoDraw, udtMagicNumberType::EntityFlag, udtEntityFlag::NoDraw, protocol, mod);
 	udtGetIdMagicNumber(&EntityFlagPlayerEvent, udtMagicNumberType::EntityFlag, udtEntityFlag::PlayerEvent, protocol, mod);
+	udtGetIdMagicNumber(&EntityFlagTelePortBit, udtMagicNumberType::EntityFlag, udtEntityFlag::TeleportBit, protocol, mod);
 	udtGetIdMagicNumber(&EntityEventBulletHitFlesh, udtMagicNumberType::EntityEvent, udtEntityEvent::BulletHitFlesh, protocol, mod);
 	udtGetIdMagicNumber(&EntityEventBulletHitWall, udtMagicNumberType::EntityEvent, udtEntityEvent::BulletHitWall, protocol, mod);
 	udtGetIdMagicNumber(&EntityEventMissileHit, udtMagicNumberType::EntityEvent, udtEntityEvent::MissileHit, protocol, mod);
@@ -1036,8 +1037,17 @@ bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 	s32 udtWeaponId;
 	udtGetUDTMagicNumber(&udtWeaponId, udtMagicNumberType::Weapon, player.weapon, _protocol, _mod);
 	
+	
+	// @TODO: investigate this case where the dead body has a ID_TR_GRAVITY trajectory
+	// and keeps falling and being visible for so damn long.
+
 	Player p;
 	ComputeTrajectoryPosition(p.Position, player.pos, serverTimeMs);
+	if(p.Position[2] <= _min[2] || p.Position[2] >= _max[2])
+	{
+		return false; // @FIXME: hacky work-around :(
+	}
+
 	p.Angle = ComputePlayerAngle(player, serverTimeMs);
 	p.WeaponId = (u8)udtWeaponId;
 	p.IdClientNumber = (u8)player.clientNum;
@@ -1055,6 +1065,10 @@ bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 	if(IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagFiring))
 	{
 		SetBit(&p.Flags, PlayerFlags::Firing);
+	}
+	if(IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagTelePortBit))
+	{
+		SetBit(&p.Flags, PlayerFlags::TelePortBit);
 	}
 	if(udtWeaponId == (s32)udtWeapon::LightningGun &&
 	   IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagFiring))
@@ -1265,6 +1279,8 @@ void Demo::FixPlayers(const Snapshot& prevSnap, Snapshot& currSnap, Snapshot& sn
 			continue;
 		}
 
+		const bool tpBit = IsBitSet(&player.Flags, PlayerFlags::TelePortBit);
+
 		bool fixed = false;
 		for(u32 s2 = s; s2 < snapshotCount && !fixed; ++s2)
 		{
@@ -1279,7 +1295,9 @@ void Demo::FixPlayers(const Snapshot& prevSnap, Snapshot& currSnap, Snapshot& sn
 				const Player& player2 = snap2.Players[p2];
 				if(player2.IdClientNumber == player.IdClientNumber)
 				{
-					if(s2 > s && IsBitSet(&player2.Flags, PlayerFlags::Dead) == alive)
+					if(s2 > s && 
+					   IsBitSet(&player2.Flags, PlayerFlags::Dead) == alive &&
+					   IsBitSet(&player2.Flags, PlayerFlags::TelePortBit) == tpBit)
 					{
 						Player newPlayer = player2;
 						const f32 t = (f32)(currSnap.ServerTimeMs - prevSnap.ServerTimeMs) / (f32)(snap2.ServerTimeMs - prevSnap.ServerTimeMs);
