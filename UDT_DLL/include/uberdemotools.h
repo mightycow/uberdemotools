@@ -2804,6 +2804,22 @@ extern "C"
 	};
 #undef UDT_POWER_UP_ITEM
 
+#define UDT_LIFE_STATS_LIST(N) \
+	N(Health) \
+	N(HoldableItem) \
+	N(Weapons) \
+	N(Armor) \
+	N(MaxHealth)
+
+	struct udtLifeStatsIndex
+	{
+		enum Id
+		{
+			UDT_LIFE_STATS_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
 #define UDT_PERSISTENT_STATS_LIST(N) \
 	N(FlagCaptures) \
 	N(Score) \
@@ -2954,18 +2970,19 @@ extern "C"
 	{
 		enum Id
 		{
-			PowerUpIndex,
-			PersStatsIndex,
-			EntityType,
-			EntityFlag,
-			EntityEvent,
+			PowerUpIndex,   /* idPlayerStateBase::powerups */
+			LifeStatsIndex, /* idPlayerStateBase::stats */
+			PersStatsIndex, /* idPlayerStateBase::persistant */
+			EntityType,     /* idEntityStateBase::eType */
+			EntityFlag,     /* idEntityStateBase::eFlags */
+			EntityEvent,    /* idEntityStateBase::event */
 			ConfigStringIndex,
 			Team,
 			GameType,
 			FlagStatus,
-			Weapon,
+			Weapon, /* idPlayerStateBase::weapon and idEntityStateBase::weapon */
 			MeanOfDeath,
-			Item,
+			Item,   /* idEntityStateBase::modelindex */
 			Count
 		};
 	};

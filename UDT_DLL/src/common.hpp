@@ -219,32 +219,6 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 
 #define EV_NONE 0
 
-// player_state->stats[] indexes
-// NOTE: may not have more than 16
-typedef enum {
-	STAT_HEALTH_68,
-	STAT_HOLDABLE_ITEM_68,
-	STAT_WEAPONS_68,					// 16 bit fields
-	STAT_ARMOR_68,				
-	STAT_DEAD_YAW_68,					// look this direction when dead (FIXME: get rid of?)
-	STAT_CLIENTS_READY_68,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_68					// health / armor limit, changeable by handicap
-} statIndex_68_t;
-
-typedef enum {
-	STAT_HEALTH_73p,
-	STAT_HOLDABLE_ITEM_73p,
-	STAT_PERSISTANT_POWERUP_73p,
-	STAT_WEAPONS_73p,					// 16 bit fields
-	STAT_ARMOR_73p,				
-	STAT_BATTLE_SUIT_KILL_COUNT_73p,
-	STAT_CLIENTS_READY_73p,				// bit mask of clients wishing to exit the intermission (FIXME: configstring?)
-	STAT_MAX_HEALTH_73p,				// health / armor limit, changeable by handicap
-	STAT_POWERUP_REMAINING_73p = 11,
-	STAT_QUAD_KILL_COUNT_73p = 13,
-	STAT_ARMOR_TIER_73p = 14
-} statIndex_73p_t;
-
 /*
 ===================================================================================
 

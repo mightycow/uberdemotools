@@ -60,6 +60,40 @@ static const s16* PowerUpTables[udtProtocol::Count * 3] =
 	PowerUps_91, PowerUps_91_U2Q, PowerUps_91_Q2U
 };
 
+static s16 LifeStats_3_68_U2Q[udtLifeStatsIndex::Count];
+static s16 LifeStats_3_68_Q2U[udtLifeStatsIndex::Count * 2];
+static const s16 LifeStats_3_68[udtLifeStatsIndex::Count * 2] =
+{
+	(s16)udtLifeStatsIndex::Health, 0,
+	(s16)udtLifeStatsIndex::HoldableItem, 1,
+	(s16)udtLifeStatsIndex::Weapons, 2,
+	(s16)udtLifeStatsIndex::Armor, 3,
+	(s16)udtLifeStatsIndex::MaxHealth, 6
+};
+
+static s16 LifeStats_73p_U2Q[udtLifeStatsIndex::Count];
+static s16 LifeStats_73p_Q2U[udtLifeStatsIndex::Count * 2];
+static const s16 LifeStats_73p[udtLifeStatsIndex::Count * 2] =
+{
+	(s16)udtLifeStatsIndex::Health, 0,
+	(s16)udtLifeStatsIndex::HoldableItem, 1,
+	(s16)udtLifeStatsIndex::Weapons, 3,
+	(s16)udtLifeStatsIndex::Armor, 4,
+	(s16)udtLifeStatsIndex::MaxHealth, 7
+};
+
+static const s16* LifeStatsTables[udtProtocol::Count * 3] =
+{
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U
+};
+
 static s16 PersStats_3_U2Q[udtPersStatsIndex::Count];
 static s16 PersStats_3_Q2U[udtPersStatsIndex::Count * 2];
 static const s16 PersStats_3[udtPersStatsIndex::Count * 2] =
@@ -1045,6 +1079,7 @@ struct MagicNumberTableGroup
 static const MagicNumberTableGroup MagicNumberTables[udtMagicNumberType::Count] =
 {
 	MagicNumberTableGroup(udtMagicNumberType::PowerUpIndex, PowerUpTables, udtPowerUpIndex::Count),
+	MagicNumberTableGroup(udtMagicNumberType::LifeStatsIndex, LifeStatsTables, udtLifeStatsIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::PersStatsIndex, PersStatsTables, udtPersStatsIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityType, EntityTypeTables, udtEntityType::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityFlag, EntityFlagBitTables, udtEntityFlag::Count),
