@@ -265,6 +265,7 @@ private:
 	udtString _mapName = udtString::NewEmptyConstant();
 	udtCuContext* _context = nullptr;
 	u8* _messageData = nullptr;
+	Snapshot* _snapshot = nullptr;
 	s32 _firstMatchStartTimeMs = UDT_S32_MAX;
 	s32 _firstMatchEndTimeMs = UDT_S32_MIN;
 	s32 _firstSnapshotTimeMs = UDT_S32_MAX;

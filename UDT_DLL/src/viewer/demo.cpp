@@ -335,6 +335,9 @@ Demo::Demo()
 
 Demo::~Demo()
 {
+	udtCuDestroyContext(_context);
+	free(_messageData);
+	free(_snapshot);
 }
 
 bool Demo::Init()
@@ -352,6 +355,13 @@ bool Demo::Init()
 		return false;
 	}
 	_messageData = inMsgData;
+
+	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
+	if(snapshot == nullptr)
+	{
+		return false;
+	}
+	_snapshot = snapshot;
 
 	return true;
 }
@@ -764,20 +774,14 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		}
 	}
 
-	// @TODO: write everything to a temporary Snapshot instance
-	// and then call WriteSnapshot.
-
-	//
-	// Server time.
-	//
-
-	Write(snapshot.ServerTimeMs);
+	Snapshot& newSnap = *_snapshot;
+	newSnap.ServerTimeMs = snapshot.ServerTimeMs;
 
 	//
 	// Static items.
 	//
 
-	memset(_staticItemBits, 0, sizeof(_staticItemBits));
+	newSnap.StaticItemCount = 0;
 	for(u32 i = 0; i < snapshot.EntityCount; ++i)
 	{
 		const idEntityStateBase& es = *snapshot.Entities[i];
@@ -792,12 +796,11 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 			udtGetUDTMagicNumber(&udtItemId, udtMagicNumberType::Item, es.modelindex, _protocol, _mod);
 			if(IsSame(es, _staticItems[j], udtItemId))
 			{
-				SetBit(_staticItemBits, j);
+				newSnap.StaticItems[newSnap.StaticItemCount++] = _staticItems[j];
 				break;
 			}
 		}
 	}
-	Write(_staticItemBits, (_staticItems.GetSize() + 7) / 8);
 
 	//
 	// Players.
@@ -837,8 +840,8 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	ProcessPlayer(es, snapshot.ServerTimeMs, true);
 	const u32 playerCount = _tempPlayers.GetSize();
 	assert(playerCount <= 64);
-	Write(playerCount);
-	Write(_tempPlayers.GetStartAddress(), playerCount * (u32)sizeof(Player));
+	newSnap.PlayerCount = playerCount;
+	memcpy(newSnap.Players, _tempPlayers.GetStartAddress(), playerCount * sizeof(Player));
 
 	//
 	// Dynamic items.
@@ -968,9 +971,8 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		}
 	}
 	const u32 dynItemCount = _tempDynamicItems.GetSize();
-	Write(dynItemCount);
-	assert(dynItemCount <= MAX_DYN_ITEMS);
-	Write(_tempDynamicItems.GetStartAddress(), dynItemCount * (u32)sizeof(DynamicItem));
+	newSnap.DynamicItemCount = dynItemCount;
+	memcpy(newSnap.DynamicItems, _tempDynamicItems.GetStartAddress(), dynItemCount * (u32)sizeof(DynamicItem));
 
 	//
 	// Beams.
@@ -1003,19 +1005,14 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		_beams[i].Base.Alpha = udt_clamp(t*t*t, 0.0f, 1.0f);
 		_tempBeams.Add(_beams[i].Base);
 	}
-	const u32 beamCount = _tempBeams.GetSize();
-	Write(beamCount);
-	assert(beamCount <= MAX_STATIC_ITEMS);
-	Write(_tempBeams.GetStartAddress(), beamCount * (u32)sizeof(RailBeam));
+	const u32 railBeamCount = _tempBeams.GetSize();
+	newSnap.RailBeamCount = railBeamCount;
+	memcpy(newSnap.RailBeams, _tempBeams.GetStartAddress(), railBeamCount * (u32)sizeof(RailBeam));
 
-	//
-	// Core.
-	//
+	newSnap.Core.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
+	newSnap.Core.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
 
-	SnapshotCore snapshotCore;
-	snapshotCore.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
-	snapshotCore.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
-	Write(snapshotCore);
+	WriteSnapshot(newSnap);
 
 	return true;
 }
