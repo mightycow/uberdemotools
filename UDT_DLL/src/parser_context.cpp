@@ -9,6 +9,7 @@
 #include "plug_in_raw_config_strings.hpp"
 #include "plug_in_captures.hpp"
 #include "plug_in_obituaries.hpp"
+#include "plug_in_scores.hpp"
 
 // For the placement new operator.
 #include <new>

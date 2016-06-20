@@ -195,7 +195,8 @@ Macro arguments:
 	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStatsBuffers) \
 	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommandBuffers) \
 	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigStringBuffers) \
-	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers)
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers) \
+	N(Scores,           "scores",             udtParserPlugInScores,           udtParseDataScoreBuffers)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -2076,6 +2077,82 @@ extern "C"
 	}
 	udtParseDataCaptureBuffers;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCaptureBuffers)
+
+#if defined(__cplusplus)
+	struct udtParseDataScoreMask
+	{
+		enum Id
+		{
+			TeamBased = UDT_BIT(0)
+		};
+	};
+#endif
+
+	typedef struct udtParseDataScore_s
+	{
+		/* The index of the current gamestate. */
+		s32 GameStateIndex;
+
+		/* The first snapshot from which this is valid. */
+		s32 ServerTimeMs;
+
+		/* First place player or red team score. */
+		s32 Score1; 
+
+		/* Second place player or blue team score. */
+		s32 Score2;
+
+		/* First place player client number or 0. */
+		u32 Id1;
+
+		/* Second place player client number or 1. */
+		u32 Id2;
+
+		/* See udtParseDataScoreMask::Id. */
+		u32 Flags;
+
+		/* First place player name. */
+		u32 Name1;
+
+		/* String length. */
+		u32 Name1Length;
+
+		/* Second place player name. */
+		u32 Name2;
+
+		/* String length. */
+		u32 Name2Length;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtParseDataScore;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScore)
+
+	/* Complete score data for all demos in a context. */
+	typedef struct udtParseDataScoreBuffers_s
+	{
+		/* The score descriptors. */
+		const udtParseDataScore* Scores;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of Scores to use. */
+		const udtParseDataBufferRange* ScoreRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Scores array. */
+		u32 ScoreCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataScoreBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScoreBuffers)
 
 	typedef struct udtTimeShiftArg_s
 	{
