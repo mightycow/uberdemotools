@@ -104,6 +104,7 @@ struct SnapshotCore
 	u32 FollowedName;
 	s16 FollowedHealth;
 	s16 FollowedArmor;
+	s16 FollowedAmmo;
 };
 
 struct SnapshotScore
@@ -191,6 +192,10 @@ struct Demo
 	u32         GetSnapshotIndexFromServerTime(s32 serverTimeMs) const;
 	s32         GetSnapshotServerTimeMs(u32 index) const;
 	bool        GetSnapshotData(Snapshot& snapshot, u32 index) const;
+
+	udtMod::Id      GetMod() const { return (udtMod::Id)_protocol; }
+	udtGameType::Id GetGameType() const { return (udtGameType::Id)_protocol; }
+	udtProtocol::Id GetProtocol() const { return (udtProtocol::Id)_protocol; }
 
 private:
 	UDT_NO_COPY_SEMANTICS(Demo);
@@ -293,6 +298,4 @@ private:
 	u32 _mod = udtMod::None;
 	u32 _gameType = udtGameType::Count;
 	u32 _protocol = udtProtocol::Invalid;
-	u32 _scoreIndex = 0;
-	bool _teamMode = false;
 };

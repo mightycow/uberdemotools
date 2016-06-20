@@ -601,7 +601,8 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		if(name != nullptr)
 		{
 			char msg[256];
-			sprintf(msg, "Following %s - HP %d - armor %d", name, snapshot.Core.FollowedHealth, snapshot.Core.FollowedArmor);
+			sprintf(msg, "Following %s - HP %d - armor %d - ammo %d", 
+					name, (int)snapshot.Core.FollowedHealth, (int)snapshot.Core.FollowedArmor, (int)snapshot.Core.FollowedAmmo);
 			NVGcontext* const ctx = renderParams.NVGContext;
 			nvgBeginPath(ctx);
 			nvgFontSize(ctx, 16.0f);
@@ -617,8 +618,8 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	{
 		int score1 = (int)snapshot.Score.Score1;
 		int score2 = (int)snapshot.Score.Score2;
-		const char* name1 = "?";
-		const char* name2 = "?";
+		const char* name1;
+		const char* name2;
 		if(snapshot.Score.IsScoreTeamBased)
 		{
 			name1 = "RED";
@@ -629,9 +630,12 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 			name1 = _demo.GetStringSafe(snapshot.Score.Score1Name, "?");
 			name2 = _demo.GetStringSafe(snapshot.Score.Score2Name, "?");
 
-			// For display consistency, we always keep the lowest client number first.
-			// @TODO: only in duel? for FFA/RR, show the leaders
-			if(snapshot.Score.Score1Id > snapshot.Score.Score2Id)
+			// For display consistency, we always keep the lowest client number first
+			// in duel and HoonyMode because they are the only 2 game types 
+			// that guarantee you have exactly 2 players.
+			const udtGameType::Id gt = _demo.GetGameType();
+			if((gt == udtGameType::Duel || gt == udtGameType::HM) &&
+			   snapshot.Score.Score1Id > snapshot.Score.Score2Id)
 			{
 				const char* const nameTemp = name2;
 				const int scoreTemp = score2;

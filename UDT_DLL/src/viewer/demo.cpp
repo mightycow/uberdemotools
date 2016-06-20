@@ -1051,8 +1051,10 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	//
 
 	const s32 followedPlayerIndex = snapshot.PlayerState->clientNum;
+	const s32 weapon = snapshot.PlayerState->weapon;
 	newSnap.Core.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
 	newSnap.Core.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
+	newSnap.Core.FollowedAmmo = (weapon >= 0 && weapon < ID_MAX_PS_WEAPONS) ? (s16)snapshot.PlayerState->ammo[snapshot.PlayerState->weapon] : s16(0);
 	newSnap.Core.FollowedName = u32(-1);
 	if(followedPlayerIndex >= 0 && followedPlayerIndex < 64)
 	{
@@ -1433,12 +1435,10 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 
 bool Demo::AnalyzeDemo(const char* filePath)
 {
-	_scoreIndex = 0;
 	_firstMatchStartTimeMs = UDT_S32_MAX;
 	_firstMatchEndTimeMs = UDT_S32_MIN;
 	_mod = udtMod::None;
 	_gameType = udtGameType::Count;
-	_teamMode = false;
 
 	const u32 plugInIds[2] = { udtParserPlugIn::Stats, udtParserPlugIn::Scores };
 	udtParseArg arg;
@@ -1506,7 +1506,6 @@ bool Demo::AnalyzeDemo(const char* filePath)
 			_firstMatchEndTimeMs = stats.EndTimeMs - 50;
 			_mod = stats.Mod;
 			_gameType = stats.GameType;
-			_teamMode = stats.TeamMode != 0;
 			// @TODO: custom red/blue team names?
 		}
 	}
