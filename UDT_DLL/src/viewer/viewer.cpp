@@ -597,20 +597,11 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 
 	// @TODO: follow message
 	{
-		u32 name = u32(-1);
-		for(u32 i = 0; i < snapshot.PlayerCount; ++i)
-		{
-			if(IsBitSet(&snapshot.Players[i].Flags, PlayerFlags::Followed))
-			{
-				name = snapshot.Players[i].Name;
-				break;
-			}
-		}
-
-		if(name != u32(-1))
+		const char* const name = _demo.GetString(snapshot.Core.FollowedName);
+		if(name != nullptr)
 		{
 			char msg[256];
-			sprintf(msg, "Following %s - HP %d - armor %d", _demo.GetString(name), snapshot.Core.FollowedHealth, snapshot.Core.FollowedArmor);
+			sprintf(msg, "Following %s - HP %d - armor %d", name, snapshot.Core.FollowedHealth, snapshot.Core.FollowedArmor);
 			NVGcontext* const ctx = renderParams.NVGContext;
 			nvgBeginPath(ctx);
 			nvgFontSize(ctx, 16.0f);
@@ -620,6 +611,47 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 			nvgFill(ctx);
 			nvgClosePath(ctx);
 		}
+	}
+
+	// @TODO: score message
+	{
+		int score1 = (int)snapshot.Score.Score1;
+		int score2 = (int)snapshot.Score.Score2;
+		const char* name1 = "?";
+		const char* name2 = "?";
+		if(snapshot.Score.IsScoreTeamBased)
+		{
+			name1 = "RED";
+			name2 = "BLUE";
+		}
+		else
+		{
+			name1 = _demo.GetStringSafe(snapshot.Score.Score1Name, "?");
+			name2 = _demo.GetStringSafe(snapshot.Score.Score2Name, "?");
+
+			// For display consistency, we always keep the lowest client number first.
+			// @TODO: only in duel? for FFA/RR, show the leaders
+			if(snapshot.Score.Score1Id > snapshot.Score.Score2Id)
+			{
+				const char* const nameTemp = name2;
+				const int scoreTemp = score2;
+				name2 = name1;
+				score2 = score1;
+				name1 = nameTemp;
+				score1 = scoreTemp;
+			}
+		}
+
+		char msg[256];
+		sprintf(msg, "%s %d - %d %s", name1, score1, score2, name2);
+		NVGcontext* const ctx = renderParams.NVGContext;
+		nvgBeginPath(ctx);
+		nvgFontSize(ctx, 16.0f);
+		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+		nvgText(ctx, _uiRect.X() + 5.0f, _uiRect.Y() + 5.0f + 16.0f + 4.0f, msg, nullptr);
+		nvgFillColor(ctx, nvgGrey(255));
+		nvgFill(ctx);
+		nvgClosePath(ctx);
 	}
 }
 

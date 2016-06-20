@@ -101,9 +101,20 @@ struct RailBeam
 
 struct SnapshotCore
 {
+	u32 FollowedName;
 	s16 FollowedHealth;
 	s16 FollowedArmor;
-	// @TODO: scores!
+};
+
+struct SnapshotScore
+{
+	u32 Score1Name;
+	u32 Score2Name;
+	s16 Score1;
+	s16 Score2;
+	u8 Score1Id;
+	u8 Score2Id;
+	u8 IsScoreTeamBased;
 };
 
 #define  MAX_STATIC_ITEMS  64
@@ -117,6 +128,7 @@ struct Snapshot
 	DynamicItem DynamicItems[MAX_DYN_ITEMS];
 	RailBeam RailBeams[MAX_RAIL_BEAMS];
 	SnapshotCore Core;
+	SnapshotScore Score;
 	u32 PlayerCount;
 	u32 StaticItemCount;
 	u32 DynamicItemCount;
@@ -174,6 +186,7 @@ struct Demo
 	const f32*  GetMapMax() const { return _max; }
 	u32         GetSnapshotCount() const { return _snapshots[_readIndex].GetSize(); }
 	const char* GetString(u32 offset) const { return _stringAllocator.GetStringAt(offset); }
+	const char* GetStringSafe(u32 offset, const char* replacement) const;
 
 	u32         GetSnapshotIndexFromServerTime(s32 serverTimeMs) const;
 	s32         GetSnapshotServerTimeMs(u32 index) const;
@@ -243,6 +256,12 @@ private:
 		f32 Position[3];
 		u32 SnapshotIndex;
 	};
+
+	struct Score
+	{
+		SnapshotScore Base;
+		s32 ServerTimeMs;
+	};
 	
 	PlayerEx _players[64];
 	idProtocolNumbers _protocolNumbers;
@@ -262,6 +281,7 @@ private:
 	udtVMArray<Impact> _tempShaftImpacts;
 	udtVMArray<Impact> _explosions;
 	udtVMArray<Impact> _bulletImpacts;
+	udtVMArray<Score> _scores;
 	udtString _mapName = udtString::NewEmptyConstant();
 	udtCuContext* _context = nullptr;
 	u8* _messageData = nullptr;
@@ -273,5 +293,6 @@ private:
 	u32 _mod = udtMod::None;
 	u32 _gameType = udtGameType::Count;
 	u32 _protocol = udtProtocol::Invalid;
+	u32 _scoreIndex = 0;
 	bool _teamMode = false;
 };

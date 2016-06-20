@@ -68,10 +68,10 @@ namespace Float3
 		result[2] = a[2] - b[2];
 	}
 
-	void Direction(f32* result, const f32* a, const f32* b)
+	void Direction(f32* result, const f32* start, const f32* end)
 	{
 		f32 dir[3];
-		Sub(dir, a, b);
+		Sub(dir, end, start);
 		Normalize(result, dir);
 	}
 

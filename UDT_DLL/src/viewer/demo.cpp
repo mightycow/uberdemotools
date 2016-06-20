@@ -331,6 +331,7 @@ Demo::Demo()
 	_tempShaftImpacts.Init(UDT_MEMORY_PAGE_SIZE, "Demo::TempShaftImpactsArray");
 	_explosions.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ExplosionsArray");
 	_bulletImpacts.Init(UDT_MEMORY_PAGE_SIZE, "Demo::BulletImpactsArray");
+	_scores.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ScoresArray");
 }
 
 Demo::~Demo()
@@ -410,6 +411,17 @@ void Demo::Load(const char* filePath)
 	const u32 lastIndex = snapshots.GetSize() - 1;
 	_firstSnapshotTimeMs = snapshots[0].ServerTimeMs;
 	_lastSnapshotTimeMs = snapshots[lastIndex].ServerTimeMs;
+}
+
+const char* Demo::GetStringSafe(u32 offset, const char* replacement) const
+{
+	const char* const s = GetString(offset);
+	if(s == nullptr)
+	{
+		return replacement;
+	}
+
+	return s;
 }
 
 u32 Demo::GetSnapshotIndexFromServerTime(s32 serverTimeMs) const
@@ -504,6 +516,31 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 	Read(offset, snapshot.RailBeams, snapshot.RailBeamCount * (u32)sizeof(RailBeam));
 
 	Read(offset, snapshot.Core);
+
+	// @TODO: binary search
+	const Score* score = nullptr;
+	for(u32 i = 0; i < _scores.GetSize(); ++i)
+	{
+		if(snapshot.ServerTimeMs >= _scores[i].ServerTimeMs)
+		{
+			score = &_scores[i];
+		}
+	}
+
+	if(score == nullptr)
+	{
+		snapshot.Score.IsScoreTeamBased = 0;
+		snapshot.Score.Score1Id = 0;
+		snapshot.Score.Score2Id = 0;
+		snapshot.Score.Score1 = 0;
+		snapshot.Score.Score2 = 0;
+		snapshot.Score.Score1Name = u32(-1);
+		snapshot.Score.Score2Name = u32(-1);
+	}
+	else
+	{
+		snapshot.Score = score->Base;
+	}
 
 	return true;
 }
@@ -1009,8 +1046,18 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	newSnap.RailBeamCount = railBeamCount;
 	memcpy(newSnap.RailBeams, _tempBeams.GetStartAddress(), railBeamCount * (u32)sizeof(RailBeam));
 
+	//
+	// Core.
+	//
+
+	const s32 followedPlayerIndex = snapshot.PlayerState->clientNum;
 	newSnap.Core.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
 	newSnap.Core.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
+	newSnap.Core.FollowedName = u32(-1);
+	if(followedPlayerIndex >= 0 && followedPlayerIndex < 64)
+	{
+		newSnap.Core.FollowedName = _players[followedPlayerIndex].Name;
+	}
 
 	WriteSnapshot(newSnap);
 
@@ -1322,11 +1369,12 @@ void Demo::FixLGEndPoints()
 			{
 				continue;
 			}
-			
-			// @NOTE: It might look better if we don't take the average of both points but instead
-			// use the current angle and use the average of both angles.
-			// However, to do that requires having the original player angles.
-			Float3::Lerp(player.LGEndPoint, prevPlayer->LGEndPoint, nextPlayer->LGEndPoint, 0.5f);
+
+			// We keep the current view direction but use the beam length of the next snapshot.
+			f32 normDir[3];
+			const f32 length = Float3::Dist(nextPlayer->Position, nextPlayer->LGEndPoint);
+			Float3::Direction(normDir, player.Position, player.LGEndPoint);
+			Float3::Mad(player.LGEndPoint, player.Position, normDir, length);
 			SetBit(&player.Flags, PlayerFlags::ShortLGBeam);
 		}
 	}
@@ -1363,7 +1411,7 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 	for(u32 i = 0; i < _tempShaftImpacts.GetSize(); ++i)
 	{
 		f32 beamVector[3];
-		Float3::Direction(beamVector, _tempShaftImpacts[i].Position, start);
+		Float3::Direction(beamVector, start, _tempShaftImpacts[i].Position);
 		const f32 dot = Float3::Dot(viewVector, beamVector);
 		if(dot > bestDotProduct)
 		{
@@ -1385,17 +1433,18 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 
 bool Demo::AnalyzeDemo(const char* filePath)
 {
+	_scoreIndex = 0;
 	_firstMatchStartTimeMs = UDT_S32_MAX;
 	_firstMatchEndTimeMs = UDT_S32_MIN;
 	_mod = udtMod::None;
 	_gameType = udtGameType::Count;
 	_teamMode = false;
 
-	const u32 plugInId = udtParserPlugIn::Stats;
+	const u32 plugInIds[2] = { udtParserPlugIn::Stats, udtParserPlugIn::Scores };
 	udtParseArg arg;
 	memset(&arg, 0, sizeof(arg));
-	arg.PlugIns = &plugInId;
-	arg.PlugInCount = 1;
+	arg.PlugIns = plugInIds;
+	arg.PlugInCount = 2;
 
 	s32 errorCode = (s32)udtErrorCode::Unprocessed;
 	udtMultiParseArg extraArg;
@@ -1407,28 +1456,62 @@ bool Demo::AnalyzeDemo(const char* filePath)
 
 	udtParserContextGroup* contextGroup = nullptr;
 	udtParserContext* context = nullptr;
-	udtParseDataStatsBuffers buffers;
 	if(udtParseDemoFiles(&contextGroup, &arg, &extraArg) != udtErrorCode::None ||
 	   errorCode != udtErrorCode::None ||
-	   udtGetContextFromGroup(contextGroup, 0, &context) != udtErrorCode::None ||
-	   udtGetContextPlugInBuffers(context, plugInId, &buffers) != udtErrorCode::None ||
-	   buffers.MatchCount == 0)
+	   udtGetContextFromGroup(contextGroup, 0, &context) != udtErrorCode::None)
 	{
+		udtDestroyContextGroup(contextGroup);
 		return false;
 	}
 
-	const udtParseDataStats& stats = buffers.MatchStats[0];
-	if(stats.GameStateIndex > 0)
+	udtParseDataScoreBuffers scoreBuffers;
+	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Scores, &scoreBuffers) == udtErrorCode::None &&
+	   scoreBuffers.ScoreCount > 0)
 	{
-		return false;
+		const u32 offset = (u32)_stringAllocator.GetCurrentByteCount();
+		u8* const newCopy = _stringAllocator.AllocateAndGetAddress(scoreBuffers.StringBufferSize);
+		memcpy(newCopy, scoreBuffers.StringBuffer, (size_t)scoreBuffers.StringBufferSize);
+
+		for(u32 i = 0; i < scoreBuffers.ScoreCount; ++i)
+		{
+			const udtParseDataScore& s = scoreBuffers.Scores[i];
+			if(s.GameStateIndex >= 1)
+			{
+				break;
+			}
+
+			Score score;
+			score.ServerTimeMs = s.ServerTimeMs;
+			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
+			score.Base.Score1Id = (u8)s.Id1;
+			score.Base.Score2Id = (u8)s.Id2;
+			score.Base.Score1 = (s16)s.Score1;
+			score.Base.Score2 = (s16)s.Score2;
+			score.Base.Score1Name = s.Name1 + offset;
+			score.Base.Score2Name = s.Name2 + offset;
+			_scores.Add(score);
+		}
 	}
 
-	_firstMatchStartTimeMs = stats.StartTimeMs + 50;
-	_firstMatchEndTimeMs = stats.EndTimeMs - 50;
-	_mod = stats.Mod;
-	_gameType = stats.GameType;
-	_teamMode = stats.TeamMode != 0;
-	// @TODO: map name, custom red/blue team names
+	bool success = false;
+	udtParseDataStatsBuffers statsBuffers;
+	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Stats, &statsBuffers) == udtErrorCode::None &&
+	   statsBuffers.MatchCount > 0)
+	{
+		const udtParseDataStats& stats = statsBuffers.MatchStats[0];
+		if(stats.GameStateIndex == 0)
+		{
+			success = true;
+			_firstMatchStartTimeMs = stats.StartTimeMs + 50;
+			_firstMatchEndTimeMs = stats.EndTimeMs - 50;
+			_mod = stats.Mod;
+			_gameType = stats.GameType;
+			_teamMode = stats.TeamMode != 0;
+			// @TODO: custom red/blue team names?
+		}
+	}
 
-	return true;
+	udtDestroyContextGroup(contextGroup);
+
+	return success;
 }

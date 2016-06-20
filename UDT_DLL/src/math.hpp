@@ -20,7 +20,7 @@ namespace Float3
 	extern f32  Length(const f32* a);
 	extern void Add(f32* result, const f32* a, const f32* b);
 	extern void Sub(f32* result, const f32* a, const f32* b);
-	extern void Direction(f32* result, const f32* a, const f32* b); // The result is normalized.
+	extern void Direction(f32* result, const f32* start, const f32* end); // The result is normalized.
 	extern void Normalize(f32* result, const f32* a);
 	extern void Mad(f32* result, const f32* a, const f32* b, f32 s);
 	extern void Lerp(f32* result, const f32* a, const f32* b, f32 t);
