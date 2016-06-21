@@ -120,7 +120,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	const s32 playerCSBaseIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
+		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i], UDT_S32_MIN);
 	}
 }
 
@@ -155,7 +155,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol);
 	if(csIndex >= firstPlayerCsIndex && csIndex < firstPlayerCsIndex + 64)
 	{
-		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex]);
+		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex], parser._inServerTime);
 	}
 }
 
@@ -302,7 +302,7 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& confi
 	_currentGameState.KeyValuePairCount = _keyValuePairs.GetSize() - previousCount;
 }
 
-void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtString& configString)
+void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtString& configString, s32 serverTimeMs)
 {
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 
@@ -329,6 +329,11 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		_playerInfos[playerIndex].Index = playerIndex;
 		WriteStringToApiStruct(_playerInfos[playerIndex].FirstName, finalName);
 		_playerInfos[playerIndex].FirstTeam = team;
+		if(serverTimeMs != UDT_S32_MIN)
+		{
+			_playerInfos[playerIndex].FirstSnapshotTimeMs = serverTimeMs;
+			_playerInfos[playerIndex].LastSnapshotTimeMs = serverTimeMs;
+		}
 	}
 	// Player disconnected?
 	else if(_playerInfos[playerIndex].Index == playerIndex && udtString::IsNullOrEmpty(configString))

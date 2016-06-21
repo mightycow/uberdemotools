@@ -36,7 +36,7 @@ private:
 	void AddCurrentGameState();
 	void ProcessDemoTakerName(s32 playerIndex, const udtString* configStrings, udtProtocol::Id protocol);
 	void ProcessSystemAndServerInfo(const udtString& configStrings);
-	void ProcessPlayerInfo(s32 playerIndex, const udtString& configString);
+	void ProcessPlayerInfo(s32 playerIndex, const udtString& configString, s32 serverTimeMs);
 
 private:
 	udtGeneralAnalyzer _analyzer;
