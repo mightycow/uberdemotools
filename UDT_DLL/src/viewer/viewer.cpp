@@ -86,6 +86,22 @@ static s32 GetSpriteIdFromDynamicItemId(s32 itemId)
 	}
 }
 
+static s32 GetSpriteIdFromWeaponId(u8 weaponId)
+{
+	switch((udtWeapon::Id)weaponId)
+	{
+		case udtWeapon::Gauntlet: return Sprite::gauntlet;
+		case udtWeapon::MachineGun: return Sprite::mg;
+		case udtWeapon::Shotgun: return Sprite::sg;
+		case udtWeapon::GrenadeLauncher: return Sprite::gl;
+		case udtWeapon::RocketLauncher: return Sprite::rl;
+		case udtWeapon::PlasmaGun: return Sprite::pg;
+		case udtWeapon::Railgun: return Sprite::rg;
+		case udtWeapon::LightningGun: return Sprite::lg;
+		default: return -1;
+	}
+}
+
 
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
@@ -493,10 +509,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		}
 		else if(item.Id == DynamicItemType::ProjectileGrenade)
 		{
-			const f32 x = _mapRect.Left() + (item.Position[0] - _mapMin[0]) * mapScale;
-			const f32 y = _mapRect.Bottom() - (item.Position[1] - _mapMin[1]) * mapScale;
-			const f32 zScale = 1.0f + _config.DynamicZScale * ((item.Position[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-			DrawGrenade(renderParams.NVGContext, x, y, 4.0f * bgImageScale * zScale);
+			f32 pos[3];
+			ComputeMapPosition(pos, item.Position, mapScale, _config.DynamicZScale);
+			DrawGrenade(renderParams.NVGContext, pos[0], pos[1], 4.0f * bgImageScale * pos[2]);
 		}
 		else
 		{
@@ -509,13 +524,11 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	for(u32 b = 0; b < snapshot.RailBeamCount; ++b)
 	{
 		const RailBeam& beam = snapshot.RailBeams[b];
-		const f32 x0 = _mapRect.Left() + (beam.StartPosition[0] - _mapMin[0]) * mapScale;
-		const f32 y0 = _mapRect.Bottom() - (beam.StartPosition[1] - _mapMin[1]) * mapScale;
-		const f32 z0 = 1.0f + 4.0f * ((beam.StartPosition[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-		const f32 x1 = _mapRect.Left() + (beam.EndPosition[0] - _mapMin[0]) * mapScale;
-		const f32 y1 = _mapRect.Bottom() - (beam.EndPosition[1] - _mapMin[1]) * mapScale;
-		const f32 z1 = 1.0f + 4.0f * ((beam.EndPosition[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-		DrawRailBeam(renderParams.NVGContext, x0, y0, z0, x1, y1, z1, beam.Alpha);
+		f32 p0[3];
+		f32 p1[3];
+		ComputeMapPosition(p0, beam.StartPosition, mapScale, 4.0f);
+		ComputeMapPosition(p1, beam.EndPosition, mapScale, 4.0f);
+		DrawRailBeam(renderParams.NVGContext, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], beam.Alpha);
 	}
 
 	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
@@ -528,13 +541,11 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 			continue;
 		}
 
-		const f32 x0 = _mapRect.Left() + (player.Position[0] - _mapMin[0]) * mapScale;
-		const f32 y0 = _mapRect.Bottom() - (player.Position[1] - _mapMin[1]) * mapScale;
-		const f32 z0 = 1.0f + _config.DynamicZScale * ((player.Position[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-		const f32 x1 = _mapRect.Left() + (player.LGEndPoint[0] - _mapMin[0]) * mapScale;
-		const f32 y1 = _mapRect.Bottom() - (player.LGEndPoint[1] - _mapMin[1]) * mapScale;
-		const f32 z1 = 1.0f + _config.DynamicZScale * ((player.LGEndPoint[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-		DrawShaftBeam(renderParams.NVGContext, x0, y0, z0, x1, y1, z1);
+		f32 p0[3];
+		f32 p1[3];
+		ComputeMapPosition(p0, player.Position, mapScale, _config.DynamicZScale);
+		ComputeMapPosition(p1, player.LGEndPoint, mapScale, _config.DynamicZScale);
+		DrawShaftBeam(renderParams.NVGContext, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2]);
 	}
 	
 	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
@@ -545,10 +556,20 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 			continue;
 		}
 
-		const f32 x = _mapRect.Left() + (player.Position[0] - _mapMin[0]) * mapScale;
-		const f32 y = _mapRect.Bottom() - (player.Position[1] - _mapMin[1]) * mapScale;
-		const f32 zScale = 1.0f + _config.DynamicZScale * ((player.Position[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-		DrawPlayer(renderParams.NVGContext, x, y, 6.0f * bgImageScale * zScale, -player.Angle, IsBitSet(&player.Flags, PlayerFlags::Firing));
+		f32 pos[3];
+		ComputeMapPosition(pos, player.Position, mapScale, _config.DynamicZScale);
+		const bool firing = IsBitSet(&player.Flags, PlayerFlags::Firing);
+		const s32 spriteId = GetSpriteIdFromWeaponId(player.WeaponId) + (firing ? 1 : 0);
+		if(spriteId >= 0 && spriteId < Sprite::Count)
+		{
+			DrawPlayerWeapon(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle + UDT_PI / 2.0f, _sprites[spriteId]);
+		}
+		DrawPlayer(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle, firing);
+		const char* const name = _demo.GetString(player.Name);
+		if(name != nullptr)
+		{
+			DrawPlayerName(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], name);
+		}
 	}
 
 	Platform_NVGEndFrame(_platform);
@@ -567,10 +588,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		}
 		else if(item.Id == DynamicItemType::ImpactGeneric)
 		{
-			const f32 x = _mapRect.Left() + (item.Position[0] - _mapMin[0]) * mapScale;
-			const f32 y = _mapRect.Bottom() - (item.Position[1] - _mapMin[1]) * mapScale;
-			const f32 zScale = 1.0f + _config.DynamicZScale * ((item.Position[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-			DrawImpact(renderParams.NVGContext, x, y, 2.0f * bgImageScale * zScale);
+			f32 p[3];
+			ComputeMapPosition(p, item.Position, mapScale, _config.DynamicZScale);
+			DrawImpact(renderParams.NVGContext, p[0], p[1], 2.0f * bgImageScale * p[2]);
 		}
 		else if(item.Id == DynamicItemType::Explosion)
 		{
@@ -732,23 +752,22 @@ void Viewer::Render(RenderParams& renderParams)
 	}
 }
 
-void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 scaleZ, f32 a)
+void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a)
 {
 	if(spriteId >= (u32)Sprite::Count)
 	{
 		return;
 	}
 
-	const f32 x = params.X + (pos[0] - _mapMin[0]) * params.CoordsScale;
-	const f32 y = params.Y + _mapRect.Height() - (pos[1] - _mapMin[1]) * params.CoordsScale;
-	const f32 zScale = 1.0f + scaleZ * ((pos[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
-	const f32 w = size * params.ImageScale * zScale;
-	const f32 h = size * params.ImageScale * zScale;
+	f32 p[3];
+	ComputeMapPosition(p, pos, params.CoordsScale, zScale);
+	const f32 w = size * params.ImageScale * p[2];
+	const f32 h = size * params.ImageScale * p[2];
 	NVGcontext* const c = _sharedReadOnly->NVGContext;
 
 	nvgBeginPath(c);
 	nvgResetTransform(c);
-	nvgTranslate(c, x, y);
+	nvgTranslate(c, p[0], p[1]);
 	nvgScale(c, w, h);
 	nvgRotate(c, a);
 	nvgRect(c, -0.5f, -0.5f, 1.0f, 1.0f);
@@ -939,4 +958,11 @@ void Viewer::OffsetTimeMs(s32 durationMs)
 	const f32 progressDeltaAbs = GetProgressFromTime((u32)abs((int)durationMs));
 	const f32 newProgress = durationMs >= 0 ? (progress + progressDeltaAbs) : (progress - progressDeltaAbs);
 	SetPlaybackProgress(newProgress);
+}
+
+void Viewer::ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32 zScale)
+{
+	result[0] = _mapRect.Left() + (input[0] - _mapMin[0]) * mapScale;
+	result[1] = _mapRect.Bottom() - (input[1] - _mapMin[1]) * mapScale;
+	result[2] = 1.0f + zScale * ((input[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
 }

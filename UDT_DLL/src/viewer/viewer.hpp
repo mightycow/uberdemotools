@@ -71,6 +71,7 @@ private:
 	void OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat);
 	void OffsetSnapshot(s32 snapshotCount);
 	void OffsetTimeMs(s32 durationMs);
+	void ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32 zScale);
 
 	struct MapAlias
 	{

@@ -72,6 +72,49 @@ void DrawPlayer(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, bool firing)
 	nvgClosePath(nvgContext);
 }
 
+void DrawPlayerName(NVGcontext* nvgContext, f32 x, f32 y, f32 r, const char* name)
+{
+	nvgBeginPath(nvgContext);
+	nvgFillColor(nvgContext, nvgGrey(255));
+	nvgFontSize(nvgContext, 16.0f);
+	nvgTextAlign(nvgContext, NVGalign::NVG_ALIGN_CENTER | NVGalign::NVG_ALIGN_BOTTOM);
+	nvgText(nvgContext, x, y - r - 5.0f, name, nullptr);
+	nvgFill(nvgContext);
+	nvgClosePath(nvgContext);
+}
+
+void DrawPlayerWeapon(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, int spriteId)
+{
+	int imgWidth;
+	int imgHeight;
+	nvgImageSize(nvgContext, spriteId, &imgWidth, &imgHeight);
+	if(imgHeight == 0)
+	{
+		return;
+	}
+
+	const f32 weapAngle = a - UDT_PI / 8.0f;
+	x += 1.5f * r * cosf(weapAngle);
+	y += 1.5f * r * sinf(weapAngle);
+	
+	const f32 ar = (f32)imgHeight / (f32)imgWidth;
+	const f32 scale = 2.0f * r;
+	const f32 y0 = -ar / 2.0f;
+	const f32 y1 = ar;
+	NVGcontext* const c = nvgContext;
+
+	nvgBeginPath(c);
+	nvgResetTransform(c);
+	nvgTranslate(c, x, y);
+	nvgScale(c, scale, scale);
+	nvgRotate(c, a);
+	nvgRect(c, -0.5f, y0, 1.0f, y1);
+	nvgFillPaint(c, nvgImagePattern(c, -0.5f, y0, 1.0f, y1, 0.0f, spriteId, 1.0f));
+	nvgFill(c);
+	nvgClosePath(c);
+	nvgResetTransform(c);
+}
+
 void DrawGrenade(NVGcontext* nvgContext, f32 x, f32 y, f32 r)
 {
 	nvgBeginPath(nvgContext);
