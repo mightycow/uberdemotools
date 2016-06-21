@@ -1,8 +1,20 @@
 #include "nanovg_drawing.hpp"
 #include "math.hpp"
+#include "utils.hpp"
 
 #include <math.h>
 
+
+NVGcolor sat_add(NVGcolor color, f32 f)
+{
+	NVGcolor c;
+	c.r = udt_min(color.r + f, 1.0f);
+	c.g = udt_min(color.g + f, 1.0f);
+	c.b = udt_min(color.b + f, 1.0f);
+	c.a = color.a;
+
+	return c;
+}
 
 NVGcolor nvgGrey(unsigned char c)
 {
@@ -44,7 +56,7 @@ void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, 
 	nvgClosePath(nvgContext);
 }
 
-void DrawPlayer(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, bool firing)
+void DrawPlayer(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, NVGcolor color)
 {
 	const f32 fovRadius = 6.0f * r;
 	const f32 x0 = x + fovRadius * cosf(a - UDT_PI / 6.0f);
@@ -53,18 +65,16 @@ void DrawPlayer(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, bool firing)
 	const f32 y1 = y + fovRadius * sinf(a + UDT_PI / 6.0f);
 
 	nvgBeginPath(nvgContext);
+	nvgFillPaint(nvgContext, nvgRadialGradient(nvgContext, x, y, 0.0f, fovRadius, nvgGreyA(255, 127), nvgGreyA(255, 0)));
 	nvgMoveTo(nvgContext, x, y);
 	nvgLineTo(nvgContext, x0, y0);
 	nvgLineTo(nvgContext, x1, y1);
-	nvgFillPaint(nvgContext, nvgRadialGradient(nvgContext, x, y, 0.0f, fovRadius, nvgGreyA(255, 127), nvgGreyA(255, 0)));
 	nvgFill(nvgContext);
 	nvgClosePath(nvgContext);
 
-	const NVGcolor inside = firing ? nvgRGB(255, 191, 191) : nvgRGB(255, 127, 127);
-	const NVGcolor outside = firing ? nvgRGB(255, 63, 63) : nvgRGB(255, 0, 0);
 	nvgBeginPath(nvgContext);
+	nvgFillColor(nvgContext, color);
 	nvgCircle(nvgContext, x, y, r);
-	nvgFillPaint(nvgContext, nvgRadialGradient(nvgContext, x, y, 0.0f, r, inside, outside));
 	nvgFill(nvgContext);
 	nvgStrokeColor(nvgContext, nvgGrey(0));
 	nvgStrokeWidth(nvgContext, 1.5f);
@@ -127,7 +137,7 @@ void DrawGrenade(NVGcontext* nvgContext, f32 x, f32 y, f32 r)
 	nvgClosePath(nvgContext);
 }
 
-void DrawRailBeam(NVGcontext* nvgContext, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, f32 alpha)
+void DrawRailBeam(NVGcontext* nvgContext, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1, f32 z1, f32 alpha, NVGcolor color)
 {
 	const f32 dx = x1 - x0;
 	const f32 dy = y1 - y0;
@@ -150,7 +160,7 @@ void DrawRailBeam(NVGcontext* nvgContext, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1
 	nvgLineTo(nvgContext, 0.5f, 0.5f * z1);
 	nvgLineTo(nvgContext, 0.5f, -0.5f * z1);
 	nvgLineTo(nvgContext, -0.5f, -0.5f * z0);
-	nvgFillColor(nvgContext, nvgRGBAf(1.0f, 0.0f, 0.0f, alpha));
+	nvgFillColor(nvgContext, nvgRGBAf(color.r, color.g, color.b, alpha));
 	nvgFill(nvgContext);
 	nvgClosePath(nvgContext);
 	nvgResetTransform(nvgContext);
@@ -165,7 +175,7 @@ void DrawRailBeam(NVGcontext* nvgContext, f32 x0, f32 y0, f32 z0, f32 x1, f32 y1
 	nvgLineTo(nvgContext, 0.5f, 0.5f * z1);
 	nvgLineTo(nvgContext, 0.5f, -0.5f * z1);
 	nvgLineTo(nvgContext, -0.5f, -0.5f * z0);
-	nvgFillColor(nvgContext, nvgRGBAf(1.0f, 0.0f, 0.0f, alpha));
+	nvgFillColor(nvgContext, nvgRGBAf(color.r, color.g, color.b, alpha));
 	nvgFill(nvgContext);
 	nvgClosePath(nvgContext);
 	nvgResetTransform(nvgContext);

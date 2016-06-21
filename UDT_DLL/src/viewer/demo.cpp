@@ -403,6 +403,11 @@ void Demo::Load(const char* filePath)
 	ParseDemo(filePath, &Demo::ProcessMessage_StaticItems);
 	ParseDemo(filePath, &Demo::ProcessMessage_FinalPass);
 
+	if(_snapshots[_readIndex].GetSize() == 0)
+	{
+		return;
+	}
+
 	FixStaticItems();
 	FixDynamicItemsAndPlayers();
 	FixLGEndPoints();
@@ -1020,10 +1025,13 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	{
 		const idEntityStateBase& es = *snapshot.ChangedEntities[i];
 		if(es.eType == _protocolNumbers.EntityTypeEvent &&
-		   es.event == _protocolNumbers.EntityEventRailTrail)
+		   es.event == _protocolNumbers.EntityEventRailTrail &&
+		   es.clientNum >= 0 &&
+		   es.clientNum < 64)
 		{
 			railBeam.ServerTimeMs = snapshot.ServerTimeMs;
 			railBeam.Base.Alpha = 1.0f;
+			railBeam.Base.Team = (u8)_players[es.clientNum].Team;
 			Float3::Copy(railBeam.Base.StartPosition, es.origin2);
 			Float3::Copy(railBeam.Base.EndPosition, es.pos.trBase);
 			_beams.Add(railBeam);
@@ -1435,8 +1443,8 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 
 bool Demo::AnalyzeDemo(const char* filePath)
 {
-	_firstMatchStartTimeMs = UDT_S32_MAX;
-	_firstMatchEndTimeMs = UDT_S32_MIN;
+	_firstMatchStartTimeMs = UDT_S32_MIN;
+	_firstMatchEndTimeMs = UDT_S32_MAX;
 	_mod = udtMod::None;
 	_gameType = udtGameType::Count;
 

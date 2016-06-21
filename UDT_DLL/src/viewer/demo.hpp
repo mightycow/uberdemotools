@@ -97,6 +97,7 @@ struct RailBeam
 	f32 StartPosition[3];
 	f32 EndPosition[3];
 	f32 Alpha;
+	u8 Team;
 };
 
 struct SnapshotCore

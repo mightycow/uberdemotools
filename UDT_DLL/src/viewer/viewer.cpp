@@ -16,6 +16,25 @@
 #define DATA_PATH "viewer_data"
 
 
+static const NVGcolor PlayerColors[6] =
+{
+	// free, free followed, red, red followed, blue, blue followed
+	nvgRGB(255, 0, 0),
+	nvgRGB(255, 127, 127),
+	nvgRGB(255, 0, 0),
+	nvgRGB(255, 127, 127),
+	nvgRGB(80, 80, 255),
+	nvgRGB(160, 160, 255)
+};
+
+static const NVGcolor RailColors[3] =
+{
+	// free, red, blue
+	nvgRGB(255, 0, 0),
+	nvgRGB(255, 0, 0),
+	nvgRGB(0, 0, 255)
+};
+
 static s32 GetSpriteIdFromItemId(s32 itemId)
 {
 	switch((udtItem::Id)itemId)
@@ -524,11 +543,16 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	for(u32 b = 0; b < snapshot.RailBeamCount; ++b)
 	{
 		const RailBeam& beam = snapshot.RailBeams[b];
+		if(beam.Team >= udtTeam::Spectators)
+		{
+			continue;
+		}
+
 		f32 p0[3];
 		f32 p1[3];
 		ComputeMapPosition(p0, beam.StartPosition, mapScale, 4.0f);
 		ComputeMapPosition(p1, beam.EndPosition, mapScale, 4.0f);
-		DrawRailBeam(renderParams.NVGContext, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], beam.Alpha);
+		DrawRailBeam(renderParams.NVGContext, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], beam.Alpha, RailColors[beam.Team]);
 	}
 
 	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
@@ -551,7 +575,8 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
 	{
 		const Player& player = snapshot.Players[p];
-		if(IsBitSet(&player.Flags, PlayerFlags::Dead))
+		if(IsBitSet(&player.Flags, PlayerFlags::Dead) ||
+		   player.Team >= udtTeam::Spectators)
 		{
 			continue;
 		}
@@ -564,7 +589,8 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		{
 			DrawPlayerWeapon(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle + UDT_PI / 2.0f, _sprites[spriteId]);
 		}
-		DrawPlayer(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle, firing);
+		const u8 colorIndex = 2 * player.Team + (IsBitSet(&player.Flags, PlayerFlags::Followed) ? 1 : 0);
+		DrawPlayer(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle, PlayerColors[colorIndex]);
 		const char* const name = _demo.GetString(player.Name);
 		if(name != nullptr)
 		{
