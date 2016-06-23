@@ -295,7 +295,9 @@ void Viewer::LoadMap(const udtString& mapName)
 	}
 
 	int mapTextureId = 0;
-	if(!CreateTextureRGBA(mapTextureId, (u32)w, (u32)h, pixels))
+	const bool validTexture = CreateTextureRGBA(mapTextureId, (u32)w, (u32)h, pixels);
+	stbi_image_free(pixels);
+	if(!validTexture)
 	{
 		return;
 	}
