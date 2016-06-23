@@ -19,14 +19,6 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 };
 #undef ITEM
 
-#define ITEM(Enum, Desc) Desc,
-static const char* TeamNames[udtTeam::Count + 1]
-{
-	UDT_TEAM_LIST(ITEM)
-	"unknown"
-};
-#undef ITEM
-
 
 udtString CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
