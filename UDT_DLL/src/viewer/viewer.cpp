@@ -128,8 +128,6 @@ const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 Viewer::Viewer(Platform& platform)
 	: _platform(platform)
 {
-	udtInitLibrary();
-
 	_tempAllocator.Init(1 << 16, "Viewer::Temp");
 	_persistAllocator.Init(1 << 16, "Viewer::Persist");
 	_mapAliases.Init(1 << 16, "Viewer::AliasArray");
@@ -139,7 +137,6 @@ Viewer::Viewer(Platform& platform)
 
 Viewer::~Viewer()
 {
-	udtShutDownLibrary();
 	free(_snapshot);
 }
 
