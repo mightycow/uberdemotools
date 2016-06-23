@@ -1,6 +1,9 @@
 #include "uberdemotools.h"
 #include "platform.hpp"
 #include "viewer.hpp"
+
+// The default (16 KB) is too small.
+#define FONS_SCRATCH_BUF_SIZE (1 << 16)
 #include "nanovg/nanovg.h"
 
 #include <stdio.h>
