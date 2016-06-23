@@ -46,7 +46,7 @@ local function ApplyProjectSettings()
 
 	rtti "Off"
 	exceptionhandling "Off"
-	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings", "FatalWarnings" }
+	flags { "Unicode", "NoPCH", "StaticRuntime", "NoManifest", "ExtraWarnings" } -- "FatalWarnings"
 	
 	-- The PG instrumented and PG optimized builds need to share their .obj files.
 	filter { "configurations:ReleaseInst", "platforms:x32" }
@@ -296,6 +296,8 @@ solution "UDT"
 		ApplyProjectSettings()
 		filter "system:windows"
 			links { "D3D11" }
+		filter "system:not windows"
+			links { "GL", "glfw" }
 		
 	project "viewer_data_gen"
 	

@@ -1,3 +1,4 @@
+#include "uberdemotools.h"
 #include "platform.hpp"
 #include "viewer.hpp"
 #include "thread_local_allocators.hpp"
@@ -5,8 +6,10 @@
 #include "string.hpp"
 #include "path.hpp"
 #include "utils.hpp"
+
+// The default 16 KB buffer is too small.
+#define FONS_SCRATCH_BUF_SIZE (1 << 16)
 #include "nanovg/nanovg.h"
-#include "nanovg/nanovg_d3d11.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -15,6 +18,18 @@
 #include <d3d11.h>
 #include <assert.h>
 #include <math.h>
+
+#if defined(UDT_MSVC)
+#	pragma warning(push, 0)
+#endif
+
+#define NANOVG_D3D11_IMPLEMENTATION
+#include "nanovg/nanovg_d3d11.h"
+#include "nanovg/nanovg.c"
+
+#if defined(UDT_MSVC)
+#	pragma warning(pop)
+#endif
 
 
 #define  WINDOW_CLASS_NAME  L"UDT_Viewer"
