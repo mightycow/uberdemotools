@@ -147,7 +147,7 @@ bool Viewer::Init(int argc, char** argv)
 	   !_demo.Init() ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
-	   nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"\\Roboto-Regular.ttf") == FONS_INVALID)
+	   nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/Roboto-Regular.ttf") == FONS_INVALID)
 	{
 		return false;
 	}
