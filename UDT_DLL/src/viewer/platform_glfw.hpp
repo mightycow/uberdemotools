@@ -113,12 +113,25 @@ struct Platform
 
 	void MainLoop()
 	{
+		const double MaxWaitTime = 1.0 / 40.0;
+
 		GLFWwindow* const window = _window;
 		NVGcontext* const nvg = _sharedReadOnly.NVGContext;
 		RenderParams renderParams;
 		
+		// Time stamp of the last render.
+		// Time 0 is the time glfwInit was called.
+		double prevTime = -1.0;
 		while(!glfwWindowShouldClose(window))
 		{
+			const double currTime = glfwGetTime();
+			const double elapsed = currTime - prevTime;
+			if(elapsed < MaxWaitTime)
+			{
+				glfwWaitEventsTimeout(MaxWaitTime - elapsed);
+				continue;
+			}
+
 			int winWidth, winHeight;
 			int fbWidth, fbHeight;
 			glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -139,7 +152,9 @@ struct Platform
 			
 			glfwSwapBuffers(window);
 			
-			glfwPollEvents();
+			glfwWaitEventsTimeout(MaxWaitTime);
+
+			prevTime = currTime;
 		}
 	}
 
