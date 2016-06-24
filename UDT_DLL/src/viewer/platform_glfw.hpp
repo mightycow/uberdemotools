@@ -132,6 +132,13 @@ struct Platform
 				continue;
 			}
 
+			_viewer->Update();
+			if(!_drawRequested)
+			{
+				prevTime = currTime;
+				continue;
+			}
+
 			int winWidth, winHeight;
 			int fbWidth, fbHeight;
 			glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -146,7 +153,6 @@ struct Platform
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 			
 			nvgBeginFrame(nvg, winWidth, winHeight, (float)fbWidth / (float)winWidth);
-			_viewer->Update();
 			_viewer->Render(renderParams);
 			nvgEndFrame(nvg);
 			
@@ -155,6 +161,8 @@ struct Platform
 			glfwWaitEventsTimeout(MaxWaitTime);
 
 			prevTime = currTime;
+
+			_drawRequested = false;
 		}
 	}
 
