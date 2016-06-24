@@ -96,9 +96,8 @@ static VirtualKey::Id GetVirtualKeyId(int key)
 static void GlobalKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 static void GlobalCursorPosCallback(GLFWwindow* window, double x, double y);
 static void GlobalMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-#if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 1) || (GLFW_VERSION_MAJOR >= 4)
 static void GlobalDropCallback(GLFWwindow* window, int count, const char** paths);
-#endif
+static void GlobalWindowRefreshCallback(GLFWwindow* window);
 
 
 struct Platform
@@ -146,6 +145,14 @@ struct Platform
 
 	bool Init()
 	{
+		int glfwMajor, glfwMinor, glfwRevision;
+		glfwGetVersion(&glfwMajor, &glfwMinor, &glfwRevision);
+		if(glfwMajor < 3)
+		{
+			LogError("The glfw version must be 3.0 or higher");
+			return false;
+		}
+	
 		if(!glfwInit())
 		{
 			LogError("glfwInit failed");
@@ -165,21 +172,22 @@ struct Platform
 		_window = window;
 		
 		glfwSetWindowUserPointer(window, this);
-#if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 2) || (GLFW_VERSION_MAJOR >= 4)
-		glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
-#endif
-
+		if((glfwMajor == 3 && glfwMinor >= 2) || glfwMajor >= 4)
+		{
+			glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
+		}
 		glfwMakeContextCurrent(window);
 #if defined(UDT_WINDOWS)
 		glewInit();
 #endif
-
 		glfwSetKeyCallback(window, &GlobalKeyCallback);
 		glfwSetCursorPosCallback(window, &GlobalCursorPosCallback);
 		glfwSetMouseButtonCallback(window, &GlobalMouseButtonCallback);
-#if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 1) || (GLFW_VERSION_MAJOR >= 4)
-		glfwSetDropCallback(window, &GlobalDropCallback);
-#endif
+		if((glfwMajor == 3 && glfwMinor >= 1) || glfwMajor >= 4)
+		{
+			glfwSetDropCallback(window, &GlobalDropCallback);
+		}
+		glfwSetWindowRefreshCallback(window, &GlobalWindowRefreshCallback);
 		glfwSwapInterval(0);
 		
 #if defined(UDT_DEBUG)
@@ -293,6 +301,40 @@ struct Platform
 		event.DroppedFilePaths = paths;
 		_viewer->ProcessEvent(event);
 	}
+	
+	void WindowRefreshCallback()
+	{
+		ReDraw();
+	}
+	
+	void ReDraw()
+	{
+		GLFWwindow* const window = _window;
+		NVGcontext* const nvg = _sharedReadOnly.NVGContext;
+
+		int winWidth, winHeight;
+		int fbWidth, fbHeight;
+		glfwGetWindowSize(window, &winWidth, &winHeight);
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+		
+		RenderParams renderParams;	
+		renderParams.ClientWidth = winWidth;
+		renderParams.ClientHeight = winHeight;
+		renderParams.NVGContext = nvg;
+	
+		glViewport(0, 0, fbWidth, fbHeight);
+		glClearColor(ViewerClearColor[0], ViewerClearColor[1], ViewerClearColor[2], ViewerClearColor[3]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	
+		nvgBeginFrame(nvg, winWidth, winHeight, (float)fbWidth / (float)winWidth);
+		_viewer->Update();
+		_viewer->Render(renderParams);
+		nvgEndFrame(nvg);
+	
+		glfwSwapBuffers(window);
+	
+		_drawRequested = false;
+	}
 
 	PlatformReadOnly _sharedReadOnly;
 	PlatformReadWrite _sharedReadWrite;
@@ -316,12 +358,15 @@ static void GlobalMouseButtonCallback(GLFWwindow* window, int button, int action
 	((Platform*)glfwGetWindowUserPointer(window))->MouseButtonCallback(action, button);
 }
 
-#if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 1) || (GLFW_VERSION_MAJOR >= 4)
 static void GlobalDropCallback(GLFWwindow* window, int count, const char** paths)
 {
 	((Platform*)glfwGetWindowUserPointer(window))->DropCallback(paths, count);
 }
-#endif
+
+static void GlobalWindowRefreshCallback(GLFWwindow* window)
+{
+	((Platform*)glfwGetWindowUserPointer(window))->WindowRefreshCallback();
+}
 
 void Platform_RequestDraw(Platform& platform)
 {
@@ -352,16 +397,6 @@ void Platform_PerformAction(Platform& platform, const PlatformAction& action)
 	{
 		case PlatformActionType::Quit:
 			glfwSetWindowShouldClose(platform._window, GL_TRUE);
-			break;
-
-		case PlatformActionType::Minimize:
-			glfwIconifyWindow(platform._window);
-			break;
-
-		case PlatformActionType::Maximize:
-#if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 1) || (GLFW_VERSION_MAJOR >= 4)
-			glfwMaximizeWindow(platform._window);
-#endif
 			break;
 
 		default:
