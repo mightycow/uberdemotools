@@ -2,6 +2,7 @@ path_root = ".."
 path_src_core = path_root.."/src"
 path_src_apps = path_root.."/src/apps"
 path_inc = path_root.."/include"
+path_libs = path_root.."/libs"
 path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
 
@@ -298,6 +299,21 @@ solution "UDT"
 			links { "D3D11" }
 		filter "system:not windows"
 			links { "GL", "glfw" }
+	
+	-- OpenGL version of the Windows viewer for testing purposes
+	project "UDT_viewer_glfw"
+	
+		kind "WindowedApp"
+		defines { "UDT_CREATE_DLL", "UDT_VIEWER_WINDOWS_GLFW" }
+		files { path_src_core.."/viewer/*.cpp" }
+		files { path_src_core.."/viewer/*.hpp" }
+		ApplyProjectSettings()
+		filter "system:windows"
+			links { "OpenGL32", "glew32", "glfw3dll" }
+			filter "platforms:x32"
+				libdirs ( path_libs.."/x86" )
+			filter "platforms:x64"
+				libdirs ( path_libs.."/x64" )
 		
 	project "viewer_data_gen"
 	

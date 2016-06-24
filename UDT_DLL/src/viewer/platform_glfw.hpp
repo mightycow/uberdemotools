@@ -9,13 +9,20 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
+#if defined(UDT_WINDOWS)
+#	include <Windows.h>
+#	include "GL/glew.h"
+#	include "GLFW/glfw3.h"
+#else
+#	define GL_GLEXT_PROTOTYPES
+#	include <GL/gl.h>
+#	include <GL/glext.h>
+#	include <GLFW/glfw3.h>
+#endif
 
-#include <GLFW/glfw3.h>
-
-#if defined(UDT_GCC)
+#if defined(UDT_MSVC)
+#	pragma warning(push, 0)
+#elif defined(UDT_GCC)
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #	pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -25,7 +32,9 @@
 #include "nanovg/nanovg_gl.h"
 #include "nanovg/nanovg.c"
 
-#if defined(UDT_GCC)
+#if defined(UDT_MSVC)
+#	pragma warning(pop)
+#elif defined(UDT_GCC)
 #	pragma GCC diagnostic pop
 #endif
 
@@ -159,7 +168,12 @@ struct Platform
 #if (GLFW_VERSION_MAJOR >= 3 && GLFW_VERSION_MINOR >= 2) || (GLFW_VERSION_MAJOR >= 4)
 		glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
 #endif
+
 		glfwMakeContextCurrent(window);
+#if defined(UDT_WINDOWS)
+		glewInit();
+#endif
+
 		glfwSetKeyCallback(window, &GlobalKeyCallback);
 		glfwSetCursorPosCallback(window, &GlobalCursorPosCallback);
 		glfwSetMouseButtonCallback(window, &GlobalMouseButtonCallback);
@@ -168,13 +182,24 @@ struct Platform
 #endif
 		glfwSwapInterval(0);
 		
+#if defined(UDT_DEBUG)
 		NVGcontext* const nvg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES | NVG_DEBUG);
+#else
+		NVGcontext* const nvg = nvgCreateGL2(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
+#endif
 		if(nvg == nullptr)
 		{
 			LogError("nvgCreateGL2 failed");
 			return false;
 		}
 		_sharedReadOnly.NVGContext = nvg;
+
+		int fbWidth, fbHeight;
+		glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
+		glViewport(0, 0, fbWidth, fbHeight);
+		glClearColor(ViewerClearColor[0], ViewerClearColor[1], ViewerClearColor[2], ViewerClearColor[3]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glfwSwapBuffers(window);
 		
 		return true;
 	}
@@ -371,10 +396,86 @@ void Platform_DebugPrint(const char* format, ...)
 	va_start(args, format);
 	vsprintf(msg, format, args);
 	va_end(args);
+#if defined(UDT_WINDOWS)
+	OutputDebugStringA("\n");
+	OutputDebugStringA(msg);
+	OutputDebugStringA("\n");
+#else
 	printf("\n");
 	printf(msg);
 	printf("\n");
+#endif
 }
+
+#if defined(UDT_WINDOWS)
+
+#include "thread_local_allocators.hpp"
+#include "scoped_stack_allocator.hpp"
+#include "path.hpp"
+#include "utils.hpp"
+
+static void ResetCurrentDirectory(const char* exePath)
+{
+	udtVMLinearAllocator& alloc = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocScope(alloc);
+
+	udtString folderPath;
+	if(!udtPath::GetFolderPath(folderPath, alloc, udtString::NewConstRef(exePath)))
+	{
+		return;
+	}
+
+	wchar_t* const folderPathWide = udtString::ConvertToUTF16(alloc, folderPath);
+	if(folderPathWide == nullptr)
+	{
+		return;
+	}
+
+	SetCurrentDirectoryW(folderPathWide);
+}
+
+int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+{
+	udtInitLibrary();
+
+	Platform platform;
+	Viewer viewer(platform);
+	platform._viewer = &viewer;
+
+	int argc;
+	LPWSTR* const argvWide = CommandLineToArgvW(GetCommandLineW(), &argc);
+	udtVMLinearAllocator& alloc = udtThreadLocalAllocators::GetTempAllocator();
+	uptr argvOffsets[16];
+	char* argv[16];
+	argc = udt_min(argc, 16);
+	for(int i = 0; i < argc; ++i)
+	{
+		argvOffsets[i] = udtString::NewFromUTF16(alloc, argvWide[i]).GetOffset();
+	}
+	for(int i = 0; i < argc; ++i)
+	{
+		argv[i] = (char*)alloc.GetAddressAt(argvOffsets[i]);
+	}
+	LocalFree(argvWide);
+	ResetCurrentDirectory(argv[0]);
+
+	int result = 0;
+	if(!platform.Init() ||
+	   !viewer.Init(argc, argv))
+	{
+		result = 1;
+		goto shut_down;
+	}
+
+	platform.MainLoop();
+
+shut_down:
+	udtShutDownLibrary();
+
+	return result;
+}
+
+#else
 
 int main(int argc, char** argv)
 {
@@ -399,3 +500,5 @@ shut_down:
 
 	return result;
 }
+
+#endif
