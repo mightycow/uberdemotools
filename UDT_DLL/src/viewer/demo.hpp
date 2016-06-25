@@ -106,6 +106,8 @@ struct SnapshotCore
 	s16 FollowedHealth;
 	s16 FollowedArmor;
 	s16 FollowedAmmo;
+	u8 FollowedTeam;
+	u8 FollowedWeapon;
 };
 
 struct SnapshotScore

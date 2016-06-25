@@ -121,6 +121,31 @@ static s32 GetSpriteIdFromWeaponId(u8 weaponId)
 	}
 }
 
+static s32 GetIconSpriteIdFromWeaponId(u8 weaponId)
+{
+	switch((udtWeapon::Id)weaponId)
+	{
+		case udtWeapon::Gauntlet: return Sprite::weapon_gauntlet;
+		case udtWeapon::MachineGun: return Sprite::weapon_mg;
+		case udtWeapon::Shotgun: return Sprite::weapon_sg;
+		case udtWeapon::GrenadeLauncher: return Sprite::weapon_gl;
+		case udtWeapon::RocketLauncher: return Sprite::weapon_rl;
+		case udtWeapon::PlasmaGun: return Sprite::weapon_pg;
+		case udtWeapon::Railgun: return Sprite::weapon_rg;
+		case udtWeapon::LightningGun: return Sprite::weapon_lg;
+		default: return -1;
+	}
+}
+
+static void DrawTexturedRect(NVGcontext* ctx, f32 x, f32 y, f32 w, f32 h, int textureId)
+{
+	nvgBeginPath(ctx);
+	nvgRect(ctx, x, y, w, h);
+	nvgFillPaint(ctx, nvgImagePattern(ctx, x, y, w, h, 0.0f, textureId, 1.0f));
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+}
+
 
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
@@ -648,27 +673,9 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
 	}
 
-	// @TODO: follow message
-	{
-		const char* const name = _demo.GetString(snapshot.Core.FollowedName);
-		if(name != nullptr)
-		{
-			char msg[256];
-			sprintf(msg, "Following %s - HP %d - armor %d - ammo %d", 
-					name, (int)snapshot.Core.FollowedHealth, (int)snapshot.Core.FollowedArmor, (int)snapshot.Core.FollowedAmmo);
-			NVGcontext* const ctx = renderParams.NVGContext;
-			nvgBeginPath(ctx);
-			nvgFontSize(ctx, 16.0f);
-			nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
-			nvgText(ctx, _uiRect.X() + 5.0f, _uiRect.Y() + 5.0f, msg, nullptr);
-			nvgFillColor(ctx, nvgGrey(255));
-			nvgFill(ctx);
-			nvgClosePath(ctx);
-		}
-	}
-
 	RenderDemoScore(renderParams);
 	RenderDemoTimer(renderParams);
+	RenderDemoFollowedPlayer(renderParams);
 }
 
 void Viewer::RenderDemoScore(RenderParams& renderParams)
@@ -784,6 +791,75 @@ void Viewer::RenderDemoTimer(RenderParams& renderParams)
 	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
 	nvgFillColor(ctx, nvgGrey(0));
 	nvgText(ctx, x, y, clock, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+}
+
+void Viewer::RenderDemoFollowedPlayer(RenderParams& renderParams)
+{
+	const Snapshot& snapshot = *_snapshot;
+	if(snapshot.Core.FollowedTeam != udtTeam::Free &&
+	   snapshot.Core.FollowedTeam != udtTeam::Red && 
+	   snapshot.Core.FollowedTeam != udtTeam::Blue)
+	{
+		return;
+	}
+	
+	const f32 space = 4.0f;
+	const f32 fontSize = 20.0f;
+	NVGcontext* const ctx = renderParams.NVGContext;
+	nvgFontSize(ctx, fontSize);
+
+	const char* const name = _demo.GetString(snapshot.Core.FollowedName);
+	if(name != nullptr)
+	{	
+		char msg[128];
+		sprintf(msg, "Following %s", name);
+
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgGrey(0));
+		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_BOTTOM);
+		nvgText(ctx, _mapRect.Left() + space, _mapRect.Bottom() - space, msg, nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+	}
+
+	float bounds[4];
+	nvgTextBounds(ctx, 0.0f, 0.0f, "000", nullptr, bounds);
+	const f32 textw = ceilf(bounds[2] - bounds[0]);
+	const f32 iconw = fontSize;
+
+	// Top left corner.
+	const f32 delta = 4.0f;
+	const f32 w = 3.0f * (iconw + textw) + 5.0f * delta;
+	const f32 x = floorf(_mapRect.CenterX() - w / 2.0f);
+	const f32 y = _mapRect.Bottom() - fontSize - space;
+
+	const s32 ammoSpriteId = GetIconSpriteIdFromWeaponId(snapshot.Core.FollowedWeapon);
+	DrawTexturedRect(ctx, x, y, iconw, iconw, _sprites[Sprite::armor_red]);
+	DrawTexturedRect(ctx, x + iconw + textw + 2.0f * delta, y, iconw, iconw, _sprites[Sprite::health_large]);
+	if(ammoSpriteId >= 0)
+	{
+		DrawTexturedRect(ctx, x + 2.0f * (iconw + textw) + 4.0f * delta, y, iconw, iconw, _sprites[ammoSpriteId]);
+	}
+
+	char armor[16];
+	char health[16];
+	char ammo[16];
+	sprintf(armor, "%d", snapshot.Core.FollowedArmor);
+	sprintf(health, "%d", snapshot.Core.FollowedHealth);
+	sprintf(ammo, "%d", snapshot.Core.FollowedAmmo);
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGrey(0));
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_RIGHT | NVGalign::NVG_ALIGN_TOP);
+	nvgText(ctx, x + iconw + textw + delta, y, armor, nullptr);
+	nvgText(ctx, x + 2.0f * (iconw + textw) + 3.0f * delta, y, health, nullptr);
+	if(snapshot.Core.FollowedWeapon != udtWeapon::Gauntlet &&
+	   snapshot.Core.FollowedWeapon != udtWeapon::GrapplingHook)
+	{
+		nvgText(ctx, x + 3.0f * (iconw + textw) + 5.0f * delta, y, ammo, nullptr);
+	}
 	nvgFill(ctx);
 	nvgClosePath(ctx);
 }

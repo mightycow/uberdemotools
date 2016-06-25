@@ -1084,10 +1084,14 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 
 	const s32 followedPlayerIndex = snapshot.PlayerState->clientNum;
 	const s32 weapon = snapshot.PlayerState->weapon;
+	u32 udtWeapon;
+	GetUDTNumber(udtWeapon, udtMagicNumberType::Weapon, weapon, (udtProtocol::Id)_protocol, (udtMod::Id)_mod);
 	newSnap.Core.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
 	newSnap.Core.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
 	newSnap.Core.FollowedAmmo = (weapon >= 0 && weapon < ID_MAX_PS_WEAPONS) ? (s16)snapshot.PlayerState->ammo[snapshot.PlayerState->weapon] : s16(0);
 	newSnap.Core.FollowedName = u32(-1);
+	newSnap.Core.FollowedTeam = (followedPlayerIndex >= 0 && followedPlayerIndex < 64) ? (u8)_players[followedPlayerIndex].Team : u8(0);
+	newSnap.Core.FollowedWeapon = (u8)udtWeapon;
 	if(followedPlayerIndex >= 0 && followedPlayerIndex < 64)
 	{
 		newSnap.Core.FollowedName = _players[followedPlayerIndex].Name;
