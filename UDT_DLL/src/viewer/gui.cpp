@@ -268,7 +268,7 @@ void DemoProgressBar::SetDragging(bool dragging)
 
 void DemoProgressBar::Draw(NVGcontext* nvgContext)
 {
-	DrawProgressBar(nvgContext, Pos[0] - Radius, Pos[1], Dim[0] + 2.0f * Radius, Dim[1], Radius, Progress);
+	DrawProgressSlider(nvgContext, Pos[0] - Radius, Pos[1], Dim[0] + 2.0f * Radius, Dim[1], Radius, Progress);
 }
 
 Button::Button()

@@ -7,6 +7,8 @@
 
 extern NVGcolor nvgGrey(unsigned char c);
 extern NVGcolor nvgGreyA(unsigned char c, unsigned char a);
+extern void DrawProgressBarBackground(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r);
+extern void DrawProgressSlider(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, f32 progress);
 extern void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, f32 progress);
 extern void DrawPlayer(NVGcontext* nvgContext, f32 x, f32 y, f32 r, f32 a, NVGcolor color);
 extern void DrawPlayerName(NVGcontext* nvgContext, f32 x, f32 y, f32 r, const char* name);

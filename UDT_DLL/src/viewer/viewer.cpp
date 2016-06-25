@@ -667,49 +667,125 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		}
 	}
 
-	// @TODO: score message
+	RenderDemoScore(renderParams);
+	RenderDemoTimer(renderParams);
+}
+
+void Viewer::RenderDemoScore(RenderParams& renderParams)
+{
+	const Snapshot& snapshot = *_snapshot;
+	int score1 = (int)snapshot.Score.Score1;
+	int score2 = (int)snapshot.Score.Score2;
+	const char* name1;
+	const char* name2;
+	NVGcolor color1;
+	NVGcolor color2;
+	if(snapshot.Score.IsScoreTeamBased)
 	{
-		int score1 = (int)snapshot.Score.Score1;
-		int score2 = (int)snapshot.Score.Score2;
-		const char* name1;
-		const char* name2;
-		if(snapshot.Score.IsScoreTeamBased)
-		{
-			name1 = "RED";
-			name2 = "BLUE";
-		}
-		else
-		{
-			name1 = _demo.GetStringSafe(snapshot.Score.Score1Name, "?");
-			name2 = _demo.GetStringSafe(snapshot.Score.Score2Name, "?");
-
-			// For display consistency, we always keep the lowest client number first
-			// in duel and HoonyMode because they are the only 2 game types 
-			// that guarantee you have exactly 2 players.
-			const udtGameType::Id gt = _demo.GetGameType();
-			if((gt == udtGameType::Duel || gt == udtGameType::HM) &&
-			   snapshot.Score.Score1Id > snapshot.Score.Score2Id)
-			{
-				const char* const nameTemp = name2;
-				const int scoreTemp = score2;
-				name2 = name1;
-				score2 = score1;
-				name1 = nameTemp;
-				score1 = scoreTemp;
-			}
-		}
-
-		char msg[256];
-		sprintf(msg, "%s %d - %d %s", name1, score1, score2, name2);
-		NVGcontext* const ctx = renderParams.NVGContext;
-		nvgBeginPath(ctx);
-		nvgFontSize(ctx, 16.0f);
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
-		nvgText(ctx, _uiRect.X() + 5.0f, _uiRect.Y() + 5.0f + 16.0f + 4.0f, msg, nullptr);
-		nvgFillColor(ctx, nvgGrey(255));
-		nvgFill(ctx);
-		nvgClosePath(ctx);
+		name1 = "RED";
+		name2 = "BLUE";
+		color1 = nvgRGB(255, 95, 95);
+		color2 = nvgRGB(160, 160, 255);
 	}
+	else
+	{
+		name1 = _demo.GetStringSafe(snapshot.Score.Score1Name, "?");
+		name2 = _demo.GetStringSafe(snapshot.Score.Score2Name, "?");
+		color1 = nvgGrey(0);
+		color2 = nvgGrey(0);
+
+		// For display consistency, we always keep the lowest client number first
+		// in duel and HoonyMode because they are the only 2 game types 
+		// that guarantee you have exactly 2 players.
+		const udtGameType::Id gt = _demo.GetGameType();
+		if((gt == udtGameType::Duel || gt == udtGameType::HM) &&
+		   snapshot.Score.Score1Id > snapshot.Score.Score2Id)
+		{
+			const char* const nameTemp = name2;
+			const int scoreTemp = score2;
+			name2 = name1;
+			score2 = score1;
+			name1 = nameTemp;
+			score1 = scoreTemp;
+		}
+	}
+
+	char scoreString1[16];
+	char scoreString2[16];
+	sprintf(scoreString1, "%d", score1);
+	sprintf(scoreString2, "%d", score2);
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	const f32 space = 4.0f;
+	const f32 fontSize = 20.0f;
+	const f32 dashw = 5.0f;
+	const f32 dashh = 2.0f;
+	nvgFontSize(ctx, fontSize);
+	float bounds[4];
+	nvgTextBounds(ctx, 0.0f, 0.0f, name1, nullptr, bounds);
+	const f32 name1w = bounds[2] - bounds[0];
+	nvgTextBounds(ctx, 0.0f, 0.0f, name2, nullptr, bounds);
+	const f32 name2w = bounds[2] - bounds[0];
+	nvgTextBounds(ctx, 0.0f, 0.0f, scoreString1, nullptr, bounds);
+	const f32 score1w = bounds[2] - bounds[0];
+	nvgTextBounds(ctx, 0.0f, 0.0f, scoreString2, nullptr, bounds);
+	const f32 score2w = bounds[2] - bounds[0];
+	
+	// Top-left corner.
+	const f32 x = _mapRect.Right() - name1w - name2w - score1w - score2w - 6.0f * space;
+	const f32 y = _mapRect.Y() + space;
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, color1);
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+	nvgText(ctx, x, y, name1, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, color2);
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+	nvgText(ctx, x + name1w + score1w + dashw + score2w + 4.0f * space, y, name2, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGrey(0));
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+	nvgText(ctx, x + name1w + space, y, scoreString1, nullptr);
+	nvgText(ctx, x + name1w + score1w + dashw + 3.0f * space, y, scoreString2, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGrey(127));
+	nvgRect(ctx, x + name1w + score1w + 2.0f * space, floorf(y + fontSize / 2.0f), dashw, dashh);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+}
+
+void Viewer::RenderDemoTimer(RenderParams& renderParams)
+{
+	const int extraSec = _timerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
+	const int totalSec = (int)_demoPlaybackTimer.GetElapsedSec() + extraSec;
+	const int minutes = totalSec / 60;
+	const int seconds = totalSec % 60;
+
+	char clock[256];
+	sprintf(clock, "%d:%02d", minutes, seconds);
+
+	const f32 space = 4.0f;
+	const f32 x = floorf(_mapRect.Left()) + space;
+	const f32 y = ceilf(_mapRect.Top()) + space;
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	nvgBeginPath(ctx);
+	nvgFontSize(ctx, 20.0f);
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+	nvgFillColor(ctx, nvgGrey(0));
+	nvgText(ctx, x, y, clock, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
 }
 
 void Viewer::RenderNoDemo(RenderParams& renderParams)
@@ -747,27 +823,7 @@ void Viewer::RenderProgress(RenderParams& renderParams)
 	nvgFill(ctx);
 	nvgClosePath(ctx);
 
-	nvgBeginPath(ctx);
-	nvgRoundedRect(ctx, x, y + 2.0f, w, h, r);
-	nvgStrokeColor(ctx, nvgGrey(144));
-	nvgStrokeWidth(ctx, 2.0f);
-	nvgStroke(ctx);
-	nvgClosePath(ctx);
-
-	nvgBeginPath(ctx);
-	nvgRoundedRect(ctx, x, y, w, h, r);
-	nvgFillPaint(ctx, nvgLinearGradient(ctx, x, y, x, y + h, nvgGrey(82), nvgGrey(115)));
-	nvgFill(ctx);
-	nvgStrokeColor(ctx, nvgGrey(73));
-	nvgStrokeWidth(ctx, 2.0f);
-	nvgStroke(ctx);
-	nvgClosePath(ctx);
-
-	nvgBeginPath(ctx);
-	nvgRoundedRect(ctx, x, y, w * _demoLoadProgress, h, r);
-	nvgFillPaint(ctx, nvgLinearGradient(ctx, x, y, x, y + h, nvgGrey(210), nvgGrey(190)));
-	nvgFill(ctx);
-	nvgClosePath(ctx);
+	DrawProgressBar(ctx, x, y, w, h, r, _demoLoadProgress);
 }
 
 void Viewer::Render(RenderParams& renderParams)
@@ -818,26 +874,6 @@ void Viewer::Render(RenderParams& renderParams)
 	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
 
 	_activeWidgets.Draw(renderParams.NVGContext);
-
-	// @TODO: timer, showing either match time or true server time
-	{
-		const int totalSec = (int)_demoPlaybackTimer.GetElapsedSec();
-		//const int totalSec = ((int)_demoPlaybackTimer.GetElapsedMs() + (int)_demo.GetFirstSnapshotTimeMs()) / 1000;
-		const int minutes = totalSec / 60;
-		const int seconds = totalSec % 60;
-		char clock[256];
-		sprintf(clock, "%d:%02d", minutes, seconds);
-		const f32 x = floorf(_mapRect.CenterX());
-		const f32 y = ceilf(_mapRect.Top());
-		NVGcontext* const ctx = renderParams.NVGContext;
-		nvgBeginPath(ctx);
-		nvgFontSize(ctx, 16.0f);
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_CENTER | NVGalign::NVG_ALIGN_TOP);
-		nvgText(ctx, x, y, clock, nullptr);
-		nvgFillColor(ctx, nvgGrey(0));
-		nvgFill(ctx);
-		nvgClosePath(ctx);
-	}
 }
 
 void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a)

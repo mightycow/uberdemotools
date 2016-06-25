@@ -26,10 +26,8 @@ NVGcolor nvgGreyA(unsigned char c, unsigned char a)
 	return nvgRGBA(c, c, c, a);
 }
 
-void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, f32 progress)
+void DrawProgressBarBackground(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r)
 {
-	const f32 progressDiskCenterX = x + r + (w - 2.0f*r) * progress;
-
 	nvgBeginPath(nvgContext);
 	nvgRoundedRect(nvgContext, x, y + 2.0f, w, h, r);
 	nvgStrokeColor(nvgContext, nvgGrey(144));
@@ -45,7 +43,14 @@ void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, 
 	nvgStrokeWidth(nvgContext, 2.0f);
 	nvgStroke(nvgContext);
 	nvgClosePath(nvgContext);
+}
 
+void DrawProgressSlider(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, f32 progress)
+{
+	const f32 progressDiskCenterX = x + r + (w - 2.0f*r) * progress;
+
+	DrawProgressBarBackground(nvgContext, x, y, w, h, r);
+	
 	nvgBeginPath(nvgContext);
 	nvgCircle(nvgContext, progressDiskCenterX, y + h / 2.0f, r);
 	nvgFillPaint(nvgContext, nvgLinearGradient(nvgContext, progressDiskCenterX, y, progressDiskCenterX, y + h, nvgGrey(180), nvgGrey(133)));
@@ -53,6 +58,17 @@ void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, 
 	nvgStrokeColor(nvgContext, nvgGrey(58));
 	nvgStrokeWidth(nvgContext, 1.0f);
 	nvgStroke(nvgContext);
+	nvgClosePath(nvgContext);
+}
+
+void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, f32 progress)
+{
+	DrawProgressBarBackground(nvgContext, x, y, w, h, r);
+
+	nvgBeginPath(nvgContext);
+	nvgRoundedRect(nvgContext, x, y, w * progress, h, r);
+	nvgFillPaint(nvgContext, nvgLinearGradient(nvgContext, x, y, x, y + h, nvgGrey(210), nvgGrey(190)));
+	nvgFill(nvgContext);
 	nvgClosePath(nvgContext);
 }
 
