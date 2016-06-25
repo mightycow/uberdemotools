@@ -341,8 +341,11 @@ Demo::~Demo()
 	free(_snapshot);
 }
 
-bool Demo::Init()
+bool Demo::Init(ProgressCallback progressCallback, void* userData)
 {
+	assert(progressCallback != nullptr);
+	assert(userData != nullptr);
+
 	udtCuContext* const context = udtCuCreateContext();
 	if(context == NULL)
 	{
@@ -364,11 +367,18 @@ bool Demo::Init()
 	}
 	_snapshot = snapshot;
 
+	_progressCallback = progressCallback;
+	_userData = userData;
+
 	return true;
 }
 
 void Demo::Load(const char* filePath)
 {
+	const f32 LoadStepCount = 6.0f;
+	f32 loadStep = 1.0f;
+	(*_progressCallback)(0.0f, _userData);
+
 	_readIndex = 0;
 	_writeIndex = 0;
 	for(u32 i = 0; i < 2; ++i)
@@ -400,22 +410,36 @@ void Demo::Load(const char* filePath)
 		_protocolNumbers.GetNumbers(protocol, mod);
 	}
 
+	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	ParseDemo(filePath, &Demo::ProcessMessage_StaticItems);
+	loadStep += 1.0f;
+
+	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	ParseDemo(filePath, &Demo::ProcessMessage_FinalPass);
+	loadStep += 1.0f;
 
 	if(_snapshots[_readIndex].GetSize() == 0)
 	{
 		return;
 	}
 
+	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	FixStaticItems();
+	loadStep += 1.0f;
+
+	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	FixDynamicItemsAndPlayers();
+	loadStep += 1.0f;
+
+	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	FixLGEndPoints();
 
 	const auto& snapshots = _snapshots[_readIndex];
 	const u32 lastIndex = snapshots.GetSize() - 1;
 	_firstSnapshotTimeMs = snapshots[0].ServerTimeMs;
 	_lastSnapshotTimeMs = snapshots[lastIndex].ServerTimeMs;
+
+	(*_progressCallback)(1.0f, _userData);
 }
 
 const char* Demo::GetStringSafe(u32 offset, const char* replacement) const

@@ -174,10 +174,12 @@ struct idProtocolNumbers
 
 struct Demo
 {
+	typedef void (*ProgressCallback)(f32 progress, void* userData);
+
 	Demo();
 	~Demo();
 
-	bool        Init();
+	bool        Init(ProgressCallback progressCallback, void* userData);
 	void        Load(const char* filePath);
 
 	s32         GetFirstSnapshotTimeMs() const { return _firstSnapshotTimeMs; }
@@ -292,6 +294,8 @@ private:
 	udtCuContext* _context = nullptr;
 	u8* _messageData = nullptr;
 	Snapshot* _snapshot = nullptr;
+	ProgressCallback _progressCallback = nullptr;
+	void* _userData = nullptr;
 	s32 _firstMatchStartTimeMs = UDT_S32_MAX;
 	s32 _firstMatchEndTimeMs = UDT_S32_MIN;
 	s32 _firstSnapshotTimeMs = UDT_S32_MAX;

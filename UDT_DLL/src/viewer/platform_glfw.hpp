@@ -414,20 +414,6 @@ void Platform_GetSharedDataPointers(Platform& platform, const PlatformReadOnly**
 	}
 }
 
-void Platform_PerformAction(Platform& platform, const PlatformAction& action)
-{
-	switch(action.Type)
-	{
-		case PlatformActionType::Quit:
-			glfwSetWindowShouldClose(platform._window, GL_TRUE);
-			break;
-
-		default:
-			break;
-	}
-	
-}
-
 void Platform_SetCursorCapture(Platform&, bool)
 {
 }
@@ -445,6 +431,11 @@ void Platform_NVGBeginFrame(Platform& platform)
 void Platform_NVGEndFrame(Platform& platform)
 {
 	nvgEndFrame(platform._sharedReadOnly.NVGContext);
+}
+
+void Platform_Draw(Platform& platform)
+{
+	platform.ReDraw();
 }
 
 void Platform_DebugPrint(const char* format, ...)

@@ -125,6 +125,14 @@ static s32 GetSpriteIdFromWeaponId(u8 weaponId)
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
 
+void Viewer::DemoProgressCallback(f32 progress, void* userData)
+{
+	Viewer* const viewer = (Viewer*)userData;
+	viewer->_drawDemoLoadProgress = true;
+	viewer->_demoLoadProgress = progress;
+	Platform_Draw(viewer->_platform);
+}
+
 Viewer::Viewer(Platform& platform)
 	: _platform(platform)
 {
@@ -144,7 +152,7 @@ bool Viewer::Init(int argc, char** argv)
 {
 	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
 	if(snapshot == nullptr ||
-	   !_demo.Init() ||
+	   !_demo.Init(&DemoProgressCallback, this) ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
 	   nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/Roboto-Regular.ttf") == FONS_INVALID)
@@ -458,7 +466,7 @@ void Viewer::ProcessEvent(const Event& event)
 
 void Viewer::Update()
 {
-	if(GetCurrentSnapshotIndex() != _snapshotIndex)
+	if(_demo.GetSnapshotCount() > 0 && GetCurrentSnapshotIndex() != _snapshotIndex)
 	{
 		Platform_RequestDraw(_platform);
 	}
@@ -720,8 +728,63 @@ void Viewer::RenderNoDemo(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
+void Viewer::RenderProgress(RenderParams& renderParams)
+{
+	const f32 cx = f32(renderParams.ClientWidth / 2);
+	const f32 cy = f32(renderParams.ClientHeight / 2);
+	const f32 w = 200.0f;
+	const f32 h = 10.0f;
+	const f32 r = 5.0f;
+	const f32 x = cx - floorf(w / 2.0f);
+	const f32 y = cy - floorf(h / 2.0f) + 10.0f;
+	NVGcontext* const ctx = renderParams.NVGContext;
+
+	nvgBeginPath(ctx);
+	nvgFontSize(ctx, 24.0f);
+	nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
+	nvgText(ctx, cx, cy - 10.0f, "loading demo...", nullptr);
+	nvgFillColor(ctx, nvgGrey(255));
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgRoundedRect(ctx, x, y + 2.0f, w, h, r);
+	nvgStrokeColor(ctx, nvgGrey(144));
+	nvgStrokeWidth(ctx, 2.0f);
+	nvgStroke(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgRoundedRect(ctx, x, y, w, h, r);
+	nvgFillPaint(ctx, nvgLinearGradient(ctx, x, y, x, y + h, nvgGrey(82), nvgGrey(115)));
+	nvgFill(ctx);
+	nvgStrokeColor(ctx, nvgGrey(73));
+	nvgStrokeWidth(ctx, 2.0f);
+	nvgStroke(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgRoundedRect(ctx, x, y, w * _demoLoadProgress, h, r);
+	nvgFillPaint(ctx, nvgLinearGradient(ctx, x, y, x, y + h, nvgGrey(210), nvgGrey(190)));
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+}
+
 void Viewer::Render(RenderParams& renderParams)
 {
+	if(_drawDemoLoadProgress)
+	{
+		RenderProgress(renderParams);
+		_drawDemoLoadProgress = false;
+		return;
+	}
+
+	if(_demo.GetSnapshotCount() == 0)
+	{
+		RenderNoDemo(renderParams);
+		return;
+	}
+
 	const u32 snapshotIndex = GetCurrentSnapshotIndex();
 	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
 	{

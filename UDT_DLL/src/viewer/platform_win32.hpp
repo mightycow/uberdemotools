@@ -836,56 +836,6 @@ void Platform_GetSharedDataPointers(Platform& platform, const PlatformReadOnly**
 	}
 }
 
-void Platform_PerformAction(Platform& platform, const PlatformAction& action)
-{
-	switch(action.Type)
-	{
-		case PlatformActionType::Quit:
-			// @NOTE: CloseWindow minimizes the window...
-			PostMessageW(platform._window, WM_CLOSE, 0, 0);
-			break;
-
-		case PlatformActionType::Minimize:
-			ShowWindow(platform._window, SW_MINIMIZE);
-			break;
-
-		case PlatformActionType::Maximize:
-			switch(platform._windowState)
-			{
-				case WindowState::Maximized:
-					ShowWindow(platform._window, SW_RESTORE);
-					break;
-
-				case WindowState::Minimized:
-				case WindowState::Normal:
-				default:
-					ShowWindow(platform._window, SW_MAXIMIZE);
-					break;
-			}
-			break;
-
-		case PlatformActionType::OffsetWindow:
-		{
-			RECT rect;
-			GetWindowRect(platform._window, &rect);
-			const int width = (int)(rect.right - rect.left);
-			const int height = (int)(rect.bottom - rect.top);
-			const int x = (int)rect.left + (int)action.X;
-			const int y = (int)rect.top + (int)action.Y;
-			MoveWindow(platform._window, x, y, width, height, TRUE);
-
-			//SetWindowPlacement
-			//SetWindowPos
-			//MoveWindow
-		}
-			break;
-
-		default:
-			break;
-	}
-	
-}
-
 void Platform_SetCursorCapture(Platform& platform, bool enabled)
 {
 	if(enabled)
@@ -906,6 +856,12 @@ void Platform_NVGBeginFrame(Platform& platform)
 void Platform_NVGEndFrame(Platform& platform)
 {
 	nvgEndFrame(platform._nvgContext);
+}
+
+void Platform_Draw(Platform& platform)
+{
+	platform.ReDraw();
+	platform._drawRequested = false;
 }
 
 void Platform_DebugPrint(const char* format, ...)

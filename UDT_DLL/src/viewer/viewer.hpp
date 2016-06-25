@@ -31,6 +31,8 @@ struct Config
 
 struct Viewer
 {
+	static void DemoProgressCallback(f32 progress, void* userData);
+
 	Viewer(Platform& platform);
 	~Viewer();
 
@@ -57,6 +59,7 @@ private:
 	void LoadDemo(const char* filePath);
 	void RenderDemo(RenderParams& renderParams);
 	void RenderNoDemo(RenderParams& renderParams);
+	void RenderProgress(RenderParams& renderParams);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
 	u32  GetCurrentSnapshotIndex();
 	u32  GetSapshotIndexFromTime(u32 elapsedMs);
@@ -79,10 +82,10 @@ private:
 		udtString NameToUse;
 	};
 
+	int _sprites[Sprite::Count];
 	udtVMLinearAllocator _tempAllocator;
 	udtVMLinearAllocator _persistAllocator;
 	udtVMArray<MapAlias> _mapAliases;
-	int _sprites[Sprite::Count];
 	Demo _demo;
 	Config _config;
 	udtTimer _demoPlaybackTimer;
@@ -105,9 +108,11 @@ private:
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;
 	u32 _snapshotIndex = 0; // Index of the currently displayed snapshot.
+	f32 _demoLoadProgress = 0.0f;
 	bool _appPaused = false;
 	bool _wasTimerRunningBeforePause = false;
 	bool _wasPlayingBeforeProgressDrag = false;
 	bool _reversePlayback = false;
 	bool _mapCoordsLoaded = false;
+	bool _drawDemoLoadProgress = false;
 };
