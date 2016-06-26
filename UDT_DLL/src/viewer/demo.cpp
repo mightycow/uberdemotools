@@ -926,7 +926,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 					dynItem.Id = (u8)j;
 					dynItem.IdEntityNumber = (u16)es.number;
 					dynItem.Angle = 0.0f;
-					Float3::Copy(dynItem.Position, es.pos.trBase);
+					ComputeTrajectoryPosition(dynItem.Position, es.pos, snapshot.ServerTimeMs);
 					_tempDynamicItems.Add(dynItem);
 					break;
 				}
