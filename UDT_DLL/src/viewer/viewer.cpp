@@ -1124,6 +1124,10 @@ void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat)
 			StopPlayback();
 			break;
 
+		case VirtualKey::F:
+			Platform_ToggleMaximized(_platform);
+			break;
+
 		default:
 			break;
 	}

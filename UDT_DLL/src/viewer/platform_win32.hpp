@@ -864,6 +864,11 @@ void Platform_Draw(Platform& platform)
 	platform._drawRequested = false;
 }
 
+void Platform_ToggleMaximized(Platform& platform)
+{
+	ShowWindow(platform._window, platform._windowState == WindowState::Maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
+}
+
 void Platform_DebugPrint(const char* format, ...)
 {
 	char msg[256];

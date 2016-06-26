@@ -438,6 +438,18 @@ void Platform_Draw(Platform& platform)
 	platform.ReDraw();
 }
 
+void Platform_ToggleMaximized(Platform& platform)
+{
+	if(glfwGetWindowAttrib(platform._window, GLFW_MAXIMIZED))
+	{
+		glfwRestoreWindow(platform._window);
+	}
+	else
+	{
+		glfwMaximizeWindow(platform._window);
+	}
+}
+
 void Platform_DebugPrint(const char* format, ...)
 {
 	char msg[256];
