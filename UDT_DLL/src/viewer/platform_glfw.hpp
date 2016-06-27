@@ -528,6 +528,7 @@ int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 		goto shut_down;
 	}
 
+	platform.ReDraw();
 	platform.MainLoop();
 
 shut_down:
@@ -554,6 +555,7 @@ int main(int argc, char** argv)
 		goto shut_down;
 	}
 
+	platform.ReDraw();
 	platform.MainLoop();
 
 shut_down:

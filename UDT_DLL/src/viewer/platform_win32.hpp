@@ -351,7 +351,7 @@ struct Platform
 		//const DWORD styleEx = WS_EX_APPWINDOW; // borderless
 		const DWORD style = WS_OVERLAPPEDWINDOW;
 		const DWORD styleEx = WS_EX_ACCEPTFILES;
-		const HWND window = CreateWindowExW(styleEx, windowClass.lpszClassName, L"UDT_Viewer", style,
+		const HWND window = CreateWindowExW(styleEx, windowClass.lpszClassName, L"UDT 2D Viewer", style,
 			CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, nullptr, nullptr, _instance, nullptr);
 		if(window == nullptr)
 		{
@@ -936,6 +936,7 @@ int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 		goto shut_down;
 	}
 
+	platform.ReDraw();
 	platform.MainLoop();
 
 shut_down:
