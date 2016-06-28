@@ -131,14 +131,13 @@ struct Platform
 				glfwWaitEventsTimeout(MaxWaitTime - elapsed);
 				continue;
 			}
-
-			_viewer->Update();
-			if(!_drawRequested)
+			
+			if(glfwGetWindowAttrib(window, GLFW_ICONIFIED))
 			{
 				prevTime = currTime;
 				continue;
 			}
-
+			
 			int winWidth, winHeight;
 			int fbWidth, fbHeight;
 			glfwGetWindowSize(window, &winWidth, &winHeight);
@@ -161,8 +160,6 @@ struct Platform
 			glfwWaitEventsTimeout(MaxWaitTime);
 
 			prevTime = currTime;
-
-			_drawRequested = false;
 		}
 	}
 
@@ -350,20 +347,16 @@ struct Platform
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 	
 		nvgBeginFrame(nvg, winWidth, winHeight, (float)fbWidth / (float)winWidth);
-		_viewer->Update();
 		_viewer->Render(renderParams);
 		nvgEndFrame(nvg);
 	
 		glfwSwapBuffers(window);
-	
-		_drawRequested = false;
 	}
 
 	PlatformReadOnly _sharedReadOnly;
 	PlatformReadWrite _sharedReadWrite;
 	Viewer* _viewer = nullptr;
 	GLFWwindow* _window = nullptr;
-	bool _drawRequested = false;
 };
 
 static void GlobalKeyCallback(GLFWwindow* window, int key, int, int action, int)
@@ -389,11 +382,6 @@ static void GlobalDropCallback(GLFWwindow* window, int count, const char** paths
 static void GlobalWindowRefreshCallback(GLFWwindow* window)
 {
 	((Platform*)glfwGetWindowUserPointer(window))->WindowRefreshCallback();
-}
-
-void Platform_RequestDraw(Platform& platform)
-{
-	platform._drawRequested = true;
 }
 
 void Platform_RequestQuit(Platform& platform)

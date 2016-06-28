@@ -36,7 +36,6 @@ struct Viewer
 
 	bool Init(int argc, char** argv);
 	void ProcessEvent(const Event& event);
-	void Update();
 	void Render(RenderParams& renderParams);
 
 private:

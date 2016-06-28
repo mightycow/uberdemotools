@@ -510,7 +510,6 @@ struct Platform
 						_windowState = WindowState::Maximized;
 						ResizeBuffersFromWindowProc();
 						ReDraw();
-						_drawRequested = false;
 					}
 					else if(wParam == SIZE_RESTORED)
 					{
@@ -527,7 +526,6 @@ struct Platform
 							
 						}
 						ReDraw();
-						_drawRequested = false;
 					}
 				}
 				return 0;
@@ -542,7 +540,6 @@ struct Platform
 				_resizing = false;
 				ResizeBuffersFromWindowProc();
 				ReDraw();
-				_drawRequested = false;
 				return 0;
 
 				// wParam
@@ -558,7 +555,6 @@ struct Platform
 				{
 					SetPaused(false);
 					ReDraw();
-					_drawRequested = false;
 				}
 				return 0;
 
@@ -568,14 +564,10 @@ struct Platform
 				return 0;
 
 			case WM_TIMER:
-				if(wParam == TIMER_MAIN_ID)
+				if(wParam == TIMER_MAIN_ID &&
+				   _windowState != WindowState::Minimized)
 				{
-					_viewer->Update();
-					if(_drawRequested)
-					{
-						ReDraw();
-						_drawRequested = false;
-					}
+					ReDraw();
 				}
 				return 0;
 
@@ -774,7 +766,6 @@ struct Platform
 	bool _resizing = false;
 	bool _classRegistered = false;
 	bool _isRunning = true;
-	bool _drawRequested = false;
 	bool _paused = false;
 
 private:
@@ -811,11 +802,6 @@ static LRESULT CALLBACK MainWindowProc(HWND window, UINT message, WPARAM wParam,
 	}
 
 	return platform->WindowProc(message, wParam, lParam);
-}
-
-void Platform_RequestDraw(Platform& platform)
-{
-	platform._drawRequested = true;
 }
 
 void Platform_RequestQuit(Platform& platform)
@@ -861,7 +847,6 @@ void Platform_NVGEndFrame(Platform& platform)
 void Platform_Draw(Platform& platform)
 {
 	platform.ReDraw();
-	platform._drawRequested = false;
 }
 
 void Platform_ToggleMaximized(Platform& platform)

@@ -17,7 +17,6 @@ struct PlatformReadWrite
 {
 };
 
-extern void Platform_RequestDraw(Platform& platform);
 extern void Platform_RequestQuit(Platform& platform);
 extern void Platform_GetSharedDataPointers(Platform& platform, const PlatformReadOnly** readOnly, PlatformReadWrite** readWrite);
 extern void Platform_SetCursorCapture(Platform& platform, bool enabled);

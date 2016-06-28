@@ -492,14 +492,6 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 }
 
-void Viewer::Update()
-{
-	if(_demo.GetSnapshotCount() > 0 && GetCurrentSnapshotIndex() != _snapshotIndex)
-	{
-		Platform_RequestDraw(_platform);
-	}
-}
-
 void Viewer::RenderDemo(RenderParams& renderParams)
 {
 	f32 mapWidth;
@@ -1019,13 +1011,11 @@ void Viewer::PausePlayback()
 	{
 		_demoPlaybackTimer.Stop();
 	}
-	Platform_RequestDraw(_platform);
 }
 
 void Viewer::ResumePlayback()
 {
 	_demoPlaybackTimer.Start();
-	Platform_RequestDraw(_platform);
 }
 
 void Viewer::TogglePlayback()
@@ -1044,7 +1034,6 @@ void Viewer::StopPlayback()
 {
 	_demoPlaybackTimer.Reset();
 	_reversePlayback = false;
-	Platform_RequestDraw(_platform);
 }
 
 void Viewer::ReversePlayback()
@@ -1052,7 +1041,6 @@ void Viewer::ReversePlayback()
 	const f32 progress = GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
 	_reversePlayback = !_reversePlayback;
 	SetPlaybackProgress(progress);
-	Platform_RequestDraw(_platform);
 }
 
 void Viewer::SetPlaybackProgress(f32 progress)
@@ -1065,7 +1053,6 @@ void Viewer::SetPlaybackProgress(f32 progress)
 	{
 		_demoPlaybackTimer.Start();
 	}
-	Platform_RequestDraw(_platform);
 }
 
 void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat)
