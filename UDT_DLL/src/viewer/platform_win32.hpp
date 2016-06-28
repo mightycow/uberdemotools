@@ -387,7 +387,7 @@ struct Platform
 			return false;
 		}
 		
-		NVGcontext* const nvgContext = nvgCreateD3D11(device, NVG_ANTIALIAS);
+		NVGcontext* const nvgContext = nvgCreateD3D11(device, NVG_ANTIALIAS | NVG_STENCIL_STROKES);
 		if(nvgContext == nullptr)
 		{
 			return false;
