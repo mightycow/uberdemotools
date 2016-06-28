@@ -312,14 +312,16 @@ void Button::MouseButtonUp(s32, s32, MouseButton::Id button)
 
 void Button::MouseMove(s32 x, s32 y)
 {
+	Widget::MouseMove(x, y);
 	if(Pressed && !IsPointInside((f32)x, (f32)y))
 	{
 		Pressed = false;
 	}
 }
 
-void Button::MouseMoveNC(s32, s32)
+void Button::MouseMoveNC(s32 x, s32 y)
 {
+	Widget::MouseMoveNC(x, y);
 	Pressed = false;
 }
 
@@ -388,4 +390,245 @@ void ReverseButton::Draw(NVGcontext* nvgContext)
 {
 	const int icon = *_reversed ? BND_ICONID(16, 2) : BND_ICONID(15, 2);
 	bndToolButton(nvgContext, Pos[0], Pos[1], BND_TOOL_WIDTH, BND_WIDGET_HEIGHT, BND_CORNER_LEFT, GetState(), icon, NULL);
+}
+
+CheckBox::CheckBox()
+{
+	_text = nullptr;
+	_active = false;
+	_clicked = false;
+}
+
+CheckBox::~CheckBox()
+{
+}
+
+void CheckBox::SetText(const char* text)
+{
+	_text = text;
+}
+
+void CheckBox::SetActivePtr(bool* active)
+{
+	_active = active;
+}
+
+bool CheckBox::WasClicked()
+{
+	const bool clicked = _clicked;
+	_clicked = false;
+	return clicked;
+}
+
+void CheckBox::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
+{
+	if(button == MouseButton::Left && IsPointInside((f32)x, (f32)y))
+	{
+		_clicked = true;
+		*_active = !*_active;
+	}
+}
+
+void CheckBox::MouseButtonUp(s32, s32, MouseButton::Id)
+{
+}
+
+void CheckBox::MouseMove(s32 x, s32 y)
+{
+	Widget::MouseMove(x, y);
+}
+
+void CheckBox::MouseMoveNC(s32 x, s32 y)
+{
+	Widget::MouseMoveNC(x, y);
+}
+
+void CheckBox::Draw(NVGcontext* nvgContext)
+{
+	BNDwidgetState state = BND_DEFAULT;
+	if(*_active)
+	{
+		state = BND_ACTIVE;
+	}
+	else if(Hovered)
+	{
+		state = BND_HOVER;
+	}
+
+	bndOptionButton(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, state, _text);
+}
+
+RadioButton::RadioButton()
+{
+	_text = nullptr;
+	_active = false;
+	_clicked = false;
+}
+
+RadioButton::~RadioButton()
+{
+}
+
+void RadioButton::SetText(const char* text)
+{
+	_text = text;
+}
+
+void RadioButton::SetActive(bool active)
+{
+	_active = active;
+}
+
+bool RadioButton::IsActive() const
+{
+	return _active;
+}
+
+bool RadioButton::WasClicked()
+{
+	const bool clicked = _clicked;
+	_clicked = false;
+	return clicked;
+}
+
+void RadioButton::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
+{
+	if(button == MouseButton::Left && IsPointInside((f32)x, (f32)y))
+	{
+		_clicked = true;
+		_active = true;
+	}
+}
+
+void RadioButton::MouseButtonUp(s32, s32, MouseButton::Id)
+{
+}
+
+void RadioButton::MouseMove(s32 x, s32 y)
+{
+	Widget::MouseMove(x, y);
+}
+
+void RadioButton::MouseMoveNC(s32 x, s32 y)
+{
+	Widget::MouseMoveNC(x, y);
+}
+
+void RadioButton::Draw(NVGcontext* nvgContext)
+{
+	BNDwidgetState state = BND_DEFAULT;
+	if(_active)
+	{
+		state = BND_ACTIVE;
+	}
+	else if(Hovered)
+	{
+		state = BND_HOVER;
+	}
+
+	bndRadioButton(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, BND_CORNER_NONE, state, -1, _text);
+}
+
+RadioGroup::RadioGroup()
+{
+	_radioButtons.Init(1 << 16, "RadioGroup::RadioButtonsArray");
+	_selectedIndex = 0;
+	_selectionChanged = false;
+}
+
+RadioGroup::~RadioGroup()
+{
+}
+
+bool RadioGroup::HasSelectionChanged()
+{
+	const bool changed = _selectionChanged;
+	_selectionChanged = false;
+	return changed;
+}
+
+u32 RadioGroup::GetSelectedIndex() const
+{
+	return _selectedIndex;
+}
+
+void RadioGroup::AddRadioButton(RadioButton* radioButton)
+{
+	radioButton->SetActive(_radioButtons.GetSize() == 0);
+	_radioButtons.Add(radioButton);
+}
+
+void RadioGroup::RemoveRadioButton(RadioButton* radioButton)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		if(_radioButtons[i] == radioButton)
+		{
+			_radioButtons.RemoveUnordered(i);
+			break;
+		}
+	}
+}
+
+void RadioGroup::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->MouseButtonDown(x, y, button);
+		if(_radioButtons[i]->WasClicked())
+		{
+			_selectionChanged = true;
+			_selectedIndex = i;
+		}
+	}
+
+	if(!_selectionChanged)
+	{
+		return;
+	}
+
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->SetActive(i == _selectedIndex);
+	}
+}
+
+void RadioGroup::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->MouseButtonUp(x, y, button);
+	}
+}
+
+void RadioGroup::MouseMove(s32 x, s32 y)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->MouseMove(x, y);
+	}
+}
+
+void RadioGroup::MouseMoveNC(s32 x, s32 y)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->MouseMoveNC(x, y);
+	}
+}
+
+void RadioGroup::MouseScroll(s32 x, s32 y, s32 scroll)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->MouseScroll(x, y, scroll);
+	}
+}
+
+void RadioGroup::Draw(NVGcontext* nvgContext)
+{
+	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
+	{
+		_radioButtons[i]->Draw(nvgContext);
+	}
 }

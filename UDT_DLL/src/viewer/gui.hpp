@@ -129,3 +129,70 @@ struct ReverseButton : public Button
 private:
 	const bool* _reversed;
 };
+
+struct CheckBox : public Widget
+{
+	CheckBox();
+	~CheckBox();
+
+	void SetText(const char* text);
+	void SetActivePtr(bool* active);
+	bool WasClicked();
+
+	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseMove(s32 x, s32 y) override;
+	void MouseMoveNC(s32 x, s32 y) override;
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	const char* _text;
+	bool* _active;
+	bool _clicked;
+};
+
+struct RadioButton : public Widget
+{
+	RadioButton();
+	~RadioButton();
+
+	void SetText(const char* text);
+	void SetActive(bool active);
+	bool IsActive() const;
+	bool WasClicked();
+
+	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseMove(s32 x, s32 y) override;
+	void MouseMoveNC(s32 x, s32 y) override;
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	const char* _text;
+	bool _active;
+	bool _clicked;
+};
+
+struct RadioGroup : public Widget
+{
+	RadioGroup();
+	~RadioGroup();
+
+	bool HasSelectionChanged();
+	u32  GetSelectedIndex() const;
+
+	void AddRadioButton(RadioButton* radioButton);
+	void RemoveRadioButton(RadioButton* radioButton);
+
+	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseMove(s32 x, s32 y) override;
+	void MouseMoveNC(s32 x, s32 y) override;
+	void MouseScroll(s32 x, s32 y, s32 scroll) override;
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	udtVMArray<RadioButton*> _radioButtons;
+	u32 _selectedIndex;
+	bool _selectionChanged;
+};
