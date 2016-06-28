@@ -23,8 +23,6 @@ extern const f32 ViewerClearColor[4];
 
 struct Config
 {
-	f32 UIScaleX = 1.0f;
-	f32 UIScaleY = 1.0f;
 	f32 StaticZScale = 0.0f;
 	f32 DynamicZScale = 0.4f;
 };
@@ -93,7 +91,6 @@ private:
 	Config _config;
 	udtTimer _demoPlaybackTimer;
 	DemoProgressBar _demoProgressBar;
-	ButtonBar _playbackButtonBar;
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;

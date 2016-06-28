@@ -8,6 +8,7 @@
 #include "nanovg_drawing.hpp"
 #include "nanovg/fontstash.h"
 #include "nanovg/stb_image.h"
+#include "blendish/blendish.h"
 
 #include <stdlib.h>
 #include <math.h>
@@ -175,27 +176,33 @@ Viewer::~Viewer()
 
 bool Viewer::Init(int argc, char** argv)
 {
+	int font = FONS_INVALID;
 	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
 	if(snapshot == nullptr ||
+	   !udtFileStream::Exists(DATA_PATH"/blender_icons.png") ||
 	   !_demo.Init(&DemoProgressCallback, this) ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
-	   nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/Roboto-Regular.ttf") == FONS_INVALID)
+	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/Roboto-Regular.ttf")) == FONS_INVALID)
 	{
 		return false;
 	}
 	_snapshot = snapshot;
+
+	bndSetFont(font);
+	bndSetIconImage(nvgCreateImage(_sharedReadOnly->NVGContext, DATA_PATH"/blender_icons.png", 0));
 
 	if(argc >= 2 && udtFileStream::Exists(argv[1]))
 	{
 		LoadDemo(argv[1]);
 	}
 
+	_playPauseButton.SetTimerPtr(&_demoPlaybackTimer);
+	_reversePlaybackButton.SetReversedPtr(&_reversePlayback);
+	_activeWidgets.AddWidget(&_playPauseButton);
+	_activeWidgets.AddWidget(&_stopButton);
+	_activeWidgets.AddWidget(&_reversePlaybackButton);
 	_activeWidgets.AddWidget(&_demoProgressBar);
-	_activeWidgets.AddWidget(&_playbackButtonBar);
-	_playbackButtonBar.AddButton(&_playPauseButton);
-	_playbackButtonBar.AddButton(&_stopButton);
-	_playbackButtonBar.AddButton(&_reversePlaybackButton);
 	
 	_demoPlaybackTimer.Start();
 
@@ -467,25 +474,21 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 
 	f32 demoProgress = 0.0f;
-	Button* button = nullptr;
 	if(_demoProgressBar.HasProgressChanged(demoProgress) && _demo.IsValid())
 	{
 		SetPlaybackProgress(demoProgress);
 	}
-	else if(_playbackButtonBar.WasClicked(button))
+	else if(_playPauseButton.WasClicked())
 	{
-		if(button == &_playPauseButton)
-		{
-			TogglePlayback();
-		}
-		else if(button == &_reversePlaybackButton)
-		{
-			ReversePlayback();
-		}
-		else if(button == &_stopButton)
-		{
-			StopPlayback();
-		}
+		TogglePlayback();
+	}
+	else if(_reversePlaybackButton.WasClicked())
+	{
+		ReversePlayback();
+	}
+	else if(_stopButton.WasClicked())
+	{
+		StopPlayback();
 	}
 }
 
@@ -926,7 +929,7 @@ void Viewer::Render(RenderParams& renderParams)
 	_snapshotIndex = snapshotIndex;
 
 	const f32 progressBarMargin = 2.0f;
-	const f32 progressBarHeight = ceilf(16.0f * _config.UIScaleY);
+	const f32 progressBarHeight = (f32)BND_WIDGET_HEIGHT;
 	const f32 progressY = (f32)renderParams.ClientHeight - progressBarHeight - 2.0f * progressBarMargin;
 	_progressRect.Set(progressBarMargin, progressY, (f32)renderParams.ClientWidth - 2.0f * progressBarMargin, progressBarHeight);
 	const f32 mapAspectRatio = (_mapWidth > 0 && _mapHeight > 0) ? ((f32)_mapWidth / (f32)_mapHeight) : 1.0f;
@@ -937,14 +940,18 @@ void Viewer::Render(RenderParams& renderParams)
 
 	RenderDemo(renderParams);
 
-	const f32 r2 = floorf(progressBarHeight / 3.0f);
-	_playbackButtonBar.DoLayout(_progressRect.X(), _progressRect.Y(), progressBarHeight, r2);
-	f32 a, b, c, d;
-	_playbackButtonBar.GetRect(a, b, c, d);
+	const f32 bw = (f32)BND_TOOL_WIDTH;
+	const f32 bh = (f32)BND_WIDGET_HEIGHT;
+	f32 x0 = _progressRect.Left();
+	f32 y0 = _progressRect.Top() + floorf((_progressRect.Height() - bh) / 2.0f);
+	_playPauseButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
+	_stopButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
+	_reversePlaybackButton.SetRect(x0, y0, bw, bh); x0 += bw;
 
-	const f32 x = a + c;
+	const f32 x = x0;
 	const f32 r = floorf(progressBarHeight / 2.0f);
-	const f32 y = _progressRect.Y();
+	const f32 ph = (f32)BND_SCROLLBAR_HEIGHT;
+	const f32 y = _progressRect.Top() + floorf((_progressRect.Height() - ph) / 2.0f);
 	_demoProgressBar.SetRect(x + 2.0f * r, y, _progressRect.Width() - x - 4.0f * r, 2.0f * r);
 	_demoProgressBar.SetRadius(r);
 	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
@@ -1012,14 +1019,12 @@ void Viewer::PausePlayback()
 	{
 		_demoPlaybackTimer.Stop();
 	}
-	_playPauseButton.SetPlaying(false);
 	Platform_RequestDraw(_platform);
 }
 
 void Viewer::ResumePlayback()
 {
 	_demoPlaybackTimer.Start();
-	_playPauseButton.SetPlaying(true);
 	Platform_RequestDraw(_platform);
 }
 
@@ -1039,8 +1044,6 @@ void Viewer::StopPlayback()
 {
 	_demoPlaybackTimer.Reset();
 	_reversePlayback = false;
-	_playPauseButton.SetPlaying(false);
-	_reversePlaybackButton.SetReversed(false);
 	Platform_RequestDraw(_platform);
 }
 
@@ -1048,7 +1051,6 @@ void Viewer::ReversePlayback()
 {
 	const f32 progress = GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
 	_reversePlayback = !_reversePlayback;
-	_reversePlaybackButton.SetReversed(_reversePlayback);
 	SetPlaybackProgress(progress);
 	Platform_RequestDraw(_platform);
 }

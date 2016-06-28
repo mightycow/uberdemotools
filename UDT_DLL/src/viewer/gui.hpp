@@ -5,6 +5,7 @@
 #include "shared.hpp"
 #include "timer.hpp"
 #include "nanovg/nanovg.h"
+#include "blendish/blendish.h"
 
 
 struct Widget
@@ -71,13 +72,12 @@ private:
 	void ChangeProgress(s32 x, s32 y);
 	void SetDragging(bool dragging);
 
-	f32 Radius;
-	f32 Progress;
-	u8 OrientationAxis;
-	bool ProgressChanged;
-	bool DraggingSlider;
-	bool DragStarted;
-	bool DragEnded;
+	f32 _radius;
+	f32 _progress;
+	bool _progressChanged;
+	bool _draggingSlider;
+	bool _dragStarted;
+	bool _dragEnded;
 };
 
 struct Button : public Widget
@@ -92,7 +92,9 @@ struct Button : public Widget
 	void MouseMove(s32 x, s32 y) override;
 	void MouseMoveNC(s32 x, s32 y) override;
 
-private:
+protected:
+	BNDwidgetState GetState() const;
+
 	bool Pressed;
 	bool Clicked;
 };
@@ -102,12 +104,12 @@ struct PlayPauseButton : public Button
 	PlayPauseButton();
 	~PlayPauseButton();
 
-	void SetPlaying(bool playing);
+	void SetTimerPtr(const udtTimer* timer);
 
 	void Draw(NVGcontext* nvgContext) override;
 
 private:
-	bool Playing;
+	const udtTimer* _timer;
 };
 
 struct StopButton : public Button
@@ -120,51 +122,10 @@ struct ReverseButton : public Button
 	ReverseButton();
 	~ReverseButton();
 
-	void SetReversed(bool reversed);
+	void SetReversedPtr(const bool* reversed);
 
 	void Draw(NVGcontext* nvgContext) override;
 
 private:
-	bool Reversed;
-};
-
-struct ButtonBar : public Widget
-{
-	ButtonBar();
-	~ButtonBar();
-
-	void AddButton(Button* button);
-	bool WasClicked(Button*& button);
-	void DoLayout(f32 x, f32 y, f32 h, f32 r);
-
-	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
-	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
-	void MouseMove(s32 x, s32 y) override;
-	void MouseMoveNC(s32 x, s32 y) override;
-	void Draw(NVGcontext* nvgContext) override;
-
-private:
-	udtVMArray<Button*> _buttons;
-	f32 _radius;
-};
-
-struct TitleBar : public Widget
-{
-	TitleBar();
-	~TitleBar();
-
-	bool IsBeingDragged(s32& x, s32& y);
-
-	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
-	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
-	void MouseMove(s32 x, s32 y) override;
-	void MouseMoveNC(s32 x, s32 y) override;
-	void Draw(NVGcontext* nvgContext) override;
-
-private:
-	bool Dragging;
-	s32 OffsetX;
-	s32 OffsetY;
-	s32 CursorX;
-	s32 CursorY;
+	const bool* _reversed;
 };
