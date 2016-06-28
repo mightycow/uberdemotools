@@ -1504,10 +1504,6 @@ bool Demo::AnalyzeDemo(const char* filePath)
 	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Scores, &scoreBuffers) == udtErrorCode::None &&
 	   scoreBuffers.ScoreCount > 0)
 	{
-		const u32 offset = (u32)_stringAllocator.GetCurrentByteCount();
-		u8* const newCopy = _stringAllocator.AllocateAndGetAddress(scoreBuffers.StringBufferSize);
-		memcpy(newCopy, scoreBuffers.StringBuffer, (size_t)scoreBuffers.StringBufferSize);
-
 		for(u32 i = 0; i < scoreBuffers.ScoreCount; ++i)
 		{
 			const udtParseDataScore& s = scoreBuffers.Scores[i];
@@ -1516,6 +1512,9 @@ bool Demo::AnalyzeDemo(const char* filePath)
 				break;
 			}
 
+			const char* const name1 = (const char*)scoreBuffers.StringBuffer + s.Name1;
+			const char* const name2 = (const char*)scoreBuffers.StringBuffer + s.Name2;
+
 			Score score;
 			score.ServerTimeMs = s.ServerTimeMs;
 			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
@@ -1523,8 +1522,8 @@ bool Demo::AnalyzeDemo(const char* filePath)
 			score.Base.Score2Id = (u8)s.Id2;
 			score.Base.Score1 = (s16)s.Score1;
 			score.Base.Score2 = (s16)s.Score2;
-			score.Base.Score1Name = s.Name1 + offset;
-			score.Base.Score2Name = s.Name2 + offset;
+			score.Base.Score1Name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, name1).GetOffset();
+			score.Base.Score2Name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, name2).GetOffset();
 			_scores.Add(score);
 		}
 	}
