@@ -1519,8 +1519,8 @@ bool Demo::AnalyzeDemo(const char* filePath)
 				break;
 			}
 
-			const char* const name1 = (const char*)scoreBuffers.StringBuffer + s.Name1;
-			const char* const name2 = (const char*)scoreBuffers.StringBuffer + s.Name2;
+			const char* const name1 = s.Name2 != u32(-1) ? ((const char*)scoreBuffers.StringBuffer + s.Name1) : "";
+			const char* const name2 = s.Name2 != u32(-1) ? ((const char*)scoreBuffers.StringBuffer + s.Name2) : "";
 
 			Score score;
 			score.ServerTimeMs = s.ServerTimeMs;
