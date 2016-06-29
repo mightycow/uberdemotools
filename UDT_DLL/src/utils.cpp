@@ -636,7 +636,6 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 	const bool isPlayerInvisible = 
 		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::Intermission, protocol, udtMod::None) ||
 		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::SPIntermission, protocol, udtMod::None) ||
-		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::Spectator, protocol, udtMod::None) ||
 		ps.stats[healthStatIdx] <= GIB_HEALTH;
 	es.eType = GetIdNumber(udtMagicNumberType::EntityType, isPlayerInvisible ? udtEntityType::Invisible : udtEntityType::Player, protocol);
 	es.number = ps.clientNum;
