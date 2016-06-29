@@ -199,7 +199,7 @@ struct Demo
 	bool        GetSnapshotData(Snapshot& snapshot, u32 index) const;
 
 	udtMod::Id      GetMod() const { return (udtMod::Id)_protocol; }
-	udtGameType::Id GetGameType() const { return (udtGameType::Id)_protocol; }
+	udtGameType::Id GetGameType() const { return (udtGameType::Id)_gameType; }
 	udtProtocol::Id GetProtocol() const { return (udtProtocol::Id)_protocol; }
 
 private:
