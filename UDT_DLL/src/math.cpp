@@ -114,10 +114,10 @@ namespace Float3
 
 	void EulerAnglesToAxisVector(f32* result, const f32* angles)
 	{
-		const f32 angle1 = angles[YAW] * (UDT_PI * 2 / 360);
+		const f32 angle1 = DegToRad(angles[YAW]);
 		const f32 sy = sinf(angle1);
 		const f32 cy = cosf(angle1);
-		const f32 angle2 = angles[PITCH] * (UDT_PI * 2 / 360);
+		const f32 angle2 = DegToRad(angles[PITCH]);
 		const f32 sp = sinf(angle2);
 		const f32 cp = cosf(angle2);
 

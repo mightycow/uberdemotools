@@ -1143,7 +1143,9 @@ bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 	if(udtWeaponId == (s32)udtWeapon::LightningGun &&
 	   IsBitSet(&player.eFlags, _protocolNumbers.EntityFlagFiring))
 	{
-		ComputeLGEndPoint(p, player.pos.trBase, player.apos.trBase);
+		f32 angles[3];
+		ComputeTrajectoryPosition(angles, player.apos, serverTimeMs);
+		ComputeLGEndPoint(p, p.Position, angles);
 	}
 	_tempPlayers.Add(p);
 
@@ -1401,19 +1403,25 @@ void Demo::FixLGEndPoints()
 			Player& player = players[p];
 			const Player* prevPlayer = nullptr;
 			const Player* nextPlayer = nullptr;
-			if(IsBitSet(&player.Flags, PlayerFlags::ShortLGBeam) ||
-			   !FindPlayer(prevPlayer, s - 1, player.IdClientNumber) ||
-			   !FindPlayer(nextPlayer, s + 1, player.IdClientNumber))
+			if(IsBitSet(&player.Flags, PlayerFlags::ShortLGBeam))
 			{
 				continue;
 			}
 
-			// We keep the current view direction but use the beam length of the next snapshot.
-			f32 normDir[3];
-			const f32 length = Float3::Dist(nextPlayer->Position, nextPlayer->LGEndPoint);
-			Float3::Direction(normDir, player.Position, player.LGEndPoint);
-			Float3::Mad(player.LGEndPoint, player.Position, normDir, length);
-			SetBit(&player.Flags, PlayerFlags::ShortLGBeam);
+			const bool foundPrev = FindPlayer(prevPlayer, s - 1, player.IdClientNumber);
+			const bool foundNext = FindPlayer(nextPlayer, s + 1, player.IdClientNumber);
+			const bool shortPrev = foundPrev ? IsBitSet(&prevPlayer->Flags, PlayerFlags::ShortLGBeam) : false;
+			const bool shortNext = foundNext ? IsBitSet(&nextPlayer->Flags, PlayerFlags::ShortLGBeam) : false;
+			const bool shaftNext = foundNext ? (nextPlayer->WeaponId == (u8)udtWeapon::LightningGun && IsBitSet(&nextPlayer->Flags, PlayerFlags::Firing)) : false;
+			if(shortPrev && (shortNext || !shaftNext))
+			{
+				// We keep the current view direction but use the beam length of the previous snapshot.
+				f32 normDir[3];
+				const f32 length = Float3::Dist(prevPlayer->Position, prevPlayer->LGEndPoint);
+				Float3::Direction(normDir, player.Position, player.LGEndPoint);
+				Float3::Mad(player.LGEndPoint, player.Position, normDir, length);
+				SetBit(&player.Flags, PlayerFlags::ShortLGBeam);
+			}
 		}
 	}
 }
@@ -1428,8 +1436,7 @@ bool Demo::FindPlayer(const Player*& playerOut, u32 snapshotIndex, u8 idClientNu
 	for(u32 p = 0; p < playerCount; ++p)
 	{
 		const Player& player = players[p];
-		if(idClientNumber == player.IdClientNumber &&
-		   IsBitSet(&player.Flags, PlayerFlags::ShortLGBeam))
+		if(idClientNumber == player.IdClientNumber)
 		{
 			playerOut = &player;
 			return true;
@@ -1445,7 +1452,7 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 	Float3::EulerAnglesToAxisVector(viewVector, angles);
 
 	s32 bestImpact = -1;
-	f32 bestDotProduct = 0.85f; // The best angle has to match pretty closely.
+	f32 bestDotProduct = cosf(DegToRad(15.0f)); // The best angle has to match pretty closely.
 	for(u32 i = 0; i < _tempShaftImpacts.GetSize(); ++i)
 	{
 		f32 beamVector[3];
