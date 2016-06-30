@@ -754,8 +754,6 @@ struct Platform
 	ID3D11RenderTargetView* _renderTargetView = nullptr;
 	ID3D11Texture2D* _depthStencilBuffer = nullptr;
 	ID3D11DepthStencilView* _depthStencilView = nullptr;
-	ID3D11BlendState* _blendState = nullptr;
-	ID3D11DepthStencilState* _depthStencilState = nullptr;
 	Viewer* _viewer = nullptr;
 	HINSTANCE _instance = nullptr;
 	NVGcontext* _nvgContext = nullptr;
@@ -844,47 +842,12 @@ void Platform_NVGEndFrame(Platform& platform)
 	nvgEndFrame(platform._nvgContext);
 }
 
-void Platform_Draw(Platform& platform)
-{
-	platform.ReDraw();
-}
-
 void Platform_ToggleMaximized(Platform& platform)
 {
 	ShowWindow(platform._window, platform._windowState != WindowState::Maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
 }
 
-void Platform_DebugPrint(const char* format, ...)
-{
-	char msg[256];
-	va_list args;
-	va_start(args, format);
-	vsprintf(msg, format, args);
-	va_end(args);
-	OutputDebugStringA("\n");
-	OutputDebugStringA(msg);
-	OutputDebugStringA("\n");
-}
-
-static void ResetCurrentDirectory(const char* exePath)
-{
-	udtVMLinearAllocator& alloc = udtThreadLocalAllocators::GetTempAllocator();
-	udtVMScopedStackAllocator allocScope(alloc);
-
-	udtString folderPath;
-	if(!udtPath::GetFolderPath(folderPath, alloc, udtString::NewConstRef(exePath)))
-	{
-		return;
-	}
-
-	wchar_t* const folderPathWide = udtString::ConvertToUTF16(alloc, folderPath);
-	if(folderPathWide == nullptr)
-	{
-		return;
-	}
-	
-	SetCurrentDirectoryW(folderPathWide);
-}
+#include "windows.hpp"
 
 // @NOTE: the command line argument of wWinMain does *not* contain the path to the executable.
 // To get that, we call GetCommandLineW instead.

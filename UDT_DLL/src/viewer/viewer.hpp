@@ -3,6 +3,7 @@
 
 #include "uberdemotools.h"
 #include "shared.hpp"
+#include "platform.hpp"
 #include "array.hpp"
 #include "timer.hpp"
 #include "demo.hpp"
@@ -30,6 +31,7 @@ struct Config
 struct Viewer
 {
 	static void DemoProgressCallback(f32 progress, void* userData);
+	static void DemoLoadThreadEntryPoint(void* userData);
 
 	Viewer(Platform& platform);
 	~Viewer();
@@ -49,14 +51,26 @@ private:
 		f32 CoordsScale;
 	};
 
+	struct AppState
+	{
+		enum Id
+		{
+			Normal,
+			LoadingDemo,
+			UploadingMapTexture,
+			Count
+		};
+	};
+
 	bool LoadMapAliases();
 	bool LoadSprites();
 	void LoadMap(const udtString& mapName);
 	bool CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* pixels);
-	void LoadDemo(const char* filePath);
+	void StartLoadingDemo(const char* filePath);
+	void LoadDemoImpl(const char* filePath);
 	void RenderDemo(RenderParams& renderParams);
 	void RenderNoDemo(RenderParams& renderParams);
-	void RenderProgress(RenderParams& renderParams);
+	void RenderDemoLoadProgress(RenderParams& renderParams);
 	void RenderDemoScore(RenderParams& renderParams);
 	void RenderDemoTimer(RenderParams& renderParams);
 	void RenderDemoFollowedPlayer(RenderParams& renderParams);
@@ -75,11 +89,18 @@ private:
 	void OffsetSnapshot(s32 snapshotCount);
 	void OffsetTimeMs(s32 durationMs);
 	void ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32 zScale);
+	void UploadMapTexture();
 
 	struct MapAlias
 	{
 		udtString NameFound;
 		udtString NameToUse;
+	};
+
+	struct DemoLoadThreadData
+	{
+		char FilePath[512];
+		Viewer* ViewerPtr;
 	};
 
 	int _sprites[Sprite::Count];
@@ -89,6 +110,7 @@ private:
 	Demo _demo;
 	Config _config;
 	udtTimer _demoPlaybackTimer;
+	udtTimer _globalTimer;
 	DemoProgressBar _demoProgressBar;
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
@@ -103,6 +125,9 @@ private:
 	PlatformReadOnly* _sharedReadOnly = nullptr;
 	PlatformReadWrite* _sharedReadWrite = nullptr;
 	Snapshot* _snapshot = nullptr;
+	AppState::Id _appState = AppState::Normal;
+	CriticalSectionId _appStateLock;
+	void* _mapImage = nullptr;
 	int _map = InvalidTextureId;
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;
@@ -113,6 +138,6 @@ private:
 	bool _wasPlayingBeforeProgressDrag = false;
 	bool _reversePlayback = false;
 	bool _mapCoordsLoaded = false;
-	bool _drawDemoLoadProgress = false;
 	bool _timerShowsServerTime = false;
+	bool _appLoaded = false;
 };

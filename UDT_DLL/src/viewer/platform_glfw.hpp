@@ -183,7 +183,7 @@ struct Platform
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 		glfwWindowHint(GLFW_SAMPLES, 4);
-		GLFWwindow* const window = glfwCreateWindow(640, 480, "UDT 2D Viewer", NULL, NULL);
+		GLFWwindow* const window = glfwCreateWindow(1024, 768, "UDT 2D Viewer", NULL, NULL);
 		if(window == nullptr)
 		{
 			LogError("glfwCreateWindow failed");
@@ -438,50 +438,13 @@ void Platform_ToggleMaximized(Platform& platform)
 	}
 }
 
-void Platform_DebugPrint(const char* format, ...)
-{
-	char msg[256];
-	va_list args;
-	va_start(args, format);
-	vsprintf(msg, format, args);
-	va_end(args);
-#if defined(UDT_WINDOWS)
-	OutputDebugStringA("\n");
-	OutputDebugStringA(msg);
-	OutputDebugStringA("\n");
-#else
-	printf("\n");
-	printf(msg);
-	printf("\n");
-#endif
-}
-
 #if defined(UDT_WINDOWS)
 
 #include "thread_local_allocators.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "path.hpp"
 #include "utils.hpp"
-
-static void ResetCurrentDirectory(const char* exePath)
-{
-	udtVMLinearAllocator& alloc = udtThreadLocalAllocators::GetTempAllocator();
-	udtVMScopedStackAllocator allocScope(alloc);
-
-	udtString folderPath;
-	if(!udtPath::GetFolderPath(folderPath, alloc, udtString::NewConstRef(exePath)))
-	{
-		return;
-	}
-
-	wchar_t* const folderPathWide = udtString::ConvertToUTF16(alloc, folderPath);
-	if(folderPathWide == nullptr)
-	{
-		return;
-	}
-
-	SetCurrentDirectoryW(folderPathWide);
-}
+#include "windows.hpp"
 
 int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
@@ -526,6 +489,9 @@ shut_down:
 }
 
 #else
+
+#include <pthread.h>
+#include "linux.hpp"
 
 int main(int argc, char** argv)
 {

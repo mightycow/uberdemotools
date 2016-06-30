@@ -1,5 +1,4 @@
 #include "viewer.hpp"
-#include "platform.hpp"
 #include "file_stream.hpp"
 #include "math.hpp"
 #include "utils.hpp"
@@ -151,12 +150,37 @@ static void DrawTexturedRect(NVGcontext* ctx, f32 x, f32 y, f32 w, f32 h, int te
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
 
+struct CriticalSectionLock
+{
+	CriticalSectionLock(CriticalSectionId lock)
+		: _lock(lock)
+	{
+		Platform_EnterCriticalSection(lock);
+	}
+
+	~CriticalSectionLock()
+	{
+		Platform_LeaveCriticalSection(_lock);
+	}
+
+private:
+	CriticalSectionId _lock;
+};
+
 void Viewer::DemoProgressCallback(f32 progress, void* userData)
 {
 	Viewer* const viewer = (Viewer*)userData;
-	viewer->_drawDemoLoadProgress = true;
 	viewer->_demoLoadProgress = progress;
-	Platform_Draw(viewer->_platform);
+}
+
+void Viewer::DemoLoadThreadEntryPoint(void* userData)
+{
+	const DemoLoadThreadData& data = *(const DemoLoadThreadData*)userData;
+	Viewer* const viewer = data.ViewerPtr;
+	viewer->LoadDemoImpl(data.FilePath);
+	free(userData);
+	CriticalSectionLock lock(viewer->_appStateLock);
+	viewer->_appState = AppState::UploadingMapTexture;
 }
 
 Viewer::Viewer(Platform& platform)
@@ -171,6 +195,7 @@ Viewer::Viewer(Platform& platform)
 
 Viewer::~Viewer()
 {
+	Platform_ReleaseCriticalSection(_appStateLock);
 	free(_snapshot);
 }
 
@@ -183,7 +208,7 @@ bool Viewer::Init(int argc, char** argv)
 	   !_demo.Init(&DemoProgressCallback, this) ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
-	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/Roboto-Regular.ttf")) == FONS_INVALID)
+	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/DejaVuSans.ttf")) == FONS_INVALID)
 	{
 		return false;
 	}
@@ -192,19 +217,25 @@ bool Viewer::Init(int argc, char** argv)
 	bndSetFont(font);
 	bndSetIconImage(nvgCreateImage(_sharedReadOnly->NVGContext, DATA_PATH"/blender_icons.png", 0));
 
-	if(argc >= 2 && udtFileStream::Exists(argv[1]))
-	{
-		LoadDemo(argv[1]);
-	}
-
 	_playPauseButton.SetTimerPtr(&_demoPlaybackTimer);
 	_reversePlaybackButton.SetReversedPtr(&_reversePlayback);
+
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
 	_activeWidgets.AddWidget(&_reversePlaybackButton);
 	_activeWidgets.AddWidget(&_demoProgressBar);
+
+	Platform_CreateCriticalSection(_appStateLock);
+	if(argc >= 2 && udtFileStream::Exists(argv[1]))
+	{
+		CriticalSectionLock lock(_appStateLock);
+		_appState = AppState::LoadingDemo;
+		StartLoadingDemo(argv[1]);
+	}
 	
 	_demoPlaybackTimer.Start();
+	_globalTimer.Start();
+	_appLoaded = true;
 
 	return true;
 }
@@ -299,11 +330,6 @@ bool Viewer::LoadSprites()
 
 void Viewer::LoadMap(const udtString& mapName)
 {
-	if(_map != InvalidTextureId)
-	{
-		nvgDeleteImage(_sharedReadOnly->NVGContext, _map);
-	}
-	_map = InvalidTextureId;
 	_mapWidth = 0;
 	_mapHeight = 0;
 	_mapCoordsLoaded = false;
@@ -334,14 +360,6 @@ void Viewer::LoadMap(const udtString& mapName)
 		return;
 	}
 
-	int mapTextureId = 0;
-	const bool validTexture = CreateTextureRGBA(mapTextureId, (u32)w, (u32)h, pixels);
-	stbi_image_free(pixels);
-	if(!validTexture)
-	{
-		return;
-	}
-
 	u32 version = 0;
 	mapFile.Read(&version, 4, 1);
 	mapFile.Read(_mapMin, 12, 1);
@@ -349,7 +367,7 @@ void Viewer::LoadMap(const udtString& mapName)
 	_mapCoordsLoaded = true;
 	_mapWidth = (u32)w;
 	_mapHeight = (u32)h;
-	_map = mapTextureId;
+	_mapImage = pixels;
 }
 
 bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* pixels)
@@ -370,10 +388,26 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 	return true;
 }
 
-void Viewer::LoadDemo(const char* filePath)
+void Viewer::LoadDemoImpl(const char* filePath)
 {
 	_demo.Load(filePath);
 
+	/*
+	_map = InvalidTextureId;
+	_mapWidth = 0;
+	_mapHeight = 0;
+	_mapCoordsLoaded = false;
+	for(u32 i = 0; i < 3; ++i)
+	{
+		_mapMin[i] = _demo.GetMapMin()[i];
+		_mapMax[i] = _demo.GetMapMax()[i];
+	}
+	_reversePlayback = false;
+	_demoPlaybackTimer.Stop();
+	_demoPlaybackTimer.Reset();
+	_demoPlaybackTimer.Start(); */
+
+	
 	const udtString originalMapName = _demo.GetMapName();
 	udtString mapName = originalMapName;
 	for(u32 i = 0, count = _mapAliases.GetSize(); i < count; ++i)
@@ -401,8 +435,21 @@ void Viewer::LoadDemo(const char* filePath)
 	_demoPlaybackTimer.Start();
 }
 
+void Viewer::StartLoadingDemo(const char* filePath)
+{
+	DemoLoadThreadData* const data = (DemoLoadThreadData*)malloc(sizeof(DemoLoadThreadData));
+	data->ViewerPtr = this;
+	strcpy(data->FilePath, filePath);
+	Platform_NewThread(&DemoLoadThreadEntryPoint, data);
+}
+
 void Viewer::ProcessEvent(const Event& event)
 {
+	if(!_appLoaded)
+	{
+		return;
+	}
+
 	if(event.Type == EventType::Paused)
 	{
 		_wasTimerRunningBeforePause = _demoPlaybackTimer.IsRunning();
@@ -440,12 +487,18 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 	else if(event.Type == EventType::FilesDropped)
 	{
-		for(u32 i = 0; i < event.DroppedFileCount; ++i)
+		// We don't start a threaded job if one is already in progress.
+		CriticalSectionLock lock(_appStateLock);
+		if(_appState == AppState::Normal)
 		{
-			if(udtIsValidProtocol(udtGetProtocolByFilePath(event.DroppedFilePaths[i])))
+			for(u32 i = 0; i < event.DroppedFileCount; ++i)
 			{
-				LoadDemo(event.DroppedFilePaths[i]);
-				break;
+				if(udtIsValidProtocol(udtGetProtocolByFilePath(event.DroppedFilePaths[i])))
+				{
+					_appState = AppState::LoadingDemo;
+					StartLoadingDemo(event.DroppedFilePaths[i]);
+					break;
+				}
 			}
 		}
 	}
@@ -875,7 +928,7 @@ void Viewer::RenderNoDemo(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderProgress(RenderParams& renderParams)
+void Viewer::RenderDemoLoadProgress(RenderParams& renderParams)
 {
 	const f32 cx = f32(renderParams.ClientWidth / 2);
 	const f32 cy = f32(renderParams.ClientHeight / 2);
@@ -895,14 +948,39 @@ void Viewer::RenderProgress(RenderParams& renderParams)
 	nvgClosePath(ctx);
 
 	DrawProgressBar(ctx, x, y, w, h, r, _demoLoadProgress);
+
+	const f32 icono = 8.0f;
+	const f32 iconx = 20.0f;
+	const f32 icony = 20.0f;
+	const f32 icona = (f32)_globalTimer.GetElapsedMs() / 1000.0f;
+	nvgResetTransform(ctx);
+	nvgTranslate(ctx, iconx, icony);
+	nvgScale(ctx, 1.5f, 1.5f);
+	nvgRotate(ctx, icona);
+	bndIcon(ctx, -icono, -icono, BND_ICONID(2, 15));
+	nvgResetTransform(ctx);
 }
 
 void Viewer::Render(RenderParams& renderParams)
 {
-	if(_drawDemoLoadProgress)
+	if(!_appLoaded)
 	{
-		RenderProgress(renderParams);
-		_drawDemoLoadProgress = false;
+		return;
+	}
+
+	CriticalSectionLock appStateLock(_appStateLock);
+
+	if(_appState == AppState::UploadingMapTexture)
+	{
+		UploadMapTexture();
+		_appState = AppState::Normal;
+		RenderDemoLoadProgress(renderParams);
+		return;
+	}
+
+	if(_appState == AppState::LoadingDemo)
+	{
+		RenderDemoLoadProgress(renderParams);
 		return;
 	}
 
@@ -1158,4 +1236,42 @@ void Viewer::ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32
 	result[0] = _mapRect.Left() + (input[0] - _mapMin[0]) * mapScale;
 	result[1] = _mapRect.Bottom() - (input[1] - _mapMin[1]) * mapScale;
 	result[2] = 1.0f + zScale * ((input[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
+}
+
+void Viewer::UploadMapTexture()
+{
+	if(_map != InvalidTextureId)
+	{
+		nvgDeleteImage(_sharedReadOnly->NVGContext, _map);
+		_map = InvalidTextureId;
+	}
+
+	if(_mapImage == nullptr)
+	{
+		return;
+	}
+	
+	if(!_mapCoordsLoaded || 
+	   _mapWidth == 0 || 
+	   _mapHeight == 0)
+	{
+		stbi_image_free(_mapImage);
+		_mapImage = nullptr;
+		return;
+	}
+
+	int mapTextureId = 0;
+	const bool validTexture = CreateTextureRGBA(mapTextureId, _mapWidth, _mapHeight, (const u8*)_mapImage);
+	stbi_image_free(_mapImage);
+	_mapImage = nullptr;
+	if(validTexture)
+	{
+		_map = mapTextureId;
+	}
+	else
+	{
+		_mapCoordsLoaded = false;
+		_mapWidth = 0;
+		_mapHeight = 0;
+	}
 }
