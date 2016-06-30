@@ -969,20 +969,27 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		}
 		else if(es.eType == _protocolNumbers.EntityTypeGeneral)
 		{
-			if(es.weapon == _protocolNumbers.WeaponRocket || es.weapon == _protocolNumbers.WeaponGrenade)
+			const s32 event = es.event & (~ID_ES_EVENT_BITS);
+			if(event == _protocolNumbers.EntityEventMissileHit ||
+			   event == _protocolNumbers.EntityEventMissileMiss ||
+			   event == _protocolNumbers.EntityEventMissileMissMetal)
 			{
-				Impact explosion;
-				Float3::Copy(explosion.Position, es.pos.trBase);
-				explosion.SnapshotIndex = snapshots.GetSize();
-				_explosions.Add(explosion);
-			}
-			else if(es.weapon == _protocolNumbers.WeaponPlasma)
-			{
-				dynItem.Id = DynamicItemType::ImpactPlasma;
-				dynItem.IdEntityNumber = (u16)es.number;
-				dynItem.Angle = 0.0f;
-				Float3::Copy(dynItem.Position, es.pos.trBase);
-				_tempDynamicItems.Add(dynItem);
+				if(es.weapon == _protocolNumbers.WeaponRocket || 
+				   es.weapon == _protocolNumbers.WeaponGrenade)
+				{
+					Impact explosion;
+					Float3::Copy(explosion.Position, es.pos.trBase);
+					explosion.SnapshotIndex = snapshots.GetSize();
+					_explosions.Add(explosion);
+				}
+				else if(es.weapon == _protocolNumbers.WeaponPlasma)
+				{
+					dynItem.Id = DynamicItemType::ImpactPlasma;
+					dynItem.IdEntityNumber = (u16)es.number;
+					dynItem.Angle = 0.0f;
+					Float3::Copy(dynItem.Position, es.pos.trBase);
+					_tempDynamicItems.Add(dynItem);
+				}
 			}
 		}
 		else if(es.eType == _protocolNumbers.EntityTypeEvent &&
