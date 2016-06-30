@@ -395,7 +395,7 @@ void ReverseButton::Draw(NVGcontext* nvgContext)
 CheckBox::CheckBox()
 {
 	_text = nullptr;
-	_active = false;
+	_active = nullptr;
 	_clicked = false;
 }
 
