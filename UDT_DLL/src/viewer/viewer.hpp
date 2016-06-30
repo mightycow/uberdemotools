@@ -75,6 +75,7 @@ private:
 	void RenderDemoTimer(RenderParams& renderParams);
 	void RenderDemoFollowedPlayer(RenderParams& renderParams);
 	void DrawProgressSliderToolTip(RenderParams& renderParams);
+	void DrawHelp(RenderParams& renderParams);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
 	u32  GetCurrentSnapshotIndex();
 	u32  GetSapshotIndexFromTime(u32 elapsedMs);
@@ -141,4 +142,5 @@ private:
 	bool _mapCoordsLoaded = false;
 	bool _timerShowsServerTime = false;
 	bool _appLoaded = false;
+	bool _displayHelp = false;
 };

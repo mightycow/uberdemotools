@@ -16,6 +16,23 @@
 #define DATA_PATH "viewer_data"
 
 
+static const char* const HelpBindStrings[] =
+{
+	"KEY", "ACTION",
+	"F1", "toggle display of this help overlay",
+	"escape", "quit",
+	"space", "toggle play/pause",
+	"P", "toggle play/pause",
+	"R", "toggle forward/reverse playback",
+	"F", "toggle maximized/restored",
+	"left", "jump to the previous snapshot and pause",
+	"right", "jump to the next snapshot and pause",
+	"up", "jump forward by 1 second",
+	"down", "jump backward by 1 second",
+	"page up", "jump forward by 10 seconds",
+	"page down", "jump backward by 10 seconds"
+};
+
 static const NVGcolor PlayerColors[6] =
 {
 	// free, free followed, red, red followed, blue, blue followed
@@ -1032,6 +1049,11 @@ void Viewer::Render(RenderParams& renderParams)
 	{
 		DrawProgressSliderToolTip(renderParams);
 	}
+
+	if(_displayHelp)
+	{
+		DrawHelp(renderParams);
+	}
 }
 
 void Viewer::DrawProgressSliderToolTip(RenderParams& renderParams)
@@ -1086,6 +1108,46 @@ void Viewer::DrawProgressSliderToolTip(RenderParams& renderParams)
 	nvgText(ctx, textx, texty, timeStamp, nullptr);
 	nvgFill(ctx);
 	nvgClosePath(ctx);
+}
+
+void Viewer::DrawHelp(RenderParams& renderParams)
+{
+	NVGcontext* const ctx = renderParams.NVGContext;
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGreyA(0, 160));
+	nvgRect(ctx, 0.0f, 0.0f, (f32)renderParams.ClientWidth, (f32)renderParams.ClientHeight);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	const u32 stringCount = (u32)UDT_COUNT_OF(HelpBindStrings);
+	const u32 lineCount = stringCount / 2;
+	const f32 w1 = 90.0f;
+	const f32 w2 = 280.0f;
+	const f32 w = w1 + w2 - 1.0f;
+	const f32 h = (f32)(lineCount * BND_WIDGET_HEIGHT);
+
+	f32 x = floorf(((f32)renderParams.ClientWidth - w) / 2.0f);
+	f32 y = floorf(((f32)renderParams.ClientHeight - h) / 2.0f);
+	for(u32 i = 0; i < stringCount; i += 2)
+	{
+		int flags;
+		if(i == 0)
+		{
+			flags = BND_CORNER_DOWN;
+		}
+		else if(i == stringCount - 2)
+		{
+			flags = BND_CORNER_TOP;
+		}
+		else
+		{
+			flags = BND_CORNER_DOWN | BND_CORNER_TOP;
+		}
+		bndTextField(ctx, x, y, w1, BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, BND_DEFAULT, -1, HelpBindStrings[i], 1, 0);
+		bndTextField(ctx, x + w1 - 1.0f, y, w2, BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, BND_DEFAULT, -1, HelpBindStrings[i + 1], 1, 0);
+		y += BND_WIDGET_HEIGHT - 2.0f;
+	}
 }
 
 void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a)
@@ -1252,6 +1314,10 @@ void Viewer::OnKeyPressed(VirtualKey::Id virtualKeyId, bool repeat)
 
 		case VirtualKey::F:
 			Platform_ToggleMaximized(_platform);
+			break;
+
+		case VirtualKey::F1:
+			_displayHelp = !_displayHelp;
 			break;
 
 		default:
