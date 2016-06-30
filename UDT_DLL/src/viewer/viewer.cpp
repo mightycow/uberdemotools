@@ -1131,7 +1131,7 @@ void Viewer::DrawHelp(RenderParams& renderParams)
 	f32 y = floorf(((f32)renderParams.ClientHeight - h) / 2.0f);
 	for(u32 i = 0; i < stringCount; i += 2)
 	{
-		int flags;
+		int flags = BND_CORNER_DOWN | BND_CORNER_TOP;
 		if(i == 0)
 		{
 			flags = BND_CORNER_DOWN;
@@ -1140,12 +1140,9 @@ void Viewer::DrawHelp(RenderParams& renderParams)
 		{
 			flags = BND_CORNER_TOP;
 		}
-		else
-		{
-			flags = BND_CORNER_DOWN | BND_CORNER_TOP;
-		}
-		bndTextField(ctx, x, y, w1, BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, BND_DEFAULT, -1, HelpBindStrings[i], 1, 0);
-		bndTextField(ctx, x + w1 - 1.0f, y, w2, BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, BND_DEFAULT, -1, HelpBindStrings[i + 1], 1, 0);
+		const BNDwidgetState state = i == 0 ? BND_ACTIVE : BND_DEFAULT;
+		bndTextField(ctx, x, y, w1, BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, state, -1, HelpBindStrings[i], 1, 0);
+		bndTextField(ctx, x + w1 - 1.0f, y, w2, BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, state, -1, HelpBindStrings[i + 1], 1, 0);
 		y += BND_WIDGET_HEIGHT - 2.0f;
 	}
 }
