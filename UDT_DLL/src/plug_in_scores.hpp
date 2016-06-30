@@ -54,6 +54,10 @@ private:
 	s32 _score2;
 	s32 _clientNumber1; // CPMA: first place client number
 	s32 _clientNumber2; // CPMA: second place client number
+	s32 _csIndexScore1;
+	s32 _csIndexScore2;
+	s32 _csIndexClient1;
+	s32 _csIndexClient2;
 	udtGameType::Id _gameType;
 	udtProtocol::Id _protocol;
 	udtMod::Id _mod;

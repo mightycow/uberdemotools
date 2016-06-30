@@ -3,6 +3,18 @@
 #include "scoped_stack_allocator.hpp"
 
 
+static void ParseConfigStringInt(s32& value, udtBaseParser& parser, s32 csIndex)
+{
+	const char* const cs = parser.GetConfigString(csIndex).GetPtr();
+	if(cs == NULL)
+	{
+		return;
+	}
+
+	StringParseInt(value, cs);
+}
+
+
 udtParserPlugInScores::udtParserPlugInScores()
 {
 }
@@ -89,6 +101,10 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	_score2 = 0;
 	_clientNumber1 = 0;
 	_clientNumber2 = 0;
+	_csIndexScore1 = 685; // @TODO: handle other QL versions properly
+	_csIndexScore2 = 686; // @TODO: handle other QL versions properly
+	_csIndexClient1 = 687; // @TODO: handle other QL versions properly
+	_csIndexClient2 = 688; // @TODO: handle other QL versions properly
 	_parser = &parser;
 	++_gameStateIndex;
 	_protocol = parser._inProtocol;
@@ -101,10 +117,17 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	{
 		ProcessCPMAScores();
 	}
+	else if(_protocol <= udtProtocol::Dm68)
+	{
+		ParseConfigStringInt(_score1, parser, csIndexScore1);
+		ParseConfigStringInt(_score2, parser, csIndexScore2);
+	}
 	else
 	{
-		StringParseInt(_score1, parser.GetConfigString(csIndexScore1).GetPtr());
-		StringParseInt(_score2, parser.GetConfigString(csIndexScore2).GetPtr());
+		ParseConfigStringInt(_score1, parser, _csIndexScore1);
+		ParseConfigStringInt(_score2, parser, _csIndexScore2);
+		ParseConfigStringInt(_clientNumber1, parser, _csIndexClient1);
+		ParseConfigStringInt(_clientNumber2, parser, _csIndexClient2);
 	}
 	for(u32 i = 0; i < 64; ++i)
 	{
@@ -112,6 +135,7 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	}
 	GetGameStateNumbers();
 	AddScore();
+	_scoreChanged = false;
 }
 
 void udtParserPlugInScores::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
@@ -122,45 +146,69 @@ void udtParserPlugInScores::ProcessCommandMessage(const udtCommandCallbackArg& a
 		const s32 csIndexScore2 = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::Scores2, _protocol, _mod);
 		const s32 csIndexFirstPlayer = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol, _mod);
 
-		if(_mod == udtMod::CPMA &&
-		   arg.ConfigStringIndex == CS_CPMA_GAME_INFO)
-		{
-			const s32 prevScore1 = _score1;
-			const s32 prevScore2 = _score2;
-			ProcessCPMAScores();
-			if(_score1 != prevScore1 ||
-			   _score2 != prevScore2)
-			{
-				_scoreChanged = true;
-			}
-		}
-		else if(_mod == udtMod::CPMA &&
-				arg.ConfigStringIndex == CS_CPMA_ROUND_INFO)
-		{
-			const s32 prevScore1 = _score1;
-			const s32 prevScore2 = _score2;
-			ProcessCPMARoundScores();
-			if(_score1 != prevScore1 ||
-			   _score2 != prevScore2)
-			{
-				_scoreChanged = true;
-			}
-		}
-		else if(_mod != udtMod::CPMA &&
-				arg.ConfigStringIndex == csIndexScore1)
-		{
-			StringParseInt(_score1, parser.GetConfigString(csIndexScore1).GetPtr());
-			_scoreChanged = true;
-		}
-		else if(_mod != udtMod::CPMA &&
-				arg.ConfigStringIndex == csIndexScore2)
-		{
-			StringParseInt(_score2, parser.GetConfigString(csIndexScore2).GetPtr());
-			_scoreChanged = true;
-		}
-		else if(arg.ConfigStringIndex >= csIndexFirstPlayer && arg.ConfigStringIndex < csIndexFirstPlayer + 64)
+		if(arg.ConfigStringIndex >= csIndexFirstPlayer && arg.ConfigStringIndex < csIndexFirstPlayer + 64)
 		{
 			ProcessPlayerConfigString(arg.ConfigStringIndex - csIndexFirstPlayer, parser.GetConfigString(arg.ConfigStringIndex).GetPtr());
+		}
+
+		if(_mod == udtMod::CPMA)
+		{
+			if(arg.ConfigStringIndex == CS_CPMA_GAME_INFO)
+			{
+				const s32 prevScore1 = _score1;
+				const s32 prevScore2 = _score2;
+				ProcessCPMAScores();
+				if(_score1 != prevScore1 ||
+				   _score2 != prevScore2)
+				{
+					_scoreChanged = true;
+				}
+			}
+			else if(arg.ConfigStringIndex == CS_CPMA_ROUND_INFO)
+			{
+				const s32 prevScore1 = _score1;
+				const s32 prevScore2 = _score2;
+				ProcessCPMARoundScores();
+				if(_score1 != prevScore1 ||
+				   _score2 != prevScore2)
+				{
+					_scoreChanged = true;
+				}
+			}
+		}
+		else if(_protocol <= udtProtocol::Dm68)
+		{
+			if(arg.ConfigStringIndex == csIndexScore1)
+			{
+				ParseConfigStringInt(_score1, parser, csIndexScore1);
+				_scoreChanged = true;
+			}
+			else if(arg.ConfigStringIndex == csIndexScore2)
+			{
+				ParseConfigStringInt(_score2, parser, csIndexScore2);
+				_scoreChanged = true;
+			}
+		}
+		else
+		{
+			if(arg.ConfigStringIndex == _csIndexScore1)
+			{
+				ParseConfigStringInt(_score1, parser, _csIndexScore1);
+				_scoreChanged = true;
+			}
+			else if(arg.ConfigStringIndex == _csIndexScore2)
+			{
+				ParseConfigStringInt(_score2, parser, _csIndexScore2);
+				_scoreChanged = true;
+			}
+			else if(arg.ConfigStringIndex == _csIndexClient1)
+			{
+				ParseConfigStringInt(_clientNumber1, parser, _csIndexClient1);
+			}
+			else if(arg.ConfigStringIndex == _csIndexClient2)
+			{
+				ParseConfigStringInt(_clientNumber2, parser, _csIndexClient2);
+			}
 		}
 	}
 	else
@@ -398,6 +446,7 @@ void udtParserPlugInScores::ParseScoresCommandImpl(const idTokenizer& tokenizer,
 	_score2 = score2;
 	_clientNumber1 = id1;
 	_clientNumber2 = id2;
+	_scoreChanged = true;
 }
 
 void udtParserPlugInScores::GetGameStateNumbers()
