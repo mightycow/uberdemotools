@@ -39,6 +39,10 @@ struct ItemClass
 	};
 };
 
+#if defined(UDT_GCC)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wtype-limits"
+#endif
 static u32 GetItemSpawnTimeMs(u32 itemId)
 {
 	if(itemId >= (u32)udtItem::AmmoFirst &&
@@ -75,6 +79,9 @@ static u32 GetItemSpawnTimeMs(u32 itemId)
 			return 0;
 	}
 }
+#if defined(UDT_GCC)
+#	pragma GCC diagnostic pop
+#endif
 
 static u32 GetItemIdFromDynamicItemId(u32 dynItemId)
 {
