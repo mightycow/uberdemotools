@@ -121,9 +121,10 @@ struct SnapshotScore
 	u8 IsScoreTeamBased;
 };
 
-#define  MAX_STATIC_ITEMS  64
-#define  MAX_DYN_ITEMS     64
-#define  MAX_RAIL_BEAMS    16
+// The maximum amount of entities presented in a frame is 256.
+#define  MAX_STATIC_ITEMS  256
+#define  MAX_DYN_ITEMS     256
+#define  MAX_RAIL_BEAMS     64
 
 struct Snapshot
 {

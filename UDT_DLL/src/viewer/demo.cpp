@@ -1282,20 +1282,21 @@ void Demo::FixDynamicItemsAndPlayers()
 	_readIndex = 0;
 	_writeIndex = 1;
 
-	Snapshot snaps[2];
-	Snapshot snap2;
+	Snapshot* const snapshots = (Snapshot*)malloc(sizeof(Snapshot) * 3);
+	Snapshot* snaps[2] = { snapshots, snapshots + 1 };
+	Snapshot& snap2 = snapshots[2];
 	u32 snapIdx = 1;
-	GetSnapshotData(snaps[0], 0);
-	WriteSnapshot(snaps[0]);
+	GetSnapshotData(*snaps[0], 0);
+	WriteSnapshot(*snaps[0]);
 
 	const u32 snapshotCount = _snapshots[_readIndex].GetSize();
 	for(u32 s = 1; s < snapshotCount - 1; ++s)
 	{
-		GetSnapshotData(snaps[snapIdx], s);
-		auto& currSnap = snaps[snapIdx];
-		const auto& prevSnap = snaps[snapIdx ^ 1];
+		GetSnapshotData(*snaps[snapIdx], s);
+		auto& currSnap = *snaps[snapIdx];
+		const auto& prevSnap = *snaps[snapIdx ^ 1];
 		snapIdx ^= 1;
-		assert(currSnap.DynamicItemCount <= MAX_STATIC_ITEMS);
+		assert(currSnap.DynamicItemCount <= MAX_DYN_ITEMS);
 		assert(currSnap.StaticItemCount <= MAX_STATIC_ITEMS);
 		assert(currSnap.RailBeamCount <= MAX_RAIL_BEAMS);
 		assert(currSnap.PlayerCount <= 64);
@@ -1344,6 +1345,8 @@ void Demo::FixDynamicItemsAndPlayers()
 
 		WriteSnapshot(currSnap);
 	}
+
+	free(snapshots);
 
 	_readIndex = 1;
 	_writeIndex = 0;
