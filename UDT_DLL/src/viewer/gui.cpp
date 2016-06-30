@@ -27,7 +27,6 @@ Widget::Widget()
 	Dim[0] = 0.0f;
 	Dim[1] = 0.0f;
 	Hovered = false;
-	Enabled = true;
 }
 
 Widget::~Widget()
@@ -74,6 +73,11 @@ void Widget::MouseScroll(s32, s32, s32)
 
 void Widget::Draw(NVGcontext*)
 {
+}
+
+bool Widget::IsHovered() const
+{
+	return Hovered;
 }
 
 bool Widget::IsPointInside(f32 x, f32 y)

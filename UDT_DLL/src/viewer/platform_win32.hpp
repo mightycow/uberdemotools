@@ -847,6 +847,15 @@ void Platform_ToggleMaximized(Platform& platform)
 	ShowWindow(platform._window, platform._windowState != WindowState::Maximized ? SW_SHOWMAXIMIZED : SW_NORMAL);
 }
 
+void Platform_GetCursorPosition(Platform& platform, s32& x, s32& y)
+{
+	POINT point;
+	GetCursorPos(&point);
+	ScreenToClient(platform._window, &point);
+	x = (s32)point.x;
+	y = (s32)point.y;
+}
+
 #include "windows.hpp"
 
 // @NOTE: the command line argument of wWinMain does *not* contain the path to the executable.

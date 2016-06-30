@@ -1027,6 +1027,65 @@ void Viewer::Render(RenderParams& renderParams)
 	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
 
 	_activeWidgets.Draw(renderParams.NVGContext);
+
+	if(_demoProgressBar.IsHovered())
+	{
+		DrawProgressSliderToolTip(renderParams);
+	}
+}
+
+void Viewer::DrawProgressSliderToolTip(RenderParams& renderParams)
+{
+	s32 cx, cy;
+	Platform_GetCursorPosition(_platform, cx, cy);
+
+	f32 x, y, w, h;
+	_demoProgressBar.GetRect(x, y, w, h);
+
+	const f32 progress = udt_clamp(((f32)cx - x) / w, 0.0f, 1.0f);
+	const int extraSec = _timerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
+	const int totalSec = (int)(GetTimeFromProgress(progress) / 1000) + extraSec;
+	const int minutes = totalSec / 60;
+	const int seconds = totalSec % 60;
+
+	char timeStamp[256];
+	sprintf(timeStamp, "%d:%02d", minutes, seconds);
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	nvgFontSize(ctx, 12.0f);
+
+	float bounds[4];
+	nvgTextBounds(ctx, 0.0f, 0.0f, timeStamp, nullptr, bounds);
+
+	const f32 textm = 2.0f;
+	const f32 textw = bounds[2] - bounds[0];
+	const f32 texth = bounds[3] - bounds[1];
+	const f32 textx = floorf((f32)cx - textw / 2.0f);
+	const f32 texty = y - 4.0f - textm - texth;
+	const f32 bgx = textx - textm;
+	const f32 bgy = texty - textm;
+	const f32 bgw = textw + 2.0f * textm;
+	const f32 bgh = texth + 2.0f * textm;
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgRGB(255, 255, 191));
+	nvgRect(ctx, bgx, bgy, bgw, bgh);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgStrokeColor(ctx, nvgGrey(0));
+	nvgRect(ctx, bgx + 0.375f, bgy + 0.375f, bgw - 1.0f, bgh - 1.0f);
+	nvgStrokeWidth(ctx, 1.0f);
+	nvgStroke(ctx);
+	nvgClosePath(ctx);
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGrey(0));
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+	nvgText(ctx, textx, texty, timeStamp, nullptr);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
 }
 
 void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a)

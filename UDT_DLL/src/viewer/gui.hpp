@@ -23,13 +23,14 @@ struct Widget
 	virtual void MouseScroll(s32 x, s32 y, s32 scroll);
 	virtual void Draw(NVGcontext* nvgContext);
 
+	bool IsHovered() const;
+
 protected:
 	bool IsPointInside(f32 x, f32 y);
 
 	f32 Pos[2];
 	f32 Dim[2];
 	bool Hovered;
-	bool Enabled;
 };
 
 struct WidgetGroup : public Widget

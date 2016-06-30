@@ -438,6 +438,14 @@ void Platform_ToggleMaximized(Platform& platform)
 	}
 }
 
+void Platform_GetCursorPosition(Platform& platform, s32& x, s32& y)
+{
+	double cx, cy;
+	glfwGetCursorPos(platform._window, &cx, &cy);
+	x = (s32)cx;
+	y = (s32)cy;
+}
+
 #if defined(UDT_WINDOWS)
 
 #include "thread_local_allocators.hpp"
