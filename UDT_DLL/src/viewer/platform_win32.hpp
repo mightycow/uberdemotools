@@ -207,10 +207,6 @@ struct Platform
 		flags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
 		DXGI_SWAP_CHAIN_DESC swapChainDesc;
-		RECT rect;
-		GetClientRect(window, &rect);
-		_windowClientWidth = rect.right - rect.left;
-		_windowClientHeight = rect.bottom - rect.top;
 		InitSwapChainDesc(swapChainDesc, window, _windowClientWidth, _windowClientHeight);
 		IDXGISwapChain* swapChain = nullptr;
 		ID3D11Device* device = nullptr;
@@ -224,7 +220,9 @@ struct Platform
 		_device = device;
 		_deviceContext = deviceContext;
 
-		if(!ResizeBuffers())
+		RECT rect;
+		GetClientRect(window, &rect);
+		if(!ResizeBuffers((UINT)(rect.right - rect.left), (UINT)(rect.bottom - rect.top)))
 		{
 			return false;
 		}
@@ -249,8 +247,16 @@ struct Platform
 		return true;
 	}
 
-	bool ResizeBuffers()
+	bool ResizeBuffers(UINT newWidth, UINT newHeight)
 	{
+		if(newWidth == _windowClientWidth &&
+		   newHeight == _windowClientHeight)
+		{
+			return true;
+		}
+		_windowClientWidth = newWidth;
+		_windowClientHeight = newHeight;
+
 		COM_RELEASE(_renderTargetView);
 		COM_RELEASE(_depthStencilView);
 		COM_RELEASE(_depthStencilBuffer);
@@ -321,7 +327,7 @@ struct Platform
 
 	LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 	{
-#define ResizeBuffersFromWindowProc() do { if(!ResizeBuffers()) { SendMessageW(_window, WM_CLOSE, 0, 0); return 0; } } while((void)0, 0)
+#define ResizeBuffersFromWindowProc(w, h) do { if(!ResizeBuffers(w, h)) { SendMessageW(_window, WM_CLOSE, 0, 0); return 0; } } while((void)0, 0)
 
 		switch(message)
 		{
@@ -338,67 +344,40 @@ struct Platform
 				return 0;
 
 			case WM_SIZE:
-				_windowClientWidth = LOWORD(lParam);
-				_windowClientHeight = HIWORD(lParam);
 				if(_device != nullptr)
 				{
 					if(wParam == SIZE_MINIMIZED)
 					{
 						_windowState = WindowState::Minimized;
-						SetPaused(true);
 					}
 					else if(wParam == SIZE_MAXIMIZED)
 					{
 						_windowState = WindowState::Maximized;
-						ResizeBuffersFromWindowProc();
+						ResizeBuffersFromWindowProc((UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
 						ReDraw();
 					}
 					else if(wParam == SIZE_RESTORED)
 					{
 						_windowState = WindowState::Normal;
-						if(_windowState == WindowState::Minimized ||
-						   _windowState == WindowState::Maximized)
-						{
-							SetPaused(false);
-							ResizeBuffersFromWindowProc();
-						}
-						else if(!_resizing)
-						{
-							ResizeBuffersFromWindowProc();
-							
-						}
+						ResizeBuffersFromWindowProc((UINT)LOWORD(lParam), (UINT)HIWORD(lParam));
 						ReDraw();
 					}
 				}
 				return 0;
 
 			case WM_ENTERSIZEMOVE: // Resize bar grabbed.
-				SetPaused(true);
 				_resizing = true;
 				return 0;
 
 			case WM_EXITSIZEMOVE: // Resize bar released.
-				SetPaused(false);
+			{
 				_resizing = false;
-				ResizeBuffersFromWindowProc();
+				RECT rect;
+				GetClientRect(_window, &rect);
+				ResizeBuffersFromWindowProc((UINT)(rect.right - rect.left), (UINT)(rect.bottom - rect.top));
 				ReDraw();
 				return 0;
-
-				// wParam
-				// 0   => FALSE or WM_INACTIVE
-				// 1,2 => TRUE or WM_ACTIVE or WM_CLICKACTIVE
-			case WM_ACTIVATE:
-			case WM_ACTIVATEAPP:
-				if(wParam == 0)
-				{
-					SetPaused(true);
-				}
-				else if(wParam == 1 || wParam == 2)
-				{
-					SetPaused(false);
-					ReDraw();
-				}
-				return 0;
+			}
 
 			case WM_GETMINMAXINFO:
 				((MINMAXINFO*)lParam)->ptMinTrackSize.x = 640;
