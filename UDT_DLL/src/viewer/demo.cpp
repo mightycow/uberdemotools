@@ -149,9 +149,10 @@ ItemClass::Id GetItemClassFromId(u32 itemId)
 		case udtItem::ItemKeyMaster:
 		case udtItem::ItemKeySilver:
 			return ItemClass::Static;
-	}
 
-	return ItemClass::Unknown;
+		default:
+			return ItemClass::Unknown;
+	}
 }
 
 struct DynamicItemPair
