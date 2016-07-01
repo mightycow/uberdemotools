@@ -22,11 +22,27 @@ struct PlatformReadWrite;
 
 extern const f32 ViewerClearColor[4];
 
+#define TAB_LIST(N) \
+	N(Options, "Options") \
+	N(Chat, "Chat") \
+	N(Log, "Log")
+
 struct Config
 {
 	f32 StaticZScale = 0.0f;
 	f32 DynamicZScale = 0.4f;
 };
+
+#define ITEM(Enum, String) Enum,
+struct Tab
+{
+	enum Id
+	{
+		TAB_LIST(ITEM)
+		Count
+	};
+};
+#undef ITEM
 
 struct Viewer
 {
@@ -117,11 +133,21 @@ private:
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;
+	CheckBox _showServerTimeCheckBox;
+	CheckBox _drawMapOverlaysCheckBox;
+	CheckBox _drawMapScoresCheckBox;
+	CheckBox _drawMapClockCheckBox;
+	CheckBox _drawMapFollowMsgCheckBox;
+	CheckBox _drawMapHealthCheckBox;
 	WidgetGroup _activeWidgets;
+	WidgetGroup _tabWidgets[Tab::Count];
+	RadioButton _tabButtons[Tab::Count];
+	RadioGroup _tabButtonGroup;
 	f32 _mapMin[3];
 	f32 _mapMax[3];
 	Rectangle _mapRect;
 	Rectangle _uiRect;
+	Rectangle _tabBarRect;
 	Rectangle _progressRect;
 	Platform& _platform;
 	PlatformReadOnly* _sharedReadOnly = nullptr;
@@ -130,10 +156,12 @@ private:
 	AppState::Id _appState = AppState::Normal;
 	CriticalSectionId _appStateLock;
 	void* _mapImage = nullptr;
+	WidgetGroup* _activeTabWidgets = nullptr;
 	int _map = InvalidTextureId;
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;
 	u32 _snapshotIndex = 0; // Index of the currently displayed snapshot.
+	u32 _selectedTabIndex = 0;
 	f32 _demoLoadProgress = 0.0f;
 	bool _appPaused = false;
 	bool _wasTimerRunningBeforePause = false;
@@ -143,4 +171,9 @@ private:
 	bool _timerShowsServerTime = false;
 	bool _appLoaded = false;
 	bool _displayHelp = false;
+	bool _drawMapOverlays = true;
+	bool _drawMapScores = true;
+	bool _drawMapClock = true;
+	bool _drawMapFollowMsg = true;
+	bool _drawMapHealth = true;
 };

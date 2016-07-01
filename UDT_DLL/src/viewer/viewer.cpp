@@ -33,6 +33,15 @@ static const char* const HelpBindStrings[] =
 	"page down", "jump backward by 10 seconds"
 };
 
+
+#define ITEM(Enum, String) String,
+static const char* TabNames[Tab::Count + 1] =
+{
+	TAB_LIST(ITEM)
+	""
+};
+#undef ITEM
+
 static const NVGcolor PlayerColors[6] =
 {
 	// free, free followed, red, red followed, blue, blue followed
@@ -236,11 +245,50 @@ bool Viewer::Init(int argc, char** argv)
 
 	_playPauseButton.SetTimerPtr(&_demoPlaybackTimer);
 	_reversePlaybackButton.SetReversedPtr(&_reversePlayback);
+	_showServerTimeCheckBox.SetActivePtr(&_timerShowsServerTime);
+	_showServerTimeCheckBox.SetText("Clock shows server time");
+	_drawMapOverlaysCheckBox.SetActivePtr(&_drawMapOverlays);
+	_drawMapOverlaysCheckBox.SetText("Enable map overlays");
+	_drawMapScoresCheckBox.SetActivePtr(&_drawMapScores);
+	_drawMapScoresCheckBox.SetText("Draw scores");
+	_drawMapClockCheckBox.SetActivePtr(&_drawMapClock);
+	_drawMapClockCheckBox.SetText("Draw clock");
+	_drawMapFollowMsgCheckBox.SetActivePtr(&_drawMapFollowMsg);
+	_drawMapFollowMsgCheckBox.SetText("Draw follow message");
+	_drawMapHealthCheckBox.SetActivePtr(&_drawMapHealth);
+	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
+	
+	_tabWidgets[Tab::Options].AddWidget(&_showServerTimeCheckBox);
+	_tabWidgets[Tab::Options].AddWidget(&_drawMapOverlaysCheckBox);
+	_tabWidgets[Tab::Options].AddWidget(&_drawMapScoresCheckBox);
+	_tabWidgets[Tab::Options].AddWidget(&_drawMapClockCheckBox);
+	_tabWidgets[Tab::Options].AddWidget(&_drawMapFollowMsgCheckBox);
+	_tabWidgets[Tab::Options].AddWidget(&_drawMapHealthCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
 	_activeWidgets.AddWidget(&_reversePlaybackButton);
 	_activeWidgets.AddWidget(&_demoProgressBar);
+	_activeWidgets.AddWidget(&_tabButtonGroup);
+
+	_selectedTabIndex = 0;
+	_activeTabWidgets = &_tabWidgets[0];
+	for(u32 i = 0; i < (u32)Tab::Count; ++i)
+	{
+		int flags = BND_CORNER_TOP;
+		if(i > 0)
+		{
+			flags |= BND_CORNER_LEFT;
+		}
+		else if(i < (u32)Tab::Count - 1)
+		{
+			flags |= BND_CORNER_RIGHT;
+		}
+		_tabButtons[i].SetCornerFlags(flags);
+		_tabButtons[i].SetActive(i == 0);
+		_tabButtons[i].SetText(TabNames[i]);
+		_tabButtonGroup.AddRadioButton(&_tabButtons[i]);
+	}
 
 	Platform_CreateCriticalSection(_appStateLock);
 	if(argc >= 2 && udtFileStream::Exists(argv[1]))
@@ -408,22 +456,6 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 void Viewer::LoadDemoImpl(const char* filePath)
 {
 	_demo.Load(filePath);
-
-	/*
-	_map = InvalidTextureId;
-	_mapWidth = 0;
-	_mapHeight = 0;
-	_mapCoordsLoaded = false;
-	for(u32 i = 0; i < 3; ++i)
-	{
-		_mapMin[i] = _demo.GetMapMin()[i];
-		_mapMax[i] = _demo.GetMapMax()[i];
-	}
-	_reversePlayback = false;
-	_demoPlaybackTimer.Stop();
-	_demoPlaybackTimer.Reset();
-	_demoPlaybackTimer.Start(); */
-
 	
 	const udtString originalMapName = _demo.GetMapName();
 	udtString mapName = originalMapName;
@@ -485,22 +517,27 @@ void Viewer::ProcessEvent(const Event& event)
 	else if(event.Type == EventType::MouseButtonDown)
 	{
 		_activeWidgets.MouseButtonDown(event.CursorPos[0], event.CursorPos[1], event.MouseButtonId);
+		_activeTabWidgets->MouseButtonDown(event.CursorPos[0], event.CursorPos[1], event.MouseButtonId);
 	}
 	else if(event.Type == EventType::MouseButtonUp)
 	{
 		_activeWidgets.MouseButtonUp(event.CursorPos[0], event.CursorPos[1], event.MouseButtonId);
+		_activeTabWidgets->MouseButtonUp(event.CursorPos[0], event.CursorPos[1], event.MouseButtonId);
 	}
 	else if(event.Type == EventType::MouseMove)
 	{
 		_activeWidgets.MouseMove(event.CursorPos[0], event.CursorPos[1]);
+		_activeTabWidgets->MouseMove(event.CursorPos[0], event.CursorPos[1]);
 	}
 	else if(event.Type == EventType::MouseMoveNC)
 	{
 		_activeWidgets.MouseMoveNC(event.CursorPos[0], event.CursorPos[1]);
+		_activeTabWidgets->MouseMoveNC(event.CursorPos[0], event.CursorPos[1]);
 	}
 	else if(event.Type == EventType::MouseScroll)
 	{
 		_activeWidgets.MouseScroll(event.CursorPos[0], event.CursorPos[1], event.Scroll);
+		_activeTabWidgets->MouseScroll(event.CursorPos[0], event.CursorPos[1], event.Scroll);
 	}
 	else if(event.Type == EventType::FilesDropped)
 	{
@@ -559,6 +596,11 @@ void Viewer::ProcessEvent(const Event& event)
 	else if(_stopButton.WasClicked())
 	{
 		StopPlayback();
+	}
+
+	if(_tabButtonGroup.HasSelectionChanged())
+	{
+		_activeTabWidgets = &_tabWidgets[_tabButtonGroup.GetSelectedIndex()];
 	}
 }
 
@@ -738,9 +780,25 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
 	}
 
-	RenderDemoScore(renderParams);
-	RenderDemoTimer(renderParams);
-	RenderDemoFollowedPlayer(renderParams);
+	if(!_drawMapOverlays)
+	{
+		return;
+	}
+
+	if(_drawMapScores)
+	{
+		RenderDemoScore(renderParams);
+	}
+	
+	if(_drawMapClock)
+	{
+		RenderDemoTimer(renderParams);
+	}
+	
+	if(_drawMapFollowMsg || _drawMapHealth)
+	{
+		RenderDemoFollowedPlayer(renderParams);
+	}
 }
 
 void Viewer::RenderDemoScore(RenderParams& renderParams)
@@ -875,18 +933,26 @@ void Viewer::RenderDemoFollowedPlayer(RenderParams& renderParams)
 	NVGcontext* const ctx = renderParams.NVGContext;
 	nvgFontSize(ctx, fontSize);
 
-	const char* const name = _demo.GetString(snapshot.Core.FollowedName);
-	if(name != nullptr)
-	{	
-		char msg[128];
-		sprintf(msg, "Following %s", name);
+	if(_drawMapFollowMsg)
+	{
+		const char* const name = _demo.GetString(snapshot.Core.FollowedName);
+		if(name != nullptr)
+		{
+			char msg[128];
+			sprintf(msg, "Following %s", name);
 
-		nvgBeginPath(ctx);
-		nvgFillColor(ctx, nvgGrey(0));
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_BOTTOM);
-		nvgText(ctx, _mapRect.Left() + space, _mapRect.Bottom() - space, msg, nullptr);
-		nvgFill(ctx);
-		nvgClosePath(ctx);
+			nvgBeginPath(ctx);
+			nvgFillColor(ctx, nvgGrey(0));
+			nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_BOTTOM);
+			nvgText(ctx, _mapRect.Left() + space, _mapRect.Bottom() - space, msg, nullptr);
+			nvgFill(ctx);
+			nvgClosePath(ctx);
+		}
+	}
+
+	if(!_drawMapHealth)
+	{
+		return;
 	}
 
 	float bounds[4];
@@ -1022,8 +1088,11 @@ void Viewer::Render(RenderParams& renderParams)
 	const f32 mapAspectRatio = (_mapWidth > 0 && _mapHeight > 0) ? ((f32)_mapWidth / (f32)_mapHeight) : 1.0f;
 	const f32 mapHeight = progressY - progressBarMargin;
 	const f32 mapWidth = ceilf(mapHeight * mapAspectRatio);
+	const f32 uiOffsetX = 20.0f;
+	const f32 uiOffsetY = 20.0f;
 	_mapRect.Set(0.0f, 0.0f, mapWidth, mapHeight);
-	_uiRect.Set(mapWidth, 0.0f, (f32)renderParams.ClientWidth - mapWidth, mapHeight);
+	_tabBarRect.Set(mapWidth + uiOffsetX, 0.0f, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, (f32)BND_WIDGET_HEIGHT);
+	_uiRect.Set(mapWidth + uiOffsetX, _tabBarRect.Bottom() + uiOffsetY, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, mapHeight - _tabBarRect.Height() - uiOffsetY);
 
 	RenderDemo(renderParams);
 
@@ -1043,7 +1112,29 @@ void Viewer::Render(RenderParams& renderParams)
 	_demoProgressBar.SetRadius(r);
 	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
 
+	const f32 tw = 80.0f;
+	const f32 th = (f32)BND_WIDGET_HEIGHT;
+	const f32 ty = _tabBarRect.Y();
+	f32 tx = _tabBarRect.X();
+	for(u32 i = 0; i < (u32)Tab::Count; ++i)
+	{
+		_tabButtons[i].SetRect(tx, ty, tw, th);
+		tx += tw - 1.0f;
+	}
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
+	const f32 ox = _uiRect.X();
+	f32 oy = _uiRect.Y();
+	_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+
 	_activeWidgets.Draw(renderParams.NVGContext);
+	_activeTabWidgets->Draw(renderParams.NVGContext);
 
 	if(_demoProgressBar.IsHovered())
 	{

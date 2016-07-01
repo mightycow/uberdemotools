@@ -136,6 +136,7 @@ struct CheckBox : public Widget
 	CheckBox();
 	~CheckBox();
 
+	void SetRect(NVGcontext* nvgContext, f32 x, f32 y);
 	void SetText(const char* text);
 	void SetActivePtr(bool* active);
 	bool WasClicked();
@@ -157,6 +158,7 @@ struct RadioButton : public Widget
 	RadioButton();
 	~RadioButton();
 
+	void SetCornerFlags(int flags);
 	void SetText(const char* text);
 	void SetActive(bool active);
 	bool IsActive() const;
@@ -170,6 +172,7 @@ struct RadioButton : public Widget
 
 private:
 	const char* _text;
+	int _cornerFlags;
 	bool _active;
 	bool _clicked;
 };

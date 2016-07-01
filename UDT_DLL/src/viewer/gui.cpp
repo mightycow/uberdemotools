@@ -407,6 +407,18 @@ CheckBox::~CheckBox()
 {
 }
 
+void CheckBox::SetRect(NVGcontext* nvgContext, f32 x, f32 y)
+{
+	float bounds[4];
+	nvgFontSize(nvgContext, 13.0f); // BND_LABEL_FONT_SIZE
+	nvgTextBounds(nvgContext, 0.0f, 0.0f, _text, nullptr, bounds);
+	const f32 textTength = bounds[2] - bounds[0];
+	Pos[0] = x;
+	Pos[1] = y;
+	Dim[0] = (f32)BND_WIDGET_HEIGHT + textTength;
+	Dim[1] = (f32)BND_WIDGET_HEIGHT;
+}
+
 void CheckBox::SetText(const char* text)
 {
 	_text = text;
@@ -459,18 +471,24 @@ void CheckBox::Draw(NVGcontext* nvgContext)
 		state = BND_HOVER;
 	}
 
-	bndOptionButton(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, state, _text);
+	bndOptionButton(nvgContext, Pos[0], Pos[1], Dim[0] + 6.0f, BND_WIDGET_HEIGHT, state, _text);
 }
 
 RadioButton::RadioButton()
 {
 	_text = nullptr;
+	_cornerFlags = 0;
 	_active = false;
 	_clicked = false;
 }
 
 RadioButton::~RadioButton()
 {
+}
+
+void RadioButton::SetCornerFlags(int flags)
+{
+	_cornerFlags = flags;
 }
 
 void RadioButton::SetText(const char* text)
@@ -530,7 +548,7 @@ void RadioButton::Draw(NVGcontext* nvgContext)
 		state = BND_HOVER;
 	}
 
-	bndRadioButton(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, BND_CORNER_NONE, state, -1, _text);
+	bndRadioButton(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, _cornerFlags, state, -1, _text);
 }
 
 RadioGroup::RadioGroup()
