@@ -25,6 +25,7 @@ extern const f32 ViewerClearColor[4];
 #define TAB_LIST(N) \
 	N(Options, "Options") \
 	N(Chat, "Chat") \
+	N(HeatMaps, "Heat Maps") \
 	N(Log, "Log")
 
 struct Config

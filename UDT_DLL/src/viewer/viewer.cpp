@@ -13,7 +13,11 @@
 #include <math.h>
 
 
-#define DATA_PATH "viewer_data"
+#define  DATA_PATH          "viewer_data"
+#define  DATA_PATH_ICONS    DATA_PATH"/blender_icons.png"
+#define  DATA_PATH_FONT     DATA_PATH"/DejaVuSans.ttf"
+#define  DATA_PATH_ALIASES  DATA_PATH"/mapaliases.txt"
+#define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
 
 
 static const char* const HelpBindStrings[] =
@@ -227,21 +231,28 @@ Viewer::~Viewer()
 
 bool Viewer::Init(int argc, char** argv)
 {
+	if(!udtFileStream::Exists(DATA_PATH_ICONS) ||
+	   !udtFileStream::Exists(DATA_PATH_FONT) ||
+	   !udtFileStream::Exists(DATA_PATH_ALIASES) ||
+	   !udtFileStream::Exists(DATA_PATH_SPRITES))
+	{
+		return false;
+	}
+
 	int font = FONS_INVALID;
 	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
 	if(snapshot == nullptr ||
-	   !udtFileStream::Exists(DATA_PATH"/blender_icons.png") ||
 	   !_demo.Init(&DemoProgressCallback, this) ||
 	   !LoadMapAliases() ||
 	   !LoadSprites() ||
-	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH"/DejaVuSans.ttf")) == FONS_INVALID)
+	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH_FONT)) == FONS_INVALID)
 	{
 		return false;
 	}
 	_snapshot = snapshot;
 
 	bndSetFont(font);
-	bndSetIconImage(nvgCreateImage(_sharedReadOnly->NVGContext, DATA_PATH"/blender_icons.png", 0));
+	bndSetIconImage(nvgCreateImage(_sharedReadOnly->NVGContext, DATA_PATH_ICONS, 0));
 
 	_playPauseButton.SetTimerPtr(&_demoPlaybackTimer);
 	_reversePlaybackButton.SetReversedPtr(&_reversePlayback);
@@ -258,12 +269,13 @@ bool Viewer::Init(int argc, char** argv)
 	_drawMapHealthCheckBox.SetActivePtr(&_drawMapHealth);
 	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
 	
-	_tabWidgets[Tab::Options].AddWidget(&_showServerTimeCheckBox);
-	_tabWidgets[Tab::Options].AddWidget(&_drawMapOverlaysCheckBox);
-	_tabWidgets[Tab::Options].AddWidget(&_drawMapScoresCheckBox);
-	_tabWidgets[Tab::Options].AddWidget(&_drawMapClockCheckBox);
-	_tabWidgets[Tab::Options].AddWidget(&_drawMapFollowMsgCheckBox);
-	_tabWidgets[Tab::Options].AddWidget(&_drawMapHealthCheckBox);
+	WidgetGroup& options = _tabWidgets[Tab::Options];
+	options.AddWidget(&_showServerTimeCheckBox);
+	options.AddWidget(&_drawMapOverlaysCheckBox);
+	options.AddWidget(&_drawMapScoresCheckBox);
+	options.AddWidget(&_drawMapClockCheckBox);
+	options.AddWidget(&_drawMapFollowMsgCheckBox);
+	options.AddWidget(&_drawMapHealthCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
@@ -280,7 +292,7 @@ bool Viewer::Init(int argc, char** argv)
 		{
 			flags |= BND_CORNER_LEFT;
 		}
-		else if(i < (u32)Tab::Count - 1)
+		if(i < (u32)Tab::Count - 1)
 		{
 			flags |= BND_CORNER_RIGHT;
 		}
@@ -308,12 +320,9 @@ bool Viewer::Init(int argc, char** argv)
 bool Viewer::LoadMapAliases()
 {
 	// Line endings: \r\n
-	udtVMScopedStackAllocator allocScope(_tempAllocator);
 
-	udtString filePath;
-	udtPath::Combine(filePath, _tempAllocator, udtString::NewConstRef(DATA_PATH), "mapaliases.txt");
 	udtFileStream file;
-	if(!file.Open(filePath.GetPtr(), udtFileOpenMode::Read))
+	if(!file.Open(DATA_PATH_ALIASES, udtFileOpenMode::Read))
 	{
 		return false;
 	}
@@ -356,12 +365,8 @@ bool Viewer::LoadMapAliases()
 
 bool Viewer::LoadSprites()
 {
-	udtVMScopedStackAllocator allocScope(_tempAllocator);
-
-	udtString filePath;
-	udtPath::Combine(filePath, _tempAllocator, udtString::NewConstRef(DATA_PATH), "sprites.texturepack");
 	udtFileStream file;
-	if(!file.Open(filePath.GetPtr(), udtFileOpenMode::Read))
+	if(!file.Open(DATA_PATH_SPRITES, udtFileOpenMode::Read))
 	{
 		return false;
 	}
@@ -956,15 +961,26 @@ void Viewer::RenderDemoFollowedPlayer(RenderParams& renderParams)
 	}
 
 	float bounds[4];
-	nvgTextBounds(ctx, 0.0f, 0.0f, "000", nullptr, bounds);
+	nvgTextBounds(ctx, 0.0f, 0.0f, "-000", nullptr, bounds);
 	const f32 textw = ceilf(bounds[2] - bounds[0]);
 	const f32 iconw = fontSize;
 
 	// Top left corner.
 	const f32 delta = 4.0f;
 	const f32 w = 3.0f * (iconw + textw) + 5.0f * delta;
-	const f32 x = floorf(_mapRect.CenterX() - w / 2.0f);
-	const f32 y = _mapRect.Bottom() - fontSize - space;
+	const f32 h = fontSize + space;
+	const f32 x = ceilf(_mapRect.Right() - w);
+	const f32 y = _mapRect.Bottom() - h;
+
+	if(_map != InvalidTextureId)
+	{
+		const f32 r = space;
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgRGBf(ViewerClearColor[0], ViewerClearColor[1], ViewerClearColor[2]));
+		nvgRoundedRect(ctx, x - r, y - r, w + 2.0f * r, h + 2.0f * r, r);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+	}
 
 	const s32 ammoSpriteId = GetIconSpriteIdFromWeaponId(snapshot.Core.FollowedWeapon);
 	DrawTexturedRect(ctx, x, y, iconw, iconw, _sprites[Sprite::armor_red]);
