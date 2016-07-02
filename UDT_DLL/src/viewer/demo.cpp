@@ -1592,7 +1592,11 @@ bool Demo::AnalyzeDemo(const char* filePath)
 		for(u32 i = 0; i < chatBuffers.ChatMessageCount; ++i)
 		{
 			const udtParseDataChat& c = chatBuffers.ChatMessages[i];
-			if(c.GameStateIndex >= 1)
+			if(c.ServerTimeMs < _firstMatchStartTimeMs)
+			{
+				continue;
+			}
+			if(c.GameStateIndex >= 1 || c.ServerTimeMs > _firstMatchEndTimeMs)
 			{
 				break;
 			}
