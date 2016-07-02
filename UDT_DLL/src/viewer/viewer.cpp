@@ -1302,7 +1302,8 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 			break;
 		}
 
-		const int totalSec = (int)message.ServerTimeMs / 1000;
+		const int offsetMs = _timerShowsServerTime ? 0 : (int)_demo.GetFirstSnapshotTimeMs();
+		const int totalSec = ((int)message.ServerTimeMs - offsetMs) / 1000;
 		const int minutes = totalSec / 60;
 		const int seconds = totalSec % 60;
 		const char* const name = _demo.GetString(message.PlayerName);
