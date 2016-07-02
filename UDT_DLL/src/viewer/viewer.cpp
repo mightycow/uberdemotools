@@ -1178,9 +1178,21 @@ void Viewer::Render(const RenderParams& renderParams)
 	_activeWidgets.Draw(renderParams.NVGContext);
 	_activeTabWidgets->Draw(renderParams.NVGContext);
 
-	if(_tabButtonGroup.GetSelectedIndex() == Tab::Chat)
+	const u32 tabIndex = _tabButtonGroup.GetSelectedIndex();
+	if(tabIndex == Tab::Chat)
 	{
 		DrawChat(renderParams, serverTimeMs);
+	}
+	else if(tabIndex == Tab::Log || tabIndex == Tab::HeatMaps)
+	{
+		NVGcontext* const ctx = renderParams.NVGContext;
+		nvgFontSize(ctx, 16.0f);
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgGrey(0));
+		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+		nvgText(ctx, _uiRect.X(), _uiRect.Y(), "coming soon... hopefully", nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
 	}
 
 	if(_demoProgressBar.IsHovered())
