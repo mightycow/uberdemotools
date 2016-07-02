@@ -55,7 +55,7 @@ struct Viewer
 
 	bool Init(int argc, char** argv);
 	void ProcessEvent(const Event& event);
-	void Render(RenderParams& renderParams);
+	void Render(const RenderParams& renderParams);
 
 private:
 	UDT_NO_COPY_SEMANTICS(Viewer);
@@ -85,17 +85,17 @@ private:
 	bool CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* pixels);
 	void StartLoadingDemo(const char* filePath);
 	void LoadDemoImpl(const char* filePath);
-	void RenderDemo(RenderParams& renderParams);
-	void RenderNoDemo(RenderParams& renderParams);
-	void RenderDemoLoadProgress(RenderParams& renderParams);
-	void RenderDemoScore(RenderParams& renderParams);
-	void RenderDemoTimer(RenderParams& renderParams);
-	void RenderDemoFollowedPlayer(RenderParams& renderParams);
-	void DrawProgressSliderToolTip(RenderParams& renderParams);
-	void DrawHelp(RenderParams& renderParams);
+	void RenderDemo(const RenderParams& renderParams);
+	void RenderNoDemo(const RenderParams& renderParams);
+	void RenderDemoLoadProgress(const RenderParams& renderParams);
+	void RenderDemoScore(const RenderParams& renderParams);
+	void RenderDemoTimer(const RenderParams& renderParams);
+	void RenderDemoFollowedPlayer(const RenderParams& renderParams);
+	void DrawProgressSliderToolTip(const RenderParams& renderParams);
+	void DrawHelp(const RenderParams& renderParams);
+	void DrawChat(const RenderParams& renderParams, s32 serverTimeMs);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
-	u32  GetCurrentSnapshotIndex();
-	u32  GetSapshotIndexFromTime(u32 elapsedMs);
+	void GetCurrentSnapshotIndexAndServerTime(u32& snapshotIndex, s32& serverTimeMs);
 	f32  GetProgressFromTime(u32 elapsedMs);
 	u32  GetTimeFromProgress(f32 progress);
 	void PausePlayback();
@@ -162,7 +162,6 @@ private:
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;
 	u32 _snapshotIndex = 0; // Index of the currently displayed snapshot.
-	u32 _selectedTabIndex = 0;
 	f32 _demoLoadProgress = 0.0f;
 	bool _appPaused = false;
 	bool _wasTimerRunningBeforePause = false;

@@ -341,6 +341,7 @@ Demo::Demo()
 	_explosions.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ExplosionsArray");
 	_bulletImpacts.Init(UDT_MEMORY_PAGE_SIZE, "Demo::BulletImpactsArray");
 	_scores.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ScoresArray");
+	_chatMessages.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ChatMessagesArray");
 }
 
 Demo::~Demo()
@@ -1509,11 +1510,20 @@ bool Demo::AnalyzeDemo(const char* filePath)
 	_mod = udtMod::None;
 	_gameType = udtGameType::Count;
 
-	const u32 plugInIds[2] = { udtParserPlugIn::Stats, udtParserPlugIn::Scores };
+	_scores.Clear();
+	_chatMessages.Clear();
+
+	const u32 plugInIds[] = 
+	{ 
+		udtParserPlugIn::Stats, 
+		udtParserPlugIn::Scores,
+		udtParserPlugIn::Chat
+	};
+
 	udtParseArg arg;
 	memset(&arg, 0, sizeof(arg));
 	arg.PlugIns = plugInIds;
-	arg.PlugInCount = 2;
+	arg.PlugInCount = (u32)UDT_COUNT_OF(plugInIds);
 
 	s32 errorCode = (s32)udtErrorCode::Unprocessed;
 	udtMultiParseArg extraArg;
@@ -1545,9 +1555,6 @@ bool Demo::AnalyzeDemo(const char* filePath)
 				break;
 			}
 
-			const char* const name1 = s.Name2 != u32(-1) ? ((const char*)scoreBuffers.StringBuffer + s.Name1) : "";
-			const char* const name2 = s.Name2 != u32(-1) ? ((const char*)scoreBuffers.StringBuffer + s.Name2) : "";
-
 			Score score;
 			score.ServerTimeMs = s.ServerTimeMs;
 			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
@@ -1555,8 +1562,8 @@ bool Demo::AnalyzeDemo(const char* filePath)
 			score.Base.Score2Id = (u8)s.Id2;
 			score.Base.Score1 = (s16)s.Score1;
 			score.Base.Score2 = (s16)s.Score2;
-			score.Base.Score1Name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, name1).GetOffset();
-			score.Base.Score2Name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, name2).GetOffset();
+			score.Base.Score1Name = CloneStringClean(scoreBuffers.StringBuffer, s.Name1);
+			score.Base.Score2Name = CloneStringClean(scoreBuffers.StringBuffer, s.Name2);
 			_scores.Add(score);
 		}
 	}
@@ -1578,7 +1585,74 @@ bool Demo::AnalyzeDemo(const char* filePath)
 		}
 	}
 
+	udtParseDataChatBuffers chatBuffers;
+	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Chat, &chatBuffers) == udtErrorCode::None &&
+	   chatBuffers.ChatMessageCount > 0)
+	{
+		for(u32 i = 0; i < chatBuffers.ChatMessageCount; ++i)
+		{
+			const udtParseDataChat& c = chatBuffers.ChatMessages[i];
+			if(c.GameStateIndex >= 1)
+			{
+				break;
+			}
+
+			ChatMessage msg;
+			msg.Location = CloneString(chatBuffers.StringBuffer, c.Strings[1].Location);
+			msg.Message = CloneString(chatBuffers.StringBuffer, c.Strings[1].Message);
+			msg.PlayerName = CloneString(chatBuffers.StringBuffer, c.Strings[1].PlayerName);
+			msg.ServerTimeMs = c.ServerTimeMs;
+			msg.TeamMessage = c.TeamMessage;
+			_chatMessages.Add(msg);
+		}
+	}
+
 	udtDestroyContextGroup(contextGroup);
 
 	return success;
+}
+
+u32 Demo::CloneString(const void* buffer, u32 offset)
+{
+	const char* const toClone = offset != UDT_U32_MAX ? ((const char*)buffer + offset) : "";
+
+	return udtString::NewClone(_stringAllocator, toClone).GetOffset();
+}
+
+u32 Demo::CloneStringClean(const void* buffer, u32 offset)
+{
+	const char* const toClone = offset != UDT_U32_MAX ? ((const char*)buffer + offset) : "";
+
+	return udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, toClone).GetOffset();
+}
+
+u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
+{
+	// @TODO: binary search?
+	for(u32 i = 0, count = _chatMessages.GetSize(); i < count; ++i)
+	{
+		if(_chatMessages[i].ServerTimeMs > serverTimeMs)
+		{
+			return i - 1;
+		}
+	}
+
+	return UDT_U32_MAX;
+}
+
+u32 Demo::GetChatMessageCount() const
+{
+	return _chatMessages.GetSize();
+}
+
+bool Demo::GetChatMessage(ChatMessage& message, u32 index) const
+{
+	if(index >= _chatMessages.GetSize())
+	{
+		return false;
+	}
+
+	message = _chatMessages[index];
+
+	return true;
 }

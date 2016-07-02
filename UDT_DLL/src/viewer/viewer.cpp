@@ -291,7 +291,6 @@ bool Viewer::Init(int argc, char** argv)
 	_activeWidgets.AddWidget(&_demoProgressBar);
 	_activeWidgets.AddWidget(&_tabButtonGroup);
 
-	_selectedTabIndex = 0;
 	_activeTabWidgets = &_tabWidgets[0];
 	for(u32 i = 0; i < (u32)Tab::Count; ++i)
 	{
@@ -625,7 +624,7 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 }
 
-void Viewer::RenderDemo(RenderParams& renderParams)
+void Viewer::RenderDemo(const RenderParams& renderParams)
 {
 	f32 mapWidth;
 	f32 mapHeight;
@@ -822,7 +821,7 @@ void Viewer::RenderDemo(RenderParams& renderParams)
 	}
 }
 
-void Viewer::RenderDemoScore(RenderParams& renderParams)
+void Viewer::RenderDemoScore(const RenderParams& renderParams)
 {
 	const Snapshot& snapshot = *_snapshot;
 	int score1 = (int)snapshot.Score.Score1;
@@ -915,7 +914,7 @@ void Viewer::RenderDemoScore(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderDemoTimer(RenderParams& renderParams)
+void Viewer::RenderDemoTimer(const RenderParams& renderParams)
 {
 	const int extraSec = _timerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
 	const int totalSec = (int)_demoPlaybackTimer.GetElapsedSec() + extraSec;
@@ -939,7 +938,7 @@ void Viewer::RenderDemoTimer(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderDemoFollowedPlayer(RenderParams& renderParams)
+void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 {
 	const Snapshot& snapshot = *_snapshot;
 	if(snapshot.Core.FollowedTeam != udtTeam::Free &&
@@ -1027,7 +1026,7 @@ void Viewer::RenderDemoFollowedPlayer(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderNoDemo(RenderParams& renderParams)
+void Viewer::RenderNoDemo(const RenderParams& renderParams)
 {
 	const char* const message = "drag'n'drop a demo file anywhere in the window to load it";
 	NVGcontext* const ctx = renderParams.NVGContext;
@@ -1043,7 +1042,7 @@ void Viewer::RenderNoDemo(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderDemoLoadProgress(RenderParams& renderParams)
+void Viewer::RenderDemoLoadProgress(const RenderParams& renderParams)
 {
 	const f32 cx = f32(renderParams.ClientWidth / 2);
 	const f32 cy = f32(renderParams.ClientHeight / 2);
@@ -1076,7 +1075,7 @@ void Viewer::RenderDemoLoadProgress(RenderParams& renderParams)
 	nvgResetTransform(ctx);
 }
 
-void Viewer::Render(RenderParams& renderParams)
+void Viewer::Render(const RenderParams& renderParams)
 {
 	if(!_appLoaded)
 	{
@@ -1105,7 +1104,9 @@ void Viewer::Render(RenderParams& renderParams)
 		return;
 	}
 
-	const u32 snapshotIndex = GetCurrentSnapshotIndex();
+	u32 snapshotIndex;
+	s32 serverTimeMs;
+	GetCurrentSnapshotIndexAndServerTime(snapshotIndex, serverTimeMs);
 	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
 	{
 		RenderNoDemo(renderParams);
@@ -1168,6 +1169,11 @@ void Viewer::Render(RenderParams& renderParams)
 	_activeWidgets.Draw(renderParams.NVGContext);
 	_activeTabWidgets->Draw(renderParams.NVGContext);
 
+	if(_tabButtonGroup.GetSelectedIndex() == Tab::Chat)
+	{
+		DrawChat(renderParams, serverTimeMs);
+	}
+
 	if(_demoProgressBar.IsHovered())
 	{
 		DrawProgressSliderToolTip(renderParams);
@@ -1179,7 +1185,7 @@ void Viewer::Render(RenderParams& renderParams)
 	}
 }
 
-void Viewer::DrawProgressSliderToolTip(RenderParams& renderParams)
+void Viewer::DrawProgressSliderToolTip(const RenderParams& renderParams)
 {
 	s32 cx, cy;
 	Platform_GetCursorPosition(_platform, cx, cy);
@@ -1233,7 +1239,7 @@ void Viewer::DrawProgressSliderToolTip(RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::DrawHelp(RenderParams& renderParams)
+void Viewer::DrawHelp(const RenderParams& renderParams)
 {
 	NVGcontext* const ctx = renderParams.NVGContext;
 
@@ -1270,6 +1276,68 @@ void Viewer::DrawHelp(RenderParams& renderParams)
 	}
 }
 
+void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
+{
+	const u32 index = _demo.GetChatMessageIndexFromServerTime(serverTimeMs);
+	if(index == UDT_U32_MAX)
+	{
+		return;
+	}
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	const f32 fontSize = 16.0f;
+	const f32 lineHeight = 20.0f;
+	nvgFontSize(ctx, fontSize);
+
+	const f32 top = _uiRect.Top();
+	const f32 x = _uiRect.Left();
+	f32 y = _uiRect.Bottom();
+
+	u32 i = index;
+	ChatMessage message;
+	while(_demo.GetChatMessage(message, i--))
+	{
+		if(y <= top)
+		{
+			break;
+		}
+
+		const int totalSec = (int)message.ServerTimeMs / 1000;
+		const int minutes = totalSec / 60;
+		const int seconds = totalSec % 60;
+		const char* const name = _demo.GetString(message.PlayerName);
+		const char* const msg = _demo.GetString(message.Message);
+		const char* const loc = _demo.GetString(message.Location);
+
+		char line[512];
+		if(message.TeamMessage)
+		{
+			if(!udtString::IsNullOrEmpty(loc))
+			{
+				sprintf(line, "[%d:%02d] (%s) (%s): %s", minutes, seconds, name, loc, msg);
+			}
+			else
+			{
+				sprintf(line, "[%d:%02d] (%s): %s", minutes, seconds, name, msg);
+			}
+		}
+		else
+		{
+			sprintf(line, "[%d:%02d] %s: %s", minutes, seconds, name, msg);
+		}
+
+		// @TODO: display with line breaks?
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgGrey(0));
+		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_BOTTOM);
+		nvgText(ctx, x, y, line, nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+
+		y -= lineHeight;
+	}
+}
+
 void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a)
 {
 	if(spriteId >= (u32)Sprite::Count)
@@ -1295,17 +1363,11 @@ void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const
 	nvgResetTransform(c);
 }
 
-u32 Viewer::GetCurrentSnapshotIndex()
+void Viewer::GetCurrentSnapshotIndexAndServerTime(u32& snapshotIndex, s32& serverTimeMs)
 {
-	return GetSapshotIndexFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
-}
-
-u32 Viewer::GetSapshotIndexFromTime(u32 elapsedMs)
-{
-	const f32 progress = GetProgressFromTime(elapsedMs);
-	const s32 serverTimeMs = _demo.GetFirstSnapshotTimeMs() + (s32)(progress * (f32)_demo.GetDurationMs());
-
-	return _demo.GetSnapshotIndexFromServerTime(serverTimeMs);
+	const f32 progress = GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
+	serverTimeMs = _demo.GetFirstSnapshotTimeMs() + (s32)(progress * (f32)_demo.GetDurationMs());
+	snapshotIndex = _demo.GetSnapshotIndexFromServerTime(serverTimeMs);
 }
 
 f32 Viewer::GetProgressFromTime(u32 elapsedMs)

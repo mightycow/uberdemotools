@@ -65,6 +65,11 @@ void DrawProgressBar(NVGcontext* nvgContext, f32 x, f32 y, f32 w, f32 h, f32 r, 
 {
 	DrawProgressBarBackground(nvgContext, x, y, w, h, r);
 
+	if(progress == 0.0f)
+	{
+		return;
+	}
+
 	nvgBeginPath(nvgContext);
 	nvgRoundedRect(nvgContext, x, y, w * progress, h, r);
 	nvgFillPaint(nvgContext, nvgLinearGradient(nvgContext, x, y, x, y + h, nvgGrey(210), nvgGrey(190)));

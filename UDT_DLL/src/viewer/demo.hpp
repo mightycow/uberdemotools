@@ -143,6 +143,15 @@ struct Snapshot
 
 #pragma pack(pop)
 
+struct ChatMessage
+{
+	u32 Location;
+	u32 PlayerName;
+	u32 Message;
+	u32 TeamMessage;
+	s32 ServerTimeMs;
+};
+
 struct idProtocolNumbers
 {
 	idProtocolNumbers();
@@ -199,6 +208,10 @@ struct Demo
 	s32         GetSnapshotServerTimeMs(u32 index) const;
 	bool        GetSnapshotData(Snapshot& snapshot, u32 index) const;
 
+	u32         GetChatMessageIndexFromServerTime(s32 serverTimeMs) const;
+	u32         GetChatMessageCount() const;
+	bool        GetChatMessage(ChatMessage& message, u32 index) const;
+
 	udtMod::Id      GetMod() const { return (udtMod::Id)_protocol; }
 	udtGameType::Id GetGameType() const { return (udtGameType::Id)_gameType; }
 	udtProtocol::Id GetProtocol() const { return (udtProtocol::Id)_protocol; }
@@ -238,6 +251,8 @@ private:
 	void ComputeLGEndPoint(Player& player, const f32* start, const f32* angles);
 	bool FindPlayer(const Player*& player, u32 snapshotIndex, u8 idClientNumber);
 	bool AnalyzeDemo(const char* filePath);
+	u32  CloneString(const void* buffer, u32 offset);
+	u32  CloneStringClean(const void* buffer, u32 offset);
 
 	enum Constants
 	{
@@ -293,6 +308,7 @@ private:
 	udtVMArray<Impact> _explosions;
 	udtVMArray<Impact> _bulletImpacts;
 	udtVMArray<Score> _scores;
+	udtVMArray<ChatMessage> _chatMessages;
 	udtString _mapName = udtString::NewEmptyConstant();
 	udtCuContext* _context = nullptr;
 	u8* _messageData = nullptr;
