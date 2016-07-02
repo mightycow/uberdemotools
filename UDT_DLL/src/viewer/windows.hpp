@@ -99,6 +99,8 @@ void Platform_PrintError(const char* format, ...)
 	MessageBoxA(nullptr, msg, "UDT 2D Viewer - Error", MB_OK | MB_ICONERROR);
 }
 
+static bool ExitOnFatalError = true;
+
 void Platform_FatalError(const char* format, ...)
 {
 	// @TODO: Write a mini-dump file?
@@ -109,11 +111,15 @@ void Platform_FatalError(const char* format, ...)
 	vsprintf(msg, format, args);
 	va_end(args);
 	MessageBoxA(nullptr, msg, "UDT 2D Viewer - Fatal Error", MB_OK | MB_ICONERROR);
-	exit(666);
+	if(ExitOnFatalError)
+	{
+		exit(666);
+	}
 }
 
 static int Win32ExceptionFilter(unsigned int code)
 {
+	ExitOnFatalError = false;
 	Platform_FatalError("A Win32 exception with code %08X was thrown.\nShutting down.", (int)code);
 
 	return EXCEPTION_EXECUTE_HANDLER;
