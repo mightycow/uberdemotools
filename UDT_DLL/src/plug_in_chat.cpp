@@ -330,6 +330,9 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 
 void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser)
 {
+	// @NOTE: I have seen QL demo data where a chat message from a player kicked for excess flood is received right after he disconnected,
+	// which would mean looking up the player's config string will yield a blank name but the chat commands itself has a valid name.
+
 	s32 playerIndex = -1;
 	if(!StringParseInt(playerIndex, argument1.GetPtr()) ||
 	   playerIndex < 0 ||
