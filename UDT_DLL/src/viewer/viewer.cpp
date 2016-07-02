@@ -916,8 +916,17 @@ void Viewer::RenderDemoScore(const RenderParams& renderParams)
 
 void Viewer::RenderDemoTimer(const RenderParams& renderParams)
 {
-	const int extraSec = _timerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
-	const int totalSec = (int)_demoPlaybackTimer.GetElapsedSec() + extraSec;
+	int totalSec;
+	if(_reversePlayback)
+	{
+		const int endTimeMs = _timerShowsServerTime ? (int)(_demo.GetFirstSnapshotTimeMs() + _demo.GetDurationMs()) : (int)_demo.GetDurationMs();
+		totalSec = (endTimeMs - (int)_demoPlaybackTimer.GetElapsedMs()) / 1000;
+	}
+	else
+	{
+		const int startOffsetMs = _timerShowsServerTime ? (int)_demo.GetFirstSnapshotTimeMs() : 0;
+		totalSec = ((int)_demoPlaybackTimer.GetElapsedMs() + startOffsetMs) / 1000;
+	}
 	const int minutes = totalSec / 60;
 	const int seconds = totalSec % 60;
 
