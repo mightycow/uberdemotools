@@ -28,6 +28,10 @@ static DWORD WINAPI ThreadEntryPoint(_In_ LPVOID lpParameter)
 void Platform_NewThread(Platform_ThreadFunc userEntryPoint, void* userData)
 {
 	ThreadData* const data = (ThreadData*)malloc(sizeof(ThreadData));
+	if(data == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for thread data", (int)sizeof(ThreadData));
+	}
 	data->EntryPoint = userEntryPoint;
 	data->UserData = userData;
 	CreateThread(nullptr, 0, &ThreadEntryPoint, data, 0, nullptr);
@@ -36,12 +40,21 @@ void Platform_NewThread(Platform_ThreadFunc userEntryPoint, void* userData)
 void Platform_CreateCriticalSection(CriticalSectionId& csRef)
 {
 	CRITICAL_SECTION* const cs = (CRITICAL_SECTION*)malloc(sizeof(CRITICAL_SECTION));
+	if(cs == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for critical section data", (int)sizeof(CRITICAL_SECTION));
+	}
 	InitializeCriticalSection(cs);
 	csRef = cs;
 }
 
 void Platform_ReleaseCriticalSection(CriticalSectionId cs)
 {
+	if(cs == InvalidCriticalSectionId)
+	{
+		return;
+	}
+
 	DeleteCriticalSection((CRITICAL_SECTION*)cs);
 	free(cs);
 }
@@ -74,4 +87,34 @@ static void ResetCurrentDirectory(const char* exePath)
 	}
 
 	SetCurrentDirectoryW(folderPathWide);
+}
+
+void Platform_PrintError(const char* format, ...)
+{
+	char msg[256];
+	va_list args;
+	va_start(args, format);
+	vsprintf(msg, format, args);
+	va_end(args);
+	MessageBoxA(nullptr, msg, "UDT 2D Viewer - Error", MB_OK | MB_ICONERROR);
+}
+
+void Platform_FatalError(const char* format, ...)
+{
+	// @TODO: Write a mini-dump file?
+	// @TODO: Write a call-stack file?
+	char msg[256];
+	va_list args;
+	va_start(args, format);
+	vsprintf(msg, format, args);
+	va_end(args);
+	MessageBoxA(nullptr, msg, "UDT 2D Viewer - Fatal Error", MB_OK | MB_ICONERROR);
+	exit(666);
+}
+
+static int Win32ExceptionFilter(unsigned int code)
+{
+	Platform_FatalError("A Win32 exception with code %08X was thrown.\nShutting down.", (int)code);
+
+	return EXCEPTION_EXECUTE_HANDLER;
 }

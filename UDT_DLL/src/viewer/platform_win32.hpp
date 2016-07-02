@@ -679,10 +679,14 @@ void Platform_GetCursorPosition(Platform& platform, s32& x, s32& y)
 
 #include "windows.hpp"
 
-// @NOTE: the command line argument of wWinMain does *not* contain the path to the executable.
-// To get that, we call GetCommandLineW instead.
-int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
+static void udtCrashHandler(const char* message)
 {
+	Platform_FatalError(message);
+}
+
+static int Main(HINSTANCE instance)
+{
+	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
 	
 	Platform platform(instance);
@@ -707,7 +711,7 @@ int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 	ResetCurrentDirectory(argv[0]);
 
 	int result = 0;
-	if(!platform.Init() || 
+	if(!platform.Init() ||
 	   !viewer.Init(argc, argv))
 	{
 		result = 1;
@@ -721,4 +725,18 @@ shut_down:
 	udtShutDownLibrary();
 
 	return result;
+}
+
+// @NOTE: the command line argument of wWinMain does *not* contain the path to the executable.
+// To get that, we call GetCommandLineW instead.
+int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
+{
+	__try
+	{
+		return Main(instance);
+	}
+	__except(Win32ExceptionFilter(GetExceptionCode()))
+	{
+		return 666;
+	}
 }

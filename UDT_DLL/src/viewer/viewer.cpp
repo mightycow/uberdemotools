@@ -231,25 +231,33 @@ Viewer::~Viewer()
 
 bool Viewer::Init(int argc, char** argv)
 {
-	if(!udtFileStream::Exists(DATA_PATH_ICONS) ||
-	   !udtFileStream::Exists(DATA_PATH_FONT) ||
-	   !udtFileStream::Exists(DATA_PATH_ALIASES) ||
-	   !udtFileStream::Exists(DATA_PATH_SPRITES))
+	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
+	if(snapshot == nullptr)
+	{
+		Platform_PrintError("Failed to allocate %d bytes for snapshot data", (int)sizeof(Snapshot));
+		return false;
+	}
+	_snapshot = snapshot;
+	
+	if(!_demo.Init(&DemoProgressCallback, this) ||
+	   !LoadMapAliases() ||
+	   !LoadSprites())
 	{
 		return false;
 	}
 
-	int font = FONS_INVALID;
-	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
-	if(snapshot == nullptr ||
-	   !_demo.Init(&DemoProgressCallback, this) ||
-	   !LoadMapAliases() ||
-	   !LoadSprites() ||
-	   (font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH_FONT)) == FONS_INVALID)
+	const int font = nvgCreateFont(_sharedReadOnly->NVGContext, "sans", DATA_PATH_FONT);
+	if(font == FONS_INVALID)
 	{
+		Platform_PrintError("Failed to open/load font file %s", DATA_PATH_FONT);
 		return false;
 	}
-	_snapshot = snapshot;
+
+	if(!udtFileStream::Exists(DATA_PATH_ICONS))
+	{
+		Platform_PrintError("Failed to open icon sheet file %s", DATA_PATH_ICONS);
+		return false;
+	}
 
 	bndSetFont(font);
 	bndSetIconImage(nvgCreateImage(_sharedReadOnly->NVGContext, DATA_PATH_ICONS, 0));
@@ -324,6 +332,7 @@ bool Viewer::LoadMapAliases()
 	udtFileStream file;
 	if(!file.Open(DATA_PATH_ALIASES, udtFileOpenMode::Read))
 	{
+		Platform_PrintError("Failed to open map aliases file %s", DATA_PATH_ALIASES);
 		return false;
 	}
 
@@ -368,6 +377,7 @@ bool Viewer::LoadSprites()
 	udtFileStream file;
 	if(!file.Open(DATA_PATH_SPRITES, udtFileOpenMode::Read))
 	{
+		Platform_PrintError("Failed to open the sprite texture pack file %s", DATA_PATH_SPRITES);
 		return false;
 	}
 
@@ -377,6 +387,7 @@ bool Viewer::LoadSprites()
 	file.Read(&spriteCount, 4, 1);
 	if(spriteCount != Sprite::Count)
 	{
+		Platform_PrintError("Sprite count mismatch in file %s", DATA_PATH_SPRITES);
 		return false;
 	}
 
@@ -391,6 +402,7 @@ bool Viewer::LoadSprites()
 		file.Read(pixels, w * h * 4, 1);
 		if(!CreateTextureRGBA(_sprites[s], w, h, pixels))
 		{
+			Platform_PrintError("Failed to create a texture for sprite %d in file %s", (int)s, DATA_PATH_SPRITES);
 			return false;
 		}
 	}
@@ -492,6 +504,10 @@ void Viewer::LoadDemoImpl(const char* filePath)
 void Viewer::StartLoadingDemo(const char* filePath)
 {
 	DemoLoadThreadData* const data = (DemoLoadThreadData*)malloc(sizeof(DemoLoadThreadData));
+	if(data == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for thread job data", (int)sizeof(DemoLoadThreadData));
+	}
 	data->ViewerPtr = this;
 	strcpy(data->FilePath, filePath);
 	Platform_NewThread(&DemoLoadThreadEntryPoint, data);

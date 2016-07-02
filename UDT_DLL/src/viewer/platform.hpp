@@ -17,6 +17,7 @@ struct PlatformReadWrite
 {
 };
 
+#define  InvalidCriticalSectionId  nullptr
 typedef void* CriticalSectionId;
 
 typedef void (*Platform_ThreadFunc)(void* userData);
@@ -34,3 +35,5 @@ extern void Platform_CreateCriticalSection(CriticalSectionId& cs);
 extern void Platform_ReleaseCriticalSection(CriticalSectionId cs);
 extern void Platform_EnterCriticalSection(CriticalSectionId cs);
 extern void Platform_LeaveCriticalSection(CriticalSectionId cs);
+extern void Platform_PrintError(const char* format, ...); // Show error message.
+extern void Platform_FatalError(const char* format, ...); // Show error message and stack trace, then quit.

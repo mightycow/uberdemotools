@@ -155,7 +155,7 @@ private:
 	PlatformReadWrite* _sharedReadWrite = nullptr;
 	Snapshot* _snapshot = nullptr;
 	AppState::Id _appState = AppState::Normal;
-	CriticalSectionId _appStateLock;
+	CriticalSectionId _appStateLock = InvalidCriticalSectionId;
 	void* _mapImage = nullptr;
 	WidgetGroup* _activeTabWidgets = nullptr;
 	int _map = InvalidTextureId;

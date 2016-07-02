@@ -2,6 +2,7 @@
 #include "file_stream.hpp"
 #include "utils.hpp"
 #include "sprites.hpp"
+#include "platform.hpp"
 
 #include <stdlib.h>
 #include <math.h>
@@ -357,6 +358,7 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	udtCuContext* const context = udtCuCreateContext();
 	if(context == NULL)
 	{
+		Platform_PrintError("udtCuCreateContext failed");
 		return false;
 	}
 	_context = context;
@@ -364,6 +366,7 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	u8* const inMsgData = (u8*)malloc(ID_MAX_MSG_LENGTH);
 	if(inMsgData == NULL)
 	{
+		Platform_PrintError("Failed to allocate %d bytes for demo message data", ID_MAX_MSG_LENGTH);
 		return false;
 	}
 	_messageData = inMsgData;
@@ -371,6 +374,7 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
 	if(snapshot == nullptr)
 	{
+		Platform_PrintError("Failed to allocate %d bytes for snapshot data", (int)sizeof(Snapshot));
 		return false;
 	}
 	_snapshot = snapshot;
@@ -1290,6 +1294,10 @@ void Demo::FixDynamicItemsAndPlayers()
 	_writeIndex = 1;
 
 	Snapshot* const snapshots = (Snapshot*)malloc(sizeof(Snapshot) * 3);
+	if(snapshots == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for snapshot data", (int)sizeof(Snapshot) * 3);
+	}
 	Snapshot* snaps[2] = { snapshots, snapshots + 1 };
 	Snapshot& snap2 = snapshots[2];
 	u32 snapIdx = 1;

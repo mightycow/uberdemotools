@@ -299,6 +299,9 @@ solution "UDT"
 			links { "D3D11" }
 		filter "system:not windows"
 			links { "GL", "glfw" }
+		filter "action:gmake"
+			buildoptions { "-g" } -- Generate debug symbols.
+			linkoptions { "-rdynamic" } -- Embed the debug symbols in the executable.
 	
 	-- OpenGL version of the Windows viewer for testing purposes
 	project "UDT_viewer_glfw"

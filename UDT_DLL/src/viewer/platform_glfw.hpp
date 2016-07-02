@@ -8,6 +8,10 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#if !defined(UDT_WINDOWS)
+#	include <execinfo.h>
+#	include <signal.h>
+#endif
 
 #if defined(UDT_WINDOWS)
 #	include <Windows.h>
@@ -38,18 +42,6 @@
 #	pragma GCC diagnostic pop
 #endif
 
-
-static void LogError(const char* format, ...)
-{
-	char msg[256];
-	va_list args;
-	va_start(args, format);
-	vsprintf(msg, format, args);
-	va_end(args);
-	fprintf(stderr, "Error: ");
-	fprintf(stderr, msg);
-	fprintf(stderr, "\n");
-}
 
 static void GlobalErrorCallback(int error, const char* desc)
 {
@@ -169,13 +161,13 @@ struct Platform
 		glfwGetVersion(&glfwMajor, &glfwMinor, &glfwRevision);
 		if(glfwMajor < 3)
 		{
-			LogError("The glfw version must be 3.0 or higher");
+			Platform_PrintError("The glfw version must be 3.0 or higher");
 			return false;
 		}
 	
 		if(!glfwInit())
 		{
-			LogError("glfwInit failed");
+			Platform_PrintError("glfwInit failed");
 			return false;
 		}
 	
@@ -186,7 +178,7 @@ struct Platform
 		GLFWwindow* const window = glfwCreateWindow(1024, 768, "UDT 2D Viewer", NULL, NULL);
 		if(window == nullptr)
 		{
-			LogError("glfwCreateWindow failed");
+			Platform_PrintError("glfwCreateWindow failed");
 			return false;
 		}
 		_window = window;
@@ -217,7 +209,7 @@ struct Platform
 #endif
 		if(nvg == nullptr)
 		{
-			LogError("nvgCreateGL2 failed");
+			Platform_PrintError("nvgCreateGL2 failed");
 			return false;
 		}
 		_sharedReadOnly.NVGContext = nvg;
@@ -446,6 +438,11 @@ void Platform_GetCursorPosition(Platform& platform, s32& x, s32& y)
 	y = (s32)cy;
 }
 
+static void udtCrashHandler(const char* message)
+{
+	Platform_FatalError(message);
+}
+
 #if defined(UDT_WINDOWS)
 
 #include "thread_local_allocators.hpp"
@@ -454,8 +451,9 @@ void Platform_GetCursorPosition(Platform& platform, s32& x, s32& y)
 #include "utils.hpp"
 #include "windows.hpp"
 
-int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+static int Main()
 {
+	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
 
 	Platform platform;
@@ -496,13 +494,49 @@ shut_down:
 	return result;
 }
 
+int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+{
+	__try
+	{
+		return Main();
+	}
+	__except(Win32ExceptionFilter(GetExceptionCode()))
+	{
+		return 666;
+	}
+}
+
 #else
 
 #include <pthread.h>
 #include "linux.hpp"
 
+static void SignalHandler(int signal)
+{
+	const char* message = "Unknown signal received, closing now.";
+	if(signal == SIGSEGV)
+	{
+		message = "Segmentation fault (SIGSEGV) detected.";
+	}
+	else if(signal == SIGFPE)
+	{
+		message = "Erroneous arithmetic operation (SIGFPE) detected.";
+	}
+	else if(signal == SIGBUS)
+	{
+		message = "Bus error (SIGBUS) detected.";
+	}
+
+	Platform_FatalError(message);
+}
+
 int main(int argc, char** argv)
 {
+	signal(SIGSEGV, &SignalHandler);
+	signal(SIGFPE, &SignalHandler);
+	signal(SIGBUS, &SignalHandler);
+
+	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
 	
 	Platform platform;
