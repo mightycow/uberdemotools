@@ -15,8 +15,8 @@
 
 #define  DATA_PATH          "viewer_data"
 #define  DATA_PATH_ICONS    DATA_PATH"/blender_icons.png"
-#define  DATA_PATH_FONT     DATA_PATH"/DejaVuSans.ttf"
-#define  DATA_PATH_ALIASES  DATA_PATH"/mapaliases.txt"
+#define  DATA_PATH_FONT     DATA_PATH"/deja_vu_sans.ttf"
+#define  DATA_PATH_ALIASES  DATA_PATH"/map_aliases.txt"
 #define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
 
 
