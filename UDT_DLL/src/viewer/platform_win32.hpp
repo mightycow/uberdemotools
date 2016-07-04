@@ -731,6 +731,11 @@ shut_down:
 // To get that, we call GetCommandLineW instead.
 int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
+	if(IsDebuggerPresent())
+	{
+		return Main(instance);
+	}
+
 	__try
 	{
 		return Main(instance);
