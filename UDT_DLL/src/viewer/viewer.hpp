@@ -170,6 +170,7 @@ private:
 	TextButton _genHeatMapsButton;
 	Slider _heatMapOpacity;
 	Label _heatMapOpacityLabel;
+	CheckBox _heatMapOpacityCheckBox;
 	f32 _mapMin[3];
 	f32 _mapMax[3];
 	Rectangle _mapRect;
@@ -203,4 +204,5 @@ private:
 	bool _drawMapClock = true;
 	bool _drawMapFollowMsg = true;
 	bool _drawMapHealth = true;
+	bool _embedOpacityInHeatMap = true;
 };

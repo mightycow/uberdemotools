@@ -290,6 +290,8 @@ bool Viewer::Init(int argc, char** argv)
 	_heatMapOpacity.SetProgress(0.75f);
 	_heatMapOpacity.SetRadius((f32)(BND_WIDGET_HEIGHT / 2));
 	_heatMapOpacityLabel.SetText("Opacity");
+	_heatMapOpacityCheckBox.SetActivePtr(&_embedOpacityInHeatMap);
+	_heatMapOpacityCheckBox.SetText("Embed opacity in heat map");
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -304,6 +306,7 @@ bool Viewer::Init(int argc, char** argv)
 	heatMaps.AddWidget(&_heatMapOpacity);
 	heatMaps.AddWidget(&_genHeatMapsButton);
 	heatMaps.AddWidget(&_heatMapOpacityLabel);
+	heatMaps.AddWidget(&_heatMapOpacityCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
@@ -630,13 +633,28 @@ void Viewer::GenerateHeatMaps()
 		const u32 divider = (maxValue + rampColorCount - 1) / rampColorCount;
 		if(divider > 0)
 		{
-			for(u32 i = 0; i < pixelCount; ++i)
+			if(_embedOpacityInHeatMap)
 			{
-				const u8 val = (u8)(histogram[i] / divider);
-				heatMap[4 * i + 0] = colorRamp[val][0];
-				heatMap[4 * i + 1] = colorRamp[val][1];
-				heatMap[4 * i + 2] = colorRamp[val][2];
-				heatMap[4 * i + 3] = 255;
+				for(u32 i = 0; i < pixelCount; ++i)
+				{
+					const u8 val = (u8)(histogram[i] / divider);
+					const u8 op = (u8)(((u32)val * 256) / rampColorCount);
+					heatMap[4 * i + 0] = colorRamp[val][0];
+					heatMap[4 * i + 1] = colorRamp[val][1];
+					heatMap[4 * i + 2] = colorRamp[val][2];
+					heatMap[4 * i + 3] = op;
+				}
+			}
+			else
+			{
+				for(u32 i = 0; i < pixelCount; ++i)
+				{
+					const u8 val = (u8)(histogram[i] / divider);
+					heatMap[4 * i + 0] = colorRamp[val][0];
+					heatMap[4 * i + 1] = colorRamp[val][1];
+					heatMap[4 * i + 2] = colorRamp[val][2];
+					heatMap[4 * i + 3] = 255;
+				}
 			}
 		}
 		else
@@ -1399,6 +1417,9 @@ void Viewer::Render(const RenderParams& renderParams)
 	{
 		const f32 hmx = _uiRect.X();
 		f32 hmy = _uiRect.Y();
+
+		_heatMapOpacityCheckBox.SetRect(ctx, hmx, hmy);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
 		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
