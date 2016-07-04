@@ -387,7 +387,7 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	return true;
 }
 
-void Demo::Load(const char* filePath)
+void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 {
 	const f32 LoadStepCount = 6.0f;
 	f32 loadStep = 1.0f;
@@ -413,7 +413,8 @@ void Demo::Load(const char* filePath)
 	}
 
 	const u32 previousMod = _mod;
-	if(!AnalyzeDemo(filePath) && protocol <= udtProtocol::Dm68)
+	if(!AnalyzeDemo(filePath, keepOnlyFirstMatch) && 
+	   protocol <= udtProtocol::Dm68)
 	{
 		ParseDemo(filePath, &Demo::ProcessMessage_Mod);
 	}
@@ -1566,7 +1567,7 @@ void Demo::ComputeLGEndPoint(Player& player, const f32* start, const f32* angles
 	}
 }
 
-bool Demo::AnalyzeDemo(const char* filePath)
+bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 {
 	_firstMatchStartTimeMs = UDT_S32_MIN;
 	_firstMatchEndTimeMs = UDT_S32_MAX;
@@ -1640,8 +1641,11 @@ bool Demo::AnalyzeDemo(const char* filePath)
 		if(stats.GameStateIndex == 0)
 		{
 			success = true;
-			_firstMatchStartTimeMs = stats.StartTimeMs + 50;
-			_firstMatchEndTimeMs = stats.EndTimeMs - 50;
+			if(keepOnlyFirstMatch)
+			{
+				_firstMatchStartTimeMs = stats.StartTimeMs + 50;
+				_firstMatchEndTimeMs = stats.EndTimeMs - 50;
+			}
 			_mod = stats.Mod;
 			_gameType = stats.GameType;
 			// @TODO: custom red/blue team names?

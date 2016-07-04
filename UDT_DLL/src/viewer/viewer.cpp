@@ -292,6 +292,8 @@ bool Viewer::Init(int argc, char** argv)
 	_heatMapOpacityLabel.SetText("Opacity");
 	_heatMapOpacityCheckBox.SetActivePtr(&_embedOpacityInHeatMap);
 	_heatMapOpacityCheckBox.SetText("Embed opacity in heat map");
+	_onlyFirstMatchCheckBox.SetActivePtr(&_onlyKeepFirstMatchSnapshots);
+	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -300,6 +302,7 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_drawMapClockCheckBox);
 	options.AddWidget(&_drawMapFollowMsgCheckBox);
 	options.AddWidget(&_drawMapHealthCheckBox);
+	options.AddWidget(&_onlyFirstMatchCheckBox);
 
 	WidgetGroup& heatMaps = _tabWidgets[Tab::HeatMaps];
 	heatMaps.AddWidget(&_heatMapGroup);
@@ -494,7 +497,7 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 
 void Viewer::LoadDemo(const char* filePath)
 {
-	_demo.Load(filePath);
+	_demo.Load(filePath, _onlyKeepFirstMatchSnapshots);
 	
 	const udtString originalMapName = _demo.GetMapName();
 	udtString mapName = originalMapName;
@@ -1406,6 +1409,7 @@ void Viewer::Render(const RenderParams& renderParams)
 		const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
 		const f32 ox = _uiRect.X();
 		f32 oy = _uiRect.Y();
+		_onlyFirstMatchCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;

@@ -155,6 +155,7 @@ private:
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;
+	CheckBox _onlyFirstMatchCheckBox;
 	CheckBox _showServerTimeCheckBox;
 	CheckBox _drawMapOverlaysCheckBox;
 	CheckBox _drawMapScoresCheckBox;
@@ -205,4 +206,5 @@ private:
 	bool _drawMapFollowMsg = true;
 	bool _drawMapHealth = true;
 	bool _embedOpacityInHeatMap = true;
+	bool _onlyKeepFirstMatchSnapshots = true;
 };

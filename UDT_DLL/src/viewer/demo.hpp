@@ -199,7 +199,7 @@ struct Demo
 	~Demo();
 
 	bool        Init(ProgressCallback progressCallback, void* userData);
-	void        Load(const char* filePath);
+	void        Load(const char* filePath, bool keepOnlyFirstMatch);
 	void		GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber);
 
 	s32         GetFirstSnapshotTimeMs() const { return _firstSnapshotTimeMs; }
@@ -260,7 +260,7 @@ private:
 	void WriteSnapshot(const Snapshot& snapshot);
 	void ComputeLGEndPoint(Player& player, const f32* start, const f32* angles);
 	bool FindPlayer(const Player*& player, u32 snapshotIndex, u8 idClientNumber);
-	bool AnalyzeDemo(const char* filePath);
+	bool AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch);
 	u32  CloneString(const void* buffer, u32 offset);
 	u32  CloneStringClean(const void* buffer, u32 offset);
 
