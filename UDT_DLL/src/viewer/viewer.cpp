@@ -176,6 +176,87 @@ static void DrawTexturedRect(NVGcontext* ctx, f32 x, f32 y, f32 w, f32 h, int te
 	nvgClosePath(ctx);
 }
 
+// The sum of all kernel coefficients should be 256.
+static void ConvolveRGBAImage(u8* output, const u8* input, u32 width, u32 height, const u8* kernelCoeffs, u32 kernelSize)
+{
+	const u32 ks2 = kernelSize / 2;
+	const u32 x1 = width - ks2;
+	const u32 y1 = height - ks2;
+
+	for(u32 y = 0; y < ks2; ++y)
+	{
+		for(u32 x = 0; x < width; ++x)
+		{
+			const u32 idx = y * width + x;
+			output[idx * 4 + 0] = input[idx * 4 + 0];
+			output[idx * 4 + 1] = input[idx * 4 + 1];
+			output[idx * 4 + 2] = input[idx * 4 + 2];
+			output[idx * 4 + 3] = input[idx * 4 + 3];
+		}
+	}
+
+	for(u32 y = ks2; y < y1; ++y)
+	{
+		for(u32 x = 0; x < ks2; ++x)
+		{
+			const u32 idx = y * width + x;
+			output[idx * 4 + 0] = input[idx * 4 + 0];
+			output[idx * 4 + 1] = input[idx * 4 + 1];
+			output[idx * 4 + 2] = input[idx * 4 + 2];
+			output[idx * 4 + 3] = input[idx * 4 + 3];
+		}
+
+		for(u32 x = ks2; x < x1; ++x)
+		{
+			u16 sumR = 0;
+			u16 sumG = 0;
+			u16 sumB = 0;
+			for(u32 ky = 0; ky < kernelSize; ++ky)
+			{
+				for(u32 kx = 0; kx < kernelSize; ++kx)
+				{
+					const u32 inIdx = (y + ky - ks2) * width + (x + kx - ks2);
+					const u32 kernIdx = ky * kernelSize + kx;
+					const u8 r = input[inIdx * 4 + 0];
+					const u8 g = input[inIdx * 4 + 1];
+					const u8 b = input[inIdx * 4 + 2];
+					const u8 k = kernelCoeffs[kernIdx];
+					sumR += (u16)r * (u16)k;
+					sumG += (u16)g * (u16)k;
+					sumB += (u16)b * (u16)k;
+				}
+			}
+
+			const u32 idx = y * width + x;
+			output[idx * 4 + 0] = sumR >> 8;
+			output[idx * 4 + 1] = sumG >> 8;
+			output[idx * 4 + 2] = sumB >> 8;
+			output[idx * 4 + 3] = input[idx * 4 + 3];
+		}
+
+		for(u32 x = x1; x < width; ++x)
+		{
+			const u32 idx = y * width + x;
+			output[idx * 4 + 0] = input[idx * 4 + 0];
+			output[idx * 4 + 1] = input[idx * 4 + 1];
+			output[idx * 4 + 2] = input[idx * 4 + 2];
+			output[idx * 4 + 3] = input[idx * 4 + 3];
+		}
+	}
+
+	for(u32 y = y1; y < height; ++y)
+	{
+		for(u32 x = 0; x < width; ++x)
+		{
+			const u32 idx = y * width + x;
+			output[idx * 4 + 0] = input[idx * 4 + 0];
+			output[idx * 4 + 1] = input[idx * 4 + 1];
+			output[idx * 4 + 2] = input[idx * 4 + 2];
+			output[idx * 4 + 3] = input[idx * 4 + 3];
+		}
+	}
+}
+
 
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
@@ -622,9 +703,26 @@ void Viewer::GenerateHeatMaps()
 			continue;
 		}
 
+		// @TODO: bundle all temporary allocations in one and all permanent ones in another?
 		const u32 pixelCount = w * h;
-		u32* const histogram = (u32*)malloc(sizeof(u32) * pixelCount);
+		u32* const histogram = (u32*)malloc((u32)sizeof(u32) * pixelCount);
+		if(histogram == nullptr)
+		{
+			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)((u32)sizeof(u32) * pixelCount));
+		}
+
 		u8* const heatMap = (u8*)malloc(4 * pixelCount);
+		if(heatMap == nullptr)
+		{
+			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
+		}
+
+		u8* const heatMap2 = (u8*)malloc(4 * pixelCount);
+		if(heatMap2 == nullptr)
+		{
+			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
+		}
+
 		_demo.GenerateHeatMap(histogram, w, h, _mapMin, _mapMax, p);
 
 		u32 maxValue = 0;
@@ -671,9 +769,17 @@ void Viewer::GenerateHeatMaps()
 			}
 		}
 
+		// We smooth the heat map to make it look less blocky.
+		const u8 gaussian3x3[9] = { 16, 32, 16, 32, 64, 32, 16, 32, 16 };
+		ConvolveRGBAImage(heatMap2, heatMap, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMap, heatMap2, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMap2, heatMap, w, h, gaussian3x3, 3);
+		free(histogram);
+		free(heatMap);
+		
 		_heatMaps[p].Width = w;
 		_heatMaps[p].Height = h;
-		_heatMaps[p].Image = heatMap;
+		_heatMaps[p].Image = heatMap2;
 		_heatMaps[p].TextureId = InvalidTextureId;
 
 		++playerIndex;
