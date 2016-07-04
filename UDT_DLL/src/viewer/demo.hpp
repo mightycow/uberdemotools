@@ -17,6 +17,7 @@ struct PlayerFlags
 		ShortLGBeam,
 		Followed,
 		TelePortBit,
+		HasFlag,
 		Count
 	};
 };
@@ -189,6 +190,8 @@ struct idProtocolNumbers
 	s32 EntityEventRailTrail;
 	s32 PlayerStatsHealth;
 	s32 PlayerStatsArmor;
+	s32 PowerUpFlagRed;
+	s32 PowerUpFlagBlue;
 };
 
 struct Demo

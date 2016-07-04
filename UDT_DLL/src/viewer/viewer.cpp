@@ -1063,9 +1063,16 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		}
 		else
 		{
+			f32 size = 16.0f;
+			if(item.Id == DynamicItemType::FlagRed ||
+			   item.Id == DynamicItemType::FlagBlue)
+			{
+				size = 24.0f;
+			}
+
 			// @NOTE: DrawSpriteAt will check if the sprite ID is valid.
 			const s32 spriteId = GetSpriteIdFromDynamicItemId(item.Id);
-			DrawMapSpriteAt(params, (u32)spriteId, item.Position, 16.0f, _config.StaticZScale, item.Angle);
+			DrawMapSpriteAt(params, (u32)spriteId, item.Position, size, _config.StaticZScale, item.Angle);
 		}
 	}
 	
@@ -1101,6 +1108,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		DrawShaftBeam(renderParams.NVGContext, p0[0], p0[1], p0[2], p1[0], p1[1], p1[2]);
 	}
 	
+	// @TODO: sort players by Z position?
 	for(u32 p = 0; p < snapshot.PlayerCount; ++p)
 	{
 		const Player& player = snapshot.Players[p];
@@ -1112,18 +1120,29 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 
 		f32 pos[3];
 		ComputeMapPosition(pos, player.Position, mapScale, _config.DynamicZScale);
+		const f32 radius = 6.0f * bgImageScale * pos[2];
+
 		const bool firing = IsBitSet(&player.Flags, PlayerFlags::Firing);
-		const s32 spriteId = GetSpriteIdFromWeaponId(player.WeaponId) + (firing ? 1 : 0);
-		if(spriteId >= 0 && spriteId < Sprite::Count)
+		const s32 weaponSpriteId = GetSpriteIdFromWeaponId(player.WeaponId) + (firing ? 1 : 0);
+		if(weaponSpriteId >= 0 && weaponSpriteId < Sprite::Count)
 		{
-			DrawPlayerWeapon(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle + UDT_PI / 2.0f, _sprites[spriteId]);
+			DrawPlayerWeapon(renderParams.NVGContext, pos[0], pos[1], radius, -player.Angle + UDT_PI / 2.0f, _sprites[weaponSpriteId]);
 		}
+
 		const u8 colorIndex = 2 * player.Team + (IsBitSet(&player.Flags, PlayerFlags::Followed) ? 1 : 0);
-		DrawPlayer(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], -player.Angle, PlayerColors[colorIndex]);
+		DrawPlayer(renderParams.NVGContext, pos[0], pos[1], radius, -player.Angle, PlayerColors[colorIndex]);
+
+		if(IsBitSet(&player.Flags, PlayerFlags::HasFlag))
+		{
+			const u32 flagSpriteId = player.Team == 1 ? (u32)Sprite::flag_blue : (u32)Sprite::flag_red;
+			const f32 flagSize = 24.0f * pos[2];
+			DrawSpriteAt(flagSpriteId, pos[0], pos[1] - flagSize / 1.5f, flagSize);
+		}
+
 		const char* const name = _demo.GetString(player.Name);
 		if(name != nullptr)
 		{
-			DrawPlayerName(renderParams.NVGContext, pos[0], pos[1], 6.0f * bgImageScale * pos[2], name);
+			DrawPlayerName(renderParams.NVGContext, pos[0], pos[1], radius, name);
 		}
 	}
 
@@ -1672,6 +1691,29 @@ void Viewer::DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const
 	nvgBeginPath(c);
 	nvgResetTransform(c);
 	nvgTranslate(c, p[0], p[1]);
+	nvgScale(c, w, h);
+	nvgRotate(c, a);
+	nvgRect(c, -0.5f, -0.5f, 1.0f, 1.0f);
+	nvgFillPaint(c, nvgImagePattern(c, -0.5f, -0.5f, 1.0f, 1.0f, 0.0f, _sprites[spriteId], 1.0f));
+	nvgFill(c);
+	nvgClosePath(c);
+	nvgResetTransform(c);
+}
+
+void Viewer::DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a)
+{
+	if(spriteId >= (u32)Sprite::Count)
+	{
+		return;
+	}
+
+	const f32 w = size;
+	const f32 h = size;
+	NVGcontext* const c = _sharedReadOnly->NVGContext;
+
+	nvgBeginPath(c);
+	nvgResetTransform(c);
+	nvgTranslate(c, x, y);
 	nvgScale(c, w, h);
 	nvgRotate(c, a);
 	nvgRect(c, -0.5f, -0.5f, 1.0f, 1.0f);

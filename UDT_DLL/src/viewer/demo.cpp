@@ -312,6 +312,8 @@ void idProtocolNumbers::GetNumbers(u32 protocol, u32 mod)
 	udtGetIdMagicNumber(&EntityEventRailTrail, udtMagicNumberType::EntityEvent, udtEntityEvent::RailTrail, protocol, mod);
 	udtGetIdMagicNumber(&PlayerStatsHealth, udtMagicNumberType::LifeStatsIndex, udtLifeStatsIndex::Health, protocol, mod);
 	udtGetIdMagicNumber(&PlayerStatsArmor, udtMagicNumberType::LifeStatsIndex, udtLifeStatsIndex::Armor, protocol, mod);
+	udtGetIdMagicNumber(&PowerUpFlagRed, udtMagicNumberType::PowerUpIndex, udtPowerUpIndex::RedFlag, protocol, mod);
+	udtGetIdMagicNumber(&PowerUpFlagBlue, udtMagicNumberType::PowerUpIndex, udtPowerUpIndex::BlueFlag, protocol, mod);
 
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(DynamicItemIds); ++i)
 	{
@@ -1219,6 +1221,11 @@ bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 		f32 angles[3];
 		ComputeTrajectoryPosition(angles, player.apos, serverTimeMs);
 		ComputeLGEndPoint(p, p.Position, angles);
+	}
+	if(IsBitSet(&player.powerups, _protocolNumbers.PowerUpFlagRed) ||
+	   IsBitSet(&player.powerups, _protocolNumbers.PowerUpFlagBlue))
+	{
+		SetBit(&p.Flags, PlayerFlags::HasFlag);
 	}
 	_tempPlayers.Add(p);
 
