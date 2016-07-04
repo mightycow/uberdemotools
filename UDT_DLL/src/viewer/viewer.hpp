@@ -90,6 +90,7 @@ private:
 	void LoadDemo(const char* filePath);
 	void StartGeneratingHeatMaps();
 	void GenerateHeatMaps();
+	void RenderNormal(const RenderParams& renderParams);
 	void RenderDemo(const RenderParams& renderParams);
 	void RenderNoDemo(const RenderParams& renderParams);
 	void RenderThreadedJobProgress(const RenderParams& renderParams);

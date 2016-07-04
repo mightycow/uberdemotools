@@ -813,6 +813,147 @@ void Viewer::ProcessEvent(const Event& event)
 	}
 }
 
+void Viewer::RenderNormal(const RenderParams& renderParams)
+{
+	if(_demo.GetSnapshotCount() == 0)
+	{
+		RenderNoDemo(renderParams);
+		return;
+	}
+
+	u32 snapshotIndex;
+	s32 serverTimeMs;
+	GetCurrentSnapshotIndexAndServerTime(snapshotIndex, serverTimeMs);
+	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
+	{
+		RenderNoDemo(renderParams);
+		return;
+	}
+	_snapshotIndex = snapshotIndex;
+
+	const f32 progressBarMargin = 2.0f;
+	const f32 progressBarHeight = (f32)BND_WIDGET_HEIGHT;
+	const f32 progressY = (f32)renderParams.ClientHeight - progressBarHeight - 2.0f * progressBarMargin;
+	_progressRect.Set(progressBarMargin, progressY, (f32)renderParams.ClientWidth - 2.0f * progressBarMargin, progressBarHeight);
+	const f32 mapAspectRatio = (_mapWidth > 0 && _mapHeight > 0) ? ((f32)_mapWidth / (f32)_mapHeight) : 1.0f;
+	const f32 mapHeight = progressY - progressBarMargin;
+	const f32 mapWidth = ceilf(mapHeight * mapAspectRatio);
+	const f32 uiOffsetX = 20.0f;
+	const f32 uiOffsetY = 20.0f;
+	_mapRect.Set(0.0f, 0.0f, mapWidth, mapHeight);
+	_tabBarRect.Set(mapWidth + uiOffsetX, 0.0f, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, (f32)BND_WIDGET_HEIGHT);
+	_uiRect.Set(mapWidth + uiOffsetX, _tabBarRect.Bottom() + uiOffsetY, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, mapHeight - _tabBarRect.Height() - uiOffsetY);
+
+	RenderDemo(renderParams);
+
+	const f32 bw = (f32)BND_TOOL_WIDTH;
+	const f32 bh = (f32)BND_WIDGET_HEIGHT;
+	f32 x0 = _progressRect.Left();
+	f32 y0 = _progressRect.Top() + floorf((_progressRect.Height() - bh) / 2.0f);
+	_playPauseButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
+	_stopButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
+	_reversePlaybackButton.SetRect(x0, y0, bw, bh); x0 += bw;
+
+	const f32 x = x0;
+	const f32 r = floorf(progressBarHeight / 2.0f);
+	const f32 ph = (f32)BND_SCROLLBAR_HEIGHT;
+	const f32 y = _progressRect.Top() + floorf((_progressRect.Height() - ph) / 2.0f);
+	_demoProgressBar.SetRect(x + 2.0f * r, y, _progressRect.Width() - x - 4.0f * r, 2.0f * r);
+	_demoProgressBar.SetRadius(r);
+	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
+
+	const f32 tw = 80.0f;
+	const f32 th = (f32)BND_WIDGET_HEIGHT;
+	const f32 ty = _tabBarRect.Y();
+	f32 tx = _tabBarRect.X();
+	for(u32 i = 0; i < (u32)Tab::Count; ++i)
+	{
+		_tabButtons[i].SetRect(tx, ty, tw, th);
+		tx += tw - 1.0f;
+	}
+
+	NVGcontext* const ctx = renderParams.NVGContext;
+	const u32 tabIndex = _tabButtonGroup.GetSelectedIndex();
+	if(tabIndex == Tab::Options)
+	{
+		const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
+		const f32 ox = _uiRect.X();
+		f32 oy = _uiRect.Y();
+		_onlyFirstMatchCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	}
+	else if(tabIndex == Tab::HeatMaps)
+	{
+		const f32 hmx = _uiRect.X();
+		f32 hmy = _uiRect.Y();
+
+		_heatMapOpacityCheckBox.SetRect(ctx, hmx, hmy);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+
+		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+
+		_heatMapOpacityLabel.SetRect(ctx, hmx, hmy - 5.0f);
+		const f32 sliderX = _heatMapOpacityLabel.GetX() + _heatMapOpacityLabel.GetWidth();
+		_heatMapOpacity.SetRect(sliderX + (f32)(BND_WIDGET_HEIGHT / 2), hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+
+		const HeatMapPlayer* players;
+		_demo.GetHeatMapPlayers(players);
+
+		float bounds[4];
+		nvgFontSize(ctx, 13.0f);
+		f32 maxNameWidth = 60.0f; // Minimum size to look good.
+		for(u32 i = 0; i < 64; ++i)
+		{
+			if(players[i].Present)
+			{
+				nvgTextBounds(ctx, 0.0f, 0.0f, _demo.GetStringSafe(players[i].Name, "?"), nullptr, bounds);
+				const f32 width = bounds[2] - bounds[0];
+				maxNameWidth = udt_max(maxNameWidth, width);
+			}
+		}
+
+		for(u32 i = 0; i < 64; ++i)
+		{
+			if(players[i].Present)
+			{
+				_heatMapPlayers[i].SetRect(hmx, hmy, maxNameWidth + 16.0f, (f32)BND_WIDGET_HEIGHT);
+				hmy += (f32)BND_WIDGET_HEIGHT - 2.0f;
+			}
+		};
+	}
+
+	_activeWidgets.Draw(renderParams.NVGContext);
+	_activeTabWidgets->Draw(renderParams.NVGContext);
+
+	if(tabIndex == Tab::Chat)
+	{
+		DrawChat(renderParams, serverTimeMs);
+	}
+	else if(tabIndex == Tab::Log)
+	{
+		NVGcontext* const ctx = renderParams.NVGContext;
+		nvgFontSize(ctx, 16.0f);
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgGrey(0));
+		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+		nvgText(ctx, _uiRect.X(), _uiRect.Y(), "coming soon... hopefully", nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+	}
+
+	if(_demoProgressBar.IsHovered())
+	{
+		DrawProgressSliderToolTip(renderParams);
+	}
+}
+
 void Viewer::RenderDemo(const RenderParams& renderParams)
 {
 	f32 mapWidth;
@@ -1266,16 +1407,22 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 
 void Viewer::RenderNoDemo(const RenderParams& renderParams)
 {
-	const char* const message = "drag'n'drop a demo file anywhere in the window to load it";
+	const char* const message0 = "drag'n'drop a demo file anywhere in the window to load it";
+	const char* const message1 = "press F1 to display the list of key binds";
 	NVGcontext* const ctx = renderParams.NVGContext;
-	nvgBeginPath(ctx);
 	nvgFontSize(ctx, 24.0f);
-	f32 bounds[4];
-	nvgTextBounds(ctx, 0.0f, 0.0f, message, nullptr, bounds);
-	const f32 x = floorf(((f32)renderParams.ClientWidth - bounds[2]) / 2.0f);
-	const f32 y = floorf(((f32)renderParams.ClientHeight - bounds[3]) / 2.0f);
-	nvgText(ctx, x, y, message, nullptr);
+	f32 bounds0[4];
+	f32 bounds1[4];
+	nvgTextBounds(ctx, 0.0f, 0.0f, message0, nullptr, bounds0);
+	nvgTextBounds(ctx, 0.0f, 0.0f, message1, nullptr, bounds1);
+	const f32 x0 = floorf(((f32)renderParams.ClientWidth - bounds0[2]) / 2.0f);
+	const f32 x1 = floorf(((f32)renderParams.ClientWidth - bounds1[2]) / 2.0f);
+	const f32 y = floorf((f32)renderParams.ClientHeight / 2.0f);
+
+	nvgBeginPath(ctx);
 	nvgFillColor(ctx, nvgGrey(255));
+	nvgText(ctx, x0, y - 12.0f, message0, nullptr);
+	nvgText(ctx, x1, y + 12.0f, message1, nullptr);
 	nvgFill(ctx);
 	nvgClosePath(ctx);
 }
@@ -1322,165 +1469,31 @@ void Viewer::Render(const RenderParams& renderParams)
 
 	CriticalSectionLock appStateLock(_appStateLock);
 
-	if(_appState == AppState::FinishDemoLoading)
+	switch(_appState)
 	{
-		FinishLoadingDemo();
-		_appState = AppState::Normal;
-		RenderThreadedJobProgress(renderParams);
-		return;
-	}
+		case AppState::FinishDemoLoading:
+			FinishLoadingDemo();
+			_appState = AppState::Normal;
+			RenderThreadedJobProgress(renderParams);
+			break;
 
-	if(_appState == AppState::FinishHeatMapGeneration)
-	{
-		FinishGeneratingHeatMaps();
-		_appState = AppState::Normal;
-		RenderThreadedJobProgress(renderParams);
-		return;
-	}
+		case AppState::FinishHeatMapGeneration:
+			FinishGeneratingHeatMaps();
+			_appState = AppState::Normal;
+			RenderThreadedJobProgress(renderParams);
+			break;
 
-	if(_appState == AppState::LoadingDemo ||
-	   _appState == AppState::GeneratingHeatMaps)
-	{
-		RenderThreadedJobProgress(renderParams);
-		return;
-	}
+		case AppState::LoadingDemo:
+		case AppState::GeneratingHeatMaps:
+			RenderThreadedJobProgress(renderParams);
+			break;
 
-	if(_demo.GetSnapshotCount() == 0)
-	{
-		RenderNoDemo(renderParams);
-		return;
-	}
+		case AppState::Normal:
+			RenderNormal(renderParams);
+			break;
 
-	u32 snapshotIndex;
-	s32 serverTimeMs;
-	GetCurrentSnapshotIndexAndServerTime(snapshotIndex, serverTimeMs);
-	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
-	{
-		RenderNoDemo(renderParams);
-		return;
-	}
-	_snapshotIndex = snapshotIndex;
-
-	const f32 progressBarMargin = 2.0f;
-	const f32 progressBarHeight = (f32)BND_WIDGET_HEIGHT;
-	const f32 progressY = (f32)renderParams.ClientHeight - progressBarHeight - 2.0f * progressBarMargin;
-	_progressRect.Set(progressBarMargin, progressY, (f32)renderParams.ClientWidth - 2.0f * progressBarMargin, progressBarHeight);
-	const f32 mapAspectRatio = (_mapWidth > 0 && _mapHeight > 0) ? ((f32)_mapWidth / (f32)_mapHeight) : 1.0f;
-	const f32 mapHeight = progressY - progressBarMargin;
-	const f32 mapWidth = ceilf(mapHeight * mapAspectRatio);
-	const f32 uiOffsetX = 20.0f;
-	const f32 uiOffsetY = 20.0f;
-	_mapRect.Set(0.0f, 0.0f, mapWidth, mapHeight);
-	_tabBarRect.Set(mapWidth + uiOffsetX, 0.0f, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, (f32)BND_WIDGET_HEIGHT);
-	_uiRect.Set(mapWidth + uiOffsetX, _tabBarRect.Bottom() + uiOffsetY, (f32)renderParams.ClientWidth - mapWidth - uiOffsetX, mapHeight - _tabBarRect.Height() - uiOffsetY);
-
-	RenderDemo(renderParams);
-
-	const f32 bw = (f32)BND_TOOL_WIDTH;
-	const f32 bh = (f32)BND_WIDGET_HEIGHT;
-	f32 x0 = _progressRect.Left();
-	f32 y0 = _progressRect.Top() + floorf((_progressRect.Height() - bh) / 2.0f);
-	_playPauseButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
-	_stopButton.SetRect(x0, y0, bw, bh); x0 += bw - 1.0f;
-	_reversePlaybackButton.SetRect(x0, y0, bw, bh); x0 += bw;
-
-	const f32 x = x0;
-	const f32 r = floorf(progressBarHeight / 2.0f);
-	const f32 ph = (f32)BND_SCROLLBAR_HEIGHT;
-	const f32 y = _progressRect.Top() + floorf((_progressRect.Height() - ph) / 2.0f);
-	_demoProgressBar.SetRect(x + 2.0f * r, y, _progressRect.Width() - x - 4.0f * r, 2.0f * r);
-	_demoProgressBar.SetRadius(r);
-	_demoProgressBar.SetProgress(GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs()));
-
-	const f32 tw = 80.0f;
-	const f32 th = (f32)BND_WIDGET_HEIGHT;
-	const f32 ty = _tabBarRect.Y();
-	f32 tx = _tabBarRect.X();
-	for(u32 i = 0; i < (u32)Tab::Count; ++i)
-	{
-		_tabButtons[i].SetRect(tx, ty, tw, th);
-		tx += tw - 1.0f;
-	}
-
-	NVGcontext* const ctx = renderParams.NVGContext;
-	const u32 tabIndex = _tabButtonGroup.GetSelectedIndex();
-	if(tabIndex == Tab::Options)
-	{
-		const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
-		const f32 ox = _uiRect.X();
-		f32 oy = _uiRect.Y();
-		_onlyFirstMatchCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
-		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	}
-	else if(tabIndex == Tab::HeatMaps)
-	{
-		const f32 hmx = _uiRect.X();
-		f32 hmy = _uiRect.Y();
-
-		_heatMapOpacityCheckBox.SetRect(ctx, hmx, hmy);
-		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
-
-		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
-		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
-
-		_heatMapOpacityLabel.SetRect(ctx, hmx, hmy - 5.0f);
-		const f32 sliderX = _heatMapOpacityLabel.GetX() + _heatMapOpacityLabel.GetWidth();
-		_heatMapOpacity.SetRect(sliderX + (f32)(BND_WIDGET_HEIGHT / 2), hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
-		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
-
-		const HeatMapPlayer* players;
-		_demo.GetHeatMapPlayers(players);
-
-		float bounds[4];
-		nvgFontSize(ctx, 13.0f);
-		f32 maxNameWidth = 60.0f; // Minimum size to look good.
-		for(u32 i = 0; i < 64; ++i)
-		{
-			if(players[i].Present)
-			{
-				nvgTextBounds(ctx, 0.0f, 0.0f, _demo.GetStringSafe(players[i].Name, "?"), nullptr, bounds);
-				const f32 width = bounds[2] - bounds[0];
-				maxNameWidth = udt_max(maxNameWidth, width);
-			}
-		}
-		
-		for(u32 i = 0; i < 64; ++i)
-		{
-			if(players[i].Present)
-			{
-				_heatMapPlayers[i].SetRect(hmx, hmy, maxNameWidth + 16.0f, (f32)BND_WIDGET_HEIGHT);
-				hmy += (f32)BND_WIDGET_HEIGHT - 2.0f;
-			}
-		};
-	}
-
-	_activeWidgets.Draw(renderParams.NVGContext);
-	_activeTabWidgets->Draw(renderParams.NVGContext);
-	
-	if(tabIndex == Tab::Chat)
-	{
-		DrawChat(renderParams, serverTimeMs);
-	}
-	else if(tabIndex == Tab::Log)
-	{
-		NVGcontext* const ctx = renderParams.NVGContext;
-		nvgFontSize(ctx, 16.0f);
-		nvgBeginPath(ctx);
-		nvgFillColor(ctx, nvgGrey(0));
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
-		nvgText(ctx, _uiRect.X(), _uiRect.Y(), "coming soon... hopefully", nullptr);
-		nvgFill(ctx);
-		nvgClosePath(ctx);
-	}
-
-	if(_demoProgressBar.IsHovered())
-	{
-		DrawProgressSliderToolTip(renderParams);
+		default:
+			break;
 	}
 
 	if(_displayHelp)
