@@ -1708,7 +1708,13 @@ u32 Demo::CloneStringClean(const void* buffer, u32 offset)
 u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
 {
 	// @TODO: binary search?
-	for(u32 i = 0, count = _chatMessages.GetSize(); i < count; ++i)
+	const u32 count = _chatMessages.GetSize();
+	if(serverTimeMs >= _chatMessages[count - 1].ServerTimeMs)
+	{
+		return count - 1;
+	}
+
+	for(u32 i = 0; i < count; ++i)
 	{
 		if(_chatMessages[i].ServerTimeMs > serverTimeMs)
 		{
