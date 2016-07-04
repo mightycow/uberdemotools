@@ -500,9 +500,9 @@ int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 	{
 		return Main();
 	}
-	__except(Win32ExceptionFilter(GetExceptionCode()))
+	__except(Win32ExceptionFilter())
 	{
-		return 666;
+		return Win32ExceptionHandler((int)GetExceptionCode());
 	}
 }
 

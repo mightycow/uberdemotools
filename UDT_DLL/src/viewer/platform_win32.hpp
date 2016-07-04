@@ -740,8 +740,8 @@ int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 	{
 		return Main(instance);
 	}
-	__except(Win32ExceptionFilter(GetExceptionCode()))
+	__except(Win32ExceptionFilter())
 	{
-		return 666;
+		return Win32ExceptionHandler((int)GetExceptionCode());
 	}
 }
