@@ -159,7 +159,7 @@ void WidgetGroup::Draw(NVGcontext* nvgContext)
 	}
 }
 
-DemoProgressBar::DemoProgressBar()
+Slider::Slider()
 {
 	Pos[0] = 0.0f;
 	Pos[1] = 0.0f;
@@ -173,21 +173,21 @@ DemoProgressBar::DemoProgressBar()
 	_dragEnded = false;
 }
 
-DemoProgressBar::~DemoProgressBar()
+Slider::~Slider()
 {
 }
 
-void DemoProgressBar::SetRadius(f32 r)
+void Slider::SetRadius(f32 r)
 {
 	_radius = r;
 }
 
-void DemoProgressBar::SetProgress(f32 progress)
+void Slider::SetProgress(f32 progress)
 {
 	_progress = progress;
 }
 
-bool DemoProgressBar::HasProgressChanged(f32& progress)
+bool Slider::HasProgressChanged(f32& progress)
 {
 	const bool changed = _progressChanged;
 	progress = _progress;
@@ -195,21 +195,26 @@ bool DemoProgressBar::HasProgressChanged(f32& progress)
 	return changed;
 }
 
-bool DemoProgressBar::HasDragJustStarted()
+bool Slider::HasDragJustStarted()
 {
 	const bool started = _dragStarted;
 	_dragStarted = false;
 	return started;
 }
 
-bool DemoProgressBar::HasDragJustEnded()
+bool Slider::HasDragJustEnded()
 {
 	const bool ended = _dragEnded;
 	_dragEnded = false;
 	return ended;
 }
 
-void DemoProgressBar::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
+f32 Slider::GetProgress() const
+{
+	return _progress;
+}
+
+void Slider::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
 {
 	if(button == MouseButton::Left && IsPointInside((f32)x, (f32)y))
 	{
@@ -218,7 +223,7 @@ void DemoProgressBar::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
 	}
 }
 
-void DemoProgressBar::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
+void Slider::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
 {
 	if(button == MouseButton::Left && _draggingSlider)
 	{
@@ -227,7 +232,7 @@ void DemoProgressBar::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
 	}
 }
 
-void DemoProgressBar::MouseMove(s32 x, s32 y)
+void Slider::MouseMove(s32 x, s32 y)
 {
 	Widget::MouseMove(x, y);
 	if(_draggingSlider)
@@ -236,7 +241,7 @@ void DemoProgressBar::MouseMove(s32 x, s32 y)
 	}
 }
 
-void DemoProgressBar::MouseMoveNC(s32 x, s32 y)
+void Slider::MouseMoveNC(s32 x, s32 y)
 {
 	Widget::MouseMoveNC(x, y);
 	if(_draggingSlider)
@@ -246,7 +251,7 @@ void DemoProgressBar::MouseMoveNC(s32 x, s32 y)
 	}
 }
 
-void DemoProgressBar::ChangeProgress(s32 x, s32 y)
+void Slider::ChangeProgress(s32 x, s32 y)
 {
 	const f32 cp[2] = { (f32)x, (f32)y };
 	const f32 min = Pos[0];
@@ -256,7 +261,7 @@ void DemoProgressBar::ChangeProgress(s32 x, s32 y)
 	_progressChanged = true;
 }
 
-void DemoProgressBar::SetDragging(bool dragging)
+void Slider::SetDragging(bool dragging)
 {
 	if(_draggingSlider && !dragging)
 	{
@@ -270,7 +275,7 @@ void DemoProgressBar::SetDragging(bool dragging)
 	_draggingSlider = dragging;
 }
 
-void DemoProgressBar::Draw(NVGcontext* nvgContext)
+void Slider::Draw(NVGcontext* nvgContext)
 {
 	BNDwidgetState state = BND_DEFAULT;
 	if(_draggingSlider)
@@ -394,6 +399,37 @@ void ReverseButton::Draw(NVGcontext* nvgContext)
 {
 	const int icon = *_reversed ? BND_ICONID(16, 2) : BND_ICONID(15, 2);
 	bndToolButton(nvgContext, Pos[0], Pos[1], BND_TOOL_WIDTH, BND_WIDGET_HEIGHT, BND_CORNER_LEFT, GetState(), icon, NULL);
+}
+
+TextButton::TextButton()
+{
+	_text = nullptr;
+}
+
+TextButton::~TextButton()
+{
+}
+
+void TextButton::SetRect(NVGcontext* nvgContext, f32 x, f32 y)
+{
+	float bounds[4];
+	nvgFontSize(nvgContext, 13.0f); // BND_LABEL_FONT_SIZE
+	nvgTextBounds(nvgContext, 0.0f, 0.0f, _text, nullptr, bounds);
+	const f32 textTength = bounds[2] - bounds[0];
+	Pos[0] = x;
+	Pos[1] = y;
+	Dim[0] = textTength + 16.0f;
+	Dim[1] = (f32)BND_WIDGET_HEIGHT;
+}
+
+void TextButton::SetText(const char* text)
+{
+	_text = text;
+}
+
+void TextButton::Draw(NVGcontext* nvgContext)
+{
+	bndToolButton(nvgContext, Pos[0], Pos[1], Dim[0], (f32)BND_WIDGET_HEIGHT, BND_CORNER_NONE, GetState(), -1, _text);
 }
 
 CheckBox::CheckBox()
@@ -592,6 +628,11 @@ void RadioGroup::RemoveRadioButton(RadioButton* radioButton)
 	}
 }
 
+void RadioGroup::RemoveAllRadioButtons()
+{
+	_radioButtons.Clear();
+}
+
 void RadioGroup::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
 {
 	for(u32 i = 0, count = _radioButtons.GetSize(); i < count; ++i)
@@ -653,4 +694,31 @@ void RadioGroup::Draw(NVGcontext* nvgContext)
 	{
 		_radioButtons[i]->Draw(nvgContext);
 	}
+}
+
+Label::Label()
+{
+	_text = nullptr;
+}
+
+Label::~Label()
+{
+}
+
+void Label::SetText(const char* text)
+{
+	_text = text;
+}
+
+void Label::SetRect(NVGcontext* nvgContext, f32 x, f32 y)
+{
+	Pos[0] = x;
+	Pos[1] = y;
+	Dim[0] = bndLabelWidth(nvgContext, -1, _text);
+	Dim[1] = BND_WIDGET_HEIGHT;
+}
+
+void Label::Draw(NVGcontext* nvgContext)
+{
+	bndLabel(nvgContext, Pos[0], Pos[1], Dim[0], Dim[1], -1, _text);
 }

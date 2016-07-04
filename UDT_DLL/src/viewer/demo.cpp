@@ -3,6 +3,7 @@
 #include "utils.hpp"
 #include "sprites.hpp"
 #include "platform.hpp"
+#include "utils.hpp"
 
 #include <stdlib.h>
 #include <math.h>
@@ -455,6 +456,54 @@ void Demo::Load(const char* filePath)
 	(*_progressCallback)(1.0f, _userData);
 }
 
+void Demo::GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber)
+{
+	memset(histogram, 0, width * height * sizeof(u32));
+
+	const f32 playerRadius = 32.0f; // Quake units
+	const f32 scale = max[0] - min[0];
+	const u32 r = (u32)((playerRadius / scale) * (f32)width);
+	const u32 maxSqDist = 2 * r * r;
+
+	const auto& snapshots = _snapshots[_readIndex];
+	const u32 snapshotCount = snapshots.GetSize();
+	for(u32 s = 0; s < snapshotCount; ++s)
+	{
+		Snapshot& snap = *_snapshot;
+		if(!GetSnapshotData(snap, s))
+		{
+			continue;
+		}
+
+		for(u32 p = 0; p < snap.PlayerCount; ++p)
+		{
+			const Player& player = snap.Players[p];
+			if((u32)player.IdClientNumber == clientNumber)
+			{
+				const f32 xcf = ((max[0] - player.Position[0]) / (max[0] - min[0])) * (f32)width;
+				const f32 ycf = ((max[1] - player.Position[1]) / (max[1] - min[1])) * (f32)height;
+				const u32 xc = udt_clamp<u32>((u32)xcf, 0, width - 1);
+				const u32 yc = udt_clamp<u32>((u32)ycf, 0, height - 1);
+				const u32 ymin = (u32)udt_max((s32)(yc - r), 0);
+				const u32 ymax = udt_min(yc + r, height);
+				for(u32 y = ymin; y < ymax; ++y)
+				{
+					const u32 xmin = (u32)udt_max((s32)(xc - r), 0);
+					const u32 xmax = udt_min(xc + r, width);
+					const u32 yd = yc - y;
+					for(u32 x = xmin; x < xmax; ++x)
+					{
+						const u32 xd = xc - x;
+						const u32 dist = xd*xd + yd*yd;
+						histogram[y*width + (width - 1 - x)] += maxSqDist - dist;
+					}
+				}
+				break;
+			}
+		}
+	}
+}
+
 const char* Demo::GetStringSafe(u32 offset, const char* replacement) const
 {
 	const char* const s = GetString(offset);
@@ -807,8 +856,11 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 
 		for(s32 p = 0; p < 64; ++p)
 		{
-			_players[p].Name = u32(-1);
+			_players[p].Name = UDT_U32_MAX;
 			_players[p].Team = udtTeam::Spectators;
+			_heatMapPlayers[p].Present = 0;
+			_heatMapPlayers[p].Name = UDT_U32_MAX;
+			_heatMapPlayers[p].Team = udtTeam::Spectators;
 			ProcessPlayerConfigString(_protocolNumbers.CSIndexFirstPlayer + p, p);
 		}
 	}
@@ -1189,12 +1241,23 @@ void Demo::ProcessPlayerConfigString(u32 csIndex, u32 playerIndex)
 	   udtGetUDTMagicNumber(&udtTeam, udtMagicNumberType::Team, idTeam, _protocol, _mod) == udtErrorCode::None)
 	{
 		_players[playerIndex].Team = udtTeam;
+		if(_heatMapPlayers[playerIndex].Present == 0 &&
+		   udtTeam != udtTeam::Spectators)
+		{
+			_heatMapPlayers[playerIndex].Present = 1;
+			_heatMapPlayers[playerIndex].Team = (u8)udtTeam;
+		}
 	}
 
 	char nameBuffer[64];
 	if(udtParseConfigStringValueAsString(nameBuffer, sizeof(nameBuffer), tempBuffer, sizeof(tempBuffer), "n", cs.ConfigString) == udtErrorCode::None)
 	{
-		_players[playerIndex].Name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, nameBuffer).GetOffset();
+		const u32 name = udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, nameBuffer).GetOffset();
+		_players[playerIndex].Name = name;
+		if(_heatMapPlayers[playerIndex].Name == UDT_U32_MAX)
+		{
+			_heatMapPlayers[playerIndex].Name = name;
+		}
 	}
 }
 
@@ -1659,4 +1722,9 @@ bool Demo::GetChatMessage(ChatMessage& message, u32 index) const
 	message = _chatMessages[index];
 
 	return true;
+}
+
+void Demo::GetHeatMapPlayers(const HeatMapPlayer*& players) const
+{
+	players = _heatMapPlayers;
 }

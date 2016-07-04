@@ -200,17 +200,27 @@ private:
 void Viewer::DemoProgressCallback(f32 progress, void* userData)
 {
 	Viewer* const viewer = (Viewer*)userData;
-	viewer->_demoLoadProgress = progress;
+	viewer->_threadedJobProgress = progress;
 }
 
 void Viewer::DemoLoadThreadEntryPoint(void* userData)
 {
 	const DemoLoadThreadData& data = *(const DemoLoadThreadData*)userData;
 	Viewer* const viewer = data.ViewerPtr;
-	viewer->LoadDemoImpl(data.FilePath);
+	viewer->LoadDemo(data.FilePath);
 	free(userData);
 	CriticalSectionLock lock(viewer->_appStateLock);
-	viewer->_appState = AppState::UploadingMapTexture;
+	viewer->_appState = AppState::FinishDemoLoading;
+}
+
+void Viewer::HeatMapsGenThreadEntryPoint(void* userData)
+{
+	const HeatMapsGenThreadData& data = *(const HeatMapsGenThreadData*)userData;
+	Viewer* const viewer = data.ViewerPtr;
+	viewer->GenerateHeatMaps();
+	free(userData);
+	CriticalSectionLock lock(viewer->_appStateLock);
+	viewer->_appState = AppState::FinishHeatMapGeneration;
 }
 
 Viewer::Viewer(Platform& platform)
@@ -276,6 +286,10 @@ bool Viewer::Init(int argc, char** argv)
 	_drawMapFollowMsgCheckBox.SetText("Draw follow message");
 	_drawMapHealthCheckBox.SetActivePtr(&_drawMapHealth);
 	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
+	_genHeatMapsButton.SetText("Generate Heat Maps");
+	_heatMapOpacity.SetProgress(0.75f);
+	_heatMapOpacity.SetRadius((f32)(BND_WIDGET_HEIGHT / 2));
+	_heatMapOpacityLabel.SetText("Opacity");
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -284,6 +298,12 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_drawMapClockCheckBox);
 	options.AddWidget(&_drawMapFollowMsgCheckBox);
 	options.AddWidget(&_drawMapHealthCheckBox);
+
+	WidgetGroup& heatMaps = _tabWidgets[Tab::HeatMaps];
+	heatMaps.AddWidget(&_heatMapGroup);
+	heatMaps.AddWidget(&_heatMapOpacity);
+	heatMaps.AddWidget(&_genHeatMapsButton);
+	heatMaps.AddWidget(&_heatMapOpacityLabel);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
@@ -469,7 +489,7 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 	return true;
 }
 
-void Viewer::LoadDemoImpl(const char* filePath)
+void Viewer::LoadDemo(const char* filePath)
 {
 	_demo.Load(filePath);
 	
@@ -492,6 +512,11 @@ void Viewer::LoadDemoImpl(const char* filePath)
 			_mapMin[i] = _demo.GetMapMin()[i];
 			_mapMax[i] = _demo.GetMapMax()[i];
 		}
+		for(u32 i = 0; i < 2; ++i)
+		{
+			_mapMin[i] -= 256.0f;
+			_mapMax[i] += 256.0f;
+		}
 	}
 
 	_reversePlayback = false;
@@ -509,7 +534,144 @@ void Viewer::StartLoadingDemo(const char* filePath)
 	}
 	data->ViewerPtr = this;
 	strcpy(data->FilePath, filePath);
+
+	for(u32 p = 0; p < 64; ++p)
+	{
+		HeatMapData& heatMap = _heatMaps[p];
+		if(heatMap.TextureId != InvalidTextureId)
+		{
+			nvgDeleteImage(_sharedReadOnly->NVGContext, heatMap.TextureId);
+			heatMap.TextureId = InvalidTextureId;
+		}
+		if(heatMap.Image != nullptr)
+		{
+			free(heatMap.Image);
+			heatMap.Image = nullptr;
+		}
+		heatMap.Width = 0;
+		heatMap.Height = 0;
+		_heatMapBtnIdxToPlayerIdx[p] = 0;
+	}
+
+	_threadedJobText = "loading demo...";
 	Platform_NewThread(&DemoLoadThreadEntryPoint, data);
+}
+
+void Viewer::GenerateHeatMaps()
+{
+	_threadedJobProgress = 0.0f;
+
+	const HeatMapPlayer* players;
+	u32 playerCount = 0;
+	_demo.GetHeatMapPlayers(players);
+	for(u32 i = 0; i < 64; ++i)
+	{
+		if(players[i].Present)
+		{
+			++playerCount;
+		}
+	}
+
+	if(playerCount == 0)
+	{
+		return;
+	}
+
+	u32 buttonIndex = 0;
+	for(u32 i = 0; i < 64; ++i)
+	{
+		if(players[i].Present)
+		{
+			_heatMapBtnIdxToPlayerIdx[buttonIndex++] = (u8)i;
+		}
+	}
+
+	const u32 rampColorCount = 256;
+	const u32 baseColorCount = 5;
+	const u8 colors[baseColorCount + 1][3] = { { 0, 0, 0 }, { 0, 255, 255 }, { 0, 255, 0 }, { 255, 255, 0 }, { 255, 0, 0 }, { 255, 0, 0 } };
+	u8 colorRamp[rampColorCount][3];
+	const u32 div = rampColorCount / baseColorCount;
+	for(u32 i = 0; i < rampColorCount; ++i)
+	{
+		const u32 c0 = i / div;
+		const u32 c1 = c0 + 1;
+		const f32 t = (f32)(i % div) / (f32)div;
+		for(u32 c = 0; c < 3; ++c)
+		{
+			colorRamp[i][c] = (u8)((f32)colors[c0][c] * (1.0f - t) + (f32)colors[c1][c] * t);
+		}
+	}
+
+	const u32 w = _mapWidth > 0 ? _mapWidth : 1024;
+	const u32 h = _mapHeight > 0 ? _mapHeight : 1024;
+	u32 playerIndex = 0;
+	for(u32 p = 0; p < 64; ++p)
+	{
+		if(players[p].Present == 0)
+		{
+			_heatMaps[p].Width = 0;
+			_heatMaps[p].Height = 0;
+			_heatMaps[p].Image = nullptr;
+			_heatMaps[p].TextureId = InvalidTextureId;
+			continue;
+		}
+
+		const u32 pixelCount = w * h;
+		u32* const histogram = (u32*)malloc(sizeof(u32) * pixelCount);
+		u8* const heatMap = (u8*)malloc(4 * pixelCount);
+		_demo.GenerateHeatMap(histogram, w, h, _mapMin, _mapMax, p);
+
+		u32 maxValue = 0;
+		for(u32 i = 0; i < pixelCount; ++i)
+		{
+			maxValue = udt_max(maxValue, histogram[i]);
+		}
+
+		const u32 divider = (maxValue + rampColorCount - 1) / rampColorCount;
+		if(divider > 0)
+		{
+			for(u32 i = 0; i < pixelCount; ++i)
+			{
+				const u8 val = (u8)(histogram[i] / divider);
+				heatMap[4 * i + 0] = colorRamp[val][0];
+				heatMap[4 * i + 1] = colorRamp[val][1];
+				heatMap[4 * i + 2] = colorRamp[val][2];
+				heatMap[4 * i + 3] = 255;
+			}
+		}
+		else
+		{
+			for(u32 i = 0; i < pixelCount; i += 4)
+			{
+				heatMap[i + 0] = 0;
+				heatMap[i + 1] = 0;
+				heatMap[i + 2] = 0;
+				heatMap[i + 3] = 255;
+			}
+		}
+
+		_heatMaps[p].Width = w;
+		_heatMaps[p].Height = h;
+		_heatMaps[p].Image = heatMap;
+		_heatMaps[p].TextureId = InvalidTextureId;
+
+		++playerIndex;
+		_threadedJobProgress = (f32)playerIndex / (f32)playerCount;
+	}
+
+	_threadedJobProgress = 1.0f;
+}
+
+void Viewer::StartGeneratingHeatMaps()
+{
+	HeatMapsGenThreadData* const data = (HeatMapsGenThreadData*)malloc(sizeof(HeatMapsGenThreadData));
+	if(data == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for thread job data", (int)sizeof(HeatMapsGenThreadData));
+	}
+	data->ViewerPtr = this;
+	_threadedJobText = "generating heat maps...";
+	Platform_NewThread(&HeatMapsGenThreadEntryPoint, data);
 }
 
 void Viewer::ProcessEvent(const Event& event)
@@ -617,6 +779,12 @@ void Viewer::ProcessEvent(const Event& event)
 	{
 		StopPlayback();
 	}
+	else if(_genHeatMapsButton.WasClicked())
+	{
+		CriticalSectionLock lock(_appStateLock);
+		_appState = AppState::GeneratingHeatMaps;
+		StartGeneratingHeatMaps();
+	}
 
 	if(_tabButtonGroup.HasSelectionChanged())
 	{
@@ -643,12 +811,12 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 	const f32 bgImageScaleX = (f32)_mapRect.Width() / mapWidth;
 	const f32 bgImageScaleY = (f32)_mapRect.Height() / mapHeight;
 	const f32 bgImageScale = udt_min(bgImageScaleX, bgImageScaleY);
-	const f32 mapDisplayX = _mapRect.Left();
-	const f32 mapDisplayY = _mapRect.Top();
 	const f32 mapScaleX = mapWidth / (_mapMax[0] - _mapMin[0]);
 	const f32 mapScaleY = mapHeight / (_mapMax[1] - _mapMin[1]);
 	const f32 mapScale = udt_min(mapScaleX, mapScaleY) * bgImageScale;
-
+	f32 mapDisplayX = _mapRect.Left();
+	f32 mapDisplayY = _mapRect.Top();
+	
 	if(_map != InvalidTextureId)
 	{
 		NVGcontext* const c = renderParams.NVGContext;
@@ -659,6 +827,46 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		nvgBeginPath(c);
 		nvgRect(c, x, y, w, h);
 		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _map, 1.0f));
+		nvgFill(c);
+		nvgClosePath(c);
+	}
+	
+	const u32 heatMapButtonIndex = _heatMapGroup.GetSelectedIndex();
+	const u32 heatMapIndex = _heatMapBtnIdxToPlayerIdx[heatMapButtonIndex];
+	if(heatMapIndex < 64 &&
+	   _heatMaps[heatMapIndex].TextureId != InvalidTextureId &&
+	   _heatMapOpacity.GetProgress() > 0.0f)
+	{
+		NVGcontext* const c = renderParams.NVGContext;
+		f32 w = mapWidth * bgImageScale;
+		f32 h = mapHeight * bgImageScale;
+		if(_map == InvalidTextureId)
+		{
+			const f32 tw = (f32)_heatMaps[heatMapIndex].Width;
+			const f32 th = (f32)_heatMaps[heatMapIndex].Height;
+			const f32 rw = (f32)_mapRect.Width();
+			const f32 rh = (f32)_mapRect.Height();
+			const f32 r = udt_min(tw / rw, th / rh);
+			const f32 cw = _mapMax[0] - _mapMin[0];
+			const f32 ch = _mapMax[1] - _mapMin[1];
+			const f32 ar = cw / ch;
+			w = tw / r;
+			h = th / r;
+			if(cw > ch)
+			{
+				mapDisplayY += (h - (h / ar));
+				h /= ar;
+			}
+			else
+			{
+				w *= ar;
+			}
+		}
+		const f32 x = mapDisplayX;
+		const f32 y = mapDisplayY;
+		nvgBeginPath(c);
+		nvgRect(c, x, y, w, h);
+		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _heatMapOpacity.GetProgress()));
 		nvgFill(c);
 		nvgClosePath(c);
 	}
@@ -1051,7 +1259,7 @@ void Viewer::RenderNoDemo(const RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::RenderDemoLoadProgress(const RenderParams& renderParams)
+void Viewer::RenderThreadedJobProgress(const RenderParams& renderParams)
 {
 	const f32 cx = f32(renderParams.ClientWidth / 2);
 	const f32 cy = f32(renderParams.ClientHeight / 2);
@@ -1065,12 +1273,12 @@ void Viewer::RenderDemoLoadProgress(const RenderParams& renderParams)
 	nvgBeginPath(ctx);
 	nvgFontSize(ctx, 24.0f);
 	nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_BOTTOM);
-	nvgText(ctx, cx, cy - 10.0f, "loading demo...", nullptr);
+	nvgText(ctx, cx, cy - 10.0f, _threadedJobText, nullptr);
 	nvgFillColor(ctx, nvgGrey(255));
 	nvgFill(ctx);
 	nvgClosePath(ctx);
 
-	DrawProgressBar(ctx, x, y, w, h, r, _demoLoadProgress);
+	DrawProgressBar(ctx, x, y, w, h, r, _threadedJobProgress);
 
 	const f32 icono = 8.0f;
 	const f32 iconx = 20.0f;
@@ -1093,17 +1301,26 @@ void Viewer::Render(const RenderParams& renderParams)
 
 	CriticalSectionLock appStateLock(_appStateLock);
 
-	if(_appState == AppState::UploadingMapTexture)
+	if(_appState == AppState::FinishDemoLoading)
 	{
-		UploadMapTexture();
+		FinishLoadingDemo();
 		_appState = AppState::Normal;
-		RenderDemoLoadProgress(renderParams);
+		RenderThreadedJobProgress(renderParams);
 		return;
 	}
 
-	if(_appState == AppState::LoadingDemo)
+	if(_appState == AppState::FinishHeatMapGeneration)
 	{
-		RenderDemoLoadProgress(renderParams);
+		FinishGeneratingHeatMaps();
+		_appState = AppState::Normal;
+		RenderThreadedJobProgress(renderParams);
+		return;
+	}
+
+	if(_appState == AppState::LoadingDemo ||
+	   _appState == AppState::GeneratingHeatMaps)
+	{
+		RenderThreadedJobProgress(renderParams);
 		return;
 	}
 
@@ -1165,25 +1382,66 @@ void Viewer::Render(const RenderParams& renderParams)
 	}
 
 	NVGcontext* const ctx = renderParams.NVGContext;
-	const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
-	const f32 ox = _uiRect.X();
-	f32 oy = _uiRect.Y();
-	_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
-	_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	const u32 tabIndex = _tabButtonGroup.GetSelectedIndex();
+	if(tabIndex == Tab::Options)
+	{
+		const f32 oo = (f32)BND_WIDGET_HEIGHT + 4.0f;
+		const f32 ox = _uiRect.X();
+		f32 oy = _uiRect.Y();
+		_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+	}
+	else if(tabIndex == Tab::HeatMaps)
+	{
+		const f32 hmx = _uiRect.X();
+		f32 hmy = _uiRect.Y();
+
+		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+
+		_heatMapOpacityLabel.SetRect(ctx, hmx, hmy - 5.0f);
+		const f32 sliderX = _heatMapOpacityLabel.GetX() + _heatMapOpacityLabel.GetWidth();
+		_heatMapOpacity.SetRect(sliderX + (f32)(BND_WIDGET_HEIGHT / 2), hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
+		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+
+		const HeatMapPlayer* players;
+		_demo.GetHeatMapPlayers(players);
+
+		float bounds[4];
+		nvgFontSize(ctx, 13.0f);
+		f32 maxNameWidth = 60.0f; // Minimum size to look good.
+		for(u32 i = 0; i < 64; ++i)
+		{
+			if(players[i].Present)
+			{
+				nvgTextBounds(ctx, 0.0f, 0.0f, _demo.GetStringSafe(players[i].Name, "?"), nullptr, bounds);
+				const f32 width = bounds[2] - bounds[0];
+				maxNameWidth = udt_max(maxNameWidth, width);
+			}
+		}
+		
+		for(u32 i = 0; i < 64; ++i)
+		{
+			if(players[i].Present)
+			{
+				_heatMapPlayers[i].SetRect(hmx, hmy, maxNameWidth + 16.0f, (f32)BND_WIDGET_HEIGHT);
+				hmy += (f32)BND_WIDGET_HEIGHT - 2.0f;
+			}
+		};
+	}
 
 	_activeWidgets.Draw(renderParams.NVGContext);
 	_activeTabWidgets->Draw(renderParams.NVGContext);
-
-	const u32 tabIndex = _tabButtonGroup.GetSelectedIndex();
+	
 	if(tabIndex == Tab::Chat)
 	{
 		DrawChat(renderParams, serverTimeMs);
 	}
-	else if(tabIndex == Tab::Log || tabIndex == Tab::HeatMaps)
+	else if(tabIndex == Tab::Log)
 	{
 		NVGcontext* const ctx = renderParams.NVGContext;
 		nvgFontSize(ctx, 16.0f);
@@ -1567,8 +1825,45 @@ void Viewer::ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32
 	result[2] = 1.0f + zScale * ((input[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
 }
 
-void Viewer::UploadMapTexture()
+void Viewer::FinishLoadingDemo()
 {
+	const HeatMapPlayer* players;
+	_demo.GetHeatMapPlayers(players);
+	_heatMapGroup.RemoveAllRadioButtons();
+
+	u32 first = 64;
+	u32 last = 0;
+	for(u32 i = 0; i < 64; ++i)
+	{
+		if(players[i].Present)
+		{
+			first = udt_min(first, i);
+			last = udt_max(last, i);
+		}
+	}
+
+	for(u32 i = 0; i < 64; ++i)
+	{
+		if(!players[i].Present)
+		{
+			continue;
+		}
+
+		int cornerFlags = 0;
+		if(i > first)
+		{
+			cornerFlags |= BND_CORNER_TOP;
+		}
+		if(i < last)
+		{
+			cornerFlags |= BND_CORNER_DOWN;
+		}
+		_heatMapPlayers[i].SetActive(i == first);
+		_heatMapPlayers[i].SetCornerFlags(cornerFlags);
+		_heatMapPlayers[i].SetText(_demo.GetStringSafe(players[i].Name, "?"));
+		_heatMapGroup.AddRadioButton(&_heatMapPlayers[i]);
+	}
+
 	if(_map != InvalidTextureId)
 	{
 		nvgDeleteImage(_sharedReadOnly->NVGContext, _map);
@@ -1602,5 +1897,19 @@ void Viewer::UploadMapTexture()
 		_mapCoordsLoaded = false;
 		_mapWidth = 0;
 		_mapHeight = 0;
+	}
+}
+
+void Viewer::FinishGeneratingHeatMaps()
+{
+	for(u32 p = 0; p < 64; ++p)
+	{
+		HeatMapData& heatMap = _heatMaps[p];
+		if(heatMap.Image != nullptr)
+		{
+			CreateTextureRGBA(heatMap.TextureId, heatMap.Width, heatMap.Height, (const u8*)heatMap.Image);
+			free(heatMap.Image);
+			heatMap.Image = nullptr;
+		}
 	}
 }

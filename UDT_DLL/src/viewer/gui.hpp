@@ -16,6 +16,11 @@ struct Widget
 	void SetRect(f32 x, f32 y, f32 w, f32 h);
 	void GetRect(f32& x, f32& y, f32& w, f32& h);
 
+	f32 GetX() const { return Pos[0]; }
+	f32 GetY() const { return Pos[1]; }
+	f32 GetWidth() const { return Dim[0]; }
+	f32 GetHeight() const { return Dim[1]; }
+
 	virtual void MouseButtonDown(s32 x, s32 y, MouseButton::Id button);
 	virtual void MouseButtonUp(s32 x, s32 y, MouseButton::Id button);
 	virtual void MouseMove(s32 x, s32 y);
@@ -52,16 +57,17 @@ private:
 	udtVMArray<Widget*> _widgets;
 };
 
-struct DemoProgressBar : public Widget
+struct Slider : public Widget
 {
-	DemoProgressBar();
-	~DemoProgressBar();
+	Slider();
+	~Slider();
 
 	void SetRadius(f32 r);
 	void SetProgress(f32 progress);
 	bool HasProgressChanged(f32& progress);
 	bool HasDragJustStarted();
 	bool HasDragJustEnded();
+	f32  GetProgress() const;
 
 	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
 	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
@@ -131,6 +137,20 @@ private:
 	const bool* _reversed;
 };
 
+struct TextButton : public Button
+{
+	TextButton();
+	~TextButton();
+
+	void SetRect(NVGcontext* nvgContext, f32 x, f32 y);
+	void SetText(const char* text);
+
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	const char* _text;
+};
+
 struct CheckBox : public Widget
 {
 	CheckBox();
@@ -187,6 +207,7 @@ struct RadioGroup : public Widget
 
 	void AddRadioButton(RadioButton* radioButton);
 	void RemoveRadioButton(RadioButton* radioButton);
+	void RemoveAllRadioButtons();
 
 	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
 	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
@@ -199,4 +220,18 @@ private:
 	udtVMArray<RadioButton*> _radioButtons;
 	u32 _selectedIndex;
 	bool _selectionChanged;
+};
+
+struct Label : public Widget
+{
+	Label();
+	~Label();
+
+	void SetText(const char* text);
+	void SetRect(NVGcontext* nvgContext, f32 x, f32 y);
+
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	const char* _text;
 };

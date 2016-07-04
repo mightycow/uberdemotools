@@ -152,6 +152,13 @@ struct ChatMessage
 	s32 ServerTimeMs;
 };
 
+struct HeatMapPlayer
+{
+	u32 Name;
+	u8 Team; // udtTeam::Id
+	u8 Present;
+};
+
 struct idProtocolNumbers
 {
 	idProtocolNumbers();
@@ -193,6 +200,7 @@ struct Demo
 
 	bool        Init(ProgressCallback progressCallback, void* userData);
 	void        Load(const char* filePath);
+	void		GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber);
 
 	s32         GetFirstSnapshotTimeMs() const { return _firstSnapshotTimeMs; }
 	u32         GetDurationMs() const { return (u32)(_lastSnapshotTimeMs - _firstSnapshotTimeMs); }
@@ -211,6 +219,8 @@ struct Demo
 	u32         GetChatMessageIndexFromServerTime(s32 serverTimeMs) const;
 	u32         GetChatMessageCount() const;
 	bool        GetChatMessage(ChatMessage& message, u32 index) const;
+
+	void        GetHeatMapPlayers(const HeatMapPlayer*& players) const;
 
 	udtMod::Id      GetMod() const { return (udtMod::Id)_protocol; }
 	udtGameType::Id GetGameType() const { return (udtGameType::Id)_gameType; }
@@ -288,8 +298,9 @@ private:
 		SnapshotScore Base;
 		s32 ServerTimeMs;
 	};
-	
+
 	PlayerEx _players[64];
+	HeatMapPlayer _heatMapPlayers[64];
 	idProtocolNumbers _protocolNumbers;
 	u8 _staticItemBits[MaxItemMaskByteCount];
 	f32 _min[3];

@@ -49,6 +49,7 @@ struct Viewer
 {
 	static void DemoProgressCallback(f32 progress, void* userData);
 	static void DemoLoadThreadEntryPoint(void* userData);
+	static void HeatMapsGenThreadEntryPoint(void* userData);
 
 	Viewer(Platform& platform);
 	~Viewer();
@@ -74,7 +75,9 @@ private:
 		{
 			Normal,
 			LoadingDemo,
-			UploadingMapTexture,
+			FinishDemoLoading,
+			GeneratingHeatMaps,
+			FinishHeatMapGeneration,
 			Count
 		};
 	};
@@ -84,10 +87,12 @@ private:
 	void LoadMap(const udtString& mapName);
 	bool CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* pixels);
 	void StartLoadingDemo(const char* filePath);
-	void LoadDemoImpl(const char* filePath);
+	void LoadDemo(const char* filePath);
+	void StartGeneratingHeatMaps();
+	void GenerateHeatMaps();
 	void RenderDemo(const RenderParams& renderParams);
 	void RenderNoDemo(const RenderParams& renderParams);
-	void RenderDemoLoadProgress(const RenderParams& renderParams);
+	void RenderThreadedJobProgress(const RenderParams& renderParams);
 	void RenderDemoScore(const RenderParams& renderParams);
 	void RenderDemoTimer(const RenderParams& renderParams);
 	void RenderDemoFollowedPlayer(const RenderParams& renderParams);
@@ -108,7 +113,8 @@ private:
 	void OffsetSnapshot(s32 snapshotCount);
 	void OffsetTimeMs(s32 durationMs);
 	void ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32 zScale);
-	void UploadMapTexture();
+	void FinishLoadingDemo();
+	void FinishGeneratingHeatMaps();
 
 	struct MapAlias
 	{
@@ -122,7 +128,22 @@ private:
 		Viewer* ViewerPtr;
 	};
 
+	struct HeatMapsGenThreadData
+	{
+		Viewer* ViewerPtr;
+	};
+
+	struct HeatMapData
+	{
+		void* Image = nullptr;
+		u32 Width = 0;
+		u32 Height = 0;
+		int TextureId = InvalidTextureId;
+	};
+
+	HeatMapData _heatMaps[64];
 	int _sprites[Sprite::Count];
+	u8 _heatMapBtnIdxToPlayerIdx[64];
 	udtVMLinearAllocator _tempAllocator;
 	udtVMLinearAllocator _persistAllocator;
 	udtVMArray<MapAlias> _mapAliases;
@@ -130,7 +151,7 @@ private:
 	Config _config;
 	udtTimer _demoPlaybackTimer;
 	udtTimer _globalTimer;
-	DemoProgressBar _demoProgressBar;
+	Slider _demoProgressBar;
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;
@@ -144,6 +165,11 @@ private:
 	WidgetGroup _tabWidgets[Tab::Count];
 	RadioButton _tabButtons[Tab::Count];
 	RadioGroup _tabButtonGroup;
+	RadioButton _heatMapPlayers[64];
+	RadioGroup _heatMapGroup;
+	TextButton _genHeatMapsButton;
+	Slider _heatMapOpacity;
+	Label _heatMapOpacityLabel;
 	f32 _mapMin[3];
 	f32 _mapMax[3];
 	Rectangle _mapRect;
@@ -158,11 +184,12 @@ private:
 	CriticalSectionId _appStateLock = InvalidCriticalSectionId;
 	void* _mapImage = nullptr;
 	WidgetGroup* _activeTabWidgets = nullptr;
+	const char* _threadedJobText = nullptr;
 	int _map = InvalidTextureId;
 	u32 _mapWidth = 0;
 	u32 _mapHeight = 0;
 	u32 _snapshotIndex = 0; // Index of the currently displayed snapshot.
-	f32 _demoLoadProgress = 0.0f;
+	f32 _threadedJobProgress = 0.0f;
 	bool _appPaused = false;
 	bool _wasTimerRunningBeforePause = false;
 	bool _wasPlayingBeforeProgressDrag = false;
