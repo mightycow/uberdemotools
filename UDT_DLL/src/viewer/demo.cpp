@@ -481,7 +481,8 @@ void Demo::GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min
 		for(u32 p = 0; p < snap.PlayerCount; ++p)
 		{
 			const Player& player = snap.Players[p];
-			if((u32)player.IdClientNumber == clientNumber)
+			if((u32)player.IdClientNumber == clientNumber &&
+			   !IsBitSet(&player.Flags, PlayerFlags::Dead))
 			{
 				const f32 xcf = ((max[0] - player.Position[0]) / (max[0] - min[0])) * (f32)width;
 				const f32 ycf = ((max[1] - player.Position[1]) / (max[1] - min[1])) * (f32)height;
