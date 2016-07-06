@@ -1728,11 +1728,13 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 
 	NVGcontext* const ctx = renderParams.NVGContext;
 	const f32 fontSize = 16.0f;
-	const f32 lineHeight = 20.0f;
 	nvgFontSize(ctx, fontSize);
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
 
 	const f32 top = _uiRect.Top();
 	const f32 x = _uiRect.Left();
+	const f32 w = _uiRect.Width();
+	const f32 lineW = udt_max(w, 100.0f);
 	f32 y = _uiRect.Bottom();
 
 	u32 i = index;
@@ -1769,15 +1771,15 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 			sprintf(line, "[%d:%02d] %s: %s", minutes, seconds, name, msg);
 		}
 
-		// @TODO: display with line breaks?
+		float bounds[4];
+		nvgTextBoxBounds(ctx, 0.0f, 0.0f, lineW, line, nullptr, bounds);
+		y -= bounds[3] - bounds[1];
+
 		nvgBeginPath(ctx);
 		nvgFillColor(ctx, nvgGrey(0));
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_BOTTOM);
-		nvgText(ctx, x, y, line, nullptr);
+		nvgTextBox(ctx, x, y, lineW, line, nullptr);
 		nvgFill(ctx);
 		nvgClosePath(ctx);
-
-		y -= lineHeight;
 	}
 }
 
