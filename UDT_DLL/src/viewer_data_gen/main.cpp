@@ -49,16 +49,15 @@ struct SpritePackGenerator
 		_sprites.Init(1 << 16, "Sprites");
 	}
 
-	void ProcessFolder(const char* dataFolderPath)
+	void ProcessFolder(const udtString& dataPath, const udtString& outputPath)
 	{
 		printf("processing sprites\n");
-		const udtString dataPath = udtString::NewConstRef(dataFolderPath);
 
 #define ITEM(Enum, FileNameNoExt) LoadSprite(dataPath, udtString::NewConstRef(FileNameNoExt));
 		SPRITE_LIST(ITEM)
 #undef ITEM
 
-		WriteFile();
+		WriteFile(outputPath);
 	}
 
 private:
@@ -95,7 +94,7 @@ private:
 		_sprites.Add(info);
 	}
 
-	void WriteFile()
+	void WriteFile(const udtString& outputPath)
 	{
 		if(_sprites.GetSize() != Sprite::Count)
 		{
@@ -103,7 +102,7 @@ private:
 		}
 
 		udtFileStream file;
-		if(!file.Open("sprites.texturepack", udtFileOpenMode::Write))
+		if(!file.Open(outputPath.GetPtr(), udtFileOpenMode::Write))
 		{
 			return;
 		}
@@ -134,10 +133,8 @@ struct MapTextConverter
 		_tempAlloc.Init(1 << 16, "Temp");
 	}
 
-	void ProcessFolder(const char* dataFolderPath)
+	void ProcessFolder(const udtString& folderPath, const udtString& outputPath)
 	{
-		const udtString folderPath = udtString::NewConstRef(dataFolderPath);
-
 		udtFileListQuery query;
 		query.InitAllocators(64);
 		query.FolderPath = folderPath;
@@ -160,12 +157,12 @@ struct MapTextConverter
 			udtString fileNameNoExt;
 			udtPath::GetFileNameWithoutExtension(fileNameNoExt, _tempAlloc, file.Name);
 			printf("processing map %s\n", fileNameNoExt.GetPtr());
-			ProcessMap(folderPath, fileNameNoExt);
+			ProcessMap(folderPath, fileNameNoExt, outputPath);
 		}
 	}
 
 private:
-	void ProcessMap(const udtString& folderPath, const udtString& name)
+	void ProcessMap(const udtString& folderPath, const udtString& name, const udtString& outputPath)
 	{
 		udtString textFilePath;
 		udtString textFileName = udtString::NewFromConcatenating(_tempAlloc, name, udtString::NewConstRef(".txt"));
@@ -195,9 +192,11 @@ private:
 			realMax[i] = udt_max(min[i], max[i]);
 		}
 
-		udtString mapFileName = udtString::NewFromConcatenating(_tempAlloc, name, udtString::NewConstRef(".mapinfo"));
+		const udtString mapFileName = udtString::NewFromConcatenating(_tempAlloc, name, udtString::NewConstRef(".mapinfo"));
+		udtString mapFilePath;
+		udtPath::Combine(mapFilePath, _tempAlloc, outputPath, mapFileName);
 		udtFileStream mapFile;
-		if(!mapFile.Open(mapFileName.GetPtr(), udtFileOpenMode::Write))
+		if(!mapFile.Open(mapFilePath.GetPtr(), udtFileOpenMode::Write))
 		{
 			return;
 		}
@@ -216,13 +215,38 @@ void PrintHelp()
 {
 }
 
-int udt_main(int, char**)
+int udt_main(int argc, char** argv)
 {
 	udtInitLibrary();
+
+	udtString inputPath = udtString::NewConstRef("viewer_data");
+	udtString outputPath = udtString::NewConstRef(".");
+	for(int i = 1; i < argc; ++i)
+	{
+		if(udtString::StartsWith(udtString::NewConstRef(argv[i]), "-o="))
+		{
+			outputPath = udtString::NewConstRef(argv[i] + 3);
+		}
+		else
+		{
+			inputPath = udtString::NewConstRef(argv[i]);
+		}
+	}
+
+	udtVMLinearAllocator alloc;
+	alloc.Init(UDT_MEMORY_PAGE_SIZE, "udt_main::Paths");
+	udtString spritesFolderPath;
+	udtString mapsFolderPath;
+	udtString spritesOutputPath;
+	udtPath::Combine(spritesFolderPath, alloc, inputPath, "sprites");
+	udtPath::Combine(mapsFolderPath, alloc, inputPath, "maps");
+	udtPath::Combine(spritesOutputPath, alloc, outputPath, "sprites.texturepack");
+
 	SpritePackGenerator atlasGenerator;
-	atlasGenerator.ProcessFolder("G:\\__viewer\\raw_data\\sprites");
+	atlasGenerator.ProcessFolder(spritesFolderPath, spritesOutputPath);
 	MapTextConverter mapPackager;
-	mapPackager.ProcessFolder("G:\\__viewer\\raw_data\\maps");
+	mapPackager.ProcessFolder(mapsFolderPath, outputPath);
+
 	udtShutDownLibrary();
 
 	return 0;
