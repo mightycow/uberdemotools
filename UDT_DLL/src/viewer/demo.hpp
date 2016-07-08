@@ -4,6 +4,7 @@
 #include "uberdemotools.h"
 #include "array.hpp"
 #include "string.hpp"
+#include "timer.hpp"
 
 
 #pragma pack(push, 1)
@@ -324,6 +325,7 @@ private:
 	udtVMArray<Score> _scores;
 	udtVMArray<ChatMessage> _chatMessages;
 	udtString _mapName = udtString::NewEmptyConstant();
+	udtTimer _loadTimer;
 	udtCuContext* _context = nullptr;
 	u8* _messageData = nullptr;
 	Snapshot* _snapshot = nullptr;

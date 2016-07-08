@@ -1,6 +1,7 @@
 #include "uberdemotools.h"
 #include "platform.hpp"
 #include "viewer.hpp"
+#include "log.hpp"
 
 // The default (16 KB) is too small.
 #define FONS_SCRATCH_BUF_SIZE (1 << 16)
@@ -456,6 +457,8 @@ static int Main()
 	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
 
+	Log::Init();
+
 	Platform platform;
 	Viewer viewer(platform);
 	platform._viewer = &viewer;
@@ -538,6 +541,8 @@ int main(int argc, char** argv)
 
 	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
+
+	Log::Init();
 	
 	Platform platform;
 	Viewer viewer(platform);

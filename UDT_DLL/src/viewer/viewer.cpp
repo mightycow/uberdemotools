@@ -5,6 +5,8 @@
 #include "scoped_stack_allocator.hpp"
 #include "path.hpp"
 #include "nanovg_drawing.hpp"
+#include "log.hpp"
+#include "thread_local_allocators.hpp"
 #include "nanovg/fontstash.h"
 #include "nanovg/stb_image.h"
 #include "blendish/blendish.h"
@@ -19,6 +21,10 @@
 #define  DATA_PATH_ALIASES  DATA_PATH"/map_aliases.txt"
 #define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
 
+
+static const char* const Version = "0.1.0";
+
+static const char* const LogSeparator = "^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^";
 
 static const char* const HelpBindStrings[] =
 {
@@ -63,6 +69,13 @@ static const NVGcolor RailColors[3] =
 	nvgRGB(255, 0, 0),
 	nvgRGB(255, 0, 0),
 	nvgRGB(0, 0, 255)
+};
+
+static const NVGcolor LogColors[Log::Level::Count] =
+{
+	nvgGrey(0),
+	nvgRGB(255, 127, 0),
+	nvgRGB(255, 0, 0)
 };
 
 static s32 GetSpriteIdFromItemId(s32 itemId)
@@ -416,6 +429,8 @@ bool Viewer::Init(int argc, char** argv)
 		_tabButtonGroup.AddRadioButton(&_tabButtons[i]);
 	}
 
+	Log::LogInfo("UDT 2D Viewer is now operational");
+
 	Platform_CreateCriticalSection(_appStateLock);
 	if(argc >= 2 && udtFileStream::Exists(argv[1]))
 	{
@@ -647,6 +662,7 @@ void Viewer::StartLoadingDemo(const char* filePath)
 void Viewer::GenerateHeatMaps()
 {
 	_threadedJobProgress = 0.0f;
+	_genericTimer.Restart();
 
 	const HeatMapPlayer* players;
 	u32 playerCount = 0;
@@ -787,6 +803,11 @@ void Viewer::GenerateHeatMaps()
 	}
 
 	_threadedJobProgress = 1.0f;
+
+	udtVMLinearAllocator& tempAlloc = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocScope(tempAlloc);
+	const udtString genTime = FormatTime(tempAlloc, _genericTimer.GetElapsedMs());
+	Log::LogInfo("Heat maps generated in %s", genTime.GetPtr());
 }
 
 void Viewer::StartGeneratingHeatMaps()
@@ -847,6 +868,20 @@ void Viewer::ProcessEvent(const Event& event)
 	{
 		_activeWidgets.MouseScroll(event.CursorPos[0], event.CursorPos[1], event.Scroll);
 		_activeTabWidgets->MouseScroll(event.CursorPos[0], event.CursorPos[1], event.Scroll);
+
+		if(event.Scroll != 0 &&
+		   _tabButtonGroup.GetSelectedIndex() == Tab::Log)
+		{
+			const f32 x = (f32)event.CursorPos[0];
+			const f32 y = (f32)event.CursorPos[1];
+			if(x >= _uiRect.Left() && 
+			   x <= _uiRect.Right() &&
+			   y >= _uiRect.Top() &&
+			   y <= _uiRect.Bottom())
+			{
+				Log::ShiftOffset(event.Scroll > 0 ? 2 : -2);
+			}
+		}
 	}
 	else if(event.Type == EventType::FilesDropped)
 	{
@@ -1044,14 +1079,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 	}
 	else if(tabIndex == Tab::Log)
 	{
-		NVGcontext* const ctx = renderParams.NVGContext;
-		nvgFontSize(ctx, 16.0f);
-		nvgBeginPath(ctx);
-		nvgFillColor(ctx, nvgGrey(0));
-		nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
-		nvgText(ctx, _uiRect.X(), _uiRect.Y(), "coming soon... hopefully", nullptr);
-		nvgFill(ctx);
-		nvgClosePath(ctx);
+		DrawLog(renderParams);
 	}
 
 	if(_demoProgressBar.IsHovered())
@@ -1731,7 +1759,7 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 	nvgFontSize(ctx, fontSize);
 	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
 
-	const f32 top = _uiRect.Top();
+	const f32 top = _uiRect.Top() + fontSize;
 	const f32 x = _uiRect.Left();
 	const f32 w = _uiRect.Width();
 	const f32 lineW = udt_max(w, 100.0f);
@@ -1778,6 +1806,57 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 		nvgBeginPath(ctx);
 		nvgFillColor(ctx, nvgGrey(0));
 		nvgTextBox(ctx, x, y, lineW, line, nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+	}
+}
+
+void Viewer::DrawLog(const RenderParams& renderParams)
+{
+	NVGcontext* const ctx = renderParams.NVGContext;
+	const f32 fontSize = 16.0f;
+	nvgFontSize(ctx, fontSize);
+	nvgTextAlign(ctx, NVGalign::NVG_ALIGN_LEFT | NVGalign::NVG_ALIGN_TOP);
+
+	const f32 top = _uiRect.Top() + fontSize;
+	const f32 x = _uiRect.Left();
+	const f32 w = udt_max(_uiRect.Width(), 100.0f);
+	f32 y = _uiRect.Bottom();
+
+	const u32 msgCount = Log::GetMessageCount();
+	const u32 offset = Log::GetOffset();
+	if(offset > 0)
+	{
+		y -= fontSize;
+	}
+
+	for(s32 i = (s32)(msgCount - 1 - offset); i >= 0; i--)
+	{
+		if(y <= top)
+		{
+			break;
+		}
+
+		const char* const msg = Log::GetMessageString((u32)i);
+		const u32 level = Log::GetMessageLevel((u32)i);
+		const NVGcolor color = LogColors[level > (u32)Log::Level::Count ? 0 : level];
+
+		float bounds[4];
+		nvgTextBoxBounds(ctx, 0.0f, 0.0f, w, msg, nullptr, bounds);
+		y -= bounds[3] - bounds[1];
+
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, color);
+		nvgTextBox(ctx, x, y, w, msg, nullptr);
+		nvgFill(ctx);
+		nvgClosePath(ctx);
+	}
+
+	if(offset > 0)
+	{
+		nvgBeginPath(ctx);
+		nvgFillColor(ctx, nvgGrey(0));
+		nvgText(ctx, x, _uiRect.Bottom() - fontSize, LogSeparator, nullptr);
 		nvgFill(ctx);
 		nvgClosePath(ctx);
 	}

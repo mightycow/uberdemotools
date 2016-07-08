@@ -100,6 +100,7 @@ private:
 	void DrawProgressSliderToolTip(const RenderParams& renderParams);
 	void DrawHelp(const RenderParams& renderParams);
 	void DrawChat(const RenderParams& renderParams, s32 serverTimeMs);
+	void DrawLog(const RenderParams& renderParams);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
 	void DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a = 0.0f);
 	void GetCurrentSnapshotIndexAndServerTime(u32& snapshotIndex, s32& serverTimeMs);
@@ -153,6 +154,7 @@ private:
 	Config _config;
 	udtTimer _demoPlaybackTimer;
 	udtTimer _globalTimer;
+	udtTimer _genericTimer;
 	Slider _demoProgressBar;
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;

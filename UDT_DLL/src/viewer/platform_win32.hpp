@@ -6,6 +6,7 @@
 #include "string.hpp"
 #include "path.hpp"
 #include "utils.hpp"
+#include "log.hpp"
 
 // The default 16 KB buffer is too small.
 #define FONS_SCRATCH_BUF_SIZE (1 << 16)
@@ -446,13 +447,15 @@ struct Platform
 
 			case WM_MOUSEWHEEL:
 			{
+				POINT point = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
+				ScreenToClient(_window, &point);
 				Event event;
 				ZeroMemory(&event, sizeof(event));
 				event.Type = EventType::MouseScroll;
 				event.MouseButtonId = MouseButton::Middle;
 				event.Scroll = (s32)GET_WHEEL_DELTA_WPARAM(wParam);
-				event.CursorPos[0] = (s32)GET_X_LPARAM(lParam);
-				event.CursorPos[1] = (s32)GET_Y_LPARAM(lParam);
+				event.CursorPos[0] = (s32)point.x;
+				event.CursorPos[1] = (s32)point.y;
 				_viewer->ProcessEvent(event);
 				return 0;
 			}
@@ -688,6 +691,8 @@ static int Main(HINSTANCE instance)
 {
 	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();
+
+	Log::Init();
 	
 	Platform platform(instance);
 	Viewer viewer(platform);

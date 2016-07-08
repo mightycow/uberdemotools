@@ -4,6 +4,10 @@
 #include "sprites.hpp"
 #include "platform.hpp"
 #include "utils.hpp"
+#include "log.hpp"
+#include "scoped_stack_allocator.hpp"
+#include "path.hpp"
+#include "thread_local_allocators.hpp"
 
 #include <stdlib.h>
 #include <math.h>
@@ -282,6 +286,11 @@ static f32 ComputePlayerAngle(const idEntityStateBase& es, s32 serverTimeMs)
 	return (angles[1] / 180.0f) * UDT_PI;
 }
 
+static void MessageCallback(s32 logLevel, const char* message)
+{
+	Log::LogMessage((Log::Level::Id)logLevel, message);
+}
+
 idProtocolNumbers::idProtocolNumbers()
 {
 	memset(this, 0, sizeof(idProtocolNumbers));
@@ -386,11 +395,15 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	_progressCallback = progressCallback;
 	_userData = userData;
 
+	udtCuSetMessageCallback(context, &MessageCallback);
+
 	return true;
 }
 
 void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 {
+	_loadTimer.Restart();
+
 	const f32 LoadStepCount = 6.0f;
 	f32 loadStep = 1.0f;
 	(*_progressCallback)(0.0f, _userData);
@@ -457,6 +470,13 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 	_lastSnapshotTimeMs = snapshots[lastIndex].ServerTimeMs;
 
 	(*_progressCallback)(1.0f, _userData);
+
+	udtVMLinearAllocator& tempAlloc = udtThreadLocalAllocators::GetTempAllocator();
+	udtVMScopedStackAllocator allocScope(tempAlloc);
+	udtString fileName;
+	udtPath::GetFileName(fileName, tempAlloc, udtString::NewConstRef(filePath));
+	const udtString loadTime = FormatTime(tempAlloc, _loadTimer.GetElapsedMs());
+	Log::LogInfo("Demo %s loaded in %s", fileName.GetPtr(), loadTime.GetPtr());
 }
 
 void Demo::GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber)
@@ -1596,6 +1616,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 	memset(&arg, 0, sizeof(arg));
 	arg.PlugIns = plugInIds;
 	arg.PlugInCount = (u32)UDT_COUNT_OF(plugInIds);
+	arg.MessageCb = &MessageCallback;
 
 	s32 errorCode = (s32)udtErrorCode::Unprocessed;
 	udtMultiParseArg extraArg;
