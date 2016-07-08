@@ -492,6 +492,7 @@ static int Main()
 	platform.MainLoop();
 
 shut_down:
+	Log::Destroy();
 	udtShutDownLibrary();
 
 	return result;
@@ -560,6 +561,7 @@ int main(int argc, char** argv)
 	platform.MainLoop();
 
 shut_down:
+	Log::Destroy();
 	udtShutDownLibrary();
 
 	return result;

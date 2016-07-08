@@ -446,8 +446,6 @@ bool Viewer::Init(int argc, char** argv)
 		_tabButtonGroup.AddRadioButton(&_tabButtons[i]);
 	}
 
-	Log::LogInfo("UDT 2D Viewer is now operational");
-
 	Platform_CreateCriticalSection(_appStateLock);
 	if(argc >= 2 && udtFileStream::Exists(argv[1]))
 	{
@@ -455,8 +453,9 @@ bool Viewer::Init(int argc, char** argv)
 		_appState = AppState::LoadingDemo;
 		StartLoadingDemo(argv[1]);
 	}
+
+	Log::LogInfo("UDT 2D Viewer is now operational");
 	
-	_demoPlaybackTimer.Start();
 	_globalTimer.Start();
 	_appLoaded = true;
 
@@ -896,7 +895,9 @@ void Viewer::ProcessEvent(const Event& event)
 			   y >= _uiRect.Top() &&
 			   y <= _uiRect.Bottom())
 			{
+				Log::Lock();
 				Log::ShiftOffset(event.Scroll > 0 ? 2 : -2);
+				Log::Unlock();
 			}
 		}
 	}
@@ -1860,6 +1861,8 @@ void Viewer::DrawLog(const RenderParams& renderParams)
 	const f32 w = udt_max(_uiRect.Width(), 100.0f);
 	f32 y = _uiRect.Bottom();
 
+	Log::Lock();
+
 	const u32 msgCount = Log::GetMessageCount();
 	const u32 offset = Log::GetOffset();
 	if(offset > 0)
@@ -1888,6 +1891,8 @@ void Viewer::DrawLog(const RenderParams& renderParams)
 		nvgFill(ctx);
 		nvgClosePath(ctx);
 	}
+
+	Log::Unlock();
 
 	if(offset > 0)
 	{

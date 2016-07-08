@@ -18,16 +18,19 @@ namespace Log
 		};
 	};
 
-	void        Init();
-	void        LogMessage(Level::Id level, const char* format, ...);
-	void        LogInfo(const char* format, ...);
-	void        LogWarning(const char* format, ...);
-	void        LogError(const char* format, ...);
-	u32         GetMessageCount();
-	const char* GetMessageString(u32 index);
-	u32         GetMessageLevel(u32 index);
-	void        ShiftOffset(s32 amount);
-	u32         GetOffset();
+	extern void        Init();
+	extern void        Destroy();
+	extern void        LogMessage(Level::Id level, const char* format, ...); // Calls Lock and Unlock.
+	extern void        LogInfo(const char* format, ...);    // Calls Lock and Unlock.
+	extern void        LogWarning(const char* format, ...); // Calls Lock and Unlock.
+	extern void        LogError(const char* format, ...);   // Calls Lock and Unlock.
+	extern u32         GetMessageCount();
+	extern const char* GetMessageString(u32 index);
+	extern u32         GetMessageLevel(u32 index);
+	extern void        ShiftOffset(s32 amount);
+	extern u32         GetOffset();
+	extern void        Lock();
+	extern void        Unlock();
 }
 
 extern udtString FormatTime(udtVMLinearAllocator& allocator, u64 milliSeconds);

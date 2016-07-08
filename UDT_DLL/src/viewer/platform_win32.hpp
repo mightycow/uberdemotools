@@ -727,6 +727,7 @@ static int Main(HINSTANCE instance)
 	platform.MainLoop();
 
 shut_down:
+	Log::Destroy();
 	udtShutDownLibrary();
 
 	return result;

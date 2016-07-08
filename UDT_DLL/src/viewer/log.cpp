@@ -1,6 +1,7 @@
 #include "log.hpp"
 #include "array.hpp"
 #include "utils.hpp"
+#include "platform.hpp"
 
 #include <stdlib.h>
 #include <stdarg.h>
@@ -20,11 +21,18 @@ struct LogSystem
 	{
 		Messages.Init(UDT_MEMORY_PAGE_SIZE, "LogSystem::LogMessagesArray");
 		StringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "LogSystem::Strings");
+		Platform_CreateCriticalSection(CriticalSection);
+	}
+
+	~LogSystem()
+	{
+		Platform_ReleaseCriticalSection(CriticalSection);
 	}
 
 	char TempMessageBuffer[4096];
 	udtVMArray<Message> Messages;
 	udtVMLinearAllocator StringAllocator;
+	CriticalSectionId CriticalSection = InvalidCriticalSectionId;
 	u32 Offset = 0;
 };
 
@@ -39,10 +47,18 @@ namespace Log
 		new (LogSystemInstance) LogSystem;
 	}
 
+	void Destroy()
+	{
+		LogSystemInstance->~LogSystem();
+		free(LogSystemInstance);
+	}
+
 	static void LogMessage(Level::Id level, const char* format, va_list args)
 	{
+		Lock();
+
 		char* const msg = LogSystemInstance->TempMessageBuffer;
-		vsprintf(msg, format, args);;
+		vsprintf(msg, format, args);
 
 		Message message;
 		message.String = udtString::NewClone(LogSystemInstance->StringAllocator, msg).GetOffset();
@@ -52,6 +68,8 @@ namespace Log
 		{
 			ShiftOffset(1);
 		}
+
+		Unlock();
 	}
 
 	void LogMessage(Level::Id level, const char* format, ...)
@@ -109,6 +127,16 @@ namespace Log
 	u32 GetOffset()
 	{
 		return LogSystemInstance->Offset;
+	}
+
+	void Lock()
+	{
+		Platform_EnterCriticalSection(LogSystemInstance->CriticalSection);
+	}
+
+	void Unlock()
+	{
+		Platform_LeaveCriticalSection(LogSystemInstance->CriticalSection);
 	}
 }
 
