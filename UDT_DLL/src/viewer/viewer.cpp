@@ -22,11 +22,11 @@
 #define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
 
 
-static const char* const Version = "0.1.0";
+static const char* const ViewerVersionString = "0.1.0";
 
 static const char* const LogSeparator = "^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^";
 
-static const char* const HelpBindStrings[] =
+static const char* HelpBindStrings[] =
 {
 	"KEY", "ACTION",
 	"F1", "toggle display of this help overlay",
@@ -41,6 +41,23 @@ static const char* const HelpBindStrings[] =
 	"down", "jump backward by 1 second",
 	"page up", "jump forward by 10 seconds",
 	"page down", "jump backward by 10 seconds"
+};
+
+static const char* HelpCreditStrings[] =
+{
+	"CODE / ASSETS", "DESCRIPTION", "AUTHORS",
+	"UDT 2D Viewer", ViewerVersionString, "myT",
+	"UDT Library", udtGetVersionString(), "myT",
+	"NanoVG", "Vector graphics library", "Mikko Mononen",
+	"NanoVG", "Direct3D 11 port", "Chris Maughan",
+	"Blendish", "UI drawing functions", "Leonard Ritter",
+	"stb_image", "Image library", "Sean Barrett",
+	"stb_truetype", "TrueType library", "Sean Barrett",
+	"Quake 3 textures", "", "id Software",
+	"Blender icons", "", "The Blender Foundation",
+	"DejaVu", "Font", "The DejaVu team",
+	"Icons", "", "Memento_Mori",
+	"Viz data", "", "Memento_Mori, Akuma, myT"
 };
 
 
@@ -1709,41 +1726,61 @@ void Viewer::DrawProgressSliderToolTip(const RenderParams& renderParams)
 	nvgClosePath(ctx);
 }
 
-void Viewer::DrawHelp(const RenderParams& renderParams)
+static void DrawHelpBox(f32& width, NVGcontext* ctx, f32 x, f32 y, const char** strings, u32 stringCount, u32 columnCount)
 {
-	NVGcontext* const ctx = renderParams.NVGContext;
+	f32 widths[16];
+	assert(columnCount <= (u32)UDT_COUNT_OF(widths));
 
-	nvgBeginPath(ctx);
-	nvgFillColor(ctx, nvgGreyA(0, 160));
-	nvgRect(ctx, 0.0f, 0.0f, (f32)renderParams.ClientWidth, (f32)renderParams.ClientHeight);
-	nvgFill(ctx);
-	nvgClosePath(ctx);
+	nvgFontSize(ctx, 13.0f);
+	width = 0.0f;
+	for(u32 c = 0; c < columnCount; ++c)
+	{
+		widths[c] = 10.0f;
+		for(u32 s = c; s < stringCount; s += columnCount)
+		{
+			float bounds[4];
+			nvgTextBounds(ctx, 0.0f, 0.0f, strings[s], nullptr, bounds);
+			widths[c] = udt_max(widths[c], bounds[2] - bounds[0] + 10.0f);
+		}
+		width += widths[c];
+	}
 
-	const u32 stringCount = (u32)UDT_COUNT_OF(HelpBindStrings);
-	const u32 lineCount = stringCount / 2;
-	const f32 w1 = 90.0f;
-	const f32 w2 = 280.0f;
-	const f32 w = w1 + w2 - 1.0f;
-	const f32 h = (f32)(lineCount * BND_WIDGET_HEIGHT);
+	width -= (f32)(columnCount - 1);
 
-	f32 x = floorf(((f32)renderParams.ClientWidth - w) / 2.0f);
-	f32 y = floorf(((f32)renderParams.ClientHeight - h) / 2.0f);
-	for(u32 i = 0; i < stringCount; i += 2)
+	for(u32 i = 0; i < stringCount; i += columnCount)
 	{
 		int flags = BND_CORNER_DOWN | BND_CORNER_TOP;
 		if(i == 0)
 		{
 			flags = BND_CORNER_DOWN;
 		}
-		else if(i == stringCount - 2)
+		else if(i == stringCount - columnCount)
 		{
 			flags = BND_CORNER_TOP;
 		}
 		const BNDwidgetState state = i == 0 ? BND_ACTIVE : BND_DEFAULT;
-		bndTextField(ctx, x, y, w1, BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, state, -1, HelpBindStrings[i], 1, 0);
-		bndTextField(ctx, x + w1 - 1.0f, y, w2, BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, state, -1, HelpBindStrings[i + 1], 1, 0);
+		if(columnCount == 2)
+		{
+			bndTextField(ctx, x, y, widths[0], BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, state, -1, strings[i], 1, 0);
+			bndTextField(ctx, x + widths[0] - 1.0f, y, widths[1], BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, state, -1, strings[i + 1], 1, 0);
+		}
+		else if(columnCount == 3)
+		{
+			bndTextField(ctx, x, y, widths[0], BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | flags, state, -1, strings[i], 1, 0);
+			bndTextField(ctx, x + widths[0] - 1.0f, y, widths[1], BND_WIDGET_HEIGHT, BND_CORNER_RIGHT | BND_CORNER_LEFT | flags, state, -1, strings[i + 1], 1, 0);
+			bndTextField(ctx, x + widths[0] + widths[1] - 2.0f, y, widths[2], BND_WIDGET_HEIGHT, BND_CORNER_LEFT | flags, state, -1, strings[i + 2], 1, 0);
+		}
+		
 		y += BND_WIDGET_HEIGHT - 2.0f;
 	}
+}
+
+void Viewer::DrawHelp(const RenderParams& renderParams)
+{
+	NVGcontext* const ctx = renderParams.NVGContext;
+	f32 w;
+	DrawHelpBox(w, ctx, 10.0f, 10.0f, HelpBindStrings, (u32)UDT_COUNT_OF(HelpBindStrings), 2);
+	DrawHelpBox(w, ctx, w + 20.0f, 10.0f, HelpCreditStrings, (u32)UDT_COUNT_OF(HelpCreditStrings), 3);
 }
 
 void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
