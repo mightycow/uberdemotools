@@ -321,7 +321,7 @@ solution "UDT"
 	project "viewer_data_gen"
 	
 		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
+		defines { "UDT_CREATE_DLL", "UDT_DONT_RESET_CD" }
 		files { path_src_core.."/viewer_data_gen/*.cpp" }
 		files { path_src_core.."/viewer_data_gen/*.hpp" }
 		files { path_src_apps.."/shared.cpp" }
