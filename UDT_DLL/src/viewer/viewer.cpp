@@ -398,9 +398,8 @@ bool Viewer::Init(int argc, char** argv)
 	_drawMapHealthCheckBox.SetActivePtr(&_drawMapHealth);
 	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
 	_genHeatMapsButton.SetText("Generate Heat Maps");
-	_heatMapOpacity.SetProgress(0.75f);
-	_heatMapOpacity.SetRadius((f32)(BND_WIDGET_HEIGHT / 2));
-	_heatMapOpacityLabel.SetText("Opacity");
+	_heatMapOpacity.SetValue(0.75f);
+	_heatMapOpacity.SetText("Opacity");
 	_heatMapOpacityCheckBox.SetActivePtr(&_embedOpacityInHeatMap);
 	_heatMapOpacityCheckBox.SetText("Embed opacity in heat map");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_onlyKeepFirstMatchSnapshots);
@@ -419,7 +418,6 @@ bool Viewer::Init(int argc, char** argv)
 	heatMaps.AddWidget(&_heatMapGroup);
 	heatMaps.AddWidget(&_heatMapOpacity);
 	heatMaps.AddWidget(&_genHeatMapsButton);
-	heatMaps.AddWidget(&_heatMapOpacityLabel);
 	heatMaps.AddWidget(&_heatMapOpacityCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
@@ -1057,9 +1055,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
-		_heatMapOpacityLabel.SetRect(ctx, hmx, hmy - 5.0f);
-		const f32 sliderX = _heatMapOpacityLabel.GetX() + _heatMapOpacityLabel.GetWidth();
-		_heatMapOpacity.SetRect(sliderX + (f32)(BND_WIDGET_HEIGHT / 2), hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
+		_heatMapOpacity.SetRect(hmx, hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
 		const HeatMapPlayer* players;
@@ -1149,7 +1145,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 	const u32 heatMapIndex = _heatMapBtnIdxToPlayerIdx[heatMapButtonIndex];
 	if(heatMapIndex < 64 &&
 	   _heatMaps[heatMapIndex].TextureId != InvalidTextureId &&
-	   _heatMapOpacity.GetProgress() > 0.0f)
+	   _heatMapOpacity.GetValue() > 0.0f)
 	{
 		NVGcontext* const c = renderParams.NVGContext;
 		f32 w = mapWidth * bgImageScale;
@@ -1180,7 +1176,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		const f32 y = mapDisplayY;
 		nvgBeginPath(c);
 		nvgRect(c, x, y, w, h);
-		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _heatMapOpacity.GetProgress()));
+		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _heatMapOpacity.GetValue()));
 		nvgFill(c);
 		nvgClosePath(c);
 	}

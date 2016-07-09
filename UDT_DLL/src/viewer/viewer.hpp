@@ -155,7 +155,7 @@ private:
 	udtTimer _demoPlaybackTimer;
 	udtTimer _globalTimer;
 	udtTimer _genericTimer;
-	Slider _demoProgressBar;
+	DemoProgressSlider _demoProgressBar;
 	PlayPauseButton _playPauseButton;
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;
@@ -174,7 +174,6 @@ private:
 	RadioGroup _heatMapGroup;
 	TextButton _genHeatMapsButton;
 	Slider _heatMapOpacity;
-	Label _heatMapOpacityLabel;
 	CheckBox _heatMapOpacityCheckBox;
 	f32 _mapMin[3];
 	f32 _mapMax[3];

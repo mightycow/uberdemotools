@@ -57,10 +57,10 @@ private:
 	udtVMArray<Widget*> _widgets;
 };
 
-struct Slider : public Widget
+struct DemoProgressSlider : public Widget
 {
-	Slider();
-	~Slider();
+	DemoProgressSlider();
+	~DemoProgressSlider();
 
 	void SetRadius(f32 r);
 	void SetProgress(f32 progress);
@@ -85,6 +85,30 @@ private:
 	bool _draggingSlider;
 	bool _dragStarted;
 	bool _dragEnded;
+};
+
+struct Slider : public Widget
+{
+	Slider();
+	~Slider();
+
+	void SetValue(f32 value);
+	f32  GetValue() const;
+	void SetText(const char* text);
+
+	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseButtonUp(s32 x, s32 y, MouseButton::Id button) override;
+	void MouseMove(s32 x, s32 y) override;
+	void MouseMoveNC(s32 x, s32 y) override;
+	void MouseScroll(s32 x, s32 y, s32 scroll) override;
+	void Draw(NVGcontext* nvgContext) override;
+
+private:
+	void ChangeProgress(s32 x, s32 y);
+
+	const char* _text;
+	f32 _value;
+	bool _draggingSlider;
 };
 
 struct Button : public Widget

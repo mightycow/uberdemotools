@@ -159,7 +159,7 @@ void WidgetGroup::Draw(NVGcontext* nvgContext)
 	}
 }
 
-Slider::Slider()
+DemoProgressSlider::DemoProgressSlider()
 {
 	Pos[0] = 0.0f;
 	Pos[1] = 0.0f;
@@ -173,21 +173,21 @@ Slider::Slider()
 	_dragEnded = false;
 }
 
-Slider::~Slider()
+DemoProgressSlider::~DemoProgressSlider()
 {
 }
 
-void Slider::SetRadius(f32 r)
+void DemoProgressSlider::SetRadius(f32 r)
 {
 	_radius = r;
 }
 
-void Slider::SetProgress(f32 progress)
+void DemoProgressSlider::SetProgress(f32 progress)
 {
 	_progress = progress;
 }
 
-bool Slider::HasProgressChanged(f32& progress)
+bool DemoProgressSlider::HasProgressChanged(f32& progress)
 {
 	const bool changed = _progressChanged;
 	progress = _progress;
@@ -195,30 +195,133 @@ bool Slider::HasProgressChanged(f32& progress)
 	return changed;
 }
 
-bool Slider::HasDragJustStarted()
+bool DemoProgressSlider::HasDragJustStarted()
 {
 	const bool started = _dragStarted;
 	_dragStarted = false;
 	return started;
 }
 
-bool Slider::HasDragJustEnded()
+bool DemoProgressSlider::HasDragJustEnded()
 {
 	const bool ended = _dragEnded;
 	_dragEnded = false;
 	return ended;
 }
 
-f32 Slider::GetProgress() const
+f32 DemoProgressSlider::GetProgress() const
 {
 	return _progress;
+}
+
+void DemoProgressSlider::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
+{
+	if(button == MouseButton::Left && IsPointInside((f32)x, (f32)y))
+	{
+		SetDragging(true);
+		ChangeProgress(x, y);
+	}
+}
+
+void DemoProgressSlider::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
+{
+	if(button == MouseButton::Left && _draggingSlider)
+	{
+		ChangeProgress(x, y);
+		SetDragging(false);
+	}
+}
+
+void DemoProgressSlider::MouseMove(s32 x, s32 y)
+{
+	Widget::MouseMove(x, y);
+	if(_draggingSlider)
+	{
+		ChangeProgress(x, y);
+	}
+}
+
+void DemoProgressSlider::MouseMoveNC(s32 x, s32 y)
+{
+	Widget::MouseMoveNC(x, y);
+	if(_draggingSlider)
+	{
+		ChangeProgress(x, y);
+		SetDragging(false);
+	}
+}
+
+void DemoProgressSlider::ChangeProgress(s32 x, s32)
+{
+	const f32 min = Pos[0];
+	const f32 max = Pos[0] + Dim[0];
+	const f32 pos = (f32)x;
+	_progress = udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
+	_progressChanged = true;
+}
+
+void DemoProgressSlider::SetDragging(bool dragging)
+{
+	if(_draggingSlider && !dragging)
+	{
+		_dragEnded = true;
+	}
+	else if(!_draggingSlider && dragging)
+	{
+		_dragStarted = true;
+	}
+
+	_draggingSlider = dragging;
+}
+
+void DemoProgressSlider::Draw(NVGcontext* nvgContext)
+{
+	BNDwidgetState state = BND_DEFAULT;
+	if(_draggingSlider)
+	{
+		state = BND_ACTIVE;
+	}
+	else if(Hovered)
+	{
+		state = BND_HOVER;
+	}
+
+	const f32 w = Dim[0] + 2.0f * _radius;
+	const f32 s = (f32)BND_SCROLLBAR_HEIGHT / w;
+	bndScrollBar(nvgContext, Pos[0] - _radius, Pos[1], w, BND_SCROLLBAR_HEIGHT, state, _progress, s);
+}
+
+Slider::Slider()
+{
+	_text = nullptr;
+	_value = 0.0f;
+	_draggingSlider = false;
+}
+
+Slider::~Slider()
+{
+}
+
+void Slider::SetValue(f32 value)
+{
+	_value = value;
+}
+
+f32 Slider::GetValue() const
+{
+	return _value;
+}
+
+void Slider::SetText(const char* text)
+{
+	_text = text;
 }
 
 void Slider::MouseButtonDown(s32 x, s32 y, MouseButton::Id button)
 {
 	if(button == MouseButton::Left && IsPointInside((f32)x, (f32)y))
 	{
-		SetDragging(true);
+		_draggingSlider = true;
 		ChangeProgress(x, y);
 	}
 }
@@ -228,7 +331,7 @@ void Slider::MouseButtonUp(s32 x, s32 y, MouseButton::Id button)
 	if(button == MouseButton::Left && _draggingSlider)
 	{
 		ChangeProgress(x, y);
-		SetDragging(false);
+		_draggingSlider = false;
 	}
 }
 
@@ -247,32 +350,27 @@ void Slider::MouseMoveNC(s32 x, s32 y)
 	if(_draggingSlider)
 	{
 		ChangeProgress(x, y);
-		SetDragging(false);
+		_draggingSlider = false;
 	}
 }
 
-void Slider::ChangeProgress(s32 x, s32 y)
+void Slider::MouseScroll(s32 x, s32 y, s32 scroll)
 {
-	const f32 cp[2] = { (f32)x, (f32)y };
+	if(scroll != 0 &&
+	   IsPointInside((f32)x, (f32)y))
+	{
+		const s32 offset = scroll > 0 ? 5 : -5;
+		const s32 value = (s32)(100.0f * _value) + offset;
+		_value = udt_clamp((f32)value / 100.0f, 0.0f, 1.0f);
+	}
+}
+
+void Slider::ChangeProgress(s32 x, s32)
+{
 	const f32 min = Pos[0];
 	const f32 max = Pos[0] + Dim[0];
-	const f32 pos = cp[0];
-	_progress = udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
-	_progressChanged = true;
-}
-
-void Slider::SetDragging(bool dragging)
-{
-	if(_draggingSlider && !dragging)
-	{
-		_dragEnded = true;
-	}
-	else if(!_draggingSlider && dragging)
-	{
-		_dragStarted = true;
-	}
-
-	_draggingSlider = dragging;
+	const f32 pos = (f32)x;
+	_value = udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
 }
 
 void Slider::Draw(NVGcontext* nvgContext)
@@ -287,9 +385,10 @@ void Slider::Draw(NVGcontext* nvgContext)
 		state = BND_HOVER;
 	}
 
-	const f32 w = Dim[0] + 2.0f * _radius;
-	const f32 s = (f32)BND_SCROLLBAR_HEIGHT / w;
-	bndScrollBar(nvgContext, Pos[0] - _radius, Pos[1], w, BND_SCROLLBAR_HEIGHT, state, _progress, s);
+	char value[64];
+	sprintf(value, "%d%%", (int)(_value * 100.0f));
+
+	bndSlider(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, BND_CORNER_NONE, state, _value, _text, value);
 }
 
 Button::Button()
