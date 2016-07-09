@@ -400,8 +400,8 @@ bool Viewer::Init(int argc, char** argv)
 	_genHeatMapsButton.SetText("Generate Heat Maps");
 	_heatMapOpacity.SetValue(0.75f);
 	_heatMapOpacity.SetText("Opacity");
-	_heatMapOpacityCheckBox.SetActivePtr(&_embedOpacityInHeatMap);
-	_heatMapOpacityCheckBox.SetText("Embed opacity in heat map");
+	_heatMapSquaredRampCheckBox.SetActivePtr(&_heatMapSquaredRamp);
+	_heatMapSquaredRampCheckBox.SetText("Squared ramp (bias towards hotness)");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_onlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
 	
@@ -418,7 +418,7 @@ bool Viewer::Init(int argc, char** argv)
 	heatMaps.AddWidget(&_heatMapGroup);
 	heatMaps.AddWidget(&_heatMapOpacity);
 	heatMaps.AddWidget(&_genHeatMapsButton);
-	heatMaps.AddWidget(&_heatMapOpacityCheckBox);
+	heatMaps.AddWidget(&_heatMapSquaredRampCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
@@ -747,8 +747,8 @@ void Viewer::GenerateHeatMaps()
 			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
 		}
 
-		u8* const heatMap2 = (u8*)malloc(4 * pixelCount);
-		if(heatMap2 == nullptr)
+		u8* const heatMapFinal = (u8*)malloc(4 * pixelCount);
+		if(heatMapFinal == nullptr)
 		{
 			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
 		}
@@ -762,54 +762,51 @@ void Viewer::GenerateHeatMaps()
 		}
 
 		const u32 divider = (maxValue + rampColorCount - 1) / rampColorCount;
-		if(divider > 0)
+		if(divider == 0)
 		{
-			if(_embedOpacityInHeatMap)
+			memset(heatMapFinal, 0, (size_t)pixelCount * 4);
+			goto finalize_image;
+		}
+
+		if(_heatMapSquaredRamp)
+		{
+			for(u32 i = 0; i < pixelCount; ++i)
 			{
-				for(u32 i = 0; i < pixelCount; ++i)
-				{
-					const u8 val = (u8)(histogram[i] / divider);
-					const u8 op = (u8)(((u32)val * 256) / rampColorCount);
-					heatMap[4 * i + 0] = colorRamp[val][0];
-					heatMap[4 * i + 1] = colorRamp[val][1];
-					heatMap[4 * i + 2] = colorRamp[val][2];
-					heatMap[4 * i + 3] = op;
-				}
-			}
-			else
-			{
-				for(u32 i = 0; i < pixelCount; ++i)
-				{
-					const u8 val = (u8)(histogram[i] / divider);
-					heatMap[4 * i + 0] = colorRamp[val][0];
-					heatMap[4 * i + 1] = colorRamp[val][1];
-					heatMap[4 * i + 2] = colorRamp[val][2];
-					heatMap[4 * i + 3] = 255;
-				}
+				const u32 col2 = rampColorCount - 1 - (histogram[i] / divider);
+				const u32 col = rampColorCount - 1 - ((col2 * col2) / rampColorCount);
+				const u8 op = (u8)((col * 256) / rampColorCount);
+				heatMap[4 * i + 0] = colorRamp[col][0];
+				heatMap[4 * i + 1] = colorRamp[col][1];
+				heatMap[4 * i + 2] = colorRamp[col][2];
+				heatMap[4 * i + 3] = op;
 			}
 		}
 		else
 		{
-			for(u32 i = 0; i < pixelCount; i += 4)
+			for(u32 i = 0; i < pixelCount; ++i)
 			{
-				heatMap[i + 0] = 0;
-				heatMap[i + 1] = 0;
-				heatMap[i + 2] = 0;
-				heatMap[i + 3] = 255;
+				const u32 col = histogram[i] / divider;
+				const u8 op = (u8)((col * 256) / rampColorCount);
+				heatMap[4 * i + 0] = colorRamp[col][0];
+				heatMap[4 * i + 1] = colorRamp[col][1];
+				heatMap[4 * i + 2] = colorRamp[col][2];
+				heatMap[4 * i + 3] = op;
 			}
 		}
 
 		// We smooth the heat map to make it look less blocky.
 		const u8 gaussian3x3[9] = { 16, 32, 16, 32, 64, 32, 16, 32, 16 };
-		ConvolveRGBAImage(heatMap2, heatMap, w, h, gaussian3x3, 3);
-		ConvolveRGBAImage(heatMap, heatMap2, w, h, gaussian3x3, 3);
-		ConvolveRGBAImage(heatMap2, heatMap, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMap, heatMapFinal, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
+
+	finalize_image:
 		free(histogram);
 		free(heatMap);
 		
 		_heatMaps[p].Width = w;
 		_heatMaps[p].Height = h;
-		_heatMaps[p].Image = heatMap2;
+		_heatMaps[p].Image = heatMapFinal;
 		_heatMaps[p].TextureId = InvalidTextureId;
 
 		++playerIndex;
@@ -1049,7 +1046,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		const f32 hmx = _uiRect.X();
 		f32 hmy = _uiRect.Y();
 
-		_heatMapOpacityCheckBox.SetRect(ctx, hmx, hmy);
+		_heatMapSquaredRampCheckBox.SetRect(ctx, hmx, hmy);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
 		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
