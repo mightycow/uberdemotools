@@ -367,7 +367,7 @@ void Slider::MouseScroll(s32 x, s32 y, s32 scroll)
 
 void Slider::ChangeProgress(s32 x, s32)
 {
-	const f32 min = Pos[0];
+	const f32 min = Pos[0] + 8.0f;
 	const f32 max = Pos[0] + Dim[0];
 	const f32 pos = (f32)x;
 	_value = udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
