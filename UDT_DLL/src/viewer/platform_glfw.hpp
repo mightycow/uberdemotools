@@ -89,6 +89,7 @@ static VirtualKey::Id GetVirtualKeyId(int key)
 static void GlobalKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 static void GlobalCursorPosCallback(GLFWwindow* window, double x, double y);
 static void GlobalMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+static void GlobalScrollCallback(GLFWwindow* window, double dx, double dy);
 static void GlobalDropCallback(GLFWwindow* window, int count, const char** paths);
 static void GlobalWindowRefreshCallback(GLFWwindow* window);
 
@@ -196,6 +197,7 @@ struct Platform
 		glfwSetKeyCallback(window, &GlobalKeyCallback);
 		glfwSetCursorPosCallback(window, &GlobalCursorPosCallback);
 		glfwSetMouseButtonCallback(window, &GlobalMouseButtonCallback);
+		glfwSetScrollCallback(window, &GlobalScrollCallback);
 		if((glfwMajor == 3 && glfwMinor >= 1) || glfwMajor >= 4)
 		{
 			glfwSetDropCallback(window, &GlobalDropCallback);
@@ -305,6 +307,18 @@ struct Platform
 		event.CursorPos[1] = (s32)y;
 		_viewer->ProcessEvent(event);
 	}
+
+	void ScrollCallback(s32 scroll)
+	{
+		double x, y;
+		glfwGetCursorPos(_window, &x, &y);
+		Event event;
+		event.Type = EventType::MouseScroll;
+		event.Scroll = scroll;
+		event.CursorPos[0] = (s32)x;
+		event.CursorPos[1] = (s32)y;
+		_viewer->ProcessEvent(event);
+	}
 	
 	void DropCallback(const char** paths, int count)
 	{
@@ -365,6 +379,11 @@ static void GlobalCursorPosCallback(GLFWwindow* window, double x, double y)
 static void GlobalMouseButtonCallback(GLFWwindow* window, int button, int action, int)
 {
 	((Platform*)glfwGetWindowUserPointer(window))->MouseButtonCallback(action, button);
+}
+
+static void GlobalScrollCallback(GLFWwindow* window, double, double dy)
+{
+	((Platform*)glfwGetWindowUserPointer(window))->ScrollCallback((s32)dy);
 }
 
 static void GlobalDropCallback(GLFWwindow* window, int count, const char** paths)
