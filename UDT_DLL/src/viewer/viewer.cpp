@@ -761,6 +761,7 @@ void Viewer::GenerateHeatMaps()
 			maxValue = udt_max(maxValue, histogram[i]);
 		}
 
+		const u8 gaussian3x3[9] = { 16, 32, 16, 32, 64, 32, 16, 32, 16 };
 		const u32 divider = (maxValue + rampColorCount - 1) / rampColorCount;
 		if(divider == 0)
 		{
@@ -795,7 +796,6 @@ void Viewer::GenerateHeatMaps()
 		}
 
 		// We smooth the heat map to make it look less blocky.
-		const u8 gaussian3x3[9] = { 16, 32, 16, 32, 64, 32, 16, 32, 16 };
 		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
 		ConvolveRGBAImage(heatMap, heatMapFinal, w, h, gaussian3x3, 3);
 		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
