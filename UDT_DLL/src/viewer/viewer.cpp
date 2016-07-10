@@ -1571,8 +1571,8 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 
 void Viewer::RenderNoDemo(const RenderParams& renderParams)
 {
-	const char* const message0 = "drag'n'drop a demo file anywhere in the window to load it";
-	const char* const message1 = "press F1 to display the list of key binds";
+	const char* const message0 = "Drag'n'drop a demo file anywhere in the window to load it.";
+	const char* const message1 = "Press F1 to display the help (key binds, credits).";
 	NVGcontext* const ctx = renderParams.NVGContext;
 	nvgFontSize(ctx, 24.0f);
 	f32 bounds0[4];
