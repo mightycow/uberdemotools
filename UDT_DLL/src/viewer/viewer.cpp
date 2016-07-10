@@ -462,8 +462,6 @@ bool Viewer::Init(int argc, char** argv)
 
 bool Viewer::LoadMapAliases()
 {
-	// Line endings: \r\n
-
 	udtFileStream file;
 	if(!file.Open(DATA_PATH_ALIASES, udtFileOpenMode::Read))
 	{
@@ -471,37 +469,49 @@ bool Viewer::LoadMapAliases()
 		return false;
 	}
 
-	udtString fileData = file.ReadAllAsString(_persistAllocator);
-	u32 lineStart = 0;
+	// Lines can end with "\r\n" or just "\n".
+	// The last entry might not be followed by a line return.
+	const udtString fileData = file.ReadAllAsString(_persistAllocator);
+	char* c = fileData.GetWritePtr();
+	char* found = c;
+	char* toUse = c;
 	for(;;)
 	{
-		const udtString subString = udtString::NewSubstringRef(fileData, lineStart);
-		u32 lineEnd;
-		bool hasEnd = udtString::FindFirstCharacterMatch(lineEnd, subString, '\n');
-		const u32 finalEnd = hasEnd ? (lineStart + lineEnd - 1) : fileData.GetLength();
-		fileData.GetWritePtr()[finalEnd] = '\0';
-
-		const udtString line = udtString::NewSubstringRef(fileData, lineStart, lineEnd);
-		u32 space;
-		if(!udtString::FindFirstCharacterMatch(space, line, ' '))
+		if(*c == '\0')
 		{
-			lineStart += lineEnd + 1;
-			continue;
-		}
-		const u32 finalSpace = lineStart + space;
-		fileData.GetWritePtr()[finalSpace] = '\0';
-
-		MapAlias alias;
-		alias.NameFound = udtString::NewSubstringRef(fileData, lineStart, (u32)strlen(_persistAllocator.GetStringAt(lineStart)));
-		alias.NameToUse = udtString::NewSubstringRef(fileData, finalSpace + 1, (u32)strlen(_persistAllocator.GetStringAt(finalSpace + 1)));
-		_mapAliases.Add(alias);
-
-		if(!hasEnd)
-		{
+			if(toUse > found)
+			{
+				MapAlias alias;
+				alias.NameFound = udtString::NewConstRef(found);
+				alias.NameToUse = udtString::NewConstRef(toUse);
+				_mapAliases.Add(alias);
+			}
 			break;
 		}
 
-		lineStart += lineEnd + 1;
+		if(*c == ' ' || *c == '\t')
+		{
+			*c = '\0';
+			toUse = c + 1;
+		}
+		else if(*c == '\r')
+		{
+			*c = '\0';
+		}
+		else if(*c == '\n')
+		{
+			*c = '\0';
+			if(toUse > found)
+			{
+				MapAlias alias;
+				alias.NameFound = udtString::NewConstRef(found);
+				alias.NameToUse = udtString::NewConstRef(toUse);
+				_mapAliases.Add(alias);
+			}
+			found = c + 1;
+		}
+
+		++c;
 	}
 
 	return true;
