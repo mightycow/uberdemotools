@@ -208,6 +208,6 @@ private:
 	bool _drawMapClock = true;
 	bool _drawMapFollowMsg = true;
 	bool _drawMapHealth = true;
-	bool _heatMapSquaredRamp = true;
+	bool _heatMapSquaredRamp = false;
 	bool _onlyKeepFirstMatchSnapshots = true;
 };

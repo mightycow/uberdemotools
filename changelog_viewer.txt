@@ -1,5 +1,10 @@
-0.1.1 (???)
-???
+0.1.1 (10.07.2016)
+ADD: Implemented the log tab
+ADD: Viz data for Sinister, Cure and Elder
+ADD: Heat map squared ramp option
+ADD: Credits and version information in the help overlay
+CHG: New generic slider look, mouse wheel support
+FIX: Now displaying chat messages with word wrapping
 
 0.1.0 (04.07.2016)
 1st: First public release

@@ -22,7 +22,7 @@
 #define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
 
 
-static const char* const ViewerVersionString = "0.1.0";
+static const char* const ViewerVersionString = "0.1.1";
 
 static const char* const LogSeparator = "^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^";
 
@@ -401,7 +401,7 @@ bool Viewer::Init(int argc, char** argv)
 	_heatMapOpacity.SetValue(0.75f);
 	_heatMapOpacity.SetText("Opacity");
 	_heatMapSquaredRampCheckBox.SetActivePtr(&_heatMapSquaredRamp);
-	_heatMapSquaredRampCheckBox.SetText("Squared ramp (bias towards hotness)");
+	_heatMapSquaredRampCheckBox.SetText("Bias towards heat (quadratic)");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_onlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
 	
@@ -1772,6 +1772,13 @@ static void DrawHelpBox(f32& width, NVGcontext* ctx, f32 x, f32 y, const char** 
 void Viewer::DrawHelp(const RenderParams& renderParams)
 {
 	NVGcontext* const ctx = renderParams.NVGContext;
+
+	nvgBeginPath(ctx);
+	nvgFillColor(ctx, nvgGreyA(0, 160));
+	nvgRect(ctx, 0.0f, 0.0f, (f32)renderParams.ClientWidth, (f32)renderParams.ClientHeight);
+	nvgFill(ctx);
+	nvgClosePath(ctx);
+
 	f32 w;
 	DrawHelpBox(w, ctx, 10.0f, 10.0f, HelpBindStrings, (u32)UDT_COUNT_OF(HelpBindStrings), 2);
 	DrawHelpBox(w, ctx, w + 20.0f, 10.0f, HelpCreditStrings, (u32)UDT_COUNT_OF(HelpCreditStrings), 3);
