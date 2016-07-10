@@ -3,6 +3,7 @@ ADD: Implemented the log tab
 ADD: Viz data for Sinister, Cure and Elder
 ADD: Heat map squared ramp option
 ADD: Credits and version information in the help overlay
+ADD: Map aliases
 CHG: New generic slider look, mouse wheel support
 FIX: Now displaying chat messages with word wrapping
 
