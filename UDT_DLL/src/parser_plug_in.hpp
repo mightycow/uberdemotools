@@ -77,7 +77,6 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		BufferRanges.Resize(demoCount);
 		InitAllocators(demoCount);
 	}
 
