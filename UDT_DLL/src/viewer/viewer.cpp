@@ -337,10 +337,6 @@ void Viewer::HeatMapsGenThreadEntryPoint(void* userData)
 Viewer::Viewer(Platform& platform)
 	: _platform(platform)
 {
-	_tempAllocator.Init(1 << 16, "Viewer::Temp");
-	_persistAllocator.Init(1 << 16, "Viewer::Persist");
-	_mapAliases.Init(1 << 16, "Viewer::AliasArray");
-
 	Platform_GetSharedDataPointers(platform, (const PlatformReadOnly**)&_sharedReadOnly, &_sharedReadWrite);
 }
 

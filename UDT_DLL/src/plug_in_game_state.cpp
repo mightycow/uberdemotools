@@ -40,15 +40,6 @@ udtParserPlugInGameState::~udtParserPlugInGameState()
 
 void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 {
-	// With the string allocator, we allocate:
-	// - 2 config strings
-	// - the demo taker's name
-	// - player names for everyone who connects during the game
-	_matches.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Matches");
-	_keyValuePairs.InitNoOverride(demoCount * 650, "ParserPlugInGameState::KeyValuePairs");
-	_players.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Players");
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(7), "ParserPlugInGameState::Strings");
-	_gameStates.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::GameStatesArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
 }
 

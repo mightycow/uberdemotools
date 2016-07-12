@@ -33,7 +33,6 @@ udtMatchPatternAnalyzer::~udtMatchPatternAnalyzer()
 
 void udtMatchPatternAnalyzer::InitAllocators(u32 /*demoCount*/)
 {
-	_tempAllocator.Init(1 << 16, "CutByMatchAnalyzer::TempAllocator");
 	_statsAnalyzer.Init(1, _tempAllocator);
 }
 

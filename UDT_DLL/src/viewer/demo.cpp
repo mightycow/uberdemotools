@@ -337,23 +337,12 @@ void idProtocolNumbers::GetNumbers(u32 protocol, u32 mod)
 
 Demo::Demo()
 {
-	_snapshots[0].Init(UDT_MEMORY_PAGE_SIZE, "Demo::SnapshotOffsetArray0");
-	_snapshots[1].Init(UDT_MEMORY_PAGE_SIZE, "Demo::SnapshotOffsetArray1");
-	_snapshotAllocators[0].DisableFourByteAlignment();
-	_snapshotAllocators[1].DisableFourByteAlignment();
-	_snapshotAllocators[0].Init(UDT_KB(64), "Demo::Persist0");
-	_snapshotAllocators[1].Init(UDT_KB(64), "Demo::Persist1");
-	_stringAllocator.Init(UDT_KB(64), "Demo::Strings");
-	_staticItems.Init(UDT_MEMORY_PAGE_SIZE, "Demo::StaticItemsArray");
-	_tempPlayers.Init(UDT_MEMORY_PAGE_SIZE, "Demo::TempPlayersArray");
-	_tempDynamicItems.Init(UDT_MEMORY_PAGE_SIZE, "Demo::TempDynamicItemsArray");
-	_tempBeams.Init(UDT_MEMORY_PAGE_SIZE, "Demo::TempBeamsArray");
-	_beams.Init(UDT_MEMORY_PAGE_SIZE, "Demo::BeamsArray");
-	_tempShaftImpacts.Init(UDT_MEMORY_PAGE_SIZE, "Demo::TempShaftImpactsArray");
-	_explosions.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ExplosionsArray");
-	_bulletImpacts.Init(UDT_MEMORY_PAGE_SIZE, "Demo::BulletImpactsArray");
-	_scores.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ScoresArray");
-	_chatMessages.Init(UDT_MEMORY_PAGE_SIZE, "Demo::ChatMessagesArray");
+	_snapshots[0].SetName("Demo::SnapshotOffsetArray0");
+	_snapshots[1].SetName("Demo::SnapshotOffsetArray1");
+	_snapshotAllocators[0].SetAlignment(1);
+	_snapshotAllocators[1].SetAlignment(1);
+	_snapshotAllocators[0].SetName("Demo::Persist0");
+	_snapshotAllocators[1].SetName("Demo::Persist1");
 }
 
 Demo::~Demo()

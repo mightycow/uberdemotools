@@ -124,8 +124,7 @@ int wmain(int argc, wchar_t** argvWide)
 		argc = UDT_MAX_ARG_COUNT;
 	}
 
-	udtVMLinearAllocator stringAllocator;
-	stringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "wmain::String");
+	udtVMLinearAllocator stringAllocator("wmain::Strings");
 
 	u32 argvOffsets[UDT_MAX_ARG_COUNT];
 	for(int i = 0; i < argc; ++i)

@@ -171,8 +171,6 @@ udtJSONWriter::udtJSONWriter()
 	_stream = NULL;
 	memset(_itemIndices, 0, sizeof(_itemIndices));
 	_level = 0;
-
-	_stringAllocator.Init(1 << 16, "JSONWriter::Strings");
 }
 
 udtJSONWriter::~udtJSONWriter()

@@ -3,11 +3,9 @@
 #include "scoped_stack_allocator.hpp"
 
 
-void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator)
+void udtObituariesAnalyzer::InitAllocators(u32, udtVMLinearAllocator& tempAllocator)
 {
 	_tempAllocator = &tempAllocator;
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(2), "ObituariesAnalyzer::PlayerNames");
-	Obituaries.InitNoOverride(demoCount * UDT_KB(4), "ObituariesAnalyzer::ObituariesArray");
 }
 
 void udtObituariesAnalyzer::ResetForNextDemo()

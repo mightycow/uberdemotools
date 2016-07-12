@@ -59,9 +59,9 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 
 	// Get file sizes and make sure we have enough data to process
 	// to even consider launching new threads.
-	udtVMArray<FileInfo> files((uptr)sizeof(FileInfo) * (uptr)fileCount, "DemoThreadAllocator::Process::FilesArray");
-	u64 totalByteCount = 0;
+	udtVMArray<FileInfo> files("DemoThreadAllocator::Process::FilesArray");
 	files.Resize(fileCount);
+	u64 totalByteCount = 0;
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		const u64 byteCount = udtFileStream::GetFileLength(filePaths[i]);
@@ -82,7 +82,6 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	maxThreadCount = udt_min(maxThreadCount, processorCoreCount);
 	maxThreadCount = udt_min(maxThreadCount, fileCount);
 	const u32 finalThreadCount = udt_min(maxThreadCount, (u32)(totalByteCount / UDT_MIN_BYTE_SIZE_PER_THREAD));
-	Threads.Init((uptr)sizeof(udtParsingThreadData) * (uptr)finalThreadCount, "DemoThreadAllocator::ThreadsArray");
 	Threads.Resize(finalThreadCount);
 	memset(Threads.GetStartAddress(), 0, (size_t)Threads.GetSize() * sizeof(udtParsingThreadData));
 	for(u32 i = 0; i < finalThreadCount; ++i)
@@ -120,11 +119,8 @@ bool udtDemoThreadAllocator::Process(const char** filePaths, u32 fileCount, u32 
 	// Build and finalize the arrays.
 	u32 threadIdx = 0;
 	u32 firstFileIdx = 0;
-	FilePaths.Init((uptr)sizeof(const char*) * (uptr)fileCount, "DemoThreadAllocator::FilePathsArray");
 	FilePaths.Resize(fileCount);
-	FileSizes.Init((uptr)sizeof(u64) * (uptr)fileCount, "DemoThreadAllocator::FileSizesArray");
 	FileSizes.Resize(fileCount);
-	InputIndices.Init((uptr)sizeof(u32) * (uptr)fileCount, "DemoThreadAllocator::InputIndicesArray");
 	InputIndices.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
 	{
@@ -311,7 +307,7 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 
 	const u32 minProgressTimeMs = parseInfo->MinProgressTimeMs;
 	bool success = true;
-	udtVMArray<udtThread> threads((uptr)sizeof(udtThread) * (uptr)threadCount, "MultiThreadedParsing::Process::ThreadsArray");
+	udtVMArray<udtThread> threads("MultiThreadedParsing::Process::ThreadsArray");
 	threads.Resize(threadCount);
 	for(u32 i = 0; i < threadCount; ++i)
 	{

@@ -147,9 +147,9 @@ private:
 	HeatMapData _heatMaps[64];
 	int _sprites[Sprite::Count];
 	u8 _heatMapBtnIdxToPlayerIdx[64];
-	udtVMLinearAllocator _tempAllocator;
-	udtVMLinearAllocator _persistAllocator;
-	udtVMArray<MapAlias> _mapAliases;
+	udtVMLinearAllocator _tempAllocator { "Viewer::Temp" };
+	udtVMLinearAllocator _persistAllocator { "Viewer::Persist" };
+	udtVMArray<MapAlias> _mapAliases { "Viewer::AliasArray" };
 	Demo _demo;
 	Config _config;
 	udtTimer _demoPlaybackTimer;

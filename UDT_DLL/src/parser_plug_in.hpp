@@ -77,7 +77,7 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		BufferRanges.Init((uptr)(demoCount * (u32)sizeof(udtParseDataBufferRange)), "BaseParserPlugIn::BufferRangesArray");
+		BufferRanges.Resize(demoCount);
 		InitAllocators(demoCount);
 	}
 
@@ -123,7 +123,7 @@ protected:
 	virtual void FinishDemoAnalysis() {}
 
 	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
-	udtVMArray<udtParseDataBufferRange> BufferRanges;
+	udtVMArray<udtParseDataBufferRange> BufferRanges { "BaseParserPlugIn::BufferRangesArray" };
 	
 private:
 	u32 DemoCount;

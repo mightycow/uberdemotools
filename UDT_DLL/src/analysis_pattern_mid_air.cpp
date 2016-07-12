@@ -129,13 +129,8 @@ static bool IsAllowedUDTWeapon(u32 udtWeapon, u32 allowedWeapons)
 
 struct PlayerEntities
 {
-	PlayerEntities()
-	{
-		Players.Init(1 << 16, "PlayerEntities::PlayersArray");
-	}
-
 	idLargestEntityState TempEntityState;
-	udtVMArray<idEntityStateBase*> Players;
+	udtVMArray<idEntityStateBase*> Players { "PlayerEntities::PlayersArray" };
 };
 
 static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, const udtSnapshotCallbackArg& arg, udtProtocol::Id protocol)

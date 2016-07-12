@@ -54,7 +54,7 @@ struct WidgetGroup : public Widget
 	void Draw(NVGcontext* nvgContext) override;
 
 private:
-	udtVMArray<Widget*> _widgets;
+	udtVMArray<Widget*> _widgets { "WidgetGroup::WidgetsArray" };
 };
 
 struct DemoProgressSlider : public Widget
@@ -241,7 +241,7 @@ struct RadioGroup : public Widget
 	void Draw(NVGcontext* nvgContext) override;
 
 private:
-	udtVMArray<RadioButton*> _radioButtons;
+	udtVMArray<RadioButton*> _radioButtons { "RadioGroup::RadioButtonsArray" };
 	u32 _selectedIndex;
 	bool _selectionChanged;
 };

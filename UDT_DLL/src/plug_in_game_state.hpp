@@ -41,11 +41,11 @@ private:
 private:
 	udtGeneralAnalyzer _analyzer;
 	udtGameStatePlayerInfo _playerInfos[64];
-	udtVMArray<udtParseDataGameState> _gameStates;
-	udtVMArray<udtMatchInfo> _matches;
-	udtVMArray<udtGameStateKeyValuePair> _keyValuePairs; // Key/value pairs from config strings 0 and 1.
-	udtVMArray<udtGameStatePlayerInfo> _players;
-	udtVMLinearAllocator _stringAllocator; // For the key/value pairs and the demo taker's name.
+	udtVMArray<udtParseDataGameState> _gameStates { "ParserPlugInGameState::GameStatesArray" };
+	udtVMArray<udtMatchInfo> _matches { "ParserPlugInGameState::MatchesArray" };
+	udtVMArray<udtGameStateKeyValuePair> _keyValuePairs { "ParserPlugInGameState::KeyValuePairsArray" }; // Key/value pairs from config strings 0 and 1.
+	udtVMArray<udtGameStatePlayerInfo> _players { "ParserPlugInGameState::PlayersArray" };
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInGameState::Strings" }; // For the key/value pairs and the demo taker's name.
 	udtParseDataGameState _currentGameState;
 	udtParseDataGameStateBuffers _buffers;
 	udtProtocol::Id _protocol;

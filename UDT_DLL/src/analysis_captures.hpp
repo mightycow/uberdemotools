@@ -117,7 +117,7 @@ private:
 	ProcessGamestateFunc _processGamestate;
 	ProcessCommandFunc _processCommand;
 	ProcessSnapshotFunc _processSnapshot;
-	udtVMLinearAllocator _playerNameAllocator; // For QL only.
+	udtVMLinearAllocator _playerNameAllocator { "ParserPlugInCaptures::PlayerNames" }; // For QL only.
 	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
@@ -132,6 +132,6 @@ private:
 	bool _firstSnapshot;
 
 public:
-	udtVMLinearAllocator StringAllocator;
-	udtVMArray<udtParseDataCapture> Captures;
+	udtVMLinearAllocator StringAllocator { "ParserPlugInCaptures::Strings" };
+	udtVMArray<udtParseDataCapture> Captures { "ParserPlugInCaptures::CapturesArray" };
 };

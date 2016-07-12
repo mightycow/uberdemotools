@@ -93,16 +93,14 @@ udtPatternSearchPlugIn::udtPatternSearchPlugIn()
 	: _info(NULL)
 	, _trackedPlayerIndex(UDT_S32_MIN)
 {
-	_analyzers.Init(1 << 12, "CutByPatternPlugIn::AnalyzersArray");
-	_analyzerTypes.Init(1 << 12, "CutByPatternPlugIn::AnalyzerTypesArray");
-	_analyzerAllocator.DisableReserveOverride();
-	_analyzerAllocator.Init((uptr)SizeOfAllAnalyzers, "CutByPatternPlugIn::AnalyzerData");
+	// @NOTE: This data can never be relocated.
+	_analyzerAllocator.Init((uptr)SizeOfAllAnalyzers);
+
 	_analyzerAllocatorScope.SetAllocator(_analyzerAllocator);
 }
 
-void udtPatternSearchPlugIn::InitAllocators(u32 demoCount)
+void udtPatternSearchPlugIn::InitAllocators(u32)
 {
-	CutSections.Init((uptr)(1 << 16) * (uptr)demoCount, "CutByPatternPlugIn::CutSectionsArray");
 }
 
 void udtPatternSearchPlugIn::InitAnalyzerAllocators(u32 demoCount)
@@ -304,7 +302,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
-	udtVMArray<CutSection> tempCutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
+	udtVMArray<CutSection> tempCutSections("CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
 		udtPatternSearchAnalyzerBase* const analyzer = _analyzers[i];
@@ -339,7 +337,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	if((GetInfo().Flags & (u32)udtPatternSearchArgMask::MergeCutSections) != 0)
 	{
-		udtVMArray<udtCutSection> cutSections(1 << 16, "CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
+		udtVMArray<udtCutSection> cutSections("CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
 		AppendCutSections(cutSections, tempCutSections);
 		MergeRanges(CutSections, cutSections);
 	}

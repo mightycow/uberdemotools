@@ -539,20 +539,6 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	return true;
 }
 
-uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount)
-{
-	if(demoCount < demoCountThreshold)
-	{
-		return bigByteCount * (uptr)demoCount;
-	}
-
-	const uptr byteCount1 = bigByteCount * (uptr)demoCountThreshold;
-	const uptr byteCount2 = smallByteCount * (uptr)demoCount;
-	const uptr byteCount = udt_max(byteCount1, byteCount2);
-
-	return byteCount;
-}
-
 bool IsTeamMode(udtGameType::Id gameType)
 {
 	const u8* gameTypeFlags = NULL;

@@ -182,7 +182,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
 	// Save the cut sections in a temporary array.
-	udtVMArray<udtCutSection> sections(1 << 16, "CutByPattern::SectionsArray");
+	udtVMArray<udtCutSection> sections("CutByPattern::SectionsArray");
 	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
 		sections.Add(plugIn.CutSections[i]);
@@ -565,7 +565,7 @@ s32 udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserCo
 	udtTimer progressTimer;
 	progressTimer.Start();
 
-	udtVMArray<u64> fileSizes((uptr)sizeof(u64) * (uptr)extraInfo->FileCount, "ParseMultipleDemosSingleThread::FileSizesArray");
+	udtVMArray<u64> fileSizes("ParseMultipleDemosSingleThread::FileSizesArray");
 	fileSizes.Resize(extraInfo->FileCount);
 
 	u64 totalByteCount = 0;
@@ -713,11 +713,7 @@ struct DemoMerger
 	{
 		_fileCount = fileCount;
 
-		udtVMLinearAllocator tempAllocator;
-		if(!tempAllocator.Init(1 << 16, "DemoMerger::MergeDemos::Temp"))
-		{
-			return false;
-		}
+		udtVMLinearAllocator tempAllocator("DemoMerger::MergeDemos::Temp");
 
 		udtString outputFilePath;
 		CreateMergedDemoName(outputFilePath, tempAllocator, udtString::NewConstRef(filePaths[0]), info->OutputFolderPath, protocol);
@@ -774,11 +770,6 @@ struct DemoMerger
 			demo.Context->Parser.SetFilePath(filePaths[i]);
 
 			if(!demo.Runner.Init(demo.Context->Parser, demo.Input, info->CancelOperation))
-			{
-				return false;
-			}
-
-			if(!demo.WriteBuffer.Open(1 << 20))
 			{
 				return false;
 			}
@@ -913,8 +904,7 @@ struct DemoMerger
 
 bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32 fileCount, udtProtocol::Id protocol)
 {
-	udtVMLinearAllocator allocator;
-	allocator.Init(1 << 24, "MergeDemosNoInputCheck::Temp");
+	udtVMLinearAllocator allocator("MergeDemosNoInputCheck::Temp");
 	udtVMScopedStackAllocator allocatorScope(allocator);
 	const uptr mergerOffset = allocatorScope.NewObject<DemoMerger>();
 	DemoMerger* const merger = (DemoMerger*)allocator.GetAddressAt(mergerOffset);

@@ -13,11 +13,11 @@
 template<typename T>
 struct udtVMArray
 {
-	udtVMArray(uptr reservedByteCount, const char* allocatorName)
-		: _size(0)
+	udtVMArray(const char* allocatorName)
+		: _allocator(allocatorName)
+		, _size(0)
 	{
 		HandleAlignment();
-		_allocator.Init(reservedByteCount, allocatorName);
 	}
 	
 	udtVMArray() : 
@@ -28,16 +28,6 @@ struct udtVMArray
 
 	~udtVMArray()
 	{
-	}
-	
-	void Init(uptr reservedByteCount, const char* allocatorName)
-	{
-		_allocator.Init(reservedByteCount, allocatorName);
-	}
-
-	void InitNoOverride(uptr reservedByteCount, const char* allocatorName)
-	{
-		_allocator.InitNoOverride(reservedByteCount, allocatorName);
 	}
 
 	T& operator[](u32 index)
@@ -98,7 +88,6 @@ struct udtVMArray
 			return;
 		}
 
-		_allocator.DisableReserveOverride();
 		_allocator.Allocate((uptr)sizeof(T) * (uptr)(newSize - oldSize));
 		_size = newSize;
 	}
@@ -184,6 +173,11 @@ struct udtVMArray
 		return _size == 0;
 	}
 
+	void SetName(const char* name)
+	{
+		_allocator.SetName(name);
+	}
+
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMArray);
 
@@ -193,9 +187,9 @@ private:
 
 	void HandleAlignment()
 	{
-		if(Identity(sizeof(T)) % 4 != 0)
+		if(Identity(sizeof(T)) % sizeof(void*) != 0)
 		{
-			_allocator.DisableFourByteAlignment();
+			_allocator.SetAlignment(1);
 		}
 	}
 

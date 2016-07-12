@@ -9,23 +9,17 @@ struct udtCuContext_s
 {
 	udtCuContext_s()
 	{
-		Commands.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::CommandsArray");
-		CommandStrings.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::CommandStringsArray");
-		CommandTokens.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::CommandTokensArray");
-		CommandTokenAddresses.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::CommandTokensRawArray");
-		StringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::Strings");
-		ChangedEntities.Init(UDT_MEMORY_PAGE_SIZE, "CuContext::ChangedEntitiesArray");
 		PlugIn.SetContext(this);
 	}
 
 	udtParserContext Context;
 	udtCustomParsingPlugIn PlugIn;
-	udtVMArray<udtCuCommandMessage> Commands;
-	udtVMArray<udtString> CommandStrings;
-	udtVMArray<udtString> CommandTokens;
-	udtVMArray<const char*> CommandTokenAddresses;
-	udtVMArray<const idEntityStateBase*> ChangedEntities;
-	udtVMLinearAllocator StringAllocator;
+	udtVMArray<udtCuCommandMessage> Commands { "CuContext::CommandsArray" };
+	udtVMArray<udtString> CommandStrings { "CuContext::CommandStringsArray" };
+	udtVMArray<udtString> CommandTokens { "CuContext::CommandTokensArray" };
+	udtVMArray<const char*> CommandTokenAddresses { "CuContext::CommandTokensRawArray" };
+	udtVMArray<const idEntityStateBase*> ChangedEntities { "CuContext::ChangedEntitiesArray" };
+	udtVMLinearAllocator StringAllocator { "CuContext::Strings" };
 	udtCuSnapshotMessage Snapshot;
 	udtCuGamestateMessage GameState;
 	udtCuMessageOutput Message;

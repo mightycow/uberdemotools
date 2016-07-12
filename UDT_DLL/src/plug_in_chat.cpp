@@ -43,10 +43,8 @@ udtParserPlugInChat::~udtParserPlugInChat()
 {
 }
 
-void udtParserPlugInChat::InitAllocators(u32 demoCount)
+void udtParserPlugInChat::InitAllocators(u32)
 {
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(7), "ParserPlugInChat::Strings");
-	ChatEvents.InitNoOverride(demoCount * UDT_KB(5), "ParserPlugInChat::ChatMessagesArray");
 }
 
 void udtParserPlugInChat::CopyBuffersStruct(void* buffersStruct) const

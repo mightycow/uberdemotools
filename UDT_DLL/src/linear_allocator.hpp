@@ -31,11 +31,10 @@ public:
 	static void GetThreadAllocators(u32& allocatorCount, udtVMLinearAllocator** allocators);
 
 public:
-	udtVMLinearAllocator();
+	udtVMLinearAllocator(const char* name = nullptr);
 	~udtVMLinearAllocator();
 
-	bool        Init(uptr reservedByteCount, const char* name);
-	bool        InitNoOverride(uptr reservedByteCount, const char* name);
+	bool        Init(uptr reservedByteCount);
 	uptr        Allocate(uptr byteCount);
 	u8*         AllocateAndGetAddress(uptr byteCount);
 	void        Pop(uptr byteCount);
@@ -53,8 +52,8 @@ public:
 	const char* GetStringAt(uptr offset) const;
 	char*       GetWriteStringAt(uptr offset) const;
 	u8*         GetAddressAt(uptr offset) const;
-	void        DisableReserveOverride();
-	void        DisableFourByteAlignment();
+	void        SetAlignment(u32 alignment);
+	void        SetName(const char* name);
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtVMLinearAllocator);
@@ -72,6 +71,5 @@ private:
 	u8* _addressSpaceStart;
 	const char* _name;
 	u32 _resizeCount;
-	bool _enableReserveOverride;
-	bool _forceFourByteAlignment;
+	u32 _alignment;
 };

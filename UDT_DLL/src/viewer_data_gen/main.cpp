@@ -43,12 +43,6 @@ static const char* ImageFileExtensions[] =
 
 struct SpritePackGenerator
 {
-	SpritePackGenerator()
-	{
-		_alloc.Init(1 << 16, "Temp");
-		_sprites.Init(1 << 16, "Sprites");
-	}
-
 	void ProcessFolder(const udtString& dataPath, const udtString& outputPath)
 	{
 		printf("processing sprites\n");
@@ -122,21 +116,15 @@ private:
 		}
 	}
 
-	udtVMArray<SpriteInfo> _sprites;
-	udtVMLinearAllocator _alloc;
+	udtVMArray<SpriteInfo> _sprites { "SpritePackGenerator::SpritesArray" };
+	udtVMLinearAllocator _alloc { "SpritePackGenerator::Temp" };
 };
 
 struct MapTextConverter
 {
-	MapTextConverter()
-	{
-		_tempAlloc.Init(1 << 16, "Temp");
-	}
-
 	void ProcessFolder(const udtString& folderPath, const udtString& outputPath)
 	{
 		udtFileListQuery query;
-		query.InitAllocators(64);
 		query.FolderPath = folderPath;
 		query.UserData = nullptr;
 		query.Recursive = false;
@@ -207,7 +195,7 @@ private:
 		mapFile.Write(realMax, 12, 1);
 	}
 
-	udtVMLinearAllocator _tempAlloc;
+	udtVMLinearAllocator _tempAlloc { "MapTextConverter::Temp" };
 };
 
 
@@ -233,8 +221,7 @@ int udt_main(int argc, char** argv)
 		}
 	}
 
-	udtVMLinearAllocator alloc;
-	alloc.Init(UDT_MEMORY_PAGE_SIZE, "udt_main::Paths");
+	udtVMLinearAllocator alloc("udt_main::Paths");
 	udtString spritesFolderPath;
 	udtString mapsFolderPath;
 	udtString spritesOutputPath;

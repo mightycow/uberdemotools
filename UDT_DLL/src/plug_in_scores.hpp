@@ -45,8 +45,8 @@ private:
 	};
 
 	Player _players[64];
-	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataScore> _scores;
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInScores::Strings" };
+	udtVMArray<udtParseDataScore> _scores { "ParserPlugInScores::ScoresArray" };
 	udtParseDataScoreBuffers _buffers;
 	udtBaseParser* _parser;
 	s32 _gameStateIndex;

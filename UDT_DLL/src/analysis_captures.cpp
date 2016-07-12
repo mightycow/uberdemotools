@@ -74,13 +74,9 @@ udtCapturesAnalyzer::~udtCapturesAnalyzer()
 {
 }
 
-void udtCapturesAnalyzer::Init(u32 demoCount, udtVMLinearAllocator* tempAllocator)
+void udtCapturesAnalyzer::Init(u32, udtVMLinearAllocator* tempAllocator)
 {
 	_tempAllocator = tempAllocator;
-	const uptr smallByteCount = 1 << 14;
-	StringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInCaptures::Strings");
-	_playerNameAllocator.Init(UDT_KB(4), "ParserPlugInCaptures::PlayerNames");
-	Captures.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInCaptures::CapturesArray");
 }
 
 void udtCapturesAnalyzer::StartDemoAnalysis()

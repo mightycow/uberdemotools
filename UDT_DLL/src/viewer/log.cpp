@@ -19,8 +19,6 @@ struct LogSystem
 {
 	LogSystem()
 	{
-		Messages.Init(UDT_MEMORY_PAGE_SIZE, "LogSystem::LogMessagesArray");
-		StringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "LogSystem::Strings");
 		Platform_CreateCriticalSection(CriticalSection);
 	}
 
@@ -30,8 +28,8 @@ struct LogSystem
 	}
 
 	char TempMessageBuffer[4096];
-	udtVMArray<Message> Messages;
-	udtVMLinearAllocator StringAllocator;
+	udtVMArray<Message> Messages { "LogSystem::LogMessagesArray" };
+	udtVMLinearAllocator StringAllocator { "LogSystem::Strings" };
 	CriticalSectionId CriticalSection = InvalidCriticalSectionId;
 	u32 Offset = 0;
 };

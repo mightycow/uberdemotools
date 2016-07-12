@@ -23,10 +23,8 @@ udtParserPlugInScores::~udtParserPlugInScores()
 {
 }
 
-void udtParserPlugInScores::InitAllocators(u32 demoCount)
+void udtParserPlugInScores::InitAllocators(u32)
 {
-	_scores.Init(demoCount * UDT_KB(10), "ParserPlugInScores::ScoresArray");
-	_stringAllocator.Init(demoCount * UDT_KB(4), "ParserPlugInScores::Strings");
 }
 
 void udtParserPlugInScores::CopyBuffersStruct(void* buffersStruct) const

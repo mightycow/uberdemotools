@@ -92,13 +92,6 @@ udtVMMemoryStream::~udtVMMemoryStream()
 {
 }
 
-bool udtVMMemoryStream::Open(uptr reservedByteCount)
-{
-	_buffer.Init(reservedByteCount, "VMMemoryStream::Buffer");
-
-	return true;
-}
-
 u8* udtVMMemoryStream::GetBuffer()
 {
 	return _buffer.GetStartAddress();

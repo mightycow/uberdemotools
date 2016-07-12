@@ -40,21 +40,6 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-void udtBaseParser::InitAllocators()
-{
-	_persistentAllocator.Init(1 << 18, "Parser::Persistent");
-	_configStringAllocator.Init(1 << 20, "Parser::ConfigStrings");
-	_tempAllocator.Init(1 << 18, "Parser::Temp");
-	_privateTempAllocator.Init(1 << 16, "Parser::PrivateTemp");
-	PlugIns.Init(1 << 16, "Parser::PlugInsArray");
-	_inGameStateFileOffsets.Init(1 << 16, "Parser::GameStateFileOffsetsArray");
-	_inChangedEntities.Init(1 << 16, "Parser::ChangedEntitiesArray");
-	_inRemovedEntities.Init(1 << 16, "Parser::RemovedEntitiesArray");
-	_inEntities.Init(1 << 16, "Parser::EntitiesArray");
-	_inEntityFlags.Init(1 << 16, "Parser::EntityFlagsArray");
-	_cuts.Init(1 << 16, "Parser::CutsArray");
-}
-
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtProtocol::Id outProtocol, s32 gameStateIndex, bool enablePlugIns)
 {
 	if(context == NULL || !udtIsValidProtocol(inProtocol) || gameStateIndex < 0)

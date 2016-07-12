@@ -56,10 +56,10 @@ public:
 	udtBaseParser Parser;
 	udtModifierContext ModifierContext;
 	udtJSONWriterContext JSONWriterContext;
-	udtVMLinearAllocator PlugInAllocator;
-	udtVMArray<AddOnItem> PlugIns; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
-	udtVMArray<u32> InputIndices;
-	udtVMLinearAllocator PlugInTempAllocator;
+	udtVMLinearAllocator PlugInAllocator { "ParserContext::PlugIn" };
+	udtVMArray<AddOnItem> PlugIns { "ParserContext::PlugInsArray" }; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
+	udtVMArray<u32> InputIndices { "ParserContext::InputIndicesArray" };
+	udtVMLinearAllocator PlugInTempAllocator { "ParserContext::PlugInTemp" };
 #if defined(UDT_WINDOWS)
 	udtReadOnlySequentialFileStream DemoReader;
 #endif

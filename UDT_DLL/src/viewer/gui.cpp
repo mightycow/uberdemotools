@@ -87,7 +87,6 @@ bool Widget::IsPointInside(f32 x, f32 y)
 
 WidgetGroup::WidgetGroup()
 {
-	_widgets.Init(1 << 16, "WidgetGroup::WidgetsArray");
 }
 
 WidgetGroup::~WidgetGroup()
@@ -688,7 +687,6 @@ void RadioButton::Draw(NVGcontext* nvgContext)
 
 RadioGroup::RadioGroup()
 {
-	_radioButtons.Init(1 << 16, "RadioGroup::RadioButtonsArray");
 	_selectedIndex = 0;
 	_selectionChanged = false;
 }

@@ -107,7 +107,7 @@ private:
 	s32  GetTimeOutStartTime() const;
 
 	udtTimeOut _timeOutStartAndEndTimes[Constants::MaxTimeOutCount];
-	udtVMLinearAllocator _stringAllocator;
+	udtVMLinearAllocator _stringAllocator { "GeneralAnalyzer::Strings" };
 	udtBaseParser* _parser;
 	udtVMLinearAllocator* _tempAllocator;
 	udtString _modVersion; // Allocated by _stringAllocator.
