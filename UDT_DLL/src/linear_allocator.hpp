@@ -34,7 +34,7 @@ public:
 	udtVMLinearAllocator(const char* name = nullptr);
 	~udtVMLinearAllocator();
 
-	bool        Init(uptr reservedByteCount);
+	void        Init(uptr reservedByteCount);
 	uptr        Allocate(uptr byteCount);
 	u8*         AllocateAndGetAddress(uptr byteCount);
 	void        Pop(uptr byteCount);

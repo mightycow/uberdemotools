@@ -87,11 +87,11 @@ udtVMLinearAllocator::~udtVMLinearAllocator()
 	Destroy();
 }
 
-bool udtVMLinearAllocator::Init(uptr reservedByteCount)
+void udtVMLinearAllocator::Init(uptr reservedByteCount)
 {
 	if(_addressSpaceStart != NULL)
 	{
-		return false;
+		return;
 	}
 	
 	const uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE;
@@ -109,7 +109,6 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount)
 	if(data == NULL)
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
-		return false;
 	}
 	
 	_addressSpaceStart = data;
@@ -117,8 +116,6 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount)
 	_reservedByteCount = reservedByteCount;
 	_committedByteCount = 0;
 	_commitByteCountGranularity = commitByteCountGranularity;
-
-	return true;
 }
 
 uptr udtVMLinearAllocator::Allocate(uptr byteCount)
