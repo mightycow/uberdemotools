@@ -40,10 +40,13 @@ namespace Uber.DemoTools
             var typeOfT = typeof(T);
             var sizeOfT = Marshal.SizeOf(typeOfT);
             var array = new T[count];
-            for(var i = 0; i < count; ++i)
+            if(native != IntPtr.Zero)
             {
-                var address = new IntPtr(native.ToInt64() + i * sizeOfT);
-                array[i] = (T)Marshal.PtrToStructure(address, typeOfT);
+                for(var i = 0; i < count; ++i)
+                {
+                    var address = new IntPtr(native.ToInt64() + i * sizeOfT);
+                    array[i] = (T)Marshal.PtrToStructure(address, typeOfT);
+                }
             }
 
             return array;
@@ -52,7 +55,10 @@ namespace Uber.DemoTools
         public static byte[] PtrToByteArray(IntPtr native, int byteCount)
         {
             var array = new byte[byteCount];
-            Marshal.Copy(native, array, 0, byteCount);
+            if(native != IntPtr.Zero)
+            {
+                Marshal.Copy(native, array, 0, byteCount);
+            }
 
             return array;
         }
@@ -60,7 +66,10 @@ namespace Uber.DemoTools
         public static int[] PtrToIntArray(IntPtr native, int intCount)
         {
             var array = new int[intCount];
-            Marshal.Copy(native, array, 0, intCount);
+            if(native != IntPtr.Zero)
+            {
+                Marshal.Copy(native, array, 0, intCount);
+            }
 
             return array;
         }
