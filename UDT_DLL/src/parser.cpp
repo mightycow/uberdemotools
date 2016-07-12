@@ -72,14 +72,13 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_privateTempAllocator.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
-	_inGameStateFileOffsets.Clear();
-	if(gameStateIndex > 0)
+	if(gameStateIndex == 0)
+	{
+		_inGameStateFileOffsets.Clear();
+	}
+	else
 	{
 		_inGameStateFileOffsets.Resize(gameStateIndex);
-		for(s32 i = 0; i < gameStateIndex; ++i)
-		{
-			_inGameStateFileOffsets[0] = 0;
-		}
 	}
 
 	if(enablePlugIns)
