@@ -20,6 +20,7 @@
 #define  DATA_PATH_FONT     DATA_PATH"/deja_vu_sans.ttf"
 #define  DATA_PATH_ALIASES  DATA_PATH"/map_aliases.txt"
 #define  DATA_PATH_SPRITES  DATA_PATH"/sprites.texturepack"
+#define  CONFIG_PATH        "viewerconfig.cfg"
 
 
 static const char* const ViewerVersionString = "0.1.1";
@@ -348,6 +349,11 @@ Viewer::~Viewer()
 
 bool Viewer::Init(int argc, char** argv)
 {
+	if(!LoadConfig(_config, CONFIG_PATH))
+	{
+		SaveConfig(_config, CONFIG_PATH);
+	}
+
 	Snapshot* const snapshot = (Snapshot*)malloc(sizeof(Snapshot));
 	if(snapshot == nullptr)
 	{
@@ -381,24 +387,24 @@ bool Viewer::Init(int argc, char** argv)
 
 	_playPauseButton.SetTimerPtr(&_demoPlaybackTimer);
 	_reversePlaybackButton.SetReversedPtr(&_reversePlayback);
-	_showServerTimeCheckBox.SetActivePtr(&_timerShowsServerTime);
+	_showServerTimeCheckBox.SetActivePtr(&_config.TimerShowsServerTime);
 	_showServerTimeCheckBox.SetText("Clock shows server time");
-	_drawMapOverlaysCheckBox.SetActivePtr(&_drawMapOverlays);
+	_drawMapOverlaysCheckBox.SetActivePtr(&_config.DrawMapOverlays);
 	_drawMapOverlaysCheckBox.SetText("Enable map overlays");
-	_drawMapScoresCheckBox.SetActivePtr(&_drawMapScores);
+	_drawMapScoresCheckBox.SetActivePtr(&_config.DrawMapScores);
 	_drawMapScoresCheckBox.SetText("Draw scores");
-	_drawMapClockCheckBox.SetActivePtr(&_drawMapClock);
+	_drawMapClockCheckBox.SetActivePtr(&_config.DrawMapClock);
 	_drawMapClockCheckBox.SetText("Draw clock");
-	_drawMapFollowMsgCheckBox.SetActivePtr(&_drawMapFollowMsg);
+	_drawMapFollowMsgCheckBox.SetActivePtr(&_config.DrawMapFollowMsg);
 	_drawMapFollowMsgCheckBox.SetText("Draw follow message");
-	_drawMapHealthCheckBox.SetActivePtr(&_drawMapHealth);
+	_drawMapHealthCheckBox.SetActivePtr(&_config.DrawMapHealth);
 	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
 	_genHeatMapsButton.SetText("Generate Heat Maps");
 	_heatMapOpacity.SetValue(0.75f);
 	_heatMapOpacity.SetText("Opacity");
-	_heatMapSquaredRampCheckBox.SetActivePtr(&_heatMapSquaredRamp);
+	_heatMapSquaredRampCheckBox.SetActivePtr(&_config.HeatMapSquaredRamp);
 	_heatMapSquaredRampCheckBox.SetText("Bias towards heat (quadratic)");
-	_onlyFirstMatchCheckBox.SetActivePtr(&_onlyKeepFirstMatchSnapshots);
+	_onlyFirstMatchCheckBox.SetActivePtr(&_config.OnlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
@@ -613,7 +619,7 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 
 void Viewer::LoadDemo(const char* filePath)
 {
-	_demo.Load(filePath, _onlyKeepFirstMatchSnapshots);
+	_demo.Load(filePath, _config.OnlyKeepFirstMatchSnapshots);
 	
 	const udtString originalMapName = _demo.GetMapName();
 	udtString mapName = originalMapName;
@@ -775,7 +781,7 @@ void Viewer::GenerateHeatMaps()
 			goto finalize_image;
 		}
 
-		if(_heatMapSquaredRamp)
+		if(_config.HeatMapSquaredRamp)
 		{
 			for(u32 i = 0; i < pixelCount; ++i)
 			{
@@ -1340,22 +1346,22 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
 	}
 
-	if(!_drawMapOverlays)
+	if(!_config.DrawMapOverlays)
 	{
 		return;
 	}
 
-	if(_drawMapScores)
+	if(_config.DrawMapScores)
 	{
 		RenderDemoScore(renderParams);
 	}
 	
-	if(_drawMapClock)
+	if(_config.DrawMapClock)
 	{
 		RenderDemoTimer(renderParams);
 	}
 	
-	if(_drawMapFollowMsg || _drawMapHealth)
+	if(_config.DrawMapFollowMsg || _config.DrawMapHealth)
 	{
 		RenderDemoFollowedPlayer(renderParams);
 	}
@@ -1459,12 +1465,12 @@ void Viewer::RenderDemoTimer(const RenderParams& renderParams)
 	int totalSec;
 	if(_reversePlayback)
 	{
-		const int endTimeMs = _timerShowsServerTime ? (int)(_demo.GetFirstSnapshotTimeMs() + _demo.GetDurationMs()) : (int)_demo.GetDurationMs();
+		const int endTimeMs = _config.TimerShowsServerTime ? (int)(_demo.GetFirstSnapshotTimeMs() + _demo.GetDurationMs()) : (int)_demo.GetDurationMs();
 		totalSec = (endTimeMs - (int)_demoPlaybackTimer.GetElapsedMs()) / 1000;
 	}
 	else
 	{
-		const int startOffsetMs = _timerShowsServerTime ? (int)_demo.GetFirstSnapshotTimeMs() : 0;
+		const int startOffsetMs = _config.TimerShowsServerTime ? (int)_demo.GetFirstSnapshotTimeMs() : 0;
 		totalSec = ((int)_demoPlaybackTimer.GetElapsedMs() + startOffsetMs) / 1000;
 	}
 	const int minutes = totalSec / 60;
@@ -1502,7 +1508,7 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 	NVGcontext* const ctx = renderParams.NVGContext;
 	nvgFontSize(ctx, fontSize);
 
-	if(_drawMapFollowMsg)
+	if(_config.DrawMapFollowMsg)
 	{
 		const char* const name = _demo.GetString(snapshot.Core.FollowedName);
 		if(name != nullptr)
@@ -1519,7 +1525,7 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 		}
 	}
 
-	if(!_drawMapHealth)
+	if(!_config.DrawMapHealth)
 	{
 		return;
 	}
@@ -1681,7 +1687,7 @@ void Viewer::DrawProgressSliderToolTip(const RenderParams& renderParams)
 	_demoProgressBar.GetRect(x, y, w, h);
 
 	const f32 progress = udt_clamp(((f32)cx - x) / w, 0.0f, 1.0f);
-	const int extraSec = _timerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
+	const int extraSec = _config.TimerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
 	const int totalSec = (int)(GetTimeFromProgress(progress) / 1000) + extraSec;
 	const int minutes = totalSec / 60;
 	const int seconds = totalSec % 60;
@@ -1818,7 +1824,7 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 			break;
 		}
 
-		const int offsetMs = _timerShowsServerTime ? 0 : (int)_demo.GetFirstSnapshotTimeMs();
+		const int offsetMs = _config.TimerShowsServerTime ? 0 : (int)_demo.GetFirstSnapshotTimeMs();
 		const int totalSec = ((int)message.ServerTimeMs - offsetMs) / 1000;
 		const int minutes = totalSec / 60;
 		const int seconds = totalSec % 60;
@@ -2227,4 +2233,9 @@ void Viewer::FinishGeneratingHeatMaps()
 			heatMap.Image = nullptr;
 		}
 	}
+}
+
+void Viewer::ShutDown()
+{
+	SaveConfig(_config, CONFIG_PATH);
 }

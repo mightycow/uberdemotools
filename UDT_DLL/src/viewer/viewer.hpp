@@ -12,6 +12,7 @@
 #include "gui.hpp"
 #include "shared.hpp"
 #include "math_2d.hpp"
+#include "config.hpp"
 #include "nanovg/nanovg.h"
 
 
@@ -27,12 +28,6 @@ extern const f32 ViewerClearColor[4];
 	N(Chat, "Chat") \
 	N(HeatMaps, "Heat Maps") \
 	N(Log, "Log")
-
-struct Config
-{
-	f32 StaticZScale = 0.0f;
-	f32 DynamicZScale = 0.4f;
-};
 
 #define ITEM(Enum, String) Enum,
 struct Tab
@@ -57,6 +52,7 @@ struct Viewer
 	bool Init(int argc, char** argv);
 	void ProcessEvent(const Event& event);
 	void Render(const RenderParams& renderParams);
+	void ShutDown();
 
 private:
 	UDT_NO_COPY_SEMANTICS(Viewer);
@@ -200,14 +196,6 @@ private:
 	bool _wasPlayingBeforeProgressDrag = false;
 	bool _reversePlayback = false;
 	bool _mapCoordsLoaded = false;
-	bool _timerShowsServerTime = false;
 	bool _appLoaded = false;
 	bool _displayHelp = false;
-	bool _drawMapOverlays = true;
-	bool _drawMapScores = true;
-	bool _drawMapClock = true;
-	bool _drawMapFollowMsg = true;
-	bool _drawMapHealth = true;
-	bool _heatMapSquaredRamp = false;
-	bool _onlyKeepFirstMatchSnapshots = true;
 };
