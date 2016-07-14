@@ -174,6 +174,8 @@ private:
 	TextButton _genHeatMapsButton;
 	Slider _heatMapOpacitySlider;
 	CheckBox _heatMapSquaredRampCheckBox;
+	CheckBox _drawHeatMapCheckBox;
+	CheckBox _drawHeatMapOnlyCheckBox;
 	f32 _mapMin[3];
 	f32 _mapMax[3];
 	Rectangle _mapRect;

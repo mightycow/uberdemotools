@@ -16,7 +16,9 @@
 	N(bool, DrawMapFollowMsg, true) \
 	N(bool, DrawMapHealth, true) \
 	N(bool, HeatMapSquaredRamp, false) \
-	N(bool, OnlyKeepFirstMatchSnapshots, true)
+	N(bool, OnlyKeepFirstMatchSnapshots, true) \
+	N(bool, DrawHeatMap, true) \
+	N(bool, DrawHeatMapOnly, true)
 
 #define ITEM(Type, Name, Value) Type Name = Value;
 struct Config

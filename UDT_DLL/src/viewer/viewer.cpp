@@ -414,6 +414,10 @@ bool Viewer::Init(int argc, char** argv)
 	_heatMapOpacitySlider.SetText("Opacity");
 	_heatMapSquaredRampCheckBox.SetActivePtr(&_config.HeatMapSquaredRamp);
 	_heatMapSquaredRampCheckBox.SetText("Bias towards heat (quadratic)");
+	_drawHeatMapOnlyCheckBox.SetActivePtr(&_config.DrawHeatMapOnly);
+	_drawHeatMapOnlyCheckBox.SetText("Hide entities when the heat map is visible");
+	_drawHeatMapCheckBox.SetActivePtr(&_config.DrawHeatMap);
+	_drawHeatMapCheckBox.SetText("Draw heat map");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_config.OnlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
 	_staticZScaleSlider.SetText("Static Depth Scale");
@@ -444,6 +448,8 @@ bool Viewer::Init(int argc, char** argv)
 	heatMaps.AddWidget(&_heatMapOpacitySlider);
 	heatMaps.AddWidget(&_genHeatMapsButton);
 	heatMaps.AddWidget(&_heatMapSquaredRampCheckBox);
+	heatMaps.AddWidget(&_drawHeatMapOnlyCheckBox);
+	heatMaps.AddWidget(&_drawHeatMapCheckBox);
 
 	_activeWidgets.AddWidget(&_playPauseButton);
 	_activeWidgets.AddWidget(&_stopButton);
@@ -1085,13 +1091,19 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		f32 hmy = _uiRect.Y();
 
 		_heatMapSquaredRampCheckBox.SetRect(ctx, hmx, hmy);
-		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+		hmy += (f32)BND_WIDGET_HEIGHT;
 
 		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
+		_drawHeatMapCheckBox.SetRect(ctx, hmx, hmy);
+		hmy += (f32)BND_WIDGET_HEIGHT;
+
+		_drawHeatMapOnlyCheckBox.SetRect(ctx, hmx, hmy);
+		hmy += (f32)BND_WIDGET_HEIGHT + 8.0f;
+
 		_heatMapOpacitySlider.SetRect(hmx, hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
-		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
+		hmy += (f32)BND_WIDGET_HEIGHT + 8.0f;
 
 		const HeatMapPlayer* players;
 		_demo.GetHeatMapPlayers(players);
@@ -1178,9 +1190,10 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 	
 	const u32 heatMapButtonIndex = _heatMapGroup.GetSelectedIndex();
 	const u32 heatMapIndex = _heatMapBtnIdxToPlayerIdx[heatMapButtonIndex];
-	if(heatMapIndex < 64 &&
-	   _heatMaps[heatMapIndex].TextureId != InvalidTextureId &&
-	   _config.HeatMapOpacity > 0.0f)
+	if(_config.DrawHeatMap && 
+	   _config.HeatMapOpacity > 0.0f &&
+	   heatMapIndex < 64 &&
+	   _heatMaps[heatMapIndex].TextureId != InvalidTextureId)
 	{
 		NVGcontext* const c = renderParams.NVGContext;
 		f32 w = mapWidth * bgImageScale;
@@ -1214,6 +1227,11 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _config.HeatMapOpacity));
 		nvgFill(c);
 		nvgClosePath(c);
+
+		if(_config.DrawHeatMapOnly)
+		{
+			goto draw_map_overlays;
+		}
 	}
 
 	SpriteDrawParams params;
@@ -1377,6 +1395,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		return;
 	}
 
+draw_map_overlays:
 	if(_config.DrawMapScores)
 	{
 		RenderDemoScore(renderParams);
