@@ -162,6 +162,8 @@ private:
 	CheckBox _drawMapClockCheckBox;
 	CheckBox _drawMapFollowMsgCheckBox;
 	CheckBox _drawMapHealthCheckBox;
+	Slider _staticZScaleSlider;
+	Slider _dynamicZScaleSlider;
 	WidgetGroup _activeWidgets;
 	WidgetGroup _tabWidgets[Tab::Count];
 	RadioButton _tabButtons[Tab::Count];
@@ -169,7 +171,7 @@ private:
 	RadioButton _heatMapPlayers[64];
 	RadioGroup _heatMapGroup;
 	TextButton _genHeatMapsButton;
-	Slider _heatMapOpacity;
+	Slider _heatMapOpacitySlider;
 	CheckBox _heatMapSquaredRampCheckBox;
 	f32 _mapMin[3];
 	f32 _mapMax[3];

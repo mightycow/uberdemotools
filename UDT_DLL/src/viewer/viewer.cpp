@@ -288,6 +288,11 @@ static void ConvolveRGBAImage(u8* output, const u8* input, u32 width, u32 height
 	}
 }
 
+static void SliderFormatScale(char* buffer, f32 value, f32, f32)
+{
+	sprintf(buffer, "%.2f", 1.0f + value);
+}
+
 
 const f32 ViewerClearColor[4] = { 0.447f, 0.447f, 0.447f, 1.0f };
 
@@ -400,12 +405,20 @@ bool Viewer::Init(int argc, char** argv)
 	_drawMapHealthCheckBox.SetActivePtr(&_config.DrawMapHealth);
 	_drawMapHealthCheckBox.SetText("Draw followed player status bar");
 	_genHeatMapsButton.SetText("Generate Heat Maps");
-	_heatMapOpacity.SetValue(0.75f);
-	_heatMapOpacity.SetText("Opacity");
+	_heatMapOpacitySlider.SetValuePtr(&_config.HeatMapOpacity);
+	_heatMapOpacitySlider.SetText("Opacity");
 	_heatMapSquaredRampCheckBox.SetActivePtr(&_config.HeatMapSquaredRamp);
 	_heatMapSquaredRampCheckBox.SetText("Bias towards heat (quadratic)");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_config.OnlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
+	_staticZScaleSlider.SetText("Static Z Scale");
+	_staticZScaleSlider.SetRange(0.0f, 1.0f);
+	_staticZScaleSlider.SetFormatter(&SliderFormatScale);
+	_staticZScaleSlider.SetValuePtr(&_config.StaticZScale);
+	_dynamicZScaleSlider.SetText("Dynamic Z Scale");
+	_dynamicZScaleSlider.SetRange(0.0f, 1.0f);
+	_dynamicZScaleSlider.SetFormatter(&SliderFormatScale);
+	_dynamicZScaleSlider.SetValuePtr(&_config.DynamicZScale);
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -415,10 +428,12 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_drawMapFollowMsgCheckBox);
 	options.AddWidget(&_drawMapHealthCheckBox);
 	options.AddWidget(&_onlyFirstMatchCheckBox);
+	options.AddWidget(&_staticZScaleSlider);
+	options.AddWidget(&_dynamicZScaleSlider);
 
 	WidgetGroup& heatMaps = _tabWidgets[Tab::HeatMaps];
 	heatMaps.AddWidget(&_heatMapGroup);
-	heatMaps.AddWidget(&_heatMapOpacity);
+	heatMaps.AddWidget(&_heatMapOpacitySlider);
 	heatMaps.AddWidget(&_genHeatMapsButton);
 	heatMaps.AddWidget(&_heatMapSquaredRampCheckBox);
 
@@ -1052,6 +1067,8 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_staticZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
+		_dynamicZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT);
 	}
 	else if(tabIndex == Tab::HeatMaps)
 	{
@@ -1064,7 +1081,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		_genHeatMapsButton.SetRect(ctx, hmx, hmy);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
-		_heatMapOpacity.SetRect(hmx, hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
+		_heatMapOpacitySlider.SetRect(hmx, hmy, 100.0f, (f32)BND_WIDGET_HEIGHT);
 		hmy += 2.0f * (f32)BND_WIDGET_HEIGHT;
 
 		const HeatMapPlayer* players;
@@ -1154,7 +1171,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 	const u32 heatMapIndex = _heatMapBtnIdxToPlayerIdx[heatMapButtonIndex];
 	if(heatMapIndex < 64 &&
 	   _heatMaps[heatMapIndex].TextureId != InvalidTextureId &&
-	   _heatMapOpacity.GetValue() > 0.0f)
+	   _config.HeatMapOpacity > 0.0f)
 	{
 		NVGcontext* const c = renderParams.NVGContext;
 		f32 w = mapWidth * bgImageScale;
@@ -1185,7 +1202,7 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		const f32 y = mapDisplayY;
 		nvgBeginPath(c);
 		nvgRect(c, x, y, w, h);
-		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _heatMapOpacity.GetValue()));
+		nvgFillPaint(c, nvgImagePattern(c, x, y, w, h, 0.0f, _heatMaps[heatMapIndex].TextureId, _config.HeatMapOpacity));
 		nvgFill(c);
 		nvgClosePath(c);
 	}

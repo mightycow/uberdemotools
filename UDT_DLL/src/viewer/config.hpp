@@ -7,6 +7,7 @@
 #define CONFIG_VARS(N) \
 	N(f32, StaticZScale, 0.0f) \
 	N(f32, DynamicZScale, 0.4f) \
+	N(f32, HeatMapOpacity, 0.75f) \
 	N(bool, TimerShowsServerTime, false) \
 	N(bool, DrawMapOverlays, true) \
 	N(bool, DrawMapScores, true) \

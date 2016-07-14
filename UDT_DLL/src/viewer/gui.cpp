@@ -290,10 +290,19 @@ void DemoProgressSlider::Draw(NVGcontext* nvgContext)
 	bndScrollBar(nvgContext, Pos[0] - _radius, Pos[1], w, BND_SCROLLBAR_HEIGHT, state, _progress, s);
 }
 
+static void DefaultSliderFormatter(char* buffer, f32 value, f32 min, f32 max)
+{
+	value = min + value * (max - min);
+	sprintf(buffer, "%d%%", (int)(value * 100.0f));
+}
+
 Slider::Slider()
 {
+	_formatter = &DefaultSliderFormatter;
 	_text = nullptr;
-	_value = 0.0f;
+	_value = nullptr;
+	_min = 0.0f;
+	_max = 1.0f;
 	_draggingSlider = false;
 }
 
@@ -301,14 +310,20 @@ Slider::~Slider()
 {
 }
 
-void Slider::SetValue(f32 value)
+void Slider::SetFormatter(ValueFormatter formatter)
 {
-	_value = value;
+	_formatter = formatter == nullptr ? &DefaultSliderFormatter : formatter;
 }
 
-f32 Slider::GetValue() const
+void Slider::SetRange(f32 min, f32 max)
 {
-	return _value;
+	_min = min;
+	_max = max;
+}
+
+void Slider::SetValuePtr(f32* value)
+{
+	_value = value;
 }
 
 void Slider::SetText(const char* text)
@@ -359,8 +374,8 @@ void Slider::MouseScroll(s32 x, s32 y, s32 scroll)
 	   IsPointInside((f32)x, (f32)y))
 	{
 		const s32 offset = scroll > 0 ? 5 : -5;
-		const s32 value = (s32)(100.0f * _value) + offset;
-		_value = udt_clamp((f32)value / 100.0f, 0.0f, 1.0f);
+		const s32 value = (s32)(100.0f * *_value) + offset;
+		*_value = udt_clamp((f32)value / 100.0f, _min, _max);
 	}
 }
 
@@ -369,7 +384,8 @@ void Slider::ChangeProgress(s32 x, s32)
 	const f32 min = Pos[0] + 8.0f;
 	const f32 max = Pos[0] + Dim[0];
 	const f32 pos = (f32)x;
-	_value = udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
+	const f32 range = _max - _min;
+	*_value = _min + range * udt_clamp((pos - min) / (max - min), 0.0f, 1.0f);
 }
 
 void Slider::Draw(NVGcontext* nvgContext)
@@ -384,10 +400,10 @@ void Slider::Draw(NVGcontext* nvgContext)
 		state = BND_HOVER;
 	}
 
-	char value[64];
-	sprintf(value, "%d%%", (int)(_value * 100.0f));
-
-	bndSlider(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, BND_CORNER_NONE, state, _value, _text, value);
+	char valueString[64];
+	const f32 value = (*_value - _min) / (_max - _min);
+	(*_formatter)(valueString, *_value, _min, _max);
+	bndSlider(nvgContext, Pos[0], Pos[1], Dim[0], BND_WIDGET_HEIGHT, BND_CORNER_NONE, state, value, _text, valueString);
 }
 
 Button::Button()

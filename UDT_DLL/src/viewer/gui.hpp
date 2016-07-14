@@ -89,11 +89,14 @@ private:
 
 struct Slider : public Widget
 {
+	typedef void (*ValueFormatter)(char* buffer, f32 value, f32 min, f32 max);
+
 	Slider();
 	~Slider();
 
-	void SetValue(f32 value);
-	f32  GetValue() const;
+	void SetFormatter(ValueFormatter formatter);
+	void SetRange(f32 min, f32 max);
+	void SetValuePtr(f32* value);
 	void SetText(const char* text);
 
 	void MouseButtonDown(s32 x, s32 y, MouseButton::Id button) override;
@@ -106,8 +109,11 @@ struct Slider : public Widget
 private:
 	void ChangeProgress(s32 x, s32 y);
 
+	ValueFormatter _formatter;
 	const char* _text;
-	f32 _value;
+	f32* _value;
+	f32 _min;
+	f32 _max;
 	bool _draggingSlider;
 };
 
