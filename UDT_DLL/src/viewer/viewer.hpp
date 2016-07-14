@@ -164,6 +164,7 @@ private:
 	CheckBox _drawMapHealthCheckBox;
 	Slider _staticZScaleSlider;
 	Slider _dynamicZScaleSlider;
+	Slider _globalScaleSlider;
 	WidgetGroup _activeWidgets;
 	WidgetGroup _tabWidgets[Tab::Count];
 	RadioButton _tabButtons[Tab::Count];

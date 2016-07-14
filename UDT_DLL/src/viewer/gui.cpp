@@ -292,7 +292,7 @@ void DemoProgressSlider::Draw(NVGcontext* nvgContext)
 
 static void DefaultSliderFormatter(char* buffer, f32 value, f32 min, f32 max)
 {
-	value = min + value * (max - min);
+	value = (value - min) / (max - min);
 	sprintf(buffer, "%d%%", (int)(value * 100.0f));
 }
 

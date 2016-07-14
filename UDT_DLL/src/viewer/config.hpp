@@ -5,6 +5,7 @@
 
 
 #define CONFIG_VARS(N) \
+	N(f32, GlobalScale, 1.0f) \
 	N(f32, StaticZScale, 0.0f) \
 	N(f32, DynamicZScale, 0.4f) \
 	N(f32, HeatMapOpacity, 0.75f) \

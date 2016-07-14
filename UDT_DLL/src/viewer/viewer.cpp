@@ -288,9 +288,14 @@ static void ConvolveRGBAImage(u8* output, const u8* input, u32 width, u32 height
 	}
 }
 
-static void SliderFormatScale(char* buffer, f32 value, f32, f32)
+static void SliderFormatZScale(char* buffer, f32 value, f32, f32)
 {
 	sprintf(buffer, "%.2f", 1.0f + value);
+}
+
+static void SliderFormatScale(char* buffer, f32 value, f32, f32)
+{
+	sprintf(buffer, "%.2f", value);
 }
 
 
@@ -411,14 +416,16 @@ bool Viewer::Init(int argc, char** argv)
 	_heatMapSquaredRampCheckBox.SetText("Bias towards heat (quadratic)");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_config.OnlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
-	_staticZScaleSlider.SetText("Static Z Scale");
-	_staticZScaleSlider.SetRange(0.0f, 1.0f);
-	_staticZScaleSlider.SetFormatter(&SliderFormatScale);
+	_staticZScaleSlider.SetText("Static Depth Scale");
+	_staticZScaleSlider.SetFormatter(&SliderFormatZScale);
 	_staticZScaleSlider.SetValuePtr(&_config.StaticZScale);
-	_dynamicZScaleSlider.SetText("Dynamic Z Scale");
-	_dynamicZScaleSlider.SetRange(0.0f, 1.0f);
-	_dynamicZScaleSlider.SetFormatter(&SliderFormatScale);
+	_dynamicZScaleSlider.SetText("Dynamic Depth Scale");
+	_dynamicZScaleSlider.SetFormatter(&SliderFormatZScale);
 	_dynamicZScaleSlider.SetValuePtr(&_config.DynamicZScale);
+	_globalScaleSlider.SetText("Global Scale");
+	_globalScaleSlider.SetRange(0.5f, 2.0f);
+	_globalScaleSlider.SetFormatter(&SliderFormatScale);
+	_globalScaleSlider.SetValuePtr(&_config.GlobalScale);
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -430,6 +437,7 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_onlyFirstMatchCheckBox);
 	options.AddWidget(&_staticZScaleSlider);
 	options.AddWidget(&_dynamicZScaleSlider);
+	options.AddWidget(&_globalScaleSlider);
 
 	WidgetGroup& heatMaps = _tabWidgets[Tab::HeatMaps];
 	heatMaps.AddWidget(&_heatMapGroup);
@@ -1067,6 +1075,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		_drawMapFollowMsgCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapHealthCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_globalScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
 		_staticZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
 		_dynamicZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT);
 	}
@@ -2160,7 +2169,7 @@ void Viewer::ComputeMapPosition(f32* result, const f32* input, f32 mapScale, f32
 {
 	result[0] = _mapRect.Left() + (input[0] - _mapMin[0]) * mapScale;
 	result[1] = _mapRect.Bottom() - (input[1] - _mapMin[1]) * mapScale;
-	result[2] = 1.0f + zScale * ((input[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2]));
+	result[2] = _config.GlobalScale * (1.0f + zScale * ((input[2] - _mapMin[2]) / (_mapMax[2] - _mapMin[2])));
 }
 
 void Viewer::FinishLoadingDemo()
