@@ -160,6 +160,7 @@ void udtParserPlugInGameState::ClearPlayerInfos()
 		_playerInfos[i].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[i].Index = -1;
 		_playerInfos[i].FirstTeam = (u32)-1;
+		_playerConnected[i] = false;
 	}
 }
 
@@ -297,8 +298,11 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 {
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 
+	const bool csValid = !udtString::IsNullOrEmpty(configString);
+	const bool connected = _playerConnected[playerIndex];
+
 	// Player connected?
-	if(_playerInfos[playerIndex].Index != playerIndex && !udtString::IsNullOrEmpty(configString))
+	if(csValid && !connected)
 	{
 		udtString clan, name, finalName;
 		bool hasClan;
@@ -325,9 +329,11 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 			_playerInfos[playerIndex].FirstSnapshotTimeMs = serverTimeMs;
 			_playerInfos[playerIndex].LastSnapshotTimeMs = serverTimeMs;
 		}
+
+		_playerConnected[playerIndex] = true;
 	}
 	// Player disconnected?
-	else if(_playerInfos[playerIndex].Index == playerIndex && udtString::IsNullOrEmpty(configString))
+	else if(!csValid && connected)
 	{
 		_players.Add(_playerInfos[playerIndex]);
 		++_currentGameState.PlayerCount;
@@ -338,5 +344,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		_playerInfos[playerIndex].FirstSnapshotTimeMs = UDT_S32_MAX;
 		_playerInfos[playerIndex].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[playerIndex].FirstTeam = (u32)-1;
+
+		_playerConnected[playerIndex] = false;
 	}
 }

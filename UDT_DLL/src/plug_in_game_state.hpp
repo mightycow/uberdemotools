@@ -41,6 +41,7 @@ private:
 private:
 	udtGeneralAnalyzer _analyzer;
 	udtGameStatePlayerInfo _playerInfos[64];
+	bool _playerConnected[64];
 	udtVMArray<udtParseDataGameState> _gameStates { "ParserPlugInGameState::GameStatesArray" };
 	udtVMArray<udtMatchInfo> _matches { "ParserPlugInGameState::MatchesArray" };
 	udtVMArray<udtGameStateKeyValuePair> _keyValuePairs { "ParserPlugInGameState::KeyValuePairsArray" }; // Key/value pairs from config strings 0 and 1.
