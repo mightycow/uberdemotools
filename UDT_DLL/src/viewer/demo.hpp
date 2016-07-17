@@ -247,6 +247,7 @@ private:
 		Write(&data, (u32)sizeof(T));
 	}
 
+	bool GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const;
 	void Read(uptr& offset, void* data, u32 byteCount) const;
 	void Write(const void* data, u32 byteCount);
 	void ParseDemo(const char* filePath, MessageHandler messageHandler);

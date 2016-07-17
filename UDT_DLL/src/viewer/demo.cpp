@@ -649,6 +649,34 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 	return true;
 }
 
+bool Demo::GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const
+{
+	const auto& snapshots = _snapshots[_readIndex];
+	if(index >= snapshots.GetSize())
+	{
+		return false;
+	}
+
+	uptr offset = snapshots[index].Offset;
+
+	Read(offset, snapshot.ServerTimeMs);
+
+	const u32 staticItemCount = _staticItems.GetSize();
+	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
+	offset += staticItemByteCount;
+
+	u32 playerCount = 0;
+	Read(offset, playerCount);
+	assert(playerCount <= 64);
+	offset += playerCount * (u32)sizeof(Player);
+
+	Read(offset, snapshot.DynamicItemCount);
+	assert(snapshot.DynamicItemCount <= MAX_DYN_ITEMS);
+	Read(offset, snapshot.DynamicItems, snapshot.DynamicItemCount * (u32)sizeof(DynamicItem));
+
+	return true;
+}
+
 void Demo::WriteSnapshot(const Snapshot& snapshot)
 {
 	SnapshotDesc snapDesc;
@@ -1410,7 +1438,7 @@ void Demo::FixDynamicItemsAndPlayers()
 			bool fixed = false;
 			for(u32 s2 = s; s2 < snapshotCount && !fixed; ++s2)
 			{
-				GetSnapshotData(snap2, s2);
+				GetDynamicItemsOnly(snap2, s2);
 				if(snap2.ServerTimeMs - prevSnap.ServerTimeMs >= (s32)spawnTimeMs)
 				{
 					break;
@@ -1428,7 +1456,6 @@ void Demo::FixDynamicItemsAndPlayers()
 							const f32 t = (f32)(currSnap.ServerTimeMs - prevSnap.ServerTimeMs) / (f32)(snap2.ServerTimeMs - prevSnap.ServerTimeMs);
 							Float3::Lerp(newItem.Position, item.Position, item2.Position, t);
 							currSnap.DynamicItems[currSnap.DynamicItemCount++] = newItem;
-
 						}
 						fixed = true;
 						break;
