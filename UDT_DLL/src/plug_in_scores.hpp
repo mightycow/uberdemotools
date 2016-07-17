@@ -59,6 +59,7 @@ private:
 	s32 _clientNumber2; // For CPMA demos only: second place client number.
 	s32 _followedNumber; // For non-CPMA Quake 3 demos only.
 	s32 _followedScore;  // For non-CPMA Quake 3 demos only.
+	s32 _firstSnapshotTimeMs;
 	udtString _name1; // For Quake Live demos only.
 	udtString _name2; // For Quake Live demos only.
 	udtGameType::Id _gameType;

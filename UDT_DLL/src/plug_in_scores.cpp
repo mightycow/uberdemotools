@@ -84,35 +84,23 @@ void udtParserPlugInScores::StartDemoAnalysis()
 
 void udtParserPlugInScores::FinishDemoAnalysis()
 {
-	const u32 firstIdx = BufferRanges.GetSize() > 0 ? BufferRanges[0].FirstIndex : 0;
-	if(_scores[firstIdx].Id1 != _scores[firstIdx].Id2)
+	// @NOTE: The current range hasn't been added yet.
+	const u32 rangeCount = BufferRanges.GetSize();
+	const u32 firstIdx = rangeCount == 0 ? 0 : BufferRanges[rangeCount - 1].FirstIndex + BufferRanges[rangeCount - 1].Count;
+	if(firstIdx >= _scores.GetSize())
 	{
 		return;
 	}
 
-	u32 id1 = 0;
-	u32 id2 = 0;
-	u32 onePastlastIdxToFix = 0;
-	for(u32 i = firstIdx + 1; i < _scores.GetSize(); ++i)
+	if(firstIdx + 1 < _scores.GetSize() &&
+	   _scores[firstIdx].Score1 == _scores[firstIdx + 1].Score1 &&
+	   _scores[firstIdx].Score2 == _scores[firstIdx + 1].Score2)
 	{
-		if(_scores[i].Id1 != _scores[i].Id2)
-		{
-			id1 = _scores[i].Id1;
-			id2 = _scores[i].Id2;
-			onePastlastIdxToFix = i;
-			break;
-		}
+		_scores.Remove(firstIdx);
 	}
-
-	if(id1 == id2)
+	else
 	{
-		return;
-	}
-
-	for(u32 i = firstIdx + 1; i < onePastlastIdxToFix; ++i)
-	{
-		_scores[i].Id1 = id1;
-		_scores[i].Id2 = id2;
+		_scores[firstIdx].ServerTimeMs = _firstSnapshotTimeMs;
 	}
 }
 
@@ -125,6 +113,7 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	_clientNumber2 = 64;
 	_followedNumber = 64;
 	_followedScore = SCORE_NO_ONE;
+	_firstSnapshotTimeMs = UDT_S32_MIN;
 	_name1 = udtString::NewNull();
 	_name2 = udtString::NewNull();
 	_parser = &parser;
@@ -159,8 +148,13 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	_scoreChanged = false;
 }
 
-void udtParserPlugInScores::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser&)
+void udtParserPlugInScores::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
+	if(_firstSnapshotTimeMs == UDT_S32_MIN)
+	{
+		_firstSnapshotTimeMs = parser._inServerTime;
+	}
+
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, _protocol);
 	if(ps == NULL)
 	{
@@ -360,6 +354,8 @@ void udtParserPlugInScores::AddScore()
 	scores.Flags = 0;
 	WriteNullStringToApiStruct(scores.Name1);
 	WriteNullStringToApiStruct(scores.Name2);
+	WriteNullStringToApiStruct(scores.CleanName1);
+	WriteNullStringToApiStruct(scores.CleanName2);
 	if(IsTeamMode(_gameType))
 	{
 		scores.Flags |= (u32)udtParseDataScoreMask::TeamBased;
@@ -381,19 +377,90 @@ void udtParserPlugInScores::AddScore()
 			GetScoresQL(scores);
 		}
 	}
+	if(scores.Name1 != UDT_U32_MAX)
+	{
+		WriteStringToApiStruct(scores.CleanName1, udtString::NewCleanClone(_stringAllocator, _protocol, _stringAllocator.GetStringAt(scores.Name1)));
+	}
+	if(scores.Name2 != UDT_U32_MAX)
+	{
+		WriteStringToApiStruct(scores.CleanName2, udtString::NewCleanClone(_stringAllocator, _protocol, _stringAllocator.GetStringAt(scores.Name2)));
+	}
 	_scores.Add(scores);
 }
 
 void udtParserPlugInScores::GetScoresCPMA(udtParseDataScore& scores)
 {
-	const u32 score1 = _score1;
-	const u32 score2 = _score2;
-	const u32 client1 = (u32)_clientNumber1;
-	const u32 client2 = (u32)_clientNumber2;
-	scores.Id1 = client1;
-	scores.Id2 = client2;
+	const s32 score1 = _score1;
+	const s32 score2 = _score2;
+	u32 client1 = (u32)_clientNumber1;
+	u32 client2 = (u32)_clientNumber2;
 	scores.Score1 = score1;
 	scores.Score2 = score2;
+
+	if(client1 >= 64 &&
+	   client2 >= 64)
+	{
+		const s32 followedNumber = _followedNumber;
+		if(score1 == score2)
+		{
+			u32 found = 0;
+			for(u32 i = 0; i < 64 && found != 3; ++i)
+			{
+				if(!_players[i].Present ||
+				   _players[i].Team != (u8)udtTeam::Free)
+				{
+					continue;
+				}
+
+				if(client1 >= 64)
+				{
+					client1 = i;
+					found |= 1;
+				}
+				else if(client2 >= 64)
+				{
+					client2 = i;
+					found |= 2;
+				}
+			}
+		}
+		else if(followedNumber >= 0 &&
+				followedNumber < 64 &&
+				_players[followedNumber].Team == (u8)udtTeam::Free)
+		{
+			bool found = false;
+			u32* clientId = NULL;
+			if(_followedScore == score1)
+			{
+				found = true;
+				clientId = &client2;
+				client1 = followedNumber;
+			}
+			else if(_followedScore == score2)
+			{
+				found = true;
+				clientId = &client1;
+				client2 = followedNumber;
+			}
+
+			if(found)
+			{
+				for(u32 i = 0; i < 64; ++i)
+				{
+					if(i != (u32)followedNumber &&
+					   _players[i].Present &&
+					   _players[i].Team == (u8)udtTeam::Free)
+					{
+						*clientId = i;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	scores.Id1 = client1;
+	scores.Id2 = client2;
 	if(client1 < 64)
 	{
 		WriteStringToApiStruct(scores.Name1, _players[client1].Name);
@@ -409,7 +476,7 @@ void udtParserPlugInScores::GetScoresQ3(udtParseDataScore& scores)
 	const s32 followedNumber = _followedNumber;
 	if(followedNumber < 0 ||
 	   followedNumber >= 64 ||
-	   _players[_followedNumber].Team != (u8)udtTeam::Free)
+	   _players[followedNumber].Team != (u8)udtTeam::Free)
 	{
 		return;
 	}

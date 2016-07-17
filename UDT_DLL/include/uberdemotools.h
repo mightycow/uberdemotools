@@ -2123,6 +2123,18 @@ extern "C"
 		/* String length. */
 		u32 Name2Length;
 
+		/* First place player name. */
+		u32 CleanName1;
+
+		/* String length. */
+		u32 CleanName1Length;
+
+		/* Second place player name. */
+		u32 CleanName2;
+
+		/* String length. */
+		u32 CleanName2Length;
+
 		/* Ignore this. */
 		s32 Reserved1;
 	}
