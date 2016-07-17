@@ -686,6 +686,47 @@ static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCaptureBuff
 	writer.EndArray();
 }
 
+static void WriteScores(udtJSONExporter& writer, const udtParseDataScoreBuffers& scoreBuffers, u32 demoIndex)
+{
+	const udtParseDataBufferRange range = scoreBuffers.ScoreRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("scores");
+	writer.SetStringBuffer(scoreBuffers.StringBuffer, scoreBuffers.StringBufferSize);
+
+	for(u32 i = first, end = first + count; i < end; ++i)
+	{
+		const udtParseDataScore& info = scoreBuffers.Scores[i];
+		const bool teamMode = (info.Flags & (u32)udtParseDataScoreMask::TeamBased) != 0;
+
+		writer.StartObject();
+
+		writer.WriteIntValue("game state index", info.GameStateIndex);
+		writer.WriteIntValue("server time", info.ServerTimeMs);
+		writer.WriteBoolValue("team mode", teamMode);
+		writer.WriteIntValue("score 1", info.Score1);
+		writer.WriteIntValue("score 2", info.Score2);
+		if(!teamMode)
+		{
+			if(info.Id1 < 64) writer.WriteIntValue("client 1", (s32)info.Id1);
+			if(info.Id2 < 64) writer.WriteIntValue("client 2", (s32)info.Id2);
+			if(info.Name1 != UDT_U32_MAX) writer.WriteStringValue("name 1", info.Name1);
+			if(info.Name2 != UDT_U32_MAX) writer.WriteStringValue("name 2", info.Name2);
+			if(info.CleanName1 != UDT_U32_MAX) writer.WriteStringValue("clean name 1", info.CleanName1);
+			if(info.CleanName2 != UDT_U32_MAX) writer.WriteStringValue("clean name 2", info.CleanName2);
+		}
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+
 bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const char* jsonPath)
 {
 	udtFileStream jsonFile;
@@ -763,6 +804,14 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Captures, &captureBuffers) == (s32)udtErrorCode::None)
 		{
 			WriteCaptures(jsonWriter, captureBuffers, demoIndex);
+		}
+	}
+
+	{
+		udtParseDataScoreBuffers scoreBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Scores, &scoreBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteScores(jsonWriter, scoreBuffers, demoIndex);
 		}
 	}
 
