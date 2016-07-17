@@ -266,7 +266,6 @@ private:
 	bool FindPlayer(const Player*& player, u32 snapshotIndex, u8 idClientNumber);
 	bool AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch);
 	u32  CloneString(const void* buffer, u32 offset);
-	u32  CloneStringClean(const void* buffer, u32 offset);
 
 	enum Constants
 	{

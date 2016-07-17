@@ -1644,8 +1644,8 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 			score.Base.Score2Id = (u8)s.Id2;
 			score.Base.Score1 = (s16)s.Score1;
 			score.Base.Score2 = (s16)s.Score2;
-			score.Base.Score1Name = CloneStringClean(scoreBuffers.StringBuffer, s.Name1);
-			score.Base.Score2Name = CloneStringClean(scoreBuffers.StringBuffer, s.Name2);
+			score.Base.Score1Name = CloneString(scoreBuffers.StringBuffer, s.CleanName1);
+			score.Base.Score2Name = CloneString(scoreBuffers.StringBuffer, s.CleanName2);
 			_scores.Add(score);
 		}
 	}
@@ -1706,13 +1706,6 @@ u32 Demo::CloneString(const void* buffer, u32 offset)
 	const char* const toClone = offset != UDT_U32_MAX ? ((const char*)buffer + offset) : "";
 
 	return udtString::NewClone(_stringAllocator, toClone).GetOffset();
-}
-
-u32 Demo::CloneStringClean(const void* buffer, u32 offset)
-{
-	const char* const toClone = offset != UDT_U32_MAX ? ((const char*)buffer + offset) : "";
-
-	return udtString::NewCleanClone(_stringAllocator, (udtProtocol::Id)_protocol, toClone).GetOffset();
 }
 
 u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
