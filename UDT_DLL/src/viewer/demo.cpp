@@ -335,6 +335,17 @@ void idProtocolNumbers::GetNumbers(u32 protocol, u32 mod)
 	}
 }
 
+static const u32 LoadStepCount = 4;
+static const f32 LoadSteps[LoadStepCount + 2] =
+{
+	0.0f,
+	0.03f,
+	0.07f,
+	0.42f,
+	0.52f,
+	1.0f
+};
+
 Demo::Demo()
 {
 	_snapshots[0].SetName("Demo::SnapshotOffsetArray0");
@@ -391,11 +402,9 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 
 void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 {
-	_loadTimer.Restart();
-
-	const f32 LoadStepCount = 6.0f;
-	f32 loadStep = 1.0f;
 	(*_progressCallback)(0.0f, _userData);
+	_loadTimer.Restart();
+	_loadStep = 0;
 
 	_readIndex = 0;
 	_writeIndex = 0;
@@ -422,6 +431,7 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 	{
 		ParseDemo(filePath, &Demo::ProcessMessage_Mod);
 	}
+	NextStep();
 	
 	const u32 mod = _mod;
 	if(protocol != previousProtocol || mod != previousMod)
@@ -429,28 +439,23 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 		_protocolNumbers.GetNumbers(protocol, mod);
 	}
 
-	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	ParseDemo(filePath, &Demo::ProcessMessage_StaticItems);
-	loadStep += 1.0f;
+	NextStep();
 
-	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	ParseDemo(filePath, &Demo::ProcessMessage_FinalPass);
-	loadStep += 1.0f;
+	NextStep();
 
 	if(_snapshots[_readIndex].GetSize() == 0)
 	{
 		return;
 	}
 
-	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	FixStaticItems();
-	loadStep += 1.0f;
+	NextStep();
 
-	(*_progressCallback)(loadStep / LoadStepCount, _userData);
 	FixDynamicItemsAndPlayers();
-	loadStep += 1.0f;
 
-	(*_progressCallback)(loadStep / LoadStepCount, _userData);
+	// Doesn't count as a step (too fast).
 	FixLGEndPoints();
 
 	const auto& snapshots = _snapshots[_readIndex];
@@ -755,8 +760,12 @@ void Demo::ParseDemo(const char* filePath, MessageHandler messageHandler)
 	udtCuMessageOutput output;
 	u32 continueParsing = 0;
 	u32 gsIndex = 0;
+	u64 fileOffset = 0;
+	const u64 fileSize = file.Length();
 	for(;;)
 	{
+		ReportProgress((f32)((f64)fileOffset / (f64)fileSize));
+
 		if(file.Read(&input.MessageSequence, 4, 1) != 1)
 		{
 			break;
@@ -783,6 +792,7 @@ void Demo::ParseDemo(const char* filePath, MessageHandler messageHandler)
 			break;
 		}
 		input.Buffer = _messageData;
+		fileOffset += (u64)(input.BufferByteCount + 8);
 
 		errorCode = udtCuParseMessage(context, &output, &continueParsing, &input);
 		if(errorCode != udtErrorCode::None)
@@ -1342,6 +1352,8 @@ void Demo::FixStaticItems()
 	const u32 snapshotCount = snapshots.GetSize();
 	for(u32 i = 0; i < itemCount; ++i)
 	{
+		ReportProgress((f32)i / (f32)itemCount);
+
 		const s32 itemId = _staticItems[i].Id;
 		const u32 spawnTimeMs = GetItemSpawnTimeMs(itemId);
 		if(spawnTimeMs == 0)
@@ -1417,6 +1429,8 @@ void Demo::FixDynamicItemsAndPlayers()
 	const u32 snapshotCount = _snapshots[_readIndex].GetSize();
 	for(u32 s = 1; s < snapshotCount - 1; ++s)
 	{
+		ReportProgress((f32)s / (f32)(snapshotCount - 1));
+
 		GetSnapshotData(*snaps[snapIdx], s);
 		auto& currSnap = *snaps[snapIdx];
 		const auto& prevSnap = *snaps[snapIdx ^ 1];
@@ -1780,4 +1794,18 @@ bool Demo::GetChatMessage(ChatMessage& message, u32 index) const
 void Demo::GetHeatMapPlayers(const HeatMapPlayer*& players) const
 {
 	players = _heatMapPlayers;
+}
+
+void Demo::ReportProgress(f32 subProgress)
+{
+	const f32 base = LoadSteps[_loadStep];
+	const f32 length = LoadSteps[_loadStep + 1] - LoadSteps[_loadStep];
+	const f32 progress = base + length * subProgress;
+	(*_progressCallback)(progress, _userData);
+}
+
+void Demo::NextStep()
+{
+	++_loadStep;
+	assert(_loadStep + 1 < (u32)UDT_COUNT_OF(LoadSteps));
 }

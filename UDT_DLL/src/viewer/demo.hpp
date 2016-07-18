@@ -267,6 +267,8 @@ private:
 	bool FindPlayer(const Player*& player, u32 snapshotIndex, u8 idClientNumber);
 	bool AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch);
 	u32  CloneString(const void* buffer, u32 offset);
+	void ReportProgress(f32 subProgress);
+	void NextStep();
 
 	enum Constants
 	{
@@ -338,4 +340,5 @@ private:
 	u32 _mod = udtMod::None;
 	u32 _gameType = udtGameType::Count;
 	u32 _protocol = udtProtocol::Invalid;
+	u32 _loadStep = 0;
 };
