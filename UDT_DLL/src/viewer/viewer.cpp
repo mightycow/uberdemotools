@@ -1239,7 +1239,8 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 
 		if(_config.DrawHeatMapOnly)
 		{
-			goto draw_map_overlays;
+			RenderDemoOverlays(renderParams);
+			return;
 		}
 	}
 
@@ -1399,12 +1400,16 @@ void Viewer::RenderDemo(const RenderParams& renderParams)
 		DrawMapSpriteAt(params, (u32)Sprite::dead_player, player.Position, 16.0f, _config.DynamicZScale, 0.0f);
 	}
 
+	RenderDemoOverlays(renderParams);
+}
+
+void Viewer::RenderDemoOverlays(const RenderParams& renderParams)
+{
 	if(!_config.DrawMapOverlays)
 	{
 		return;
 	}
 
-draw_map_overlays:
 	if(_config.DrawMapScores)
 	{
 		RenderDemoScore(renderParams);

@@ -90,6 +90,7 @@ private:
 	void RenderDemo(const RenderParams& renderParams);
 	void RenderNoDemo(const RenderParams& renderParams);
 	void RenderThreadedJobProgress(const RenderParams& renderParams);
+	void RenderDemoOverlays(const RenderParams& renderParams);
 	void RenderDemoScore(const RenderParams& renderParams);
 	void RenderDemoTimer(const RenderParams& renderParams);
 	void RenderDemoFollowedPlayer(const RenderParams& renderParams);
