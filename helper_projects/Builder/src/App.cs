@@ -983,6 +983,8 @@ namespace Uber.Builder
 
             if(!CreateConArchive(visualStudio, "x86") || 
                 !CreateConArchive(visualStudio, "x64") ||
+                !CreateGUIArchive(visualStudio, "x86") ||
+                !CreateGUIArchive(visualStudio, "x64") ||
                 !CreateDevArchive(visualStudio, "x86") ||
                 !CreateDevArchive(visualStudio, "x64"))
             {
@@ -1025,6 +1027,31 @@ namespace Uber.Builder
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLHeaderFilePath)));
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT.dll")));
             
+            SetStatus("Creating archive {0}", archiveFilePath);
+            if(!WinRAR.CreateArchive(workDir, archiveFilePath, filePaths))
+            {
+                SetStatus("Failed to create archive {0}", archiveFilePath);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CreateGUIArchive(VisualStudio.Version visualStudio, string arch)
+        {
+            var workDir = Path.GetFullPath(Config.RootFolderPath);
+            var libVersion = Data.DLLVersion.ToString();
+            var guiVersion = Data.GUIVersion.ToString();
+            var libChangeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogDLLFilePath));
+            var guiChangeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogGUIFilePath));
+            var archiveFilePath = string.Format("udt_gui_{0}_dll_{1}_{2}.zip", guiVersion, libVersion, arch);
+            var filePaths = new List<string>();
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT.dll")));
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI.exe")));
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI_Updater.exe")));
+            filePaths.Add(libChangeLogFilePath);
+            filePaths.Add(guiChangeLogFilePath);
+
             SetStatus("Creating archive {0}", archiveFilePath);
             if(!WinRAR.CreateArchive(workDir, archiveFilePath, filePaths))
             {
