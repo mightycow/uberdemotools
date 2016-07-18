@@ -267,7 +267,8 @@ namespace Uber.Builder
             "UDT_merger",
             "UDT_json",
             "UDT_captures",
-            "UDT_converter"
+            "UDT_converter",
+            "UDT_viewer"
         };
 
         public delegate void VoidDelegate();
@@ -290,7 +291,7 @@ namespace Uber.Builder
             Actions.Add(new Action("Generate the Visual Studio solution", ActionGenerateSolution));
             Actions.Add(new Action("Check version numbers for mismatches", ActionCheckVersions));
             Actions.Add(new Action("Build the GUI app and its updater", ActionBuildGUI));
-            Actions.Add(new Action("Build the library and command-line tools", ActionBuildLib));
+            Actions.Add(new Action("Build the library and applications", ActionBuildLib));
             Actions.Add(new Action("Package the binaries", ActionPackage));
 
             var logListBox = new ListBox();
@@ -491,6 +492,7 @@ namespace Uber.Builder
             if(profileJobs.Count == 0)
             {
                 profileJobs.Add(new ProfileJob("UDT_GUI.exe", "/ForceAnalyzeOnLoad /QuitAfterFirstJob /ForceSkipFolderScanDialog /ForceScanFoldersRecursively \"{1}\""));
+                profileJobs.Add(new ProfileJob("UDT_viewer.exe", "\"{1}\\dm_91\\ctf_with_overtime.dm_91\" /ProfileMode"));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=68 \"-o={0}\" \"{1}\\dm3\""));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=68 \"-o={0}\" \"{1}\\dm_48\""));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=91 \"-o={0}\" \"{1}\\dm_73\""));
