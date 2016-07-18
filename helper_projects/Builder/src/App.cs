@@ -53,6 +53,8 @@ namespace Uber.Builder
         public string GUIOutputFolderPath = @"UDT_GUI\.bin";
         public string DemoFolderPath = @"demo_files";
         public string WinRARFilePath = @"C:\Program Files\WinRAR\WinRAR.exe";
+        public string ResHackerFilePath = @"C:\Programs\Resource Hacker\ResourceHacker.exe";
+        public string IconFilePath = @"UDT_GUI\UDT.ico";
         public List<string> CommandLineToolNames = new List<string>();
         public List<ProfileJob> ProfileJobs = new List<ProfileJob>();
     }
@@ -1130,12 +1132,22 @@ namespace Uber.Builder
 
         private bool CreateViewerArchive(VisualStudio.Version visualStudio, string arch)
         {
-            var workDir = Path.GetFullPath(Config.RootFolderPath);
             var version = Data.ViewerVersion;
-            var changeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogViewerFilePath));
             var archiveFilePath = string.Format("udt_viewer_{0}_{1}.zip", version, arch);
+            var viewerFolderPath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release"));
+            var iconPath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.IconFilePath));
+            var resHackArgs = string.Format("-addoverwrite \"UDT_viewer.exe\", \"UDT_viewer.exe\", \"{0}\", ICONGROUP, MAINICON, 0", iconPath);
+            if(!RunAndReadProcess(viewerFolderPath, Config.ResHackerFilePath, resHackArgs))
+            {
+                SetStatus("Failed to set the viewer's icon before creating archive {0}", archiveFilePath);
+                return false;
+            }
+
+            var workDir = Path.GetFullPath(Config.RootFolderPath);
+            var changeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogViewerFilePath));
+            var viewerPath = Path.Combine(viewerFolderPath, "UDT_viewer.exe");
             var filePaths = new List<string>();
-            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT_viewer.exe")));
+            filePaths.Add(viewerPath);
             filePaths.Add(changeLogFilePath);
             
             SetStatus("Creating archive {0}", archiveFilePath);
