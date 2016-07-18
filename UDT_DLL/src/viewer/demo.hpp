@@ -252,6 +252,7 @@ private:
 	void Write(const void* data, u32 byteCount);
 	void ParseDemo(const char* filePath, MessageHandler messageHandler);
 	bool ProcessMessage_Mod(const udtCuMessageOutput& message);
+	bool ProcessMessage_OSPEncryption(const udtCuMessageOutput& message);
 	bool ProcessMessage_StaticItems(const udtCuMessageOutput& message);
 	bool ProcessMessage_FinalPass(const udtCuMessageOutput& message);
 	bool ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool followed);
@@ -341,4 +342,5 @@ private:
 	u32 _gameType = udtGameType::Count;
 	u32 _protocol = udtProtocol::Invalid;
 	u32 _loadStep = 0;
+	bool _ospEncryptedPlayers = false;
 };

@@ -431,6 +431,11 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
 	{
 		ParseDemo(filePath, &Demo::ProcessMessage_Mod);
 	}
+	_ospEncryptedPlayers = false;
+	if(_mod == (u32)udtMod::OSP)
+	{
+		ParseDemo(filePath, &Demo::ProcessMessage_OSPEncryption);
+	}
 	NextStep();
 	
 	const u32 mod = _mod;
@@ -861,6 +866,25 @@ bool Demo::ProcessMessage_Mod(const udtCuMessageOutput&)
 	return false;
 }
 
+bool Demo::ProcessMessage_OSPEncryption(const udtCuMessageOutput&)
+{
+	udtCuConfigString cs;
+	if(udtCuGetConfigString(_context, &cs, 872) != udtErrorCode::None ||
+	   cs.ConfigString == nullptr)
+	{
+		return false;
+	}
+
+	s32 value = 0;
+	if(StringParseInt(value, cs.ConfigString) &&
+	   value != 0)
+	{
+		_ospEncryptedPlayers = true;
+	}
+
+	return false;
+}
+
 bool Demo::ProcessMessage_StaticItems(const udtCuMessageOutput& message)
 {
 	if(message.IsGameState)
@@ -1240,7 +1264,20 @@ bool Demo::ProcessPlayer(const idEntityStateBase& player, s32 serverTimeMs, bool
 	udtGetUDTMagicNumber(&udtWeaponId, udtMagicNumberType::Weapon, player.weapon, _protocol, _mod);
 
 	Player p;
-	ComputeTrajectoryPosition(p.Position, player.pos, serverTimeMs);
+	if(_ospEncryptedPlayers && 
+	   !followed && 
+	   player.number < 64)
+	{
+		idTrajectoryBase traj = player.pos;
+		traj.trBase[0] += (f32)(677 - 7 * player.number);
+		traj.trBase[1] += (f32)(411 - 12 * player.number);
+		traj.trBase[2] += (f32)(243 - 2 * player.number);
+		ComputeTrajectoryPosition(p.Position, traj, serverTimeMs);
+	}
+	else
+	{
+		ComputeTrajectoryPosition(p.Position, player.pos, serverTimeMs);
+	}
 	p.Angle = ComputePlayerAngle(player, serverTimeMs);
 	p.WeaponId = (u8)udtWeaponId;
 	p.IdClientNumber = (u8)player.clientNum;
