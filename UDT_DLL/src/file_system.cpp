@@ -40,11 +40,7 @@ bool GetDirectoryFileList(udtFileListQuery& query)
 		return false;
 	}
 
-	udtVMArray<udtString> folders;
-	if(query.Recursive)
-	{
-		folders.Init(UDT_KB(4), "FileListQuery::FoldersArray");
-	}
+	udtVMArray<udtString> folders("FileListQuery::FoldersArray");
 	do
 	{
 		// @NOTE: we can't create a temp alloc scope here because of
@@ -134,11 +130,7 @@ bool GetDirectoryFileList(udtFileListQuery& query)
 		return false;
 	}
 
-	udtVMArray<udtString> folders;
-	if(query.Recursive)
-	{
-		folders.Init(UDT_KB(4), "FileListQuery::FoldersArray");
-	}
+	udtVMArray<udtString> folders("FileListQuery::FoldersArray");
 	const udtString folderPath = query.FolderPath;
 	
 	struct dirent* dirEntry;

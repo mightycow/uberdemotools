@@ -33,7 +33,7 @@ public:
 
 	udtVMLinearAllocator& GetTempAllocator() { return *TempAllocator; }
 
-	udtVMArray<udtCutSection> CutSections; // Final array.
+	udtVMArray<udtCutSection> CutSections { "CutByPatternPlugIn::CutSectionsArray" }; // Final array.
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtPatternSearchPlugIn);
@@ -42,9 +42,9 @@ private:
 	void FindPlayerInServerCommand(const udtCommandCallbackArg& info, udtBaseParser& parser);
 	bool GetPlayerName(udtString& playerName, udtVMLinearAllocator& allocator, udtBaseParser& parser, s32 csIdx);
 
-	udtVMArray<udtPatternSearchAnalyzerBase*> _analyzers;
-	udtVMArray<udtPatternType::Id> _analyzerTypes;
-	udtVMLinearAllocator _analyzerAllocator;
+	udtVMArray<udtPatternSearchAnalyzerBase*> _analyzers { "CutByPatternPlugIn::AnalyzersArray" };
+	udtVMArray<udtPatternType::Id> _analyzerTypes { "CutByPatternPlugIn::AnalyzerTypesArray" };
+	udtVMLinearAllocator _analyzerAllocator { "CutByPatternPlugIn::AnalyzerData" };
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 
 	const udtPatternSearchArg* _info;

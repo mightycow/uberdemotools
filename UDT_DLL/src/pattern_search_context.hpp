@@ -8,10 +8,9 @@ struct udtPatternSearchContext_s
 {
 	udtPatternSearchContext_s(const udtPatternSearchArg* patternInfo)
 	{
-		Matches.Init(UDT_MEMORY_PAGE_SIZE, "PatternSearchContext::MatchesArray");
 		PatternInfo = patternInfo;
 	}
 
-	udtVMArray<udtPatternMatch> Matches;
+	udtVMArray<udtPatternMatch> Matches { "PatternSearchContext::MatchesArray" };
 	const udtPatternSearchArg* PatternInfo;
 };

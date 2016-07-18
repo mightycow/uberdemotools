@@ -25,16 +25,23 @@ namespace Float3
 
 	f32 Dot(const f32* a, const f32* b)
 	{
-		const f32 x = a[0] - b[0];
-		const f32 y = a[1] - b[1];
-		const f32 z = a[2] - b[2];
+		return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+	}
 
-		return x*x + y*y + z*z;
+	f32 SquaredDist(const f32* a, const f32* b)
+	{
+		f32 dir[3];
+		Sub(dir, a, b);
+
+		return SquaredLength(dir);
 	}
 
 	f32 Dist(const f32* a, const f32* b)
 	{
-		return sqrtf(Dot(a, b));
+		f32 dir[3];
+		Sub(dir, a, b);
+
+		return sqrtf(SquaredLength(dir));
 	}
 
 	f32 SquaredLength(const f32* a)
@@ -54,11 +61,41 @@ namespace Float3
 		result[2] = a[2] + b[2];
 	}
 
+	void Sub(f32* result, const f32* a, const f32* b)
+	{
+		result[0] = a[0] - b[0];
+		result[1] = a[1] - b[1];
+		result[2] = a[2] - b[2];
+	}
+
+	void Direction(f32* result, const f32* start, const f32* end)
+	{
+		f32 dir[3];
+		Sub(dir, end, start);
+		Normalize(result, dir);
+	}
+
+	void Normalize(f32* result, const f32* a)
+	{
+		const f32 length = Length(a);
+		result[0] = a[0] / length;
+		result[1] = a[1] / length;
+		result[2] = a[2] / length;
+	}
+
 	void Mad(f32* result, const f32* a, const f32* b, f32 s)
 	{
 		result[0] = a[0] + b[0] * s;
 		result[1] = a[1] + b[1] * s;
 		result[2] = a[2] + b[2] * s;
+	}
+
+	void Lerp(f32* result, const f32* a, const f32* b, f32 t)
+	{
+		const f32 s = 1.0f - t;
+		result[0] = s*a[0] + t*b[0];
+		result[1] = s*a[1] + t*b[1];
+		result[2] = s*a[2] + t*b[2];
 	}
 
 	void Zero(f32* result)
@@ -77,10 +114,10 @@ namespace Float3
 
 	void EulerAnglesToAxisVector(f32* result, const f32* angles)
 	{
-		const f32 angle1 = angles[YAW] * (UDT_PI * 2 / 360);
+		const f32 angle1 = DegToRad(angles[YAW]);
 		const f32 sy = sinf(angle1);
 		const f32 cy = cosf(angle1);
-		const f32 angle2 = angles[PITCH] * (UDT_PI * 2 / 360);
+		const f32 angle2 = DegToRad(angles[PITCH]);
 		const f32 sp = sinf(angle2);
 		const f32 cp = cosf(angle2);
 

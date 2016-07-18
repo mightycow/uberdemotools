@@ -23,8 +23,8 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInRawConfigStrings);
 
-	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataRawConfigString> _configStrings;
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInRawConfigStrings::Strings" };
+	udtVMArray<udtParseDataRawConfigString> _configStrings { "ParserPlugInRawConfigStrings::ConfigStringsArray" };
 	udtParseDataRawConfigStringBuffers _buffers;
 	s32 _gameStateIndex;
 };

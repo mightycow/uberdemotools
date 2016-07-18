@@ -42,5 +42,8 @@ make UDT_merger config=$UDT_CONFIG
 make UDT_json config=$UDT_CONFIG
 make UDT_captures config=$UDT_CONFIG
 make UDT_converter config=$UDT_CONFIG
+make UDT_viewer config=$UDT_CONFIG
+make viewer_data_gen config=$UDT_CONFIG
 make tut_players config=$UDT_CONFIG
 make tut_multi_rail config=$UDT_CONFIG
+

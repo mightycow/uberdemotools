@@ -141,7 +141,7 @@ private:
 
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
-	udtVMArray<udtParseDataStats> _statsArray;
+	udtVMArray<udtParseDataStats> _statsArray { "ParserPlugInStats::StatsArray" };
 	udtParseDataStatsBuffers _buffers;
 	udtParseDataStats _stats;
 	udtCPMAPrintStats _cpmaPrintStats;
@@ -151,15 +151,15 @@ private:
 	s32 _teamFields[2][udtTeamStatsField::Count];
 	u8 _playerFlags[64][UDT_PLAYER_STATS_MASK_BYTE_COUNT];
 	u8 _teamFlags[2][UDT_TEAM_STATS_MASK_BYTE_COUNT];
-	udtVMLinearAllocator _stringAllocator;
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInStats::Strings" };
 	udtString _redString;  // Allocated with _stringAllocator.
 	udtString _blueString; // Allocated with _stringAllocator.
-	udtVMArray<u8> _teamFlagsArray;
-	udtVMArray<u8> _playerFlagsArray;
-	udtVMArray<s32> _teamFieldsArray;
-	udtVMArray<s32> _playerFieldsArray;
-	udtVMArray<udtPlayerStats> _playerStatsArray;
-	udtVMArray<s32> _timeOutTimes;
+	udtVMArray<u8> _teamFlagsArray { "ParserPlugInStats::TeamFlagsArray" };
+	udtVMArray<u8> _playerFlagsArray { "ParserPlugInStats::PlayerFlagsArray" };
+	udtVMArray<s32> _teamFieldsArray { "ParserPlugInStats::TeamFieldsArray" };
+	udtVMArray<s32> _playerFieldsArray { "ParserPlugInStats::PlayerFieldsArray" };
+	udtVMArray<udtPlayerStats> _playerStatsArray {  "ParserPlugInStats::PlayerStatsArray" };
+	udtVMArray<s32> _timeOutTimes { "ParserPlugInStats::TimeOutTimesArray" };
 	const idTokenizer* _tokenizer;
 	idTokenizer* _plugInTokenizer;
 	udtProtocol::Id _protocol;

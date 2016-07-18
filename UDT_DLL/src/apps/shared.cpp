@@ -79,6 +79,7 @@ void CallbackConsoleProgress(f32 progress, void*)
 	SetConsoleTitleA(title);
 }
 
+#if !defined(UDT_DONT_RESET_CD)
 static void ResetCurrentDirectory(const char* exeFilePath)
 {
 	const char* const match = strrchr(exeFilePath, '\\');
@@ -95,6 +96,7 @@ static void ResetCurrentDirectory(const char* exeFilePath)
 	wchar_t* const wideDirectoryPath = udtString::ConvertToUTF16(allocator, directoryPath);
 	SetCurrentDirectoryW(wideDirectoryPath);
 }
+#endif
 
 static void FindExecutableFileName(const char* exeFilePath)
 {
@@ -122,8 +124,7 @@ int wmain(int argc, wchar_t** argvWide)
 		argc = UDT_MAX_ARG_COUNT;
 	}
 
-	udtVMLinearAllocator stringAllocator;
-	stringAllocator.Init(UDT_MEMORY_PAGE_SIZE, "wmain::String");
+	udtVMLinearAllocator stringAllocator("wmain::Strings");
 
 	u32 argvOffsets[UDT_MAX_ARG_COUNT];
 	for(int i = 0; i < argc; ++i)
@@ -153,7 +154,9 @@ int wmain(int argc, wchar_t** argvWide)
 		}
 	}	   
 
+#if !defined(UDT_DONT_RESET_CD)
 	ResetCurrentDirectory(argv[0]);
+#endif
 	FindExecutableFileName(argv[0]);
 	ParseQuietOption(argc, argv);
 

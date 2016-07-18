@@ -39,7 +39,6 @@ public:
 	udtBaseParser();
 	~udtBaseParser();
 
-	void    InitAllocators(); // Once for all demos.
 	bool	Init(udtContext* context, udtProtocol::Id protocol, udtProtocol::Id outProtocol, s32 gameStateIndex = 0, bool enablePlugIns = true); // Once for each demo.
 	void	SetFilePath(const char* filePath); // Once for each demo. After Init.
 	void	Destroy();
@@ -90,10 +89,10 @@ public:
 
 public:
 	// General.
-	udtVMLinearAllocator _persistentAllocator; // Memory we need to be able to access to during the entire parsing phase.
-	udtVMLinearAllocator _configStringAllocator; // Gets cleated every time a new gamestate message is encountered.
-	udtVMLinearAllocator _tempAllocator;
-	udtVMLinearAllocator _privateTempAllocator;
+	udtVMLinearAllocator _persistentAllocator { "Parser::Persistent" }; // Memory we need to be able to access to during the entire parsing phase.
+	udtVMLinearAllocator _configStringAllocator { "Parser::ConfigStrings" }; // Gets cleated every time a new gamestate message is encountered.
+	udtVMLinearAllocator _tempAllocator { "Parser::Temp" };
+	udtVMLinearAllocator _privateTempAllocator { "Parser::PrivateTemp" };
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _inProtocol;
 	s32 _inProtocolSizeOfEntityState;
@@ -103,7 +102,7 @@ public:
 
 	// Callbacks. Useful for doing additional analysis/processing in the same demo reading pass.
 	void* UserData; // Put whatever you want in there. Useful for callbacks.
-	udtVMArray<udtBaseParserPlugIn*> PlugIns;
+	udtVMArray<udtBaseParserPlugIn*> PlugIns { "Parser::PlugInsArray" };
 	bool EnablePlugIns;
 
 	// Input.
@@ -127,16 +126,18 @@ public:
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.
 	udtString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
-	udtVMArray<u32> _inGameStateFileOffsets;
-	udtVMArray<udtChangedEntity> _inChangedEntities; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
-	udtVMArray<s32> _inRemovedEntities; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArray<u32> _inGameStateFileOffsets { "Parser::GameStateFileOffsetsArray" };
+	udtVMArray<udtChangedEntity> _inChangedEntities { "Parser::ChangedEntitiesArray" }; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
+	udtVMArray<s32> _inRemovedEntities { "Parser::RemovedEntitiesArray" }; // The entities that were removed in the last call to ParsePacketEntities.
+	udtVMArray<idEntityStateBase*> _inEntities { "Parser::EntitiesArray" }; // All entities that were read in the last call to ParsePacketEntities.
+	udtVMArray<u8> _inEntityFlags { "Parser::EntityFlagsArray" };
 	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
 	udtFileStream _outFile;
 	udtString _outFilePath;
 	udtString _outFileName;
-	udtVMArray<udtCutInfo> _cuts;
+	udtVMArray<udtCutInfo> _cuts { "Parser::CutsArray" };
 	u8 _outMsgData[ID_MAX_MSG_LENGTH];
 	udtMessage _outMsg; // This instance *DOES* have ownership of the raw message data.
 	s32 _outServerCommandSequence;

@@ -30,6 +30,6 @@ private:
 		s32 ServerTimeMs;
 	};
 
-	udtVMArray<Frag> _frags;
+	udtVMArray<Frag> _frags { "CutByFragAnalyzer::FragsArray" };
 	udtObituariesAnalyzer _analyzer;
 };

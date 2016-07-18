@@ -195,7 +195,8 @@ Macro arguments:
 	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStatsBuffers) \
 	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommandBuffers) \
 	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigStringBuffers) \
-	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers)
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers) \
+	N(Scores,           "scores",             udtParserPlugInScores,           udtParseDataScoreBuffers)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -2077,6 +2078,94 @@ extern "C"
 	udtParseDataCaptureBuffers;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCaptureBuffers)
 
+#if defined(__cplusplus)
+	struct udtParseDataScoreMask
+	{
+		enum Id
+		{
+			TeamBased = UDT_BIT(0)
+		};
+	};
+#endif
+
+	typedef struct udtParseDataScore_s
+	{
+		/* The index of the current gamestate. */
+		s32 GameStateIndex;
+
+		/* The first snapshot from which this is valid. */
+		s32 ServerTimeMs;
+
+		/* First place player or red team score. */
+		s32 Score1; 
+
+		/* Second place player or blue team score. */
+		s32 Score2;
+
+		/* First place player client number or 0. */
+		u32 Id1;
+
+		/* Second place player client number or 1. */
+		u32 Id2;
+
+		/* See udtParseDataScoreMask::Id. */
+		u32 Flags;
+
+		/* First place player name. */
+		u32 Name1;
+
+		/* String length. */
+		u32 Name1Length;
+
+		/* Second place player name. */
+		u32 Name2;
+
+		/* String length. */
+		u32 Name2Length;
+
+		/* First place player name. */
+		u32 CleanName1;
+
+		/* String length. */
+		u32 CleanName1Length;
+
+		/* Second place player name. */
+		u32 CleanName2;
+
+		/* String length. */
+		u32 CleanName2Length;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtParseDataScore;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScore)
+
+	/* Complete score data for all demos in a context. */
+	typedef struct udtParseDataScoreBuffers_s
+	{
+		/* The score descriptors. */
+		const udtParseDataScore* Scores;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of Scores to use. */
+		const udtParseDataBufferRange* ScoreRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Scores array. */
+		u32 ScoreCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataScoreBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScoreBuffers)
+
 	typedef struct udtTimeShiftArg_s
 	{
 		/* By how many snapshots do we shift the position of */
@@ -2285,6 +2374,20 @@ extern "C"
 	typedef idVec idVec2[2];
 	typedef idVec idVec3[3];
 	typedef idVec idVec4[4];
+
+#if defined(__cplusplus)
+
+	struct udtEntityStateFlag
+	{
+		enum Id
+		{
+			AddedOrChanged,
+			NewEvent,
+			Count
+		};
+	};
+
+#endif
 
 #pragma pack(push, 1)
 
@@ -2551,6 +2654,12 @@ extern "C"
 		/* Pointer to the player state. */
 		const idPlayerStateBase* PlayerState;
 
+		/* An array of pointers to all entity states . */
+		const idEntityStateBase** Entities;
+
+		/* An array of flags for each entity state. */
+		const u8* EntityFlags;
+
 		/* An array of pointers to the entity states that changed or were added. */
 		const idEntityStateBase** ChangedEntities;
 
@@ -2569,16 +2678,16 @@ extern "C"
 		/* Execute all commands up to this sequence number before making the snapshot current. */
 		s32 CommandNumber;
 
-		/* How many entities have been transmitted. */
-		/* Length of the ChangedEntities array and the ChangedEntityFlags array. */
-		u32 EntityCount;
+		/* How many entities have changed or been added. */
+		/* Length of the ChangedEntities array. */
+		u32 ChangedEntityCount;
 
 		/* How many entities were removed. */
 		/* Length of the RemovedEntities array. */
 		u32 RemovedEntityCount;
 
-		/* Ignore this. */
-		s32 Reserved2;
+		/* Length of the Entities array. */
+		u32 EntityCount;
 	}
 	udtCuSnapshotMessage;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtCuSnapshotMessage)
@@ -2677,6 +2786,19 @@ extern "C"
 	N(GlobalItemPickup) \
 	N(GlobalSound) \
 	N(GlobalTeamSound) \
+	N(ItemRespawn) \
+	N(ItemPop) \
+	N(PlayerTeleportIn) \
+	N(PlayerTeleportOut) \
+	N(BulletHitFlesh) \
+	N(BulletHitWall) \
+	N(MissileHit) \
+	N(MissileMiss) \
+	N(MissileMissMetal) \
+	N(RailTrail) \
+	N(PowerUpQuad) \
+	N(PowerUpBattleSuit) \
+	N(PowerUpRegen) \
 	N(QL_Overtime) \
 	N(QL_GameOver)
 
@@ -2770,6 +2892,22 @@ extern "C"
 		};
 	};
 #undef UDT_POWER_UP_ITEM
+
+#define UDT_LIFE_STATS_LIST(N) \
+	N(Health) \
+	N(HoldableItem) \
+	N(Weapons) \
+	N(Armor) \
+	N(MaxHealth)
+
+	struct udtLifeStatsIndex
+	{
+		enum Id
+		{
+			UDT_LIFE_STATS_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
 
 #define UDT_PERSISTENT_STATS_LIST(N) \
 	N(FlagCaptures) \
@@ -2904,8 +3042,8 @@ extern "C"
 			WeaponRocketLauncher,
 			WeaponShotgun,
 			Count,
-			FirstAmmo = AmmoBFG,
-			LastAmmo = AmmoSlugs,
+			AmmoFirst = AmmoBFG,
+			AmmoLast = AmmoSlugs,
 			HoldableFirst = HoldableInvulnerability,
 			HoldableLast = HoldableTeleporter,
 			ItemFirst = ItemAmmoRegen,
@@ -2917,22 +3055,39 @@ extern "C"
 		};
 	};
 
+	struct udtPlayerMovementType
+	{
+		enum Id
+		{
+			Normal,         /* can accelerate and turn */
+			NoClip,         /* no collision at all */
+			Spectator,      /* still run into walls */
+			Dead,           /* no acceleration or turning, but free falling */
+			Freeze,         /* stuck in place with no control */
+			Intermission,   /* no movement or status bar */
+			SPIntermission, /* no movement or status bar */
+			Count
+		};
+	};
+
 	struct udtMagicNumberType
 	{
 		enum Id
 		{
-			PowerUpIndex,
-			PersStatsIndex,
-			EntityType,
-			EntityFlag,
-			EntityEvent,
+			PowerUpIndex,   /* idPlayerStateBase::powerups */
+			LifeStatsIndex, /* idPlayerStateBase::stats */
+			PersStatsIndex, /* idPlayerStateBase::persistant */
+			EntityType,     /* idEntityStateBase::eType */
+			EntityFlag,     /* idEntityStateBase::eFlags */
+			EntityEvent,    /* idEntityStateBase::event */
 			ConfigStringIndex,
 			Team,
 			GameType,
 			FlagStatus,
-			Weapon,
+			Weapon,             /* idPlayerStateBase::weapon and idEntityStateBase::weapon */
 			MeanOfDeath,
-			Item,
+			Item,               /* idEntityStateBase::modelindex */
+			PlayerMovementType, /* idPlayerStateBase::pm_type */
 			Count
 		};
 	};

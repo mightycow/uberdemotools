@@ -94,16 +94,7 @@ udtParserPlugInStats::~udtParserPlugInStats()
 
 void udtParserPlugInStats::InitAllocators(u32 demoCount)
 {
-	_stringAllocator.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::Stats");
-	_statsArray.Init((uptr)sizeof(udtParseDataStats) * (uptr)demoCount, "ParserPlugInStats::StatsArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
-
-	_teamFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFlags");
-	_playerFlagsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerFlags");
-	_teamFieldsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TeamFields");
-	_playerFieldsArray.InitNoOverride(demoCount * 600, "ParserPlugInStats::PlayerFields");
-	_playerStatsArray.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::PlayerStats");
-	_timeOutTimes.Init(ComputeReservedByteCount(1 << 12, 1 << 14, 16, demoCount), "ParserPlugInStats::TimeOutTimes");
 
 	_redString = udtString::NewClone(_stringAllocator, "RED");
 	_blueString = udtString::NewClone(_stringAllocator, "BLUE");

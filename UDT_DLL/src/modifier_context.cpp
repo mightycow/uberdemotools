@@ -3,7 +3,6 @@
 
 udtModifierContext::udtModifierContext()
 {
-	_initialized = false;
 }
 
 udtModifierContext::~udtModifierContext()
@@ -20,12 +19,4 @@ void udtModifierContext::ResetForNextDemo()
 
 void udtModifierContext::InitIfNeeded()
 {
-	if(_initialized)
-	{
-		return;
-	}
-	_initialized = true;
-
-	TempAllocator.Init(1 << 16, "ModifierContext::Temp");
-	WriteStream.Open(1 << 20);
 }

@@ -67,8 +67,8 @@ static void CallbackConsoleMessageNoStdOut(s32 logLevel, const char* message)
 
 static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, bool consoleOutput, u32 maxThreadCount)
 {
-	udtVMArray<const char*> filePaths(1 << 16, "ProcessMultipleDemos::FilePathsArray");
-	udtVMArray<s32> errorCodes(1 << 16, "ProcessMultipleDemos::ErrorCodesArray");
+	udtVMArray<const char*> filePaths("ProcessMultipleDemos::FilePathsArray");
+	udtVMArray<s32> errorCodes("ProcessMultipleDemos::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -94,8 +94,7 @@ static bool ProcessBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fi
 
 	const s32 result = udtSaveDemoFilesAnalysisDataToJSON(&parseArg, &threadInfo, &jsonInfo);
 
-	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16, "ProcessMultipleDemos::Temp");
+	udtVMLinearAllocator tempAllocator("ProcessMultipleDemos::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -234,7 +233,6 @@ int udt_main(int argc, char** argv)
 	}
 
 	udtFileListQuery query;
-	query.InitAllocators(256);
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.FolderPath = udtString::NewConstRef(inputPath);
 	query.Recursive = recursive;

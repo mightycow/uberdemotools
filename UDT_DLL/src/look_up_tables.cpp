@@ -60,6 +60,40 @@ static const s16* PowerUpTables[udtProtocol::Count * 3] =
 	PowerUps_91, PowerUps_91_U2Q, PowerUps_91_Q2U
 };
 
+static s16 LifeStats_3_68_U2Q[udtLifeStatsIndex::Count];
+static s16 LifeStats_3_68_Q2U[udtLifeStatsIndex::Count * 2];
+static const s16 LifeStats_3_68[udtLifeStatsIndex::Count * 2] =
+{
+	(s16)udtLifeStatsIndex::Health, 0,
+	(s16)udtLifeStatsIndex::HoldableItem, 1,
+	(s16)udtLifeStatsIndex::Weapons, 2,
+	(s16)udtLifeStatsIndex::Armor, 3,
+	(s16)udtLifeStatsIndex::MaxHealth, 6
+};
+
+static s16 LifeStats_73p_U2Q[udtLifeStatsIndex::Count];
+static s16 LifeStats_73p_Q2U[udtLifeStatsIndex::Count * 2];
+static const s16 LifeStats_73p[udtLifeStatsIndex::Count * 2] =
+{
+	(s16)udtLifeStatsIndex::Health, 0,
+	(s16)udtLifeStatsIndex::HoldableItem, 1,
+	(s16)udtLifeStatsIndex::Weapons, 3,
+	(s16)udtLifeStatsIndex::Armor, 4,
+	(s16)udtLifeStatsIndex::MaxHealth, 7
+};
+
+static const s16* LifeStatsTables[udtProtocol::Count * 3] =
+{
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_3_68, LifeStats_3_68_U2Q, LifeStats_3_68_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U,
+	LifeStats_73p, LifeStats_73p_U2Q, LifeStats_73p_Q2U
+};
+
 static s16 PersStats_3_U2Q[udtPersStatsIndex::Count];
 static s16 PersStats_3_Q2U[udtPersStatsIndex::Count * 2];
 static const s16 PersStats_3[udtPersStatsIndex::Count * 2] =
@@ -297,7 +331,20 @@ static const s16 EntityEvents_3[udtEntityEvent::Count * 2] =
 	(s16)udtEntityEvent::ItemPickup, 19,
 	(s16)udtEntityEvent::GlobalItemPickup, 20,
 	(s16)udtEntityEvent::GlobalSound, 46,
-	(s16)udtEntityEvent::GlobalTeamSound, 47,
+	(s16)udtEntityEvent::GlobalTeamSound, UNDEFINED,
+	(s16)udtEntityEvent::ItemRespawn, 40,
+	(s16)udtEntityEvent::ItemPop, 41,
+	(s16)udtEntityEvent::PlayerTeleportIn, 42,
+	(s16)udtEntityEvent::PlayerTeleportOut, 43,
+	(s16)udtEntityEvent::BulletHitFlesh, 47,
+	(s16)udtEntityEvent::BulletHitWall, 48,
+	(s16)udtEntityEvent::MissileHit, 49,
+	(s16)udtEntityEvent::MissileMiss, 50,
+	(s16)udtEntityEvent::MissileMissMetal, UNDEFINED,
+	(s16)udtEntityEvent::RailTrail, 51,
+	(s16)udtEntityEvent::PowerUpQuad, 59,
+	(s16)udtEntityEvent::PowerUpBattleSuit, 60,
+	(s16)udtEntityEvent::PowerUpRegen, 61,
 	(s16)udtEntityEvent::QL_Overtime, UNDEFINED,
 	(s16)udtEntityEvent::QL_GameOver, UNDEFINED
 };
@@ -312,6 +359,19 @@ static const s16 EntityEvents_48_68[udtEntityEvent::Count * 2] =
 	(s16)udtEntityEvent::GlobalItemPickup, 20,
 	(s16)udtEntityEvent::GlobalSound, 46,
 	(s16)udtEntityEvent::GlobalTeamSound, 47,
+	(s16)udtEntityEvent::ItemRespawn, 40,
+	(s16)udtEntityEvent::ItemPop, 41,
+	(s16)udtEntityEvent::PlayerTeleportIn, 42,
+	(s16)udtEntityEvent::PlayerTeleportOut, 43,
+	(s16)udtEntityEvent::BulletHitFlesh, 48,
+	(s16)udtEntityEvent::BulletHitWall, 49,
+	(s16)udtEntityEvent::MissileHit, 50,
+	(s16)udtEntityEvent::MissileMiss, 51,
+	(s16)udtEntityEvent::MissileMissMetal, 52,
+	(s16)udtEntityEvent::RailTrail, 53,
+	(s16)udtEntityEvent::PowerUpQuad, 61,
+	(s16)udtEntityEvent::PowerUpBattleSuit, 62,
+	(s16)udtEntityEvent::PowerUpRegen, 63,
 	(s16)udtEntityEvent::QL_Overtime, UNDEFINED,
 	(s16)udtEntityEvent::QL_GameOver, UNDEFINED
 };
@@ -326,6 +386,19 @@ static const s16 EntityEvents_73p[udtEntityEvent::Count * 2] =
 	(s16)udtEntityEvent::GlobalItemPickup, 16,
 	(s16)udtEntityEvent::GlobalSound, 43,
 	(s16)udtEntityEvent::GlobalTeamSound, 44,
+	(s16)udtEntityEvent::ItemRespawn, 37,
+	(s16)udtEntityEvent::ItemPop, 38,
+	(s16)udtEntityEvent::PlayerTeleportIn, 39,
+	(s16)udtEntityEvent::PlayerTeleportOut, 40,
+	(s16)udtEntityEvent::BulletHitFlesh, 45,
+	(s16)udtEntityEvent::BulletHitWall, 46,
+	(s16)udtEntityEvent::MissileHit, 47,
+	(s16)udtEntityEvent::MissileMiss, 48,
+	(s16)udtEntityEvent::MissileMissMetal, 49,
+	(s16)udtEntityEvent::RailTrail, 50,
+	(s16)udtEntityEvent::PowerUpQuad, 59,
+	(s16)udtEntityEvent::PowerUpBattleSuit, 60,
+	(s16)udtEntityEvent::PowerUpRegen, 61,
 	(s16)udtEntityEvent::QL_Overtime, 84,
 	(s16)udtEntityEvent::QL_GameOver, 85
 };
@@ -989,6 +1062,31 @@ static const s16* ItemTables[udtProtocol::Count * 3] =
 	Items_90p, Items_90p_U2Q, Items_90p_Q2U
 };
 
+static s16 PMTypes_U2Q[udtPlayerMovementType::Count];
+static s16 PMTypes_Q2U[udtPlayerMovementType::Count * 2];
+static const s16 PMTypes[udtPlayerMovementType::Count * 2] =
+{
+	(s16)udtPlayerMovementType::Normal, 0,
+	(s16)udtPlayerMovementType::NoClip, 1,
+	(s16)udtPlayerMovementType::Spectator, 2,
+	(s16)udtPlayerMovementType::Dead, 3,
+	(s16)udtPlayerMovementType::Freeze, 4,
+	(s16)udtPlayerMovementType::Intermission, 5,
+	(s16)udtPlayerMovementType::SPIntermission, 6
+};
+
+static const s16* PMTypeTables[udtProtocol::Count * 3] =
+{
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U,
+	PMTypes, PMTypes_U2Q, PMTypes_Q2U
+};
+
 struct MagicNumberTableGroup
 {
 	MagicNumberTableGroup(udtMagicNumberType::Id type, const s16** tables, u32 count)
@@ -1006,6 +1104,7 @@ struct MagicNumberTableGroup
 static const MagicNumberTableGroup MagicNumberTables[udtMagicNumberType::Count] =
 {
 	MagicNumberTableGroup(udtMagicNumberType::PowerUpIndex, PowerUpTables, udtPowerUpIndex::Count),
+	MagicNumberTableGroup(udtMagicNumberType::LifeStatsIndex, LifeStatsTables, udtLifeStatsIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::PersStatsIndex, PersStatsTables, udtPersStatsIndex::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityType, EntityTypeTables, udtEntityType::Count),
 	MagicNumberTableGroup(udtMagicNumberType::EntityFlag, EntityFlagBitTables, udtEntityFlag::Count),
@@ -1016,7 +1115,8 @@ static const MagicNumberTableGroup MagicNumberTables[udtMagicNumberType::Count] 
 	MagicNumberTableGroup(udtMagicNumberType::FlagStatus, FlagStatusTables, udtFlagStatus::Count),
 	MagicNumberTableGroup(udtMagicNumberType::Weapon, WeaponTables, udtWeapon::Count),
 	MagicNumberTableGroup(udtMagicNumberType::MeanOfDeath, MeanOfDeathTables, udtMeanOfDeath::Count),
-	MagicNumberTableGroup(udtMagicNumberType::Item, ItemTables, udtItem::Count)
+	MagicNumberTableGroup(udtMagicNumberType::Item, ItemTables, udtItem::Count),
+	MagicNumberTableGroup(udtMagicNumberType::PlayerMovementType, PMTypeTables, udtPlayerMovementType::Count)
 };
 
 

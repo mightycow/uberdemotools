@@ -48,7 +48,7 @@ private:
 		s32 LastSnapshotTimeMs;
 	};
 
-	udtVMLinearAllocator _allocator;
+	udtVMLinearAllocator _allocator { "ParserPlugInQuakeToUDT::Data" };
 	udtStream* _outputFile;
 	udtdData* _data;
 	udtProtocol::Id _protocol;

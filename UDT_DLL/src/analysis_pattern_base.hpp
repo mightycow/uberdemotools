@@ -12,11 +12,7 @@ struct udtPatternSearchAnalyzerBase
 public:
 	friend udtPatternSearchPlugIn;
 
-	udtPatternSearchAnalyzerBase()
-	{
-		CutSections.Init((uptr)(1 << 16), "PatternSearchAnalyzerBase::CutSectionsArray");
-	}
-
+	udtPatternSearchAnalyzerBase() {}
 	virtual ~udtPatternSearchAnalyzerBase() {}
 
 	virtual void InitAllocators(u32 /*demoCount*/) {}
@@ -26,7 +22,7 @@ public:
 	virtual void ProcessSnapshotMessage(const udtSnapshotCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 	virtual void ProcessCommandMessage(const udtCommandCallbackArg& /*arg*/, udtBaseParser& /*parser*/) {}
 
-	udtVMArray<udtCutSection> CutSections;
+	udtVMArray<udtCutSection> CutSections { "PatternSearchAnalyzerBase::CutSectionsArray" };
 
 protected:
 	udtPatternSearchPlugIn* PlugIn;

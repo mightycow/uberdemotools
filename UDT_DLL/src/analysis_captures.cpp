@@ -74,13 +74,9 @@ udtCapturesAnalyzer::~udtCapturesAnalyzer()
 {
 }
 
-void udtCapturesAnalyzer::Init(u32 demoCount, udtVMLinearAllocator* tempAllocator)
+void udtCapturesAnalyzer::Init(u32, udtVMLinearAllocator* tempAllocator)
 {
 	_tempAllocator = tempAllocator;
-	const uptr smallByteCount = 1 << 14;
-	StringAllocator.Init(ComputeReservedByteCount(smallByteCount, smallByteCount * 4, 16, demoCount), "ParserPlugInCaptures::Strings");
-	_playerNameAllocator.Init(UDT_KB(4), "ParserPlugInCaptures::PlayerNames");
-	Captures.Init((uptr)demoCount * (uptr)(1 << 16), "ParserPlugInCaptures::CapturesArray");
 }
 
 void udtCapturesAnalyzer::StartDemoAnalysis()
@@ -244,10 +240,10 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 	}
 
 	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	for(u32 i = 0, count = arg.ChangedEntityCount; i < count; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(arg.Entities[i].IsNewEvent ||
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(arg.ChangedEntities[i].IsNewEvent ||
 		   es == NULL ||
 		   es->eType != entityTypePlayerId ||
 		   es->clientNum < 0 ||
@@ -308,10 +304,10 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP(const udtSnapshotCallbac
 
 	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
 	const s32 globalTeamSoundId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::GlobalTeamSound, parser._inProtocol);
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	for(u32 i = 0, count = arg.ChangedEntityCount; i < count; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(!arg.Entities[i].IsNewEvent ||
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(!arg.ChangedEntities[i].IsNewEvent ||
 		   es == NULL ||
 		   es->eType <= entityTypeEventId)
 		{
@@ -452,10 +448,10 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 	}
 
 	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	for(u32 i = 0, count = arg.ChangedEntityCount; i < count; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(arg.Entities[i].IsNewEvent ||
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(arg.ChangedEntities[i].IsNewEvent ||
 		   es == NULL ||
 		   es->eType != entityTypePlayerId ||
 		   es->clientNum < 0 ||
@@ -475,10 +471,10 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 
 	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
 	const s32 globalTeamSoundId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::GlobalTeamSound, parser._inProtocol);
-	for(u32 i = 0, count = arg.EntityCount; i < count; ++i)
+	for(u32 i = 0, count = arg.ChangedEntityCount; i < count; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(!arg.Entities[i].IsNewEvent ||
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(!arg.ChangedEntities[i].IsNewEvent ||
 		   es == NULL ||
 		   es->eType <= entityTypeEventId)
 		{

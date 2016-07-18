@@ -456,7 +456,7 @@ private:
 	void AnalyzeSnapshot(const udtCuSnapshotMessage& snapshot)
 	{
 		u32 railKillCount = 0;
-		for(u32 i = 0; i < snapshot.EntityCount; ++i)
+		for(u32 i = 0; i < snapshot.ChangedEntityCount; ++i)
 		{
 			Obituary obituary;
 			if(!IsObituaryEvent(obituary, *snapshot.ChangedEntities[i], _protocol))

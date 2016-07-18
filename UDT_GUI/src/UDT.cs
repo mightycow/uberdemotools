@@ -40,10 +40,13 @@ namespace Uber.DemoTools
             var typeOfT = typeof(T);
             var sizeOfT = Marshal.SizeOf(typeOfT);
             var array = new T[count];
-            for(var i = 0; i < count; ++i)
+            if(native != IntPtr.Zero)
             {
-                var address = new IntPtr(native.ToInt64() + i * sizeOfT);
-                array[i] = (T)Marshal.PtrToStructure(address, typeOfT);
+                for(var i = 0; i < count; ++i)
+                {
+                    var address = new IntPtr(native.ToInt64() + i * sizeOfT);
+                    array[i] = (T)Marshal.PtrToStructure(address, typeOfT);
+                }
             }
 
             return array;
@@ -52,7 +55,10 @@ namespace Uber.DemoTools
         public static byte[] PtrToByteArray(IntPtr native, int byteCount)
         {
             var array = new byte[byteCount];
-            Marshal.Copy(native, array, 0, byteCount);
+            if(native != IntPtr.Zero)
+            {
+                Marshal.Copy(native, array, 0, byteCount);
+            }
 
             return array;
         }
@@ -60,7 +66,10 @@ namespace Uber.DemoTools
         public static int[] PtrToIntArray(IntPtr native, int intCount)
         {
             var array = new int[intCount];
-            Marshal.Copy(native, array, 0, intCount);
+            if(native != IntPtr.Zero)
+            {
+                Marshal.Copy(native, array, 0, intCount);
+            }
 
             return array;
         }
@@ -750,6 +759,7 @@ namespace Uber.DemoTools
             RawCommands,
             RawConfigStrings,
             Captures,
+            Scores,
             Count
         }
 
@@ -1407,6 +1417,44 @@ namespace Uber.DemoTools
             public UInt32 StringBufferSize;
         }
 
+        [Flags]
+        enum udtParseDataScoreMask : uint
+		{
+			TeamBased = 1 << 0
+		};
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+	    struct udtParseDataScore
+	    {
+		    public Int32 GameStateIndex;
+		    public Int32 ServerTimeMs;
+		    public Int32 Score1; 
+		    public Int32 Score2;
+		    public UInt32 Id1;
+		    public UInt32 Id2;
+		    public UInt32 Flags;
+		    public UInt32 Name1;
+		    public UInt32 Name1Length;
+		    public UInt32 Name2;
+		    public UInt32 Name2Length;
+            public UInt32 CleanName1;
+            public UInt32 CleanName1Length;
+            public UInt32 CleanName2;
+            public UInt32 CleanName2Length;
+		    public Int32 Reserved1;
+	    }
+
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+	    struct udtParseDataScoreBuffers
+	    {
+		    public IntPtr Scores; // const udtParseDataScore*
+            public IntPtr ScoreRanges; // const udtParseDataBufferRange*
+		    public IntPtr StringBuffer; // const u8*
+		    public IntPtr Reserved1; // const void*
+		    public UInt32 ScoreCount;
+		    public UInt32 StringBufferSize;
+	    }
+
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         struct udtTimeShiftArg
         {
@@ -1504,6 +1552,9 @@ namespace Uber.DemoTools
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl, EntryPoint = "udtGetContextPlugInBuffers")]
         extern static private udtErrorCode udtGetContextPlugInCaptureBuffers(udtParserContextRef context, udtParserPlugIn plugInId, ref udtParseDataCaptureBuffers buffersStruct);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl, EntryPoint = "udtGetContextPlugInBuffers")]
+        extern static private udtErrorCode udtGetContextPlugInScoreBuffers(udtParserContextRef context, udtParserPlugIn plugInId, ref udtParseDataScoreBuffers buffersStruct);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl, EntryPoint = "udtGetContextPlugInBuffers")]
         extern static private udtErrorCode udtGetContextPlugInGameStateBuffers(udtParserContextRef context, udtParserPlugIn plugInId, ref udtParseDataGameStateBuffers buffersStruct);
@@ -1668,7 +1719,8 @@ namespace Uber.DemoTools
             (UInt32)udtParserPlugIn.Stats,
             (UInt32)udtParserPlugIn.RawCommands,
             (UInt32)udtParserPlugIn.RawConfigStrings,
-            (UInt32)udtParserPlugIn.Captures
+            (UInt32)udtParserPlugIn.Captures,
+            (UInt32)udtParserPlugIn.Scores
         };
 
         public static List<string> GetStringArray(udtStringArray array)
@@ -2619,6 +2671,25 @@ namespace Uber.DemoTools
             public udtParseDataBufferRange[] CaptureRanges;
         }
 
+        private class ScoreBuffers : BuffersBase
+        {
+            public ScoreBuffers(udtParserContextRef context, uint demoCount)
+            {
+                var buffers = new udtParseDataScoreBuffers();
+                if(udtGetContextPlugInScoreBuffers(context, udtParserPlugIn.Scores, ref buffers) != udtErrorCode.None)
+                {
+                    return;
+                }
+
+                Scores = MarshalHelper.PtrToStructureArray<udtParseDataScore>(buffers.Scores, (int)buffers.ScoreCount);
+                ScoreRanges = MarshalHelper.PtrToStructureArray<udtParseDataBufferRange>(buffers.ScoreRanges, (int)demoCount);
+                StringBuffer = MarshalHelper.PtrToByteArray(buffers.StringBuffer, (int)buffers.StringBufferSize);
+            }
+
+            public udtParseDataScore[] Scores;
+            public udtParseDataBufferRange[] ScoreRanges;
+        }
+
         private class GameStateBuffers : BuffersBase
         {
             public GameStateBuffers(udtParserContextRef context, uint demoCount)
@@ -2735,6 +2806,7 @@ namespace Uber.DemoTools
             var captureBuffers = new CaptureBuffers(context, demoCount);
             var gameStateBuffers = new GameStateBuffers(context, demoCount);
             var statsBuffers = new StatsBuffers(context, demoCount);
+            var scoreBuffers = new ScoreBuffers(context, demoCount);
 
             var demoList = new List<DemoInfo>();
             demoList.Capacity = (int)demoCount;
@@ -2771,6 +2843,7 @@ namespace Uber.DemoTools
                 ExtractCaptures(context, i, info, captureBuffers);
                 ExtractGameStates(context, i, info, gameStateBuffers);
                 ExtractStats(context, i, info, statsBuffers);
+                ExtractScores(context, i, info, scoreBuffers);
             }
 
             udtDestroyContextGroup(contextGroup);
@@ -2926,6 +2999,48 @@ namespace Uber.DemoTools
                 AddMatches(info, buffers, data, space);
                 AddPlayers(info, buffers, data, space);
                 AddKeyValuePairs(info, buffers, data, space);
+            }
+        }
+
+        private static void ExtractScores(udtParserContextRef context, uint demoIdx, DemoInfo info, ScoreBuffers buffers)
+        {
+            var range = buffers.ScoreRanges[demoIdx];
+            var start = range.FirstIndex;
+            var count = range.Count;
+
+            info.TeamGameType = false;
+            if(count != 0 && (buffers.Scores[start].Flags & (uint)udtParseDataScoreMask.TeamBased) != 0)
+            {
+                info.TeamGameType = true;
+            }
+
+            if(info.TeamGameType)
+            {
+                for(uint i = start, end = start + count; i < end; ++i)
+                {
+                    var data = buffers.Scores[i];
+                    var gs = data.GameStateIndex;
+                    var time = App.FormatMinutesSeconds(data.ServerTimeMs / 1000);
+                    var s1 = data.Score1;
+                    var s2 = data.Score2;
+                    var item = new TeamScoreDisplayInfo(gs, time, s1, s2);
+                    info.TeamScores.Add(item);
+                }
+            }
+            else
+            {
+                for(uint i = start, end = start + count; i < end; ++i)
+                {
+                    var data = buffers.Scores[i];
+                    var gs = data.GameStateIndex;
+                    var time = App.FormatMinutesSeconds(data.ServerTimeMs / 1000);
+                    var s1 = data.Score1;
+                    var s2 = data.Score2;
+                    var n1 = buffers.GetString(data.CleanName1, data.CleanName1Length, "");
+                    var n2 = buffers.GetString(data.CleanName2, data.CleanName2Length, "");
+                    var item = new ScoreDisplayInfo(gs, time, s1, s2, n1, n2);
+                    info.Scores.Add(item);
+                }
             }
         }
 

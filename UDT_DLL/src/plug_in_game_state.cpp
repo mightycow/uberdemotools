@@ -40,15 +40,6 @@ udtParserPlugInGameState::~udtParserPlugInGameState()
 
 void udtParserPlugInGameState::InitAllocators(u32 demoCount)
 {
-	// With the string allocator, we allocate:
-	// - 2 config strings
-	// - the demo taker's name
-	// - player names for everyone who connects during the game
-	_matches.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Matches");
-	_keyValuePairs.InitNoOverride(demoCount * 650, "ParserPlugInGameState::KeyValuePairs");
-	_players.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::Players");
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(7), "ParserPlugInGameState::Strings");
-	_gameStates.Init((uptr)(1 << 16) * (uptr)demoCount, "ParserPlugInGameState::GameStatesArray");
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
 }
 
@@ -120,7 +111,7 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	const s32 playerCSBaseIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
-		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i]);
+		ProcessPlayerInfo(i, parser._inConfigStrings[playerCSBaseIndex + i], UDT_S32_MIN);
 	}
 }
 
@@ -155,7 +146,7 @@ void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg
 	const s32 firstPlayerCsIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, _protocol);
 	if(csIndex >= firstPlayerCsIndex && csIndex < firstPlayerCsIndex + 64)
 	{
-		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex]);
+		ProcessPlayerInfo(csIndex - firstPlayerCsIndex, parser._inConfigStrings[csIndex], parser._inServerTime);
 	}
 }
 
@@ -169,6 +160,7 @@ void udtParserPlugInGameState::ClearPlayerInfos()
 		_playerInfos[i].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[i].Index = -1;
 		_playerInfos[i].FirstTeam = (u32)-1;
+		_playerConnected[i] = false;
 	}
 }
 
@@ -302,12 +294,15 @@ void udtParserPlugInGameState::ProcessSystemAndServerInfo(const udtString& confi
 	_currentGameState.KeyValuePairCount = _keyValuePairs.GetSize() - previousCount;
 }
 
-void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtString& configString)
+void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtString& configString, s32 serverTimeMs)
 {
 	udtVMScopedStackAllocator tempAllocScope(*TempAllocator);
 
+	const bool csValid = !udtString::IsNullOrEmpty(configString);
+	const bool connected = _playerConnected[playerIndex];
+
 	// Player connected?
-	if(_playerInfos[playerIndex].Index != playerIndex && !udtString::IsNullOrEmpty(configString))
+	if(csValid && !connected)
 	{
 		udtString clan, name, finalName;
 		bool hasClan;
@@ -329,9 +324,16 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		_playerInfos[playerIndex].Index = playerIndex;
 		WriteStringToApiStruct(_playerInfos[playerIndex].FirstName, finalName);
 		_playerInfos[playerIndex].FirstTeam = team;
+		if(serverTimeMs != UDT_S32_MIN)
+		{
+			_playerInfos[playerIndex].FirstSnapshotTimeMs = serverTimeMs;
+			_playerInfos[playerIndex].LastSnapshotTimeMs = serverTimeMs;
+		}
+
+		_playerConnected[playerIndex] = true;
 	}
 	// Player disconnected?
-	else if(_playerInfos[playerIndex].Index == playerIndex && udtString::IsNullOrEmpty(configString))
+	else if(!csValid && connected)
 	{
 		_players.Add(_playerInfos[playerIndex]);
 		++_currentGameState.PlayerCount;
@@ -342,5 +344,7 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 		_playerInfos[playerIndex].FirstSnapshotTimeMs = UDT_S32_MAX;
 		_playerInfos[playerIndex].LastSnapshotTimeMs = UDT_S32_MIN;
 		_playerInfos[playerIndex].FirstTeam = (u32)-1;
+
+		_playerConnected[playerIndex] = false;
 	}
 }

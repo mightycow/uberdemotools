@@ -32,15 +32,15 @@ void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	u32 railKillCount = 0;
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
 		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}

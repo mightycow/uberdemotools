@@ -129,13 +129,8 @@ static bool IsAllowedUDTWeapon(u32 udtWeapon, u32 allowedWeapons)
 
 struct PlayerEntities
 {
-	PlayerEntities()
-	{
-		Players.Init(1 << 16, "PlayerEntities::PlayersArray");
-	}
-
 	idLargestEntityState TempEntityState;
-	udtVMArray<idEntityStateBase*> Players;
+	udtVMArray<idEntityStateBase*> Players { "PlayerEntities::PlayersArray" };
 };
 
 static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, const udtSnapshotCallbackArg& arg, udtProtocol::Id protocol)
@@ -150,9 +145,9 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 	}
 
 	const s32 idEntityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, protocol);
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
 		if(es->eType == idEntityTypePlayerId && es->clientNum >= 0 && es->clientNum < ID_MAX_CLIENTS)
 		{
 			info.Players.Add(es);
@@ -230,9 +225,9 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	// Update the rocket speed if needed.
 	if(_rocketSpeed == -1.0f)
 	{
-		for(u32 i = 0; i < arg.EntityCount; ++i)
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 		{
-			const idEntityStateBase* const ent = arg.Entities[i].Entity;
+			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
 			u32 udtWeaponId;
 			if(ent->eType == idEntityTypeMissileId && 
 			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
@@ -248,9 +243,9 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	// Update the BFG speed if needed.
 	if(_bfgSpeed == -1.0f)
 	{
-		for(u32 i = 0; i < arg.EntityCount; ++i)
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 		{
-			const idEntityStateBase* const ent = arg.Entities[i].Entity;
+			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
 			u32 udtWeaponId;
 			if(ent->eType == idEntityTypeMissileId && 
 			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
@@ -316,15 +311,15 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	}
 
 	// Find a player getting mid-aired.
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
 		udtObituaryEvent obituary;
-		if(!IsObituaryEvent(obituary, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}

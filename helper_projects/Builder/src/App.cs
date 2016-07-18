@@ -42,8 +42,10 @@ namespace Uber.Builder
         public string RootFolderPath = @"..\..\..\..";
         public string DLLHeaderFilePath = @"UDT_DLL\include\uberdemotools.h";
         public string GUIAppSourceFilePath = @"UDT_GUI\src\App.cs";
+        public string ViewerAppSourceFilePath = @"UDT_DLL\src\viewer\viewer.cpp";
         public string ChangeLogDLLFilePath = @"changelog_dll.txt";
         public string ChangeLogGUIFilePath = @"changelog_gui.txt";
+        public string ChangeLogViewerFilePath = @"changelog_viewer.txt";
         public string PremakeFilePath = @"UDT_DLL\premake\premake5.exe";
         public string DLLPremakeFolderPath = @"UDT_DLL\premake";
         public string DLLProjectFolderPath = @"UDT_DLL\.build";
@@ -51,6 +53,8 @@ namespace Uber.Builder
         public string GUIOutputFolderPath = @"UDT_GUI\.bin";
         public string DemoFolderPath = @"demo_files";
         public string WinRARFilePath = @"C:\Program Files\WinRAR\WinRAR.exe";
+        public string ResHackerFilePath = @"C:\Programs\Resource Hacker\ResourceHacker.exe";
+        public string IconFilePath = @"UDT_GUI\UDT.ico";
         public List<string> CommandLineToolNames = new List<string>();
         public List<ProfileJob> ProfileJobs = new List<ProfileJob>();
     }
@@ -76,9 +80,11 @@ namespace Uber.Builder
     {
         public readonly Version DLLVersion = new Version();
         public readonly Version GUIVersion = new Version();
+        public readonly Version ViewerVersion = new Version();
         public readonly Version DLLVersionRequiredByGUI = new Version();
         public readonly Version ChangeLogDLLVersion = new Version();
         public readonly Version ChangeLogGUIVersion = new Version();
+        public readonly Version ChangeLogViewerVersion = new Version();
         public bool VersionsChecked = false;
         public bool VersionsValid = false;
         public int SelectedVisualStudioVersion = 0;
@@ -226,6 +232,20 @@ namespace Uber.Builder
 
             return result;
         }
+
+        public static bool AddToArchive(string workDir, string archiveFilePath, string path, string options)
+        {
+            var arguments = string.Format("a {0} {1} {2}", archiveFilePath, options, path);
+
+            return App.Instance.RunAndReadProcess(workDir, App.Instance.Config.WinRARFilePath, arguments);
+        }
+
+        public static bool AddToArchive(string workDir, string archiveFilePath, string path)
+        {
+            var arguments = string.Format("a {0} {1}", archiveFilePath, path);
+
+            return App.Instance.RunAndReadProcess(workDir, App.Instance.Config.WinRARFilePath, arguments);
+        }
     }
 
     public class App
@@ -267,7 +287,8 @@ namespace Uber.Builder
             "UDT_merger",
             "UDT_json",
             "UDT_captures",
-            "UDT_converter"
+            "UDT_converter",
+            "UDT_viewer"
         };
 
         public delegate void VoidDelegate();
@@ -290,7 +311,7 @@ namespace Uber.Builder
             Actions.Add(new Action("Generate the Visual Studio solution", ActionGenerateSolution));
             Actions.Add(new Action("Check version numbers for mismatches", ActionCheckVersions));
             Actions.Add(new Action("Build the GUI app and its updater", ActionBuildGUI));
-            Actions.Add(new Action("Build the library and command-line tools", ActionBuildLib));
+            Actions.Add(new Action("Build the library and applications", ActionBuildLib));
             Actions.Add(new Action("Package the binaries", ActionPackage));
 
             var logListBox = new ListBox();
@@ -491,6 +512,7 @@ namespace Uber.Builder
             if(profileJobs.Count == 0)
             {
                 profileJobs.Add(new ProfileJob("UDT_GUI.exe", "/ForceAnalyzeOnLoad /QuitAfterFirstJob /ForceSkipFolderScanDialog /ForceScanFoldersRecursively \"{1}\""));
+                profileJobs.Add(new ProfileJob("UDT_viewer.exe", "\"{1}\\dm_91\\ctf_with_overtime.dm_91\" /ProfileMode"));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=68 \"-o={0}\" \"{1}\\dm3\""));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=68 \"-o={0}\" \"{1}\\dm_48\""));
                 profileJobs.Add(new ProfileJob("UDT_converter.exe", "-r -q -p=91 \"-o={0}\" \"{1}\\dm_73\""));
@@ -897,6 +919,12 @@ namespace Uber.Builder
                 return false;
             }
 
+            if(!VersionParser.GetVersionFromViewerSource(Data, Path.Combine(Config.RootFolderPath, Config.ViewerAppSourceFilePath)))
+            {
+                SetStatus("Failed to get the viewer app version from the C++ source file");
+                return false;
+            }
+
             if(!VersionParser.GetVersionsFromCSAppSource(Data, Path.Combine(Config.RootFolderPath, Config.GUIAppSourceFilePath)))
             {
                 SetStatus("Failed to get the GUI version from the C# source");
@@ -915,6 +943,12 @@ namespace Uber.Builder
                 return false;
             }
 
+            if(!VersionParser.GetVersionFromViewerChangeLog(Data, Path.Combine(Config.RootFolderPath, Config.ChangeLogViewerFilePath)))
+            {
+                SetStatus("Failed to get the viewer version from the changelog");
+                return false;
+            }
+
             if(Data.DLLVersion.ToNumber() != Data.ChangeLogDLLVersion.ToNumber())
             {
                 SetStatus("Library ({0}) and changelog ({1}) versions don't match!", Data.DLLVersion, Data.ChangeLogDLLVersion);
@@ -930,6 +964,12 @@ namespace Uber.Builder
             if(Data.DLLVersion.ToNumber() != Data.DLLVersionRequiredByGUI.ToNumber())
             {
                 SetStatus("Library app ({0}) and GUI minimum library ({1}) versions don't match!", Data.DLLVersion, Data.DLLVersionRequiredByGUI);
+                return false;
+            }
+
+            if(Data.ViewerVersion.ToNumber() != Data.ChangeLogViewerVersion.ToNumber())
+            {
+                SetStatus("Viewer app ({0}) and changelog ({1}) versions don't match!", Data.ViewerVersion, Data.ChangeLogViewerVersion);
                 return false;
             }
 
@@ -983,8 +1023,11 @@ namespace Uber.Builder
 
             if(!CreateConArchive(visualStudio, "x86") || 
                 !CreateConArchive(visualStudio, "x64") ||
+                !CreateGUIArchive(visualStudio, "x86") ||
+                !CreateGUIArchive(visualStudio, "x64") ||
                 !CreateDevArchive(visualStudio, "x86") ||
-                !CreateDevArchive(visualStudio, "x64"))
+                !CreateDevArchive(visualStudio, "x64") ||
+                !CreateViewerArchives(visualStudio))
             {
                 return false;
             }            
@@ -1032,6 +1075,98 @@ namespace Uber.Builder
                 return false;
             }
 
+            return true;
+        }
+
+        private bool CreateGUIArchive(VisualStudio.Version visualStudio, string arch)
+        {
+            var workDir = Path.GetFullPath(Config.RootFolderPath);
+            var libVersion = Data.DLLVersion.ToString();
+            var guiVersion = Data.GUIVersion.ToString();
+            var libChangeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogDLLFilePath));
+            var guiChangeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogGUIFilePath));
+            var archiveFilePath = string.Format("udt_gui_{0}_dll_{1}_{2}.zip", guiVersion, libVersion, arch);
+            var filePaths = new List<string>();
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT.dll")));
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI.exe")));
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI_Updater.exe")));
+            filePaths.Add(libChangeLogFilePath);
+            filePaths.Add(guiChangeLogFilePath);
+
+            SetStatus("Creating archive {0}", archiveFilePath);
+            if(!WinRAR.CreateArchive(workDir, archiveFilePath, filePaths))
+            {
+                SetStatus("Failed to create archive {0}", archiveFilePath);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CreateViewerArchives(VisualStudio.Version visualStudio)
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName(), "viewer_data");
+            Directory.CreateDirectory(tempDir);
+            Data.TempFolderPath = tempDir;
+
+            try
+            {
+                var relPath = Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, "x86", "release", "viewer_data_gen.exe");
+                var dataGenPath = Path.GetFullPath(relPath);
+                var workDir = Path.GetFullPath(Config.RootFolderPath);
+                var args = string.Format("-o={0} viewer_data", tempDir);
+                if(!RunAndReadProcess(workDir, dataGenPath, args) ||
+                    !CreateViewerArchive(visualStudio, "x86") ||
+                    !CreateViewerArchive(visualStudio, "x64"))
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+
+            return true;
+        }
+
+        private bool CreateViewerArchive(VisualStudio.Version visualStudio, string arch)
+        {
+            var version = Data.ViewerVersion;
+            var archiveFilePath = string.Format("udt_viewer_{0}_{1}.zip", version, arch);
+            var viewerFolderPath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release"));
+            var iconPath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.IconFilePath));
+            var resHackArgs = string.Format("-addoverwrite \"UDT_viewer.exe\", \"UDT_viewer.exe\", \"{0}\", ICONGROUP, MAINICON, 0", iconPath);
+            if(!RunAndReadProcess(viewerFolderPath, Config.ResHackerFilePath, resHackArgs))
+            {
+                SetStatus("Failed to set the viewer's icon before creating archive {0}", archiveFilePath);
+                return false;
+            }
+
+            var workDir = Path.GetFullPath(Config.RootFolderPath);
+            var changeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogViewerFilePath));
+            var viewerPath = Path.Combine(viewerFolderPath, "UDT_viewer.exe");
+            var filePaths = new List<string>();
+            filePaths.Add(viewerPath);
+            filePaths.Add(changeLogFilePath);
+            
+            SetStatus("Creating archive {0}", archiveFilePath);
+            if(!WinRAR.CreateArchive(workDir, archiveFilePath, filePaths))
+            {
+                SetStatus("Failed to create archive {0}", archiveFilePath);
+                return false;
+            }
+
+            if(!WinRAR.AddToArchive(workDir, archiveFilePath, Data.TempFolderPath, "-ep1") ||
+                !WinRAR.AddToArchive(workDir, archiveFilePath, @"viewer_data\map_aliases.txt") ||
+                !WinRAR.AddToArchive(workDir, archiveFilePath, @"viewer_data\deja_vu_sans.ttf") ||
+                !WinRAR.AddToArchive(workDir, archiveFilePath, @"viewer_data\blender_icons.png") ||
+                !WinRAR.AddToArchive(workDir, archiveFilePath, @"viewer_data\maps\*.png", "-apviewer_data -ep1"))
+            {
+                SetStatus("Failed to add files to archive {0}", archiveFilePath);
+                return false;
+            }
+            
             return true;
         }
 

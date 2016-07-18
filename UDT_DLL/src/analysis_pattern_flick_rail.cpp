@@ -52,9 +52,9 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	else
 	{
 		const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, parser._inProtocol);
-		for(u32 i = 0; i < arg.EntityCount; ++i)
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 		{
-			idEntityStateBase* const es = arg.Entities[i].Entity;
+			idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
 			if(es->eType != entityTypePlayerId || es->clientNum != trackedPlayerIndex)
 			{
 				continue;
@@ -84,14 +84,14 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	}
 	
 	udtObituaryEvent obituary;
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
-		if(!IsObituaryEvent(obituary, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}

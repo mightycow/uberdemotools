@@ -19,14 +19,6 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 };
 #undef ITEM
 
-#define ITEM(Enum, Desc) Desc,
-static const char* TeamNames[udtTeam::Count + 1]
-{
-	UDT_TEAM_LIST(ITEM)
-	"unknown"
-};
-#undef ITEM
-
 
 udtString CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
@@ -547,20 +539,6 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	return true;
 }
 
-uptr ComputeReservedByteCount(uptr smallByteCount, uptr bigByteCount, u32 demoCountThreshold, u32 demoCount)
-{
-	if(demoCount < demoCountThreshold)
-	{
-		return bigByteCount * (uptr)demoCount;
-	}
-
-	const uptr byteCount1 = bigByteCount * (uptr)demoCountThreshold;
-	const uptr byteCount2 = smallByteCount * (uptr)demoCount;
-	const uptr byteCount = udt_max(byteCount1, byteCount2);
-
-	return byteCount;
-}
-
 bool IsTeamMode(udtGameType::Id gameType)
 {
 	const u8* gameTypeFlags = NULL;
@@ -635,10 +613,15 @@ void WriteNullStringToApiStruct(u32& offset)
 
 void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
 {
-	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
+	s32 healthStatIdx = GetIdNumber(udtMagicNumberType::LifeStatsIndex, udtLifeStatsIndex::Health, protocol, udtMod::None);
+	if(healthStatIdx < 0 || healthStatIdx > 16)
+	{
+		healthStatIdx = 0;
+	}
+
 	const bool isPlayerInvisible = 
-		ps.pm_type == PM_INTERMISSION ||
-		ps.pm_type == PM_SPECTATOR ||
+		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::Intermission, protocol, udtMod::None) ||
+		ps.pm_type == GetIdNumber(udtMagicNumberType::PlayerMovementType, udtPlayerMovementType::SPIntermission, protocol, udtMod::None) ||
 		ps.stats[healthStatIdx] <= GIB_HEALTH;
 	es.eType = GetIdNumber(udtMagicNumberType::EntityType, isPlayerInvisible ? udtEntityType::Invisible : udtEntityType::Player, protocol);
 	es.number = ps.clientNum;

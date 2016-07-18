@@ -10,7 +10,6 @@ udtdConverter::udtdConverter()
 	_protocolSizeOfEntityState = 0;
 	_protocolSizeOfPlayerState = 0;
 	_firstMessage = true;
-	_plugIns.Init(UDT_MEMORY_PAGE_SIZE, "UDTDemoConverter::PlugIns");
 }
 
 udtdConverter::~udtdConverter()

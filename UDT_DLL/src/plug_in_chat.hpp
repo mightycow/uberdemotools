@@ -34,11 +34,11 @@ private:
 	void InitChatEvent(udtParseDataChat& chatEvent, s32 serverTimeMs);
 
 public:
-	udtVMArray<udtParseDataChat> ChatEvents;
+	udtVMArray<udtParseDataChat> ChatEvents { "ParserPlugInChat::ChatMessagesArray" };
 
 private:
 	udtString _cleanPlayerNames[64];
-	udtVMLinearAllocator _stringAllocator;
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInChat::Strings" };
 	udtParseDataChatBuffers _buffers;
 	s32 _gameStateIndex;
 };

@@ -43,10 +43,8 @@ udtParserPlugInChat::~udtParserPlugInChat()
 {
 }
 
-void udtParserPlugInChat::InitAllocators(u32 demoCount)
+void udtParserPlugInChat::InitAllocators(u32)
 {
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(7), "ParserPlugInChat::Strings");
-	ChatEvents.InitNoOverride(demoCount * UDT_KB(5), "ParserPlugInChat::ChatMessagesArray");
 }
 
 void udtParserPlugInChat::CopyBuffersStruct(void* buffersStruct) const
@@ -299,16 +297,14 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 		if(!udtString::IsNull(cs))
 		{
 			const udtString location = udtString::NewCloneFromRef(_stringAllocator, cs);
-			udtString cleanLocation = udtString::NewCloneFromRef(_stringAllocator, location);
-			udtString::CleanUp(cleanLocation, protocol);
+			const udtString cleanLocation = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, location);
 			WriteStringToApiStruct(chatEvent.Strings[0].Location, location);
 			WriteStringToApiStruct(chatEvent.Strings[1].Location, cleanLocation);
 		}
 	}
 
 	const udtString message = udtString::NewCloneFromRef(_stringAllocator, tokenizer.GetArg(3));
-	udtString cleanMessage = udtString::NewCloneFromRef(_stringAllocator, message);
-	udtString::CleanUp(cleanMessage, protocol);
+	const udtString cleanMessage = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, message);
 	WriteStringToApiStruct(chatEvent.Strings[0].Message, message);
 	WriteStringToApiStruct(chatEvent.Strings[1].Message, cleanMessage);
 
@@ -317,15 +313,13 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	if(firstPlayerIndex != -1 &&
 	   ParseConfigStringValueString(playerName, _stringAllocator, "n", parser._inConfigStrings[firstPlayerIndex + clientNumber].GetPtr()))
 	{
-		udtString cleanPlayerName = udtString::NewCloneFromRef(_stringAllocator, playerName);
-		udtString::CleanUp(cleanMessage, protocol);
+		const udtString cleanPlayerName = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, playerName);
 		WriteStringToApiStruct(chatEvent.Strings[0].PlayerName, playerName);
 		WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, cleanPlayerName);
 	}
 	
 	const udtString command = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
-	udtString cleanCommand = udtString::NewCloneFromRef(_stringAllocator, command);
-	udtString::CleanUp(cleanMessage, protocol);
+	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, command);
 	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, command);
 	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanCommand);
 
@@ -334,6 +328,9 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 
 void udtParserPlugInChat::ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser)
 {
+	// @NOTE: I have seen QL demo data where a chat message from a player kicked for excess flood is received right after he disconnected,
+	// which would mean looking up the player's config string will yield a blank name but the chat commands itself has a valid name.
+
 	s32 playerIndex = -1;
 	if(!StringParseInt(playerIndex, argument1.GetPtr()) ||
 	   playerIndex < 0 ||

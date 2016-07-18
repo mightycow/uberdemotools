@@ -63,10 +63,9 @@ udtGeneralAnalyzer::~udtGeneralAnalyzer()
 {
 }
 
-void udtGeneralAnalyzer::InitAllocators(udtVMLinearAllocator& tempAllocator, u32 demoCount)
+void udtGeneralAnalyzer::InitAllocators(udtVMLinearAllocator& tempAllocator, u32)
 {
 	_tempAllocator = &tempAllocator;
-	_stringAllocator.Init((uptr)demoCount * (uptr)(1 << 16), "GeneralAnalyzer::Strings");
 }
 
 void udtGeneralAnalyzer::ResetForNextDemo()

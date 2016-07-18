@@ -34,7 +34,6 @@ public:
 	udtVMMemoryStream();
 	~udtVMMemoryStream();
 
-	bool   Open(uptr reservedByteCount);
 	u8*    GetBuffer();
 	void   Clear();
 
@@ -48,6 +47,6 @@ public:
 private:
 	s32    SetOffsetIfValid(s32 newOffset);
 
-	udtVMArray<u8> _buffer;
+	udtVMArray<u8> _buffer { "VMMemoryStream::Buffer" };
 	u32 _offset;
 };

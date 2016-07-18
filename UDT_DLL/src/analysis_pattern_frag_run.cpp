@@ -57,8 +57,7 @@ static bool IsAllowedUDTMeanOfDeath(s32 udtMod, u32 udtPlayerMODFlags)
 }
 
 
-udtFragRunPatternAnalyzer::udtFragRunPatternAnalyzer() 
-	: _frags(1 << 16, "CutByFragAnalyzer::FragsArray")
+udtFragRunPatternAnalyzer::udtFragRunPatternAnalyzer()
 {
 	_analyzer.SetNameAllocationEnabled(false);
 }

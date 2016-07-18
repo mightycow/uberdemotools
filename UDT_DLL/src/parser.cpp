@@ -40,19 +40,6 @@ udtBaseParser::~udtBaseParser()
 	Destroy();
 }
 
-void udtBaseParser::InitAllocators()
-{
-	_persistentAllocator.Init(1 << 18, "Parser::Persistent");
-	_configStringAllocator.Init(1 << 20, "Parser::ConfigStrings");
-	_tempAllocator.Init(1 << 18, "Parser::Temp");
-	_privateTempAllocator.Init(1 << 16, "Parser::PrivateTemp");
-	PlugIns.Init(1 << 16, "Parser::PlugInsArray");
-	_inGameStateFileOffsets.Init(1 << 16, "Parser::GameStateFileOffsetsArray");
-	_inChangedEntities.Init(1 << 16, "Parser::ChangedEntitiesArray");
-	_inRemovedEntities.Init(1 << 16, "Parser::RemovedEntitiesArray");
-	_cuts.Init(1 << 16, "Parser::CutsArray");
-}
-
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtProtocol::Id outProtocol, s32 gameStateIndex, bool enablePlugIns)
 {
 	if(context == NULL || !udtIsValidProtocol(inProtocol) || gameStateIndex < 0)
@@ -85,14 +72,13 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_privateTempAllocator.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
-	_inGameStateFileOffsets.Clear();
-	if(gameStateIndex > 0)
+	if(gameStateIndex == 0)
+	{
+		_inGameStateFileOffsets.Clear();
+	}
+	else
 	{
 		_inGameStateFileOffsets.Resize(gameStateIndex);
-		for(s32 i = 0; i < gameStateIndex; ++i)
-		{
-			_inGameStateFileOffsets[0] = 0;
-		}
 	}
 
 	if(enablePlugIns)
@@ -784,15 +770,40 @@ bool udtBaseParser::ParseSnapshot()
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
+		_inEntities.Clear();
+		_inEntityFlags.Clear();
+		for(s32 i = 0, count = newSnap.numEntities; i < count; ++i)
+		{
+			const s32 index = (newSnap.parseEntitiesNum + i) & (ID_MAX_PARSE_ENTITIES - 1);
+			idEntityStateBase* const es = GetEntity(index);
+			_inEntities.Add(es);
+
+			u8 flags = 0;
+			for(u32 j = 0, jcount = _inChangedEntities.GetSize(); j < jcount; ++j)
+			{
+				const udtChangedEntity& es2 = _inChangedEntities[j];
+				if(es->number == es2.Entity->number)
+				{
+					SetBit(&flags, (u32)udtEntityStateFlag::AddedOrChanged);
+					if(es2.IsNewEvent) SetBit(&flags, (u32)udtEntityStateFlag::NewEvent);
+					break;
+				}
+			}
+			_inEntityFlags.Add(flags);
+		}
+
 		udtSnapshotCallbackArg info;
 		info.ServerTime = _inServerTime;
 		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
 		info.Snapshot = &newSnap;
 		info.OldSnapshot = oldSnap;
-		info.Entities = _inChangedEntities.GetStartAddress();
-		info.EntityCount = _inChangedEntities.GetSize();
+		info.ChangedEntities = _inChangedEntities.GetStartAddress();
+		info.ChangedEntityCount = _inChangedEntities.GetSize();
 		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
 		info.RemovedEntityCount = _inRemovedEntities.GetSize();
+		info.Entities = _inEntities.GetStartAddress();
+		info.EntityFlags = _inEntityFlags.GetStartAddress();
+		info.EntityCount = _inEntities.GetSize();
 		info.CommandNumber = newSnap.serverCommandNum;
 		info.MessageNumber = newSnap.messageNum;
 

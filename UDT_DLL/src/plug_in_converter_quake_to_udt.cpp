@@ -6,7 +6,6 @@
 udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
-	_allocator.Init((uptr)sizeof(udtdData), "ParserPlugInQuakeToUDT::Data");
 	_data = (udtdData*)_allocator.AllocateAndGetAddress((uptr)sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
