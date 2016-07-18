@@ -483,6 +483,15 @@ bool Viewer::Init(int argc, char** argv)
 		StartLoadingDemo(argv[1]);
 	}
 
+	for(int i = 2; i < argc; ++i)
+	{
+		if(udtString::Equals(udtString::NewConstRef(argv[i]), "/ProfileMode"))
+		{
+			_profileMode = true;
+			break;
+		}
+	}
+
 	Log::LogInfo("UDT 2D Viewer is now operational");
 	
 	_globalTimer.Start();
@@ -1694,14 +1703,29 @@ void Viewer::Render(const RenderParams& renderParams)
 	{
 		case AppState::FinishDemoLoading:
 			FinishLoadingDemo();
-			_appState = AppState::Normal;
-			RenderThreadedJobProgress(renderParams);
+			if(_profileMode)
+			{
+				_appState = AppState::GeneratingHeatMaps;
+				StartGeneratingHeatMaps();
+			}
+			else
+			{
+				_appState = AppState::Normal;
+				RenderThreadedJobProgress(renderParams);
+			}
 			break;
 
 		case AppState::FinishHeatMapGeneration:
-			FinishGeneratingHeatMaps();
-			_appState = AppState::Normal;
-			RenderThreadedJobProgress(renderParams);
+			if(_profileMode)
+			{
+				Platform_RequestQuit(_platform);
+			}
+			else
+			{
+				FinishGeneratingHeatMaps();
+				_appState = AppState::Normal;
+				RenderThreadedJobProgress(renderParams);
+			}
 			break;
 
 		case AppState::LoadingDemo:

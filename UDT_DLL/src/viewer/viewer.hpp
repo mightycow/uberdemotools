@@ -203,4 +203,5 @@ private:
 	bool _mapCoordsLoaded = false;
 	bool _appLoaded = false;
 	bool _displayHelp = false;
+	bool _profileMode = false;
 };
