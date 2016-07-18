@@ -202,7 +202,21 @@ struct Platform
 		}
 		_window = window;
 		SetWindowLongPtrW(window, GWLP_USERDATA, (LONG_PTR)this);
-		
+
+		// Title bar, task bar, ...
+		const HANDLE iconSmall = LoadImageW(GetModuleHandleW(nullptr), L"MAINICON", IMAGE_ICON, GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0);
+		if(iconSmall)
+		{
+			SendMessage(_window, WM_SETICON, ICON_SMALL, (LPARAM)iconSmall);
+		}
+
+		// Alt-tab screen, ...
+		const HANDLE iconBig = LoadImageW(GetModuleHandleW(nullptr), L"MAINICON", IMAGE_ICON, GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0);
+		if(iconBig)
+		{
+			SendMessage(_window, WM_SETICON, ICON_BIG, (LPARAM)iconBig);
+		}
+
 		UINT flags = D3D11_CREATE_DEVICE_SINGLETHREADED;
 #if defined(DEBUG) || defined(_DEBUG)  
 		flags |= D3D11_CREATE_DEVICE_DEBUG;
