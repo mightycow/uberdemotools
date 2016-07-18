@@ -60,6 +60,35 @@ namespace Uber.Builder
             return false;
         }
 
+        private static Regex ViewerVersionStringRegEx = new Regex("ViewerVersionString = \"(\\d+)\\.(\\d+)\\.(\\d+)\"", RegexOptions.Compiled);
+
+        public static bool GetVersionFromViewerSource(SharedData data, string filePath)
+        {
+            var lines = File.ReadAllLines(filePath);
+            foreach(var line in lines)
+            {
+                var match = ViewerVersionStringRegEx.Match(line);
+                if(match.Success)
+                {
+                    var major = 0;
+                    var minor = 0;
+                    var rev = 0;
+                    if(int.TryParse(match.Groups[1].Value, out major) &&
+                        int.TryParse(match.Groups[2].Value, out minor) &&
+                        int.TryParse(match.Groups[3].Value, out rev))
+                    {
+                        data.ViewerVersion.Major = major;
+                        data.ViewerVersion.Minor = minor;
+                        data.ViewerVersion.Revision = rev;
+                        return true;
+                    }
+                    break;
+                }
+            }
+
+            return false;
+        }
+
         private static Regex GuiVersionStringRegEx = new Regex("GuiVersion = \"(\\d+)\\.(\\d+)\\.(\\d+)\"", RegexOptions.Compiled);
         private static Regex MinimumDllVersionMajorRegEx = new Regex("MinimumDllVersionMajor = (\\d+)", RegexOptions.Compiled);
         private static Regex MinimumDllVersionMinorRegEx = new Regex("MinimumDllVersionMinor = (\\d+)", RegexOptions.Compiled);
@@ -164,6 +193,11 @@ namespace Uber.Builder
         public static bool GetVersionFromDLLChangeLog(SharedData data, string filePath)
         {
             return GetVersionAtStartOfFile(data.ChangeLogDLLVersion, filePath);
+        }
+
+        public static bool GetVersionFromViewerChangeLog(SharedData data, string filePath)
+        {
+            return GetVersionAtStartOfFile(data.ChangeLogViewerVersion, filePath);
         }
     }
 }
