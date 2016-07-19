@@ -794,8 +794,8 @@ bool udtBaseParser::ParseSnapshot()
 
 		udtSnapshotCallbackArg info;
 		info.ServerTime = _inServerTime;
-		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
-		info.Snapshot = &newSnap;
+		info.SnapshotArrayIndex = newSnap.messageNum & PACKET_MASK;
+		info.Snapshot = GetClientSnapshot(newSnap.messageNum & PACKET_MASK);
 		info.OldSnapshot = oldSnap;
 		info.ChangedEntities = _inChangedEntities.GetStartAddress();
 		info.ChangedEntityCount = _inChangedEntities.GetSize();
