@@ -1566,8 +1566,9 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 	const f32 fontSize = 20.0f;
 	NVGcontext* const ctx = renderParams.NVGContext;
 	nvgFontSize(ctx, fontSize);
-
-	if(_config.DrawMapFollowMsg)
+	
+	if(_config.DrawMapFollowMsg &&
+	   snapshot.Core.FollowedName != UDT_U32_MAX)
 	{
 		const char* const name = _demo.GetString(snapshot.Core.FollowedName);
 		if(name != nullptr)
@@ -1622,9 +1623,9 @@ void Viewer::RenderDemoFollowedPlayer(const RenderParams& renderParams)
 	char armor[16];
 	char health[16];
 	char ammo[16];
-	sprintf(armor, "%d", snapshot.Core.FollowedArmor);
-	sprintf(health, "%d", snapshot.Core.FollowedHealth);
-	sprintf(ammo, "%d", snapshot.Core.FollowedAmmo);
+	sprintf(armor, "%d", (int)snapshot.Core.FollowedArmor);
+	sprintf(health, "%d", (int)snapshot.Core.FollowedHealth);
+	sprintf(ammo, "%d", (int)snapshot.Core.FollowedAmmo);
 
 	nvgBeginPath(ctx);
 	nvgFillColor(ctx, nvgGrey(0));
