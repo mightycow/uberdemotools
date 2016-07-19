@@ -158,7 +158,14 @@ struct Platform
 	}
 
 	void ReDraw()
-	{		
+	{
+		if(_redrawing)
+		{
+			return;
+		}
+
+		_redrawing = true;
+
 		_deviceContext->ClearRenderTargetView(_renderTargetView, ViewerClearColor);
 		_deviceContext->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 
@@ -172,6 +179,8 @@ struct Platform
 		nvgEndFrame(_nvgContext);
 
 		_swapChain->Present(0, 0);
+
+		_redrawing = false;
 	}
 
 	bool Init()
@@ -603,6 +612,7 @@ struct Platform
 	bool _classRegistered = false;
 	bool _isRunning = true;
 	bool _paused = false;
+	bool _redrawing = false;
 
 private:
 	void InitSwapChainDesc(DXGI_SWAP_CHAIN_DESC& swapChainDesc, HWND window, UINT width, UINT height)
