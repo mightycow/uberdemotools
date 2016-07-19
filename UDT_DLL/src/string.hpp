@@ -26,6 +26,7 @@ struct udtString
 	static udtString NewSubstringClone(udtVMLinearAllocator& allocator, const udtString& input, u32 offset, u32 length = (u32)InvalidLength);
 	static udtString NewNull();
 	static udtString NewCamelCaseClone(udtVMLinearAllocator& allocator, const udtString& name);
+	static udtString NewFromAllocAndOffset(udtVMLinearAllocator& allocator, u32 offset, u32 length = (u32)InvalidLength);
 
 	static void Append(udtString& result, const udtString& input);
 	static void AppendMultiple(udtString& result, const udtString** strings, u32 stringCount);

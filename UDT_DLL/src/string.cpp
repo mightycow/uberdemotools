@@ -251,6 +251,20 @@ udtString udtString::NewCamelCaseClone(udtVMLinearAllocator& allocator, const ud
 	return fixed;
 }
 
+udtString udtString::NewFromAllocAndOffset(udtVMLinearAllocator& allocator, u32 offset, u32 length)
+{
+	assert(offset < allocator.GetCurrentByteCount());
+
+	const u32 realLength = (length != (u32)InvalidLength) ? length : (u32)strlen(allocator.GetStringAt(offset));
+	udtString result;
+	result.Allocator = &allocator;
+	result.Offset = offset;
+	result.Length = realLength;
+	result.ReservedBytes = realLength + 1;
+
+	return result;
+}
+
 void udtString::Append(udtString& result, const udtString& input)
 {
 	UDT_ASSERT_OR_RETURN(result.Length + input.Length + 1 <= result.ReservedBytes);

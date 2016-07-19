@@ -377,13 +377,18 @@ void udtParserPlugInScores::AddScore()
 			GetScoresQL(scores);
 		}
 	}
+	// @NOTE: We use udtString::NewCleanCloneFromRef because it checks for the case where
+	// the allocator to use for the clone is the same as the one used for the input string.
+	// Before, we incorrectly used a pointer to a string inside a buffer that could get relocated.
 	if(scores.Name1 != UDT_U32_MAX)
 	{
-		WriteStringToApiStruct(scores.CleanName1, udtString::NewCleanClone(_stringAllocator, _protocol, _stringAllocator.GetStringAt(scores.Name1)));
+		const udtString name1 = udtString::NewFromAllocAndOffset(_stringAllocator, scores.Name1, scores.Name1Length);
+		WriteStringToApiStruct(scores.CleanName1, udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, name1));
 	}
 	if(scores.Name2 != UDT_U32_MAX)
 	{
-		WriteStringToApiStruct(scores.CleanName2, udtString::NewCleanClone(_stringAllocator, _protocol, _stringAllocator.GetStringAt(scores.Name2)));
+		const udtString name2 = udtString::NewFromAllocAndOffset(_stringAllocator, scores.Name2, scores.Name2Length);
+		WriteStringToApiStruct(scores.CleanName2, udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, name2));
 	}
 	_scores.Add(scores);
 }
