@@ -16,8 +16,8 @@ The main features are:
 Official Releases
 -----------------
 
-[Grab the binaries here](http://giant.pourri.ch/snif.php?path=UDT/).
-The zip files are Windows releases.
+[Grab the binaries here](http://giant.pourri.ch/snif.php?path=UDT/).  
+The zip files are Windows releases.  
 The tar.bz2 files are Linux releases.
 
 Project Overview
