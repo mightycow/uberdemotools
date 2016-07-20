@@ -740,7 +740,7 @@ bool udtBaseParser::ParseSnapshot()
 	// time we wrap around in the buffer.
 	//
 
-	s32 oldMessageNum = _inSnapshot.messageNum + 1;
+	s32 oldMessageNum = newSnap.messageNum;
 	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
 	{
 		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
@@ -751,11 +751,8 @@ bool udtBaseParser::ParseSnapshot()
 		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = false;
 	}
 
-	// Copy to the current good spot.
-	_inSnapshot = newSnap;
-
 	// Save the frame off in the backup array for later delta comparisons.
-	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
+	Com_Memcpy(GetClientSnapshot(newSnap.messageNum & PACKET_MASK), &newSnap, (size_t)_inProtocolSizeOfClientSnapshot);
 
 	// Don't give the same stuff to the plug-ins more than once.
 	if(newSnap.messageNum == _inLastSnapshotMessageNumber)

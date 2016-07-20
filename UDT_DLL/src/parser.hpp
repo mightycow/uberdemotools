@@ -131,7 +131,6 @@ public:
 	udtVMArray<s32> _inRemovedEntities { "Parser::RemovedEntitiesArray" }; // The entities that were removed in the last call to ParsePacketEntities.
 	udtVMArray<idEntityStateBase*> _inEntities { "Parser::EntitiesArray" }; // All entities that were read in the last call to ParsePacketEntities.
 	udtVMArray<u8> _inEntityFlags { "Parser::EntityFlagsArray" };
-	idLargestClientSnapshot _inSnapshot;
 
 	// Output.
 	udtFileStream _outFile;

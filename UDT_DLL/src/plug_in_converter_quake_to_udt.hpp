@@ -27,7 +27,7 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInQuakeToUDT);
 
 private:
-	void WriteSnapshot(udtBaseParser& parser);
+	void WriteSnapshot(udtBaseParser& parser, idClientSnapshotBase& snapshot);
 
 	struct udtdClientEntity
 	{
