@@ -96,11 +96,11 @@ private:
 	void RenderDemoFollowedPlayer(const RenderParams& renderParams);
 	void DrawProgressSliderToolTip(const RenderParams& renderParams);
 	void DrawHelp(const RenderParams& renderParams);
-	void DrawChat(const RenderParams& renderParams, s32 serverTimeMs);
+	void DrawChat(const RenderParams& renderParams, s32 displayTimeMs);
 	void DrawLog(const RenderParams& renderParams);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
 	void DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a = 0.0f);
-	void GetCurrentSnapshotIndexAndServerTime(u32& snapshotIndex, s32& serverTimeMs);
+	void GetSnapshotIndexAndTime(u32& snapshotIndex, s32& displayTimeMs);
 	f32  GetProgressFromTime(u32 elapsedMs);
 	u32  GetTimeFromProgress(f32 progress);
 	void PausePlayback();

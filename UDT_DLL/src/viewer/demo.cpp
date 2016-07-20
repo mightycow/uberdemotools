@@ -467,8 +467,8 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOu
 
 	const auto& snapshots = _snapshots[_readIndex];
 	const u32 lastIndex = snapshots.GetSize() - 1;
-	_firstSnapshotTimeMs = snapshots[0].ServerTimeMs;
-	_lastSnapshotTimeMs = snapshots[lastIndex].ServerTimeMs;
+	_firstSnapshotTimeMs = snapshots[0].DisplayTimeMs;
+	_lastSnapshotTimeMs = snapshots[lastIndex].DisplayTimeMs;
 
 	(*_progressCallback)(1.0f, _userData);
 
@@ -545,15 +545,15 @@ const char* Demo::GetStringSafe(u32 offset, const char* replacement) const
 	return s;
 }
 
-u32 Demo::GetSnapshotIndexFromServerTime(s32 serverTimeMs) const
+u32 Demo::GetSnapshotIndexFromDisplayTime(s32 displayTimeMs) const
 {
-	if(serverTimeMs < _firstSnapshotTimeMs)
+	if(displayTimeMs < _firstSnapshotTimeMs)
 	{
 		return 0;
 	}
 
 	const u32 lastIndex = _snapshots[_readIndex].GetSize() - 1;
-	if(serverTimeMs >= _lastSnapshotTimeMs)
+	if(displayTimeMs >= _lastSnapshotTimeMs)
 	{
 		return lastIndex;
 	}
@@ -564,13 +564,13 @@ u32 Demo::GetSnapshotIndexFromServerTime(s32 serverTimeMs) const
 	for(;;)
 	{
 		const u32 i = (min + max) / 2;
-		if(serverTimeMs < snapshots[i].ServerTimeMs)
+		if(displayTimeMs < snapshots[i].DisplayTimeMs)
 		{
 			max = i - 1;
 			continue;
 		}
 
-		if(serverTimeMs >= snapshots[i + 1].ServerTimeMs)
+		if(displayTimeMs >= snapshots[i + 1].DisplayTimeMs)
 		{
 			min = i + 1;
 			continue;
@@ -580,7 +580,7 @@ u32 Demo::GetSnapshotIndexFromServerTime(s32 serverTimeMs) const
 	}
 }
 
-s32 Demo::GetSnapshotServerTimeMs(u32 index) const
+s32 Demo::GetSnapshotDisplayTimeMs(u32 index) const
 {
 	const auto& snapshots = _snapshots[_readIndex];
 	if(index >= snapshots.GetSize())
@@ -589,10 +589,10 @@ s32 Demo::GetSnapshotServerTimeMs(u32 index) const
 	}
 
 	uptr offset = snapshots[index].Offset;
-	s32 serverTimeMs;
-	Read(offset, serverTimeMs);
+	s32 displayTimeMs;
+	Read(offset, displayTimeMs);
 
-	return serverTimeMs;
+	return displayTimeMs;
 }
 
 bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
@@ -605,7 +605,7 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 
 	uptr offset = snapshots[index].Offset;
 
-	Read(offset, snapshot.ServerTimeMs);
+	Read(offset, snapshot.DisplayTimeMs);
 
 	u8 staticItemBits[MaxItemMaskByteCount];
 	const u32 staticItemCount = _staticItems.GetSize();
@@ -642,7 +642,7 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 	const Score* score = nullptr;
 	for(u32 i = 0; i < _scores.GetSize(); ++i)
 	{
-		if(snapshot.ServerTimeMs >= _scores[i].ServerTimeMs)
+		if(snapshot.DisplayTimeMs >= _scores[i].DisplayTimeMs)
 		{
 			score = &_scores[i];
 		}
@@ -676,7 +676,7 @@ bool Demo::GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const
 
 	uptr offset = snapshots[index].Offset;
 
-	Read(offset, snapshot.ServerTimeMs);
+	Read(offset, snapshot.DisplayTimeMs);
 
 	const u32 staticItemCount = _staticItems.GetSize();
 	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
@@ -697,11 +697,11 @@ bool Demo::GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const
 void Demo::WriteSnapshot(const Snapshot& snapshot)
 {
 	SnapshotDesc snapDesc;
-	snapDesc.ServerTimeMs = snapshot.ServerTimeMs;
+	snapDesc.DisplayTimeMs = snapshot.DisplayTimeMs;
 	snapDesc.Offset = (u32)_snapshotAllocators[_writeIndex].GetCurrentByteCount();
 	_snapshots[_writeIndex].Add(snapDesc);
 
-	Write(snapshot.ServerTimeMs);
+	Write(snapshot.DisplayTimeMs);
 
 	u8 staticItemBits[MaxItemMaskByteCount];
 	memset(staticItemBits, 0, sizeof(staticItemBits));
@@ -958,14 +958,13 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	_tempBeams.Clear();
 	_tempShaftImpacts.Clear();
 
-	udtCuSnapshotMessage snapshot = *message.GameStateOrSnapshot.Snapshot;
+	const udtCuSnapshotMessage& snapshot = *message.GameStateOrSnapshot.Snapshot;
 
 	s32 timeOffsetMs = 0;
 	if(ProcessTimeOut(timeOffsetMs, snapshot.ServerTimeMs))
 	{
 		return true;
 	}
-	snapshot.ServerTimeMs -= timeOffsetMs;
 
 	for(u32 i = 0; i < snapshot.ChangedEntityCount; ++i)
 	{
@@ -990,7 +989,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	}
 
 	Snapshot& newSnap = *_snapshot;
-	newSnap.ServerTimeMs = snapshot.ServerTimeMs;
+	newSnap.DisplayTimeMs = snapshot.ServerTimeMs - timeOffsetMs;
 
 	//
 	// Static items.
@@ -1504,7 +1503,7 @@ void Demo::FixDynamicItemsAndPlayers()
 			for(u32 s2 = s; s2 < snapshotCount && !fixed; ++s2)
 			{
 				GetDynamicItemsOnly(snap2, s2);
-				if(snap2.ServerTimeMs - prevSnap.ServerTimeMs >= (s32)spawnTimeMs)
+				if(snap2.DisplayTimeMs - prevSnap.DisplayTimeMs >= (s32)spawnTimeMs)
 				{
 					break;
 				}
@@ -1518,7 +1517,7 @@ void Demo::FixDynamicItemsAndPlayers()
 						if(s2 > s)
 						{
 							DynamicItem newItem = item2;
-							const f32 t = (f32)(currSnap.ServerTimeMs - prevSnap.ServerTimeMs) / (f32)(snap2.ServerTimeMs - prevSnap.ServerTimeMs);
+							const f32 t = (f32)(currSnap.DisplayTimeMs - prevSnap.DisplayTimeMs) / (f32)(snap2.DisplayTimeMs - prevSnap.DisplayTimeMs);
 							Float3::Lerp(newItem.Position, item.Position, item2.Position, t);
 							currSnap.DynamicItems[currSnap.DynamicItemCount++] = newItem;
 						}
@@ -1557,7 +1556,7 @@ void Demo::FixPlayers(const Snapshot& prevSnap, Snapshot& currSnap, Snapshot& sn
 		for(u32 s2 = s; s2 < snapshotCount && !fixed; ++s2)
 		{
 			GetSnapshotData(snap2, s2);
-			if(snap2.ServerTimeMs - prevSnap.ServerTimeMs >= MAX_FIXABLE_PLAYER_BLINK_TIME_MS)
+			if(snap2.DisplayTimeMs - prevSnap.DisplayTimeMs >= MAX_FIXABLE_PLAYER_BLINK_TIME_MS)
 			{
 				break;
 			}
@@ -1572,7 +1571,7 @@ void Demo::FixPlayers(const Snapshot& prevSnap, Snapshot& currSnap, Snapshot& sn
 					   IsBitSet(&player2.Flags, PlayerFlags::TelePortBit) == tpBit)
 					{
 						Player newPlayer = player2;
-						const f32 t = (f32)(currSnap.ServerTimeMs - prevSnap.ServerTimeMs) / (f32)(snap2.ServerTimeMs - prevSnap.ServerTimeMs);
+						const f32 t = (f32)(currSnap.DisplayTimeMs - prevSnap.DisplayTimeMs) / (f32)(snap2.DisplayTimeMs - prevSnap.DisplayTimeMs);
 						Float3::Lerp(newPlayer.Position, player.Position, player2.Position, t);
 						ClearBit(&newPlayer.Flags, PlayerFlags::Firing);
 						currSnap.Players[currSnap.PlayerCount++] = newPlayer;
@@ -1769,7 +1768,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 			}
 
 			Score score;
-			score.ServerTimeMs = s.ServerTimeMs - timeOffsetMs;
+			score.DisplayTimeMs = s.ServerTimeMs - timeOffsetMs;
 			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
 			score.Base.Score1Id = (u8)s.Id1;
 			score.Base.Score2Id = (u8)s.Id2;
@@ -1807,7 +1806,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 			msg.Location = CloneString(chatBuffers.StringBuffer, c.Strings[1].Location);
 			msg.Message = CloneString(chatBuffers.StringBuffer, c.Strings[1].Message);
 			msg.PlayerName = CloneString(chatBuffers.StringBuffer, c.Strings[1].PlayerName);
-			msg.ServerTimeMs = fixedTimeMs;
+			msg.DisplayTimeMs = fixedTimeMs;
 			msg.TeamMessage = c.TeamMessage;
 			_chatMessages.Add(msg);
 		}
@@ -1825,7 +1824,7 @@ u32 Demo::CloneString(const void* buffer, u32 offset)
 	return udtString::NewClone(_stringAllocator, toClone).GetOffset();
 }
 
-u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
+u32 Demo::GetChatMessageIndexFromDisplayTime(s32 displayTimeMs) const
 {
 	const u32 count = _chatMessages.GetSize();
 	if(count == 0)
@@ -1833,7 +1832,7 @@ u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
 		return UDT_U32_MAX;
 	}
 
-	if(serverTimeMs >= _chatMessages[count - 1].ServerTimeMs)
+	if(displayTimeMs >= _chatMessages[count - 1].DisplayTimeMs)
 	{
 		return count - 1;
 	}
@@ -1841,7 +1840,7 @@ u32 Demo::GetChatMessageIndexFromServerTime(s32 serverTimeMs) const
 	// @TODO: binary search?
 	for(u32 i = 0; i < count; ++i)
 	{
-		if(_chatMessages[i].ServerTimeMs > serverTimeMs)
+		if(_chatMessages[i].DisplayTimeMs > displayTimeMs)
 		{
 			return i - 1;
 		}

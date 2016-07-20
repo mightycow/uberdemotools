@@ -1029,8 +1029,8 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 	}
 
 	u32 snapshotIndex;
-	s32 serverTimeMs;
-	GetCurrentSnapshotIndexAndServerTime(snapshotIndex, serverTimeMs);
+	s32 displayTimeMs;
+	GetSnapshotIndexAndTime(snapshotIndex, displayTimeMs);
 	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
 	{
 		RenderNoDemo(renderParams);
@@ -1149,7 +1149,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 
 	if(tabIndex == Tab::Chat)
 	{
-		DrawChat(renderParams, serverTimeMs);
+		DrawChat(renderParams, displayTimeMs);
 	}
 	else if(tabIndex == Tab::Log)
 	{
@@ -1875,9 +1875,9 @@ void Viewer::DrawHelp(const RenderParams& renderParams)
 	DrawHelpBox(w, ctx, w + 20.0f, 10.0f, HelpCreditStrings, (u32)UDT_COUNT_OF(HelpCreditStrings), 3);
 }
 
-void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
+void Viewer::DrawChat(const RenderParams& renderParams, s32 displayTimeMs)
 {
-	const u32 index = _demo.GetChatMessageIndexFromServerTime(serverTimeMs);
+	const u32 index = _demo.GetChatMessageIndexFromDisplayTime(displayTimeMs);
 	if(index == UDT_U32_MAX)
 	{
 		return;
@@ -1904,7 +1904,7 @@ void Viewer::DrawChat(const RenderParams& renderParams, s32 serverTimeMs)
 		}
 
 		const int offsetMs = _config.TimerShowsServerTime ? 0 : (int)_demo.GetFirstSnapshotTimeMs();
-		const int totalSec = ((int)message.ServerTimeMs - offsetMs) / 1000;
+		const int totalSec = ((int)message.DisplayTimeMs - offsetMs) / 1000;
 		const int minutes = totalSec / 60;
 		const int seconds = totalSec % 60;
 		const char* const name = _demo.GetString(message.PlayerName);
@@ -2043,11 +2043,11 @@ void Viewer::DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a)
 	nvgResetTransform(c);
 }
 
-void Viewer::GetCurrentSnapshotIndexAndServerTime(u32& snapshotIndex, s32& serverTimeMs)
+void Viewer::GetSnapshotIndexAndTime(u32& snapshotIndex, s32& displayTimeMs)
 {
 	const f32 progress = GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
-	serverTimeMs = _demo.GetFirstSnapshotTimeMs() + (s32)(progress * (f32)_demo.GetDurationMs());
-	snapshotIndex = _demo.GetSnapshotIndexFromServerTime(serverTimeMs);
+	displayTimeMs = _demo.GetFirstSnapshotTimeMs() + (s32)(progress * (f32)_demo.GetDurationMs());
+	snapshotIndex = _demo.GetSnapshotIndexFromDisplayTime(displayTimeMs);
 }
 
 f32 Viewer::GetProgressFromTime(u32 elapsedMs)
@@ -2198,10 +2198,10 @@ void Viewer::OffsetSnapshot(s32 snapshotCount)
 	const s32 newSnapOffset = (snapshotCount > 0) ? (2 * snapshotCount) : 0;
 	const u32 newSnapIndex1 = (u32)udt_clamp((s32)_snapshotIndex + snapshotCount, 0, (s32)_demo.GetSnapshotCount() - 1);
 	const u32 newSnapIndex2 = (u32)udt_clamp((s32)_snapshotIndex + newSnapOffset, 0, (s32)_demo.GetSnapshotCount() - 1);
-	const s32 newServerTimeMs1 = _demo.GetSnapshotServerTimeMs(newSnapIndex1);
-	const s32 newServerTimeMs2 = _demo.GetSnapshotServerTimeMs(newSnapIndex2);
-	const s32 newServerTimeMs = (newServerTimeMs1 + newServerTimeMs2) / 2;
-	const f32 newProgress = (f32)(newServerTimeMs - _demo.GetFirstSnapshotTimeMs()) / (f32)_demo.GetDurationMs();
+	const s32 newDisplayTimeMs1 = _demo.GetSnapshotDisplayTimeMs(newSnapIndex1);
+	const s32 newDisplayTimeMs2 = _demo.GetSnapshotDisplayTimeMs(newSnapIndex2);
+	const s32 newDisplayTimeMs = (newDisplayTimeMs1 + newDisplayTimeMs2) / 2;
+	const f32 newProgress = (f32)(newDisplayTimeMs - _demo.GetFirstSnapshotTimeMs()) / (f32)_demo.GetDurationMs();
 	SetPlaybackProgress(newProgress);
 }
 

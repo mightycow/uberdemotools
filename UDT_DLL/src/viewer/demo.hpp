@@ -140,7 +140,7 @@ struct Snapshot
 	u32 StaticItemCount;
 	u32 DynamicItemCount;
 	u32 RailBeamCount;
-	s32 ServerTimeMs;
+	s32 DisplayTimeMs;
 };
 
 #pragma pack(pop)
@@ -151,7 +151,7 @@ struct ChatMessage
 	u32 PlayerName;
 	u32 Message;
 	u32 TeamMessage;
-	s32 ServerTimeMs;
+	s32 DisplayTimeMs;
 };
 
 struct HeatMapPlayer
@@ -216,11 +216,11 @@ struct Demo
 	const char* GetString(u32 offset) const { return _stringAllocator.GetStringAt(offset); }
 	const char* GetStringSafe(u32 offset, const char* replacement) const;
 
-	u32         GetSnapshotIndexFromServerTime(s32 serverTimeMs) const;
-	s32         GetSnapshotServerTimeMs(u32 index) const;
+	u32         GetSnapshotIndexFromDisplayTime(s32 displayTimeMs) const;
+	s32         GetSnapshotDisplayTimeMs(u32 index) const;
 	bool        GetSnapshotData(Snapshot& snapshot, u32 index) const;
 
-	u32         GetChatMessageIndexFromServerTime(s32 serverTimeMs) const;
+	u32         GetChatMessageIndexFromDisplayTime(s32 displayTimeMs) const;
 	u32         GetChatMessageCount() const;
 	bool        GetChatMessage(ChatMessage& message, u32 index) const;
 
@@ -280,7 +280,7 @@ private:
 	struct SnapshotDesc
 	{
 		u32 Offset;
-		s32 ServerTimeMs;
+		s32 DisplayTimeMs;
 	};
 
 	struct PlayerEx
@@ -304,7 +304,7 @@ private:
 	struct Score
 	{
 		SnapshotScore Base;
-		s32 ServerTimeMs;
+		s32 DisplayTimeMs;
 	};
 
 	struct TimeOut
