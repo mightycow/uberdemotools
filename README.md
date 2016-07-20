@@ -1,6 +1,6 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-UDT is a set of tools for analyzing, cutting and modifying **Quake 3** and **Quake Live** demo files.
+UDT is a set of tools for analyzing, cutting, converting, modifying and viewing **Quake 3** and **Quake Live** demo files.
 
 The main features are:
 
@@ -17,6 +17,8 @@ Official Releases
 -----------------
 
 [Grab the binaries here](http://giant.pourri.ch/snif.php?path=UDT/).
+The zip files are Windows releases.
+The tar.bz2 files are Linux releases.
 
 Project Overview
 ----------------
@@ -40,6 +42,7 @@ Overview of the binaries
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
 | UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting, merging, conversions, etc |
+| UDT_viewer      | Application<br>C++ | Windows Linux | Window: Direct3D 11<br>Linux: GLFW | A 2D demo viewer that can generate heat maps |
 
 Supported Formats
 -----------------
@@ -79,8 +82,8 @@ Those others demos were not renamed (time-stamp, type of frags) nor sorted. I wa
 
 Whenever I had made a cool frag, I was using the same exact chat message every time because I had a chat bind for said message, so all I did was press a key. I then realized that the chat message is a marker for cool frags. If I could find when those messages were printed, I could find the cool frags! Thus, the first `Cut by Pattern` feature was born: `Cut by Chat`.
 
-Typical Usage Scenario
-----------------------
+Typical GUI Usage Scenario
+--------------------------
 
 The typical day-to-day usage scenario for UDT is the one for which the interface has been optimized: `Cut by Chat`.
 
