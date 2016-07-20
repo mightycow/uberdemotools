@@ -588,11 +588,7 @@ s32 Demo::GetSnapshotDisplayTimeMs(u32 index) const
 		return 0;
 	}
 
-	uptr offset = snapshots[index].Offset;
-	s32 displayTimeMs;
-	Read(offset, displayTimeMs);
-
-	return displayTimeMs;
+	return snapshots[index].DisplayTimeMs;
 }
 
 bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
