@@ -432,6 +432,7 @@ bool Viewer::Init(int argc, char** argv)
 	_globalScaleSlider.SetRange(0.5f, 2.0f);
 	_globalScaleSlider.SetFormatter(&SliderFormatScale);
 	_globalScaleSlider.SetValuePtr(&_config.GlobalScale);
+	_reloadDemoButton.SetText("Reload Demo");
 	
 	WidgetGroup& options = _tabWidgets[Tab::Options];
 	options.AddWidget(&_showServerTimeCheckBox);
@@ -445,6 +446,7 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_staticZScaleSlider);
 	options.AddWidget(&_dynamicZScaleSlider);
 	options.AddWidget(&_globalScaleSlider);
+	options.AddWidget(&_reloadDemoButton);
 
 	WidgetGroup& heatMaps = _tabWidgets[Tab::HeatMaps];
 	heatMaps.AddWidget(&_heatMapGroup);
@@ -1013,6 +1015,12 @@ void Viewer::ProcessEvent(const Event& event)
 		_appState = AppState::GeneratingHeatMaps;
 		StartGeneratingHeatMaps();
 	}
+	else if(_reloadDemoButton.WasClicked())
+	{
+		CriticalSectionLock lock(_appStateLock);
+		_appState = AppState::LoadingDemo;
+		StartLoadingDemo(_demo.GetFilePath());
+	}
 
 	if(_tabButtonGroup.HasSelectionChanged())
 	{
@@ -1098,7 +1106,8 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		_showServerTimeCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_globalScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
 		_staticZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
-		_dynamicZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT);
+		_dynamicZScaleSlider.SetRect(ox, oy, 200.0f, (f32)BND_WIDGET_HEIGHT); oy += oo;
+		_reloadDemoButton.SetRect(ctx, ox, oy);
 	}
 	else if(tabIndex == Tab::HeatMaps)
 	{

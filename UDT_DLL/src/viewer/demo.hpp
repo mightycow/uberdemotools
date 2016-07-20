@@ -207,6 +207,7 @@ struct Demo
 	void        Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOuts);
 	void		GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber);
 
+	const char* GetFilePath() const;
 	s32         GetFirstSnapshotTimeMs() const { return _firstSnapshotTimeMs; }
 	u32         GetDurationMs() const { return (u32)(_lastSnapshotTimeMs - _firstSnapshotTimeMs); }
 	bool        IsValid() const { return _snapshots[_readIndex].GetSize() > 0; }
@@ -318,6 +319,7 @@ private:
 
 	PlayerEx _players[64];
 	HeatMapPlayer _heatMapPlayers[64];
+	char _filePath[512];
 	idProtocolNumbers _protocolNumbers;
 	u8 _staticItemBits[MaxItemMaskByteCount];
 	f32 _min[3];

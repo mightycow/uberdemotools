@@ -167,6 +167,7 @@ private:
 	Slider _staticZScaleSlider;
 	Slider _dynamicZScaleSlider;
 	Slider _globalScaleSlider;
+	TextButton _reloadDemoButton;
 	WidgetGroup _activeWidgets;
 	WidgetGroup _tabWidgets[Tab::Count];
 	RadioButton _tabButtons[Tab::Count];

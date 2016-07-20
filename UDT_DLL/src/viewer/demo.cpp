@@ -406,6 +406,7 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOu
 	_loadTimer.Restart();
 	_loadStep = 0;
 	_removeTimeOuts = removeTimeOuts;
+	strcpy(_filePath, filePath);
 
 	_readIndex = 0;
 	_writeIndex = 0;
@@ -527,6 +528,11 @@ void Demo::GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min
 			}
 		}
 	}
+}
+
+const char* Demo::GetFilePath() const
+{
+	return _filePath;
 }
 
 const char* Demo::GetStringSafe(u32 offset, const char* replacement) const
