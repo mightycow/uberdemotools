@@ -17,6 +17,7 @@
 	N(bool, DrawMapHealth, true) \
 	N(bool, HeatMapSquaredRamp, false) \
 	N(bool, OnlyKeepFirstMatchSnapshots, true) \
+	N(bool, RemoveTimeOutSnapshots, true) \
 	N(bool, DrawHeatMap, true) \
 	N(bool, DrawHeatMapOnly, true)
 

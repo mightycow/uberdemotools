@@ -400,11 +400,13 @@ bool Demo::Init(ProgressCallback progressCallback, void* userData)
 	return true;
 }
 
-void Demo::Load(const char* filePath, bool keepOnlyFirstMatch)
+void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOuts)
 {
 	(*_progressCallback)(0.0f, _userData);
 	_loadTimer.Restart();
 	_loadStep = 0;
+	_timeOutIndex = 0;
+	_removeTimeOuts = removeTimeOuts;
 
 	_readIndex = 0;
 	_writeIndex = 0;
@@ -951,8 +953,32 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	_tempBeams.Clear();
 	_tempShaftImpacts.Clear();
 
-	const udtCuSnapshotMessage& snapshot = *message.GameStateOrSnapshot.Snapshot;
-	auto& snapshots = _snapshots[_writeIndex];
+	udtCuSnapshotMessage snapshot = *message.GameStateOrSnapshot.Snapshot;
+
+	if(_removeTimeOuts)
+	{
+		// @TODO: use display times in the viewer and keep the original server timestamps
+		// @TODO: chat + scores display timestamps
+		if(_timeOutIndex < (s32)_timeOuts.GetSize())
+		{
+			if(snapshot.ServerTimeMs >= _timeOuts[_timeOutIndex].StartTimeMs &&
+			   snapshot.ServerTimeMs <= _timeOuts[_timeOutIndex].EndTimeMs)
+			{
+				return true;
+			}
+			if(snapshot.ServerTimeMs > _timeOuts[_timeOutIndex].EndTimeMs)
+			{
+				++_timeOutIndex;
+			}
+		}
+
+		s32 timeOffsetMs = 0;
+		for(u32 i = 0, count = (u32)_timeOutIndex; i < count; ++i)
+		{
+			timeOffsetMs += _timeOuts[i].EndTimeMs - _timeOuts[i].StartTimeMs;
+		}
+		snapshot.ServerTimeMs -= timeOffsetMs;
+	}
 
 	for(u32 i = 0; i < snapshot.ChangedEntityCount; ++i)
 	{
@@ -1053,6 +1079,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	// Dynamic items.
 	//
 
+	udtVMArray<SnapshotDesc>& snapshots = _snapshots[_writeIndex];
 	DynamicItem dynItem;
 	for(u32 i = 0; i < snapshot.EntityCount; ++i)
 	{
@@ -1235,7 +1262,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	GetUDTNumber(udtWeapon, udtMagicNumberType::Weapon, weapon, (udtProtocol::Id)_protocol, (udtMod::Id)_mod);
 	newSnap.Core.FollowedHealth = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsHealth];
 	newSnap.Core.FollowedArmor = (s16)snapshot.PlayerState->stats[_protocolNumbers.PlayerStatsArmor];
-	newSnap.Core.FollowedAmmo = (weapon >= 0 && weapon < ID_MAX_PS_WEAPONS) ? (s16)snapshot.PlayerState->ammo[snapshot.PlayerState->weapon] : s16(0);
+	newSnap.Core.FollowedAmmo = (weapon >= 0 && weapon < ID_MAX_PS_WEAPONS) ? (s16)snapshot.PlayerState->ammo[weapon] : s16(0);
 	newSnap.Core.FollowedName = u32(-1);
 	newSnap.Core.FollowedTeam = (followedPlayerIndex >= 0 && followedPlayerIndex < 64) ? (u8)_players[followedPlayerIndex].Team : u8(0);
 	newSnap.Core.FollowedWeapon = (u8)udtWeapon;
@@ -1669,6 +1696,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 	_mod = udtMod::None;
 	_gameType = udtGameType::Count;
 
+	_timeOuts.Clear();
 	_scores.Clear();
 	_chatMessages.Clear();
 
@@ -1745,6 +1773,15 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 			_mod = stats.Mod;
 			_gameType = stats.GameType;
 			// @TODO: custom red/blue team names?
+			u32 t = stats.FirstTimeOutRangeIndex;
+			for(u32 i = 0; i < stats.TimeOutCount; ++i)
+			{
+				TimeOut timeOut;
+				timeOut.StartTimeMs = statsBuffers.TimeOutStartAndEndTimes[t + 0];
+				timeOut.EndTimeMs   = statsBuffers.TimeOutStartAndEndTimes[t + 1];
+				_timeOuts.Add(timeOut);
+				t += 2;
+			}
 		}
 	}
 

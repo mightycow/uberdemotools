@@ -157,6 +157,7 @@ private:
 	StopButton _stopButton;
 	ReverseButton _reversePlaybackButton;
 	CheckBox _onlyFirstMatchCheckBox;
+	CheckBox _removeTimeOutsCheckBox;
 	CheckBox _showServerTimeCheckBox;
 	CheckBox _drawMapOverlaysCheckBox;
 	CheckBox _drawMapScoresCheckBox;

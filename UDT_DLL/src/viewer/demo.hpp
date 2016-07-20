@@ -203,7 +203,7 @@ struct Demo
 	~Demo();
 
 	bool        Init(ProgressCallback progressCallback, void* userData);
-	void        Load(const char* filePath, bool keepOnlyFirstMatch);
+	void        Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOuts);
 	void		GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min, const f32* max, u32 clientNumber);
 
 	s32         GetFirstSnapshotTimeMs() const { return _firstSnapshotTimeMs; }
@@ -306,6 +306,12 @@ private:
 		s32 ServerTimeMs;
 	};
 
+	struct TimeOut
+	{
+		s32 StartTimeMs;
+		s32 EndTimeMs;
+	};
+
 	PlayerEx _players[64];
 	HeatMapPlayer _heatMapPlayers[64];
 	idProtocolNumbers _protocolNumbers;
@@ -327,6 +333,7 @@ private:
 	udtVMArray<Impact> _bulletImpacts { "Demo::BulletImpactsArray" };
 	udtVMArray<Score> _scores { "Demo::ScoresArray" };
 	udtVMArray<ChatMessage> _chatMessages { "Demo::ChatMessagesArray" };
+	udtVMArray<TimeOut> _timeOuts { "Demo::TimeOutsArray" };
 	udtString _mapName = udtString::NewEmptyConstant();
 	udtTimer _loadTimer;
 	udtCuContext* _context = nullptr;
@@ -342,5 +349,7 @@ private:
 	u32 _gameType = udtGameType::Count;
 	u32 _protocol = udtProtocol::Invalid;
 	u32 _loadStep = 0;
+	s32 _timeOutIndex = 0;
 	bool _ospEncryptedPlayers = false;
+	bool _removeTimeOuts = false;
 };

@@ -420,6 +420,8 @@ bool Viewer::Init(int argc, char** argv)
 	_drawHeatMapCheckBox.SetText("Draw heat map");
 	_onlyFirstMatchCheckBox.SetActivePtr(&_config.OnlyKeepFirstMatchSnapshots);
 	_onlyFirstMatchCheckBox.SetText("Only keep snapshots from the first full match (when available)");
+	_removeTimeOutsCheckBox.SetActivePtr(&_config.RemoveTimeOutSnapshots);
+	_removeTimeOutsCheckBox.SetText("Remove time-out snapshots");
 	_staticZScaleSlider.SetText("Static Depth Scale");
 	_staticZScaleSlider.SetFormatter(&SliderFormatZScale);
 	_staticZScaleSlider.SetValuePtr(&_config.StaticZScale);
@@ -439,6 +441,7 @@ bool Viewer::Init(int argc, char** argv)
 	options.AddWidget(&_drawMapFollowMsgCheckBox);
 	options.AddWidget(&_drawMapHealthCheckBox);
 	options.AddWidget(&_onlyFirstMatchCheckBox);
+	options.AddWidget(&_removeTimeOutsCheckBox);
 	options.AddWidget(&_staticZScaleSlider);
 	options.AddWidget(&_dynamicZScaleSlider);
 	options.AddWidget(&_globalScaleSlider);
@@ -657,7 +660,7 @@ bool Viewer::CreateTextureRGBA(int& textureId, u32 width, u32 height, const u8* 
 
 void Viewer::LoadDemo(const char* filePath)
 {
-	_demo.Load(filePath, _config.OnlyKeepFirstMatchSnapshots);
+	_demo.Load(filePath, _config.OnlyKeepFirstMatchSnapshots, _config.RemoveTimeOutSnapshots);
 	
 	const udtString originalMapName = _demo.GetMapName();
 	udtString mapName = originalMapName;
@@ -1084,6 +1087,7 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 		const f32 ox = _uiRect.X();
 		f32 oy = _uiRect.Y();
 		_onlyFirstMatchCheckBox.SetRect(ctx, ox, oy); oy += oo;
+		_removeTimeOutsCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapOverlaysCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapScoresCheckBox.SetRect(ctx, ox, oy); oy += oo;
 		_drawMapClockCheckBox.SetRect(ctx, ox, oy); oy += oo;
