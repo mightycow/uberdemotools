@@ -270,6 +270,7 @@ private:
 	u32  CloneString(const void* buffer, u32 offset);
 	void ReportProgress(f32 subProgress);
 	void NextStep();
+	bool ProcessTimeOut(s32& timeOffsetMs, s32 serverTimeMs); // Returns true if in a time-out.
 
 	enum Constants
 	{

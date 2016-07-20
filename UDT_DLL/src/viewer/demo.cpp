@@ -405,7 +405,6 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOu
 	(*_progressCallback)(0.0f, _userData);
 	_loadTimer.Restart();
 	_loadStep = 0;
-	_timeOutIndex = 0;
 	_removeTimeOuts = removeTimeOuts;
 
 	_readIndex = 0;
@@ -449,6 +448,7 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOu
 	ParseDemo(filePath, &Demo::ProcessMessage_StaticItems);
 	NextStep();
 
+	_timeOutIndex = 0;
 	ParseDemo(filePath, &Demo::ProcessMessage_FinalPass);
 	NextStep();
 
@@ -531,6 +531,11 @@ void Demo::GenerateHeatMap(u32* histogram, u32 width, u32 height, const f32* min
 
 const char* Demo::GetStringSafe(u32 offset, const char* replacement) const
 {
+	if(offset == UDT_U32_MAX)
+	{
+		return replacement;
+	}
+
 	const char* const s = GetString(offset);
 	if(s == nullptr)
 	{
@@ -955,30 +960,12 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 
 	udtCuSnapshotMessage snapshot = *message.GameStateOrSnapshot.Snapshot;
 
-	if(_removeTimeOuts)
+	s32 timeOffsetMs = 0;
+	if(ProcessTimeOut(timeOffsetMs, snapshot.ServerTimeMs))
 	{
-		// @TODO: use display times in the viewer and keep the original server timestamps
-		// @TODO: chat + scores display timestamps
-		if(_timeOutIndex < (s32)_timeOuts.GetSize())
-		{
-			if(snapshot.ServerTimeMs >= _timeOuts[_timeOutIndex].StartTimeMs &&
-			   snapshot.ServerTimeMs <= _timeOuts[_timeOutIndex].EndTimeMs)
-			{
-				return true;
-			}
-			if(snapshot.ServerTimeMs > _timeOuts[_timeOutIndex].EndTimeMs)
-			{
-				++_timeOutIndex;
-			}
-		}
-
-		s32 timeOffsetMs = 0;
-		for(u32 i = 0, count = (u32)_timeOutIndex; i < count; ++i)
-		{
-			timeOffsetMs += _timeOuts[i].EndTimeMs - _timeOuts[i].StartTimeMs;
-		}
-		snapshot.ServerTimeMs -= timeOffsetMs;
+		return true;
 	}
+	snapshot.ServerTimeMs -= timeOffsetMs;
 
 	for(u32 i = 0; i < snapshot.ChangedEntityCount; ++i)
 	{
@@ -1731,31 +1718,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 		return false;
 	}
 
-	udtParseDataScoreBuffers scoreBuffers;
-	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Scores, &scoreBuffers) == udtErrorCode::None &&
-	   scoreBuffers.ScoreCount > 0)
-	{
-		for(u32 i = 0; i < scoreBuffers.ScoreCount; ++i)
-		{
-			const udtParseDataScore& s = scoreBuffers.Scores[i];
-			if(s.GameStateIndex >= 1)
-			{
-				break;
-			}
-
-			Score score;
-			score.ServerTimeMs = s.ServerTimeMs;
-			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
-			score.Base.Score1Id = (u8)s.Id1;
-			score.Base.Score2Id = (u8)s.Id2;
-			score.Base.Score1 = (s16)s.Score1;
-			score.Base.Score2 = (s16)s.Score2;
-			score.Base.Score1Name = CloneString(scoreBuffers.StringBuffer, s.CleanName1);
-			score.Base.Score2Name = CloneString(scoreBuffers.StringBuffer, s.CleanName2);
-			_scores.Add(score);
-		}
-	}
-
+	// Process time-outs first so that chat and scores can use the info.
 	bool success = false;
 	udtParseDataStatsBuffers statsBuffers;
 	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Stats, &statsBuffers) == udtErrorCode::None &&
@@ -1778,10 +1741,43 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 			{
 				TimeOut timeOut;
 				timeOut.StartTimeMs = statsBuffers.TimeOutStartAndEndTimes[t + 0];
-				timeOut.EndTimeMs   = statsBuffers.TimeOutStartAndEndTimes[t + 1];
+				timeOut.EndTimeMs = statsBuffers.TimeOutStartAndEndTimes[t + 1];
 				_timeOuts.Add(timeOut);
 				t += 2;
 			}
+		}
+	}
+
+	udtParseDataScoreBuffers scoreBuffers;
+	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Scores, &scoreBuffers) == udtErrorCode::None &&
+	   scoreBuffers.ScoreCount > 0)
+	{
+		_timeOutIndex = 0;
+
+		for(u32 i = 0; i < scoreBuffers.ScoreCount; ++i)
+		{
+			const udtParseDataScore& s = scoreBuffers.Scores[i];
+			if(s.GameStateIndex >= 1)
+			{
+				break;
+			}
+
+			s32 timeOffsetMs = 0;
+			if(ProcessTimeOut(timeOffsetMs, s.ServerTimeMs))
+			{
+				return true;
+			}
+
+			Score score;
+			score.ServerTimeMs = s.ServerTimeMs - timeOffsetMs;
+			score.Base.IsScoreTeamBased = (s.Flags & udtParseDataScoreMask::TeamBased) != 0 ? 1 : 0;
+			score.Base.Score1Id = (u8)s.Id1;
+			score.Base.Score2Id = (u8)s.Id2;
+			score.Base.Score1 = (s16)s.Score1;
+			score.Base.Score2 = (s16)s.Score2;
+			score.Base.Score1Name = CloneString(scoreBuffers.StringBuffer, s.CleanName1);
+			score.Base.Score2Name = CloneString(scoreBuffers.StringBuffer, s.CleanName2);
+			_scores.Add(score);
 		}
 	}
 
@@ -1789,6 +1785,7 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 	if(udtGetContextPlugInBuffers(context, udtParserPlugIn::Chat, &chatBuffers) == udtErrorCode::None &&
 	   chatBuffers.ChatMessageCount > 0)
 	{
+		_timeOutIndex = 0;
 		for(u32 i = 0; i < chatBuffers.ChatMessageCount; ++i)
 		{
 			const udtParseDataChat& c = chatBuffers.ChatMessages[i];
@@ -1801,11 +1798,16 @@ bool Demo::AnalyzeDemo(const char* filePath, bool keepOnlyFirstMatch)
 				break;
 			}
 
+			// All messages that were sent during the time-out will have the timestamp of the time-out's start.
+			s32 timeOffsetMs = 0;
+			const bool timeOutChat = ProcessTimeOut(timeOffsetMs, c.ServerTimeMs);
+			const s32 fixedTimeMs = timeOutChat ? _timeOuts[_timeOutIndex].StartTimeMs : (c.ServerTimeMs - timeOffsetMs);
+
 			ChatMessage msg;
 			msg.Location = CloneString(chatBuffers.StringBuffer, c.Strings[1].Location);
 			msg.Message = CloneString(chatBuffers.StringBuffer, c.Strings[1].Message);
 			msg.PlayerName = CloneString(chatBuffers.StringBuffer, c.Strings[1].PlayerName);
-			msg.ServerTimeMs = c.ServerTimeMs;
+			msg.ServerTimeMs = fixedTimeMs;
 			msg.TeamMessage = c.TeamMessage;
 			_chatMessages.Add(msg);
 		}
@@ -1882,4 +1884,39 @@ void Demo::NextStep()
 {
 	++_loadStep;
 	assert(_loadStep + 1 < (u32)UDT_COUNT_OF(LoadSteps));
+}
+
+bool Demo::ProcessTimeOut(s32& timeOffsetMs, s32 serverTimeMs)
+{
+	if(!_removeTimeOuts)
+	{
+		timeOffsetMs = 0;
+		return false;
+	}
+
+	if(_timeOutIndex < (s32)_timeOuts.GetSize())
+	{
+		for(u32 i = _timeOutIndex, count = _timeOuts.GetSize(); i < count; ++i)
+		{
+			if(serverTimeMs >= _timeOuts[i].StartTimeMs &&
+			   serverTimeMs <= _timeOuts[i].EndTimeMs)
+			{
+				_timeOutIndex = i;
+				return true;
+			}
+			if(serverTimeMs > _timeOuts[i].EndTimeMs)
+			{
+				_timeOutIndex = i + 1;
+			}
+		}
+	}
+
+	s32 localTimeOffsetMs = 0;
+	for(u32 i = 0, count = (u32)_timeOutIndex; i < count; ++i)
+	{
+		localTimeOffsetMs += _timeOuts[i].EndTimeMs - _timeOuts[i].StartTimeMs;
+	}
+	timeOffsetMs = localTimeOffsetMs;
+
+	return false;
 }
