@@ -23,11 +23,12 @@ The tar.bz2 files are Linux releases.
 Project Overview
 ----------------
 
-The project is currently comprised of 3 parts:
+The project is currently comprised of 4 parts:
 
 1. A shared library, `UDT_DLL`, with a C89 compatible interface, written in C++. Supported OSes: Windows, Linux
 2. A set of command-line tools, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
+4. A 2D demo viewer, `UDT_viewer`, written in C++. Supported OSes: Windows, Linux
 
 Overview of the binaries
 
