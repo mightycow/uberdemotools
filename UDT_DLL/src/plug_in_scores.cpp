@@ -291,8 +291,8 @@ void udtParserPlugInScores::ProcessCPMAScores(s32 csIndex)
 
 	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
 
-	ParseConfigStringValueInt(_score1, *TempAllocator, "sr", cs);
-	ParseConfigStringValueInt(_score2, *TempAllocator, "sb", cs);
+	ParseConfigStringValueInt(_score1, *TempAllocator, "sb", cs);
+	ParseConfigStringValueInt(_score2, *TempAllocator, "sr", cs);
 }
 
 void udtParserPlugInScores::DetectGameType()
