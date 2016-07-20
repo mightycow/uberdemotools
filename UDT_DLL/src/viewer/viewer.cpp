@@ -1030,13 +1030,15 @@ void Viewer::RenderNormal(const RenderParams& renderParams)
 
 	u32 snapshotIndex;
 	s32 displayTimeMs;
-	GetSnapshotIndexAndTime(snapshotIndex, displayTimeMs);
+	s32 serverTimeMs;
+	GetIndexAndTimes(snapshotIndex, displayTimeMs, serverTimeMs);
 	if(!_demo.GetSnapshotData(*_snapshot, snapshotIndex))
 	{
 		RenderNoDemo(renderParams);
 		return;
 	}
 	_snapshotIndex = snapshotIndex;
+	_clockTimeMs = _config.TimerShowsServerTime ? serverTimeMs : (displayTimeMs - _demo.GetFirstSnapshotTimeMs());
 
 	const f32 progressBarMargin = 2.0f;
 	const f32 progressBarHeight = (f32)BND_WIDGET_HEIGHT;
@@ -1525,17 +1527,7 @@ void Viewer::RenderDemoScore(const RenderParams& renderParams)
 
 void Viewer::RenderDemoTimer(const RenderParams& renderParams)
 {
-	int totalSec;
-	if(_reversePlayback)
-	{
-		const int endTimeMs = _config.TimerShowsServerTime ? (int)(_demo.GetFirstSnapshotTimeMs() + _demo.GetDurationMs()) : (int)_demo.GetDurationMs();
-		totalSec = (endTimeMs - (int)_demoPlaybackTimer.GetElapsedMs()) / 1000;
-	}
-	else
-	{
-		const int startOffsetMs = _config.TimerShowsServerTime ? (int)_demo.GetFirstSnapshotTimeMs() : 0;
-		totalSec = ((int)_demoPlaybackTimer.GetElapsedMs() + startOffsetMs) / 1000;
-	}
+	const int totalSec = (int)_clockTimeMs / 1000;
 	const int minutes = totalSec / 60;
 	const int seconds = totalSec % 60;
 
@@ -1766,8 +1758,18 @@ void Viewer::DrawProgressSliderToolTip(const RenderParams& renderParams)
 	_demoProgressBar.GetRect(x, y, w, h);
 
 	const f32 progress = udt_clamp(((f32)cx - x) / w, 0.0f, 1.0f);
-	const int extraSec = _config.TimerShowsServerTime ? ((int)_demo.GetFirstSnapshotTimeMs() / 1000) : 0;
-	const int totalSec = (int)(GetTimeFromProgress(progress) / 1000) + extraSec;
+	int totalSec = 0;
+	if(_config.TimerShowsServerTime)
+	{
+		const s32 displayTimeMs = (s32)GetTimeFromProgress(progress) + _demo.GetFirstSnapshotTimeMs();
+		const u32 snapIndex = _demo.GetSnapshotIndexFromDisplayTime(displayTimeMs);
+		const s32 serverTimeMs = _demo.GetSnapshotServerTimeMs(snapIndex);
+		totalSec = (int)serverTimeMs / 1000;
+	}
+	else
+	{
+		totalSec = (int)GetTimeFromProgress(progress) / 1000;
+	}
 	const int minutes = totalSec / 60;
 	const int seconds = totalSec % 60;
 
@@ -2043,11 +2045,12 @@ void Viewer::DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a)
 	nvgResetTransform(c);
 }
 
-void Viewer::GetSnapshotIndexAndTime(u32& snapshotIndex, s32& displayTimeMs)
+void Viewer::GetIndexAndTimes(u32& snapshotIndex, s32& displayTimeMs, s32& serverTimeMs)
 {
 	const f32 progress = GetProgressFromTime((u32)_demoPlaybackTimer.GetElapsedMs());
 	displayTimeMs = _demo.GetFirstSnapshotTimeMs() + (s32)(progress * (f32)_demo.GetDurationMs());
 	snapshotIndex = _demo.GetSnapshotIndexFromDisplayTime(displayTimeMs);
+	serverTimeMs = _demo.GetSnapshotServerTimeMs(snapshotIndex);
 }
 
 f32 Viewer::GetProgressFromTime(u32 elapsedMs)

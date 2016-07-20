@@ -100,7 +100,7 @@ private:
 	void DrawLog(const RenderParams& renderParams);
 	void DrawMapSpriteAt(const SpriteDrawParams& params, u32 spriteId, const f32* pos, f32 size, f32 zScale, f32 a = 0.0f);
 	void DrawSpriteAt(u32 spriteId, f32 x, f32 y, f32 size, f32 a = 0.0f);
-	void GetSnapshotIndexAndTime(u32& snapshotIndex, s32& displayTimeMs);
+	void GetIndexAndTimes(u32& snapshotIndex, s32& displayTimeMs, s32& serverTimeMs);
 	f32  GetProgressFromTime(u32 elapsedMs);
 	u32  GetTimeFromProgress(f32 progress);
 	void PausePlayback();
@@ -198,6 +198,7 @@ private:
 	u32 _mapHeight = 0;
 	u32 _snapshotIndex = 0; // Index of the currently displayed snapshot.
 	f32 _threadedJobProgress = 0.0f;
+	s32 _clockTimeMs = 0;
 	bool _appPaused = false;
 	bool _wasTimerRunningBeforePause = false;
 	bool _wasPlayingBeforeProgressDrag = false;

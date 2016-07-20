@@ -141,6 +141,7 @@ struct Snapshot
 	u32 DynamicItemCount;
 	u32 RailBeamCount;
 	s32 DisplayTimeMs;
+	s32 ServerTimeMs;
 };
 
 #pragma pack(pop)
@@ -218,6 +219,7 @@ struct Demo
 
 	u32         GetSnapshotIndexFromDisplayTime(s32 displayTimeMs) const;
 	s32         GetSnapshotDisplayTimeMs(u32 index) const;
+	s32         GetSnapshotServerTimeMs(u32 index);
 	bool        GetSnapshotData(Snapshot& snapshot, u32 index) const;
 
 	u32         GetChatMessageIndexFromDisplayTime(s32 displayTimeMs) const;
@@ -281,6 +283,7 @@ private:
 	{
 		u32 Offset;
 		s32 DisplayTimeMs;
+		s32 ServerTimeMs;
 	};
 
 	struct PlayerEx

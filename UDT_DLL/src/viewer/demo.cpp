@@ -591,6 +591,17 @@ s32 Demo::GetSnapshotDisplayTimeMs(u32 index) const
 	return snapshots[index].DisplayTimeMs;
 }
 
+s32 Demo::GetSnapshotServerTimeMs(u32 index)
+{
+	const auto& snapshots = _snapshots[_readIndex];
+	if(index >= snapshots.GetSize())
+	{
+		return 0;
+	}
+
+	return snapshots[index].ServerTimeMs;
+}
+
 bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 {
 	const auto& snapshots = _snapshots[_readIndex];
@@ -602,6 +613,7 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 	uptr offset = snapshots[index].Offset;
 
 	Read(offset, snapshot.DisplayTimeMs);
+	snapshot.ServerTimeMs = snapshots[index].ServerTimeMs;
 
 	u8 staticItemBits[MaxItemMaskByteCount];
 	const u32 staticItemCount = _staticItems.GetSize();
@@ -673,6 +685,7 @@ bool Demo::GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const
 	uptr offset = snapshots[index].Offset;
 
 	Read(offset, snapshot.DisplayTimeMs);
+	snapshot.ServerTimeMs = snapshots[index].ServerTimeMs;
 
 	const u32 staticItemCount = _staticItems.GetSize();
 	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
@@ -694,6 +707,7 @@ void Demo::WriteSnapshot(const Snapshot& snapshot)
 {
 	SnapshotDesc snapDesc;
 	snapDesc.DisplayTimeMs = snapshot.DisplayTimeMs;
+	snapDesc.ServerTimeMs = snapshot.ServerTimeMs;
 	snapDesc.Offset = (u32)_snapshotAllocators[_writeIndex].GetCurrentByteCount();
 	_snapshots[_writeIndex].Add(snapDesc);
 
@@ -985,6 +999,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	}
 
 	Snapshot& newSnap = *_snapshot;
+	newSnap.ServerTimeMs = snapshot.ServerTimeMs;
 	newSnap.DisplayTimeMs = snapshot.ServerTimeMs - timeOffsetMs;
 
 	//
