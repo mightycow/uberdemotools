@@ -12,6 +12,7 @@ The main features are:
 - Time-shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
 - Converting demos: convert demos to a different protocol version
+- Viewing demos with the 2D demo viewer (top-down view)
 
 Official Releases
 -----------------
@@ -68,11 +69,13 @@ Installation
 No installation is required for any of the binaries.  
 The command-line tools have no third-party dependencies.
 
-For Windows users: UDT_GUI.exe and UDT_cutter.exe need to be able to read and write to config files right next to them.  
+For Windows users: `UDT_GUI`, `UDT_cutter` and `UDT_viewer` need to be able to read and write to config files right next to them.  
 It is therefore recommended to put all the binaries in a new folder with read and write access (i.e. not in `Program Files` nor `Program Files (x86)`).
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
+
+`UDT_viewer` requires Direct3D 11 on Windows and GLFW 3 on Linux.
 
 Project Origin
 --------------
@@ -206,7 +209,7 @@ License
 The entire source code in this release is covered by the GPL.  
 See [COPYING.txt](https://github.com/mightycow/uberdemotools/blob/master/UDT_DLL/COPYING.txt) for the GNU GENERAL PUBLIC LICENSE.
 
-Uber Demo Tools (UDT) is Copyright (C) 2011-2015 Gian 'myT' Schellenbaum.  
+Uber Demo Tools (UDT) is Copyright (C) 2011-2016 Gian 'myT' Schellenbaum.  
 It is based on the Quake III Arena source code and the Challenge Quake 3 source code.
 
 The Quake III Arena source code is Copyright (C) 1999-2005 Id Software, Inc.  
