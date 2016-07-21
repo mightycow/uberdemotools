@@ -759,9 +759,9 @@ void Viewer::GenerateHeatMaps()
 
 	const u32 rampColorCount = 256;
 	const u32 baseColorCount = 5;
-	const u8 colors[baseColorCount + 1][3] = { { 0, 0, 0 }, { 0, 255, 255 }, { 0, 255, 0 }, { 255, 255, 0 }, { 255, 0, 0 }, { 255, 0, 0 } };
+	const u8 colors[baseColorCount][3] = { { 0, 0, 0 }, { 0, 255, 255 }, { 0, 255, 0 }, { 255, 255, 0 }, { 255, 0, 0 } };
 	u8 colorRamp[rampColorCount][3];
-	const u32 div = rampColorCount / baseColorCount;
+	const u32 div = rampColorCount / (baseColorCount - 1);
 	for(u32 i = 0; i < rampColorCount; ++i)
 	{
 		const u32 c0 = i / div;
