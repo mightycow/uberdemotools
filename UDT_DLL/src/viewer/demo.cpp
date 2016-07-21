@@ -1066,12 +1066,12 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 			ProcessPlayer(es, snapshot.ServerTimeMs, false);
 		}
 	}
-	idLargestEntityState es;
-	udtPlayerStateToEntityState(&es, snapshot.PlayerState, 0, snapshot.ServerTimeMs, _protocol);
-	if(es.eType == _protocolNumbers.EntityTypePlayer)
+	idLargestEntityState followedPlayer;
+	udtPlayerStateToEntityState(&followedPlayer, snapshot.PlayerState, 0, snapshot.ServerTimeMs, _protocol);
+	if(followedPlayer.eType == _protocolNumbers.EntityTypePlayer)
 	{
 		// @NOTE: The resulting entity can be of type "Invisible".
-		ProcessPlayer(es, snapshot.ServerTimeMs, true);
+		ProcessPlayer(followedPlayer, snapshot.ServerTimeMs, true);
 	}
 	const u32 playerCount = _tempPlayers.GetSize();
 	assert(playerCount <= 64);
