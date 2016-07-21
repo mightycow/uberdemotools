@@ -1111,7 +1111,8 @@ UDT_API(s32) udtFindPatternsInDemoFiles(udtPatternSearchContext** contextPtr, co
 	new (context) udtPatternSearchContext_s(patternInfo);
 	
 	const s32 result = RunJobWithLocalContextGroup(udtParsingJobType::FindPatterns, info, extraInfo, context);
-	if(result == (s32)udtErrorCode::None || (s32)udtErrorCode::OperationCanceled)
+	if(result == (s32)udtErrorCode::None || 
+	   result == (s32)udtErrorCode::OperationCanceled)
 	{
 		*contextPtr = context;
 	}
