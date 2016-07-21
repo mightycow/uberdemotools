@@ -1013,6 +1013,8 @@ static void DestroyContextGroup(udtParserContextGroup* contextGroup)
 	}
 
 	contextGroup->~udtParserContextGroup();
+
+	free(contextGroup);
 }
 
 static s32 RunJobWithLocalContextGroup(udtParsingJobType::Id jobType, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificArg)
