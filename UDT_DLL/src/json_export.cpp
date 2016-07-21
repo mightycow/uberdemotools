@@ -371,10 +371,6 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& 
 		if(stats.TimeOutCount > 0)
 		{
 			writer.WriteIntValue("total time out duration", (s32)stats.TotalTimeOutDurationMs);
-		}
-
-		if(stats.TimeOutCount > 0)
-		{
 			writer.StartArray("time outs");
 
 			const u32 firstTo = stats.FirstTimeOutRangeIndex;
