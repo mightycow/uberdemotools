@@ -192,6 +192,7 @@ private:
 	AppState::Id _appState = AppState::Normal;
 	CriticalSectionId _appStateLock = InvalidCriticalSectionId;
 	void* _mapImage = nullptr;
+	void* _heatMapImages = nullptr;
 	WidgetGroup* _activeTabWidgets = nullptr;
 	const char* _threadedJobText = nullptr;
 	int _map = InvalidTextureId;

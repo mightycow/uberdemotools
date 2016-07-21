@@ -714,15 +714,14 @@ void Viewer::StartLoadingDemo(const char* filePath)
 			nvgDeleteImage(_sharedReadOnly->NVGContext, heatMap.TextureId);
 			heatMap.TextureId = InvalidTextureId;
 		}
-		if(heatMap.Image != nullptr)
-		{
-			free(heatMap.Image);
-			heatMap.Image = nullptr;
-		}
+		heatMap.Image = nullptr;
 		heatMap.Width = 0;
 		heatMap.Height = 0;
 		_heatMapBtnIdxToPlayerIdx[p] = 0;
 	}
+
+	free(_heatMapImages);
+	_heatMapImages = nullptr;
 
 	_threadedJobText = "loading demo...";
 	Platform_NewThread(&DemoLoadThreadEntryPoint, data);
@@ -776,6 +775,28 @@ void Viewer::GenerateHeatMaps()
 
 	const u32 w = _mapWidth > 0 ? _mapWidth : 1024;
 	const u32 h = _mapHeight > 0 ? _mapHeight : 1024;
+	const u32 pixelCount = w * h;
+	const u32 byteCountHistogram = (u32)sizeof(u32) * pixelCount;
+	const u32 byteCountHeatMap = 4 * pixelCount;
+	const u32 byteCountPersistent = playerCount * byteCountHeatMap;
+	const u32 byteCountTemp = byteCountHistogram + byteCountHeatMap;
+
+	u8* const heatMaps = (u8*)malloc((size_t)byteCountPersistent);
+	if(heatMaps == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)byteCountPersistent);
+	}
+	_heatMapImages = heatMaps;
+
+	u8* const temp = (u8*)malloc((size_t)byteCountTemp);
+	if(temp == nullptr)
+	{
+		Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)byteCountTemp);
+	}
+
+	u32* const histogramTemp = (u32*)temp;
+	u8* const heatMapTemp = temp + byteCountHistogram;
+
 	u32 playerIndex = 0;
 	for(u32 p = 0; p < 64; ++p)
 	{
@@ -788,34 +809,15 @@ void Viewer::GenerateHeatMaps()
 			continue;
 		}
 
-		// @TODO: bundle all temporary allocations in one and all permanent ones in another?
-		const u32 pixelCount = w * h;
-		u32* const histogram = (u32*)malloc((u32)sizeof(u32) * pixelCount);
-		if(histogram == nullptr)
-		{
-			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)((u32)sizeof(u32) * pixelCount));
-		}
-
-		u8* const heatMap = (u8*)malloc(4 * pixelCount);
-		if(heatMap == nullptr)
-		{
-			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
-		}
-
-		u8* const heatMapFinal = (u8*)malloc(4 * pixelCount);
-		if(heatMapFinal == nullptr)
-		{
-			Platform_FatalError("Failed to allocate %d bytes for heat map generation", (int)(4 * pixelCount));
-		}
-
-		_demo.GenerateHeatMap(histogram, w, h, _mapMin, _mapMax, p);
+		_demo.GenerateHeatMap(histogramTemp, w, h, _mapMin, _mapMax, p);
 
 		u32 maxValue = 0;
 		for(u32 i = 0; i < pixelCount; ++i)
 		{
-			maxValue = udt_max(maxValue, histogram[i]);
+			maxValue = udt_max(maxValue, histogramTemp[i]);
 		}
 
+		u8* const heatMapFinal = heatMaps + playerIndex * byteCountHeatMap;
 		const u8 gaussian3x3[9] = { 16, 32, 16, 32, 64, 32, 16, 32, 16 };
 		const u32 divider = (maxValue + rampColorCount - 1) / rampColorCount;
 		if(divider == 0)
@@ -828,37 +830,34 @@ void Viewer::GenerateHeatMaps()
 		{
 			for(u32 i = 0; i < pixelCount; ++i)
 			{
-				const u32 col2 = rampColorCount - 1 - (histogram[i] / divider);
+				const u32 col2 = rampColorCount - 1 - (histogramTemp[i] / divider);
 				const u32 col = rampColorCount - 1 - ((col2 * col2) / rampColorCount);
 				const u8 op = (u8)((col * 256) / rampColorCount);
-				heatMap[4 * i + 0] = colorRamp[col][0];
-				heatMap[4 * i + 1] = colorRamp[col][1];
-				heatMap[4 * i + 2] = colorRamp[col][2];
-				heatMap[4 * i + 3] = op;
+				heatMapTemp[4 * i + 0] = colorRamp[col][0];
+				heatMapTemp[4 * i + 1] = colorRamp[col][1];
+				heatMapTemp[4 * i + 2] = colorRamp[col][2];
+				heatMapTemp[4 * i + 3] = op;
 			}
 		}
 		else
 		{
 			for(u32 i = 0; i < pixelCount; ++i)
 			{
-				const u32 col = histogram[i] / divider;
+				const u32 col = histogramTemp[i] / divider;
 				const u8 op = (u8)((col * 256) / rampColorCount);
-				heatMap[4 * i + 0] = colorRamp[col][0];
-				heatMap[4 * i + 1] = colorRamp[col][1];
-				heatMap[4 * i + 2] = colorRamp[col][2];
-				heatMap[4 * i + 3] = op;
+				heatMapTemp[4 * i + 0] = colorRamp[col][0];
+				heatMapTemp[4 * i + 1] = colorRamp[col][1];
+				heatMapTemp[4 * i + 2] = colorRamp[col][2];
+				heatMapTemp[4 * i + 3] = op;
 			}
 		}
 
 		// We smooth the heat map to make it look less blocky.
-		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
-		ConvolveRGBAImage(heatMap, heatMapFinal, w, h, gaussian3x3, 3);
-		ConvolveRGBAImage(heatMapFinal, heatMap, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMapFinal, heatMapTemp, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMapTemp, heatMapFinal, w, h, gaussian3x3, 3);
+		ConvolveRGBAImage(heatMapFinal, heatMapTemp, w, h, gaussian3x3, 3);
 
 	finalize_image:
-		free(histogram);
-		free(heatMap);
-		
 		_heatMaps[p].Width = w;
 		_heatMaps[p].Height = h;
 		_heatMaps[p].Image = heatMapFinal;
@@ -867,6 +866,8 @@ void Viewer::GenerateHeatMaps()
 		++playerIndex;
 		_threadedJobProgress = (f32)playerIndex / (f32)playerCount;
 	}
+
+	free(temp);
 
 	_threadedJobProgress = 1.0f;
 
@@ -2320,10 +2321,12 @@ void Viewer::FinishGeneratingHeatMaps()
 		if(heatMap.Image != nullptr)
 		{
 			CreateTextureRGBA(heatMap.TextureId, heatMap.Width, heatMap.Height, (const u8*)heatMap.Image);
-			free(heatMap.Image);
 			heatMap.Image = nullptr;
 		}
 	}
+
+	free(_heatMapImages);
+	_heatMapImages = nullptr;
 }
 
 void Viewer::ShutDown()
