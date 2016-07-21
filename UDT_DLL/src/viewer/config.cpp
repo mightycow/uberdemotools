@@ -69,9 +69,9 @@ bool LoadConfig(Config& config, const char* filePath)
 
 	u8* const configPtr = (u8*)&config;
 	idTokenizer& tokenizer = *(idTokenizer*)fileAllocator.AllocateAndGetAddress((uptr)sizeof(idTokenizer));
-	for(u32 i = 0, count = lines.GetSize(); i < count; ++i)
+	for(u32 l = 0, count = lines.GetSize(); l < count; ++l)
 	{
-		const udtString line = lines[i];
+		const udtString line = lines[l];
 		if(udtString::IsNullOrEmpty(line) || udtString::StartsWith(line, "//"))
 		{
 			continue;
@@ -87,9 +87,9 @@ bool LoadConfig(Config& config, const char* filePath)
 		const char* const value = tokenizer.GetArgString(1);
 		int temps = 0;
 		unsigned int tempu = 0;
-		for(u32 i = 0; i < VariableCount; ++i)
+		for(u32 v = 0; v < VariableCount; ++v)
 		{
-			const Var& var = Variables[i];
+			const Var& var = Variables[v];
 			if(strcmp(var.Name, name) != 0)
 			{
 				continue;
