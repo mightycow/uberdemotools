@@ -98,7 +98,7 @@ bool LoadConfig(Config& config, const char* filePath)
 			switch(var.Type)
 			{
 				case VarType::f32_:
-					sscanf(value, "%f", configPtr + var.Offset);
+					sscanf(value, "%f", (f32*)(configPtr + var.Offset));
 					break;
 
 				case VarType::bool_:
