@@ -23,7 +23,7 @@
 #define  CONFIG_PATH        "viewerconfig.cfg"
 
 
-static const char* const ViewerVersionString = "0.1.1";
+static const char* const ViewerVersionString = "0.1.2";
 
 static const char* const LogSeparator = "^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^    ^";
 

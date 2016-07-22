@@ -1,3 +1,15 @@
+1.3.0 (22.07.2016)
+ADD: A new scores analysis plug-in: udtParserPlugInScores
+ADD: New API functions: udtGetIdMagicNumber, udtGetUDTMagicNumber, udtPlayerStateToEntityState
+CHG: Allocators and arrays are now lazy-initialized, which can save some memory adress space in a few scenarios
+FIX: Player (dis)connection detection in udtParserPlugInGameState
+FIX: udtCustomParsingPlugIn was using a pointer to an out-of-scope snapshot instance
+FIX: A long-standing memory leak in DestroyContextGroup
+FIX: The network fields idPlayerStateBase::stats are now read as signed numbers
+REM: Got rid of a snapshot instance that wasn't strictly needed, therefore removing a needless memcpy
+FIX: udtCuSnapshotMessage::ChangedEntities/EntityCount would get out of sync when an event duplicate was removed
+FIX: All but the first demo in time-shift batches were broken because the write buffer wasn't cleared
+
 1.2.1 (01.05.2016)
 FIX: Divide by 0 exception when no memory was committed or the total job duration is less than 1 ms
 
