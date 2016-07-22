@@ -288,6 +288,7 @@ namespace Uber.Builder
             "UDT_json",
             "UDT_captures",
             "UDT_converter",
+            "viewer_data_gen",
             "UDT_viewer"
         };
 
