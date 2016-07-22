@@ -132,13 +132,15 @@ The custom parsing API has the following features:
 * The only config string update command you get is `cs`: `bcs0`, `bcs1` and `bcs2` are dealt with transparently
 * Command tokens access: it tokenizes commands and gives you access to the results
 * A helper function for string clean-ups, `udtCleanUpString`, that gets rid of Quake 3/Live and OSP color codes
+* A helper function, `udtPlayerStateToEntityState`, to convert a player state to an entity state
 * Helper functions to parse config string variables:
   * `udtParseConfigStringValueAsInteger`
   * `udtParseConfigStringValueAsString`
 * A helper function, `udtGetIdMagicNumber`, to know what magic number Quake uses for a given UDT identifier
 * A helper function, `udtGetUDTMagicNumber`, to know what UDT identifier corresponds to a given Quake magic number
-* The supported number types are:
+* The supported magic number types are:
   * power-up indices
+  * life stats indices (stats that reset on respawn)
   * persistent stats indices
   * entity types
   * entity flags
@@ -150,6 +152,7 @@ The custom parsing API has the following features:
   * weapons
   * means of death
   * items
+  * player movement types
 
 Usage
 -----
@@ -161,8 +164,8 @@ Call `udtShutDownLibrary` after every other function.
 
 ###### Creating a custom demo parsing context
 
-Call `udtCuCreateContext` to create a context.  
-Call `udtCuDestroyContext` to free the resources of a context.
+Call `udtCuCreateContext` to create a new context.  
+Call `udtCuDestroyContext` to free all resources of a context.
 
 ###### Parsing a demo with your context
 
