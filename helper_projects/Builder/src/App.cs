@@ -18,7 +18,7 @@ namespace Uber.Builder
 {
     public static class AppVersion
     {
-        public const string Version = "0.1.0";
+        public const string Version = "0.1.1";
     }
 
     public class ProfileJob
@@ -1185,6 +1185,7 @@ namespace Uber.Builder
             var visualStudio = VisualStudio.Versions[Data.SelectedVisualStudioVersion];
 
             return
+                CreateViewerData() &&
                 CopyGUIBinaries(visualStudio) &&
                 CopyPGORunTime(visualStudio) &&
                 BuildAllLibProjects(visualStudio);
@@ -1447,6 +1448,82 @@ namespace Uber.Builder
         private bool CopyPGORunTime(VisualStudio.Version version)
         {
             return CopyPGORunTime(version, true) && CopyPGORunTime(version, false);
+        }
+
+        private bool CreateViewerData()
+        {
+            // We create the new folder in the x86\release, then copy over to x64\release.
+
+            try
+            {
+                var visualStudio = VisualStudio.Versions[Data.SelectedVisualStudioVersion];
+                var dataPathX86 = FullPath(Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, @"x86\release\viewer_data");
+                var dataPathX64 = FullPath(Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, @"x64\release\viewer_data");
+                var dataGenPath = FullPath(Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, @"x64\release\viewer_data_gen.exe");
+                if(Directory.Exists(dataPathX86))
+                {
+                    Directory.Delete(dataPathX86, true);
+                }
+                if(Directory.Exists(dataPathX64))
+                {
+                    Directory.Delete(dataPathX64, true);
+                }
+
+                Directory.CreateDirectory(dataPathX86);
+                var workDir = Path.GetFullPath(Config.RootFolderPath);
+                var args = string.Format("-o={0} viewer_data", dataPathX86);
+                if(!RunAndReadProcess(workDir, dataGenPath, args))
+                {
+                    SetStatus("Failed to create viewer data with viewer_data_gen.exe");
+                    return false;
+                }
+
+                var fileToCopy = new List<string>();
+                fileToCopy.AddRange(Directory.GetFiles(FullPath(@"viewer_data\maps"), "*.png", SearchOption.TopDirectoryOnly));
+                fileToCopy.Add(FullPath(@"viewer_data\map_aliases.txt"));
+                fileToCopy.Add(FullPath(@"viewer_data\deja_vu_sans.ttf"));
+                fileToCopy.Add(FullPath(@"viewer_data\blender_icons.png"));
+                CopyFilesToDirectory(fileToCopy, dataPathX86);
+
+                Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(dataPathX86, dataPathX64);
+            }
+            catch(Exception exception)
+            {
+                SetStatus("Failed to create viewer data, see the log");
+                LogError("Failed to create viewer data: {0}", exception.Message);
+                LogError(exception.StackTrace);
+                return false;
+            }
+
+            return true;
+        }
+
+        private string FullPath(string relativePath)
+        {
+            return Path.GetFullPath(Path.Combine(Config.RootFolderPath, relativePath));
+        }
+
+        private string FullPath(params string[] relativePaths)
+        {
+            var newPathsArray = new string[relativePaths.Length + 1];
+            newPathsArray[0] = Config.RootFolderPath;
+            var i = 1;
+            foreach(var path in relativePaths)
+            {
+                newPathsArray[i++] = path;
+            }
+
+            return Path.GetFullPath(Path.Combine(newPathsArray));
+        }
+
+        private static void CopyFilesToDirectory(List<string> filePaths, string fullDestFolderPath)
+        {
+            foreach(var filePath in filePaths)
+            {
+                var fileName = Path.GetFileName(filePath);
+                var destFilePath = Path.Combine(fullDestFolderPath, fileName);
+                File.Copy(filePath, destFilePath);
+            }
         }
     }
 }
