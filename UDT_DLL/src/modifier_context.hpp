@@ -23,8 +23,5 @@ public:
 	udtdConverter Converter;
 	udtdEntityTimeShifterPlugIn TimeShifterPlugIn;
 	udtVMMemoryStream WriteStream;
-	udtVMLinearAllocator TempAllocator;
-
-private:
-	bool _initialized;
+	udtVMLinearAllocator TempAllocator { "ModifierContext::Temp" };
 };

@@ -22,5 +22,5 @@ private:
 	UDT_NO_COPY_SEMANTICS(udtMatchPatternAnalyzer);
 
 	udtParserPlugInStats _statsAnalyzer;
-	udtVMLinearAllocator _tempAllocator;
+	udtVMLinearAllocator _tempAllocator { "CutByMatchAnalyzer::TempAllocator" };
 };

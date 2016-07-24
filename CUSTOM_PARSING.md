@@ -132,36 +132,40 @@ The custom parsing API has the following features:
 * The only config string update command you get is `cs`: `bcs0`, `bcs1` and `bcs2` are dealt with transparently
 * Command tokens access: it tokenizes commands and gives you access to the results
 * A helper function for string clean-ups, `udtCleanUpString`, that gets rid of Quake 3/Live and OSP color codes
+* A helper function, `udtPlayerStateToEntityState`, to convert a player state to an entity state
 * Helper functions to parse config string variables:
   * `udtParseConfigStringValueAsInteger`
   * `udtParseConfigStringValueAsString`
-* Helper functions to know what number id used for a given universal UDT identifier and demo protocol version:
-  * `udtGetIdConfigStringIndex` for config string indices
-  * `udtGetIdEntityEventId` for entity event types
-  * `udtGetIdEntityType` for entity types
-  * `udtGetIdPowerUpIndex` for power-ups (indices for player state, flags for entity state)
-  * `udtGetIdPersStatsIndex` for persistent player state stats indices
-  * `udtGetIdEntityStateFlag` for entity state flags
-* Helper functions to know what the universal UDT identifier is for a given id number and demo protocol version:
-  * `udtGetUdtWeaponId` for weapons
-  * `udtGetUdtMeanOfDeathId` for means of death
-  * `udtGetUdtFlagStatusId` for flag status
-  * `udtGetUdtTeamId` for teams
-  * `udtGetUdtGameTypeId` for game types
-  * `udtGetUdtItemId` for items
+* A helper function, `udtGetIdMagicNumber`, to know what magic number Quake uses for a given UDT identifier
+* A helper function, `udtGetUDTMagicNumber`, to know what UDT identifier corresponds to a given Quake magic number
+* The supported magic number types are:
+  * power-up indices
+  * life stats indices (stats that reset on respawn)
+  * persistent stats indices
+  * entity types
+  * entity flags
+  * entity events
+  * config string indices
+  * teams
+  * game types
+  * flag statuses
+  * weapons
+  * means of death
+  * items
+  * player movement types
 
 Usage
 -----
 
 ###### Start-up and shut-down
 
-Call `udtInitLibrary` before any other functions.  
+Call `udtInitLibrary` before any other functions. (One exception: you can call `udtSetCrashHandler` first.)  
 Call `udtShutDownLibrary` after every other function.
 
 ###### Creating a custom demo parsing context
 
-Call `udtCuCreateContext` to create a context.  
-Call `udtCuDestroyContext` to free the resources of a context.
+Call `udtCuCreateContext` to create a new context.  
+Call `udtCuDestroyContext` to free all resources of a context.
 
 ###### Parsing a demo with your context
 

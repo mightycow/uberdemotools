@@ -35,11 +35,14 @@ struct udtSnapshotCallbackArg
 {
 	idClientSnapshotBase* Snapshot; // Never NULL.
 	idClientSnapshotBase* OldSnapshot; // May be NULL.
-	udtChangedEntity* Entities;
+	idEntityStateBase** Entities;
+	u8* EntityFlags;
+	udtChangedEntity* ChangedEntities;
 	s32* RemovedEntities;
 	s32 SnapshotArrayIndex;
-	u32 EntityCount;
+	u32 ChangedEntityCount;
 	u32 RemovedEntityCount;
+	u32 EntityCount;
 	s32 ServerTime;
 	s32 CommandNumber;
 	s32 MessageNumber;
@@ -74,7 +77,6 @@ struct udtBaseParserPlugIn
 	{
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
-		BufferRanges.Init((uptr)(demoCount * (u32)sizeof(udtParseDataBufferRange)), "BaseParserPlugIn::BufferRangesArray");
 		InitAllocators(demoCount);
 	}
 
@@ -120,7 +122,7 @@ protected:
 	virtual void FinishDemoAnalysis() {}
 
 	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
-	udtVMArray<udtParseDataBufferRange> BufferRanges;
+	udtVMArray<udtParseDataBufferRange> BufferRanges { "BaseParserPlugIn::BufferRangesArray" };
 	
 private:
 	u32 DemoCount;

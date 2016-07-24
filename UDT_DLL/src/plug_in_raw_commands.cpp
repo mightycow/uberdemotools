@@ -10,10 +10,8 @@ udtParserPlugInRawCommands::~udtParserPlugInRawCommands()
 {
 }
 
-void udtParserPlugInRawCommands::InitAllocators(u32 demoCount)
+void udtParserPlugInRawCommands::InitAllocators(u32)
 {
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(50), "ParserPlugInRawCommands::Strings");
-	_commands.InitNoOverride(demoCount * UDT_KB(10), "ParserPlugInRawCommands::CommandsArray");
 }
 
 void udtParserPlugInRawCommands::CopyBuffersStruct(void* buffersStruct) const

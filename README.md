@@ -1,6 +1,6 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-UDT is a set of tools for analyzing, cutting and modifying **Quake 3** and **Quake Live** demo files.
+UDT is a set of tools for analyzing, cutting, converting, modifying and viewing **Quake 3** and **Quake Live** demo files.
 
 The main features are:
 
@@ -12,20 +12,31 @@ The main features are:
 - Time-shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
 - Converting demos: convert demos to a different protocol version
+- Viewing demos with the 2D demo viewer (top-down view)
 
 Official Releases
 -----------------
 
-[Grab the binaries here](http://giant.pourri.ch/snif.php?path=UDT/).
+Permanent links to the latest builds
+
+| OS      | GUI | Command-Line Tools | 2D Viewer |
+|:--------|:---:|:------------------:|:---------:|
+| Windows | [x64](http://giant.pourri.ch/UDT/redirections/windows_gui_x64.html) - [x86](http://giant.pourri.ch/UDT/redirections/windows_gui_x86.html) | [x64](http://giant.pourri.ch/UDT/redirections/windows_console_x64.html) - [x86](http://giant.pourri.ch/UDT/redirections/windows_console_x86.html) | [x64](http://giant.pourri.ch/UDT/redirections/windows_viewer_x64.html) - [x86](http://giant.pourri.ch/UDT/redirections/windows_viewer_x86.html) |
+| Linux   | Not Available    | [x64](url=http://giant.pourri.ch/UDT/redirections/linux_console_x64.html) - [x86](url=http://giant.pourri.ch/UDT/redirections/linux_console_x86.html) | [x64](http://giant.pourri.ch/UDT/redirections/linux_viewer_x64.html) - [x86](http://giant.pourri.ch/UDT/redirections/linux_viewer_x86.html) |
+
+Alternatively, you can browse [this folder](http://giant.pourri.ch/snif.php?path=UDT/) where you can also find older releases.  
+The zip files are Windows releases.  
+The tar.bz2 files are Linux releases.
 
 Project Overview
 ----------------
 
-The project is currently comprised of 3 parts:
+The project is currently comprised of 4 parts:
 
 1. A shared library, `UDT_DLL`, with a C89 compatible interface, written in C++. Supported OSes: Windows, Linux
 2. A set of command-line tools, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
+4. A 2D demo viewer, `UDT_viewer`, written in C++. Supported OSes: Windows, Linux
 
 Overview of the binaries
 
@@ -40,6 +51,7 @@ Overview of the binaries
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
 | UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting, merging, conversions, etc |
+| UDT_viewer      | Application<br>C++ | Windows Linux | Windows:<br>Direct3D 11<br>Linux:<br>GLFW 3.0+ | A 2D demo viewer that can generate heat maps |
 
 Supported Formats
 -----------------
@@ -64,11 +76,13 @@ Installation
 No installation is required for any of the binaries.  
 The command-line tools have no third-party dependencies.
 
-For Windows users: UDT_GUI.exe and UDT_cutter.exe need to be able to read and write to config files right next to them.  
+For Windows users: `UDT_GUI`, `UDT_cutter` and `UDT_viewer` need to be able to read and write to config files right next to them.  
 It is therefore recommended to put all the binaries in a new folder with read and write access (i.e. not in `Program Files` nor `Program Files (x86)`).
 
 `UDT_GUI` requires [**.NET Framework 4.0 Client Profile**](http://www.microsoft.com/en-us/download/details.aspx?id=24872) at a minimum to run.  
 If you have **Windows 8** or later, then you should have it pre-installed with the OS unless you changed system settings.
+
+`UDT_viewer` requires Direct3D 11 on Windows and GLFW 3 on Linux.
 
 Project Origin
 --------------
@@ -79,8 +93,8 @@ Those others demos were not renamed (time-stamp, type of frags) nor sorted. I wa
 
 Whenever I had made a cool frag, I was using the same exact chat message every time because I had a chat bind for said message, so all I did was press a key. I then realized that the chat message is a marker for cool frags. If I could find when those messages were printed, I could find the cool frags! Thus, the first `Cut by Pattern` feature was born: `Cut by Chat`.
 
-Typical Usage Scenario
-----------------------
+Typical GUI Usage Scenario
+--------------------------
 
 The typical day-to-day usage scenario for UDT is the one for which the interface has been optimized: `Cut by Chat`.
 
@@ -202,7 +216,7 @@ License
 The entire source code in this release is covered by the GPL.  
 See [COPYING.txt](https://github.com/mightycow/uberdemotools/blob/master/UDT_DLL/COPYING.txt) for the GNU GENERAL PUBLIC LICENSE.
 
-Uber Demo Tools (UDT) is Copyright (C) 2011-2015 Gian 'myT' Schellenbaum.  
+Uber Demo Tools (UDT) is Copyright (C) 2011-2016 Gian 'myT' Schellenbaum.  
 It is based on the Quake III Arena source code and the Challenge Quake 3 source code.
 
 The Quake III Arena source code is Copyright (C) 1999-2005 Id Software, Inc.  

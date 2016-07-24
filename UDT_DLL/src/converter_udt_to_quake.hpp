@@ -81,7 +81,7 @@ private:
 	u8 _areaMask[32];
 	udtMessage _outMsg;
 	udtContext _context;
-	udtVMArray<udtdConverterPlugIn*> _plugIns;
+	udtVMArray<udtdConverterPlugIn*> _plugIns { "UDTDemoConverter::PlugIns" };
 	udtStream* _input; // The user owns this.
 	udtStream* _output; // The user owns this. Optional.
 	udtProtocol::Id _protocol;

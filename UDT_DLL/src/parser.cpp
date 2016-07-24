@@ -24,8 +24,8 @@ udtBaseParser::udtBaseParser()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
-	_inServerTime = S32_MIN;
-	_inLastSnapshotMessageNumber = S32_MIN;
+	_inServerTime = UDT_S32_MIN;
+	_inLastSnapshotMessageNumber = UDT_S32_MIN;
 
 	_outFileName = udtString::NewEmptyConstant();
 	_outFilePath = udtString::NewEmptyConstant();
@@ -38,19 +38,6 @@ udtBaseParser::udtBaseParser()
 udtBaseParser::~udtBaseParser()
 {
 	Destroy();
-}
-
-void udtBaseParser::InitAllocators()
-{
-	_persistentAllocator.Init(1 << 18, "Parser::Persistent");
-	_configStringAllocator.Init(1 << 20, "Parser::ConfigStrings");
-	_tempAllocator.Init(1 << 18, "Parser::Temp");
-	_privateTempAllocator.Init(1 << 16, "Parser::PrivateTemp");
-	PlugIns.Init(1 << 16, "Parser::PlugInsArray");
-	_inGameStateFileOffsets.Init(1 << 16, "Parser::GameStateFileOffsetsArray");
-	_inChangedEntities.Init(1 << 16, "Parser::ChangedEntitiesArray");
-	_inRemovedEntities.Init(1 << 16, "Parser::RemovedEntitiesArray");
-	_cuts.Init(1 << 16, "Parser::CutsArray");
 }
 
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtProtocol::Id outProtocol, s32 gameStateIndex, bool enablePlugIns)
@@ -85,14 +72,13 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_privateTempAllocator.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
-	_inGameStateFileOffsets.Clear();
-	if(gameStateIndex > 0)
+	if(gameStateIndex == 0)
+	{
+		_inGameStateFileOffsets.Clear();
+	}
+	else
 	{
 		_inGameStateFileOffsets.Resize(gameStateIndex);
-		for(s32 i = 0; i < gameStateIndex; ++i)
-		{
-			_inGameStateFileOffsets[0] = 0;
-		}
 	}
 
 	if(enablePlugIns)
@@ -114,8 +100,8 @@ void udtBaseParser::ResetForGamestateMessage()
 	_inClientNum = -1;
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
-	_inServerTime = S32_MIN;
-	_inLastSnapshotMessageNumber = S32_MIN;
+	_inServerTime = UDT_S32_MIN;
+	_inLastSnapshotMessageNumber = UDT_S32_MIN;
 
 	_outServerCommandSequence = 0;
 	_outSnapshotsWritten = 0;
@@ -127,7 +113,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	memset(_inConfigStrings, 0, sizeof(_inConfigStrings));
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inEntityEventTimesMs); ++i)
 	{
-		_inEntityEventTimesMs[i] = S32_MIN;
+		_inEntityEventTimesMs[i] = UDT_S32_MIN;
 	}
 
 	_configStringAllocator.Clear();
@@ -754,7 +740,7 @@ bool udtBaseParser::ParseSnapshot()
 	// time we wrap around in the buffer.
 	//
 
-	s32 oldMessageNum = _inSnapshot.messageNum + 1;
+	s32 oldMessageNum = newSnap.messageNum;
 	if(newSnap.messageNum - oldMessageNum >= PACKET_BACKUP)
 	{
 		oldMessageNum = newSnap.messageNum - (PACKET_BACKUP - 1);
@@ -765,11 +751,8 @@ bool udtBaseParser::ParseSnapshot()
 		GetClientSnapshot(oldMessageNum & PACKET_MASK)->valid = false;
 	}
 
-	// Copy to the current good spot.
-	_inSnapshot = newSnap;
-
 	// Save the frame off in the backup array for later delta comparisons.
-	Com_Memcpy(GetClientSnapshot(_inSnapshot.messageNum & PACKET_MASK), &_inSnapshot, (size_t)_inProtocolSizeOfClientSnapshot);
+	Com_Memcpy(GetClientSnapshot(newSnap.messageNum & PACKET_MASK), &newSnap, (size_t)_inProtocolSizeOfClientSnapshot);
 
 	// Don't give the same stuff to the plug-ins more than once.
 	if(newSnap.messageNum == _inLastSnapshotMessageNumber)
@@ -784,15 +767,40 @@ bool udtBaseParser::ParseSnapshot()
 
 	if(EnablePlugIns && !PlugIns.IsEmpty())
 	{
+		_inEntities.Clear();
+		_inEntityFlags.Clear();
+		for(s32 i = 0, count = newSnap.numEntities; i < count; ++i)
+		{
+			const s32 index = (newSnap.parseEntitiesNum + i) & (ID_MAX_PARSE_ENTITIES - 1);
+			idEntityStateBase* const es = GetEntity(index);
+			_inEntities.Add(es);
+
+			u8 flags = 0;
+			for(u32 j = 0, jcount = _inChangedEntities.GetSize(); j < jcount; ++j)
+			{
+				const udtChangedEntity& es2 = _inChangedEntities[j];
+				if(es->number == es2.Entity->number)
+				{
+					SetBit(&flags, (u32)udtEntityStateFlag::AddedOrChanged);
+					if(es2.IsNewEvent) SetBit(&flags, (u32)udtEntityStateFlag::NewEvent);
+					break;
+				}
+			}
+			_inEntityFlags.Add(flags);
+		}
+
 		udtSnapshotCallbackArg info;
 		info.ServerTime = _inServerTime;
-		info.SnapshotArrayIndex = _inSnapshot.messageNum & PACKET_MASK;
-		info.Snapshot = &newSnap;
+		info.SnapshotArrayIndex = newSnap.messageNum & PACKET_MASK;
+		info.Snapshot = GetClientSnapshot(newSnap.messageNum & PACKET_MASK);
 		info.OldSnapshot = oldSnap;
-		info.Entities = _inChangedEntities.GetStartAddress();
-		info.EntityCount = _inChangedEntities.GetSize();
+		info.ChangedEntities = _inChangedEntities.GetStartAddress();
+		info.ChangedEntityCount = _inChangedEntities.GetSize();
 		info.RemovedEntities = _inRemovedEntities.GetStartAddress();
 		info.RemovedEntityCount = _inRemovedEntities.GetSize();
+		info.Entities = _inEntities.GetStartAddress();
+		info.EntityFlags = _inEntityFlags.GetStartAddress();
+		info.EntityCount = _inEntities.GetSize();
 		info.CommandNumber = newSnap.serverCommandNum;
 		info.MessageNumber = newSnap.messageNum;
 
@@ -1192,7 +1200,8 @@ bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 
 		if(addedOrChanged)
 		{
-			const bool isNewEvent = (state->eType >= ET_EVENTS) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
+			const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, _inProtocol);
+			const bool isNewEvent = (state->eType >= entityTypeEventId) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
 			udtChangedEntity info;
 			info.Entity = state;
 			info.IsNewEvent = isNewEvent;

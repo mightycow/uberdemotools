@@ -73,7 +73,7 @@ private:
 	{
 		void Clear()
 		{
-			ChangeTime = S32_MIN;
+			ChangeTime = UDT_S32_MIN;
 			InstantCapture = false;
 		}
 
@@ -85,12 +85,12 @@ private:
 	{
 		bool IsValid() const
 		{
-			return Time != S32_MIN && Distance > 0.0f;
+			return Time != UDT_S32_MIN && Distance > 0.0f;
 		}
 
 		void Clear()
 		{
-			Time = S32_MIN;
+			Time = UDT_S32_MIN;
 			Distance = -1.0f;
 		}
 
@@ -117,7 +117,7 @@ private:
 	ProcessGamestateFunc _processGamestate;
 	ProcessCommandFunc _processCommand;
 	ProcessSnapshotFunc _processSnapshot;
-	udtVMLinearAllocator _playerNameAllocator; // For QL only.
+	udtVMLinearAllocator _playerNameAllocator { "ParserPlugInCaptures::PlayerNames" }; // For QL only.
 	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
@@ -132,6 +132,6 @@ private:
 	bool _firstSnapshot;
 
 public:
-	udtVMLinearAllocator StringAllocator;
-	udtVMArray<udtParseDataCapture> Captures;
+	udtVMLinearAllocator StringAllocator { "ParserPlugInCaptures::Strings" };
+	udtVMArray<udtParseDataCapture> Captures { "ParserPlugInCaptures::CapturesArray" };
 };

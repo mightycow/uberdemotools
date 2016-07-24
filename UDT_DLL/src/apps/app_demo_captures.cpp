@@ -92,13 +92,6 @@ public:
 		_maxThreadCount = maxThreadCount;
 		_topBaseToBaseTimeCount = topBaseToBaseTimeCount;
 
-		// Max demo count: 64k
-		// Captures per demo: 64
-		// String data per demo: file path + file name + map name = 640 bytes max
-		const uptr maxDemoCount = uptr(1 << 16);
-		_captures.Init((uptr)(maxDemoCount * (64 * sizeof(CaptureInfo))), "Worker::CapturesArray");
-		_stringAllocator.Init((uptr)(maxDemoCount * 640), "Worker::String");
-
 		udtFileStream jsonFile;
 		if(!jsonFile.Open(outputFilePath, udtFileOpenMode::Write))
 		{
@@ -157,8 +150,8 @@ public:
 private:
 	void ProcessBatch(const udtFileInfo* files, u32 fileCount)
 	{
-		udtVMArray<const char*> filePaths(1 << 16, "Worker::ProcessBatch::FilePathsArray");
-		udtVMArray<s32> errorCodes(1 << 16, "Worker::ProcessBatch::ErrorCodesArray");
+		udtVMArray<const char*> filePaths("Worker::ProcessBatch::FilePathsArray");
+		udtVMArray<s32> errorCodes("Worker::ProcessBatch::ErrorCodesArray");
 		filePaths.Resize(fileCount);
 		errorCodes.Resize(fileCount);
 		for(u32 i = 0; i < fileCount; ++i)
@@ -221,7 +214,7 @@ private:
 		for(u32 i = 0; i < captureCount; ++i)
 		{
 			const udtParseDataCapture& capture = captures[i];
-			if((capture.Flags & (u32)udtParseDataCaptureFlags::DemoTaker) == 0)
+			if((capture.Flags & (u32)udtParseDataCaptureMask::DemoTaker) == 0)
 			{
 				continue;
 			}
@@ -231,10 +224,10 @@ private:
 			udtString mapName = udtString::NewClone(_stringAllocator, (const char*)buffers.StringBuffer + capture.MapName);
 			udtString::MakeLowerCase(mapName);
 
-			const bool distanceValid = (capture.Flags & (u32)udtParseDataCaptureFlags::DistanceValid) != 0;
+			const bool distanceValid = (capture.Flags & (u32)udtParseDataCaptureMask::DistanceValid) != 0;
 
 			CaptureInfo cap;
-			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0;
+			cap.BaseToBase = (capture.Flags & (u32)udtParseDataCaptureMask::BaseToBase) != 0;
 			cap.CaptureTimeMs = capture.CaptureTimeMs;
 			cap.Distance = capture.Distance;
 			cap.DistanceAndSpeedValid = distanceValid && durationMs > 0;
@@ -312,7 +305,7 @@ private:
 		udtString currentSectionMap = udtString::NewConstRef("__invalid__");
 		bool previousBaseToBase = false;
 		u32 mapTimeIndex = 0;
-		s32 previousMapTimeMs = S32_MIN;
+		s32 previousMapTimeMs = UDT_S32_MIN;
 		bool hasAtLeastOneObject = false;
 
 		const u32 captureCount = _captures.GetSize();
@@ -335,7 +328,7 @@ private:
 
 					hasAtLeastOneObject = true;
 					mapTimeIndex = 0;
-					previousMapTimeMs = S32_MIN;
+					previousMapTimeMs = UDT_S32_MIN;
 					writer.StartObject();
 					writer.WriteStringValue("map", cap.MapName.GetPtr());
 					writer.StartArray("captures");
@@ -399,8 +392,8 @@ private:
 		qsort(_captures.GetStartAddress(), (size_t)captureCount, sizeof(CaptureInfo), &GenericStableCaptureSort<compareFunc>);
 	}
 
-	udtVMArray<CaptureInfo> _captures;
-	udtVMLinearAllocator _stringAllocator;
+	udtVMArray<CaptureInfo> _captures { "Worker::CapturesArray" };
+	udtVMLinearAllocator _stringAllocator { "Worker::Strings" };
 	CmdLineParseArg _parseArg;
 	u32 _maxThreadCount;
 	u32 _topBaseToBaseTimeCount;
@@ -489,7 +482,6 @@ int udt_main(int argc, char** argv)
 	}
 
 	udtFileListQuery query;
-	query.InitAllocators(64);
 	query.FileFilter = &KeepOnlyDemoFiles;
 	query.FolderPath = udtString::NewConstRef(directoryPath);
 	query.Recursive = recursive;

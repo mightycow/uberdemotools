@@ -24,7 +24,7 @@ bool udtPath::HasTrailingSeparator(const udtString& folderPath)
 
 bool udtPath::HasValidDemoFileExtension(const udtString& filePath)
 {
-	for(u32 i = (u32)udtProtocol::FirstProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
+	for(u32 i = 0; i < (u32)udtProtocol::Count; ++i)
 	{
 		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
 		if(udtString::EndsWithNoCase(filePath, extension))

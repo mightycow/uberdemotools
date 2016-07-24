@@ -59,8 +59,8 @@ struct Config
 
 static bool ConvertDemoBatch(udtParseArg& parseArg, const udtFileInfo* files, u32 fileCount, const Config& config)
 {
-	udtVMArray<const char*> filePaths(1 << 16, "ConvertDemoBatch::FilePathsArray");
-	udtVMArray<s32> errorCodes(1 << 16, "ConvertDemoBatch::ErrorCodesArray");
+	udtVMArray<const char*> filePaths("ConvertDemoBatch::FilePathsArray");
+	udtVMArray<s32> errorCodes("ConvertDemoBatch::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -81,8 +81,7 @@ static bool ConvertDemoBatch(udtParseArg& parseArg, const udtFileInfo* files, u3
 
 	const s32 result = udtConvertDemoFiles(&parseArg, &threadInfo, &conversionArg);
 
-	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16, "ConvertDemoBatch::Temp");
+	udtVMLinearAllocator tempAllocator("ConvertDemoBatch::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -216,7 +215,6 @@ int udt_main(int argc, char** argv)
 	}
 
 	udtFileListQuery query;
-	query.InitAllocators(64);
 	query.FileFilter = &KeepOnlyCompatibleDemoFiles;
 	query.FolderPath = udtString::NewConstRef(inputPath);
 	query.Recursive = recursive;

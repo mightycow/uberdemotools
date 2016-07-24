@@ -48,11 +48,11 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 	const idTrajectoryBase& tr = ent->pos;
 	switch(tr.trType)
 	{
-		case TR_LINEAR:
+		case ID_TR_LINEAR:
 			Float3::Mad(result, tr.trBase, tr.trDelta, (atTime - tr.trTime) * 0.001f);
 			break;
 
-		case TR_SINE:
+		case ID_TR_SINE:
 			{
 				const f32 deltaTime = (atTime - tr.trTime) / (f32)tr.trDuration;
 				const f32 phase = sinf(deltaTime * UDT_PI * 2.0f);
@@ -60,7 +60,7 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_LINEAR_STOP:
+		case ID_TR_LINEAR_STOP:
 			{
 				if(atTime > tr.trTime + tr.trDuration)
 				{
@@ -77,7 +77,7 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_GRAVITY:
+		case ID_TR_GRAVITY:
 			{
 				const f32 gravity = (f32)GetEntityStateGravitySafe(ent, protocol);
 				const f32 deltaTime = (atTime - tr.trTime) * 0.001f;
@@ -86,32 +86,33 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 			}
 			break;
 
-		case TR_STATIONARY:
-		case TR_INTERPOLATE:
+		case ID_TR_STATIONARY:
+		case ID_TR_INTERPOLATE:
 		default:
 			Float3::Copy(result, tr.trBase);
 			break;
 	}
 }
 
-static bool IsAllowedIdMeanOfDeath(s32 idMOD, udtProtocol::Id procotol)
+static bool IsAllowedUDTMeanOfDeath(u32 udtMod)
 {
-	const s32 bit = GetUDTPlayerMODBitFromIdMod(idMOD, procotol);
-
+	// @NOTE: Only allows direct hits. So excludes RocketSplash and BFGSplash.
 	return
-		bit == (s32)udtPlayerMeansOfDeathBits::Grenade ||
-		bit == (s32)udtPlayerMeansOfDeathBits::Rocket ||
-		bit == (s32)udtPlayerMeansOfDeathBits::BFG;
+		udtMod == (s32)udtMeanOfDeath::Rocket ||
+		udtMod == (s32)udtMeanOfDeath::BFG;
 }
 
 static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 {
-	const s32 weapon = GetUDTWeaponFromIdWeapon(idWeapon, procotol);
+	u32 udtWeaponId;
+	if(!GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, idWeapon, procotol))
+	{
+		return false;
+	}
 
 	return
-		weapon == (s32)udtWeapon::RocketLauncher ||
-		weapon == (s32)udtWeapon::GrenadeLauncher ||
-		weapon == (s32)udtWeapon::BFG;
+		udtWeaponId == (u32)udtWeapon::RocketLauncher ||
+		udtWeaponId == (u32)udtWeapon::BFG;
 }
 
 static s32 RoundToNearest(s32 x, s32 n)
@@ -126,117 +127,10 @@ static bool IsAllowedUDTWeapon(u32 udtWeapon, u32 allowedWeapons)
 	return result != 0;
 }
 
-static void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol)
-{
-	const u32 healthStatIdx = (protocol == udtProtocol::Dm68) ? (u32)STAT_HEALTH_68 : (u32)STAT_HEALTH_73p;
-	if(ps.pm_type == PM_INTERMISSION || ps.pm_type == PM_SPECTATOR)
-	{
-		es.eType = ET_INVISIBLE;
-	}
-	else if(ps.stats[healthStatIdx] <= GIB_HEALTH)
-	{
-		es.eType = ET_INVISIBLE;
-	}
-	else
-	{
-		es.eType = ET_PLAYER;
-	}
-
-	es.number = ps.clientNum;
-
-	Float3::Copy(es.pos.trBase, ps.origin);
-	Float3::Copy(es.pos.trDelta, ps.velocity); // set the trDelta for flag direction
-	if(extrapolate)
-	{
-		es.pos.trType = TR_LINEAR_STOP;
-		es.pos.trTime = serverTimeMs; // set the time for linear prediction
-		es.pos.trDuration = 50; // set maximum extrapolation time: 1000 / sv_fps (default = 20)
-	}
-	else
-	{
-		es.pos.trType = TR_INTERPOLATE;
-	}
-
-	es.apos.trType = TR_INTERPOLATE;
-	Float3::Copy(es.apos.trBase, ps.viewangles);
-
-	es.angles2[YAW] = (f32)ps.movementDir;
-	es.legsAnim = ps.legsAnim;
-	es.torsoAnim = ps.torsoAnim;
-	es.clientNum = ps.clientNum;
-	// ET_PLAYER looks here instead of at number
-	// so corpses can also reference the proper config
-	es.eFlags = ps.eFlags;
-	if(ps.stats[healthStatIdx] <= 0)
-	{
-		es.eFlags |= EF_DEAD;
-	}
-	else
-	{
-		es.eFlags &= ~EF_DEAD;
-	}
-
-	if(ps.eventSequence != lastEventSequence)
-	{
-		const s32 seq = (ps.eventSequence & 1) ^ 1;
-		es.event = ps.events[seq];
-		es.eventParm = ps.eventParms[seq];
-		lastEventSequence = ps.eventSequence;
-	}
-	else
-	{
-		es.event = 0;
-		es.eventParm = 0;
-	}
-
-#if 0
-	// Original id code for reference.
-	if(ps.externalEvent)
-	{
-		es.event = ps.externalEvent;
-		es.eventParm = ps.externalEventParm;
-	}
-	else if(ps.entityEventSequence < ps.eventSequence)
-	{
-		int		seq;
-
-		if(ps.entityEventSequence < ps.eventSequence - MAX_PS_EVENTS)
-		{
-			ps.entityEventSequence = ps.eventSequence - MAX_PS_EVENTS;
-		}
-		seq = ps.entityEventSequence & (MAX_PS_EVENTS - 1);
-		es.event = ps.events[seq] | ((ps.entityEventSequence & 3) << 8);
-		es.eventParm = ps.eventParms[seq];
-		ps.entityEventSequence++;
-	}
-#endif
-
-	es.weapon = ps.weapon;
-	es.groundEntityNum = ps.groundEntityNum;
-
-	es.powerups = 0;
-	for(s32 i = 0; i < ID_MAX_PS_POWERUPS; i++)
-	{
-		if(ps.powerups[i])
-		{
-			es.powerups |= 1 << i;
-		}
-	}
-
-	es.loopSound = ps.loopSound;
-	es.generic1 = ps.generic1;
-}
-
-
 struct PlayerEntities
 {
-	PlayerEntities()
-	{
-		Players.Init(1 << 16, "PlayerEntities::PlayersArray");
-	}
-
 	idLargestEntityState TempEntityState;
-	udtVMArray<idEntityStateBase*> Players;
+	udtVMArray<idEntityStateBase*> Players { "PlayerEntities::PlayersArray" };
 };
 
 static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, const udtSnapshotCallbackArg& arg, udtProtocol::Id protocol)
@@ -250,14 +144,39 @@ static void GetPlayerEntities(PlayerEntities& info, s32& lastEventSequence, cons
 		info.Players.Add(&info.TempEntityState);
 	}
 
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	const s32 idEntityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, protocol);
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		idEntityStateBase* const es = arg.Entities[i].Entity;
-		if(es->eType == ET_PLAYER && es->clientNum >= 0 && es->clientNum < ID_MAX_CLIENTS)
+		idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(es->eType == idEntityTypePlayerId && es->clientNum >= 0 && es->clientNum < ID_MAX_CLIENTS)
 		{
 			info.Players.Add(es);
 		}
 	}
+}
+
+static bool GetUDTWeaponFromUDTMeanOfDeath(u32& weaponId, u32 mod)
+{
+	switch((udtMeanOfDeath::Id)mod)
+	{
+		case udtMeanOfDeath::Gauntlet: weaponId = (u32)udtWeapon::Gauntlet; break;
+		case udtMeanOfDeath::MachineGun: weaponId = (u32)udtWeapon::MachineGun; break;
+		case udtMeanOfDeath::Shotgun: weaponId = (u32)udtWeapon::Shotgun; break;
+		case udtMeanOfDeath::Grenade:
+		case udtMeanOfDeath::GrenadeSplash: weaponId = (u32)udtWeapon::GrenadeLauncher; break;
+		case udtMeanOfDeath::Rocket:
+		case udtMeanOfDeath::RocketSplash: weaponId = (u32)udtWeapon::RocketLauncher; break;
+		case udtMeanOfDeath::Lightning: weaponId = (u32)udtWeapon::LightningGun; break;
+		case udtMeanOfDeath::Railgun: weaponId = (u32)udtWeapon::Railgun; break;
+		case udtMeanOfDeath::Plasma:
+		case udtMeanOfDeath::PlasmaSplash: weaponId = (u32)udtWeapon::PlasmaGun; break;
+		case udtMeanOfDeath::BFG: weaponId = (u32)udtWeapon::BFG; break;
+		case udtMeanOfDeath::Grapple: weaponId = (u32)udtWeapon::GrapplingHook; break;
+		case udtMeanOfDeath::HeavyMachineGun: weaponId = (u32)udtWeapon::HeavyMachineGun; break;
+		default: return false;
+	}
+
+	return true;
 }
 
 
@@ -272,7 +191,7 @@ udtMidAirPatternAnalyzer::~udtMidAirPatternAnalyzer()
 void udtMidAirPatternAnalyzer::StartAnalysis()
 {
 	_protocol = udtProtocol::Invalid;
-	_lastEventSequence = S32_MIN;
+	_lastEventSequence = UDT_S32_MIN;
 	_gameStateIndex = -1;
 	_rocketSpeed = -1.0f;
 	_bfgSpeed = -1.0f;
@@ -288,9 +207,9 @@ void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbac
 
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_players); ++i)
 	{
-		_players[i].LastUpdateTime = S32_MIN;
-		_players[i].LastGroundContactTime = S32_MIN;
-		_players[i].LastZDirChangeTime = S32_MIN;
+		_players[i].LastUpdateTime = UDT_S32_MIN;
+		_players[i].LastGroundContactTime = UDT_S32_MIN;
+		_players[i].LastZDirChangeTime = UDT_S32_MIN;
 		_players[i].ZDir = 0;
 		_players[i].Position[0] = 0.0f;
 		_players[i].Position[1] = 0.0f;
@@ -301,17 +220,22 @@ void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbac
 void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
+	const s32 idEntityTypeMissileId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Missile, _protocol);
 
 	// Update the rocket speed if needed.
 	if(_rocketSpeed == -1.0f)
 	{
-		for(u32 i = 0; i < arg.EntityCount; ++i)
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 		{
-			const idEntityStateBase* const ent = arg.Entities[i].Entity;
-			if(ent->eType == ET_MISSILE && GetUDTWeaponFromIdWeapon(ent->weapon, _protocol) == udtWeapon::RocketLauncher)
+			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
+			u32 udtWeaponId;
+			if(ent->eType == idEntityTypeMissileId && 
+			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
+			   udtWeaponId == (u32)udtWeapon::RocketLauncher)
 			{
 				const f32 speed = Float3::Length(ent->pos.trDelta);
 				_rocketSpeed = (f32)RoundToNearest((s32)speed, 25);
+				break;
 			}
 		}
 	}
@@ -319,13 +243,17 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	// Update the BFG speed if needed.
 	if(_bfgSpeed == -1.0f)
 	{
-		for(u32 i = 0; i < arg.EntityCount; ++i)
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 		{
-			const idEntityStateBase* const ent = arg.Entities[i].Entity;
-			if(ent->eType == ET_MISSILE && GetUDTWeaponFromIdWeapon(ent->weapon, _protocol) == udtWeapon::BFG)
+			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
+			u32 udtWeaponId;
+			if(ent->eType == idEntityTypeMissileId && 
+			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
+			   udtWeaponId == udtWeapon::BFG)
 			{
 				const f32 speed = Float3::Length(ent->pos.trDelta);
 				_bfgSpeed = (f32)RoundToNearest((s32)speed, 25);
+				break;
 			}
 		}
 	}
@@ -333,6 +261,7 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	// Update player information: position, Z-axis change, fire projectiles, etc.
 	PlayerEntities playersInfo;
 	GetPlayerEntities(playersInfo, _lastEventSequence, arg, parser._inProtocol);
+	const s32 fireWeaponEventId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::WeaponFired, _protocol);
 	for(u32 i = 0, count = playersInfo.Players.GetSize(); i < count; ++i)
 	{
 		idEntityStateBase* const es = playersInfo.Players[i];
@@ -343,7 +272,6 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		{
 			// Store the projectile fired by the tracked player, if any.
 			const s32 eventType = es->event & (~ID_ES_EVENT_BITS);
-			const s32 fireWeaponEventId = idEntityEvent::WeaponFired(_protocol);
 			if(eventType == fireWeaponEventId && IsAllowedIdWeapon(es->weapon, _protocol))
 			{
 				AddProjectile(es->weapon, currentPosition, arg.ServerTime);
@@ -383,33 +311,32 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	}
 
 	// Find a player getting mid-aired.
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
-		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
+		udtObituaryEvent obituary;
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
 
-		const s32 targetIdx = eventInfo.TargetIndex;
+		const s32 targetIdx = obituary.TargetIndex;
 		if(targetIdx == trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const s32 attackerIdx = eventInfo.AttackerIndex;
+		const s32 attackerIdx = obituary.AttackerIndex;
 		if(attackerIdx == -1 || attackerIdx != trackedPlayerIndex)
 		{
 			continue;
 		}
 
-		const s32 idMeanOfDeath = arg.Entities[i].Entity->eventParm;
-		if(!IsAllowedIdMeanOfDeath(idMeanOfDeath, parser._inProtocol))
+		if(!IsAllowedUDTMeanOfDeath(obituary.MeanOfDeath))
 		{
 			continue;
 		}
@@ -421,13 +348,14 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		}
 
 		const udtMidAirPatternArg& extraInfo = GetExtraInfo<udtMidAirPatternArg>();
-		const s32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, _protocol);
-		if(udtWeapon != -1 && !IsAllowedUDTWeapon(udtWeapon, extraInfo.AllowedWeapons))
+		u32 udtWeaponId;
+		if(!GetUDTWeaponFromUDTMeanOfDeath(udtWeaponId, obituary.MeanOfDeath) ||
+		   !IsAllowedUDTWeapon(udtWeaponId, extraInfo.AllowedWeapons))
 		{
 			continue;
 		}
 
-		ProjectileInfo* projectile = FindBestProjectileMatch(udtWeapon, _players[targetIdx].Position, arg.ServerTime);
+		ProjectileInfo* projectile = FindBestProjectileMatch(udtWeaponId, _players[targetIdx].Position, arg.ServerTime);
 		if(projectile == NULL)
 		{
 			continue;
@@ -457,7 +385,7 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 	}
 }
 
-void udtMidAirPatternAnalyzer::AddProjectile(s32 weapon, const f32* position, s32 serverTimeMs)
+void udtMidAirPatternAnalyzer::AddProjectile(s32 idWeapon, const f32* position, s32 serverTimeMs)
 {
 	ProjectileInfo* projectile = NULL;
 	for(u32 i = 0; i < UDT_COUNT_OF(_projectiles); ++i)
@@ -472,7 +400,7 @@ void udtMidAirPatternAnalyzer::AddProjectile(s32 weapon, const f32* position, s3
 	if(projectile == NULL)
 	{
 		// We didn't find a free slot, find and pick the oldest one.
-		s32 oldestTimeMs = S32_MAX;
+		s32 oldestTimeMs = UDT_S32_MAX;
 		projectile = &_projectiles[0];
 		for(u32 i = 0; i < UDT_COUNT_OF(_projectiles); ++i)
 		{
@@ -487,13 +415,13 @@ void udtMidAirPatternAnalyzer::AddProjectile(s32 weapon, const f32* position, s3
 	projectile->UsedSlot = 1;
 	Float3::Copy(projectile->CreationPosition, position);
 	projectile->CreationTimeMs = serverTimeMs;
-	projectile->IdWeapon = weapon;
+	projectile->IdWeapon = idWeapon;
 }
 
-udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProjectileMatch(s32 udtWeapon, const f32* targetPosition, s32 serverTimeMs)
+udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProjectileMatch(u32 udtWeaponId, const f32* targetPosition, s32 serverTimeMs)
 {
 	f32 targetTravelSpeed = -1.0f;
-	if(udtWeapon == (s32)udtWeapon::BFG)
+	if(udtWeaponId == (s32)udtWeapon::BFG)
 	{
 		targetTravelSpeed = _bfgSpeed == -1.0f ? 2000.0f : _bfgSpeed;
 	}
@@ -512,8 +440,9 @@ udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProj
 			continue;
 		}
 
-		const s32 udtProjWeapon = GetUDTWeaponFromIdWeapon(info.IdWeapon, _protocol);
-		if(udtProjWeapon != udtWeapon)
+		u32 udtProjWeaponId;
+		if(!GetUDTNumber(udtProjWeaponId, udtMagicNumberType::Weapon, info.IdWeapon, _protocol) ||
+		   udtProjWeaponId != udtWeaponId)
 		{
 			continue;
 		}

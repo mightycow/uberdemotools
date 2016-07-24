@@ -72,22 +72,12 @@ static const char* ExampleConfig =
 
 struct CutByChatConfig
 {
-	CutByChatConfig()
-	{
-		ChatRules.Init(1 << 16, "CutByChatConfig::ChatRulesArray");
-		StringAllocator.Init(1 << 16, "CutByChatConfig::String");
-		CustomOutputFolder = NULL;
-		MaxThreadCount = 1;
-		StartOffsetSec = 10;
-		EndOffsetSec = 10;
-	}
-
-	udtVMArray<udtChatPatternRule> ChatRules;
-	udtVMLinearAllocator StringAllocator;
-	const char* CustomOutputFolder;
-	int MaxThreadCount;
-	int StartOffsetSec;
-	int EndOffsetSec;
+	udtVMArray<udtChatPatternRule> ChatRules { "CutByChatConfig::ChatRulesArray" };
+	udtVMLinearAllocator StringAllocator { "CutByChatConfig::String" };
+	const char* CustomOutputFolder = nullptr;
+	int MaxThreadCount = 1;
+	int StartOffsetSec = 10;
+	int EndOffsetSec = 10;
 };
 
 
@@ -132,7 +122,7 @@ static bool ReadConfig(CutByChatConfig& config, udtContext& context, udtVMLinear
 	}
 	file.Close();
 
-	udtVMArray<udtString> lines(1 << 16, "ReadConfig::LinesArray");
+	udtVMArray<udtString> lines("ReadConfig::LinesArray");
 	if(!StringSplitLines(lines, fileString))
 	{
 		return false;
@@ -223,8 +213,7 @@ static bool LoadConfig(CutByChatConfig& config, const char* configPath)
 		return false;
 	}
 
-	udtVMLinearAllocator fileAllocator;
-	fileAllocator.Init(1 << 16, "LoadConfig::File");
+	udtVMLinearAllocator fileAllocator("LoadConfig::File");
 	if(!ReadConfig(config, context->Context, fileAllocator, configPath))
 	{
 		fprintf(stderr, "Could not load the specified config file.\n");
@@ -276,8 +265,8 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 
 static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, const u32 fileCount, const CutByChatConfig& config)
 {
-	udtVMArray<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
-	udtVMArray<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
+	udtVMArray<const char*> filePaths("CutByChatMultiple::FilePathsArray");
+	udtVMArray<s32> errorCodes("CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -309,8 +298,7 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 
 	const s32 result = udtCutDemoFilesByPattern(&parseArg, &threadInfo, &patternArg);
 
-	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16, "CutByChatBatch::Temp");
+	udtVMLinearAllocator tempAllocator("CutByChatBatch::Temp");
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -372,8 +360,8 @@ struct CutByMatchConfig
 
 static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, const u32 fileCount, const CutByMatchConfig& config)
 {
-	udtVMArray<const char*> filePaths(1 << 16, "CutByChatMultiple::FilePathsArray");
-	udtVMArray<s32> errorCodes(1 << 16, "CutByChatMultiple::ErrorCodesArray");
+	udtVMArray<const char*> filePaths("CutByChatMultiple::FilePathsArray");
+	udtVMArray<s32> errorCodes("CutByChatMultiple::ErrorCodesArray");
 	filePaths.Resize(fileCount);
 	errorCodes.Resize(fileCount);
 	for(u32 i = 0; i < fileCount; ++i)
@@ -405,8 +393,7 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 
 	const s32 result = udtCutDemoFilesByPattern(&parseArg, &threadInfo, &patternArg);
 
-	udtVMLinearAllocator tempAllocator;
-	tempAllocator.Init(1 << 16, "CutByMatchBatch::Temp");
+	udtVMLinearAllocator tempAllocator { "CutByMatchBatch::Temp" };
 	for(u32 i = 0; i < fileCount; ++i)
 	{
 		if(errorCodes[i] != (s32)udtErrorCode::None)
@@ -460,7 +447,7 @@ static bool CutByMatchSingleFile(udtParseArg& parseArg, const char* filePath, co
 
 static bool HasCuttableDemoFileExtension(const udtString& filePath)
 {
-	for(u32 i = (u32)udtProtocol::FirstCuttableProtocol; i < (u32)udtProtocol::AfterLastProtocol; ++i)
+	for(u32 i = (u32)udtProtocol::FirstCuttableProtocol; i < (u32)udtProtocol::Count; ++i)
 	{
 		const char* const extension = udtGetFileExtensionByProtocol((udtProtocol::Id)i);
 		if(udtString::EndsWithNoCase(filePath, extension))
@@ -506,8 +493,8 @@ struct ProgramOptions
 	const char* OutputFolderPath = NULL; // -o=
 	u32 MaxThreadCount = 1; // -t=
 	u32 GameStateIndex = 0; // -g=
-	s32 StartTimeSec = S32_MIN; // -s=
-	s32 EndTimeSec = S32_MIN; // -e=
+	s32 StartTimeSec = UDT_S32_MIN; // -s=
+	s32 EndTimeSec = UDT_S32_MIN; // -e=
 	bool Recursive = false;	 // -r
 };
 
@@ -647,13 +634,13 @@ int udt_main(int argc, char** argv)
 			return 1;
 		}
 
-		if(options.StartTimeSec == S32_MIN)
+		if(options.StartTimeSec == UDT_S32_MIN)
 		{
 			fprintf(stderr, "The start time was not specified.\n");
 			return 1;
 		}
 
-		if(options.EndTimeSec == S32_MIN)
+		if(options.EndTimeSec == UDT_S32_MIN)
 		{
 			fprintf(stderr, "The end time was not specified.\n");
 			return 1;
@@ -692,7 +679,6 @@ int udt_main(int argc, char** argv)
 	else
 	{
 		udtFileListQuery query;
-		query.InitAllocators(64);
 		query.FileFilter = &KeepOnlyCuttableDemoFiles;
 		query.FolderPath = udtString::NewConstRef(inputPath);
 		query.Recursive = options.Recursive;

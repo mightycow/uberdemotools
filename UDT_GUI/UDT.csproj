@@ -123,6 +123,7 @@
     <Compile Include="src\AppCommands.cs" />
     <Compile Include="src\AppMatchCut.cs" />
     <Compile Include="src\AppFlagCaptures.cs" />
+	<Compile Include="src\AppScores.cs" />
 	<Compile Include="src\AppSearchResults.cs" />
     <Compile Include="src\UpdaterShared.cs" />
     <Compile Include="src\Steam.cs" />

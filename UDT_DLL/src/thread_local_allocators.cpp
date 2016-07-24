@@ -13,12 +13,7 @@ static udtThreadLocalStorage* ThreadLocalStorage = NULL;
 
 struct ThreadLocalData
 {
-	ThreadLocalData()
-	{
-		TempAllocator.Init(1 << 16, "ThreadLocal::TempAllocator");
-	}
-
-	udtVMLinearAllocator TempAllocator;
+	udtVMLinearAllocator TempAllocator { "ThreadLocal::TempAllocator" };
 };
 
 

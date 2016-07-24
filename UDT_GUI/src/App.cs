@@ -78,6 +78,10 @@ namespace Uber.DemoTools
         public string PatternCutPlayerName = "";
         public UInt32 FragCutAllowedMeansOfDeaths = 0;
         public UDT_DLL.udtProtocol ConversionOutputProtocol = UDT_DLL.udtProtocol.Invalid;
+        public bool QuitAfterFirstJob = false;
+        public bool ForceAnalyzeOnLoad = false;
+        public bool ForceSkipFolderScanDialog = false;
+        public bool ForceScanFoldersRecursively = false;
     }
 
     public class CuttabbleByTimeDisplayInfo
@@ -135,6 +139,7 @@ namespace Uber.DemoTools
 
         // Only set when the demo was parsed.
         public bool Analyzed = false;
+        public bool TeamGameType = false;
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
@@ -144,6 +149,8 @@ namespace Uber.DemoTools
         public List<CommandDisplayInfo> Commands = new List<CommandDisplayInfo>();
         public List<MatchTimeInfo> MatchTimes = new List<MatchTimeInfo>();
         public List<FlagCaptureDisplayInfo> FlagCaptures = new List<FlagCaptureDisplayInfo>();
+        public List<ScoreDisplayInfo> Scores = new List<ScoreDisplayInfo>();
+        public List<TeamScoreDisplayInfo> TeamScores = new List<TeamScoreDisplayInfo>();
     }
 
     public class DemoInfoListView : ListView
@@ -177,10 +184,10 @@ namespace Uber.DemoTools
 
     public class App
     {
-        private const string GuiVersion = "0.7.1";
+        private const string GuiVersion = "0.7.2";
         private const uint MinimumDllVersionMajor = 1;
-        private const uint MinimumDllVersionMinor = 2;
-        private const uint MinimumDllVersionRevision = 1;
+        private const uint MinimumDllVersionMinor = 3;
+        private const uint MinimumDllVersionRevision = 0;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>
@@ -856,6 +863,22 @@ namespace Uber.DemoTools
                 {
                     folderPaths.Add(Path.GetFullPath(arg));
                 }
+                else if(arg.ToLower() == "/quitafterfirstjob")
+                {
+                    _privateConfig.QuitAfterFirstJob = true;
+                }
+                else if(arg.ToLower() == "/forceanalyzeonload")
+                {
+                    _privateConfig.ForceAnalyzeOnLoad = true;
+                }
+                else if(arg.ToLower() == "/forceskipfolderscandialog")
+                {
+                    _privateConfig.ForceSkipFolderScanDialog = true;
+                }
+                else if(arg.ToLower() == "/forcescanfoldersrecursively")
+                {
+                    _privateConfig.ForceScanFoldersRecursively = true;
+                }
             }
 
             if(cmdLineArgs.Length == 0 && 
@@ -980,9 +1003,9 @@ namespace Uber.DemoTools
             {
                 var recursive = false;
 
-                if(_config.SkipScanFoldersRecursivelyDialog)
+                if(_privateConfig.ForceSkipFolderScanDialog || _config.SkipScanFoldersRecursivelyDialog)
                 {
-                    recursive = _config.ScanFoldersRecursively;
+                    recursive = _privateConfig.ForceScanFoldersRecursively || _config.ScanFoldersRecursively;
                 }
                 else
                 {
@@ -1509,6 +1532,12 @@ namespace Uber.DemoTools
             commandsTab.Header = "Commands";
             commandsTab.Content = commands.RootControl;
 
+            var scores = new ScoresComponent(this);
+            _appComponents.Add(scores);
+            var scoresTab = new TabItem();
+            scoresTab.Header = "Scores";
+            scoresTab.Content = scores.RootControl;
+
             var captures = new FlagCapturesComponent(this);
             _appComponents.Add(captures);
             var capturesTab = new TabItem();
@@ -1524,6 +1553,7 @@ namespace Uber.DemoTools
             tabControl.Items.Add(deathsTab);
             tabControl.Items.Add(statsTab);
             tabControl.Items.Add(commandsTab);
+            tabControl.Items.Add(scoresTab);
             tabControl.Items.Add(capturesTab);
 
             return tabControl;
@@ -1903,12 +1933,10 @@ namespace Uber.DemoTools
                 _demoListView.SelectedIndex = 0;
             }
 
-            if(!_config.AnalyzeOnLoad)
+            if(_privateConfig.ForceAnalyzeOnLoad || _config.AnalyzeOnLoad)
             {
-                return;
+                AnalyzeDemos(newDemos);
             }
-
-            AnalyzeDemos(newDemos);
         }
 
         private void AnalyzeDemos(List<DemoInfo> demos)
@@ -2167,6 +2195,7 @@ namespace Uber.DemoTools
 
                 var i = newDemo.InputIndex;
                 demos[i].Analyzed = true;
+                demos[i].TeamGameType = newDemo.TeamGameType;
                 demos[i].ChatEvents = newDemo.ChatEvents;
                 demos[i].FragEvents = newDemo.FragEvents;
                 demos[i].GameStateFileOffsets = newDemo.GameStateFileOffsets;
@@ -2180,6 +2209,8 @@ namespace Uber.DemoTools
                 demos[i].Commands = newDemo.Commands;
                 demos[i].MatchTimes = newDemo.MatchTimes;
                 demos[i].FlagCaptures = newDemo.FlagCaptures;
+                demos[i].Scores = newDemo.Scores;
+                demos[i].TeamScores = newDemo.TeamScores;
             }
 
             VoidDelegate infoUpdater = delegate { OnDemoListSelectionChanged(); };
@@ -3241,6 +3272,10 @@ namespace Uber.DemoTools
                 {
                     _window.Title = "UDT";
                     _demoListView.Focus();
+                    if(_privateConfig.QuitAfterFirstJob)
+                    {
+                        OnQuit();
+                    }
                 };
                 _window.Dispatcher.Invoke(uiResetter);
             }

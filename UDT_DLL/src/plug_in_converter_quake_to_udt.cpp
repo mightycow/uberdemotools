@@ -6,7 +6,6 @@
 udtParserPlugInQuakeToUDT::udtParserPlugInQuakeToUDT()
 {
 	_outputFile = NULL;
-	_allocator.Init((uptr)sizeof(udtdData), "ParserPlugInQuakeToUDT::Data");
 	_data = (udtdData*)_allocator.AllocateAndGetAddress((uptr)sizeof(udtdData));
 	_firstSnapshot = true;
 	_protocol = udtProtocol::Invalid;
@@ -110,13 +109,15 @@ void udtParserPlugInQuakeToUDT::ProcessGamestateMessage(const udtGamestateCallba
 
 void udtParserPlugInQuakeToUDT::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
+	assert(arg.Snapshot != NULL);
+
 	if(arg.ServerTime > _data->LastSnapshotTimeMs)
 	{
 		const s32 lastTime = _data->LastSnapshotTimeMs;
 		_data->LastSnapshotTimeMs = arg.ServerTime;
 		if(lastTime != 0)
 		{
-			WriteSnapshot(parser);
+			WriteSnapshot(parser, *arg.Snapshot);
 		}
 	}
 
@@ -149,15 +150,18 @@ void udtParserPlugInQuakeToUDT::ProcessCommandMessage(const udtCommandCallbackAr
 	_outputFile->Write(arg.String, arg.StringLength, 1);
 }
 
-void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser)
+void udtParserPlugInQuakeToUDT::WriteSnapshot(udtBaseParser& parser, idClientSnapshotBase& snapshot)
 {
+	idPlayerStateBase* const ps = GetPlayerState(&snapshot, parser._inProtocol);
+	assert(ps != NULL);
+
 	const u32 messageType = (u32)udtdMessageType::Snapshot;
 	_outputFile->Write(&messageType, 4, 1);
 	_outputFile->Write(&parser._inServerMessageSequence, 4, 1);
 	_outputFile->Write(&parser._inServerTime, 4, 1);
-	_outputFile->Write(&parser._inSnapshot.ps, _protocolSizeOfPlayerState, 1);
-	_outputFile->Write(&parser._inSnapshot.snapFlags, 4, 1);
-	_outputFile->Write(parser._inSnapshot.areamask, 32, 1);
+	_outputFile->Write(ps, _protocolSizeOfPlayerState, 1);
+	_outputFile->Write(&snapshot.snapFlags, 4, 1);
+	_outputFile->Write(snapshot.areamask, 32, 1);
 
 	const s32 curSnapIdx = _data->SnapshotReadIndex;
 	const s32 oldSnapIdx = _data->SnapshotReadIndex ^ 1;

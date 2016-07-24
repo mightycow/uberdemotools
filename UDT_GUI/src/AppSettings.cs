@@ -65,6 +65,8 @@ namespace Uber.DemoTools
         FragEvents,
         Stats,
         Commands,
+        Captures,
+        Scores,
         Patterns,
         CutByTime,
         CutByPattern,

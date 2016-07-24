@@ -17,20 +17,13 @@ typedef bool (*KeepFileCallback)(const char* name, u64 size, void* userData); //
 
 struct udtFileListQuery
 {
-	void InitAllocators(u32 expectedFileCount)
-	{
-		Files.Init((uptr)sizeof(udtFileInfo) * (uptr)expectedFileCount, "FileListQuery::FilesArray");
-		PersistAllocator.Init(32 * (uptr)expectedFileCount, "FileListQuery::Persist");
-		TempAllocator.Init(UDT_KB(16), "FileListQuery::Temp");
-	}
-
-	udtVMArray<udtFileInfo> Files;         // Output.
-	udtVMLinearAllocator PersistAllocator; // Output.
-	udtVMLinearAllocator TempAllocator;    // Private data.
-	udtString FolderPath;                  // Input. Can be modified.
-	KeepFileCallback FileFilter;           // Input. Can be NULL.
-	void* UserData;                        // Input. Can be NULL.
-	bool Recursive;                        // Input.
+	udtVMArray<udtFileInfo> Files { "FileListQuery::FilesArray" };      // Output.
+	udtVMLinearAllocator PersistAllocator { "FileListQuery::Persist" }; // Output.
+	udtVMLinearAllocator TempAllocator { "FileListQuery::Temp" };       // Private data.
+	udtString FolderPath;        // Input. Can be modified.
+	KeepFileCallback FileFilter; // Input. Can be NULL.
+	void* UserData;              // Input. Can be NULL.
+	bool Recursive;              // Input.
 };
 
 extern bool IsValidDirectory(const char* folderPath);

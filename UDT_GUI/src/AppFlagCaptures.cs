@@ -49,7 +49,7 @@ namespace Uber.DemoTools
         public FrameworkElement RootControl { get; private set; }
         public List<DemoInfoListView> AllListViews { get { return new List<DemoInfoListView> { _capturesListView }; } }
         public List<DemoInfoListView> InfoListViews { get { return new List<DemoInfoListView> { _capturesListView }; } }
-        public ComponentType Type { get { return ComponentType.Commands; } }
+        public ComponentType Type { get { return ComponentType.Captures; } }
         public bool MultiDemoMode { get { return false; } }
 
         public FlagCapturesComponent(App app)

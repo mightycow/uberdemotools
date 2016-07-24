@@ -1,5 +1,6 @@
 #include "plug_in_custom_parser.hpp"
 #include "custom_context.hpp"
+#include "utils.hpp"
 
 
 udtCustomParsingPlugIn::udtCustomParsingPlugIn()
@@ -26,7 +27,7 @@ void udtCustomParsingPlugIn::ProcessMessageBundleStart(const udtMessageBundleCal
 
 	udtCuMessageOutput& msg = _context->Message;
 	msg.Commands = NULL;
-	msg.ServerCommandCount = 0;
+	msg.CommandCount = 0;
 	msg.GameStateOrSnapshot.GameState = NULL;
 	msg.IsGameState = 0;
 }
@@ -40,7 +41,7 @@ void udtCustomParsingPlugIn::ProcessMessageBundleEnd(const udtMessageBundleCallb
 	}
 
 	udtCuMessageOutput& msg = _context->Message;
-	msg.ServerCommandCount = commandCount;
+	msg.CommandCount = commandCount;
 	msg.Commands = _context->Commands.GetStartAddress();
 
 	// Patch the command string addresses.
@@ -103,35 +104,39 @@ void udtCustomParsingPlugIn::ProcessCommandMessage(const udtCommandCallbackArg& 
 	_context->Commands.Add(cmd);
 }
 
-void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser&)
+void udtCustomParsingPlugIn::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	const u32 entityCount = arg.EntityCount;
+	const u32 entityCount = arg.ChangedEntityCount;
+	const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, parser._inProtocol);
 	udtVMArray<const idEntityStateBase*>& changedEntities = _context->ChangedEntities;
 	changedEntities.Clear();
 	for(u32 i = 0; i < entityCount; ++i)
 	{
-		idEntityStateBase* const ent = arg.Entities[i].Entity;
-		if(ent->eType >= ET_EVENTS)
+		idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
+		if(ent->eType >= entityTypeEventId)
 		{
-			if(!arg.Entities[i].IsNewEvent)
+			if(!arg.ChangedEntities[i].IsNewEvent)
 			{
 				// Don't give our user any duplicate event.
 				continue;
 			}
 
 			// Simplify stuff for our user a bit.
-			ent->event = (ent->eType - ET_EVENTS) & (~ID_ES_EVENT_BITS);
-			ent->eType = ET_EVENTS;
+			ent->event = (ent->eType - entityTypeEventId) & (~ID_ES_EVENT_BITS);
+			ent->eType = entityTypeEventId;
 		}
 
-		changedEntities.Add(arg.Entities[i].Entity);
+		changedEntities.Add(arg.ChangedEntities[i].Entity);
 	}
 
 	udtCuSnapshotMessage& snap = _context->Snapshot;
 	memcpy(snap.AreaMask, arg.Snapshot->areamask, 32);
 	snap.ChangedEntities = changedEntities.GetStartAddress();
 	snap.CommandNumber = arg.CommandNumber;
-	snap.EntityCount = entityCount;
+	snap.ChangedEntityCount = changedEntities.GetSize();
+	snap.Entities = (const idEntityStateBase**)arg.Entities;
+	snap.EntityCount = arg.EntityCount;
+	snap.EntityFlags = arg.EntityFlags;
 	snap.MessageNumber = arg.MessageNumber;
 	snap.PlayerState = GetPlayerState(arg.Snapshot, _context->Context.Parser._inProtocol);
 	snap.RemovedEntities = arg.RemovedEntities;

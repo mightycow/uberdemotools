@@ -32,15 +32,15 @@ void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 
 	u32 railKillCount = 0;
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
 		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
@@ -56,11 +56,8 @@ void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		{
 			continue;
 		}
-		
-		// @NOTE: eventInfo.MeanOfDeath is of type udtMeanOfDeath::Id.
-		const s32 idMeanOfDeath = arg.Entities[i].Entity->eventParm;
-		const u32 udtWeapon = GetUDTWeaponFromIdMod(idMeanOfDeath, parser._inProtocol);
-		if(udtWeapon == udtWeapon::Railgun)
+
+		if(eventInfo.MeanOfDeath == (u32)udtMeanOfDeath::Railgun)
 		{
 			++railKillCount;
 		}

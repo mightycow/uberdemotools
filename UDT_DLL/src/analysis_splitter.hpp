@@ -17,7 +17,7 @@ public:
 
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser);
 
-	udtVMArray<u32> GamestateFileOffsets; // Final array.
+	udtVMArray<u32> GamestateFileOffsets { "ParserPlugInSplitter::GamestateFileOffsetsArray" }; // Final array.
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInSplitter);

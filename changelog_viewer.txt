@@ -1,0 +1,27 @@
+0.1.2 (22.07.2016)
+ADD: Configuration file viewerconfig.cfg
+ADD: Options: static/dynamic entities depth scale and global entities scale
+ADD: Options: draw heat map, hide entities when the heat map is visible
+ADD: An option to remove time-out snapshots
+ADD: A "Reload Demo" button
+ADD: The Windows build has an icon, hurray
+CHG: Smoother demo loading progress report
+FIX: A memory leak of roughly 5 MB per demo load
+FIX: Incorrect distribution in the heat map's color ramp (too much red)
+FIX: Potential crash when rendering a snapshot where the followed player's name isn't found
+FIX: Avoid recursive calls to ReDraw in the Windows platform layer
+FIX: Sometimes corrupted player state for the followed player
+FIX: Non-followed players' positions in OSP demos
+OPT: Much faster demo loading
+
+0.1.1 (10.07.2016)
+ADD: Implemented the log tab
+ADD: Viz data for Sinister, Cure and Elder
+ADD: Heat map squared ramp option
+ADD: Credits and version information in the help overlay
+ADD: Map aliases
+CHG: New generic slider look, mouse wheel support
+FIX: Now displaying chat messages with word wrapping
+
+0.1.0 (04.07.2016)
+1st: First public release

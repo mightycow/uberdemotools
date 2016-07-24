@@ -65,7 +65,7 @@ void udtVMLinearAllocator::GetThreadAllocators(u32& allocatorCount, udtVMLinearA
 }
 
 
-udtVMLinearAllocator::udtVMLinearAllocator()
+udtVMLinearAllocator::udtVMLinearAllocator(const char* name)
 {
 	_addressSpaceStart = NULL;
 	_usedByteCount = 0;
@@ -73,10 +73,9 @@ udtVMLinearAllocator::udtVMLinearAllocator()
 	_commitByteCountGranularity = 0;
 	_committedByteCount = 0;
 	_peakUsedByteCount = 0;
-	_name = NULL;
+	_name = name;
 	_resizeCount = 0;
-	_enableReserveOverride = true;
-	_forceFourByteAlignment = true;
+	_alignment = (u32)sizeof(void*);
 
 	AllocatorTracker.RegisterAllocator(_listNode);
 }
@@ -88,17 +87,11 @@ udtVMLinearAllocator::~udtVMLinearAllocator()
 	Destroy();
 }
 
-bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
+void udtVMLinearAllocator::Init(uptr reservedByteCount)
 {
 	if(_addressSpaceStart != NULL)
 	{
-		return false;
-	}
-
-	if(_enableReserveOverride && reservedByteCount > UDT_KB(64))
-	{
-		// @TODO: @FIXME:
-		reservedByteCount = UDT_KB(64);
+		return;
 	}
 	
 	const uptr commitByteCountGranularity = UDT_MEMORY_PAGE_SIZE;
@@ -116,7 +109,6 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	if(data == NULL)
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
-		return false;
 	}
 	
 	_addressSpaceStart = data;
@@ -124,26 +116,16 @@ bool udtVMLinearAllocator::Init(uptr reservedByteCount, const char* name)
 	_reservedByteCount = reservedByteCount;
 	_committedByteCount = 0;
 	_commitByteCountGranularity = commitByteCountGranularity;
-	_name = name;
-
-	return true;
-}
-
-bool udtVMLinearAllocator::InitNoOverride(uptr reservedByteCount, const char* name)
-{
-	_enableReserveOverride = false;
-	
-	return Init(reservedByteCount, name);
 }
 
 uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 {
-	UDT_ASSERT_OR_FATAL_MSG(_addressSpaceStart != NULL, "An allocator was not properly initialized.");
+	const uptr alignmentMask = (uptr)_alignment - 1;
+	byteCount = (byteCount + alignmentMask) & (~alignmentMask);
 
-	if(_forceFourByteAlignment)
+	if(_addressSpaceStart == NULL)
 	{
-		// Make sure the next alignment is 4-byte aligned, just like this one.
-		byteCount = (byteCount + 3) & (~3);
+		Init(udt_max(byteCount, (uptr)UDT_KB(64)));
 	}
 
 	// We didn't reserve enough address space?
@@ -161,7 +143,7 @@ uptr udtVMLinearAllocator::Allocate(uptr byteCount)
 		if(!VirtualMemoryCommit(_addressSpaceStart + _committedByteCount, newByteCount))
 		{
 			UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
-			return U32_MAX;
+			return UDT_U32_MAX;
 		}
 		_committedByteCount += newByteCount;
 	}
@@ -184,7 +166,7 @@ uptr udtVMLinearAllocator::AllocateWithRelocation(uptr byteCount)
 	if(data == NULL)
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryReserve failed in allocator '%s'.", SAFE_NAME);
-		return U32_MAX;
+		return UDT_U32_MAX;
 	}
 
 	// Commit just enough for the new used size.
@@ -194,7 +176,7 @@ uptr udtVMLinearAllocator::AllocateWithRelocation(uptr byteCount)
 	if(!VirtualMemoryCommit(data, newCommitByteCount))
 	{
 		UDT_ASSERT_OR_FATAL_ALWAYS("VirtualMemoryCommit failed in allocator '%s'.", SAFE_NAME);
-		return U32_MAX;
+		return UDT_U32_MAX;
 	}
 
 	// Copy the old data to the new location.
@@ -336,14 +318,14 @@ u8* udtVMLinearAllocator::GetAddressAt(uptr offset) const
 	return _addressSpaceStart + offset;
 }
 
-void udtVMLinearAllocator::DisableReserveOverride()
+void udtVMLinearAllocator::SetAlignment(u32 alignment)
 {
-	_enableReserveOverride = false;
+	_alignment = alignment;
 }
 
-void udtVMLinearAllocator::DisableFourByteAlignment()
+void udtVMLinearAllocator::SetName(const char* name)
 {
-	_forceFourByteAlignment = false;
+	_name = name;
 }
 
 void udtVMLinearAllocator::Destroy()

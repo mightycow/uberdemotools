@@ -3,11 +3,9 @@
 #include "scoped_stack_allocator.hpp"
 
 
-void udtObituariesAnalyzer::InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator)
+void udtObituariesAnalyzer::InitAllocators(u32, udtVMLinearAllocator& tempAllocator)
 {
 	_tempAllocator = &tempAllocator;
-	_stringAllocator.InitNoOverride(demoCount * UDT_KB(2), "ObituariesAnalyzer::PlayerNames");
-	Obituaries.InitNoOverride(demoCount * UDT_KB(4), "ObituariesAnalyzer::ObituariesArray");
 }
 
 void udtObituariesAnalyzer::ResetForNextDemo()
@@ -22,15 +20,15 @@ void udtObituariesAnalyzer::ResetForNextDemo()
 
 void udtObituariesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
-	for(u32 i = 0; i < arg.EntityCount; ++i)
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
 	{
-		if(!arg.Entities[i].IsNewEvent)
+		if(!arg.ChangedEntities[i].IsNewEvent)
 		{
 			continue;
 		}
 
 		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.Entities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol))
 		{
 			continue;
 		}
@@ -68,7 +66,7 @@ udtString udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 p
 		return udtString::NewClone(_stringAllocator, "world");
 	}
 
-	const s32 firstPlayerCsIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 firstPlayerCsIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	const char* const cs = parser._inConfigStrings[firstPlayerCsIdx + playerIdx].GetPtr();
 
 	udtVMScopedStackAllocator scopedTempAllocator(*_tempAllocator);
@@ -85,7 +83,7 @@ udtString udtObituariesAnalyzer::AllocatePlayerName(udtBaseParser& parser, s32 p
 
 void udtObituariesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& /*arg*/, udtBaseParser& parser)
 {
-	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 csFirstPlayerIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	for(s32 i = 0; i < 64; ++i)
 	{
 		const udtString& cs = parser.GetConfigString(csFirstPlayerIdx + i);
@@ -112,7 +110,7 @@ void udtObituariesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /
 		return;
 	}
 
-	const s32 csFirstPlayerIdx = idConfigStringIndex::FirstPlayer(parser._inProtocol);
+	const s32 csFirstPlayerIdx = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, parser._inProtocol);
 	const s32 playerIdx = csIndex - csFirstPlayerIdx;
 	if(playerIdx < 0 || playerIdx >= 64)
 	{

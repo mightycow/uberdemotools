@@ -1778,7 +1778,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 			{
 				if(bits & (1<<i))
 				{
-					to->stats[i] = ReadShort();
+					to->stats[i] = ReadSignedShort();
 				}
 			}
 		}

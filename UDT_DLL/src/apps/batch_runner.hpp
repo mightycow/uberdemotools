@@ -66,7 +66,6 @@ struct BatchRunner
 			}
 			_totalByteCount = totalByteCount;
 
-			_batches.Init(uptr(sizeof(BatchInfo)), "BatchRunner::BatchArray");
 			BatchInfo info;
 			info.ByteCount = totalByteCount;
 			info.FileCount = fileCount;
@@ -81,7 +80,7 @@ struct BatchRunner
 
 		const u32 batchCount = (fileCount + maxBatchSize - 1) / maxBatchSize;
 		const u32 filesPerBatch = fileCount / batchCount;
-		_batches.Init(uptr(batchCount) * uptr(sizeof(BatchInfo)), "BatchRunner::BatchArray");
+		_batches.Resize(batchCount);
 
 		u64 totalByteCount = 0;
 		u32 fileOffset = 0;
@@ -101,7 +100,7 @@ struct BatchRunner
 			info.ByteCount = batchByteCount;
 			info.FileCount = batchFileCount;
 			info.FirstFileIndex = fileOffset;
-			_batches.Add(info);
+			_batches[i] = info;
 
 			fileOffset += batchFileCount;
 		}
@@ -146,7 +145,7 @@ private:
 		(*runner->_progressCb)((f32)realProgress, runner->_progressUserData);
 	}
 
-	udtVMArray<BatchInfo> _batches;
+	udtVMArray<BatchInfo> _batches { "BatchRunner::BatchArray" };
 	u64 _processedByteCount;
 	u64 _totalByteCount;
 	f64 _progressBase;

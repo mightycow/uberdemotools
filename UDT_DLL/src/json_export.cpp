@@ -233,9 +233,7 @@ static void WriteTeamStats(s32& fieldsRead, udtJSONExporter& writer, const u8* f
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
 	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if(IsBitSet(flags, (u32)i))
 		{
 			writer.WriteIntValue(fieldNames[i], fields[fieldIdx++]);
 		}
@@ -257,9 +255,7 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONExporter& writer, const udt
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtPlayerStatsField::Count; ++i)
 	{
-		const s32 byteIndex = i >> 3;
-		const s32 bitIndex = i & 7;
-		if((flags[byteIndex] & ((u8)1 << (u8)bitIndex)) != 0)
+		if(IsBitSet(flags, (u32)i))
 		{
 			const s32 field = fields[fieldIdx++];
 			switch((udtPlayerStatsField::Id)i)
@@ -375,10 +371,6 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& 
 		if(stats.TimeOutCount > 0)
 		{
 			writer.WriteIntValue("total time out duration", (s32)stats.TotalTimeOutDurationMs);
-		}
-
-		if(stats.TimeOutCount > 0)
-		{
 			writer.StartArray("time outs");
 
 			const u32 firstTo = stats.FirstTimeOutRangeIndex;
@@ -667,9 +659,9 @@ static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCaptureBuff
 	for(u32 i = first, end = first + count; i < end; ++i)
 	{
 		const udtParseDataCapture& info = captureBuffers.Captures[i];
-		const bool playerNameValid = (info.Flags & (u32)udtParseDataCaptureFlags::PlayerNameValid) != 0;
-		const bool playerIndexValid = (info.Flags & (u32)udtParseDataCaptureFlags::PlayerIndexValid) != 0;
-		const bool distanceValid = (info.Flags & (u32)udtParseDataCaptureFlags::DistanceValid) != 0;
+		const bool playerNameValid = (info.Flags & (u32)udtParseDataCaptureMask::PlayerNameValid) != 0;
+		const bool playerIndexValid = (info.Flags & (u32)udtParseDataCaptureMask::PlayerIndexValid) != 0;
+		const bool distanceValid = (info.Flags & (u32)udtParseDataCaptureMask::DistanceValid) != 0;
 
 		writer.StartObject();
 
@@ -680,9 +672,50 @@ static void WriteCaptures(udtJSONExporter& writer, const udtParseDataCaptureBuff
 		writer.WriteIntValue("pick up time", info.PickUpTimeMs);
 		writer.WriteIntValue("capture time", info.CaptureTimeMs);
 		if(distanceValid) writer.WriteIntValue("distance", (s32)info.Distance);
-		writer.WriteBoolValue("base to base", (info.Flags & (u32)udtParseDataCaptureFlags::BaseToBase) != 0);
-		writer.WriteBoolValue("demo taker", (info.Flags & (u32)udtParseDataCaptureFlags::DemoTaker) != 0);
-		writer.WriteBoolValue("spectated player", (info.Flags & (u32)udtParseDataCaptureFlags::FirstPersonPlayer) != 0);
+		writer.WriteBoolValue("base to base", (info.Flags & (u32)udtParseDataCaptureMask::BaseToBase) != 0);
+		writer.WriteBoolValue("demo taker", (info.Flags & (u32)udtParseDataCaptureMask::DemoTaker) != 0);
+		writer.WriteBoolValue("spectated player", (info.Flags & (u32)udtParseDataCaptureMask::FirstPersonPlayer) != 0);
+
+		writer.EndObject();
+	}
+
+	writer.EndArray();
+}
+
+static void WriteScores(udtJSONExporter& writer, const udtParseDataScoreBuffers& scoreBuffers, u32 demoIndex)
+{
+	const udtParseDataBufferRange range = scoreBuffers.ScoreRanges[demoIndex];
+	const u32 first = range.FirstIndex;
+	const u32 count = range.Count;
+	if(count == 0)
+	{
+		return;
+	}
+
+	writer.StartArray("scores");
+	writer.SetStringBuffer(scoreBuffers.StringBuffer, scoreBuffers.StringBufferSize);
+
+	for(u32 i = first, end = first + count; i < end; ++i)
+	{
+		const udtParseDataScore& info = scoreBuffers.Scores[i];
+		const bool teamMode = (info.Flags & (u32)udtParseDataScoreMask::TeamBased) != 0;
+
+		writer.StartObject();
+
+		writer.WriteIntValue("game state index", info.GameStateIndex);
+		writer.WriteIntValue("server time", info.ServerTimeMs);
+		writer.WriteBoolValue("team mode", teamMode);
+		writer.WriteIntValue("score 1", info.Score1);
+		writer.WriteIntValue("score 2", info.Score2);
+		if(!teamMode)
+		{
+			if(info.Id1 < 64) writer.WriteIntValue("client 1", (s32)info.Id1);
+			if(info.Id2 < 64) writer.WriteIntValue("client 2", (s32)info.Id2);
+			if(info.Name1 != UDT_U32_MAX) writer.WriteStringValue("name 1", info.Name1);
+			if(info.Name2 != UDT_U32_MAX) writer.WriteStringValue("name 2", info.Name2);
+			if(info.CleanName1 != UDT_U32_MAX) writer.WriteStringValue("clean name 1", info.CleanName1);
+			if(info.CleanName2 != UDT_U32_MAX) writer.WriteStringValue("clean name 2", info.CleanName2);
+		}
 
 		writer.EndObject();
 	}
@@ -767,6 +800,14 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Captures, &captureBuffers) == (s32)udtErrorCode::None)
 		{
 			WriteCaptures(jsonWriter, captureBuffers, demoIndex);
+		}
+	}
+
+	{
+		udtParseDataScoreBuffers scoreBuffers;
+		if(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::Scores, &scoreBuffers) == (s32)udtErrorCode::None)
+		{
+			WriteScores(jsonWriter, scoreBuffers, demoIndex);
 		}
 	}
 

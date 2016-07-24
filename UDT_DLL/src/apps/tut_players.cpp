@@ -265,10 +265,11 @@ struct PlayerPrinter
 
 		udtCuContext* const cuContext = _cuContext;
 		const u32 protocol = udtGetProtocolByFilePath(filePath);
-		const s32 firstPlayerIdx = udtGetIdConfigStringIndex((u32)udtConfigStringIndex::FirstPlayer, protocol);
-		if(firstPlayerIdx < 0)
+
+		s32 firstPlayerIdx;
+		if(!udtGetIdMagicNumber(&firstPlayerIdx, (u32)udtMagicNumberType::ConfigStringIndex, (s32)udtConfigStringIndex::FirstPlayer, protocol, (u32)udtMod::None))
 		{
-			PrintError("Failed to get the first index of player config strings");
+			PrintError("Failed to get the index of the first player config string");
 			return false;
 		}
 
@@ -348,12 +349,12 @@ private:
 		{
 			AnalyzeGameState(*message.GameStateOrSnapshot.GameState);
 		}
-		else if(message.ServerCommandCount > 0 && 
+		else if(message.CommandCount > 0 && 
 				message.Commands != NULL && 
 				message.GameStateOrSnapshot.Snapshot != NULL)
 		{
 			const s32 serverTimeMs = message.GameStateOrSnapshot.Snapshot->ServerTimeMs;
-			for(u32 i = 0; i < message.ServerCommandCount; ++i)
+			for(u32 i = 0; i < message.CommandCount; ++i)
 			{
 				AnalyzeCommand(message.Commands[i], serverTimeMs);
 			}
@@ -475,8 +476,8 @@ int main(int argc, char** argv)
 		return 3;
 	}
 
-	udtInitLibrary();
 	udtSetCrashHandler(&CrashCallback);
+	udtInitLibrary();
 
 	PlayerPrinter printer;
 	if(printer.Init())

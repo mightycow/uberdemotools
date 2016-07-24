@@ -1,3 +1,9 @@
+0.7.2 (22.07.2016)
+ADD: A new "Scores" info tab
+FIX: Player (dis)connection detection (players who reconnected had their time range wrongly starting at the previous disconnect time)
+FIX: A long-standing memory leak happening in all batch-processing operations
+FIX: All but the first demo in time-shift batches were broken
+
 0.7.1 (01.05.2016)
 FIX: Divide by 0 exception when no memory was committed or the total job duration is less than 1 ms
 

@@ -25,8 +25,8 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtParserPlugInRawCommands);
 
-	udtVMLinearAllocator _stringAllocator;
-	udtVMArray<udtParseDataRawCommand> _commands;
+	udtVMLinearAllocator _stringAllocator { "ParserPlugInRawCommands::Strings" };
+	udtVMArray<udtParseDataRawCommand> _commands { "ParserPlugInRawCommands::CommandsArray" };
 	udtParseDataRawCommandBuffers _buffers;
 	s32 _gameStateIndex;
 };

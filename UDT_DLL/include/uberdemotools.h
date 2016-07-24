@@ -2,8 +2,8 @@
 
 
 #define  UDT_VERSION_MAJOR     1
-#define  UDT_VERSION_MINOR     2
-#define  UDT_VERSION_REVISION  1
+#define  UDT_VERSION_MINOR     3
+#define  UDT_VERSION_REVISION  0
 
 #define  UDT_QUOTE(name)            #name
 #define  UDT_STR(macro)             UDT_QUOTE(macro)
@@ -83,9 +83,11 @@
 typedef float  f32;
 typedef double f64;
 
-#define S32_MIN (-2147483647 - 1)
-#define S32_MAX (2147483647)
-#define U32_MAX (0xFFFFFFFF)
+#define UDT_S16_MIN (-32768)
+#define UDT_S16_MAX (32767)
+#define UDT_S32_MIN (-2147483647 - 1)
+#define UDT_S32_MAX (2147483647)
+#define UDT_U32_MAX (0xFFFFFFFF)
 
 #if defined(UDT_MSVC)
 #	if defined(UDT_CREATE_DLL)
@@ -134,7 +136,6 @@ struct udtErrorCode
 #undef UDT_ERROR_ITEM
 
 #define UDT_PROTOCOL_LIST(N) \
-	N(Invalid, NULL) \
 	N(Dm3 , ".dm3"  ) \
 	N(Dm48, ".dm_48") \
 	N(Dm66, ".dm_66") \
@@ -150,11 +151,10 @@ struct udtProtocol
 	enum Id
 	{
 		UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
-		AfterLastProtocol,
+		Count,
+		Invalid,
 		FirstProtocol = Dm3,
-		FirstCuttableProtocol = Dm66,
-		Count = AfterLastProtocol - 1,
-		LatestProtocol = Count
+		FirstCuttableProtocol = Dm66
 	};
 };
 #undef UDT_PROTOCOL_ITEM
@@ -195,7 +195,8 @@ Macro arguments:
 	N(Stats,            "match stats",        udtParserPlugInStats,            udtParseDataStatsBuffers) \
 	N(RawCommands,      "raw commands",       udtParserPlugInRawCommands,      udtParseDataRawCommandBuffers) \
 	N(RawConfigStrings, "raw config strings", udtParserPlugInRawConfigStrings, udtParseDataRawConfigStringBuffers) \
-	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers)
+	N(Captures,         "captures",           udtParserPlugInCaptures,         udtParseDataCaptureBuffers) \
+	N(Scores,           "scores",             udtParserPlugInScores,           udtParseDataScoreBuffers)
 
 #define UDT_PLUG_IN_ITEM(Enum, Desc, Type, OutputType) Enum,
 struct udtParserPlugIn
@@ -212,19 +213,20 @@ struct udtParserPlugIn
 	N(Gauntlet, "gauntlet", 0) \
 	N(MachineGun, "machine gun", 1) \
 	N(Shotgun, "shotgun", 2) \
-	N(Grenade, "grenade launcher", 3) \
-	N(Rocket, "rocket launcher", 4) \
-	N(Plasma, "plasma gun", 5) \
+	N(GrenadeLauncher, "grenade launcher", 3) \
+	N(RocketLauncher, "rocket launcher", 4) \
+	N(PlasmaGun, "plasma gun", 5) \
 	N(Railgun, "railgun", 6) \
 	N(LightningGun, "lightning gun", 7) \
 	N(BFG, "BFG", 8) \
 	N(NailGun, "nailgun", 9) \
 	N(ChainGun, "chaingun", 10) \
 	N(ProximityMineLauncher, "proximity mine launcher", 11) \
-	N(HeavyMachineGun, "heavy machine gun", 12)
+	N(HeavyMachineGun, "heavy machine gun", 12) \
+	N(GrapplingHook, "grappling hook", 13)
 
 #define UDT_WEAPON_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtWeaponBits
+struct udtWeaponMask
 {
 	enum Id
 	{
@@ -239,20 +241,7 @@ struct udtWeapon
 {
 	enum Id
 	{
-		Gauntlet,
-		MachineGun,
-		Shotgun,
-		GrenadeLauncher,
-		RocketLauncher,
-		PlasmaGun,
-		Railgun,
-		LightningGun,
-		BFG,
-		GrapplingHook,
-		NailGun,
-		ChainGun,
-		ProximityMineLauncher,
-		HeavyMachineGun,
+		UDT_WEAPON_LIST(UDT_WEAPON_ITEM)
 		Count
 	};
 };
@@ -274,8 +263,19 @@ struct udtWeapon
 	N(ArmorRegeneration, "armor regeneration", 12) \
 	N(Invulnerability, "invulnerability", 13)
 
+#define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum = Bit,
+struct udtPowerUp
+{
+	enum Id
+	{
+		UDT_POWER_UP_LIST(UDT_POWER_UP_ITEM)
+		Count
+	};
+};
+#undef UDT_POWER_UP_ITEM
+
 #define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtPowerUpBits
+struct udtPowerUpMask
 {
 	enum Id
 	{
@@ -285,7 +285,7 @@ struct udtPowerUpBits
 };
 #undef UDT_POWER_UP_ITEM
 
-#define UDT_MOD_LIST(N) \
+#define UDT_MEAN_OF_DEATH_LIST(N) \
 	N(Shotgun, "shotgun", 0) \
 	N(Gauntlet, "gauntlet", 1) \
 	N(MachineGun, "machine gun", 2) \
@@ -316,23 +316,29 @@ struct udtPowerUpBits
 	N(Grapple, "grapple", 27) \
 	N(TeamSwitch, "team switch", 28) \
 	N(Thaw, "thaw", 29) \
-	N(UnknownQlMod1, "unknown QL MOD #1", 30) \
-	N(HeavyMachineGun, "heavy machine gun", 31)
+	N(HeavyMachineGun, "heavy machine gun", 30)
 
-#define UDT_MOD_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtMeansOfDeathBits
+#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc, Bit) Enum = Bit,
+struct udtMeanOfDeath
 {
 	enum Id
 	{
-		UDT_MOD_LIST(UDT_MOD_ITEM)
-		AfterLast,
-		MissionPackStart = NailGun,
-		MissionPackEnd = Juiced,
-		QLStart = TeamSwitch,
-		QLEnd = HeavyMachineGun,
+		UDT_MEAN_OF_DEATH_LIST(UDT_MEAN_OF_DEATH_ITEM)
+		Count
 	};
 };
-#undef UDT_MOD_ITEM
+#undef UDT_MEAN_OF_DEATH_ITEM
+
+#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
+struct udtMeanOfDeathMask
+{
+	enum Id
+	{
+		UDT_MEAN_OF_DEATH_LIST(UDT_MEAN_OF_DEATH_ITEM)
+		AfterLast
+	};
+};
+#undef UDT_MEAN_OF_DEATH_ITEM
 
 #define UDT_PLAYER_MOD_LIST(N) \
 	N(Shotgun, "shotgun", 0) \
@@ -357,8 +363,19 @@ struct udtMeansOfDeathBits
 	N(Thaw, "thaw", 19) \
 	N(HeavyMachineGun, "heavy machine gun", 20)
 
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Enum = Bit,
+struct udtPlayerMeanOfDeath
+{
+	enum Id
+	{
+		UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+		Count
+	};
+};
+#undef UDT_PLAYER_MOD_ITEM
+
 #define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtPlayerMeansOfDeathBits
+struct udtPlayerMeanOfDeathMask
 {
 	enum Id
 	{
@@ -367,50 +384,6 @@ struct udtPlayerMeansOfDeathBits
 	};
 };
 #undef UDT_PLAYER_MOD_ITEM
-
-#define UDT_MEAN_OF_DEATH_LIST(N) \
-	N(Shotgun, "shotgun") \
-	N(Gauntlet, "gauntlet") \
-	N(MachineGun, "machine gun") \
-	N(Grenade, "grenade") \
-	N(GrenadeSplash, "grenade splash") \
-	N(Rocket, "rocket") \
-	N(RocketSplash, "rocket splash") \
-	N(Plasma, "plasma") \
-	N(PlasmaSplash, "plasma splash") \
-	N(Railgun, "railgun") \
-	N(Lightning, "lightning") \
-	N(BFG, "BFG") \
-	N(BFGSplash, "BFG splash") \
-	N(Water, "water") \
-	N(Slime, "slime") \
-	N(Lava, "lava") \
-	N(Crush, "crush") \
-	N(TeleFrag, "telefrag") \
-	N(Fall, "fall") \
-	N(Suicide, "suicide") \
-	N(TargetLaser, "target laser") \
-	N(TriggerHurt, "trigger hurt") \
-	N(NailGun, "nailgun") \
-	N(ChainGun, "chaingun") \
-	N(ProximityMine, "proximity mine") \
-	N(Kamikaze, "kamikaze") \
-	N(Juiced, "juiced") \
-	N(Grapple, "grapple") \
-	N(TeamSwitch, "team switch") \
-	N(Thaw, "thaw") \
-	N(HeavyMachineGun, "heavy machine gun")
-
-#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc) Enum,
-struct udtMeanOfDeath
-{
-	enum Id
-	{
-		UDT_MEAN_OF_DEATH_LIST(UDT_MEAN_OF_DEATH_ITEM)
-		Count
-	};
-};
-#undef UDT_MEAN_OF_DEATH_ITEM
 
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
@@ -724,7 +697,7 @@ struct udtTeamStatsField
 };
 #undef UDT_TEAM_STATS_ITEM
 
-struct udtGameTypeFlags
+struct udtGameTypeMask
 {
 	enum Id
 	{
@@ -739,25 +712,26 @@ struct udtGameTypeFlags
 };
 
 /* @TODO: investigate obelisk harvester domination */
+/* The first team mode is always TDM. */
 #define UDT_GAME_TYPE_LIST(N) \
-	N(SP, "SP", "Single Player", udtGameTypeFlags::HasFragLimit) \
-	N(FFA, "FFA", "Free for All", udtGameTypeFlags::HasFragLimit) \
-	N(Duel, "1v1", "Duel", udtGameTypeFlags::HasFragLimit) \
-	N(Race, "race", "Race", udtGameTypeFlags::None) \
-	N(HM, "HM", "HoonyMode", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::RoundBased) \
-	N(RedRover, "RR", "Red Rover", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::RoundBased) \
-	N(TDM, "TDM", "Team DeathMatch", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
-	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
-	N(CA, "CA", "Clan Arena", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased) \
-	N(CTF, "CTF", "Capture The Flag", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
-	N(OneFlagCTF, "1FCTF", "One Flag CTF", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
-	N(Obelisk, "OB", "Obelisk", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
-	N(Harvester, "HAR", "Harvester", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
-	N(Domination, "DOM", "Domination", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team) \
-	N(CTFS, "CTFS", "Capture Strike", udtGameTypeFlags::HasScoreLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased) \
-	N(NTF, "NTF", "Not Team Fortress", udtGameTypeFlags::Team | udtGameTypeFlags::HasCaptureLimit) \
-	N(TwoVsTwo, "2v2", "2v2 TDM", udtGameTypeFlags::HasFragLimit | udtGameTypeFlags::Team) \
-	N(FT, "FT", "Freeze Tag", udtGameTypeFlags::HasRoundLimit | udtGameTypeFlags::Team | udtGameTypeFlags::RoundBased)
+	N(SP, "SP", "Single Player", udtGameTypeMask::HasFragLimit) \
+	N(FFA, "FFA", "Free for All", udtGameTypeMask::HasFragLimit) \
+	N(Duel, "1v1", "Duel", udtGameTypeMask::HasFragLimit) \
+	N(Race, "race", "Race", udtGameTypeMask::None) \
+	N(HM, "HM", "HoonyMode", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::RoundBased) \
+	N(RedRover, "RR", "Red Rover", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::RoundBased) \
+	N(TDM, "TDM", "Team DeathMatch", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(CBTDM, "CBTDM", "ClanBase Team DeathMatch", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(CA, "CA", "Clan Arena", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased) \
+	N(CTF, "CTF", "Capture The Flag", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(OneFlagCTF, "1FCTF", "One Flag CTF", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(Obelisk, "OB", "Obelisk", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(Harvester, "HAR", "Harvester", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(Domination, "DOM", "Domination", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team) \
+	N(CTFS, "CTFS", "Capture Strike", udtGameTypeMask::HasScoreLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased) \
+	N(NTF, "NTF", "Not Team Fortress", udtGameTypeMask::Team | udtGameTypeMask::HasCaptureLimit) \
+	N(TwoVsTwo, "2v2", "2v2 TDM", udtGameTypeMask::HasFragLimit | udtGameTypeMask::Team) \
+	N(FT, "FT", "Freeze Tag", udtGameTypeMask::HasRoundLimit | udtGameTypeMask::Team | udtGameTypeMask::RoundBased)
 	
 #define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Enum,
 struct udtGameType
@@ -897,7 +871,7 @@ extern "C"
 #pragma pack(push, 1)
 
 #if defined(__cplusplus)
-	struct udtParseArgFlags
+	struct udtParseArgFlag
 	{
 		enum Id
 		{
@@ -953,7 +927,7 @@ extern "C"
 		/* Unused in batch operations. */
 		u32 FileOffset;
 
-		/* Of type udtParseArgFlags::Id. */
+		/* See udtParseArgFlag::Id. */
 		u32 Flags;
 
 		/* Minimum duration, in milli-seconds, between 2 consecutive calls to ProgressCb. */
@@ -1035,7 +1009,7 @@ extern "C"
 		};
 	};
 
-	struct udtPatternSearchArgFlags
+	struct udtPatternSearchArgMask
 	{
 		enum Id
 		{
@@ -1055,7 +1029,7 @@ extern "C"
 		};
 	};
 
-	struct udtStringMatchingRuleFlags
+	struct udtStringMatchingRuleMask
 	{
 		enum Id
 		{
@@ -1078,7 +1052,7 @@ extern "C"
 		/* Of type udtStringComparisonMode::Id. */
 		u32 ComparisonMode;
 
-		/* Check against the bits defined in udtStringMatchingRuleFlags::Id. */
+		/* See udtStringMatchingRuleMask::Id. */
 		u32 Flags;
 	}
 	udtStringMatchingRule;
@@ -1116,7 +1090,7 @@ extern "C"
 		/* Ignored if player name rules are properly defined. */
 		s32 PlayerIndex;
 
-		/* Of type udtPatternSearchArgFlags::Id. */
+		/* See udtPatternSearchArgMask::Id. */
 		u32 Flags;
 	}
 	udtPatternSearchArg;
@@ -1227,7 +1201,7 @@ extern "C"
 	UDT_ENFORCE_API_STRUCT_SIZE(udtChatPatternArg)
 
 #if defined(__cplusplus)
-	struct udtFragRunPatternArgFlags
+	struct udtFragRunPatternArgMask
 	{
 		enum Id
 		{
@@ -1257,7 +1231,7 @@ extern "C"
 		u32 TimeMode;
 
 		/* Boolean options. */
-		/* See udtFragRunPatternArgFlags. */
+		/* See udtFragRunPatternArgMask. */
 		u32 Flags;
 		
 		/* All the allowed weapons. */
@@ -2024,7 +1998,7 @@ extern "C"
 	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataRawConfigStringBuffers)
 
 #if defined(__cplusplus)
-	struct udtParseDataCaptureFlags
+	struct udtParseDataCaptureMask
 	{
 		enum Id
 		{
@@ -2069,7 +2043,7 @@ extern "C"
 		/* Not always available: check for the DistanceValid bit of Flags. */
 		f32 Distance;
 
-		/* Check the bits against values in udtParseDataCaptureFlags::Id. */
+		/* See udtParseDataCaptureFlags::Id. */
 		u32 Flags;
 
 		/* Index of the player who capped (the "client number"). */
@@ -2103,6 +2077,94 @@ extern "C"
 	}
 	udtParseDataCaptureBuffers;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataCaptureBuffers)
+
+#if defined(__cplusplus)
+	struct udtParseDataScoreMask
+	{
+		enum Id
+		{
+			TeamBased = UDT_BIT(0)
+		};
+	};
+#endif
+
+	typedef struct udtParseDataScore_s
+	{
+		/* The index of the current gamestate. */
+		s32 GameStateIndex;
+
+		/* The first snapshot from which this is valid. */
+		s32 ServerTimeMs;
+
+		/* First place player or red team score. */
+		s32 Score1; 
+
+		/* Second place player or blue team score. */
+		s32 Score2;
+
+		/* First place player client number or 0. */
+		u32 Id1;
+
+		/* Second place player client number or 1. */
+		u32 Id2;
+
+		/* See udtParseDataScoreMask::Id. */
+		u32 Flags;
+
+		/* First place player name. */
+		u32 Name1;
+
+		/* String length. */
+		u32 Name1Length;
+
+		/* Second place player name. */
+		u32 Name2;
+
+		/* String length. */
+		u32 Name2Length;
+
+		/* First place player name. */
+		u32 CleanName1;
+
+		/* String length. */
+		u32 CleanName1Length;
+
+		/* Second place player name. */
+		u32 CleanName2;
+
+		/* String length. */
+		u32 CleanName2Length;
+
+		/* Ignore this. */
+		s32 Reserved1;
+	}
+	udtParseDataScore;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScore)
+
+	/* Complete score data for all demos in a context. */
+	typedef struct udtParseDataScoreBuffers_s
+	{
+		/* The score descriptors. */
+		const udtParseDataScore* Scores;
+
+		/* Array length: the context' demo count. */
+		/* For a demo index, tells you which indices of Scores to use. */
+		const udtParseDataBufferRange* ScoreRanges;
+
+		/* Pointer to a buffer containing all UTF-8 strings. */
+		const u8* StringBuffer;
+
+		/* Ignore this. */
+		const void* Reserved1;
+
+		/* The length of the Scores array. */
+		u32 ScoreCount;
+
+		/* The byte count of the StringBuffer. */
+		u32 StringBufferSize;
+	}
+	udtParseDataScoreBuffers;
+	UDT_ENFORCE_API_STRUCT_SIZE(udtParseDataScoreBuffers)
 
 	typedef struct udtTimeShiftArg_s
 	{
@@ -2313,16 +2375,31 @@ extern "C"
 	typedef idVec idVec3[3];
 	typedef idVec idVec4[4];
 
+#if defined(__cplusplus)
+
+	struct udtEntityStateFlag
+	{
+		enum Id
+		{
+			AddedOrChanged,
+			NewEvent,
+			Count
+		};
+	};
+
+#endif
+
 #pragma pack(push, 1)
 
 	typedef enum
 	{
-		TR_STATIONARY,
-		TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
-		TR_LINEAR,
-		TR_LINEAR_STOP,
-		TR_SINE,        /* value = base + sin( time / duration ) * delta */
-		TR_GRAVITY
+		ID_TR_STATIONARY,
+		ID_TR_INTERPOLATE, /* non-parametric, but interpolate between snapshots */
+		ID_TR_LINEAR,
+		ID_TR_LINEAR_STOP,
+		ID_TR_SINE,        /* value = base + sin( time / duration ) * delta */
+		ID_TR_GRAVITY,
+		ID_TR_TYPE_COUNT
 	}
 	idTrajectoryType;
 
@@ -2577,6 +2654,12 @@ extern "C"
 		/* Pointer to the player state. */
 		const idPlayerStateBase* PlayerState;
 
+		/* An array of pointers to all entity states . */
+		const idEntityStateBase** Entities;
+
+		/* An array of flags for each entity state. */
+		const u8* EntityFlags;
+
 		/* An array of pointers to the entity states that changed or were added. */
 		const idEntityStateBase** ChangedEntities;
 
@@ -2595,16 +2678,16 @@ extern "C"
 		/* Execute all commands up to this sequence number before making the snapshot current. */
 		s32 CommandNumber;
 
-		/* How many entities have been transmitted. */
-		/* Length of the ChangedEntities array and the ChangedEntityFlags array. */
-		u32 EntityCount;
+		/* How many entities have changed or been added. */
+		/* Length of the ChangedEntities array. */
+		u32 ChangedEntityCount;
 
 		/* How many entities were removed. */
 		/* Length of the RemovedEntities array. */
 		u32 RemovedEntityCount;
 
-		/* Ignore this. */
-		s32 Reserved2;
+		/* Length of the Entities array. */
+		u32 EntityCount;
 	}
 	udtCuSnapshotMessage;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtCuSnapshotMessage)
@@ -2647,8 +2730,8 @@ extern "C"
 		/* An array of server-to-client string commands. */
 		const udtCuCommandMessage* Commands;
 
-		/* Length of the ServerCommandCount array. */
-		u32 ServerCommandCount;
+		/* Length of the Commands array. */
+		u32 CommandCount;
 
 		/* When non-zero, use GameStateOrSnapshot::GameState. */
 		/* Else, use GameStateOrSnapshot::Snapshot. */
@@ -2703,6 +2786,19 @@ extern "C"
 	N(GlobalItemPickup) \
 	N(GlobalSound) \
 	N(GlobalTeamSound) \
+	N(ItemRespawn) \
+	N(ItemPop) \
+	N(PlayerTeleportIn) \
+	N(PlayerTeleportOut) \
+	N(BulletHitFlesh) \
+	N(BulletHitWall) \
+	N(MissileHit) \
+	N(MissileMiss) \
+	N(MissileMissMetal) \
+	N(RailTrail) \
+	N(PowerUpQuad) \
+	N(PowerUpBattleSuit) \
+	N(PowerUpRegen) \
 	N(QL_Overtime) \
 	N(QL_GameOver)
 
@@ -2797,6 +2893,22 @@ extern "C"
 	};
 #undef UDT_POWER_UP_ITEM
 
+#define UDT_LIFE_STATS_LIST(N) \
+	N(Health) \
+	N(HoldableItem) \
+	N(Weapons) \
+	N(Armor) \
+	N(MaxHealth)
+
+	struct udtLifeStatsIndex
+	{
+		enum Id
+		{
+			UDT_LIFE_STATS_LIST(UDT_IDENTITY_WITH_COMMA)
+			Count
+		};
+	};
+
 #define UDT_PERSISTENT_STATS_LIST(N) \
 	N(FlagCaptures) \
 	N(Score) \
@@ -2838,9 +2950,10 @@ extern "C"
 	N(AwardDefense) \
 	N(AwardAssist) \
 	N(AwardDenied) \
-	N(HasTeamVoted)
+	N(HasTeamVoted) \
+	N(Spectator)
 
-	struct udtEntityStateFlags
+	struct udtEntityFlag
 	{
 		enum Id
 		{
@@ -2929,8 +3042,8 @@ extern "C"
 			WeaponRocketLauncher,
 			WeaponShotgun,
 			Count,
-			FirstAmmo = AmmoBFG,
-			LastAmmo = AmmoSlugs,
+			AmmoFirst = AmmoBFG,
+			AmmoLast = AmmoSlugs,
 			HoldableFirst = HoldableInvulnerability,
 			HoldableLast = HoldableTeleporter,
 			ItemFirst = ItemAmmoRegen,
@@ -2939,6 +3052,43 @@ extern "C"
 			FlagLast = FlagRed,
 			WeaponFirst = WeaponBFG,
 			WeaponLast = WeaponShotgun
+		};
+	};
+
+	struct udtPlayerMovementType
+	{
+		enum Id
+		{
+			Normal,         /* can accelerate and turn */
+			NoClip,         /* no collision at all */
+			Spectator,      /* still run into walls */
+			Dead,           /* no acceleration or turning, but free falling */
+			Freeze,         /* stuck in place with no control */
+			Intermission,   /* no movement or status bar */
+			SPIntermission, /* no movement or status bar */
+			Count
+		};
+	};
+
+	struct udtMagicNumberType
+	{
+		enum Id
+		{
+			PowerUpIndex,   /* idPlayerStateBase::powerups */
+			LifeStatsIndex, /* idPlayerStateBase::stats */
+			PersStatsIndex, /* idPlayerStateBase::persistant */
+			EntityType,     /* idEntityStateBase::eType */
+			EntityFlag,     /* idEntityStateBase::eFlags */
+			EntityEvent,    /* idEntityStateBase::event */
+			ConfigStringIndex,
+			Team,
+			GameType,
+			FlagStatus,
+			Weapon,             /* idPlayerStateBase::weapon and idEntityStateBase::weapon */
+			MeanOfDeath,
+			Item,               /* idEntityStateBase::modelindex */
+			PlayerMovementType, /* idPlayerStateBase::pm_type */
+			Count
 		};
 	};
 
@@ -2994,79 +3144,23 @@ extern "C"
 	/* Will clean up the string for printing by: */
 	/* - getting rid of Quake 3/Live and OSP color codes */
 	/* - removing unprintable characters for protocols <= 90 (no UTF-8 support) */
+	/* The protocol argument is of type udtProtocol::Id. */
 	/* The return value is of type udtErrorCode::Id. */
 	UDT_API(s32) udtCleanUpString(char* string, u32 protocol);
 
-	/* Gets the Quake config string index from the UDT index. */
-	/* udtConfigStringId is of type udtConfigStringIndex::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetIdConfigStringIndex(u32 udtConfigStringId, u32 protocol);
+	/* Finds the UDT number for a given Quake number. */
+	/* The magicNumberTypeId argument is of type udtMagicNumberType::Id. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The mod argument is of type udtMod::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtGetIdMagicNumber(s32* idNumber, u32 magicNumberTypeId, s32 udtNumber, u32 protocol, u32 mod);
 
-	/* Gets the UDT weapon number from the Quake number. */
-	/* The result is of type udtWeapon::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetUdtWeaponId(s32 idWeaponId, u32 protocol);
-
-	/* Gets the UDT mean of death number from the Quake number. */
-	/* The result is of type udtMeanOfDeath::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetUdtMeanOfDeathId(s32 idModId, u32 protocol);
-
-	/* Gets the Quake entity event number from the UDT number. */
-	/* udtEntityEventId is of type udtEntityEvent::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetIdEntityEventId(u32 udtEntityEventId, u32 protocol);
-
-	/* Gets the Quake entity type number from the UDT number. */
-	/* udtEntityType is of type udtEntityType::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetIdEntityType(u32 udtEntityType, u32 protocol);
-
-	/* Gets the Quake player state power-up index from the UDT number. */
-	/* udtPowerUpId is of type udtPowerUpIndex::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetIdPowerUpIndex(u32 udtPowerUpId, u32 protocol);
-
-	/* Gets the Quake player state persistant stats index from the UDT number. */
-	/* udtPersStatsId is of type udtPersStatsIndextype ::Id. */
-	/* Returns -1 when not available. */
-	UDT_API(s32) udtGetIdPersStatsIndex(u32 udtPersStatsId, u32 protocol);
-
-	/* Gets the Quake entity state bit mask from the UDT number. */
-	/* udtEntityStateFlagId is of type udtEntityStateFlags ::Id. */
-	/* Returns 0 when not available. */
-	UDT_API(s32) udtGetIdEntityStateFlag(u32 udtEntityStateFlagId, u32 protocol);
-
-	/* Gets the UDT flag status number from the Quake number. */
-	/* The result is of type udtFlagStatus::Id. */
-	/* Returns -1 when not available. */
-	/* The flag status for both flags is encoded with 2 characters in a config string. */
-	/* Each character being one of "0", "1" or "2". Flag status config string example: "01". */
-	/* The first one is for the red flag, the second one for the blue flag. */
-	/* To get the index of that config string, call udtGetIdConfigStringIndex with udtConfigStringIndex::FlagStatus. */
-	UDT_API(s32) udtGetUdtFlagStatusId(s32 idFlagStatusId, u32 protocol);
-
-	/* Gets the UDT team number from the Quake number. */
-	/* The result is of type udtTeam::Id. */
-	/* Returns -1 when not available. */
-	/* The team of a player is encoded as "t" in his config string. */
-	/* To get the player's config string index: */
-	/* call udtGetIdConfigStringIndex with udtConfigStringIndex::FirstPlayer and add the player's client number to that. */
-	UDT_API(s32) udtGetUdtTeamId(s32 idTeamId, u32 protocol);
-
-	/* Gets the UDT game type number from the Quake number. */
-	/* mod is of type udtMod::Id. */
-	/* The result is of type udtGameType::Id. */
-	/* Returns -1 when not available. */
-	/* The game type is encoded as "g_gametype" in the server info config string. */
-	/* The server info config string is always at index 0. */
-	UDT_API(s32) udtGetUdtGameTypeId(s32 idGameTypeId, u32 protocol, u32 mod);
-
-	/* Gets the UDT item number from the Quake number. */
-	/* The result is of type udtItem::Id. */
-	/* Returns -1 when not available. */
-	/* Item ids are generally found encoded in idEntityStateBase::modelindex. */
-	UDT_API(s32) udtGetUdtItemId(s32 idItemId, u32 protocol);
+	/* Finds the Quake number for a given UDT number. */
+	/* The magicNumberTypeId argument is of type udtMagicNumberType::Id. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The mod argument is of type udtMod::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtGetUDTMagicNumber(s32* udtNumber, u32 magicNumberTypeId, s32 idNumber, u32 protocol, u32 mod);
 
 	/* Reads the integer value of a config string variable. */
 	/* The temp buffer is used for constructing a search string. */
@@ -3077,6 +3171,12 @@ extern "C"
 	/* The temp buffer is used for constructing a search string. */
 	/* The return value is of type udtErrorCode::Id. */
 	UDT_API(s32) udtParseConfigStringValueAsString(char* resBuf, u32 resBytes, char* tempBuf, u32 tempBytes, const char* varName, const char* configString);
+
+	/* Converts a player state to an entity state. */
+	/* Set extrapolate to a non-zero value to enable extrapolation. */
+	/* The protocol argument is of type udtProtocol::Id. */
+	/* The return value is of type udtErrorCode::Id. */
+	UDT_API(s32) udtPlayerStateToEntityState(idEntityStateBase* es, const idPlayerStateBase* ps, u32 extrapolate, s32 serverTimeMs, u32 protocol);
 
 #ifdef __cplusplus
 }

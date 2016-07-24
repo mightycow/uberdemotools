@@ -30,14 +30,14 @@ public:
 
 	udtVMLinearAllocator& GetStringAllocator() { return _stringAllocator; }
 
-	udtVMArray<udtParseDataObituary> Obituaries;
+	udtVMArray<udtParseDataObituary> Obituaries { "ObituariesAnalyzer::ObituariesArray" };
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtObituariesAnalyzer);
 
 	udtString AllocatePlayerName(udtBaseParser& parser, s32 playerIdx);
 
-	udtVMLinearAllocator _stringAllocator;
+	udtVMLinearAllocator _stringAllocator { "ObituariesAnalyzer::Strings" };
 	udtVMLinearAllocator* _tempAllocator;
 	s32 _playerTeams[64];
 	s32 _gameStateIndex;

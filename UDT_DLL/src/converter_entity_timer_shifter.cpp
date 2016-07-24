@@ -4,7 +4,6 @@
 
 udtdEntityTimeShifterPlugIn::udtdEntityTimeShifterPlugIn()
 {
-	_tempAllocator.Init(1 << 16, "UDTDemoEntityTimeShifterPlugIn::Temp");
 }
 
 udtdEntityTimeShifterPlugIn::~udtdEntityTimeShifterPlugIn()
@@ -77,13 +76,16 @@ void udtdEntityTimeShifterPlugIn::CopySnapshot(udtdSnapshotData& dest, const udt
 
 void udtdEntityTimeShifterPlugIn::FixSnapshot(udtdSnapshotData& dest, const udtdSnapshotData& source)
 {
+	const s32 entityTypePlayerId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Player, _protocol);
+	const s32 entityFlagDead = GetIdEntityStateFlagMask(udtEntityFlag::Dead, _protocol);
+	const s32 entityFlagTeleportBit = GetIdEntityStateFlagMask(udtEntityFlag::TeleportBit, _protocol);
 	for(s32 i = 0; i < MAX_GENTITIES; ++i)
 	{
 		const udtdClientEntity& sourceEntity = source.Entities[i];
 		udtdClientEntity& destEntity = dest.Entities[i];
 		if(sourceEntity.Valid &&
-		   sourceEntity.EntityState.eType == ET_PLAYER &&
-		   (sourceEntity.EntityState.eFlags & EF_DEAD) == 0 &&
+		   sourceEntity.EntityState.eType == entityTypePlayerId &&
+		   (sourceEntity.EntityState.eFlags & entityFlagDead) == 0 &&
 		   sourceEntity.EntityState.clientNum == destEntity.EntityState.clientNum)
 		{
 			destEntity.Valid = true;
@@ -95,13 +97,13 @@ void udtdEntityTimeShifterPlugIn::FixSnapshot(udtdSnapshotData& dest, const udtd
 				destEntity.EntityState.pos.trDelta[j] = sourceEntity.EntityState.pos.trDelta[j];
 			}
 
-			if(sourceEntity.EntityState.eFlags & EF_TELEPORT_BIT)
+			if(sourceEntity.EntityState.eFlags & entityFlagTeleportBit)
 			{
-				destEntity.EntityState.eFlags |= EF_TELEPORT_BIT;
+				destEntity.EntityState.eFlags |= entityFlagTeleportBit;
 			}
 			else
 			{
-				destEntity.EntityState.eFlags &= ~EF_TELEPORT_BIT;
+				destEntity.EntityState.eFlags &= ~entityFlagTeleportBit;
 			}
 		}
 	}
