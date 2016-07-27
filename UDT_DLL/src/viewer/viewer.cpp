@@ -1031,7 +1031,7 @@ void Viewer::ProcessEvent(const Event& event)
 
 void Viewer::RenderNormal(const RenderParams& renderParams)
 {
-	if(_demo.GetSnapshotCount() == 0)
+	if(!_demo.IsValid())
 	{
 		RenderNoDemo(renderParams);
 		return;
@@ -1714,8 +1714,11 @@ void Viewer::Render(const RenderParams& renderParams)
 	switch(_appState)
 	{
 		case AppState::FinishDemoLoading:
-			FinishLoadingDemo();
-			if(_profileMode)
+			if(_demo.IsValid())
+			{
+				FinishLoadingDemo();
+			}
+			if(_demo.IsValid() && _profileMode)
 			{
 				_appState = AppState::GeneratingHeatMaps;
 				StartGeneratingHeatMaps();
