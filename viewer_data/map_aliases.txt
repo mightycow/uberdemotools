@@ -3,9 +3,13 @@ hub3aeroq3 aerowalk
 ztn3tourney1 bloodrun
 ztn3dm1 bloodrun
 ztntourney1 bloodrun
+bloodrunintel bloodrun
+bloodrunblue bloodrun
 q3dm6 campgrounds
 pro-q3dm6 campgrounds
 qzdm6 campgrounds
+campgroundsintel campgrounds
+campgroundsblue campgrounds
 ospdm5a deepinside
 q3shw24 dreadfulplace
 q3dm14 grimdungeons
