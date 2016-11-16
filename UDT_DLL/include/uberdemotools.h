@@ -508,6 +508,7 @@ struct udtMatchStatsDataType
 	N(DamageGiven, "damage given", BiggerWins, Positive) \
 	N(DamageReceived, "damage received", SmallerWins, Positive) \
 	N(TeamDamage, "team damage", SmallerWins, Positive) \
+	N(TeleFrags, "telefrags", BiggerWins, Positive) \
 	N(ArmorTaken, "armor taken", BiggerWins, Positive) \
 	N(HealthTaken, "health taken", BiggerWins, Positive) \
 	N(Captures, "captures", BiggerWins, Positive) \

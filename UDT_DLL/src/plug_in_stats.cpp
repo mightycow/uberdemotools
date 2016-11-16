@@ -1220,6 +1220,10 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 		PLAYER_FIELD(YellowArmorPickups, 6),
 		PLAYER_FIELD(GreenArmorPickups, 7)
 		// We ignore more stuff that follows.
+		// 8: power-up mask
+		// for each power-up:
+		// - number of pickups
+		// - total carry time
 	};
 
 	static const udtStatsField playerFields1[] =
@@ -1228,7 +1232,9 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 		PLAYER_FIELD(Kills, 1),
 		PLAYER_FIELD(Deaths, 2),
 		PLAYER_FIELD(Suicides, 3),
-		// We skip some stuff...
+		PLAYER_FIELD(TeleFrags, 4),
+		PLAYER_FIELD(TeamDamage, 5),
+		PLAYER_FIELD(TeamKills, 6),
 		PLAYER_FIELD(RocketLauncherDamage, 7),
 		PLAYER_FIELD(RocketLauncherDirectHits, 8)
 		// We ignore more stuff that follows.
