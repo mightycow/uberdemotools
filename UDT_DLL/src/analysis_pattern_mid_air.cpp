@@ -96,10 +96,11 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 
 static bool IsAllowedUDTMeanOfDeath(u32 udtMod)
 {
-	// @NOTE: Only allows direct hits. So excludes RocketSplash and BFGSplash.
+	// @NOTE: Only allows direct hits. So excludes RocketSplash, BFGSplash and GrenadeSplash.
 	return
 		udtMod == (s32)udtMeanOfDeath::Rocket ||
-		udtMod == (s32)udtMeanOfDeath::BFG;
+		udtMod == (s32)udtMeanOfDeath::BFG ||
+		udtMod == (s32)udtMeanOfDeath::Grenade;
 }
 
 static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
@@ -112,7 +113,8 @@ static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 
 	return
 		udtWeaponId == (u32)udtWeapon::RocketLauncher ||
-		udtWeaponId == (u32)udtWeapon::BFG;
+		udtWeaponId == (u32)udtWeapon::BFG ||
+		udtWeaponId == (u32)udtWeapon::GrenadeLauncher;
 }
 
 static s32 RoundToNearest(s32 x, s32 n)
@@ -195,6 +197,7 @@ void udtMidAirPatternAnalyzer::StartAnalysis()
 	_gameStateIndex = -1;
 	_rocketSpeed = -1.0f;
 	_bfgSpeed = -1.0f;
+	_midairObituaries = false;
 	memset(_projectiles, 0, sizeof(_projectiles));
 	memset(_players, 0, sizeof(_players));
 }
@@ -215,12 +218,26 @@ void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbac
 		_players[i].Position[1] = 0.0f;
 		_players[i].Position[2] = 0.0f;
 	}
+
+	int cpmaVersion;
+	if(GetCPMAVersion(cpmaVersion, PlugIn->GetTempAllocator(), parser.GetConfigString(CS_SERVERINFO)) && cpmaVersion >= 150)
+	{
+		_midairObituaries = true;
+	}
 }
 
 void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
+	if(_midairObituaries)
+	{
+		ProcessMidairObituaries(arg, parser, trackedPlayerIndex);
+		return;
+	}
+
+	const udtMidAirPatternArg& extraInfo = GetExtraInfo<udtMidAirPatternArg>();
 	const s32 idEntityTypeMissileId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Missile, _protocol);
+	const u32 allowedWeapons = extraInfo.AllowedWeapons & (~u32(udtWeaponMask::GrenadeLauncher));
 
 	// Update the rocket speed if needed.
 	if(_rocketSpeed == -1.0f)
@@ -347,10 +364,9 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 			continue;
 		}
 
-		const udtMidAirPatternArg& extraInfo = GetExtraInfo<udtMidAirPatternArg>();
 		u32 udtWeaponId;
 		if(!GetUDTWeaponFromUDTMeanOfDeath(udtWeaponId, obituary.MeanOfDeath) ||
-		   !IsAllowedUDTWeapon(udtWeaponId, extraInfo.AllowedWeapons))
+		   !IsAllowedUDTWeapon(udtWeaponId, allowedWeapons))
 		{
 			continue;
 		}
@@ -368,8 +384,8 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 			continue;
 		}
 
-		const u32 projectileDistance = (u32)Float3::Dist(projectile->CreationPosition, _players[targetIdx].Position);
-		if(projectileDistance < extraInfo.MinDistance)
+		const u32 projectileTimeMs = (u32)(arg.ServerTime - projectile->CreationTimeMs);
+		if(projectileTimeMs < extraInfo.MinProjectileTimeMs)
 		{
 			continue;
 		}
@@ -472,4 +488,81 @@ udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProj
 	}
 
 	return NULL;
+}
+
+void udtMidAirPatternAnalyzer::ProcessMidairObituaries(const udtSnapshotCallbackArg& arg, udtBaseParser& parser, s32 trackedPlayerIndex)
+{
+	const udtMidAirPatternArg& extraInfo = GetExtraInfo<udtMidAirPatternArg>();
+
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
+	{
+		if(!arg.ChangedEntities[i].IsNewEvent)
+		{
+			continue;
+		}
+
+		udtObituaryEvent obituary;
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
+		{
+			continue;
+		}
+
+		const idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+		if(es->generic1 <= 0)
+		{
+			continue;
+		}
+
+		const s32 targetIdx = obituary.TargetIndex;
+		if(targetIdx == trackedPlayerIndex)
+		{
+			continue;
+		}
+
+		const s32 attackerIdx = obituary.AttackerIndex;
+		if(attackerIdx == -1 || attackerIdx != trackedPlayerIndex)
+		{
+			continue;
+		}
+
+		if(!IsAllowedUDTMeanOfDeath(obituary.MeanOfDeath))
+		{
+			continue;
+		}
+		
+		u32 udtWeaponId;
+		if(!GetUDTWeaponFromUDTMeanOfDeath(udtWeaponId, obituary.MeanOfDeath) ||
+		   !IsAllowedUDTWeapon(udtWeaponId, extraInfo.AllowedWeapons))
+		{
+			continue;
+		}
+
+		const u32 victimAirTimeMs = (u32)es->time;
+		if(extraInfo.MinAirTimeMs > 0 && victimAirTimeMs < extraInfo.MinAirTimeMs)
+		{
+			continue;
+		}
+
+		const u32 projectileTimeMs = (u32)es->time2;
+		if(extraInfo.MinProjectileTimeMs > 0 && projectileTimeMs < extraInfo.MinProjectileTimeMs)
+		{
+			continue;
+		}
+
+		const u32 victimGroundDistance = (u32)es->origin[0];
+		parser._context->LogInfo("Distance: %u in obituary vs %u minimum", victimGroundDistance, extraInfo.MinGroundDistance);
+		if(extraInfo.MinGroundDistance > 0 && victimGroundDistance < extraInfo.MinGroundDistance)
+		{
+			continue;
+		}
+
+		const udtPatternSearchArg& info = PlugIn->GetInfo();
+		udtCutSection cut;
+		cut.VeryShortDesc = "midair";
+		cut.GameStateIndex = _gameStateIndex;
+		cut.StartTimeMs = arg.ServerTime - info.StartOffsetSec * 1000;
+		cut.EndTimeMs = arg.ServerTime + info.EndOffsetSec * 1000;
+		cut.PatternTypes = UDT_BIT((u32)udtPatternType::MidAirFrags);
+		CutSections.Add(cut);
+	}
 }

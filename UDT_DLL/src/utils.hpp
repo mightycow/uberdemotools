@@ -88,6 +88,7 @@ extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durati
 extern void        WriteStringToApiStruct(u32& offset, const udtString& string);
 extern void        WriteNullStringToApiStruct(u32& offset);
 extern void        PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol);
+extern bool        GetCPMAVersion(int& version, udtVMLinearAllocator& allocator, const udtString& serverInfoCS); // "1.5" -> 150, "1.55" -> 155
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.

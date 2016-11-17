@@ -1073,9 +1073,9 @@ namespace Uber.DemoTools
         public struct udtMidAirPatternArg
         {
             public UInt32 AllowedWeapons;
-            public UInt32 MinDistance;
+            public UInt32 MinProjectileTimeMs;
             public UInt32 MinAirTimeMs;
-            public Int32 Reserved1;
+            public UInt32 MinGroundDistance;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -1877,11 +1877,16 @@ namespace Uber.DemoTools
             {
                 weaponFlags |= (UInt32)udtWeaponMask.BFG;
             }
+            if(config.MidAirCutAllowGrenade)
+            {
+                weaponFlags |= (UInt32)udtWeaponMask.Grenade;
+            }
 
             var rules = new udtMidAirPatternArg();
             rules.AllowedWeapons = weaponFlags;
-            rules.MinDistance = (UInt32)Math.Max(0, config.MidAirCutMinDistance);
+            rules.MinProjectileTimeMs = (UInt32)Math.Max(0, config.MidAirCutMinProjectileTimeMs);
             rules.MinAirTimeMs = (UInt32)Math.Max(0, config.MidAirCutMinAirTimeMs);
+            rules.MinGroundDistance = (UInt32)Math.Max(0, config.MidAirCutMinGroundDistance);
 
             return rules;
         }

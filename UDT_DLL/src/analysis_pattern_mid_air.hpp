@@ -20,6 +20,7 @@ private:
 	struct ProjectileInfo;
 	void            AddProjectile(s32 idWeapon, const f32* position, s32 serverTimeMs);
 	ProjectileInfo* FindBestProjectileMatch(u32 udtWeapon, const f32* targetPosition, s32 serverTimeMs);
+	void            ProcessMidairObituaries(const udtSnapshotCallbackArg& arg, udtBaseParser& parser, s32 trackedPlayerIndex);
 
 	struct ProjectileInfo
 	{
@@ -45,4 +46,5 @@ private:
 	s32 _lastEventSequence;
 	f32 _rocketSpeed;
 	f32 _bfgSpeed;
+	bool _midairObituaries;
 };

@@ -685,3 +685,41 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 	es.loopSound = ps.loopSound;
 	es.generic1 = ps.generic1;
 }
+
+bool GetCPMAVersion(int& version, udtVMLinearAllocator& allocator, const udtString& serverInfoCS)
+{
+	udtVMScopedStackAllocator allocScope(allocator);
+
+	udtString gameName, gameVersion;
+	if(!serverInfoCS.IsValid() ||
+	   !ParseConfigStringValueString(gameName, allocator, "gamename", serverInfoCS.GetPtr()) ||
+	   !udtString::Equals(gameName, "cpma") ||
+	   !ParseConfigStringValueString(gameVersion, allocator, "gameversion", serverInfoCS.GetPtr()) ||
+	   udtString::IsNullOrEmpty(gameVersion))
+	{
+		return false;
+	}
+
+	char digits[3];
+	const int digitCount = sscanf(gameVersion.GetPtr(), "%c.%c%c", &digits[0], &digits[1], &digits[2]);
+	if(digitCount < 2)
+	{
+		return false;
+	}
+
+	const int digitScales[3] = { 100, 10, 1 };
+	int cpmaVersion = 0;
+	for(int i = 0; i < digitCount; ++i)
+	{
+		if(digits[i] < '0' || digits[i] > '9')
+		{
+			return false;
+		}
+
+		cpmaVersion += digitScales[i] * (int)(digits[i] - '0');
+	}
+
+	version = cpmaVersion;
+
+	return true;
+}

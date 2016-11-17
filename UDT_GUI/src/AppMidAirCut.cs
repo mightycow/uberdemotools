@@ -29,9 +29,9 @@ namespace Uber.DemoTools
         public void SaveToConfigObject(UdtConfig config)
         {
             int value;
-            if(int.TryParse(_minDistanceEditBox.Text, out value))
+            if(int.TryParse(_minProjectileTimeEditBox.Text, out value))
             {
-                config.MidAirCutMinDistance = value;
+                config.MidAirCutMinProjectileTimeMs = value;
             }
 
             if(int.TryParse(_minAirTimeEditBox.Text, out value))
@@ -39,8 +39,14 @@ namespace Uber.DemoTools
                 config.MidAirCutMinAirTimeMs = value;
             }
 
+            if(int.TryParse(_minGroundDistanceEditBox.Text, out value))
+            {
+                config.MidAirCutMinGroundDistance = value;
+            }
+
             config.MidAirCutAllowRocket = _allowRocketsCheckBox.IsChecked ?? false;
             config.MidAirCutAllowBFG = _allowBFGsCheckBox.IsChecked ?? false;
+            config.MidAirCutAllowGrenade = _allowGrenadesCheckBox.IsChecked ?? false;
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -49,24 +55,32 @@ namespace Uber.DemoTools
         }
 
         private App _app;
-        private TextBox _minDistanceEditBox;
+        private TextBox _minProjectileTimeEditBox;
         private TextBox _minAirTimeEditBox;
+        private TextBox _minGroundDistanceEditBox;
         private CheckBox _allowRocketsCheckBox;
         private CheckBox _allowBFGsCheckBox;
+        private CheckBox _allowGrenadesCheckBox;
 
         private FrameworkElement CreateTab()
         {
-            var minDistanceEditBox = new TextBox();
-            _minDistanceEditBox = minDistanceEditBox;
-            minDistanceEditBox.Width = 60;
-            minDistanceEditBox.Text = _app.Config.MidAirCutMinDistance.ToString();
-            minDistanceEditBox.ToolTip = "The minimum distance between the position where the projectile was shot from and the impact position. Setting it to 0 will not filter based on distance.";
+            var minProjectileTimeEditBox = new TextBox();
+            _minProjectileTimeEditBox = minProjectileTimeEditBox;
+            minProjectileTimeEditBox.Width = 60;
+            minProjectileTimeEditBox.Text = _app.Config.MidAirCutMinProjectileTimeMs.ToString();
+            minProjectileTimeEditBox.ToolTip = "The minimum amount of time the projectile was in existence prior to the hit, in milli-seconds.";
 
             var minAirTimeEditBox = new TextBox();
             _minAirTimeEditBox = minAirTimeEditBox;
             minAirTimeEditBox.Width = 60;
             minAirTimeEditBox.Text = _app.Config.MidAirCutMinAirTimeMs.ToString();
             minAirTimeEditBox.ToolTip = "The minimum amount of time the victim was in the air prior to the hit, in milli-seconds.";
+
+            var minGroundDistanceEditBox = new TextBox();
+            _minGroundDistanceEditBox = minGroundDistanceEditBox;
+            minGroundDistanceEditBox.Width = 60;
+            minGroundDistanceEditBox.Text = _app.Config.MidAirCutMinGroundDistance.ToString();
+            minGroundDistanceEditBox.ToolTip = "The minimum distance from the 'ground' the victim was at impact time, in Quake units.";
 
             var allowRocketsCheckBox = new CheckBox();
             _allowRocketsCheckBox = allowRocketsCheckBox;
@@ -80,13 +94,21 @@ namespace Uber.DemoTools
             allowBFGsCheckBox.VerticalAlignment = VerticalAlignment.Center;
             allowBFGsCheckBox.IsChecked = _app.Config.MidAirCutAllowBFG;
 
+            var allowGrenadesCheckBox = new CheckBox();
+            _allowGrenadesCheckBox = allowGrenadesCheckBox;
+            allowGrenadesCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            allowGrenadesCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            allowGrenadesCheckBox.IsChecked = _app.Config.MidAirCutAllowGrenade;
+
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Allow Rockets?", allowRocketsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow BFG?", allowBFGsCheckBox));
-            rulesPanelList.Add(App.CreateTuple("Min. Distance", minDistanceEditBox));
-            rulesPanelList.Add(App.CreateTuple("Min. Air Time [ms]", minAirTimeEditBox));
+            rulesPanelList.Add(App.CreateTuple("CPMA: Allow Grenades?", allowGrenadesCheckBox));
+            rulesPanelList.Add(App.CreateTuple("Min. Projectile Time [ms]", minProjectileTimeEditBox));
+            rulesPanelList.Add(App.CreateTuple("Min. Victim Air Time [ms]", minAirTimeEditBox));
+            rulesPanelList.Add(App.CreateTuple("CPMA: Min. Ground Distance", minGroundDistanceEditBox));
 
-            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 120, 5);
+            var rulesPanel = WpfHelper.CreateDualColumnPanel(rulesPanelList, 160, 5);
             rulesPanel.HorizontalAlignment = HorizontalAlignment.Center;
             rulesPanel.VerticalAlignment = VerticalAlignment.Center;
 
@@ -103,10 +125,13 @@ namespace Uber.DemoTools
             helpTextBlock.Margin = new Thickness(5);
             helpTextBlock.TextWrapping = TextWrapping.WrapWithOverflow;
             helpTextBlock.Text =
-                "Recommended minimum value for victim air time: 300 ms" +
-                "\nRecommended minimum value for projectile distance: 300 \"Quake units\"" + 
-                "\n\nIf you set a low min. distance like 300, it would be recommended to set the air time to be at least 600." +
-                "\nAlternatively, if you set a low min. air time like 300, it would be recommended to set the min. distance to at least 600.";
+                "\"Allow Grenades?\" and \"Min. Ground Distance\" are available only for CPMA 1.50+ demos and will be ignored for other demos.\n\n" +
+                "Notes for CPMA 1.50+:\n" +
+                "All numbers extracted from the demos are much more reliable.\n" +
+                "All direct hits against players in water/slime/lava are filtered out.\n" +
+                "The \"ground distance\" is the vertical distance from the player's collision model to the \"ground\", " + 
+                "so it doesn't account for horizontal movement and try to predict on which surface the victim was going to land on.\n" +
+                "The \"ground\" can be a solid surface, water, lava, slime or a player clip.";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);

@@ -1253,15 +1253,14 @@ extern "C"
 		/* See udtWeaponBits::Id. */
 		u32 AllowedWeapons;
 
-		/* The minimum distance between the projectile's  */
-		/* start (where the weapon was fired) and end (position of impact) points. */
-		u32 MinDistance;
+		/* The minimum amount of time the projectile must have existed prior to the hit. */
+		u32 MinProjectileTimeMs;
 
-		/* The minimum time the victim was in the air prior to the hit.  */
+		/* The minimum amount of time the victim was in the air prior to the hit. */
 		u32 MinAirTimeMs;
 
-		/* Ignore this. */
-		s32 Reserved1;
+		/* The minimum distance the victim was from the ground/water/lava/slime when he died. */
+		u32 MinGroundDistance;
 	}
 	udtMidAirPatternArg;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtMidAirPatternArg)
