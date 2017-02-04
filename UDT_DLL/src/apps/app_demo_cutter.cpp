@@ -238,10 +238,12 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 	info.OutputFolderPath = outputFolder;
 	
 	udtCut cut;
+	memset(&cut, 0, sizeof(cut));
 	cut.StartTimeMs = startSec * 1000;
 	cut.EndTimeMs = endSec * 1000;
 
 	udtCutByTimeArg cutInfo;
+	memset(&cutInfo, 0, sizeof(cutInfo));
 	cutInfo.CutCount = 1;
 	cutInfo.Cuts = &cut;
 
@@ -282,10 +284,12 @@ static bool CutByChatBatch(udtParseArg& parseArg, const udtFileInfo* files, cons
 	threadInfo.MaxThreadCount = (u32)config.MaxThreadCount;
 
 	udtChatPatternArg chatInfo;
+	memset(&chatInfo, 0, sizeof(chatInfo));
 	chatInfo.Rules = config.ChatRules.GetStartAddress();
 	chatInfo.RuleCount = config.ChatRules.GetSize();
 
 	udtPatternInfo patternInfo;
+	memset(&patternInfo, 0, sizeof(patternInfo));
 	patternInfo.Type = (u32)udtPatternType::Chat;
 	patternInfo.TypeSpecificInfo = &chatInfo;
 
@@ -377,10 +381,12 @@ static bool CutByMatchBatch(udtParseArg& parseArg, const udtFileInfo* files, con
 	threadInfo.MaxThreadCount = config.MaxThreadCount;
 
 	udtMatchPatternArg matchInfo;
+	memset(&matchInfo, 0, sizeof(matchInfo));
 	matchInfo.MatchStartOffsetMs = (u32)config.StartOffsetSec * 1000;
 	matchInfo.MatchEndOffsetMs = (u32)config.EndOffsetSec * 1000;
 
 	udtPatternInfo patternInfo;
+	memset(&patternInfo, 0, sizeof(patternInfo));
 	patternInfo.Type = (u32)udtPatternType::Matches;
 	patternInfo.TypeSpecificInfo = &matchInfo;
 
@@ -679,6 +685,7 @@ int udt_main(int argc, char** argv)
 	else
 	{
 		udtFileListQuery query;
+		memset(&query, 0, sizeof(query));
 		query.FileFilter = &KeepOnlyCuttableDemoFiles;
 		query.FolderPath = udtString::NewConstRef(inputPath);
 		query.Recursive = options.Recursive;
