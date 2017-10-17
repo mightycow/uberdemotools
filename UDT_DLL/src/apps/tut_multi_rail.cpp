@@ -145,13 +145,11 @@ struct Obituary
 
 static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity, udtProtocol::Id protocol)
 {	
-	// Ideally, you should get and test those once before parsing instead of 
-	// querying those values and over.
-	
+	// Should get these values once before parsing instead of over and over during parsing.
 	s32 obituaryEvtId;
 	s32 eventTypeId;
-	if(!udtGetIdMagicNumber(&obituaryEvtId, udtMagicNumberType::EntityEvent, (u32)udtEntityEvent::Obituary, protocol, udtMod::None) ||
-	   !udtGetIdMagicNumber(&eventTypeId, udtMagicNumberType::EntityType, (u32)udtEntityType::Event, protocol, udtMod::None))
+	if(udtGetIdMagicNumber(&obituaryEvtId, udtMagicNumberType::EntityEvent, (u32)udtEntityEvent::Obituary, protocol, udtMod::None) != udtErrorCode::None ||
+	   udtGetIdMagicNumber(&eventTypeId, udtMagicNumberType::EntityType, (u32)udtEntityType::Event, protocol, udtMod::None) != udtErrorCode::None)
 	{
 		return false;
 	}
@@ -177,8 +175,9 @@ static bool IsObituaryEvent(Obituary& obituary, const idEntityStateBase& entity,
 		attackerIdx = -1;
 	}
 
+	// Should get this value once before parsing instead of over and over during parsing.
 	s32 udtMod;
-	if(!udtGetUDTMagicNumber(&udtMod, (u32)udtMagicNumberType::MeanOfDeath, entity.eventParm, (u32)protocol, (u32)udtMod::None))
+	if(udtGetUDTMagicNumber(&udtMod, (u32)udtMagicNumberType::MeanOfDeath, entity.eventParm, (u32)protocol, (u32)udtMod::None) != udtErrorCode::None)
 	{
 		return false;
 	}
