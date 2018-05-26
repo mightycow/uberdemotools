@@ -59,9 +59,12 @@ private:
 	void ParseQLScoresDuelOld();
 	void ParseQ3Scores();
 	void ParseQ3ScoresDM3();
-	void ParseCPMAStats(bool endGameStats);
+	void ParseCPMAStats(bool endGameStats, bool newEncoding);
 	void ParseCPMAXStats2();
 	void ParseCPMAMStats();
+	void ParseCPMAXStats2a();
+	void ParseCPMAMStatsa();
+	void ParseCPMADuelEndScores();
 	void ParseCPMAXScores();
 	void ParseCPMADMScores();
 	void ParseQLScoresTDMVeryOld();
@@ -170,8 +173,11 @@ private:
 	s32 _cpmaScoreBlue;
 	s32 _cpmaRoundScoreRed;
 	s32 _cpmaRoundScoreBlue;
+	s32 _cpma150DuelEndScoresState;
 	s32 _firstPlaceScore;
 	s32 _secondPlaceScore;
 	s32 _lastMatchEndTime;
 	bool _disableStatsOverrides;
+	bool _cpma150ValidDuelEndScores;
+	bool _cpma150Forfeit;
 };
