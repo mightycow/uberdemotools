@@ -2416,7 +2416,14 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 		tokenizer->Tokenize(section.GetPtr());
 		if(tokenizer->GetArgCount() >= 1)
 		{
-			StringParseInt(value, tokenizer->GetArgString(0));
+			if(header.Field1 == udtPlayerStatsField::FlagTime)
+			{
+				StringParseSeconds(value, tokenizer->GetArgString(0));
+			}
+			else
+			{
+				StringParseInt(value, tokenizer->GetArgString(0));
+			}
 		}
 		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.Field1, value);
 	}
