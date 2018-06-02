@@ -188,7 +188,7 @@ Contact
 GitHub user: [mightycow](https://github.com/mightycow)  
 GitHub project page: [uberdemotools](https://github.com/mightycow/uberdemotools)
 
-myT @ QuakeNet on IRC  
+myT @ [Discord](https://discord.me/CPMA)
 myT @ [ESR](http://esreality.com/?a=users&user_id=37287)
 
 Official ESR forum thread: [UDT @ ESR](http://www.esreality.com/post/2691563/uberdemotools/)  
@@ -216,7 +216,7 @@ License
 The entire source code in this release is covered by the GPL.  
 See [COPYING.txt](https://github.com/mightycow/uberdemotools/blob/master/UDT_DLL/COPYING.txt) for the GNU GENERAL PUBLIC LICENSE.
 
-Uber Demo Tools (UDT) is Copyright (C) 2011-2016 Gian 'myT' Schellenbaum.  
+Uber Demo Tools (UDT) is Copyright (C) 2011-2018 Gian 'myT' Schellenbaum.  
 It is based on the Quake III Arena source code and the Challenge Quake 3 source code.
 
 The Quake III Arena source code is Copyright (C) 1999-2005 Id Software, Inc.  

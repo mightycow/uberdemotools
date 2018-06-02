@@ -3,7 +3,7 @@
 
 #define  UDT_VERSION_MAJOR     1
 #define  UDT_VERSION_MINOR     3
-#define  UDT_VERSION_REVISION  0
+#define  UDT_VERSION_REVISION  1
 
 #define  UDT_QUOTE(name)            #name
 #define  UDT_STR(macro)             UDT_QUOTE(macro)
