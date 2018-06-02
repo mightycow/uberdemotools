@@ -187,7 +187,7 @@ namespace Uber.DemoTools
         private const string GuiVersion = "0.7.2";
         private const uint MinimumDllVersionMajor = 1;
         private const uint MinimumDllVersionMinor = 3;
-        private const uint MinimumDllVersionRevision = 0;
+        private const uint MinimumDllVersionRevision = 1;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
         private static readonly List<string> DemoExtensions = new List<string>

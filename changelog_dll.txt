@@ -1,3 +1,7 @@
+1.3.1 (02.06.2018)
+ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands
+FIX: Flag possession time stats in CPMA demos
+
 1.3.0 (22.07.2016)
 ADD: A new scores analysis plug-in: udtParserPlugInScores
 ADD: New API functions: udtGetIdMagicNumber, udtGetUDTMagicNumber, udtPlayerStateToEntityState

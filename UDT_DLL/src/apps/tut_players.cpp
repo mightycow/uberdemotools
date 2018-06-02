@@ -267,7 +267,8 @@ struct PlayerPrinter
 		const u32 protocol = udtGetProtocolByFilePath(filePath);
 
 		s32 firstPlayerIdx;
-		if(!udtGetIdMagicNumber(&firstPlayerIdx, (u32)udtMagicNumberType::ConfigStringIndex, (s32)udtConfigStringIndex::FirstPlayer, protocol, (u32)udtMod::None))
+		if(udtGetIdMagicNumber(&firstPlayerIdx, (u32)udtMagicNumberType::ConfigStringIndex, (s32)udtConfigStringIndex::FirstPlayer, protocol, (u32)udtMod::None) != 
+		   udtErrorCode::None)
 		{
 			PrintError("Failed to get the index of the first player config string");
 			return false;

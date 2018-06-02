@@ -3,7 +3,7 @@
 
 #define  UDT_VERSION_MAJOR     1
 #define  UDT_VERSION_MINOR     3
-#define  UDT_VERSION_REVISION  0
+#define  UDT_VERSION_REVISION  1
 
 #define  UDT_QUOTE(name)            #name
 #define  UDT_STR(macro)             UDT_QUOTE(macro)
@@ -508,6 +508,7 @@ struct udtMatchStatsDataType
 	N(DamageGiven, "damage given", BiggerWins, Positive) \
 	N(DamageReceived, "damage received", SmallerWins, Positive) \
 	N(TeamDamage, "team damage", SmallerWins, Positive) \
+	N(TeleFrags, "telefrags", BiggerWins, Positive) \
 	N(ArmorTaken, "armor taken", BiggerWins, Positive) \
 	N(HealthTaken, "health taken", BiggerWins, Positive) \
 	N(Captures, "captures", BiggerWins, Positive) \

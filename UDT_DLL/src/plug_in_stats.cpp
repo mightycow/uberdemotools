@@ -9,10 +9,13 @@ static_assert((s32)udtPlayerStatsField::Count <= (s32)(UDT_PLAYER_STATS_MASK_BYT
 
 /*
 CPMA stats/scores commands:
-- mstats  : full stats for one player sent multiple times during a game
-- xstats2 : full stats for one player sent at the end of a game, encoded the same as mstats
-- xscores : team and player scores sent multiple times during a game
-- dmscores: first and second place client numbers for non-team games sent whenever it changes
+- mstats           full stats for one player sent multiple times
+- xstats2          full stats for one player sent once at the end of a game only, encoded the same as mstats
+- mstatsa          same as mstats but winner/loser have client numbers 0/1
+- xstats2a         same as xstats2 but winner/loser have client numbers 0/1
+- duelendscores    sent at the end of a 1v1/hm match, contains winner name, loser name, victory type
+- scores           team and player scores sent multiple times during a game
+- dmscores         first and second place client numbers for non-team games sent whenever it changes
 */
 
 
@@ -257,6 +260,9 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("dscores", ParseQLScoresDuelOld),
 		HANDLER("xstats2", ParseCPMAXStats2),
 		HANDLER("mstats", ParseCPMAMStats),
+		HANDLER("xstats2a", ParseCPMAXStats2a),
+		HANDLER("mstatsa", ParseCPMAMStatsa),
+		HANDLER("duelendscores", ParseCPMADuelEndScores),
 		HANDLER("xscores", ParseCPMAXScores),
 		HANDLER("dmscores", ParseCPMADMScores),
 		HANDLER("tdmscores", ParseQLScoresTDMVeryOld),
@@ -1150,16 +1156,9 @@ void udtParserPlugInStats::ParseQ3ScoresDM3()
 	}
 }
 
-void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
+void udtParserPlugInStats::ParseCPMAStats(bool endGameStats, bool newEncoding)
 {
 	if(_tokenizer->GetArgCount() < 3)
-	{
-		return;
-	}
-
-	if(!endGameStats && 
-	   _analyzer.Forfeited() && 
-	   GetValue(2) == 0)
 	{
 		return;
 	}
@@ -1220,6 +1219,10 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 		PLAYER_FIELD(YellowArmorPickups, 6),
 		PLAYER_FIELD(GreenArmorPickups, 7)
 		// We ignore more stuff that follows.
+		// 8: power-up mask
+		// for each power-up:
+		// - number of pickups
+		// - total carry time
 	};
 
 	static const udtStatsField playerFields1[] =
@@ -1228,7 +1231,9 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 		PLAYER_FIELD(Kills, 1),
 		PLAYER_FIELD(Deaths, 2),
 		PLAYER_FIELD(Suicides, 3),
-		// We skip some stuff...
+		PLAYER_FIELD(TeleFrags, 4),
+		PLAYER_FIELD(TeamDamage, 5),
+		PLAYER_FIELD(TeamKills, 6),
 		PLAYER_FIELD(RocketLauncherDamage, 7),
 		PLAYER_FIELD(RocketLauncherDirectHits, 8)
 		// We ignore more stuff that follows.
@@ -1271,20 +1276,71 @@ void udtParserPlugInStats::ParseCPMAStats(bool endGameStats)
 	}
 
 	ParsePlayerFields(clientNumber, playerFields1, (s32)UDT_COUNT_OF(playerFields1), offset);
+
+	if(endGameStats && newEncoding && clientNumber == 0 && _cpma150DuelEndScoresState == 1)
+	{
+		_cpma150DuelEndScoresState = 2;
+	}
+
+	if(endGameStats && newEncoding && clientNumber == 1 && _cpma150DuelEndScoresState == 2)
+	{
+		for(u32 i = 2; i < 64; ++i)
+		{
+			memset(_playerFields[i], 0, sizeof(_playerFields[i]));
+			memset(_playerFlags[i], 0, sizeof(_playerFlags[i]));
+		}
+		SetPlayerField(0, udtPlayerStatsField::TeamIndex, 0);
+		SetPlayerField(1, udtPlayerStatsField::TeamIndex, 0);
+		_cpma150ValidDuelEndScores = true;
+		_cpma150DuelEndScoresState = 0;
+	}
 }
 
 void udtParserPlugInStats::ParseCPMAXStats2()
 {
-	ParseCPMAStats(true);
+	ParseCPMAStats(true, false);
 }
 
 void udtParserPlugInStats::ParseCPMAMStats()
 {
-	ParseCPMAStats(false);
+	ParseCPMAStats(false, false);
+}
+
+void udtParserPlugInStats::ParseCPMAXStats2a()
+{
+	ParseCPMAStats(true, true);
+}
+
+void udtParserPlugInStats::ParseCPMAMStatsa()
+{
+	ParseCPMAStats(false, true);
+}
+
+void udtParserPlugInStats::ParseCPMADuelEndScores()
+{
+	const udtString winnerName = udtString::NewClone(_stringAllocator, _tokenizer->GetArgString(1));
+	const udtString loserName = udtString::NewClone(_stringAllocator, _tokenizer->GetArgString(2));
+	const udtString winnerNameClean = udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, winnerName);
+	const udtString loserNameClean = udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, loserName);
+	WriteStringToApiStruct(_playerStats[0].Name, winnerName);
+	WriteStringToApiStruct(_playerStats[1].Name, loserName);
+	WriteStringToApiStruct(_playerStats[0].CleanName, winnerNameClean);
+	WriteStringToApiStruct(_playerStats[1].CleanName, loserNameClean);
+
+	_firstPlaceClientNumber = 0;
+	_secondPlaceClientNumber = 1;
+	_cpma150ValidDuelEndScores = false;
+	_cpma150DuelEndScoresState = 1;
+	_cpma150Forfeit = GetValue(3) == 1;
 }
 
 void udtParserPlugInStats::ParseCPMAXScores()
 {
+	if(_cpma150ValidDuelEndScores)
+	{
+		return;
+	}
+
 	if(_tokenizer->GetArgCount() < 2)
 	{
 		return;
@@ -1333,6 +1389,11 @@ void udtParserPlugInStats::ParseCPMAXScores()
 
 void udtParserPlugInStats::ParseCPMADMScores()
 {
+	if(_cpma150ValidDuelEndScores)
+	{
+		return;
+	}
+
 	if(_tokenizer->GetArgCount() < 3 ||
 	   !_analyzer.IsMatchInProgress())
 	{
@@ -2355,7 +2416,14 @@ void udtParserPlugInStats::ParseCPMAPrintStatsPlayer(const udtString& message)
 		tokenizer->Tokenize(section.GetPtr());
 		if(tokenizer->GetArgCount() >= 1)
 		{
-			StringParseInt(value, tokenizer->GetArgString(0));
+			if(header.Field1 == udtPlayerStatsField::FlagTime)
+			{
+				StringParseSeconds(value, tokenizer->GetArgString(0));
+			}
+			else
+			{
+				StringParseInt(value, tokenizer->GetArgString(0));
+			}
 		}
 		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.Field1, value);
 	}
@@ -2528,6 +2596,8 @@ void udtParserPlugInStats::AddCurrentStats()
 	// Fix up the stats and save them.
 	//
 
+	const bool forfeited = _cpma150ValidDuelEndScores ? _cpma150Forfeit : _analyzer.Forfeited();
+	
 	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime() - _analyzer.TotalTimeOutDuration());
 
 	if(_stats.GameType == udtGameType::Invalid &&
@@ -2536,7 +2606,7 @@ void udtParserPlugInStats::AddCurrentStats()
 		_stats.GameType = _analyzer.GameType();
 	}
 
-	if(!_analyzer.Forfeited() &&
+	if(!forfeited &&
 	   !IsRoundBasedMode((udtGameType::Id)_stats.GameType))
 	{
 		if(_analyzer.OvertimeCount() == 0 &&
@@ -2568,7 +2638,7 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 		
 		// Fix the team index when needed and possible.
-		if(!IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
+		if(!IsBitSet(GetPlayerFlags(i), (u32)udtPlayerStatsField::TeamIndex) &&
 		   _playerTeamIndices[i] != -1)
 		{
 			SetPlayerField(i, udtPlayerStatsField::TeamIndex, _playerTeamIndices[i]);
@@ -2585,7 +2655,7 @@ void udtParserPlugInStats::AddCurrentStats()
 		s32 playersFound = 0;
 		for(s32 i = 0; i < 64; ++i)
 		{
-			if(IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) &&
+			if(IsBitSet(GetPlayerFlags(i), (u32)udtPlayerStatsField::TeamIndex) &&
 			   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] == (s32)udtTeam::Free)
 			{
 				playerIndices[playersFound++] = i;
@@ -2626,6 +2696,13 @@ void udtParserPlugInStats::AddCurrentStats()
 				break;
 			}
 		}
+	}
+
+	if(_cpma150ValidDuelEndScores)
+	{
+		// only keep client numbers 0 and 1
+		memset(&_playerFlags[2][0], 0, 62 * sizeof(_playerFlags[0]));
+		memset(&_playerFields[2][0], 0, 62 * sizeof(_playerFields[0]));
 	}
 
 	for(u32 i = 0; i < 64; ++i)
@@ -2685,7 +2762,7 @@ void udtParserPlugInStats::AddCurrentStats()
 
 		for(s32 j = 0; j < (s32)udtTeamStatsField::Count; ++j)
 		{
-			if(IsBitSet(teamFlags, j))
+			if(IsBitSet(teamFlags, (u32)j))
 			{
 				*teamFields++ = GetTeamFields(i)[j];
 			}
@@ -2705,7 +2782,7 @@ void udtParserPlugInStats::AddCurrentStats()
 
 		for(s32 j = 0; j < (s32)udtPlayerStatsField::Count; ++j)
 		{
-			if(IsBitSet(playerFlags, j))
+			if(IsBitSet(playerFlags, (u32)j))
 			{
 				*playerFields++ = GetPlayerFields(i)[j];
 			}
@@ -2725,7 +2802,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	{
 		s32 redScore = 0;
 		s32 blueScore = 0;
-		if(_analyzer.Forfeited() &&
+		if(forfeited &&
 		   _protocol >= udtProtocol::Dm73)
 		{
 			// Short-circuit the scores commands in case of a forfeit so we don't get the -999 scores.
@@ -2737,8 +2814,8 @@ void udtParserPlugInStats::AddCurrentStats()
 			WriteStringToApiStruct(_stats.SecondPlaceName, redScore > blueScore ? _blueString : _redString);
 		}
 		else if((_stats.ValidTeams & 3) == 3 &&
-				IsBitSet(GetTeamFlags(0), (s32)udtTeamStatsField::Score) &&
-				IsBitSet(GetTeamFlags(1), (s32)udtTeamStatsField::Score))
+				IsBitSet(GetTeamFlags(0), (u32)udtTeamStatsField::Score) &&
+				IsBitSet(GetTeamFlags(1), (u32)udtTeamStatsField::Score))
 		{
 			redScore = GetTeamFields(0)[udtTeamStatsField::Score];
 			blueScore = GetTeamFields(1)[udtTeamStatsField::Score];
@@ -2776,9 +2853,9 @@ void udtParserPlugInStats::AddCurrentStats()
 		for(s32 i = 0; i < 64; ++i)
 		{
 			if((_stats.ValidPlayers & ((u64)1 << (u64)i)) != 0 &&
-			   IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::Score))
+			   IsBitSet(GetPlayerFlags(i), (u32)udtPlayerStatsField::Score))
 			{
-				if(IsBitSet(GetPlayerFlags(i), (s32)udtPlayerStatsField::TeamIndex) && 
+				if(IsBitSet(GetPlayerFlags(i), (u32)udtPlayerStatsField::TeamIndex) && 
 				   GetPlayerFields(i)[udtPlayerStatsField::TeamIndex] != (s32)udtTeam::Spectators)
 				{
 					const s32 score = GetPlayerFields(i)[udtPlayerStatsField::Score];
@@ -2799,7 +2876,8 @@ void udtParserPlugInStats::AddCurrentStats()
 		}
 
 		if(_analyzer.Mod() == udtMod::CPMA &&
-		   _analyzer.Forfeited() &&
+		   forfeited &&
+		   !_cpma150Forfeit &&
 		   _firstPlaceClientNumber >= 0 &&
 		   _firstPlaceClientNumber < 64 &&
 		   _secondPlaceClientNumber >= 0 &&
@@ -2811,6 +2889,18 @@ void udtParserPlugInStats::AddCurrentStats()
 			_stats.FirstPlaceNameLength = _playerStats[_firstPlaceClientNumber].CleanNameLength;
 			_stats.SecondPlaceName = _playerStats[_secondPlaceClientNumber].CleanName;
 			_stats.SecondPlaceNameLength = _playerStats[_secondPlaceClientNumber].CleanNameLength;
+		}
+		else if(_analyzer.Mod() == udtMod::CPMA &&
+				_cpma150ValidDuelEndScores &&
+				IsBitSet(GetPlayerFlags(0), (u32)udtPlayerStatsField::Score) &&
+				IsBitSet(GetPlayerFlags(1), (u32)udtPlayerStatsField::Score))
+		{
+			_stats.FirstPlaceScore = GetPlayerFields(0)[udtPlayerStatsField::Score];
+			_stats.SecondPlaceScore = GetPlayerFields(1)[udtPlayerStatsField::Score];
+			_stats.FirstPlaceName = _playerStats[0].CleanName;
+			_stats.FirstPlaceNameLength = _playerStats[0].CleanNameLength;
+			_stats.SecondPlaceName = _playerStats[1].CleanName;
+			_stats.SecondPlaceNameLength = _playerStats[1].CleanNameLength;
 		}
 		else if(firstPlaceScore != UDT_S32_MIN &&
 				secondPlaceScore != UDT_S32_MIN &&
@@ -2900,7 +2990,7 @@ void udtParserPlugInStats::AddCurrentStats()
 	_stats.OverTimeType = (u32)_analyzer.OvertimeType();
 	_stats.Mod = _analyzer.Mod();
 	WriteStringToApiStruct(_stats.ModVersion, udtString::NewCloneFromRef(_stringAllocator, _analyzer.ModVersion()));
-	_stats.Forfeited = _analyzer.Forfeited() ? 1 : 0;
+	_stats.Forfeited = forfeited ? 1 : 0;
 	_stats.TimeOutCount = timeOutCount;
 	_stats.TotalTimeOutDurationMs = _analyzer.TotalTimeOutDuration();
 	_stats.MercyLimited = _analyzer.MercyLimited();
@@ -2933,6 +3023,9 @@ void udtParserPlugInStats::ClearStats(bool newGameState)
 	memset(_teamFields, 0, sizeof(_teamFields));
 	memset(_teamFlags, 0, sizeof(_teamFlags));
 	ResetCPMAPrintStats();
+	_cpma150DuelEndScoresState = 0;
+	_cpma150ValidDuelEndScores = false;
+	_cpma150Forfeit = false;
 
 	if(newGameState)
 	{
@@ -2992,9 +3085,9 @@ void udtParserPlugInStats::ComputePlayerAccuracies(s32 clientNumber)
 void udtParserPlugInStats::ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots)
 {
 	u8* const flags = GetPlayerFlags(clientNumber);
-	if(IsBitSet(flags, acc) ||
-	   !IsBitSet(flags, hits) ||
-	   !IsBitSet(flags, shots))
+	if(IsBitSet(flags, (u32)acc) ||
+	   !IsBitSet(flags, (u32)hits) ||
+	   !IsBitSet(flags, (u32)shots))
 	{
 		return;
 	}
@@ -3008,9 +3101,9 @@ void udtParserPlugInStats::ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 
 
 void udtParserPlugInStats::ComputePlayerRocketSkill(s32 clientNumber)
 {
-	const s32 skillIdx = (s32)udtPlayerStatsField::RocketLauncherSkill;
-	const s32 dmgIdx = (s32)udtPlayerStatsField::RocketLauncherDamage;
-	const s32 hitsIdx = (s32)udtPlayerStatsField::RocketLauncherHits;
+	const u32 skillIdx = (u32)udtPlayerStatsField::RocketLauncherSkill;
+	const u32 dmgIdx = (u32)udtPlayerStatsField::RocketLauncherDamage;
+	const u32 hitsIdx = (u32)udtPlayerStatsField::RocketLauncherHits;
 
 	u8* const flags = GetPlayerFlags(clientNumber);
 	if(IsBitSet(flags, skillIdx) ||
