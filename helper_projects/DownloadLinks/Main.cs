@@ -34,17 +34,17 @@ namespace Uber.DownloadLinks
         {
             using(var webClient = new WebClient())
             {
-                var pageData = webClient.DownloadString("http://giant.pourri.ch/snif.php?path=UDT/");
+                var pageData = webClient.DownloadString("http://myt.playmorepromode.com/udt/");
                 foreach(var link in _links)
                 {
-                    var regEx = new Regex(link.RegEx);
+                    var regEx = new Regex("\"(" + link.RegEx + ")\"");
                     var match = regEx.Match(pageData);
                     if(!match.Success)
                     {
                         continue;
                     }
 
-                    var downloadUrl = "http://giant.pourri.ch/UDT/" + match.Groups[0].Value;
+                    var downloadUrl = "http://myt.playmorepromode.com/udt/" + match.Groups[1].Value;
                     CreateRedirectionHTMLFile(link.FileName, link.Title, downloadUrl);
                 }
             }
