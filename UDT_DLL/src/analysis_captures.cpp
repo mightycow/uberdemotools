@@ -110,14 +110,15 @@ void udtCapturesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&
 	udtVMScopedStackAllocator allocScope(*_tempAllocator);
 
 	const udtProtocol::Id protocol = parser._inProtocol;
-	if(protocol >= udtProtocol::Dm73 && protocol <= udtProtocol::Dm91)
+	if(AreAllProtocolFlagsSet(protocol, udtProtocolFlags::QuakeLive))
 	{
 		_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageQLorOSP;
 		_processCommand = &udtCapturesAnalyzer::ProcessCommandMessageQLorOSP;
 		_processSnapshot = &udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP;
 	}
 	// @NOTE: EF_AWARD_CAP doesn't exist in dm3.
-	else if(protocol >= udtProtocol::Dm48 && protocol <= udtProtocol::Dm68)
+	else if(AreAllProtocolFlagsSet(protocol, udtProtocolFlags::Quake3) &&
+			protocol != udtProtocol::Dm3)
 	{
 		udtString gameName;
 		if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", parser.GetConfigString(CS_SERVERINFO).GetPtr()))
@@ -135,6 +136,12 @@ void udtCapturesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&
 				_processSnapshot = &udtCapturesAnalyzer::ProcessSnapshotMessageQLorOSP;
 			}
 		}
+	}
+	else
+	{
+		_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageDummy;
+		_processCommand = &udtCapturesAnalyzer::ProcessCommandMessageDummy;
+		_processSnapshot = &udtCapturesAnalyzer::ProcessSnapshotMessageDummy;
 	}
 
 	udtString mapName;
@@ -672,7 +679,7 @@ void udtCapturesAnalyzer::ProcessPlayerConfigStringQLorOSP(const char* configStr
 		_playerNames[playerIndex] = udtString::NewNull();
 	}
 
-	if(parser._inProtocol >= udtProtocol::Dm73 && parser._inProtocol <= udtProtocol::Dm90)
+	if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlagsEx::QL_ClanName))
 	{
 		udtString clan;
 		if(ParseConfigStringValueString(clan, *_tempAllocator, "cn", configString))
@@ -816,7 +823,7 @@ bool udtCapturesAnalyzer::ExtractPlayerIndexFromCaptureMessageQLorOSP(s32& playe
 	// dm_90: sprintf(name, "%s %s", cn, n) OR sprintf(name, "%s^7 %s", cn, n)
 	// dm_91: sprintf(name, "%s", n)
 
-	if(protocol == udtProtocol::Dm91)
+	if(!AreAllProtocolFlagsSet(protocol, udtProtocolFlagsEx::QL_ClanName))
 	{
 		for(s32 i = 0; i < 64; ++i)
 		{

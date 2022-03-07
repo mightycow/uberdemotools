@@ -1,4 +1,5 @@
 #include "string.hpp"
+#include "utils.hpp"
 
 #include <string.h>
 #include <ctype.h>
@@ -216,6 +217,11 @@ udtString udtString::NewNull()
 	return string;
 }
 
+static bool IsUppercase(char letter)
+{
+	return letter >= 'A' && letter <= 'Z';
+}
+
 udtString udtString::NewCamelCaseClone(udtVMLinearAllocator& allocator, const udtString& name)
 {
 	if(udtString::IsNullOrEmpty(name))
@@ -227,7 +233,15 @@ udtString udtString::NewCamelCaseClone(udtVMLinearAllocator& allocator, const ud
 	char* const start = fixed.GetWritePtr();
 	char* dest = start;
 	const char* src = start;
-	*dest++ = (char)::tolower((int)*src++);
+	if(IsUppercase(src[0]) && IsUppercase(src[1]))
+	{
+		*dest++ = *src++;
+	}
+	else
+	{
+		*dest++ = (char)::tolower((int)*src++);
+	}
+	
 	while(*src)
 	{
 		if(src[0] != ' ')
@@ -728,6 +742,7 @@ static bool IsLongOSPColorString(const udtString& string)
 
 u32 CleanUpString(char* string, udtProtocol::Id protocol)
 {
+	const bool allowUTF8 = AreAllProtocolFlagsSet(protocol, udtProtocolFlagsEx::QL_Unicode);
 	u32 newLength = 0;
 	char* const start = string;
 	char* dest = start;
@@ -743,10 +758,9 @@ u32 CleanUpString(char* string, udtProtocol::Id protocol)
 		{
 			source++;
 		}
-		// Protocols up to 90 : only keep printable codes.
-		// Protocols 91 and up: keep everything.
-		else if(protocol >= udtProtocol::Dm91 ||
-				(c >= 0x20 && c <= 0x7E))
+		// QL protocols up to 90 : only keep printable codes.
+		// QL protocols 91 and up: keep everything.
+		else if(allowUTF8 || (c >= 0x20 && c <= 0x7E))
 		{
 			*dest++ = c;
 			newLength++;
@@ -798,6 +812,32 @@ void udtString::RemoveCharacter(udtString& result, char toRemove)
 	*dest = '\0';
 
 	result.Length = newLength;
+}
+
+void udtString::TrimLeadingCharacter(udtString& result, char toRemove)
+{
+	if(IsNullOrEmpty(result))
+	{
+		return;
+	}
+
+	// Make sure we're not trying to modify a read-only string.
+	UDT_ASSERT_OR_RETURN(result.ReservedBytes > 0);
+
+	char* src = result.GetWritePtr();
+	if(*src != toRemove)
+	{
+		return;
+	}
+
+	u32 removed = 0;
+	while(*src++ == toRemove)
+	{
+		removed++;
+	}
+
+	result.Offset += removed;
+	result.Length += removed;
 }
 
 void udtString::TrimTrailingCharacter(udtString& result, char toRemove)

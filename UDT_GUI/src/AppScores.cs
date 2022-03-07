@@ -98,6 +98,10 @@ namespace Uber.DemoTools
             var scores = new ObservableCollection<ListViewItem>();
             if(demoInfo.TeamGameType)
             {
+                var isWolf = UDT_DLL.IsProtocolWolfenstein(demoInfo.ProtocolNumber);
+                _headerScore1.Content = isWolf ? "Axis Team" : "RED Team";
+                _headerScore2.Content = isWolf ? "Allies Team" : "BLUE Team";
+
                 foreach(var score in demoInfo.TeamScores)
                 {
                     var item = new ListViewItem();
@@ -137,6 +141,8 @@ namespace Uber.DemoTools
         private App _app;
         private DemoInfoListView _scoresListView;
         private DemoInfoListView _teamScoresListView;
+        private GridViewColumnHeader _headerScore1;
+        private GridViewColumnHeader _headerScore2;
         private GroupBox _groupBox;
         private static RoutedCommand _cutByScoreCommand = new RoutedCommand();
         private static RoutedCommand _copyCommand = new RoutedCommand();
@@ -173,7 +179,7 @@ namespace Uber.DemoTools
             headerStartEndTime.Content = "Time";
             headerStartEndTime.Tag = "Time";
             columnStartEndTime.Header = headerStartEndTime;
-            columnStartEndTime.Width = 40;
+            columnStartEndTime.Width = 50;
             columnStartEndTime.DisplayMemberBinding = new Binding("Time");
 
             var columnScore1 = new GridViewColumn();
@@ -242,11 +248,12 @@ namespace Uber.DemoTools
             headerStartEndTime.Content = "Time";
             headerStartEndTime.Tag = "Time";
             columnStartEndTime.Header = headerStartEndTime;
-            columnStartEndTime.Width = 40;
+            columnStartEndTime.Width = 50;
             columnStartEndTime.DisplayMemberBinding = new Binding("Time");
 
             var columnScore1 = new GridViewColumn();
             var headerScore1 = new GridViewColumnHeader();
+            _headerScore1 = headerScore1;
             headerScore1.Content = "RED Score";
             headerScore1.Tag = "Score1";
             columnScore1.Header = headerScore1;
@@ -255,6 +262,7 @@ namespace Uber.DemoTools
 
             var columnScore2 = new GridViewColumn();
             var headerScore2 = new GridViewColumnHeader();
+            _headerScore2 = headerScore2;
             headerScore2.Content = "BLUE Score";
             headerScore2.Tag = "Score2";
             columnScore2.Header = headerScore2;

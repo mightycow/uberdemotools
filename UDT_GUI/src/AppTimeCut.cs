@@ -400,7 +400,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            if(!App.IsValidWriteProtocol(demo.ProtocolNumber))
+            if(!UDT_DLL.IsProtocolWritable(demo.ProtocolNumber))
             {
                 _app.LogError("Can't write demos of that protocol");
                 return;

@@ -11,17 +11,6 @@
 #define  SCORE_NO_ONE  -9999
 
 
-static void ParseConfigStringInt(s32& value, udtBaseParser& parser, s32 csIndex)
-{
-	const char* const cs = parser.GetConfigString(csIndex).GetPtr();
-	if(cs == NULL)
-	{
-		return;
-	}
-
-	StringParseInt(value, cs);
-}
-
 static void CloneConfigString(udtString& string, udtVMLinearAllocator& alloc, udtBaseParser& parser, s32 csIndex)
 {
 	const udtString cs = parser.GetConfigString(csIndex);
@@ -32,11 +21,6 @@ static void CloneConfigString(udtString& string, udtVMLinearAllocator& alloc, ud
 	}
 
 	string = udtString::NewCloneFromRef(alloc, cs);
-}
-
-static bool HasClanName(udtProtocol::Id protocol)
-{
-	return protocol >= udtProtocol::Dm73 && protocol <= udtProtocol::Dm90;
 }
 
 
@@ -119,7 +103,7 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	_parser = &parser;
 	++_gameStateIndex;
 	_protocol = parser._inProtocol;
-	if(_protocol <= udtProtocol::Dm68)
+	if(!AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 	{
 		DetectMod();
 	}
@@ -132,17 +116,17 @@ void udtParserPlugInScores::ProcessGamestateMessage(const udtGamestateCallbackAr
 	{
 		ProcessCPMAScores(CS_CPMA_GAME_INFO);
 	}
-	else if(_protocol <= udtProtocol::Dm68)
-	{
-		ParseConfigStringInt(_score1, parser, CS_SCORE_1);
-		ParseConfigStringInt(_score2, parser, CS_SCORE_2);
-	}
-	else
+	else if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 	{
 		ParseConfigStringInt(_score1, parser, CS_SCORE_1);
 		ParseConfigStringInt(_score2, parser, CS_SCORE_2);
 		CloneConfigString(_name1, _tempAllocator, parser, CS_QL_SCORE_NAME_1);
 		CloneConfigString(_name2, _tempAllocator, parser, CS_QL_SCORE_NAME_2);
+	}
+	else
+	{
+		ParseConfigStringInt(_score1, parser, CS_SCORE_1);
+		ParseConfigStringInt(_score2, parser, CS_SCORE_2);
 	}
 	AddScore();
 	_scoreChanged = false;
@@ -215,7 +199,7 @@ void udtParserPlugInScores::ProcessCommandMessage(const udtCommandCallbackArg& a
 			_scoreChanged = true;
 		}
 
-		if(_protocol >= udtProtocol::Dm73)
+		if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 		{
 			if(arg.ConfigStringIndex == CS_QL_SCORE_NAME_1)
 			{
@@ -258,7 +242,7 @@ void udtParserPlugInScores::ProcessPlayerConfigString(u32 index, const char* cs)
 		_players[index].Name = udtString::NewCloneFromRef(_stringAllocator, name);
 	}
 
-	if(HasClanName(_protocol))
+	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlagsEx::QL_ClanName))
 	{
 		udtString clan;
 		if(ParseConfigStringValueString(clan, *TempAllocator, "cn", cs) &&
@@ -368,13 +352,13 @@ void udtParserPlugInScores::AddScore()
 		{
 			GetScoresCPMA(scores);
 		}
-		else if(_protocol <= udtProtocol::Dm68)
+		else if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 		{
-			GetScoresQ3(scores);
+			GetScoresQL(scores);
 		}
 		else
 		{
-			GetScoresQL(scores);
+			GetScoresQ3(scores);
 		}
 	}
 	// @NOTE: We use udtString::NewCleanCloneFromRef because it checks for the case where

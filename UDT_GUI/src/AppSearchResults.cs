@@ -680,7 +680,7 @@ namespace Uber.DemoTools
                 }
 
                 var filePath = _resultDemos[(int)displayInfo.FileIndex].FilePath;
-                if(!App.IsValidWriteProtocol(App.GetProtocolFromFilePath(filePath)))
+                if(!UDT_DLL.IsProtocolWritable(App.GetProtocolFromFilePath(filePath)))
                 {
                     continue;
                 }

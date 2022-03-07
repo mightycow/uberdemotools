@@ -17,9 +17,10 @@
 struct udtJSONExporter
 {
 public:
-	udtJSONExporter(udtJSONWriter& writer, udtVMLinearAllocator& tempAllocator)
+	udtJSONExporter(udtJSONWriter& writer, udtVMLinearAllocator& tempAllocator, udtProtocol::Id protocol)
 		: Writer(writer)
 		, TempAllocator(tempAllocator)
+		, Protocol(protocol)
 		, StringBuffer(NULL)
 		, StringBufferSize(0)
 	{
@@ -112,6 +113,9 @@ public:
 private:
 	UDT_NO_COPY_SEMANTICS(udtJSONExporter);
 
+public:
+	udtProtocol::Id Protocol;
+
 private:
 	udtString GetFixedName(const char* name)
 	{
@@ -184,14 +188,15 @@ static void WriteUDTWeapon(udtJSONExporter& writer, s32 udtWeaponIndex, const ch
 	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Weapons, (u32)udtWeaponIndex));
 }
 
-static void WriteUDTTeamIndex(udtJSONExporter& writer, s32 udtTeamIndex, const char* keyName = "team")
+static void WriteUDTTeamIndex(udtJSONExporter& writer, udtTeam::Id udtTeamIndex, const char* keyName = "team")
 {
 	if(keyName == NULL)
 	{
 		return;
 	}
 
-	writer.WriteStringValue(keyName, GetUDTStringForValue(udtStringArray::Teams, (u32)udtTeamIndex));
+	const char* teamName = GetUDTStringForValue(udtStringArray::Teams, (u32)udtTeamIndex);
+	writer.WriteStringValue(keyName, teamName);
 }
 
 static void WriteUDTGameTypeShort(udtJSONExporter& writer, u32 udtGameType)
@@ -224,11 +229,22 @@ static void WriteUDTOverTimeType(udtJSONExporter& writer, u32 udtOverTimeType)
 	writer.WriteStringValue("overtime type", GetUDTStringForValue(udtStringArray::OverTimeTypes, udtOverTimeType));
 }
 
-static void WriteTeamStats(s32& fieldsRead, udtJSONExporter& writer, const u8* flags, const s32* fields, s32 teamIndex, const char** fieldNames)
+static void WriteUDTWolfClassName(udtJSONExporter& writer, const char* keyName, u32 udtWolfClass)
+{
+	if(keyName == NULL)
+	{
+		return;
+	}
+
+	const char* className = GetUDTStringForValue(udtStringArray::WolfClassNames, udtWolfClass);
+	writer.WriteStringValue(keyName, className);
+}
+
+static void WriteTeamStats(s32& fieldsRead, udtJSONExporter& writer, const u8* flags, const s32* fields, udtTeam::Id teamIndex, const char** fieldNames)
 {
 	writer.StartObject();
 
-	writer.WriteStringValue("team", teamIndex == (s32)udtTeam::Red ? "red" : "blue");
+	WriteUDTTeamIndex(writer, teamIndex);
 
 	s32 fieldIdx = 0;
 	for(s32 i = 0; i < (s32)udtTeamStatsField::Count; ++i)
@@ -265,7 +281,11 @@ static void WritePlayerStats(s32& fieldsRead, udtJSONExporter& writer, const udt
 					break;
 
 				case udtPlayerStatsField::TeamIndex:
-					WriteUDTTeamIndex(writer, field);
+					WriteUDTTeamIndex(writer, (udtTeam::Id)field);
+					break;
+
+				case udtPlayerStatsField::PlayerClass:
+					WriteUDTWolfClassName(writer, fieldNames[i], field);
 					break;
 
 				default:
@@ -326,6 +346,7 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& 
 		writer.WriteStringValue("winner", stats.SecondPlaceWon ? stats.SecondPlaceName : stats.FirstPlaceName);
 		writer.WriteStringValue("first place name", stats.FirstPlaceName);
 		writer.WriteStringValue("second place name", stats.SecondPlaceName);
+		writer.WriteStringValue("defender name", stats.DefenderName);
 		writer.WriteIntValue("first place score", (s32)stats.FirstPlaceScore);
 		writer.WriteIntValue("second place score", (s32)stats.SecondPlaceScore);
 		WriteStartDate(writer, stats.StartDateEpoch);
@@ -395,10 +416,13 @@ static void WriteStats(udtJSONExporter& writer, const udtParseDataStatsBuffers& 
 
 			for(s32 i = 0; i < 2; ++i)
 			{
+				s32 idTeamIndex = 1 + i;
+				u32 udtTeamIndex;
+				GetUDTNumber(udtTeamIndex, udtMagicNumberType::Team, idTeamIndex, writer.Protocol);
 				if((stats.ValidTeams & ((u64)1 << (u64)i)) != 0)
 				{
 					s32 fieldsRead;
-					WriteTeamStats(fieldsRead, writer, flags, fields, i, teamStatsFieldNames);
+					WriteTeamStats(fieldsRead, writer, flags, fields, (udtTeam::Id)udtTeamIndex, teamStatsFieldNames);
 					flags += UDT_TEAM_STATS_MASK_BYTE_COUNT;
 					fields += fieldsRead;
 				}
@@ -504,13 +528,13 @@ static void WriteDeathEvents(udtJSONExporter& writer, const udtParseDataObituary
 		{
 			writer.WriteIntValue("attacker client number", info.AttackerIdx);
 			writer.WriteStringValue("attacker clean name", info.AttackerName);
-			WriteUDTTeamIndex(writer, info.AttackerTeamIdx, "attacker team");
+			WriteUDTTeamIndex(writer, (udtTeam::Id)info.AttackerTeamIdx, "attacker team");
 		}
 		if(info.TargetIdx >= 0 && info.TargetIdx < 64)
 		{
 			writer.WriteIntValue("target client number", info.TargetIdx);
 			writer.WriteStringValue("target clean name", info.TargetName);
-			WriteUDTTeamIndex(writer, info.TargetTeamIdx, "target team");
+			WriteUDTTeamIndex(writer, (udtTeam::Id)info.TargetTeamIdx, "target team");
 		}
 		writer.WriteStringValue("cause of death", info.MeanOfDeathName);
 
@@ -623,7 +647,7 @@ static void WriteGameStates(udtJSONExporter& writer, const udtParseDataGameState
 			writer.StartObject();
 			writer.WriteIntValue("client number", gameStateBuffers.Players[j].Index);
 			writer.WriteStringValue("clean name", gameStateBuffers.Players[j].FirstName);
-			WriteUDTTeamIndex(writer, gameStateBuffers.Players[j].FirstTeam);
+			WriteUDTTeamIndex(writer, (udtTeam::Id)gameStateBuffers.Players[j].FirstTeam);
 			writer.WriteIntValue("start time", gameStateBuffers.Players[j].FirstSnapshotTimeMs);
 			writer.WriteIntValue("end time", gameStateBuffers.Players[j].LastSnapshotTimeMs);
 			writer.EndObject();
@@ -738,7 +762,7 @@ bool ExportPlugInsDataToJSON(udtParserContext* context, u32 demoIndex, const cha
 	context->JSONWriterContext.ResetForNextDemo();
 	udtJSONWriter& writer = context->JSONWriterContext.Writer;
 	udtVMLinearAllocator& tempAllocator = context->Parser._tempAllocator;
-	udtJSONExporter jsonWriter(writer, tempAllocator);
+	udtJSONExporter jsonWriter(writer, tempAllocator, context->Parser._inProtocol);
 
 	writer.StartFile();
 

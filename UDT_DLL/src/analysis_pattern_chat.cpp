@@ -6,7 +6,7 @@
 #include "cut_section.hpp"
 
 
-static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idTokenizer& tokenizer)
+static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idTokenizer& tokenizer, udtBaseParser& parser)
 {
 	bool hasCPMASyntax = false;
 
@@ -19,6 +19,12 @@ static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idT
 	{
 		isTeamMessage = true;
 	}
+	else if(udtString::Equals(command, "lchat"))
+	{
+		// @TODO: confirm that this is correct
+		// it probably is since it displays with the same color as "chat"
+		isTeamMessage = false;
+	}
 	else if(udtString::Equals(command, "mm2"))
 	{
 		isTeamMessage = true;
@@ -26,6 +32,25 @@ static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idT
 	}
 	else
 	{
+		return false;
+	}
+
+	if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::RTCW))
+	{
+		if(tokenizer.GetArgCount() >= 2)
+		{
+			udtString messageEmClean = udtString::NewCloneFromRef(parser._tempAllocator, tokenizer.GetArg(1));
+			udtString::RemoveEmCharacter(messageEmClean);
+
+			u32 colonIdx = 0;
+			if(udtString::FindFirstCharacterMatch(colonIdx, messageEmClean, ':') &&
+			   colonIdx + 4 < tokenizer.GetArgLength(1))
+			{
+				message = udtString::NewSubstringRef(messageEmClean, colonIdx + 4);
+				return true;
+			}
+		}
+
 		return false;
 	}
 
@@ -49,7 +74,6 @@ static bool GetMessageAndType(udtString& message, bool& isTeamMessage, const idT
 	return false;
 }
 
-
 udtChatPatternAnalyzer::udtChatPatternAnalyzer()
 {
 }
@@ -68,7 +92,8 @@ void udtChatPatternAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& 
 
 	udtString message;
 	bool isTeamMessage;
-	if(!GetMessageAndType(message, isTeamMessage, tokenizer))
+	udtVMScopedStackAllocator allocatorScopeGuard(parser._tempAllocator);
+	if(!GetMessageAndType(message, isTeamMessage, tokenizer, parser))
 	{
 		return;
 	}

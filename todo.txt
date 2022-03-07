@@ -1,4 +1,24 @@
 To do:
+- Let udtGetIdMagicNumber and udtGetUDTMagicNumber use a single udtGameInfo structure
+	that contains the protocol, mod and mod version
+	instead of just the protocol and mod as 2 separate variables
+	this might become necessary for mods that change(d) key stuff over time
+- Rate-limit warning messages to avoid visual spam and UI slow-downs
+	- assign types and save last timestamp per type
+	- if same warning type happens twice in X ms, don't invoke the callback
+- Improve look_up_tables.cpp further
+	- rethink to account for mods better?
+	- remove the 2 extra table data declarations everywhere
+		- allocate everything with a single big table instead
+		- simply assert on the table size being large enough at init and we're good
+	- each entry in table arrays should be (pointer, length, protocol list)
+		- we can validate that all entries have the expected -1 key value to end the table
+			and keep the tables nice and readable
+			(could even have all that data inlined from now on)
+		- protocol list: udtProtocol::* udtProtocolList::End
+			where udtProtocolList::End is udtProtocol::Count or higher (avoid 0 due to 0-init)
+	- protocol list: fixed-size array u32 Protocols[udtProtocol::Count + 1]
+	- #define for the common protocol lists: Q3, QL, Quake, RTCW, ET, Wolfenstein, ...
 - Player position smoothing for "laggy" demos
 - DLL: Better mid-air detection heuristics?
 - DLL: Give plug-ins the ability to tell when their job is done so that parsing can be stopped early
@@ -10,3 +30,6 @@ To do:
 - Time shifter: Finer granularity level? Give the offset in milliseconds or floating-point snapshot count?
 - Track overtime start/end times to be able to translate all match times to server times
 - More reliable overtime detection?
+- Enemy Territory support? (protocols 82, 83, 84)
+- DeFRaG support?
+- Restart demo parsing when sv_pure is 0 and there's a mismatch between protocol and server engine versions

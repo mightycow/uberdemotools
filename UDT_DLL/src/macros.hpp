@@ -159,12 +159,3 @@ Static analysis annotation macros.
 #	define UDT_PRINTF_FORMAT_ARG
 #	define UDT_PRINTF_POST_FUNCTION(stringIndex, firstToCheck)
 #endif
-
-/*
-Thread-local storage macros.
-*/
-#if defined(UDT_WINDOWS)
-#	define UDT_THREAD_LOCAL __declspec(thread)
-#elif defined(UDT_LINUX)
-#	define UDT_THREAD_LOCAL __thread
-#endif

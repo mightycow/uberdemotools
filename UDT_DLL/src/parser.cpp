@@ -2,14 +2,17 @@
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
 #include "path.hpp"
+#include "analysis_general.hpp"
 
 
-udtBaseParser::udtBaseParser() 
+udtBaseParser::udtBaseParser()
 {
 	_context = NULL;
 	_inProtocol = udtProtocol::Invalid;
 	_outProtocol = udtProtocol::Invalid;
 	_protocolConverter = NULL;
+	_analyzer = new udtGeneralAnalyzer;
+	_analyzer->InitAllocators(_tempAllocator, 1);
 
 	UserData = NULL;
 	EnablePlugIns = true;
@@ -37,7 +40,7 @@ udtBaseParser::udtBaseParser()
 
 udtBaseParser::~udtBaseParser()
 {
-	Destroy();
+	delete _analyzer;
 }
 
 bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtProtocol::Id outProtocol, s32 gameStateIndex, bool enablePlugIns)
@@ -127,10 +130,6 @@ void udtBaseParser::SetFilePath(const char* filePath)
 	udtPath::GetFileName(_inFileName, _persistentAllocator, _inFilePath);
 }
 
-void udtBaseParser::Destroy()
-{
-}
-
 bool udtBaseParser::ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset)
 {
 	_inMsg = inMsg;
@@ -145,8 +144,8 @@ bool udtBaseParser::ParseServerMessage()
 {
 	_outMsg.Init(_outMsgData, sizeof(_outMsgData));
 
-	_outMsg.SetHuffman(_outProtocol >= udtProtocol::Dm66);
-	_inMsg.SetHuffman(_inProtocol >= udtProtocol::Dm66);
+	_outMsg.SetHuffman(!AreAllProtocolFlagsSet(_outProtocol, udtProtocolFlagsEx::NoHuffman));
+	_inMsg.SetHuffman(!AreAllProtocolFlagsSet(_inProtocol, udtProtocolFlagsEx::NoHuffman));
 
 	//
 	// Using the message sequence number as acknowledge number will help avoid 
@@ -154,10 +153,10 @@ bool udtBaseParser::ParseServerMessage()
 	// For reference in the Q3 source code: "Client command overflow".
 	//
 	s32 reliableSequenceAcknowledge = _inServerMessageSequence;
-	if(_inProtocol > udtProtocol::Dm3)
+	if(_inProtocol > udtProtocol::Dm3) // @TODO:
 	{
 		const s32 sequAck = _inMsg.ReadLong(); // Reliable sequence acknowledge.
-		if(_inProtocol >= udtProtocol::Dm68)
+		if(_inProtocol >= udtProtocol::Dm57) // @TODO:
 		{
 			reliableSequenceAcknowledge = sequAck;
 		}
@@ -370,7 +369,7 @@ void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const ch
 
 bool udtBaseParser::ShouldWriteMessage() const
 {
-	return _outWriteMessage && _outProtocol >= udtProtocol::Dm66;
+	return _outWriteMessage && !AreAllProtocolFlagsSet(_outProtocol, udtProtocolFlags::ReadOnly);
 }
 
 void udtBaseParser::WriteFirstMessage()
@@ -583,7 +582,7 @@ bool udtBaseParser::ParseGamestate()
 		}
 	}
 
-	if(_inProtocol >= udtProtocol::Dm66)
+	if(_inProtocol >= udtProtocol::Dm57) // @TODO:
 	{
 		_inClientNum = _inMsg.ReadLong();
 		_inChecksumFeed = _inMsg.ReadLong();
@@ -609,6 +608,11 @@ bool udtBaseParser::ParseGamestate()
 
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
+
+	_analyzer->ResetForNextDemo();
+	_analyzer->ProcessGamestateMessage(udtGamestateCallbackArg(), *this);
+	_inMod = _analyzer->Mod();
+	_inModVersion = _analyzer->ModVersion();
 
 	return true;
 }
@@ -1235,6 +1239,13 @@ const udtString udtBaseParser::GetConfigString(s32 csIndex) const
 	}
 
 	return _inConfigStrings[csIndex];
+}
+
+const udtGameInfo udtBaseParser::GetGameInfo() const
+{
+	const udtGameInfo gameInfo = { _inModVersion, _inProtocol, _inMod };
+
+	return gameInfo;
 }
 
 void udtBaseParser::AddPlugIn(udtBaseParserPlugIn* plugIn)

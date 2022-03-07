@@ -19,6 +19,48 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 };
 #undef ITEM
 
+#define ITEM(Enum, Ext, Desc, Flags) Flags,
+static const u32 ProtocolFlags[udtProtocol::Count + 1] =
+{
+	UDT_PROTOCOL_LIST(ITEM)
+	0
+};
+#undef ITEM
+
+#define UDT_PROTOCOL_LIST_EX(N) \
+	N(Dm3 , udtProtocolFlagsEx::NoHuffman) \
+	N(Dm48, udtProtocolFlagsEx::NoHuffman) \
+	N(Dm57, 0) \
+	N(Dm58, 0) \
+	N(Dm59, 0) \
+	N(Dm60, 0) \
+	N(Dm66, 0) \
+	N(Dm67, 0) \
+	N(Dm68, 0) \
+	N(Dm73, udtProtocolFlagsEx::QL_ClanName) \
+	N(Dm90, udtProtocolFlagsEx::QL_ClanName) \
+	N(Dm91, udtProtocolFlagsEx::QL_Unicode)
+
+#define ITEM(Enum, FlagsEx) Enum,
+struct udtProtocolEx
+{
+	enum Id
+	{
+		UDT_PROTOCOL_LIST_EX(ITEM)
+		Count
+	};
+};
+#undef ITEM
+static_assert(udtProtocolEx::Count == udtProtocol::Count, "UDT_PROTOCOL_LIST_EX is invalid");
+
+#define ITEM(Enum, FlagsEx) FlagsEx,
+static const u32 ProtocolFlagsEx[udtProtocol::Count + 1] =
+{
+	UDT_PROTOCOL_LIST_EX(ITEM)
+	0
+};
+#undef ITEM
+
 
 udtString CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg)
 {
@@ -447,10 +489,10 @@ void LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& tem
 	context.LogInfo("Thread reserved byte count: %s", reservedMemory.GetPtr());
 }
 
-bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol)
+bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol, udtMod::Id mod)
 {
-	const s32 obituaryEvtId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::Obituary, protocol);
-	const s32 eventTypeId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, protocol);
+	const s32 obituaryEvtId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::Obituary, protocol, mod);
+	const s32 eventTypeId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, protocol, mod);
 	const s32 eventType = entity.eType & (~ID_ES_EVENT_BITS);
 	if(eventType != eventTypeId + obituaryEvtId)
 	{
@@ -510,7 +552,8 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	}
 
 	// "xcn" was for the full clan name, "c" for the country.
-	if(protocol <= udtProtocol::Dm90 &&
+	const bool hasClanName = AreAllProtocolFlagsSet(protocol, udtProtocolFlagsEx::QL_ClanName);
+	if(hasClanName &&
 	   ParseConfigStringValueString(clan, allocator, "cn", configString))
 	{
 		hasClan = true;
@@ -521,7 +564,7 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	// Some QuakeCon 2015 demos have a '.' between the clan tag and player name.
 	// Some of them have no separator at all and I don't see how the ambiguity can be resolved. :-(
 	u32 firstSeparatorIdx = 0;
-	if(protocol <= udtProtocol::Dm90 ||
+	if(hasClanName ||
 	   !udtString::FindFirstCharacterListMatch(firstSeparatorIdx, clanAndPlayer, udtString::NewConstRef(" .")))
 	{
 		player = clanAndPlayer;
@@ -684,4 +727,55 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 
 	es.loopSound = ps.loopSound;
 	es.generic1 = ps.generic1;
+}
+
+void ParseConfigStringInt(s32& value, udtBaseParser& parser, s32 csIndex)
+{
+	const char* const cs = parser.GetConfigString(csIndex).GetPtr();
+	if(cs == NULL)
+	{
+		return;
+	}
+
+	StringParseInt(value, cs);
+}
+
+bool AreAllProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlags::Mask flags)
+{
+	if((u32)protocol >= (u32)udtProtocol::Count)
+	{
+		return false;
+	}
+
+	return (ProtocolFlags[protocol] & (u32)flags) == (u32)flags;
+}
+
+bool AreAnyProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlags::Mask flags)
+{
+	if((u32)protocol >= (u32)udtProtocol::Count)
+	{
+		return false;
+	}
+
+	return (ProtocolFlags[protocol] & (u32)flags) != 0;
+}
+
+bool AreAllProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlagsEx::Mask flags)
+{
+	if((u32)protocol >= (u32)udtProtocol::Count)
+	{
+		return false;
+	}
+
+	return (ProtocolFlagsEx[protocol] & (u32)flags) == (u32)flags;
+}
+
+bool AreAnyProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlagsEx::Mask flags)
+{
+	if((u32)protocol >= (u32)udtProtocol::Count)
+	{
+		return false;
+	}
+
+	return (ProtocolFlagsEx[protocol] & (u32)flags) != 0;
 }

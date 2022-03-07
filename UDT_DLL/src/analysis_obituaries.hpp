@@ -23,7 +23,7 @@ public:
 
 	void InitAllocators(u32 demoCount, udtVMLinearAllocator& tempAllocator);
 	void ResetForNextDemo();
- 
+
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);

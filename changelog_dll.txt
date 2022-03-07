@@ -1,3 +1,9 @@
+1.4.0 (DD.MM.2022)
+ADD: Support for RtCW (dm_57, dm_58, dm_59, dm_60) with OSP and RtcwPro mods
+     Search and cut for the mid-air and frag sequence patterns isn't supported
+CHG: The JSON exporter will not lower-case the first letter of a key when the first two are uppercase
+FIX: Invalid stats no longer get exported via the API calls, so it affects both JSON export and GUI display
+
 1.3.1 (02.06.2018)
 ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands
 FIX: Flag possession time stats in CPMA demos

@@ -23,17 +23,13 @@ static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id p
 	// @NOTE: the original Quake 3 id function BG_EvaluateTrajectory
 	// didn't use the local gravity field but used the DEFAULT_GRAVITY constant instead.
 
-	if(protocol == udtProtocol::Dm73)
+	switch(protocol)
 	{
-		return ((const idEntityState73*)ent)->pos_gravity;
+		case udtProtocol::Dm73: ((const idEntityState73*)ent)->pos_gravity;
+		case udtProtocol::Dm90: ((const idEntityState90*)ent)->pos_gravity;
+		case udtProtocol::Dm91: ((const idEntityState91*)ent)->pos_gravity;
+		default: return DEFAULT_GRAVITY;
 	}
-
-	if(protocol == udtProtocol::Dm90)
-	{
-		return ((const idEntityState90*)ent)->pos_gravity;
-	}
-
-	return DEFAULT_GRAVITY;
 }
 
 static s32 GetEntityStateGravitySafe(const idEntityStateBase* ent, udtProtocol::Id protocol)
@@ -319,7 +315,7 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		}
 
 		udtObituaryEvent obituary;
-		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol, parser._inMod))
 		{
 			continue;
 		}

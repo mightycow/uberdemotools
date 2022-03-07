@@ -91,7 +91,7 @@ void udtFlickRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 			continue;
 		}
 
-		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(obituary, *arg.ChangedEntities[i].Entity, parser._inProtocol, parser._inMod))
 		{
 			continue;
 		}

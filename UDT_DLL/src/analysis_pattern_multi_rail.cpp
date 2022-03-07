@@ -40,7 +40,7 @@ void udtMultiRailPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallba
 		}
 
 		udtObituaryEvent eventInfo;
-		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol))
+		if(!IsObituaryEvent(eventInfo, *arg.ChangedEntities[i].Entity, parser._inProtocol, parser._inMod))
 		{
 			continue;
 		}

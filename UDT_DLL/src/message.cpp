@@ -1,4 +1,5 @@
 #include "message.hpp"
+#include "utils.hpp"
 
 
 static const u16 HuffmanDecoderTable[2048] =
@@ -332,6 +333,91 @@ const idNetField EntityStateFields48[]
 
 const s32 EntityStateFieldCount48 = sizeof(EntityStateFields48) / sizeof(EntityStateFields48[0]);
 static_assert(EntityStateFieldCount48 == 51, "dm_48 network entity states have 51 fields!");
+
+//
+// 60 rtcw
+//
+
+#define ESF(field, bits) { (s16)OFFSET_OF(idEntityState60, field), bits }
+
+const idNetField EntityStateFields60[] =
+{
+	ESF(eType, 8),
+	ESF(eFlags, 24),
+	ESF(pos.trType, 8),
+	ESF(pos.trTime, 32),
+	ESF(pos.trDuration, 32),
+	ESF(pos.trBase[0], 0),
+	ESF(pos.trBase[1], 0),
+	ESF(pos.trBase[2], 0),
+	ESF(pos.trDelta[0], 0),
+	ESF(pos.trDelta[1], 0),
+	ESF(pos.trDelta[2], 0),
+	ESF(apos.trType, 8),
+	ESF(apos.trTime, 32),
+	ESF(apos.trDuration, 32),
+	ESF(apos.trBase[0], 0),
+	ESF(apos.trBase[1], 0),
+	ESF(apos.trBase[2], 0),
+	ESF(apos.trDelta[0], 0),
+	ESF(apos.trDelta[1], 0),
+	ESF(apos.trDelta[2], 0),
+	ESF(time, 32),
+	ESF(time2, 32),
+	ESF(origin[0], 0),
+	ESF(origin[1], 0),
+	ESF(origin[2], 0),
+	ESF(origin2[0], 0),
+	ESF(origin2[1], 0),
+	ESF(origin2[2], 0),
+	ESF(angles[0], 0),
+	ESF(angles[1], 0),
+	ESF(angles[2], 0),
+	ESF(angles2[0], 0),
+	ESF(angles2[1], 0),
+	ESF(angles2[2], 0),
+	ESF(otherEntityNum, GENTITYNUM_BITS),
+	ESF(otherEntityNum2, GENTITYNUM_BITS),
+	ESF(groundEntityNum, GENTITYNUM_BITS),
+	ESF(loopSound, 8),
+	ESF(constantLight, 32),
+	ESF(dl_intensity, 32),
+	ESF(modelindex, 9),
+	ESF(modelindex2, 9),
+	ESF(frame, 16),
+	ESF(clientNum, 8),
+	ESF(solid, 24),
+	ESF(event, 10),
+	ESF(eventParm, 8),
+	ESF(eventSequence, 8),
+	ESF(events[0], 8),
+	ESF(events[1], 8),
+	ESF(events[2], 8),
+	ESF(events[3], 8),
+	ESF(eventParms[0], 8),
+	ESF(eventParms[1], 8),
+	ESF(eventParms[2], 8),
+	ESF(eventParms[3], 8),
+	ESF(powerups, 16),
+	ESF(weapon, 8),
+	ESF(legsAnim, 10),
+	ESF(torsoAnim, 10),
+	ESF(density, 10),
+	ESF(dmgFlags, 32),
+	ESF(onFireStart, 32),
+	ESF(onFireEnd, 32),
+	ESF(aiChar, 8),
+	ESF(teamNum, 8),
+	ESF(effect1Time, 32),
+	ESF(effect2Time, 32),
+	ESF(effect3Time, 32),
+	ESF(aiState, 2),
+	ESF(animMovetype, 4)
+};
+
+#undef ESF
+
+const s32 EntityStateFieldCount60 = sizeof(EntityStateFields60) / sizeof(EntityStateFields60[0]);
 
 //
 // 68
@@ -728,6 +814,97 @@ static const idNetField PlayerStateFields48[] =
 static const s32 PlayerStateFieldCount48 = sizeof(PlayerStateFields48) / sizeof(PlayerStateFields48[0]);
 
 //
+// 60
+//
+
+#define PSF(field, bits) { (s16)OFFSET_OF(idPlayerState60, field), bits }
+
+static const idNetField PlayerStateFields60[] =
+{
+	PSF(commandTime, 32),
+	PSF(pm_type, 8),
+	PSF(bobCycle, 8),
+	PSF(pm_flags, 16),
+	PSF(pm_time, -16),
+	PSF(origin[0], 0),
+	PSF(origin[1], 0),
+	PSF(origin[2], 0),
+	PSF(velocity[0], 0),
+	PSF(velocity[1], 0),
+	PSF(velocity[2], 0),
+	PSF(weaponTime, -16),
+	PSF(weaponDelay, -16),
+	PSF(grenadeTimeLeft, -16),
+	PSF(gravity, 16),
+	PSF(leanf, 0),
+	PSF(speed, 16),
+	PSF(delta_angles[0], 16),
+	PSF(delta_angles[1], 16),
+	PSF(delta_angles[2], 16),
+	PSF(groundEntityNum, GENTITYNUM_BITS),
+	PSF(legsTimer, 16),
+	PSF(torsoTimer, 16),
+	PSF(legsAnim, 10),
+	PSF(torsoAnim, 10),
+	PSF(movementDir, 8),
+	PSF(eFlags, 24),
+	PSF(eventSequence, 8),
+	PSF(events[0], 8),
+	PSF(events[1], 8),
+	PSF(events[2], 8),
+	PSF(events[3], 8),
+	PSF(eventParms[0], 8),
+	PSF(eventParms[1], 8),
+	PSF(eventParms[2], 8),
+	PSF(eventParms[3], 8),
+	PSF(clientNum, 8),
+	PSF(weapons[0], 32),
+	PSF(weapons[1], 32),
+	PSF(weapon, 7),
+	PSF(weaponstate, 4),
+	PSF(weapAnim, 10),
+	PSF(viewangles[0], 0),
+	PSF(viewangles[1], 0),
+	PSF(viewangles[2], 0),
+	PSF(viewheight, -8),
+	PSF(damageEvent, 8),
+	PSF(damageYaw, 8),
+	PSF(damagePitch, 8),
+	PSF(damageCount, 8),
+	PSF(mins[0], 0),
+	PSF(mins[1], 0),
+	PSF(mins[2], 0),
+	PSF(maxs[0], 0),
+	PSF(maxs[1], 0),
+	PSF(maxs[2], 0),
+	PSF(crouchMaxZ, 0),
+	PSF(crouchViewHeight, 0),
+	PSF(standViewHeight, 0),
+	PSF(deadViewHeight, 0),
+	PSF(runSpeedScale, 0),
+	PSF(sprintSpeedScale, 0),
+	PSF(crouchSpeedScale, 0),
+	PSF(friction, 0),
+	PSF(viewlocked, 8),
+	PSF(viewlocked_entNum, 16),
+	PSF(aiChar, 8),
+	PSF(teamNum, 8),
+	PSF(gunfx, 8),
+	PSF(onFireStart, 32),
+	PSF(curWeapHeat, 8),
+	PSF(sprintTime, 16),
+	PSF(aimSpreadScale, 8),
+	PSF(aiState, 2),
+	PSF(serverCursorHint, 8),
+	PSF(serverCursorHintVal, 8),
+	PSF(classWeaponTime, 32)
+};
+
+#undef PSF
+
+static const s32 PlayerStateFieldCount60 = sizeof(PlayerStateFields60) / sizeof(PlayerStateFields60[0]);
+
+//
 // 68
 //
 
@@ -1056,6 +1233,18 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			_playerStateFieldCount = PlayerStateFieldCount48;
 			break;
 
+		case udtProtocol::Dm57:
+		case udtProtocol::Dm58:
+		case udtProtocol::Dm59:
+		case udtProtocol::Dm60:
+			_protocolSizeOfEntityState = sizeof(idEntityState60);
+			_protocolSizeOfPlayerState = sizeof(idPlayerState60);
+			_entityStateFields = EntityStateFields60;
+			_entityStateFieldCount = EntityStateFieldCount60;
+			_playerStateFields = PlayerStateFields60;
+			_playerStateFieldCount = PlayerStateFieldCount60;
+			break;
+
 		case udtProtocol::Dm66:
 			_protocolSizeOfEntityState = sizeof(idEntityState66);
 			_protocolSizeOfPlayerState = sizeof(idPlayerState66);
@@ -1075,13 +1264,16 @@ void udtMessage::InitProtocol(udtProtocol::Id protocol)
 			break;
 
 		case udtProtocol::Dm68:
-		default:
 			_protocolSizeOfEntityState = sizeof(idEntityState68);
 			_protocolSizeOfPlayerState = sizeof(idPlayerState68);
 			_entityStateFields = EntityStateFields68;
 			_entityStateFieldCount = EntityStateFieldCount68;
 			_playerStateFields = PlayerStateFields68;
 			_playerStateFieldCount = PlayerStateFieldCount68;
+			break;
+
+		default:
+			assert(0);
 			break;
 	}
 }
@@ -1387,7 +1579,7 @@ void udtMessage::RealWriteString(const char* s, s32 length, s32 bufferLength, ch
 		return;
 	}
 
-	if(_protocol >= udtProtocol::Dm91)
+	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlagsEx::QL_Unicode))
 	{
 		WriteData(s, length + 1);
 		return;
@@ -1431,6 +1623,7 @@ s32 udtMessage::RealReadFloat()
 
 char* udtMessage::RealReadString(s32& length, s32 bufferLength, char* buffer)
 {
+	const bool allowUTF8 = AreAllProtocolFlagsSet(_protocol, udtProtocolFlagsEx::QL_Unicode);
 	s32 stringLength = 0;
 	do
 	{
@@ -1448,7 +1641,7 @@ char* udtMessage::RealReadString(s32& length, s32 bufferLength, char* buffer)
 		}
 
 		// don't allow higher ascii values
-		if(_protocol <= udtProtocol::Dm90 && c > 127)
+		if(c > 127 && !allowUTF8)
 		{
 			c = '.';
 		}
@@ -1536,112 +1729,261 @@ bool udtMessage::RealWriteDeltaPlayer(const idPlayerStateBase* from, idPlayerSta
 	//
 	// send the arrays
 	//
-	s32 statsbits = 0;
-	for(i=0 ; i<ID_MAX_PS_STATS ; i++) 
-	{
-		if(to->stats[i] != from->stats[i])
-		{
-			statsbits |= 1<<i;
-		}
-	}
-	s32 persistantbits = 0;
-	for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++) 
-	{
-		if(to->persistant[i] != from->persistant[i])
-		{
-			persistantbits |= 1<<i;
-		}
-	}
-	s32 ammobits = 0;
-	for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++)
-	{
-		if(to->ammo[i] != from->ammo[i]) 
-		{
-			ammobits |= 1<<i;
-		}
-	}
-	s32 powerupbits = 0;
-	for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++) 
-	{
-		if(to->powerups[i] != from->powerups[i]) 
-		{
-			powerupbits |= 1<<i;
-		}
-	}
 
-	if(!statsbits && !persistantbits && !ammobits && !powerupbits) 
+	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
 	{
-		WriteBits(0, 1);	// no change
-		return ValidState();
-	}
-	WriteBits(1, 1);	// changed
-
-	if(statsbits) 
-	{
-		WriteBits(1, 1);	// changed
-		WriteBits(statsbits, ID_MAX_PS_STATS);
+		idPlayerState60* to60 = (idPlayerState60*) to;
+		idPlayerState60* from60 = (idPlayerState60*) from;
+		s32 statsbits = 0;
 		for(i=0 ; i<ID_MAX_PS_STATS ; i++)
 		{
-			if(statsbits & (1<<i))
+			if(to->stats[i] != from->stats[i])
 			{
-				WriteShort(to->stats[i]);
+				statsbits |= 1<<i;
 			}
 		}
-	} 
-	else 
-	{
-		WriteBits(0, 1);	// no change
-	}
-
-	if(persistantbits)
-	{
-		WriteBits(1, 1);	// changed
-		WriteBits(persistantbits, ID_MAX_PS_PERSISTANT);
+		s32 persistantbits = 0;
 		for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++)
 		{
-			if(persistantbits & (1<<i))
+			if(to->persistant[i] != from->persistant[i])
 			{
-				WriteShort(to->persistant[i]);
-			}
-		}		
-	} 
-	else 
-	{
-		WriteBits(0, 1);	// no change
-	}
-
-	if(ammobits) 
-	{
-		WriteBits(1, 1);	// changed
-		WriteBits(ammobits, ID_MAX_PS_WEAPONS);
-		for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++)
-		{
-			if(ammobits & (1<<i))
-			{
-				WriteShort(to->ammo[i]);
-			}
-		}	
-	} 
-	else 
-	{
-		WriteBits(0, 1);	// no change
-	}
-
-	if(powerupbits) 
-	{
-		WriteBits(1, 1);	// changed
-		WriteBits(powerupbits, ID_MAX_PS_POWERUPS);
-		for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++)
-		{
-			if(powerupbits & (1<<i))
-			{
-				WriteLong(to->powerups[i]);
+				persistantbits |= 1<<i;
 			}
 		}
-	} 
-	else 
+		s32 holdablebits = 0;
+		for(i=0 ; i<16 ; i++)
+		{
+			if(to60->holdable[i] != from60->holdable[i])
+			{
+				holdablebits |= 1<<i;
+			}
+		}
+		s32 powerupbits = 0;
+		for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++)
+		{
+			if(to->powerups[i] != from->powerups[i])
+			{
+				powerupbits |= 1<<i;
+			}
+		}
+
+		if ( statsbits || persistantbits || holdablebits || powerupbits )
+		{
+
+			WriteBits(1, 1 ); // something changed
+
+			if ( statsbits ) {
+				WriteBits(1, 1); // changed
+				WriteShort(statsbits);
+				for ( i = 0 ; i < 16 ; i++ )
+					if ( statsbits & ( 1 << i ) ) {
+						// RF, changed to long to allow more flexibility
+//					WriteLong (msg, to->stats[i]);
+						WriteShort(to->stats[i] );  //----(SA)	back to short since weapon bits are handled elsewhere now
+					}
+			} else {
+				WriteBits(0, 1 ); // no change to stats
+			}
+
+
+			if ( persistantbits ) {
+				WriteBits(1, 1 ); // changed
+				WriteShort(persistantbits );
+				for ( i = 0 ; i < 16 ; i++ )
+					if ( persistantbits & ( 1 << i ) ) {
+						WriteShort(to->persistant[i] );
+					}
+			} else {
+				WriteBits(0, 1 ); // no change to persistant
+			}
+
+
+			if ( holdablebits ) {
+				WriteBits(1, 1 ); // changed
+				WriteShort(holdablebits );
+				for ( i = 0 ; i < 16 ; i++ )
+					if ( holdablebits & ( 1 << i ) ) {
+						WriteShort(to60->holdable[i] );
+					}
+			} else {
+				WriteBits(0, 1 ); // no change to holdables
+			}
+
+
+			if ( powerupbits ) {
+				WriteBits(1, 1 ); // changed
+				WriteShort(powerupbits );
+				for ( i = 0 ; i < 16 ; i++ )
+					if ( powerupbits & ( 1 << i ) ) {
+						WriteLong(to->powerups[i] );
+					}
+			} else {
+				WriteBits(0, 1 ); // no change to powerups
+			}
+		} else {
+			WriteBits(0, 1 ); // no change to any
+		}
+
+		// ammo stored
+		int ammobits[4];
+		for (int j = 0; j < 4; j++ ) {  //----(SA)	modified for 64 weaps
+			ammobits[j] = 0;
+			for ( i = 0 ; i < 16 ; i++ ) {
+				if ( to->ammo[i + ( j * 16 )] != from->ammo[i + ( j * 16 )] ) {
+					ammobits[j] |= 1 << i;
+				}
+			}
+		}
+
+//----(SA)	also encapsulated ammo changes into one check.  clip values will change frequently,
+		// but ammo will not.  (only when you get ammo/reload rather than each shot)
+		if ( ammobits[0] || ammobits[1] || ammobits[2] || ammobits[3] ) {  // if any were set...
+			WriteBits(1, 1 ); // changed
+			for (int j = 0; j < 4; j++ ) {
+				if ( ammobits[j] ) {
+					WriteBits(1, 1 ); // changed
+					WriteShort(ammobits[j] );
+					for ( i = 0 ; i < 16 ; i++ )
+						if ( ammobits[j] & ( 1 << i ) ) {
+							WriteShort(to->ammo[i + ( j * 16 )] );
+						}
+				} else {
+					WriteBits(0, 1 ); // no change
+				}
+			}
+		} else {
+			WriteBits(0, 1 ); // no change
+		}
+
+		// ammo in clip
+		for (int j = 0; j < 4; j++ ) {  //----(SA)	modified for 64 weaps
+			int clipbits = 0;
+			for ( i = 0 ; i < 16 ; i++ ) {
+				if ( to60->ammoclip[i + ( j * 16 )] != from60->ammoclip[i + ( j * 16 )] ) {
+					clipbits |= 1 << i;
+				}
+			}
+			if ( clipbits ) {
+				WriteBits(1, 1 ); // changed
+				WriteShort(clipbits );
+				for ( i = 0 ; i < 16 ; i++ )
+					if ( clipbits & ( 1 << i ) ) {
+						WriteShort(to60->ammoclip[i + ( j * 16 )] );
+					}
+			} else {
+				WriteBits(0, 1 ); // no change
+			}
+		}
+	}
+	else
 	{
-		WriteBits(0, 1);	// no change
+		s32 statsbits = 0;
+		for(i=0 ; i<ID_MAX_PS_STATS ; i++)
+		{
+			if(to->stats[i] != from->stats[i])
+			{
+				statsbits |= 1<<i;
+			}
+		}
+		s32 persistantbits = 0;
+		for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++)
+		{
+			if(to->persistant[i] != from->persistant[i])
+			{
+				persistantbits |= 1<<i;
+			}
+		}
+		s32 ammobits = 0;
+		for(i=0 ; i<16 ; i++)
+		{
+			if(to->ammo[i] != from->ammo[i])
+			{
+				ammobits |= 1<<i;
+			}
+		}
+		s32 powerupbits = 0;
+		for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++)
+		{
+			if(to->powerups[i] != from->powerups[i])
+			{
+				powerupbits |= 1<<i;
+			}
+		}
+
+		if(!statsbits && !persistantbits && !ammobits && !powerupbits)
+		{
+			WriteBits(0, 1);	// no change
+			return ValidState();
+		}
+		WriteBits(1, 1);	// changed
+
+		if(statsbits)
+		{
+			WriteBits(1, 1);	// changed
+			WriteBits(statsbits, ID_MAX_PS_STATS);
+			for(i=0 ; i<ID_MAX_PS_STATS ; i++)
+			{
+				if(statsbits & (1<<i))
+				{
+					WriteShort(to->stats[i]);
+				}
+			}
+		}
+		else
+		{
+			WriteBits(0, 1);	// no change
+		}
+
+		if(persistantbits)
+		{
+			WriteBits(1, 1);	// changed
+			WriteBits(persistantbits, ID_MAX_PS_PERSISTANT);
+			for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++)
+			{
+				if(persistantbits & (1<<i))
+				{
+					WriteShort(to->persistant[i]);
+				}
+			}
+		}
+		else
+		{
+			WriteBits(0, 1);	// no change
+		}
+
+		if(ammobits)
+		{
+			WriteBits(1, 1);	// changed
+			WriteBits(ammobits, 16);
+			for(i=0 ; i<16 ; i++)
+			{
+				if(ammobits & (1<<i))
+				{
+					WriteShort(to->ammo[i]);
+				}
+			}
+		}
+		else
+		{
+			WriteBits(0, 1);	// no change
+		}
+
+		if(powerupbits)
+		{
+			WriteBits(1, 1);	// changed
+			WriteBits(powerupbits, ID_MAX_PS_POWERUPS);
+			for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++)
+			{
+				if(powerupbits & (1<<i))
+				{
+					WriteLong(to->powerups[i]);
+				}
+			}
+		}
+		else
+		{
+			WriteBits(0, 1);	// no change
+		}
 	}
 
 	return ValidState();
@@ -1694,7 +2036,7 @@ void udtMessage::ReadDeltaPlayerDM3(idPlayerStateBase* to)
 	if(ReadBit())
 	{
 		const s32 mask = ReadShort();
-		for(s32 i = 0; i < ID_MAX_PS_WEAPONS; ++i)
+		for(s32 i = 0; i < 16; ++i)
 		{
 			if((mask & (1 << i)) != 0) // bit set?
 			{
@@ -1731,6 +2073,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		memset(&dummy, 0, sizeof(dummy));
 	}
 	memcpy(to, from, _protocolSizeOfPlayerState);
+	//*to = *from;
 	
 	if(_protocol <= udtProtocol::Dm48)
 	{
@@ -1767,57 +2110,151 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 		*toF = *fromF;
 	}
 
-	// read the arrays
-	if(ReadBit()) 
+	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
 	{
-		// parse stats
-		if(ReadBit()) 
+		idPlayerState60* to60 = (idPlayerState60*)to;
+
+		// read the arrays
+		if(ReadBit())
 		{
-			bits = ReadBits(ID_MAX_PS_STATS);
-			for(i=0 ; i<ID_MAX_PS_STATS ; i++) 
+			// parse stats
+			if(ReadBit())
 			{
-				if(bits & (1<<i))
+				bits = ReadBits(ID_MAX_PS_STATS);
+				for(i = 0; i < ID_MAX_PS_STATS; i++)
 				{
-					to->stats[i] = ReadSignedShort();
+					if(bits & (1 << i))
+					{
+						to->stats[i] = ReadShort();
+					}
+				}
+			}
+			// parse persistant stats
+			if(ReadBit())
+			{
+				bits = ReadBits(ID_MAX_PS_PERSISTANT);
+				for(i = 0; i < ID_MAX_PS_PERSISTANT; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to->persistant[i] = ReadShort();
+					}
+				}
+			}
+			// parse holdable
+			if(ReadBit())
+			{
+				bits = ReadBits(16);
+				for(i = 0; i < 16; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to60->holdable[i] = ReadShort();
+					}
+				}
+			}
+			// parse powerups
+			if(ReadBit())
+			{
+				bits = ReadBits(ID_MAX_PS_POWERUPS);
+				for(i = 0; i < ID_MAX_PS_POWERUPS; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to->powerups[i] = ReadLong();
+					}
 				}
 			}
 		}
 
-		// parse persistant stats
-		if(ReadBit()) 
-		{
-			bits = ReadBits(ID_MAX_PS_PERSISTANT);
-			for(i=0 ; i<ID_MAX_PS_PERSISTANT ; i++) 
+		// ammo stored
+		if(ReadBit())
+		{     // check for any ammo change (0-63)
+			for(int j = 0; j < 4; j++)
 			{
-				if(bits & (1<<i)) 
+				if(ReadBit())
 				{
-					to->persistant[i] = ReadShort();
+					bits = ReadShort();
+					for(int i = 0; i < 16; i++)
+					{
+						if(bits & (1 << i))
+						{
+							to->ammo[i + (j * 16)] = ReadShort();
+						}
+					}
 				}
 			}
 		}
-
-		// parse ammo
-		if(ReadBit()) 
+		// ammo in clip
+		for(int j = 0; j < 4; j++)
 		{
-			bits = ReadBits(ID_MAX_PS_WEAPONS);
-			for(i=0 ; i<ID_MAX_PS_WEAPONS ; i++) 
+			if(ReadBit())
 			{
-				if(bits & (1<<i)) 
+				bits = ReadShort();
+				for(int i = 0; i < 16; i++)
 				{
-					to->ammo[i] = ReadShort();
+					if(bits & (1 << i))
+					{
+						to60->ammoclip[i + (j * 16)] = ReadShort();
+					}
 				}
 			}
 		}
-
-		// parse powerups
-		if(ReadBit()) 
+	}
+	else
+	{
+		// read the arrays
+		if(ReadBit())
 		{
-			bits = ReadBits(ID_MAX_PS_POWERUPS);
-			for(i=0 ; i<ID_MAX_PS_POWERUPS ; i++) 
+			// parse stats
+			if(ReadBit())
 			{
-				if(bits & (1<<i)) 
+				bits = ReadBits(ID_MAX_PS_STATS);
+				for(i = 0; i < ID_MAX_PS_STATS; i++)
 				{
-					to->powerups[i] = ReadLong();
+					if(bits & (1 << i))
+					{
+						to->stats[i] = ReadSignedShort();
+					}
+				}
+			}
+
+			// parse persistant stats
+			if(ReadBit())
+			{
+				bits = ReadBits(ID_MAX_PS_PERSISTANT);
+				for(i = 0; i < ID_MAX_PS_PERSISTANT; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to->persistant[i] = ReadShort();
+					}
+				}
+			}
+
+			// parse ammo
+			if(ReadBit())
+			{
+				bits = ReadBits(16);
+				for(i = 0; i < 16; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to->ammo[i] = ReadShort();
+					}
+				}
+			}
+
+			// parse powerups
+			if(ReadBit())
+			{
+				bits = ReadBits(ID_MAX_PS_POWERUPS);
+				for(i = 0; i < ID_MAX_PS_POWERUPS; i++)
+				{
+					if(bits & (1 << i))
+					{
+						to->powerups[i] = ReadLong();
+					}
 				}
 			}
 		}
@@ -1856,6 +2293,7 @@ bool udtMessage::RealWriteDeltaEntity(const idEntityStateBase* from, const idEnt
 	STATIC_ASSERT(EntityStateFieldCount91 + 1 == sizeof(idEntityState91) / 4);
 	STATIC_ASSERT(sizeof(idEntityState3)  % 4 == 0);
 	STATIC_ASSERT(sizeof(idEntityState48) % 4 == 0);
+	STATIC_ASSERT(sizeof(idEntityState60) % 4 == 0);
 	STATIC_ASSERT(sizeof(idEntityState66) % 4 == 0);
 	STATIC_ASSERT(sizeof(idEntityState67) % 4 == 0);
 	STATIC_ASSERT(sizeof(idEntityState68) % 4 == 0);

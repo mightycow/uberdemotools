@@ -429,7 +429,7 @@ void Demo::Load(const char* filePath, bool keepOnlyFirstMatch, bool removeTimeOu
 
 	const u32 previousMod = _mod;
 	if(!AnalyzeDemo(filePath, keepOnlyFirstMatch) && 
-	   protocol <= udtProtocol::Dm68)
+	   AreAllProtocolFlagsSet((udtProtocol::Id)protocol, udtProtocolFlags::Quake3))
 	{
 		ParseDemo(filePath, &Demo::ProcessMessage_Mod);
 	}
@@ -1259,6 +1259,7 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 	// Core.
 	//
 
+	enum Constants { ID_MAX_PS_WEAPONS = 16 }; // always 16 for Quake, more for Wolfenstein
 	const s32 followedPlayerIndex = snapshot.PlayerState->clientNum;
 	const s32 weapon = snapshot.PlayerState->weapon;
 	u32 udtWeapon;

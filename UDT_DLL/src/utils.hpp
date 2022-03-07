@@ -65,6 +65,16 @@ struct CallbackCutDemoFileStreamCreationInfo
 	const char* OutputFolderPath;
 };
 
+struct udtProtocolFlagsEx
+{
+	enum Mask
+	{
+		NoHuffman = udtProtocolFlags::Last << 1,
+		QL_ClanName = NoHuffman << 1,
+		QL_Unicode = QL_ClanName << 1
+	};
+};
+
 extern udtString   CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
 extern udtString   CallbackConvertedDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
 extern bool        StringParseInt(s32& output, const char* string);
@@ -77,7 +87,7 @@ extern s32         GetErrorCode(bool success, const s32* cancel);
 extern bool        RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation);
 extern void        LogLinearAllocatorDebugStats(udtContext& context, udtVMLinearAllocator& allocator);
 extern bool        StringMatchesCutByChatRule(const udtString& string, const udtChatPatternRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol);
-extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol);
+extern bool        IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, udtProtocol::Id protocol, udtMod::Id mod);
 extern const char* GetUDTModName(s32 mod); // Where mod is of type udtMeanOfDeath::Id. Never returns a NULL pointer.
 extern bool        GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udtVMLinearAllocator& allocator, udtProtocol::Id protocol, const char* configString);
 extern bool        IsTeamMode(udtGameType::Id gameType);
@@ -88,6 +98,11 @@ extern void        PerfStatsFinalize(u64* perfStats, u32 threadCount, u64 durati
 extern void        WriteStringToApiStruct(u32& offset, const udtString& string);
 extern void        WriteNullStringToApiStruct(u32& offset);
 extern void        PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, const idPlayerStateBase& ps, bool extrapolate, s32 serverTimeMs, udtProtocol::Id protocol);
+extern void        ParseConfigStringInt(s32& value, udtBaseParser& parser, s32 csIndex);
+extern bool        AreAllProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlags::Mask flags);
+extern bool        AreAnyProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlags::Mask flags);
+extern bool        AreAllProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlagsEx::Mask flags);
+extern bool        AreAnyProtocolFlagsSet(udtProtocol::Id protocol, udtProtocolFlagsEx::Mask flags);
 
 // Gets the integer value of a config string variable.
 // The variable name matching is case sensitive.

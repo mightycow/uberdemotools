@@ -42,6 +42,7 @@ private:
 	s32  GetValue(s32 index);
 	void ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset = 0);
 	void SetFields(u8* destMask, s32* destFields, const udtStatsFieldValue* fields, s32 fieldCount);
+	bool GetField(s32& fieldValue, const u8* mask, const s32* fields, s32 fieldIndex);
 	s64  CreateBitMask(const udtStatsField* fields, s32 fieldCount);
 	void AddCurrentStats();
 	void ClearStats(bool newGameState = false);
@@ -85,7 +86,12 @@ private:
 	void ParseCPMAPrintStats(const udtString& message);
 	void ParseCPMAPrintStatsPlayer(const udtString& message);
 	void ParseCPMAPrintStatsTeam(const udtString& message);
-	void ResetCPMAPrintStats();
+	void ParseWolfScores();
+	void ParseWolfWeapStats();
+	void ParseWolfSC();
+	void ParseWolfSCHeader(const udtString& message);
+	void ParseWolfSCStatsPlayer(const udtString& message);
+	void ParseWolfSCStatsTeam(const udtString& message);
 	void ComputePlayerAccuracies(s32 clientNumber);
 	void ComputePlayerAccuracy(s32 clientNumber, s32 acc, s32 hits, s32 shots);
 	void ComputePlayerRocketSkill(s32 clientNumber);
@@ -117,14 +123,30 @@ private:
 
 	void SetPlayerField(s32 clientNumber, udtPlayerStatsField::Id fieldId, s32 value)
 	{
-		const udtStatsFieldValue field = { (s32)fieldId, value };
-		SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), &field, 1);
+		if(value != UDT_S32_MIN)
+		{
+			const udtStatsFieldValue field = { (s32)fieldId, value };
+			SetFields(GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), &field, 1);
+		}
 	}
 
 	void SetTeamField(s32 teamIndex, udtTeamStatsField::Id fieldId, s32 value)
 	{
-		const udtStatsFieldValue field = { (s32)fieldId, value };
-		SetFields(GetTeamFlags(teamIndex), GetTeamFields(teamIndex), &field, 1);
+		if(value != UDT_S32_MIN)
+		{
+			const udtStatsFieldValue field = { (s32)fieldId, value };
+			SetFields(GetTeamFlags(teamIndex), GetTeamFields(teamIndex), &field, 1);
+		}
+	}
+
+	bool GetPlayerField(s32& fieldValue, s32 clientNumber, udtPlayerStatsField::Id fieldId)
+	{
+		return GetField(fieldValue, GetPlayerFlags(clientNumber), GetPlayerFields(clientNumber), (s32)fieldId);
+	}
+
+	bool GetTeamField(s32& fieldValue, s32 teamIndex, udtTeamStatsField::Id fieldId)
+	{
+		return GetField(fieldValue, GetTeamFlags(teamIndex), GetTeamFields(teamIndex), (s32)fieldId);
 	}
 
 	struct udtCPMAPrintStats
@@ -142,12 +164,28 @@ private:
 		bool TeamStats;
 	};
 
+	struct udtWolfSCStats
+	{
+		struct Header
+		{
+			u16 StringStart;
+			u16 StringLength;
+			s16 PlayerField;
+			s16 TeamField;
+		};
+
+		Header Headers[64];
+		u32 HeaderCount;
+		u32 TeamIndex;
+	};
+
 	u8 _playerIndices[64];
 	udtGeneralAnalyzer _analyzer;
 	udtVMArray<udtParseDataStats> _statsArray { "ParserPlugInStats::StatsArray" };
 	udtParseDataStatsBuffers _buffers;
 	udtParseDataStats _stats;
 	udtCPMAPrintStats _cpmaPrintStats;
+	udtWolfSCStats _wolfSCStats;
 	udtPlayerStats _playerStats[64];
 	s32 _playerTeamIndices[64];
 	s32 _playerFields[64][udtPlayerStatsField::Count];

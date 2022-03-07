@@ -315,15 +315,17 @@ void udtParserPlugInGameState::ProcessPlayerInfo(s32 playerIndex, const udtStrin
 			finalName = udtString::NewCleanCloneFromRef(_stringAllocator, _protocol, name);
 		}
 
-		s32 team = -1;
-		if(!ParseConfigStringValueInt(team, *TempAllocator, "t", configString.GetPtr()))
+		s32 idTeamIndex = -1;
+		if(!ParseConfigStringValueInt(idTeamIndex, *TempAllocator, "t", configString.GetPtr()))
 		{
-			team = -1;
+			idTeamIndex = -1;
 		}
+		u32 udtTeamIndex = udtTeam::Count;
+		GetUDTNumber(udtTeamIndex, udtMagicNumberType::Team, idTeamIndex, _protocol);
 
 		_playerInfos[playerIndex].Index = playerIndex;
 		WriteStringToApiStruct(_playerInfos[playerIndex].FirstName, finalName);
-		_playerInfos[playerIndex].FirstTeam = team;
+		_playerInfos[playerIndex].FirstTeam = udtTeamIndex;
 		if(serverTimeMs != UDT_S32_MIN)
 		{
 			_playerInfos[playerIndex].FirstSnapshotTimeMs = serverTimeMs;

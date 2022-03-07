@@ -190,56 +190,6 @@ namespace Uber.DemoTools
         private const uint MinimumDllVersionRevision = 1;
         private readonly string DllVersion = UDT_DLL.GetVersion();
 
-        private static readonly List<string> DemoExtensions = new List<string>
-        {
-            ".dm3",
-            ".dm_48",
-            ".dm_66",
-            ".dm_67",
-            ".dm_68",
-            ".dm_73",
-            ".dm_90",
-            ".dm_91"
-        };
-
-        private static readonly List<string> DemoExtensionsQ3 = new List<string>
-        {
-            ".dm3",
-            ".dm_48",
-            ".dm_66",
-            ".dm_67",
-            ".dm_68"
-        };
-
-        private static readonly List<string> DemoExtensionsQL = new List<string>
-        {
-            ".dm_73",
-            ".dm_90",
-            ".dm_91"
-        };
-
-        private static readonly Dictionary<string, UDT_DLL.udtProtocol> ProtocolFileExtDic = new Dictionary<string, UDT_DLL.udtProtocol>
-        {
-            { ".dm3",   UDT_DLL.udtProtocol.Dm3  },
-            { ".dm_48", UDT_DLL.udtProtocol.Dm48 },
-            { ".dm_66", UDT_DLL.udtProtocol.Dm66 },
-            { ".dm_67", UDT_DLL.udtProtocol.Dm67 },
-            { ".dm_68", UDT_DLL.udtProtocol.Dm68 },
-            { ".dm_73", UDT_DLL.udtProtocol.Dm73 },
-            { ".dm_90", UDT_DLL.udtProtocol.Dm90 },
-            { ".dm_91", UDT_DLL.udtProtocol.Dm91 }
-        };
-
-        private static readonly List<UDT_DLL.udtProtocol> ValidWriteProtocols = new List<UDT_DLL.udtProtocol>
-        {
-            { UDT_DLL.udtProtocol.Dm66 },
-            { UDT_DLL.udtProtocol.Dm67 },
-            { UDT_DLL.udtProtocol.Dm68 },
-            { UDT_DLL.udtProtocol.Dm73 },
-            { UDT_DLL.udtProtocol.Dm90 },
-            { UDT_DLL.udtProtocol.Dm91 }
-        };
-
         private class ConfigStringDisplayInfo
         {
             public ConfigStringDisplayInfo(string description, string value)
@@ -377,7 +327,7 @@ namespace Uber.DemoTools
                 return null;
             }
 
-            demos = demos.FindAll(d => IsValidWriteProtocol(d.ProtocolNumber));
+            demos = demos.FindAll(d => UDT_DLL.IsProtocolWritable(d.ProtocolNumber));
             if(demos.Count == 0)
             {
                 if(!silent) LogError("No selected demo had a protocol version compatible with the requested operation");
@@ -1022,7 +972,7 @@ namespace Uber.DemoTools
 
                 foreach(var folderPath in folderPaths)
                 {
-                    foreach(var demoExtension in DemoExtensions)
+                    foreach(var demoExtension in UDT_DLL.ProtocolExtensions)
                     {
                         var searchPattern = "*" + demoExtension;
                         var demoPaths = Directory.GetFiles(folderPath, searchPattern, searchOption);
@@ -1276,27 +1226,45 @@ namespace Uber.DemoTools
             return component.RootControl == tab.Content;
         }
 
+        private static string CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags flag)
+        {
+            var extensions = "";
+            var written = 0;
+            for(var i = 0; i < UDT_DLL.ProtocolExtensions.Count; ++i)
+            {
+                if((UDT_DLL.ProtocolFlags[i] & flag) == 0)
+                {
+                    continue;
+                }
+
+                if(written > 0)
+                {
+                    extensions += ";";
+                }
+                extensions += "*" + UDT_DLL.ProtocolExtensions[i];
+                ++written;
+            }
+
+            return extensions;
+        }
+
         private void OnOpenDemo()
         {
             using(var openFileDialog = new System.Windows.Forms.OpenFileDialog())
             {
-                var extensionsQ3 = "*" + DemoExtensionsQ3[0];
-                for(var i = 1; i < DemoExtensionsQ3.Count; ++i)
-                {
-                    extensionsQ3 += ";*" + DemoExtensionsQ3[i];
-                }
-
-                var extensionsQL = "*" + DemoExtensionsQL[0];
-                for(var i = 1; i < DemoExtensionsQL.Count; ++i)
-                {
-                    extensionsQL += ";*" + DemoExtensionsQL[i];
-                }
+                var extensionsAll = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.AllGames);
+                var extensionsQ3 = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.Quake3);
+                var extensionsQL = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.QuakeLive);
+                var extensionsRTCW = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.RTCW);
 
                 var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
                 openFileDialog.Multiselect = true;
                 openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                openFileDialog.Filter = string.Format("Quake 3 demos ({0})|{0}|Quake Live demos ({1})|{1}", extensionsQ3, extensionsQL);
+                openFileDialog.Filter = string.Format(
+                    "All demos ({0})|{0}|Quake 3 demos ({1})|{1}" +
+                    "|Quake Live demos ({2})|{2}|Return to Castle Wolfenstein demos ({3})|{3}",
+                    extensionsAll, extensionsQ3, extensionsQL, extensionsRTCW);
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
@@ -1841,7 +1809,7 @@ namespace Uber.DemoTools
         {
             var extension = Path.GetExtension(path).ToLower();
 
-            return DemoExtensions.Contains(extension);
+            return UDT_DLL.ProtocolExtensions.Contains(extension);
         }
 
         private void OnDemoListBoxDragDrop(object sender, DragEventArgs e)
@@ -2561,7 +2529,7 @@ namespace Uber.DemoTools
                 return;
             }
 
-            if(!IsValidWriteProtocol(demo.ProtocolNumber))
+            if(!UDT_DLL.IsProtocolWritable(demo.ProtocolNumber))
             {
                 LogError("The selected demo is using a protocol that UDT can't write.");
                 return;
@@ -2878,27 +2846,13 @@ namespace Uber.DemoTools
         public static UDT_DLL.udtProtocol GetProtocolFromFilePath(string filePath)
         {
             var extension = Path.GetExtension(filePath).ToLower();
-            if(!ProtocolFileExtDic.ContainsKey(extension))
+            var index = UDT_DLL.ProtocolExtensions.FindIndex((ext) => ext == extension);
+            if((uint)index >= (uint)UDT_DLL.ProtocolExtensions.Count)
             {
                 return UDT_DLL.udtProtocol.Invalid;
             }
 
-            var prot = ProtocolFileExtDic[extension];
-
-            return ProtocolFileExtDic[extension];
-        }
-
-        public static bool IsValidWriteProtocol(UDT_DLL.udtProtocol protocol)
-        {
-            foreach(var writeProtocol in ValidWriteProtocols)
-            {
-                if(writeProtocol == protocol)
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return (UDT_DLL.udtProtocol)index;
         }
 
         private static void ScrollListBoxAllTheWayDown(ListBox listBox, object lastItem)

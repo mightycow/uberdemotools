@@ -1,10 +1,10 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-UDT is a set of tools for analyzing, cutting, converting, modifying and viewing **Quake 3** and **Quake Live** demo files.
+UDT is a set of tools for analyzing, cutting, converting, modifying and viewing **Quake 3**, **Quake Live** and **Return to Castle Wolfenstein** demo files.
 
 The main features are:
 
-- Extracting and displaying information (examples: map name, player names and teams, game mode, etc)
+- Extracting and displaying information or saving it to a JSON file (examples: map name, player names and teams, game mode, team stats, player stats, etc)
 - Cutting by time: creating a new demo file that is a time sub-range of the original demo file for easier processing or demo viewing
 - Splitting demos: given a demo with multiple gamestates (happens on map change/reload), create a new demo file per gamestate
 - Cutting by patterns: given rules defined by the user, find matching events and cut demos around the times of said events
@@ -12,7 +12,7 @@ The main features are:
 - Time-shifting demos: shifting the non-first-person players back in time (a sort of anti-lag)
 - Merging demos: given multiple demos from the same match recorded by different players, create a new demo with more complete information
 - Converting demos: convert demos to a different protocol version
-- Viewing demos with the 2D demo viewer (top-down view)
+- Viewing Q3 and QL demos with the 2D demo viewer (top-down view)
 
 Official Releases
 -----------------
@@ -21,10 +21,10 @@ Permanent links to the latest builds
 
 | OS      | GUI | Command-Line Tools | 2D Viewer |
 |:--------|:---:|:------------------:|:---------:|
-| Windows | [x64](http://myt.playmorepromode.com/udt/redirections/windows_gui_x64.html) - [x86](http://myt.playmorepromode.com/udt/redirections/windows_gui_x86.html) | [x64](http://myt.playmorepromode.com/udt/redirections/windows_console_x64.html) - [x86](http://myt.playmorepromode.com/udt/redirections/windows_console_x86.html) | [x64](http://myt.playmorepromode.com/udt/redirections/windows_viewer_x64.html) - [x86](http://myt.playmorepromode.com/udt/redirections/windows_viewer_x86.html) |
-| Linux   | Not Available    | [x64](http://myt.playmorepromode.com/udt/redirections/linux_console_x64.html) - [x86](http://myt.playmorepromode.com/udt/redirections/linux_console_x86.html) | [x64](http://myt.playmorepromode.com/udt/redirections/linux_viewer_x64.html) - [x86](http://myt.playmorepromode.com/udt/redirections/linux_viewer_x86.html) |
+| Windows | [x64](https://udt.playmorepromode.com/redirections/windows_gui_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_gui_x86.html) | [x64](https://udt.playmorepromode.com/redirections/windows_console_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_console_x86.html) | [x64](https://udt.playmorepromode.com/redirections/windows_viewer_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_viewer_x86.html) |
+| Linux   | Not Available    | [x64](url=https://udt.playmorepromode.com/redirections/linux_console_x64.html) - [x86](url=https://udt.playmorepromode.com/redirections/linux_console_x86.html) | [x64](https://udt.playmorepromode.com/redirections/linux_viewer_x64.html) - [x86](https://udt.playmorepromode.com/redirections/linux_viewer_x86.html) |
 
-Alternatively, you can browse [this folder](http://myt.playmorepromode.com/udt/) where you can also find older releases.  
+Alternatively, you can browse [this folder](https://udt.playmorepromode.com) where you can also find older releases.  
 The zip files are Windows releases.  
 The tar.bz2 files are Linux releases.
 
@@ -36,7 +36,7 @@ The project is currently comprised of 4 parts:
 1. A shared library, `UDT_DLL`, with a C89 compatible interface, written in C++. Supported OSes: Windows, Linux
 2. A set of command-line tools, written in C++. Supported OSes: Windows, Linux
 3. A GUI application, `UDT_GUI`, written in C#. Supported OSes: Windows only (requires the .NET Framework)
-4. A 2D demo viewer, `UDT_viewer`, written in C++. Supported OSes: Windows, Linux
+4. A 2D demo viewer for Q3 and QL, `UDT_viewer`, written in C++. Supported OSes: Windows, Linux
 
 Overview of the binaries
 
@@ -51,7 +51,7 @@ Overview of the binaries
 | UDT_captures    | Application<br>C++ | Windows Linux |  | Command-line application for exporting a sorted list of all flag captures from the demo recorder to a single JSON file |
 | UDT_converter   | Application<br>C++ | Windows Linux |  | Command-line application for converting demos to a different protocol version |
 | UDT_GUI         | Application<br>C#  | Windows       | [.NET Framework 4.0 Client Profile](http://www.microsoft.com/en-us/download/details.aspx?id=24872) | GUI application for demo analysis, information display, cutting by time or various patterns, time-shifting, merging, conversions, etc |
-| UDT_viewer      | Application<br>C++ | Windows Linux | Windows:<br>Direct3D 11<br>Linux:<br>GLFW 3.0+ | A 2D demo viewer that can generate heat maps |
+| UDT_viewer      | Application<br>C++ | Windows Linux | Windows:<br>Direct3D 11<br>Linux:<br>GLFW 3.0+ | A 2D demo viewer for Q3 and QL that can generate heat maps |
 
 Supported Formats
 -----------------
@@ -59,16 +59,20 @@ Supported Formats
 Read-only demos can be analyzed.  
 Read/write demos can be analyzed, modified and cut.
 
-| File extension | Game version | Support level |
-|:------|:------------------|:-----------|
-| dm3   | Quake 3 1.11-1.17 | Read-only  |
-| dm_48 | Quake 3 1.27      | Read-only  |
-| dm_66 | Quake 3 1.29-1.30 | Read/write |
-| dm_67 | Quake 3 1.31      | Read/write |
-| dm_68 | Quake 3 1.32      | Read/write |
-| dm_73 | Quake Live        | Read/write |
-| dm_90 | Quake Live        | Read/write |
-| dm_91 | Quake Live        | Read/write |
+| File extension | Game version                  | Support level |
+|:------|:---------------------------------------|:-----------|
+| dm3   | Quake 3 1.11-1.17                      | Read-only  |
+| dm_48 | Quake 3 1.27                           | Read-only  |
+| dm_57 | Return to Castle Wolfenstein 1.00-1.10 | Read/write |
+| dm_58 | Return to Castle Wolfenstein 1.30-1.31 | Read/write |
+| dm_59 | Return to Castle Wolfenstein 1.32-1.33 | Read/write |
+| dm_60 | Return to Castle Wolfenstein 1.40-1.41 | Read/write |
+| dm_66 | Quake 3 1.29-1.30                      | Read/write |
+| dm_67 | Quake 3 1.31                           | Read/write |
+| dm_68 | Quake 3 1.32                           | Read/write |
+| dm_73 | Quake Live                             | Read/write |
+| dm_90 | Quake Live                             | Read/write |
+| dm_91 | Quake Live                             | Read/write |
 
 Installation
 ------------
@@ -188,10 +192,10 @@ Contact
 GitHub user: [mightycow](https://github.com/mightycow)  
 GitHub project page: [uberdemotools](https://github.com/mightycow/uberdemotools)
 
-myT @ [Discord](https://discord.me/CPMA)
+myT#2680 @ [Discord](https://discord.me/CPMA)  
 myT @ [ESR](http://esreality.com/?a=users&user_id=37287)
 
-Official ESR forum thread: [UDT @ ESR](http://www.esreality.com/post/2691563/uberdemotools/)  
+Official ESR forum thread: UDT @ [ESR](http://www.esreality.com/post/2691563/uberdemotools/)  
 No account is required to post comments.
 
 Thanks
@@ -203,6 +207,8 @@ In alphabetical order:
 * Danmer
 * gaiia
 * JackBender
+* Kimi|AHK
+* Maverick
 * Naper
 * oranjemetal
 * pakao
@@ -216,7 +222,7 @@ License
 The entire source code in this release is covered by the GPL.  
 See [COPYING.txt](https://github.com/mightycow/uberdemotools/blob/master/UDT_DLL/COPYING.txt) for the GNU GENERAL PUBLIC LICENSE.
 
-Uber Demo Tools (UDT) is Copyright (C) 2011-2018 Gian 'myT' Schellenbaum.  
+Uber Demo Tools (UDT) is Copyright (C) 2011-2022 Gian 'myT' Schellenbaum.  
 It is based on the Quake III Arena source code and the Challenge Quake 3 source code.
 
 The Quake III Arena source code is Copyright (C) 1999-2005 Id Software, Inc.  

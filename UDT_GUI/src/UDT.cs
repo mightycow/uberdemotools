@@ -73,6 +73,36 @@ namespace Uber.DemoTools
 
             return array;
         }
+
+        public static List<string> PtrToAnsiStringList(IntPtr native, int stringCount)
+        {
+            int elementSize = Marshal.SizeOf(typeof(IntPtr));
+
+            var list = new List<string>();
+            for(int i = 0; i < stringCount; ++i)
+            {
+                var address = Marshal.ReadIntPtr(native, i * elementSize);
+                var element = Marshal.PtrToStringAnsi(address);
+                list.Add(element ?? "N/A");
+            }
+
+            return list;
+        }
+
+        public static List<T> PtrToUintEnumerationList<T>(IntPtr native, int count)
+        {
+            var list = new List<T>();
+            if(native != IntPtr.Zero)
+            {
+                for(int i = 0; i < count; ++i)
+                {
+                    var address = new IntPtr(native.ToInt64() + i * 4);
+                    list.Add((T)(object)(uint)Marshal.ReadInt32(address)); // eek...
+                }
+            }
+
+            return list;
+        }
     }
 
     // @TODO: Move this...
@@ -715,6 +745,10 @@ namespace Uber.DemoTools
         {
             Dm3,
             Dm48,
+            Dm57,
+            Dm58,
+            Dm59,
+            Dm60,
             Dm66,
             Dm67,
             Dm68,
@@ -724,6 +758,20 @@ namespace Uber.DemoTools
             Count,
             Invalid
         }
+
+        [Flags]
+        public enum udtProtocolFlags : uint
+        {
+            ReadOnly = 1 << 0,
+            Quake3 = 1 << 1,
+            QuakeLive = 1 << 2,
+            RTCW = 1 << 3,
+            ET = 1 << 4,
+            Last = ET,
+            Quake = Quake3 | QuakeLive,
+            Wolfenstein = RTCW | ET,
+            AllGames = Quake | Wolfenstein
+        };
 
         public enum udtErrorCode : int
         {
@@ -763,6 +811,7 @@ namespace Uber.DemoTools
             Count
         }
 
+        [Flags]
         public enum udtWeaponMask : uint
         {
             Gauntlet = 1 << 0,
@@ -799,6 +848,7 @@ namespace Uber.DemoTools
             PlayerStatsNames,
             PlugInNames,
             PerfStatsNames,
+            WolfClassNames,
             Count
         }
 
@@ -844,9 +894,12 @@ namespace Uber.DemoTools
             Ping,
             Positive,
             Boolean,
+            WolfClass,
+            WolfRespawnsLeft,
             Count
         }
 
+        [Flags]
         enum udtGameTypeFlags : byte
         {
             None = 0,
@@ -895,6 +948,17 @@ namespace Uber.DemoTools
             Throughput,
             Duration,
             Percentage,
+            Count
+        }
+
+        private enum udtTeam : uint
+        {
+            Free,
+            Red,
+            Blue,
+            Spectators,
+            Axis,
+            Allies,
             Count
         }
 
@@ -1314,6 +1378,8 @@ namespace Uber.DemoTools
             public UInt32 GameStateIndex;
             public Int32 CountDownStartTimeMs;
             public Int32 IntermissionEndTimeMs;
+            public UInt32 DefenderName; // string offset
+            public UInt32 DefenderNameLength;
             public Int32 Reserved1;
 	    }
 
@@ -1469,6 +1535,17 @@ namespace Uber.DemoTools
             public Int32 Reserved1;
         }
 
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        struct udtProtocolList
+        {
+            public IntPtr Extensions; // const char**
+            public IntPtr Descriptions; // const char**
+            public IntPtr Flags; // const u32*
+            public IntPtr Reserved1;
+            public UInt32 Count;
+            public UInt32 Reserved2;
+        }
+
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private IntPtr udtGetVersionString();
 
@@ -1489,6 +1566,9 @@ namespace Uber.DemoTools
 
 	    [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
 	    extern static private udtProtocol udtGetProtocolByFilePath(IntPtr filePath);
+
+        [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
+        extern static private udtErrorCode udtGetProtocolList(ref udtProtocolList protocolList);
 
         [DllImport(_dllPath, CharSet = CharSet.Ansi, CallingConvention = CallingConvention.Cdecl)]
         extern static private udtErrorCode udtCrash(udtCrashType crashType);
@@ -1648,15 +1728,15 @@ namespace Uber.DemoTools
 
                 _teamFieldNames = GetStringArray(udtStringArray.TeamStatsNames);
 
-                IntPtr teamFieldCompModes = IntPtr.Zero;
-                UInt32 teamFieldCompModeCount = 0;
-                udtGetByteArray(udtByteArray.TeamStatsCompModes, ref teamFieldCompModes, ref teamFieldCompModeCount);
-                _teamCompModes = MarshalHelper.PtrToByteArray(playerCompModes, (int)playerCompModeCount);
+                IntPtr teamCompModes = IntPtr.Zero;
+                UInt32 teamCompModeCount = 0;
+                udtGetByteArray(udtByteArray.TeamStatsCompModes, ref teamCompModes, ref teamCompModeCount);
+                _teamCompModes = MarshalHelper.PtrToByteArray(teamCompModes, (int)teamCompModeCount);
 
-                IntPtr teamFieldDataTypes = IntPtr.Zero;
-                UInt32 teamFieldDataTypeCount = 0;
-                udtGetByteArray(udtByteArray.TeamStatsDataTypes, ref teamFieldDataTypes, ref teamFieldDataTypeCount);
-                _teamDataTypes = MarshalHelper.PtrToByteArray(teamFieldDataTypes, (int)teamFieldDataTypeCount);
+                IntPtr teamDataTypes = IntPtr.Zero;
+                UInt32 teamDataTypeCount = 0;
+                udtGetByteArray(udtByteArray.TeamStatsDataTypes, ref teamDataTypes, ref teamDataTypeCount);
+                _teamDataTypes = MarshalHelper.PtrToByteArray(teamDataTypes, (int)teamDataTypeCount);
 
                 IntPtr gameTypeFlags = IntPtr.Zero;
                 UInt32 gameTypeCount = 0;
@@ -1800,9 +1880,38 @@ namespace Uber.DemoTools
             return udtCrash(crashType) == udtErrorCode.None;
         }
 
+        public static List<udtProtocolFlags> ProtocolFlags;
+        public static List<string> ProtocolExtensions;
+        public static List<string> ProtocolDescriptions;
+
         public static void InitLibrary()
         {
             udtInitLibrary();
+
+            var protocolList = new udtProtocolList();
+            var errorCode = udtGetProtocolList(ref protocolList);
+            if(errorCode != udtErrorCode.None)
+            {
+                throw new Exception("udtGetProtocolList failed: " + errorCode.ToString());
+            }
+
+            if(protocolList.Count != (uint)udtProtocol.Count)
+            {
+                var msg = string.Format(
+                    "UDT_GUI and UDT_DLL don't agree on protocol counts ({0} vs {1})",
+                    protocolList.Count, udtProtocol.Count);
+                throw new Exception(msg);
+            }
+
+            ProtocolFlags = MarshalHelper.PtrToUintEnumerationList<udtProtocolFlags>(protocolList.Flags, (int)protocolList.Count);
+            ProtocolExtensions = MarshalHelper.PtrToAnsiStringList(protocolList.Extensions, (int)protocolList.Count);
+            ProtocolDescriptions = MarshalHelper.PtrToAnsiStringList(protocolList.Descriptions, (int)protocolList.Count);
+
+            if(ProtocolFlags.Count != (int)protocolList.Count ||
+                ProtocolExtensions.Count != (int)protocolList.Count)
+            {
+                throw new Exception("Invalid udtGetProtocolList output");
+            }
         }
 
         public static void ShutDownLibrary()
@@ -1932,18 +2041,65 @@ namespace Uber.DemoTools
 
         public static string GetProtocolAsString(udtProtocol protocol)
         {
-            switch(protocol)
+            if((uint)protocol >= (uint)UDT_DLL.udtProtocol.Count)
             {
-                case udtProtocol.Dm3:  return "3 (Quake 3 1.11-1.17)";
-                case udtProtocol.Dm48: return "48 (Quake 3 1.27)";
-                case udtProtocol.Dm66: return "66 (Quake 3 1.29-1.30)";
-                case udtProtocol.Dm67: return "67 (Quake 3 1.31)";
-                case udtProtocol.Dm68: return "68 (Quake 3 1.32)";
-                case udtProtocol.Dm73: return "73 (Quake Live)";
-                case udtProtocol.Dm90: return "90 (Quake Live)";
-                case udtProtocol.Dm91: return "91 (Quake Live)";
-                default: return "?";
+                return "?";
             }
+
+            var extension = ProtocolExtensions[(int)protocol];
+            var versionString = extension;
+            // No, I do not want to use String.IndexOfAny or some LINQ shit for this instead of a for loop.
+            // Please get off my lawn now.
+            int firstDigitIndex = -1;
+            for(int i = 0; i < extension.Length; ++i)
+            {
+                if(extension[i] >= '0' && extension[i] <= '9')
+                {
+                    firstDigitIndex = i;
+                    break;
+                }
+            }
+
+            if(firstDigitIndex >= 0)
+            {
+                int versionValue;
+                if(int.TryParse(extension.Substring(firstDigitIndex), out versionValue))
+                {
+                    versionString = versionValue.ToString();
+                }
+            }
+
+            return string.Format("{0} ({1})", versionString, ProtocolDescriptions[(int)protocol]);
+        }
+
+        private static bool AreAllProtocolBitsSet(UDT_DLL.udtProtocol protocol, UDT_DLL.udtProtocolFlags flags)
+        {
+            if((uint)protocol >= (uint)UDT_DLL.udtProtocol.Count)
+            {
+                return false;
+            }
+
+            return (UDT_DLL.ProtocolFlags[(int)protocol] & flags) == flags;
+        }
+
+        private static bool AreAnyProtocolBitsSet(UDT_DLL.udtProtocol protocol, UDT_DLL.udtProtocolFlags flags)
+        {
+            if((uint)protocol >= (uint)UDT_DLL.udtProtocol.Count)
+            {
+                return false;
+            }
+
+            return (UDT_DLL.ProtocolFlags[(int)protocol] & flags) != 0;
+        }
+
+        public static bool IsProtocolWritable(UDT_DLL.udtProtocol protocol)
+        {
+            return !AreAllProtocolBitsSet(protocol, UDT_DLL.udtProtocolFlags.ReadOnly);
+        }
+
+        public static bool IsProtocolWolfenstein(udtProtocol protocol)
+        {
+            return AreAnyProtocolBitsSet(protocol, UDT_DLL.udtProtocolFlags.Wolfenstein);
         }
 
         public static bool SplitDemo(udtParserContextRef context, ref udtParseArg parseArg, string filePath)
@@ -3105,6 +3261,12 @@ namespace Uber.DemoTools
                 stats.AddGenericField("Blue team name", blueTeamName);
             }
 
+            var defenderName = data.DefenderName != uint.MaxValue ? buffers.GetString(data.DefenderName, data.DefenderNameLength) : null;
+            if(defenderName != null)
+            {
+                stats.AddGenericField("Defending team's name", defenderName);
+            }
+
             stats.AddGenericField("Mod", GetUDTStringForValueOrNull(udtStringArray.ModNames, data.Mod));
             if(data.Mod != 0)
             {
@@ -3173,6 +3335,33 @@ namespace Uber.DemoTools
             info.MatchStats.Add(stats);
         }
 
+        private static bool IsValidTeamIndex(int teamIndex, DemoInfo info)
+        {
+            if(IsProtocolWolfenstein(info.ProtocolNumber))
+            {
+                switch((udtTeam)teamIndex)
+                {
+                    case udtTeam.Axis:
+                    case udtTeam.Allies:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+            else
+            {
+                switch((udtTeam)teamIndex)
+                {
+                    case udtTeam.Free:
+                    case udtTeam.Red:
+                    case udtTeam.Blue:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         private static void ExtractPlayerStats(StatsBuffers buffers, udtParseDataStats data, DemoInfo info, ref DemoStatsInfo stats)
         {
             var playerInfoIndex = (int)data.FirstPlayerStatsIndex;
@@ -3200,7 +3389,7 @@ namespace Uber.DemoTools
                         var fieldName = "";
                         var fieldValue = "";
                         var fieldIntegerValue = buffers.PlayerFields[fieldIdx];
-                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, LibraryArrays.GetPlayerFieldName(j));
+                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, LibraryArrays.GetPlayerFieldName(j), info);
                         field.Key = fieldName;
                         field.Value = fieldValue;
                         field.IntegerValue = fieldIntegerValue;
@@ -3216,7 +3405,7 @@ namespace Uber.DemoTools
                 playerStats.TeamIndex = teamIndex;
 
                 // Get rid of spectators and players without a team.
-                if(teamIndex >= 0 && teamIndex < 3)
+                if(IsValidTeamIndex(teamIndex, info))
                 {
                     stats.PlayerStats.Add(playerStats);
                 }
@@ -3320,7 +3509,7 @@ namespace Uber.DemoTools
                         var fieldName = "";
                         var fieldValue = "";
                         var fieldIntegerValue = buffers.TeamFields[fieldIdx];
-                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, LibraryArrays.GetTeamFieldName(j));
+                        FormatStatsField(out fieldName, out fieldValue, fieldIntegerValue, dataType, LibraryArrays.GetTeamFieldName(j), info);
                         field.Key = fieldName;
                         field.Value = fieldValue;
                         field.IntegerValue = fieldIntegerValue;
@@ -3505,18 +3694,26 @@ namespace Uber.DemoTools
             return _teamNames[(int)teamIndex];
         }
 
-        private static bool IsStatsValueValid(udtMatchStatsDataType type, int value)
+        private static bool IsStatsValueValid(udtMatchStatsDataType type, int value, DemoInfo info)
         {
             switch(type)
             {
                 case udtMatchStatsDataType.Team:
-                    return value >= 0 && value <= 3;
+                    return IsValidTeamIndex(value, info);
 
                 case udtMatchStatsDataType.Weapon:
                     return true;
 
                 case udtMatchStatsDataType.Percentage:
-                    return value >= 0 && value <= 100;
+                    if(IsProtocolWolfenstein(info.ProtocolNumber))
+                    {
+                        // you can have > 100 if you get 2 kills with the panzerfaust
+                        return value >= 0;
+                    }
+                    else
+                    {
+                        return value >= 0 && value <= 100;
+                    }
 
                 case udtMatchStatsDataType.Minutes:
                 case udtMatchStatsDataType.Seconds:
@@ -3533,10 +3730,10 @@ namespace Uber.DemoTools
             }
         }
 
-        private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtMatchStatsDataType dataType, string inFieldName)
+        private static void FormatStatsField(out string fieldName, out string fieldValue, int fieldIntegerValue, udtMatchStatsDataType dataType, string inFieldName, DemoInfo info)
         {
             fieldName = dataType == udtMatchStatsDataType.Team ? "Team" : ProcessStatsFieldName(inFieldName);
-            if(!IsStatsValueValid(dataType, fieldIntegerValue))
+            if(!IsStatsValueValid(dataType, fieldIntegerValue, info))
             {
                 fieldValue = "<invalid>";
                 return;
@@ -3570,6 +3767,14 @@ namespace Uber.DemoTools
 
                 case udtMatchStatsDataType.Boolean:
                     fieldValue = fieldIntegerValue == 0 ? "no" : "yes";
+                    break;
+
+                case udtMatchStatsDataType.WolfClass:
+                    fieldValue = GetUDTStringForValueOrNull(udtStringArray.WolfClassNames, (uint)fieldIntegerValue) ?? "N/A";
+                    break;
+
+                case udtMatchStatsDataType.WolfRespawnsLeft:
+                    fieldValue = fieldIntegerValue == -1 ? "infinite" : Math.Max(fieldIntegerValue, 0).ToString();
                     break;
 
                 case udtMatchStatsDataType.Generic:

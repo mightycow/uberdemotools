@@ -62,6 +62,8 @@ namespace Uber.DemoTools
         private FrameworkElement _matchSelectionPanel;
         private ComboBox _matchSelectionComboBox;
         private ScrollViewer _scrollViewer;
+        private GridViewColumnHeader _headerRed;
+        private GridViewColumnHeader _headerBlue;
         private App _app;
 
         private class TeamStatsDisplayInfo
@@ -147,6 +149,10 @@ namespace Uber.DemoTools
 
             ShowMatchSelector(demoInfo.MatchStats.Count > 1);
             PopulateViews(demoInfo.MatchStats[0]);
+
+            var isWolf = UDT_DLL.IsProtocolWolfenstein(demoInfo.ProtocolNumber);
+            _headerRed.Content = isWolf ? "Axis" : "Red";
+            _headerBlue.Content = isWolf ? "Allies" : "Blue";
         }
 
         private void PopulateViews(DemoStatsInfo stats)
@@ -454,6 +460,7 @@ namespace Uber.DemoTools
 
             var columnRed = new GridViewColumn();
             var headerRed = new GridViewColumnHeader();
+            _headerRed = headerRed;
             headerRed.Content = "Red";
             headerRed.Tag = "Red";
             columnRed.Header = headerRed;
@@ -462,6 +469,7 @@ namespace Uber.DemoTools
 
             var columnBlue = new GridViewColumn();
             var headerBlue = new GridViewColumnHeader();
+            _headerBlue = headerBlue;
             headerBlue.Content = "Blue";
             headerBlue.Tag = "Blue";
             columnBlue.Header = headerBlue;

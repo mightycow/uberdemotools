@@ -27,12 +27,29 @@ the location isn't stored in some QL demos I have
 CPMA team chat format ("mm2"):
 playerIndex locationIndex message
 
+RTCW chat format ("chat", 2 extra args):
+"name^7: ^2message" 0
+
+RTCW team chat format ("tchat", 2 extra args):
+"[lof](name^7) ([lon]location[lof]): ^5message" 1
+"(name^7): ^5message" 1
+
+RTCW limbo chat format ("lchat"):
+name^7: ^2message
+
 @NOTE: In Quake 3, player names can contain and end with spaces.
 
 @NOTE: In the new QL, in both "chat" and "tchat", the clan and name separator 
 can sometimes be a '.' instead of ' '...
 */
 
+
+static void WriteStringsToApiStruct(u32& offsetRaw, u32& offsetClean, const udtString& stringRaw, udtVMLinearAllocator& allocator, udtProtocol::Id protocol)
+{
+	udtString stringClean = udtString::NewCleanCloneFromRef(allocator, protocol, stringRaw);
+	WriteStringToApiStruct(offsetRaw, stringRaw);
+	WriteStringToApiStruct(offsetClean, stringClean);
+}
 
 udtParserPlugInChat::udtParserPlugInChat()
 {
@@ -91,6 +108,18 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 		   csIndex < firstPlayerCsIndex + 64)
 		{
 			ProcessPlayerConfigString(parser, tokenizer.GetArg(2), csIndex - firstPlayerCsIndex);
+		}
+	}
+	else if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::RTCW) &&
+			tokenizer.GetArgCount() >= 2)
+	{
+		if(udtString::Equals(command, "chat") || udtString::Equals(command, "lchat"))
+		{
+			ProcessWolfChatCommand(parser, false);
+		}
+		else if(udtString::Equals(command, "tchat"))
+		{
+			ProcessWolfChatCommand(parser, true);
 		}
 	}
 	else if(tokenizer.GetArgCount() == 2 && 
@@ -163,8 +192,7 @@ void udtParserPlugInChat::ProcessChatCommand(udtBaseParser& parser)
 	udtString::RemoveEmCharacter(argument1[0]);
 	udtString::RemoveEmCharacter(argument1[1]);
 
-	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
-	if(qlFormat)
+	if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::QuakeLive))
 	{
 		ExtractPlayerIndexRelatedData(chatEvent, argument1[1], parser);
 
@@ -209,8 +237,7 @@ void udtParserPlugInChat::ProcessTeamChatCommand(udtBaseParser& parser)
 	udtString::RemoveEmCharacter(argument1[0]);
 	udtString::RemoveEmCharacter(argument1[1]);
 
-	const bool qlFormat = parser._inProtocol >= udtProtocol::Dm73;
-	if(qlFormat)
+	if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::QuakeLive))
 	{
 		ExtractPlayerIndexRelatedData(chatEvent, argument1[1], parser);
 
@@ -322,6 +349,82 @@ void udtParserPlugInChat::ProcessCPMATeamChatCommand(udtBaseParser& parser)
 	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, command);
 	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, command);
 	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanCommand);
+
+	ChatEvents.Add(chatEvent);
+}
+
+void udtParserPlugInChat::ProcessWolfChatCommand(udtBaseParser& parser, bool teamChat)
+{
+	udtVMScopedStackAllocator allocScope(*TempAllocator);
+
+	udtParseDataChat chatEvent;
+	InitChatEvent(chatEvent, parser._inServerTime);
+	chatEvent.TeamMessage = teamChat ? 1 : 0;
+
+	const udtProtocol::Id protocol = parser._inProtocol;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	const udtString originalCommand = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
+	WriteStringsToApiStruct(chatEvent.Strings[0].OriginalCommand, chatEvent.Strings[1].OriginalCommand, originalCommand, _stringAllocator, protocol);
+
+	udtString argument1;
+	argument1 = udtString::NewCloneFromRef(*TempAllocator, tokenizer.GetArg(1));
+	udtString::RemoveEmCharacter(argument1);
+
+	u32 messageStart = 0;
+	if(!udtString::Contains(messageStart, argument1, ": ^"))
+	{
+		return;
+	}
+	messageStart += 4;
+
+	u32 nameStart = 0;
+	if(udtString::StartsWith(argument1, "[lof]("))
+	{
+		nameStart = 6;
+	}
+	else if(udtString::StartsWith(argument1, "("))
+	{
+		nameStart = 1;
+	}
+
+	u32 locStart = 0;
+	if(udtString::Contains(locStart, argument1, "([lon]"))
+	{
+		locStart += 6;
+	}
+
+	u32 locEnd = 0;
+	udtString::Contains(locEnd, argument1, "[lof]): ^5");
+
+	u32 nameEnd = 0;
+	if(teamChat)
+	{
+		if(!udtString::Contains(nameEnd, argument1, "^7)"))
+		{
+			return;
+		}
+	}
+	else
+	{
+		if(!udtString::Contains(nameEnd, argument1, "^7: ^2"))
+		{
+			return;
+		}
+	}
+
+	const udtString playerName = udtString::NewSubstringClone(_stringAllocator, argument1, nameStart, nameEnd - nameStart);
+	WriteStringsToApiStruct(chatEvent.Strings[0].PlayerName, chatEvent.Strings[1].PlayerName, playerName, _stringAllocator, protocol);
+
+	const udtString message = udtString::NewSubstringClone(_stringAllocator, argument1, messageStart);
+	WriteStringsToApiStruct(chatEvent.Strings[0].Message, chatEvent.Strings[1].Message, message, _stringAllocator, protocol);
+
+	if(locStart > 0 &&
+	   locEnd > locStart &&
+	   locEnd < messageStart)
+	{
+		const udtString location = udtString::NewSubstringClone(_stringAllocator, argument1, locStart, locEnd - locStart);
+		WriteStringsToApiStruct(chatEvent.Strings[0].Location, chatEvent.Strings[1].Location, location, _stringAllocator, protocol);
+	}
 
 	ChatEvents.Add(chatEvent);
 }

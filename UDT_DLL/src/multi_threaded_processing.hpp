@@ -47,7 +47,7 @@ struct udtMultiThreadedParsing
 {
 	bool Process(udtTimer& jobTimer,
 				 udtParserContext* contexts, 
-                 udtDemoThreadAllocator& threadInfo, 
+				 udtDemoThreadAllocator& threadInfo, 
 				 const udtParseArg* parseInfo, 
 				 const udtMultiParseArg* multiParseInfo,
 				 udtParsingJobType::Id jobType,

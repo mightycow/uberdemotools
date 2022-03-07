@@ -74,6 +74,7 @@ struct udtString
 
 	static void RemoveCharacter(udtString& result, char toRemove);
 
+	static void TrimLeadingCharacter(udtString& result, char toRemove);
 	static void TrimTrailingCharacter(udtString& result, char toRemove);
 
 	static void RemoveEmCharacter(udtString& result);

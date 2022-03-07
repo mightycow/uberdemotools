@@ -13,12 +13,11 @@ public:
 	void InitAllocators(udtVMLinearAllocator& tempAllocator, u32 demoCount);
 	void ResetForNextDemo();
 	void FinishDemoAnalysis();
- 
+
 	void ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser);
 	void ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser);
 	void ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser);
 
-	void ClearStringAllocator();
 	void SetIntermissionEndTime();
 	void ResetForNextMatch();
 	bool HasMatchJustStarted() const;
@@ -51,6 +50,8 @@ public:
 	udtGamePlay::Id     GamePlay() const;
 	udtString           ModVersion() const;
 	udtString           MapName() const;
+	udtTeam::Id         WolfWinningTeam() const { return _rtcwWinningTeam; }
+	udtTeam::Id         WolfDefendingTeam() const { return _rtcwDefendingTeam; }
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtGeneralAnalyzer);
@@ -83,9 +84,9 @@ private:
 
 	// Functions with the "Once" suffix only need to be called from ProcessGamestateMessage.
 	void UpdateGameState(udtGameState::Id gameState);
-	void ProcessModNameAndVersionOnce();
-	void ProcessMapNameOnce();
-	void ProcessQ3ServerInfoConfigStringOnce(const char* configString);
+	void ProcessModNameAndVersion();
+	void ProcessMapName();
+	void ProcessQ3ServerInfoConfigString(const char* configString);
 	void ProcessCPMAGameInfoConfigString(const char* configString);
 	void ProcessCPMARoundInfoConfigString(const char* configString);
 	void ProcessQLServerInfoConfigString(const char* configString);
@@ -97,6 +98,10 @@ private:
 	void ProcessScores2Player(const char* configString);
 	void ProcessQLPauseStartConfigString(const char* configString);
 	void ProcessQLPauseEndConfigString(const char* configString);
+	void ProcessWolfInfoConfigString(const char* configString);
+	void ProcessWolfServerInfoConfigString(const char* configString);
+	void ProcessWolfPausedConfigString(const char* configString);
+	udtTeam::Id ParseWolfTeamFromConfigString(u32 csIndex, const char* keyName);
 	s32  GetLevelStartTime();
 	s32  GetWarmUpEndTime();
 	bool IsIntermission();
@@ -127,7 +132,11 @@ private:
 	u32 _fragLimit;
 	u32 _captureLimit;
 	u32 _roundLimit;
+	u32 _roundIndex;
 	s32 _te;
+	udtTeam::Id _rtcwWinningTeam;
+	udtTeam::Id _rtcwWinningTeamInter;
+	udtTeam::Id _rtcwDefendingTeam;
 	udtGame::Id _game;
 	udtGameType::Id _gameType;
 	udtGameState::Id _gameState;

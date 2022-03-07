@@ -79,6 +79,29 @@ static u32 PopCount(const u8* flags, u32 byteCount)
 	return count;
 }
 
+static const char* GetIdTeamName(s32 idTeamIndex, udtProtocol::Id protocol)
+{
+	u32 udtTeamIndex = u32(-1);
+	if(!GetUDTNumber(udtTeamIndex, udtMagicNumberType::Team, idTeamIndex, protocol))
+	{
+		return "?";
+	}
+
+	const char** strings = NULL;
+	u32 stringCount = 0;
+	if(udtGetStringArray(udtStringArray::Teams, &strings, &stringCount) != (s32)udtErrorCode::None)
+	{
+		return "?";
+	}
+
+	if(udtTeamIndex >= stringCount)
+	{
+		return "?";
+	}
+
+	return strings[udtTeamIndex];
+}
+
 
 udtParserPlugInStats::udtParserPlugInStats()
 {
@@ -98,9 +121,6 @@ udtParserPlugInStats::~udtParserPlugInStats()
 void udtParserPlugInStats::InitAllocators(u32 demoCount)
 {
 	_analyzer.InitAllocators(*TempAllocator, demoCount);
-
-	_redString = udtString::NewClone(_stringAllocator, "RED");
-	_blueString = udtString::NewClone(_stringAllocator, "BLUE");
 }
 
 void udtParserPlugInStats::CopyBuffersStruct(void* buffersStruct) const
@@ -177,6 +197,15 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	_plugInTokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
 	_followedClientNumber = -1;
+
+	// we delay the allocation of team names since we need to know the protocol
+	// 1 = red/axis
+	// 2 = blue/allies
+	if(!_redString.IsValid() || !_blueString.IsValid())
+	{
+		_redString = udtString::NewClone(_stringAllocator, GetIdTeamName(1, _protocol));
+		_blueString = udtString::NewClone(_stringAllocator, GetIdTeamName(2, _protocol));
+	}
 
 	_firstPlaceClientNumber = -1;
 	_secondPlaceClientNumber = -1;
@@ -278,7 +307,9 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("scores_ft", ParseQLScoresFT),
 		HANDLER("rrscores", ParseQLScoresRROld),
 		HANDLER("scores_rr", ParseQLScoresRR),
-		HANDLER("print", ParsePrint)
+		HANDLER("print", ParsePrint),
+		HANDLER("ws", ParseWolfWeapStats),
+		HANDLER("sc", ParseWolfSC)
 	};
 #undef HANDLER
 	/*
@@ -459,10 +490,12 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 		return;
 	}
 
-	s32 teamIndex = -1;
-	if(ParseConfigStringValueInt(teamIndex, *TempAllocator, "t", configString))
+	s32 idTeamIndex = -1;
+	if(ParseConfigStringValueInt(idTeamIndex, *TempAllocator, "t", configString))
 	{
-		_playerTeamIndices[playerIndex] = teamIndex;
+		u32 udtTeamIndex = (s32)idTeamIndex;
+		GetUDTNumber(udtTeamIndex, udtMagicNumberType::Team, idTeamIndex, _protocol);
+		_playerTeamIndices[playerIndex] = udtTeamIndex;
 	}
 
 	udtString clan, name;
@@ -482,13 +515,17 @@ void udtParserPlugInStats::ProcessPlayerConfigString(const char* configString, s
 
 void udtParserPlugInStats::ParseScores()
 {
-	if(_protocol >= udtProtocol::Dm73)
+	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 	{
 		ParseQLScoresOld();
 	}
 	else if(_protocol == udtProtocol::Dm3)
 	{
 		ParseQ3ScoresDM3();
+	}
+	else if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
+	{
+		ParseWolfScores();
 	}
 	else
 	{
@@ -2494,9 +2531,348 @@ void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 	}
 }
 
-void udtParserPlugInStats::ResetCPMAPrintStats()
+void udtParserPlugInStats::ParseWolfScores()
 {
-	memset(&_cpmaPrintStats, 0, sizeof(_cpmaPrintStats));
+	if(_tokenizer->GetArgCount() < 2)
+	{
+		return;
+	}
+
+	s32 scoreCount = GetValue(1);
+	if(scoreCount < 0)
+	{
+		return;
+	}
+
+	scoreCount = udt_min(scoreCount, 64);
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields), 2);
+	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 3);
+
+	if((s32)_tokenizer->GetArgCount() != 4 + (scoreCount * 8))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields[] =
+	{
+		// player class: 0=soldier, 1=medic, 2=engineer, 3=lieutenant
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 1),
+		PLAYER_FIELD(Time, 2),
+		// skipped 3: score flags
+		// skipped 4: power-ups
+		PLAYER_FIELD(PlayerClass, 5),
+		PLAYER_FIELD(RespawnsLeft, 6)
+	};
+
+	s32 offset = 4;
+	for(s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if(clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+		}
+
+		offset += 8;
+	}
+}
+
+void udtParserPlugInStats::ParseWolfWeapStats()
+{
+	if(_tokenizer->GetArgCount() < 1 + 3)
+	{
+		return;
+	}
+
+	s32 token = 1;
+	const s32 clientNumber = GetValue(token++);
+	token++; // skipped: rounds
+	const u32 weaponMask = (u32)GetValue(token++);
+	if(weaponMask == 0)
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Hits, Offset + 0), \
+	PLAYER_FIELD(Weapon##Shots, Offset + 1), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 2), \
+	PLAYER_FIELD(Weapon##Deaths, Offset + 3), \
+	PLAYER_FIELD(Weapon##Headshots, Offset + 4)
+	
+	const udtStatsField weaponFields[] =
+	{
+		WEAPON_FIELDS(Knife, 0),
+		WEAPON_FIELDS(Luger, 0),
+		WEAPON_FIELDS(Colt, 0),
+		WEAPON_FIELDS(MP40, 0),
+		WEAPON_FIELDS(Thompson, 0),
+		WEAPON_FIELDS(Sten, 0),
+		WEAPON_FIELDS(FG42, 0),
+		WEAPON_FIELDS(Panzerfaust, 0),
+		WEAPON_FIELDS(Flamethrower, 0),
+		WEAPON_FIELDS(Grenade, 0),
+		WEAPON_FIELDS(Mortar, 0),
+		WEAPON_FIELDS(Dynamite, 0),
+		WEAPON_FIELDS(Airstrike, 0),
+		WEAPON_FIELDS(Artillery, 0),
+		WEAPON_FIELDS(Syringe, 0),
+		WEAPON_FIELDS(Smoke, 0),
+		WEAPON_FIELDS(MG42, 0),
+		WEAPON_FIELDS(Rifle, 0),
+		WEAPON_FIELDS(Venom, 0)
+	};
+
+#undef WEAPON_FIELDS
+
+	bool hasStats = false;
+	for(u32 i = 0, fieldIndex = 0; i < 19; ++i, fieldIndex += 5)
+	{
+		if((weaponMask & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32 hits = GetValue(token + 0);
+		const s32 atts = GetValue(token + 1);
+		const s32 kills = GetValue(token + 2);
+		const s32 deaths = GetValue(token + 3);
+		// skipped: headshots
+		ParsePlayerFields(clientNumber, weaponFields + fieldIndex, 5, token);
+		token += 5;
+		if(atts > 0 || hits > 0 || kills > 0 || deaths > 0)
+		{
+			hasStats = true;
+		}
+	}
+
+	if(hasStats)
+	{
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageGiven, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageReceived, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamage, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::GibbedBodies, GetValue(token++));
+	}
+}
+
+void udtParserPlugInStats::ParseWolfSC()
+{
+	if(_tokenizer->GetArgCount() != 2)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	const udtString message = _tokenizer->GetArg(1);
+	udtString cleanMessage = udtString::NewCloneFromRef(*TempAllocator, message);
+	udtString::CleanUp(cleanMessage, _protocol);
+
+	if(udtString::IsNullOrEmpty(cleanMessage) ||
+	   udtString::StartsWith(cleanMessage, "Mod"))
+	{
+		return;
+	}
+
+	if(udtString::StartsWith(cleanMessage, "Axis Team") ||
+	   udtString::StartsWith(cleanMessage, "Allied Team"))
+	{
+		ParseWolfSCHeader(cleanMessage);
+	}
+	else if(udtString::StartsWith(cleanMessage, "----"))
+	{
+		_disableStatsOverrides = true;
+		ParseWolfSCStatsTeam(cleanMessage);
+		_disableStatsOverrides = false;
+	}
+	else
+	{
+		_disableStatsOverrides = true;
+		ParseWolfSCStatsPlayer(cleanMessage);
+		_disableStatsOverrides = false;
+	}
+}
+
+void udtParserPlugInStats::ParseWolfSCHeader(const udtString& cleanMessage)
+{
+	udtString message = cleanMessage;
+
+	struct Field
+	{
+		const char* Name;
+		s16 PlayerField;
+		s16 TeamField;
+	};
+
+#define FIELD(Name, Field) { Name, (s16)udtPlayerStatsField::Field, (s16)udtTeamStatsField::Field }
+	static const Field fields[] =
+	{
+		{ "Player", -1, -666 },
+		FIELD("Kll", Kills),
+		FIELD("Dth", Deaths),
+		FIELD("Sui", Suicides),
+		FIELD("TK", TeamKills),
+		FIELD("Eff", Efficiency),
+		FIELD("Gib", GibbedBodies),
+		FIELD("Accrcy", Accuracy),
+		FIELD("HS", Headshots),
+		FIELD("DG", DamageGiven),
+		FIELD("DR", DamageReceived),
+		FIELD("TD", TeamDamage),
+		FIELD("Rev", Revives),
+		FIELD("Score", Score)
+	};
+#undef FIELD
+
+	_wolfSCStats.TeamIndex = udtString::StartsWithNoCase(message, "Allied Team") ? 1 : 0;
+
+	udtString::TrimTrailingCharacter(message, '-');
+
+	udtString headerString = message;
+	u32 headerStart = 0;
+	if(udtString::Contains(headerStart, message, "----Player"))
+	{
+		headerStart += 4;
+		headerString = udtString::NewSubstringClone(*TempAllocator, message, headerStart);
+	}
+
+	idTokenizer* const tokenizer = _plugInTokenizer;
+	tokenizer->Tokenize(headerString.GetPtr());
+
+	const u32 tokenCount = tokenizer->GetArgCount();
+	const u32 fieldCount = (u32)UDT_COUNT_OF(fields);
+	u32& headerCount = _wolfSCStats.HeaderCount;
+	headerCount = 0;
+	for(u32 t = 0; t < tokenCount; ++t)
+	{
+		const udtString token = tokenizer->GetArg(t);
+		for(u32 f = 0; f < fieldCount; ++f)
+		{
+			if(udtString::Equals(token, fields[f].Name))
+			{
+				udtWolfSCStats::Header& header = _wolfSCStats.Headers[headerCount++];
+				header.PlayerField = fields[f].PlayerField;
+				header.TeamField = fields[f].TeamField;
+
+				u16 startOffset = 0;
+				u16 length = 0;
+				if(t == 0)
+				{
+					length = (u16)tokenizer->GetArgOffset(1);
+				}
+				else if(t == 1)
+				{
+					startOffset = (u16)tokenizer->GetArgOffset(1);
+					length = (u16)tokenizer->GetArgLength(1);
+				}
+				else if(t + 1 < tokenCount)
+				{
+					const u16 endOffset = (u16)tokenizer->GetArgOffset(t) + (u16)tokenizer->GetArgLength(t);
+					startOffset = (u16)tokenizer->GetArgOffset(t - 1) + (u16)tokenizer->GetArgLength(t - 1);
+					length = endOffset - startOffset;
+				}
+				else
+				{
+					startOffset = (u16)tokenizer->GetArgOffset(t - 1) + (u16)tokenizer->GetArgLength(t - 1);
+					length = (u16)headerString.GetLength() - startOffset;
+				}
+				header.StringStart = startOffset;
+				header.StringLength = length;
+
+				break;
+			}
+		}
+	}
+}
+
+void udtParserPlugInStats::ParseWolfSCStatsPlayer(const udtString& message)
+{
+	const u32 headerCount = _wolfSCStats.HeaderCount;
+	if(headerCount < 2)
+	{
+		return;
+	}
+
+	udtString playerName;
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if(header.PlayerField == -1)
+		{
+			playerName = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+			udtString::CleanUp(playerName, _protocol);
+			udtString::TrimTrailingCharacter(playerName, ' ');
+			break;
+		}
+	}
+
+	s32 clientNumber = -1;
+	for(u32 i = 0; i < 64; ++i)
+	{
+		// "sc" turns player names into lower case it seems
+		if(_playerStats[i].CleanName != UDT_U32_MAX &&
+		   udtString::EqualsNoCase(playerName, _stringAllocator.GetStringAt(_playerStats[i].CleanName)))
+		{
+			clientNumber = (s32)i;
+			break;
+		}
+	}
+	if(clientNumber == -1)
+	{
+		return;
+	}
+
+	const udtTeam::Id team = _wolfSCStats.TeamIndex ? udtTeam::Allies : udtTeam::Axis;
+	SetPlayerField(clientNumber, udtPlayerStatsField::TeamIndex, (s32)team);
+
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if(header.PlayerField < 0)
+		{
+			continue;
+		}
+
+		s32 value = 0;
+		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+		StringParseInt(value, section.GetPtr());
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.PlayerField, value);
+	}
+}
+
+void udtParserPlugInStats::ParseWolfSCStatsTeam(const udtString& cleanMessage)
+{
+	const u32 headerCount = _wolfSCStats.HeaderCount;
+	if(headerCount < 2)
+	{
+		return;
+	}
+
+	udtString message = cleanMessage;
+	udtString::TrimLeadingCharacter(message, '-');
+
+	const s32 teamIndex = (s32)_wolfSCStats.TeamIndex;
+	for(u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if(header.TeamField < 0)
+		{
+			continue;
+		}
+
+		s32 value = 0;
+		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+		StringParseInt(value, section.GetPtr());
+		SetTeamField(teamIndex, (udtTeamStatsField::Id)header.TeamField, value);
+	}
 }
 
 void udtParserPlugInStats::ParseFields(u8* destMask, s32* destFields, const udtStatsField* fields, s32 fieldCount, s32 tokenOffset)
@@ -2535,6 +2911,19 @@ void udtParserPlugInStats::SetFields(u8* destMask, s32* destFields, const udtSta
 		*field = fields[i].Value;
 		destMask[byteIndex] |= (u8)1 << (u8)bitIndex;
 	}
+}
+
+bool udtParserPlugInStats::GetField(s32& fieldValue, const u8* mask, const s32* fields, s32 fieldIndex)
+{
+	const s32 byteIndex = fieldIndex >> 3;
+	const s32 bitIndex = fieldIndex & 7;
+	if((mask[byteIndex] & ((u8)1 << (u8)bitIndex)) == 0)
+	{
+		return false;
+	}
+
+	fieldValue = fields[fieldIndex];
+	return true;
 }
 
 s32 udtParserPlugInStats::GetValue(s32 index)
@@ -2586,8 +2975,9 @@ void udtParserPlugInStats::AddCurrentStats()
 		return;
 	}
 
+	const s32 matchStartTime = _analyzer.MatchStartTime();
 	if(_statsArray.GetSize() >= 1 &&
-	   _lastMatchEndTime > _analyzer.MatchStartTime())
+	   _lastMatchEndTime > matchStartTime)
 	{
 		return;
 	}
@@ -2596,8 +2986,11 @@ void udtParserPlugInStats::AddCurrentStats()
 	// Fix up the stats and save them.
 	//
 
+	_stats.DefenderName = u32(~0);
+	_stats.DefenderNameLength = 0;
+
 	const bool forfeited = _cpma150ValidDuelEndScores ? _cpma150Forfeit : _analyzer.Forfeited();
-	
+
 	_stats.MatchDurationMs = (u32)(_analyzer.MatchEndTime() - _analyzer.MatchStartTime() - _analyzer.TotalTimeOutDuration());
 
 	if(_stats.GameType == udtGameType::Invalid &&
@@ -2802,8 +3195,27 @@ void udtParserPlugInStats::AddCurrentStats()
 	{
 		s32 redScore = 0;
 		s32 blueScore = 0;
-		if(forfeited &&
-		   _protocol >= udtProtocol::Dm73)
+		if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
+		{
+			const udtTeam::Id winningTeam = _analyzer.WolfWinningTeam();
+			const char* winner = winningTeam == udtTeam::Allies ? "allies" : "axis";
+			const char* loser = winningTeam == udtTeam::Allies ? "axis" : "allies";
+			WriteStringToApiStruct(_stats.FirstPlaceName, udtString::NewClone(_stringAllocator, winner));
+			WriteStringToApiStruct(_stats.SecondPlaceName, udtString::NewClone(_stringAllocator, loser));
+			if((_stats.ValidTeams & 3) == 3 &&
+			   IsBitSet(GetTeamFlags(0), (u32)udtTeamStatsField::Score) &&
+			   IsBitSet(GetTeamFlags(1), (u32)udtTeamStatsField::Score))
+			{
+				const int axisScore = GetTeamFields(0)[udtTeamStatsField::Score];
+				const int alliesScore = GetTeamFields(1)[udtTeamStatsField::Score];
+				_stats.FirstPlaceScore = winningTeam == udtTeam::Allies ? alliesScore : axisScore;
+				_stats.SecondPlaceScore = winningTeam == udtTeam::Allies ? axisScore : alliesScore;
+			}
+			const udtTeam::Id defendingTeam = _analyzer.WolfDefendingTeam();
+			const char* defender = defendingTeam == udtTeam::Allies ? "allies" : "axis";
+			WriteStringToApiStruct(_stats.DefenderName, udtString::NewClone(_stringAllocator, defender));
+		}
+		else if(forfeited && AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 		{
 			// Short-circuit the scores commands in case of a forfeit so we don't get the -999 scores.
 			redScore = _firstPlaceScore;
@@ -3011,9 +3423,6 @@ void udtParserPlugInStats::AddCurrentStats()
 
 	// Clear the stats for the next match.
 	ClearStats();
-
-	// We just cloned its strings into our local _stringAllocator, so it's safe.
-	_analyzer.ClearStringAllocator();
 }
 
 void udtParserPlugInStats::ClearStats(bool newGameState)
@@ -3022,7 +3431,8 @@ void udtParserPlugInStats::ClearStats(bool newGameState)
 	memset(_playerFlags, 0, sizeof(_playerFlags));
 	memset(_teamFields, 0, sizeof(_teamFields));
 	memset(_teamFlags, 0, sizeof(_teamFlags));
-	ResetCPMAPrintStats();
+	memset(&_cpmaPrintStats, 0, sizeof(_cpmaPrintStats));
+	memset(&_wolfSCStats, 0, sizeof(_wolfSCStats));
 	_cpma150DuelEndScoresState = 0;
 	_cpma150ValidDuelEndScores = false;
 	_cpma150Forfeit = false;
@@ -3079,6 +3489,25 @@ void udtParserPlugInStats::ComputePlayerAccuracies(s32 clientNumber)
 	COMPUTE_ACC(ProximityMineLauncher);
 	COMPUTE_ACC(ChainGun);
 	COMPUTE_ACC(HeavyMachineGun);
+	COMPUTE_ACC(Knife);
+	COMPUTE_ACC(Luger);
+	COMPUTE_ACC(Colt);
+	COMPUTE_ACC(MP40);
+	COMPUTE_ACC(Thompson);
+	COMPUTE_ACC(Sten);
+	COMPUTE_ACC(FG42);
+	COMPUTE_ACC(Panzerfaust);
+	COMPUTE_ACC(Flamethrower);
+	COMPUTE_ACC(Grenade);
+	COMPUTE_ACC(Mortar);
+	COMPUTE_ACC(Dynamite);
+	COMPUTE_ACC(Airstrike);
+	COMPUTE_ACC(Artillery);
+	COMPUTE_ACC(Syringe);
+	COMPUTE_ACC(Smoke);
+	COMPUTE_ACC(MG42);
+	COMPUTE_ACC(Rifle);
+	COMPUTE_ACC(Venom);
 #undef COMPUTE_ACC
 }
 

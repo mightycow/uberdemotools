@@ -58,11 +58,27 @@ static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
 };
 #undef UDT_ERROR_ITEM
 
-#define UDT_PROTOCOL_ITEM(Enum, Ext) Ext,
+#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Ext,
 static const char* DemoFileExtensions[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
 	".after_last"
+};
+#undef UDT_PROTOCOL_ITEM
+
+#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Desc,
+static const char* ProtocolDescriptions[udtProtocol::Count + 1] =
+{
+	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
+	"invalid protocol"
+};
+#undef UDT_PROTOCOL_ITEM
+
+#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Flags,
+static const u32 ProtocolFlags[udtProtocol::Count + 1] =
+{
+	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
+	0
 };
 #undef UDT_PROTOCOL_ITEM
 
@@ -194,6 +210,14 @@ static const char* PerfStatsFieldNames[]
 };
 #undef UDT_PERF_STATS_ITEM
 
+#define UDT_WOLF_CLASS_ITEM(Enum, Desc) Desc,
+static const char* WolfClassNames[]
+{
+	UDT_WOLF_CLASS_LIST(UDT_WOLF_CLASS_ITEM)
+	"after last wolf class"
+};
+#undef UDT_WOLF_CLASS_ITEM
+
 #define UDT_PLAYER_STATS_ITEM(Enum, Desc, Comp, Type) (u8)udtStatsCompMode::Comp,
 static const u8 PlayerStatsCompModesArray[]
 {
@@ -279,12 +303,7 @@ UDT_API(s32) udtIsValidProtocol(u32 protocol)
 
 UDT_API(s32) udtIsProtocolWriteSupported(u32 protocol)
 {
-	if(!udtIsValidProtocol(protocol))
-	{
-		return 0;
-	}
-
-	return protocol >= (u32)udtProtocol::Dm66 ? 1 : 0;
+	return AreAllProtocolFlagsSet((udtProtocol::Id)protocol, udtProtocolFlags::ReadOnly) ? 0 : 1;
 }
 
 UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
@@ -293,13 +312,17 @@ UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idEntityState3);
 		case udtProtocol::Dm48: return (u32)sizeof(idEntityState48);
+		case udtProtocol::Dm57:
+		case udtProtocol::Dm58:
+		case udtProtocol::Dm59:
+		case udtProtocol::Dm60: return (u32)sizeof(idEntityState60);
 		case udtProtocol::Dm66: return (u32)sizeof(idEntityState66);
 		case udtProtocol::Dm67: return (u32)sizeof(idEntityState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
 		case udtProtocol::Dm91: return (u32)sizeof(idEntityState91);
-		default: return 0;
+		default: assert(0); return 0;
 	}
 }
 
@@ -309,13 +332,17 @@ UDT_API(u32) udtGetSizeOfIdPlayerState(u32 protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idPlayerState3);
 		case udtProtocol::Dm48: return (u32)sizeof(idPlayerState48);
+		case udtProtocol::Dm57:
+		case udtProtocol::Dm58:
+		case udtProtocol::Dm59:
+		case udtProtocol::Dm60: return (u32)sizeof(idPlayerState60);
 		case udtProtocol::Dm66: return (u32)sizeof(idPlayerState66);
 		case udtProtocol::Dm67: return (u32)sizeof(idPlayerState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
 		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
 		case udtProtocol::Dm91: return (u32)sizeof(idPlayerState91);
-		default: return 0;
+		default: assert(0); return 0;
 	}
 }
 
@@ -325,13 +352,17 @@ UDT_API(u32) udtGetSizeOfidClientSnapshot(u32 protocol)
 	{
 		case udtProtocol::Dm3: return (u32)sizeof(idClientSnapshot3);
 		case udtProtocol::Dm48: return (u32)sizeof(idClientSnapshot48);
+		case udtProtocol::Dm57:
+		case udtProtocol::Dm58:
+		case udtProtocol::Dm59:
+		case udtProtocol::Dm60: return (u32)sizeof(idClientSnapshot60);
 		case udtProtocol::Dm66: return (u32)sizeof(idClientSnapshot66);
 		case udtProtocol::Dm67: return (u32)sizeof(idClientSnapshot67);
 		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
 		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
 		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
 		case udtProtocol::Dm91: return (u32)sizeof(idClientSnapshot91);
-		default: return 0;
+		default: assert(0); return 0;
 	}
 }
 
@@ -359,6 +390,21 @@ UDT_API(u32) udtGetProtocolByFilePath(const char* filePath)
 	return (u32)udtProtocol::Invalid;
 }
 
+UDT_API(s32) udtGetProtocolList(udtProtocolList* protocolList)
+{
+	if(protocolList == NULL)
+	{
+		return (s32)udtErrorCode::InvalidArgument;
+	}
+
+	protocolList->Count = udtProtocol::Count;
+	protocolList->Extensions = DemoFileExtensions;
+	protocolList->Descriptions = ProtocolDescriptions;
+	protocolList->Flags = ProtocolFlags;
+
+	return (s32)udtErrorCode::None;
+}
+
 UDT_API(s32) udtCrash(u32 crashType)
 {
 	if(crashType >= (u32)udtCrashType::Count)
@@ -377,7 +423,10 @@ UDT_API(s32) udtCrash(u32 crashType)
 			break;
 
 		case udtCrashType::WriteAccess:
-			*(int*)0 = 1337;
+			{
+				volatile int* x = NULL;
+				*x = 1337;
+			}
 			break;
 
 		default:
@@ -474,6 +523,11 @@ UDT_API(s32) udtGetStringArray(u32 arrayId, const char*** elements, u32* element
 		case udtStringArray::PerfStatsNames:
 			*elements = PerfStatsFieldNames;
 			*elementCount = (u32)(UDT_COUNT_OF(PerfStatsFieldNames) - 1);
+			break;
+
+		case udtStringArray::WolfClassNames:
+			*elements = WolfClassNames;
+			*elementCount = (u32)(UDT_COUNT_OF(WolfClassNames) - 1);
 			break;
 
 		default:
