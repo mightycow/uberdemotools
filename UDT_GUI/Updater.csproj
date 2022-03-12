@@ -73,6 +73,7 @@
     <Compile Include="src\UpdaterApp.cs" />
     <Compile Include="src\UpdaterShared.cs" />
     <Compile Include="src\ZipStorer.cs" />
+    <Compile Include="..\libcurl\curl.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

@@ -366,19 +366,21 @@ namespace Uber.DemoTools
                 }
             }
 
-            var updaterFileName = Updater.UpdaterHelper.ExeFileName;
-            var updaterFileNameNewExt = updaterFileName + Updater.UpdaterHelper.NewFileExtension;
-            var updaterFileNameOldExt = updaterFileName + Updater.UpdaterHelper.OldFileExtension;
-            if(File.Exists(updaterFileNameNewExt))
+            foreach(var updaterFileName in Updater.UpdaterHelper.FileNames)
             {
-                if(File.Exists(updaterFileName))
+                var updaterFileNameNewExt = updaterFileName + Updater.UpdaterHelper.NewFileExtension;
+                var updaterFileNameOldExt = updaterFileName + Updater.UpdaterHelper.OldFileExtension;
+                if(File.Exists(updaterFileNameNewExt))
                 {
-                    TryDeleteFile(updaterFileName);
+                    if(File.Exists(updaterFileName))
+                    {
+                        TryDeleteFile(updaterFileName);
+                    }
+                    TryMoveFile(updaterFileNameNewExt, updaterFileName);
                 }
-                TryMoveFile(updaterFileNameNewExt, updaterFileName);
+                TryDeleteFile(updaterFileNameNewExt);
+                TryDeleteFile(updaterFileNameOldExt);
             }
-            TryDeleteFile(updaterFileNameNewExt);
-            TryDeleteFile(updaterFileNameOldExt);
 
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Critical;
 
@@ -1357,6 +1359,39 @@ namespace Uber.DemoTools
         }
 #endif
 
+        private DockPanel CreateAboutPanel(string URL, string text, ImageSource imageSource)
+        {
+            var icon = new System.Windows.Controls.Image();
+            icon.HorizontalAlignment = HorizontalAlignment.Right;
+            icon.VerticalAlignment = VerticalAlignment.Top;
+            icon.Margin = new Thickness(10, 0, 0, 0);
+            icon.Stretch = Stretch.None;
+            icon.Source = imageSource;
+
+            var credit = new TextBlock { Text = text };
+            var hyperLink = new Hyperlink(new Run(URL));
+            hyperLink.NavigateUri = new Uri(URL);
+            hyperLink.RequestNavigate += (obj, args) => HandleLinkClick(args);
+            var link = new TextBlock();
+            link.Inlines.Add(hyperLink);
+            credit.Margin = new Thickness(0, 5, 0, 0);
+            link.Margin = new Thickness(0, 5, 0, 0);
+
+            var panel = new DockPanel();
+            panel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            panel.VerticalAlignment = VerticalAlignment.Top;
+            panel.LastChildFill = false;
+            panel.Margin = new Thickness(0, 10, 0, 0);
+            panel.Children.Add(icon);
+            panel.Children.Add(credit);
+            panel.Children.Add(link);
+            DockPanel.SetDock(icon, Dock.Right);
+            DockPanel.SetDock(credit, Dock.Top);
+            DockPanel.SetDock(link, Dock.Top);
+
+            return panel;
+        }
+
         private void ShowAboutWindow()
         {
             var udtIcon = new System.Windows.Controls.Image();
@@ -1382,34 +1417,15 @@ namespace Uber.DemoTools
             DockPanel.SetDock(guiVersion, Dock.Top);
             DockPanel.SetDock(dllVersion, Dock.Top);
 
-            var zipStorerIcon = new System.Windows.Controls.Image();
-            zipStorerIcon.HorizontalAlignment = HorizontalAlignment.Right;
-            zipStorerIcon.VerticalAlignment = VerticalAlignment.Top;
-            zipStorerIcon.Margin = new Thickness(10, 0, 0, 0);
-            zipStorerIcon.Stretch = Stretch.None;
-            zipStorerIcon.Source = UDT.Properties.Resources.ZipStorerIcon.ToImageSource();
+            var zipStorerPanel = CreateAboutPanel(
+                "https://zipstorer.codeplex.com/",
+                "The updater uses ZipStorer by Jaime Olivares",
+                UDT.Properties.Resources.ZipStorerIcon.ToImageSource());
 
-            const string ZipStorerUrl = "https://zipstorer.codeplex.com/";
-            var zipStorerCredit = new TextBlock { Text = "The updater uses ZipStorer by Jaime Olivares" };
-            var zipStorerHyperLink = new Hyperlink(new Run(ZipStorerUrl));
-            zipStorerHyperLink.NavigateUri = new Uri(ZipStorerUrl);
-            zipStorerHyperLink.RequestNavigate += (obj, args) => HandleLinkClick(args);
-            var zipStorerLink = new TextBlock();
-            zipStorerLink.Inlines.Add(zipStorerHyperLink);
-            zipStorerCredit.Margin = new Thickness(0, 5, 0, 0);
-            zipStorerLink.Margin = new Thickness(0, 5, 0, 0);
-
-            var zipStorerPanel = new DockPanel();
-            zipStorerPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
-            zipStorerPanel.VerticalAlignment = VerticalAlignment.Top;
-            zipStorerPanel.LastChildFill = false;
-            zipStorerPanel.Margin = new Thickness(0, 10, 0, 0);
-            zipStorerPanel.Children.Add(zipStorerIcon);
-            zipStorerPanel.Children.Add(zipStorerCredit);
-            zipStorerPanel.Children.Add(zipStorerLink);
-            DockPanel.SetDock(zipStorerIcon, Dock.Right);
-            DockPanel.SetDock(zipStorerCredit, Dock.Top);
-            DockPanel.SetDock(zipStorerLink, Dock.Top);
+            var curlPanel = CreateAboutPanel(
+                "https://curl.se/",
+                "The updater uses curl",
+                UDT.Properties.Resources.CurlIcon.ToImageSource());
 
             var rootPanel = new StackPanel();
             rootPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1418,6 +1434,7 @@ namespace Uber.DemoTools
             rootPanel.Orientation = Orientation.Vertical;
             rootPanel.Children.Add(udtPanel);
             rootPanel.Children.Add(zipStorerPanel);
+            rootPanel.Children.Add(curlPanel);
 
             var window = new Window();
             window.Owner = MainWindow;

@@ -125,6 +125,9 @@
         &lt;title&gt;{1}&lt;/title&gt;
     &lt;/head&gt;
     &lt;body&gt;
+    &lt;script&gt;
+        window.location.replace("{0}")
+    &lt;/script&gt;
     &lt;h2&gt;{1}&lt;/h2&gt;
     The latest version can be downloaded by following &lt;a href='{0}'&gt;this link&lt;/a&gt;.
     &lt;/body&gt;

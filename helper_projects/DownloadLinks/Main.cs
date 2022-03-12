@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Text.RegularExpressions;
 
 
@@ -32,9 +33,18 @@ namespace Uber.DownloadLinks
 
         private static void RealMain()
         {
-            using(var webClient = new WebClient())
+            var stringReceiver = new CURLStringReceiver();
+            CURL.Init();
+            try
             {
-                var pageData = webClient.DownloadString("http://myt.playmorepromode.com/udt/");
+                CURL.SetLongOption(CURL.LongOption.SSL_VerifyHost, 1);
+                CURL.SetLongOption(CURL.LongOption.SSL_VerifyPeer, 1);
+                CURL.SetStringBlobOption(CURL.StringBlobOption.CertificateAuthorityInfo, UpdateWebsite.Certificate);
+                CURL.SetWriteCallback(stringReceiver.CurlWriteCallback);
+                CURL.SetStringOption(CURL.StringOption.URL, UpdateWebsite.URL);
+                CURL.Perform();
+
+                var pageData = stringReceiver.Data;
                 foreach(var link in _links)
                 {
                     var regEx = new Regex("\"(" + link.RegEx + ")\"");
@@ -44,9 +54,13 @@ namespace Uber.DownloadLinks
                         continue;
                     }
 
-                    var downloadUrl = "http://myt.playmorepromode.com/udt/" + match.Groups[1].Value;
+                    var downloadUrl = UpdateWebsite.URL + "/" + match.Groups[1].Value;
                     CreateRedirectionHTMLFile(link.FileName, link.Title, downloadUrl);
                 }
+            }
+            finally
+            {
+                CURL.ShutDown();
             }
         }
 

@@ -14,7 +14,7 @@ namespace Uber.DemoTools.Updater
 {
     public static class VersionInfo
     {
-        public static readonly string Version = "0.1.0";
+        public static readonly string Version = "0.1.1";
     }
 
     public static class FileOps
@@ -182,10 +182,13 @@ namespace Uber.DemoTools.Updater
 
         private void Update()
         {
-            using(var webClient = new WebClient())
-            {
-                _webClient = webClient;
+            CURL.Init();
+            CURL.SetLongOption(CURL.LongOption.SSL_VerifyHost, 1);
+            CURL.SetLongOption(CURL.LongOption.SSL_VerifyPeer, 1);
+            CURL.SetStringBlobOption(CURL.StringBlobOption.CertificateAuthorityInfo, UpdateWebsite.Certificate);
 
+            try
+            {
                 GetLatestVersionNumbersAndBinariesUrl();
                 if(!IsNewVersionHigher())
                 {
@@ -248,28 +251,42 @@ namespace Uber.DemoTools.Updater
                     Process.Start("UDT_GUI.exe");
                 }
             }
+            finally
+            {
+                CURL.ShutDown();
+            }
         }
 
         private bool GetLatestVersionNumbersAndBinariesUrl()
         {
-            var htmlData = _webClient.DownloadString("http://giant.pourri.ch/snif.php?path=UDT/");
-            var regEx = new Regex("udt_gui_(.+)_dll_(.+)_" + _archName + ".zip");
+            var receiver = new CURLStringReceiver();
+            CURL.SetWriteCallback(receiver.CurlWriteCallback);
+            CURL.SetStringOption(CURL.StringOption.URL, UpdateWebsite.URL);
+            CURL.Perform();
+
+            var htmlData = receiver.Data;
+            var regEx = new Regex("\"(udt_gui_(.+)_dll_(.+)_" + _archName + ".zip)\"");
             var match = regEx.Match(htmlData);
             if(!match.Success)
             {
                 return false;
             }
 
-            _downloadUrl = "http://giant.pourri.ch/UDT/" + match.Groups[0].Value;
-            _newGuiVersion = match.Groups[1].Value;
-            _newDllVersion = match.Groups[2].Value;
+            _downloadUrl = UpdateWebsite.URL + "/" + match.Groups[1].Value;
+            _newGuiVersion = match.Groups[2].Value;
+            _newDllVersion = match.Groups[3].Value;
 
             return true;
         }
 
         private bool DownloadAndReadConfig()
         {
-            var config = _webClient.DownloadString("http://giant.pourri.ch/UDT/updater/updater.cfg");
+            var receiver = new CURLStringReceiver();
+            CURL.SetWriteCallback(receiver.CurlWriteCallback);
+            CURL.SetStringOption(CURL.StringOption.URL, UpdateWebsite.URL + "/updater/updater.cfg");
+            CURL.Perform();
+
+            var config = receiver.Data;
             using(StringReader sr = new StringReader(config))
             {
                 string line;
@@ -313,7 +330,12 @@ namespace Uber.DemoTools.Updater
 
         private bool DownloadAndExtractNewTempFiles()
         {
-            var data = _webClient.DownloadData(_downloadUrl);
+            var receiver = new CURLDataReceiver();
+            CURL.SetWriteCallback(receiver.CurlWriteCallback);
+            CURL.SetStringOption(CURL.StringOption.URL, _downloadUrl);
+            CURL.Perform();
+
+            var data = receiver.Data.ToArray();
             using(var archive = ZipStorer.Open(new MemoryStream(data), FileAccess.Read))
             {
                 var entries = archive.ReadCentralDir();
@@ -510,7 +532,6 @@ namespace Uber.DemoTools.Updater
         private static readonly Regex _versionRegEx = new Regex("(\\d+)\\.(\\d+)\\.(\\d+)([a-z])?", RegexOptions.Compiled);
         private readonly List<FileOperation> _fileOps = new List<FileOperation>();
         private readonly List<FileOperation> _undoFileOps = new List<FileOperation>();
-        private WebClient _webClient;
         private string _curDllVersion;
         private string _curGuiVersion;
         private string _archName;

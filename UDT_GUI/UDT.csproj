@@ -123,8 +123,8 @@
     <Compile Include="src\AppCommands.cs" />
     <Compile Include="src\AppMatchCut.cs" />
     <Compile Include="src\AppFlagCaptures.cs" />
-	<Compile Include="src\AppScores.cs" />
-	<Compile Include="src\AppSearchResults.cs" />
+    <Compile Include="src\AppScores.cs" />
+    <Compile Include="src\AppSearchResults.cs" />
     <Compile Include="src\UpdaterShared.cs" />
     <Compile Include="src\Steam.cs" />
   </ItemGroup>
@@ -150,6 +150,7 @@
   <ItemGroup>
     <Content Include="..\todo.txt" />
     <None Include="Resources\ZipStorerIcon.ico" />
+    <None Include="curl.png" />
     <Content Include="UDT.ico" />
     <Content Include="ZipStorer.png" />
   </ItemGroup>
