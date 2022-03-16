@@ -170,6 +170,11 @@ bool StringParseInt(s32& output, const char* string)
 	return sscanf(string, "%d", &output) == 1;
 }
 
+bool StringParseFloat(f32& output, const char* string)
+{
+	return sscanf(string, "%f", &output) == 1;
+}
+
 bool StringMatchesCutByChatRule(const udtString& string, const udtChatPatternRule& rule, udtVMLinearAllocator& allocator, udtProtocol::Id procotol)
 {
 	if(!string.IsValid() || rule.Pattern == NULL)

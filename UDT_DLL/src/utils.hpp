@@ -78,6 +78,7 @@ struct udtProtocolFlagsEx
 extern udtString   CallbackCutDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
 extern udtString   CallbackConvertedDemoFileNameCreation(const udtDemoStreamCreatorArg& arg);
 extern bool        StringParseInt(s32& output, const char* string);
+extern bool        StringParseFloat(f32& output, const char* string);
 extern bool        StringSplitLines(udtVMArray<udtString>& lines, udtString& inOutText);
 extern udtString   FormatTimeForFileName(udtVMLinearAllocator& allocator, s32 timeMs); // Format is "mmss".
 extern udtString   FormatBytes(udtVMLinearAllocator& allocator, u64 byteCount); // Will use the most appropriate unit.

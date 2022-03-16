@@ -1476,7 +1476,7 @@ extern "C"
 		/* The minimum amount of frags in a sequence. */
 		u32 MinFragCount;
 
-		/* Time interval between 2 consecutive frags, in seconds. */
+		/* Maximum time interval between 2 consecutive frags, in seconds. */
 		/* See TimeMode for the interpretation of this value. */
 		u32 TimeBetweenFragsSec;
 

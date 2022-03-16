@@ -29,6 +29,25 @@
 #define UDT_API UDT_API_DEF
 
 
+#define STATIC_ASSERT(Cond) static_assert(Cond, #Cond)
+
+#define BIT_COUNT(Struct, Field) (sizeof(((Struct*)0)->Field) * 8)
+
+// The bit mask isn't big enough for all weapons.
+// Fortunately, it's big enough for the ones we do care about.
+// STATIC_ASSERT(BIT_COUNT(udtMidAirPatternArg, AllowedWeapons) >= udtWeapon::Count);
+STATIC_ASSERT(udtWeapon::RocketLauncher <= 32);
+STATIC_ASSERT(udtWeapon::BFG <= 32);
+STATIC_ASSERT(udtWeapon::GrenadeLauncher <= 32);
+// These are not supported yet but might be soon.
+STATIC_ASSERT(udtWeapon::Panzerfaust <= 32);
+STATIC_ASSERT(udtWeapon::GrenadePineapple <= 32);
+
+// @TODO: unfortunately, by default, a lot of means of death will be off for RtCW
+// u8 AllowedMeansOfDeaths[16] and the appropriate static_assert shall do
+//STATIC_ASSERT(BIT_COUNT(udtFragRunPatternArg, AllowedMeansOfDeaths) >= udtMeanOfDeath::Count);
+
+
 static_assert(sizeof(s8) == 1, "sizeof(s8) must be 1");
 static_assert(sizeof(u8) == 1, "sizeof(u8) must be 1");
 static_assert(sizeof(s16) == 2, "sizeof(s16) must be 2");

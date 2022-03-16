@@ -92,13 +92,14 @@ static void ComputeTrajectoryPosition(f32* result, const idEntityStateBase* ent,
 
 static bool IsAllowedUDTMeanOfDeath(u32 udtMod)
 {
-	// @NOTE: Only allows direct hits. So excludes RocketSplash and BFGSplash.
+	// @NOTE: Only allows direct hits. So excludes splash.
 	return
 		udtMod == (s32)udtMeanOfDeath::Rocket ||
-		udtMod == (s32)udtMeanOfDeath::BFG;
+		udtMod == (s32)udtMeanOfDeath::BFG ||
+		udtMod == (s32)udtMeanOfDeath::Grenade;
 }
 
-static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
+static bool IsTrackedProjectileIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 {
 	u32 udtWeaponId;
 	if(!GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, idWeapon, procotol))
@@ -106,6 +107,7 @@ static bool IsAllowedIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 		return false;
 	}
 
+	// @NOTE: no grenades!
 	return
 		udtWeaponId == (u32)udtWeapon::RocketLauncher ||
 		udtWeaponId == (u32)udtWeapon::BFG;
@@ -268,7 +270,7 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		{
 			// Store the projectile fired by the tracked player, if any.
 			const s32 eventType = es->event & (~ID_ES_EVENT_BITS);
-			if(eventType == fireWeaponEventId && IsAllowedIdWeapon(es->weapon, _protocol))
+			if(eventType == fireWeaponEventId && IsTrackedProjectileIdWeapon(es->weapon, _protocol))
 			{
 				AddProjectile(es->weapon, currentPosition, arg.ServerTime);
 			}
@@ -351,21 +353,24 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 			continue;
 		}
 
-		ProjectileInfo* projectile = FindBestProjectileMatch(udtWeaponId, _players[targetIdx].Position, arg.ServerTime);
-		if(projectile == NULL)
+		if(udtWeaponId != udtWeapon::GrenadeLauncher && extraInfo.MinDistance > 0)
 		{
-			continue;
+			ProjectileInfo* projectile = FindBestProjectileMatch(udtWeaponId, _players[targetIdx].Position, arg.ServerTime);
+			if(projectile == NULL)
+			{
+				continue;
+			}
+			projectile->UsedSlot = 0;
+
+			const u32 projectileDistance = (u32)Float3::Dist(projectile->CreationPosition, _players[targetIdx].Position);
+			if(projectileDistance < extraInfo.MinDistance)
+			{
+				continue;
+			}
 		}
-		projectile->UsedSlot = 0;
 
 		const u32 victimAirTimeMs = (u32)udt_max<s32>(0, _players[targetIdx].LastUpdateTime - _players[targetIdx].LastZDirChangeTime);
 		if(extraInfo.MinAirTimeMs > 0 && victimAirTimeMs < extraInfo.MinAirTimeMs)
-		{
-			continue;
-		}
-
-		const u32 projectileDistance = (u32)Float3::Dist(projectile->CreationPosition, _players[targetIdx].Position);
-		if(projectileDistance < extraInfo.MinDistance)
 		{
 			continue;
 		}
