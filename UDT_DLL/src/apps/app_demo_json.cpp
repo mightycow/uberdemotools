@@ -23,6 +23,7 @@ void PrintHelp()
 	printf("-c    output to the console/terminal          (default: off)\n");
 	printf("-r    enable recursive demo file search       (default: off)\n");
 	printf("-t=N  set the maximum number of threads to N  (default: 1)\n");
+	printf("-p=P  set the protocol version to P           (default: no override)\n");
 	printf("-a=   select analyzers                        (default: all enabled)\n");
 	printf("        g: Game states         s: Stats\n");
 	printf("        m: chat Messages       r: Raw commands\n");
@@ -34,6 +35,15 @@ void PrintHelp()
 	printf("still be active, so make sure you only read the stdout output from your programs and scripts.\n");
 	printf("\n");
 	printf("Example for selecting analyzers: -a=sd will select stats and deaths.\n");
+}
+
+// We don't need any synchronization since we only write before starting the job.
+// Once the job has started, all accesses are read-only.
+static udtProtocol::Id g_protocol = udtProtocol::Invalid;
+
+static u32 ProtocolCallback(const char* /*filePath*/)
+{
+	return g_protocol;
 }
 
 static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/, void* /*userData*/)
@@ -124,6 +134,7 @@ static bool ProcessMultipleDemos(const udtFileInfo* files, u32 fileCount, const 
 	parseArg.PlugIns = plugInIds;
 	parseArg.PlugInCount = plugInCount;
 	parseArg.OutputFolderPath = customOutputFolder;
+	parseArg.ProtocolCb = g_protocol != udtProtocol::Invalid ? &ProtocolCallback : NULL;
 
 	BatchRunner runner(parseArg, files, fileCount, UDT_JSON_BATCH_SIZE);
 	const u32 batchCount = runner.GetBatchCount();
@@ -146,18 +157,6 @@ int udt_main(int argc, char** argv)
 	{
 		PrintHelp();
 		return 0;
-	}
-
-	bool fileMode = false;
-	const char* const inputPath = argv[argc - 1];
-	if(udtFileStream::Exists(inputPath) && udtPath::HasValidDemoFileExtension(inputPath))
-	{
-		fileMode = true;
-	}
-	else if(!IsValidDirectory(inputPath))
-	{
-		fprintf(stderr, "Invalid file/folder path.\n");
-		return 1;
 	}
 
 	const char* customOutputPath = NULL;
@@ -199,6 +198,21 @@ int udt_main(int argc, char** argv)
 		{
 			maxThreadCount = (u32)localMaxThreads;
 		}
+		else if(udtString::StartsWith(arg, "-p=") &&
+				arg.GetLength() >= 4)
+		{
+			s32 protocol = -1;
+			if(StringParseInt(protocol, arg.GetPtr() + 3))
+			{
+#define ITEM(Number, Ext, Desc, Flags) case Number: g_protocol = udtProtocol::Dm##Number; break;
+				switch(protocol)
+				{
+					UDT_PROTOCOL_LIST(ITEM)
+					default: assert(0); break;
+				}
+#undef ITEM
+			}
+		}
 		else if(udtString::StartsWith(arg, "-a=") &&
 				arg.GetLength() >= 4)
 		{
@@ -222,6 +236,18 @@ int udt_main(int argc, char** argv)
 		}
 	}
 
+	bool fileMode = false;
+	const char* const inputPath = argv[argc - 1];	
+	if(udtFileStream::Exists(inputPath) && (g_protocol != udtProtocol::Invalid || udtPath::HasValidDemoFileExtension(inputPath)))
+	{
+		fileMode = true;
+	}
+	else if(!IsValidDirectory(inputPath))
+	{
+		fprintf(stderr, "Invalid file/folder path.\n");
+		return 1;
+	}
+
 	if(fileMode)
 	{
 		udtFileInfo fileInfo;
@@ -233,7 +259,7 @@ int udt_main(int argc, char** argv)
 	}
 
 	udtFileListQuery query;
-	query.FileFilter = &KeepOnlyDemoFiles;
+	query.FileFilter = g_protocol == udtProtocol::Invalid ? &KeepOnlyDemoFiles : NULL;
 	query.FolderPath = udtString::NewConstRef(inputPath);
 	query.Recursive = recursive;
 	GetDirectoryFileList(query);

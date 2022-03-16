@@ -741,6 +741,9 @@ namespace Uber.DemoTools
         [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
         public delegate void udtCrashCallback(string message);
 
+        [UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+        public delegate UInt32 udtProtocolCallback(string filePath);
+
         public enum udtProtocol : uint
         {
             Dm3,
@@ -974,16 +977,16 @@ namespace Uber.DemoTools
             public IntPtr OutputFolderPath; // const char*
             public udtMessageCallback MessageCb;
             public udtProgressCallback ProgressCb;
+            public udtProtocolCallback ProtocolCb;
             public IntPtr ProgressContext; // void*
             public IntPtr CancelOperation; // s32*
             public IntPtr PerformanceStats; // u64*
-            public IntPtr Reserved1;
             public UInt32 PlugInCount;
             public Int32 GameStateIndex;
             public UInt32 FileOffset;
             public UInt32 Flags;
             public UInt32 MinProgressTimeMs;
-            public Int32 Reserved2;
+            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

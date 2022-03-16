@@ -37,3 +37,4 @@ extern bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg&
 extern bool ProcessSingleDemoFile(udtParsingJobType::Id jobType, udtParserContext* context, u32 contextDemoIndex, u32 inputDemoIndex, const udtParseArg* info, const char* demoFilePath, const void* jobSpecificInfo);
 extern bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32 fileCount, udtProtocol::Id protocol);
 extern s32  udtParseMultipleDemosSingleThread(udtParsingJobType::Id jobType, udtParserContext* context, const udtParseArg* info, const udtMultiParseArg* extraInfo, const void* jobSpecificInfo);
+udtProtocol::Id GetProtocolByFilePath(udtProtocolCallback protocolCb, const char* filePath);

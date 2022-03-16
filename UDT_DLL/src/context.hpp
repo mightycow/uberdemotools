@@ -15,7 +15,7 @@ public:
 	udtContext();
 	~udtContext();
 
-	bool SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext);
+	bool SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext, udtProtocolCallback protocolCb);
 	void Reset();
 	void Destroy();
 
@@ -24,6 +24,8 @@ public:
 	void LogError(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
 	void LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...) const UDT_PRINTF_POST_FUNCTION(2, 3);
 	void NotifyProgress(f32 progress) const;
+
+	udtProtocol::Id GetProtocolByFilePath(const char* filePath) const;
 
 	udtProtocolConverter* GetProtocolConverter(udtProtocol::Id outProtocol, udtProtocol::Id inProtocol);
 
@@ -36,6 +38,7 @@ private:
 	udtMessageCallback  _messageCallback;  // Can be NULL.
 	udtProgressCallback _progressCallback; // Can be NULL.
 	void*               _progressContext;  // Can be NULL.
+	udtProtocolCallback _protocolCallback; // Can be NULL.
 
 	udtProtocolConverter3to68    _converter3to68;
 	udtProtocolConverter48to68   _converter48to68;

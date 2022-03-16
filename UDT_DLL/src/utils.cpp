@@ -19,7 +19,7 @@ static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 };
 #undef ITEM
 
-#define ITEM(Enum, Ext, Desc, Flags) Flags,
+#define ITEM(Number, Ext, Desc, Flags) Flags,
 static const u32 ProtocolFlags[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(ITEM)
@@ -28,20 +28,20 @@ static const u32 ProtocolFlags[udtProtocol::Count + 1] =
 #undef ITEM
 
 #define UDT_PROTOCOL_LIST_EX(N) \
-	N(Dm3 , udtProtocolFlagsEx::NoHuffman) \
-	N(Dm48, udtProtocolFlagsEx::NoHuffman) \
-	N(Dm57, 0) \
-	N(Dm58, 0) \
-	N(Dm59, 0) \
-	N(Dm60, 0) \
-	N(Dm66, 0) \
-	N(Dm67, 0) \
-	N(Dm68, 0) \
-	N(Dm73, udtProtocolFlagsEx::QL_ClanName) \
-	N(Dm90, udtProtocolFlagsEx::QL_ClanName) \
-	N(Dm91, udtProtocolFlagsEx::QL_Unicode)
+	N(3 , udtProtocolFlagsEx::NoHuffman) \
+	N(48, udtProtocolFlagsEx::NoHuffman) \
+	N(57, 0) \
+	N(58, 0) \
+	N(59, 0) \
+	N(60, 0) \
+	N(66, 0) \
+	N(67, 0) \
+	N(68, 0) \
+	N(73, udtProtocolFlagsEx::QL_ClanName) \
+	N(90, udtProtocolFlagsEx::QL_ClanName) \
+	N(91, udtProtocolFlagsEx::QL_Unicode)
 
-#define ITEM(Enum, FlagsEx) Enum,
+#define ITEM(Number, FlagsEx) Dm##Number,
 struct udtProtocolEx
 {
 	enum Id
@@ -53,7 +53,7 @@ struct udtProtocolEx
 #undef ITEM
 static_assert(udtProtocolEx::Count == udtProtocol::Count, "UDT_PROTOCOL_LIST_EX is invalid");
 
-#define ITEM(Enum, FlagsEx) FlagsEx,
+#define ITEM(Number, FlagsEx) FlagsEx,
 static const u32 ProtocolFlagsEx[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST_EX(ITEM)

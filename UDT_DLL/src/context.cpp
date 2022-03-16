@@ -1,6 +1,7 @@
 #include "context.hpp"
 #include "common.hpp"
 #include "crash.hpp"
+#include "api_helpers.hpp"
 
 #if defined(UDT_MSVC) && defined(UDT_WINDOWS)
 #	include <Windows.h> // IsDebuggerPresent, __debugbreak
@@ -22,6 +23,7 @@ udtContext::udtContext()
 	: _messageCallback(NULL)
 	, _progressCallback(NULL)
 	, _progressContext(NULL)
+	, _protocolCallback(NULL)
 {
 }
 
@@ -30,11 +32,12 @@ udtContext::~udtContext()
 	Destroy();
 }
 
-bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext)
+bool udtContext::SetCallbacks(udtMessageCallback messageCb, udtProgressCallback progressCb, void* progressContext, udtProtocolCallback protocolCb)
 {
 	_messageCallback = messageCb;
 	_progressCallback = progressCb;
 	_progressContext = progressContext;
+	_protocolCallback = protocolCb;
 
 	return true;
 }
@@ -127,6 +130,11 @@ void udtContext::NotifyProgress(f32 progress) const
 	{
 		(*_progressCallback)(progress, _progressContext);
 	}
+}
+
+udtProtocol::Id udtContext::GetProtocolByFilePath(const char* filePath) const
+{
+	return ::GetProtocolByFilePath(_protocolCallback, filePath);
 }
 
 udtProtocolConverter* udtContext::GetProtocolConverter(udtProtocol::Id outProtocol, udtProtocol::Id inProtocol)

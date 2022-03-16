@@ -117,7 +117,7 @@ bool InitContextWithPlugIns(udtParserContext& context, const udtParseArg& info, 
 static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
 	context->ResetForNextDemo(!clearPlugInData);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
@@ -140,7 +140,7 @@ static bool ParseDemoFile(udtProtocol::Id protocol, udtParserContext* context, c
 
 static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, bool clearPlugInData)
 {
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -151,7 +151,7 @@ static bool ParseDemoFile(udtParserContext* context, const udtParseArg* info, co
 
 static bool CutByPattern(udtParserContext* context, const udtParseArg* info, const char* demoFilePath)
 {
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -172,7 +172,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	}
 
 	context->ResetForNextDemo(true);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
@@ -209,16 +209,16 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
 
-	context->Context.SetCallbacks(info->MessageCb, NULL, NULL);
+	context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
 	const bool result = RunParser(context->Parser, file, info->CancelOperation);
-	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext);
+	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
 
 	return result;
 }
 
 static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, udtPatternSearchContext* searchContext)
 {
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -256,7 +256,7 @@ static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtPars
 
 static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtProtocolConversionArg* conversionInfo)
 {
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -269,7 +269,7 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 	}
 
 	context->ResetForNextDemo(false);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
@@ -339,7 +339,7 @@ static void CreateTimeShiftDemoName(udtString& outputFilePath, udtVMLinearAlloca
 
 static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, const char* demoFilePath, const udtTimeShiftArg* timeShiftArg)
 {
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -366,7 +366,7 @@ static bool TimeShiftDemo(udtParserContext* context, const udtParseArg* info, co
 	}
 
 	context->ResetForNextDemo(true);
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
@@ -752,7 +752,7 @@ struct DemoMerger
 				return false;
 			}
 
-			if(!demo.Context->Context.SetCallbacks(info->MessageCb, i == 0 ? info->ProgressCb : NULL, info->ProgressContext))
+			if(!demo.Context->Context.SetCallbacks(info->MessageCb, i == 0 ? info->ProgressCb : NULL, info->ProgressContext, info->ProtocolCb))
 			{
 				return false;
 			}
@@ -910,4 +910,20 @@ bool MergeDemosNoInputCheck(const udtParseArg* info, const char** filePaths, u32
 	DemoMerger* const merger = (DemoMerger*)allocator.GetAddressAt(mergerOffset);
 
 	return merger->MergeDemos(info, filePaths, fileCount, protocol);
+}
+
+udtProtocol::Id GetProtocolByFilePath(udtProtocolCallback protocolCb, const char* filePath)
+{
+	if(protocolCb != NULL)
+	{
+		const u32 protocol = (*protocolCb)(filePath);
+		if(protocol >= udtProtocol::Count)
+		{
+			return udtProtocol::Invalid;
+		}
+
+		return (udtProtocol::Id)protocol;
+	}
+
+	return (udtProtocol::Id)udtGetProtocolByFilePath(filePath);
 }

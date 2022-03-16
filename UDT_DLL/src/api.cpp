@@ -77,7 +77,7 @@ static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
 };
 #undef UDT_ERROR_ITEM
 
-#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Ext,
+#define UDT_PROTOCOL_ITEM(Number, Ext, Desc, Flags) Ext,
 static const char* DemoFileExtensions[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
@@ -85,7 +85,7 @@ static const char* DemoFileExtensions[udtProtocol::Count + 1] =
 };
 #undef UDT_PROTOCOL_ITEM
 
-#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Desc,
+#define UDT_PROTOCOL_ITEM(Number, Ext, Desc, Flags) Desc,
 static const char* ProtocolDescriptions[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
@@ -93,7 +93,7 @@ static const char* ProtocolDescriptions[udtProtocol::Count + 1] =
 };
 #undef UDT_PROTOCOL_ITEM
 
-#define UDT_PROTOCOL_ITEM(Enum, Ext, Desc, Flags) Flags,
+#define UDT_PROTOCOL_ITEM(Number, Ext, Desc, Flags) Flags,
 static const u32 ProtocolFlags[udtProtocol::Count + 1] =
 {
 	UDT_PROTOCOL_LIST(UDT_PROTOCOL_ITEM)
@@ -725,7 +725,7 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		return false;
 	}
 
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePath);
+	const udtProtocol::Id protocol = context.GetProtocolByFilePath(filePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return false;
@@ -823,7 +823,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::InvalidArgument;
@@ -831,7 +831,7 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 
 	context->ResetForNextDemo(false);
 
-	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -881,7 +881,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(demoFilePath);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, demoFilePath);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -900,7 +900,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
 
 	context->ResetForNextDemo(false);
-	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext))
+	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext, info->ProtocolCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
@@ -970,7 +970,7 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 		}
 	}
 
-	const udtProtocol::Id protocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePaths[0]);
+	const udtProtocol::Id protocol = GetProtocolByFilePath(info->ProtocolCb, filePaths[0]);
 	if(protocol == udtProtocol::Invalid)
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -979,7 +979,7 @@ UDT_API(s32) udtMergeDemoFiles(const udtParseArg* info, const char** filePaths, 
 	// Make sure we're not trying to merge demos with different protocols.
 	for(u32 i = 1; i < fileCount; ++i)
 	{
-		const udtProtocol::Id tempProtocol = (udtProtocol::Id)udtGetProtocolByFilePath(filePaths[i]);
+		const udtProtocol::Id tempProtocol = GetProtocolByFilePath(info->ProtocolCb, filePaths[i]);
 		if(tempProtocol != protocol)
 		{
 			return (s32)udtErrorCode::InvalidArgument;
@@ -1352,7 +1352,7 @@ UDT_API(s32) udtCuSetMessageCallback(udtCuContext* context, udtMessageCallback c
 		return (s32)udtErrorCode::InvalidArgument;
 	}
 
-	if(!context->Context.Context.SetCallbacks(callback, NULL, NULL))
+	if(!context->Context.Context.SetCallbacks(callback, NULL, NULL, NULL))
 	{
 		return (s32)udtErrorCode::OperationFailed;
 	}
