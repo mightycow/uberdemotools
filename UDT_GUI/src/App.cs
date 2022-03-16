@@ -52,6 +52,7 @@ namespace Uber.DemoTools
         public bool MidAirCutAllowRocket = true;
         public bool MidAirCutAllowBFG = true;
         public bool MidAirCutAllowGrenade = false;
+        public bool MidAirCutAllowPanzerfaust = false;
         public bool AnalyzeOnLoad = true;
         public int MultiRailCutMinFragCount = 2;
         public bool ColorLogWarningsAndErrors = false;

@@ -830,7 +830,7 @@ namespace Uber.DemoTools
             ChainGun = 1 << 10,
             ProximityMineLauncher = 1 << 11,
             HeavyMachineGun = 1 << 12,
-            AfterLast
+            Panzerfaust = 1 << 19
         }
 
         public enum udtStringArray : uint
@@ -1992,6 +1992,10 @@ namespace Uber.DemoTools
             if(config.MidAirCutAllowGrenade)
             {
                 weaponFlags |= (UInt32)udtWeaponMask.Grenade;
+            }
+            if(config.MidAirCutAllowPanzerfaust)
+            {
+                weaponFlags |= (UInt32)udtWeaponMask.Panzerfaust;
             }
 
             var rules = new udtMidAirPatternArg();

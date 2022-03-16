@@ -45,4 +45,5 @@ private:
 	s32 _lastEventSequence;
 	f32 _rocketSpeed;
 	f32 _bfgSpeed;
+	f32 _panzerSpeed;
 };

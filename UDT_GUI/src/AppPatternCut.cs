@@ -351,7 +351,10 @@ namespace Uber.DemoTools
 
             if(IsPatternActive(selectedPatterns, UDT_DLL.udtPatternType.MidAirFrags))
             {
-                if(!config.MidAirCutAllowRocket && !config.MidAirCutAllowBFG && !config.MidAirCutAllowGrenade)
+                if(!config.MidAirCutAllowRocket &&
+                    !config.MidAirCutAllowBFG &&
+                    !config.MidAirCutAllowGrenade &&
+                    !config.MidAirCutAllowPanzerfaust)
                 {
                     app.LogError("[mid-air frags] You didn't check any weapon. Please check at least one to proceed.");
                     return;

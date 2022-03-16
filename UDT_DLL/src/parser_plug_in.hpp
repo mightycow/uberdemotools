@@ -17,6 +17,7 @@ struct udtChangedEntity
 {
 	idEntityStateBase* Entity;
 	bool IsNewEvent;
+	bool IsNewEntity;
 };
 
 struct udtMessageBundleCallbackArg

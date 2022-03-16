@@ -42,6 +42,7 @@ namespace Uber.DemoTools
             config.MidAirCutAllowRocket = _allowRocketsCheckBox.IsChecked ?? false;
             config.MidAirCutAllowBFG = _allowBFGsCheckBox.IsChecked ?? false;
             config.MidAirCutAllowGrenade = _allowGrenadesCheckBox.IsChecked ?? false;
+            config.MidAirCutAllowPanzerfaust = _allowPanzerfaustCheckBox.IsChecked ?? false;
         }
 
         public void SaveToConfigObject(UdtPrivateConfig config)
@@ -55,6 +56,7 @@ namespace Uber.DemoTools
         private CheckBox _allowRocketsCheckBox;
         private CheckBox _allowBFGsCheckBox;
         private CheckBox _allowGrenadesCheckBox;
+        private CheckBox _allowPanzerfaustCheckBox;
 
         private FrameworkElement CreateTab()
         {
@@ -88,10 +90,17 @@ namespace Uber.DemoTools
             allowGrenadesCheckBox.VerticalAlignment = VerticalAlignment.Center;
             allowGrenadesCheckBox.IsChecked = _app.Config.MidAirCutAllowGrenade;
 
+            var allowPanzerfaustCheckBox = new CheckBox();
+            _allowPanzerfaustCheckBox = allowPanzerfaustCheckBox;
+            allowPanzerfaustCheckBox.HorizontalAlignment = HorizontalAlignment.Left;
+            allowPanzerfaustCheckBox.VerticalAlignment = VerticalAlignment.Center;
+            allowPanzerfaustCheckBox.IsChecked = _app.Config.MidAirCutAllowPanzerfaust;
+
             var rulesPanelList = new List<Tuple<FrameworkElement, FrameworkElement>>();
             rulesPanelList.Add(App.CreateTuple("Allow Rockets?", allowRocketsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow BFG?", allowBFGsCheckBox));
             rulesPanelList.Add(App.CreateTuple("Allow Grenades?", allowGrenadesCheckBox));
+            rulesPanelList.Add(App.CreateTuple("Allow Panzerfaust?", allowPanzerfaustCheckBox));
             rulesPanelList.Add(App.CreateTuple("Min. Distance", minDistanceEditBox));
             rulesPanelList.Add(App.CreateTuple("Min. Air Time [ms]", minAirTimeEditBox));
 
@@ -116,7 +125,8 @@ namespace Uber.DemoTools
                 "\nRecommended minimum value for projectile distance: 300 \"Quake units\"" + 
                 "\n\nIf you set a low min. distance like 300, it would be recommended to set the air time to be at least 600." +
                 "\nAlternatively, if you set a low min. air time like 300, it would be recommended to set the min. distance to at least 600." +
-                "\n\nMin. distance is ignored for grenades, so be sure adjust the air time and weapon list accordingly.";
+                "\n\nMin. distance is ignored for grenades, so be sure adjust the air time and weapon list accordingly." +
+                "\n\nNote that the Rocket Launcher is the Allied version of the Panzerfaust in RtCW.";
 
             var helpGroupBox = new GroupBox();
             helpGroupBox.Margin = new Thickness(5);

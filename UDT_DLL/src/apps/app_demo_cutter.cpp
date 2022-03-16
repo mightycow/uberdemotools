@@ -35,6 +35,7 @@ struct ProgramOptions
 	s32 AllowRL;
 	s32 AllowBFG;
 	s32 AllowGL;
+	s32 AllowPF;
 	udtFragRunPatternArg FragRun;
 	s32 AllowSelfKills;
 	s32 AllowTeamKills;
@@ -105,6 +106,7 @@ static const CmdLineOption cmdLineOptions[] =
 	{ "RL", "allow rocket launcher", false, &options.AllowRL, "a", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "BFG", "allow big fucking gun", false, &options.AllowBFG, "a", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "GL", "allow grenade launcher", false, &options.AllowGL, "a", NULL, OptionType::Integer, "1", "0", "1" },
+	{ "PF", "allow Panzerfaust", false, &options.AllowPF, "a", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "distance", "min. distance traveled", false, &options.MidAir.MinDistance, "a", NULL, OptionType::Integer, "500", "0", NULL },
 	{ "duration", "min. time the victim was airborne prior to the hit, in milliseconds", false, &options.MidAir.MinAirTimeMs, "a", NULL, OptionType::Integer, "250", "0", NULL },
 	// multi rail
@@ -1014,6 +1016,10 @@ int udt_main(int argc, char** argv)
 		if(options.AllowGL)
 		{
 			options.MidAir.AllowedWeapons |= UDT_BIT(udtWeapon::GrenadeLauncher);
+		}
+		if(options.AllowPF)
+		{
+			options.MidAir.AllowedWeapons |= UDT_BIT(udtWeapon::Panzerfaust);
 		}
 		return CutFilesBySinglePattern(parseArg.ParseArg, files, fileCount, options, udtPatternType::MidAirFrags, &options.MidAir) ? 0 : 1;
 	}

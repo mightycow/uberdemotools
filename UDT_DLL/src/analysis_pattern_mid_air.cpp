@@ -96,6 +96,7 @@ static bool IsAllowedUDTMeanOfDeath(u32 udtMod)
 	return
 		udtMod == (s32)udtMeanOfDeath::Rocket ||
 		udtMod == (s32)udtMeanOfDeath::BFG ||
+		udtMod == (s32)udtMeanOfDeath::Panzerfaust ||
 		udtMod == (s32)udtMeanOfDeath::Grenade;
 }
 
@@ -110,7 +111,8 @@ static bool IsTrackedProjectileIdWeapon(s32 idWeapon, udtProtocol::Id procotol)
 	// @NOTE: no grenades!
 	return
 		udtWeaponId == (u32)udtWeapon::RocketLauncher ||
-		udtWeaponId == (u32)udtWeapon::BFG;
+		udtWeaponId == (u32)udtWeapon::BFG ||
+		udtWeaponId == (u32)udtWeapon::Panzerfaust;
 }
 
 static s32 RoundToNearest(s32 x, s32 n)
@@ -171,6 +173,8 @@ static bool GetUDTWeaponFromUDTMeanOfDeath(u32& weaponId, u32 mod)
 		case udtMeanOfDeath::BFG: weaponId = (u32)udtWeapon::BFG; break;
 		case udtMeanOfDeath::Grapple: weaponId = (u32)udtWeapon::GrapplingHook; break;
 		case udtMeanOfDeath::HeavyMachineGun: weaponId = (u32)udtWeapon::HeavyMachineGun; break;
+		case udtMeanOfDeath::Panzerfaust:
+		case udtMeanOfDeath::PanzerfaustSplash: weaponId = (u32)udtWeapon::Panzerfaust; break;
 		default: return false;
 	}
 
@@ -193,6 +197,7 @@ void udtMidAirPatternAnalyzer::StartAnalysis()
 	_gameStateIndex = -1;
 	_rocketSpeed = -1.0f;
 	_bfgSpeed = -1.0f;
+	_panzerSpeed = -1.0f;
 	memset(_projectiles, 0, sizeof(_projectiles));
 	memset(_players, 0, sizeof(_players));
 }
@@ -215,46 +220,38 @@ void udtMidAirPatternAnalyzer::ProcessGamestateMessage(const udtGamestateCallbac
 	}
 }
 
+static void ComputeProjectileSpeed(float* speed, udtWeapon::Id weapon, const udtSnapshotCallbackArg& arg, s32 idEntityTypeMissileId, udtProtocol::Id protocol)
+{
+	if(*speed > 0.0f)
+	{
+		return;
+	}
+
+	for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
+	{
+		const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
+		u32 udtWeaponId;
+		if(ent->eType == idEntityTypeMissileId &&
+		   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, protocol) &&
+		   udtWeaponId == (u32)weapon)
+		{
+			const f32 computedSpeed = Float3::Length(ent->pos.trDelta);
+			*speed = (f32)RoundToNearest((s32)computedSpeed, 25);
+			return;
+		}
+	}
+}
+
 void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
 	const s32 trackedPlayerIndex = PlugIn->GetTrackedPlayerIndex();
 	const s32 idEntityTypeMissileId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Missile, _protocol);
 
-	// Update the rocket speed if needed.
-	if(_rocketSpeed == -1.0f)
-	{
-		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
-		{
-			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
-			u32 udtWeaponId;
-			if(ent->eType == idEntityTypeMissileId && 
-			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
-			   udtWeaponId == (u32)udtWeapon::RocketLauncher)
-			{
-				const f32 speed = Float3::Length(ent->pos.trDelta);
-				_rocketSpeed = (f32)RoundToNearest((s32)speed, 25);
-				break;
-			}
-		}
-	}
+	ComputeProjectileSpeed(&_rocketSpeed, udtWeapon::RocketLauncher, arg, idEntityTypeMissileId, _protocol);
+	ComputeProjectileSpeed(&_bfgSpeed, udtWeapon::BFG, arg, idEntityTypeMissileId, _protocol);
+	ComputeProjectileSpeed(&_panzerSpeed, udtWeapon::Panzerfaust, arg, idEntityTypeMissileId, _protocol);
 
-	// Update the BFG speed if needed.
-	if(_bfgSpeed == -1.0f)
-	{
-		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
-		{
-			const idEntityStateBase* const ent = arg.ChangedEntities[i].Entity;
-			u32 udtWeaponId;
-			if(ent->eType == idEntityTypeMissileId && 
-			   GetUDTNumber(udtWeaponId, udtMagicNumberType::Weapon, ent->weapon, _protocol) &&
-			   udtWeaponId == udtWeapon::BFG)
-			{
-				const f32 speed = Float3::Length(ent->pos.trDelta);
-				_bfgSpeed = (f32)RoundToNearest((s32)speed, 25);
-				break;
-			}
-		}
-	}
+	const bool rtcw = AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW);
 
 	// Update player information: position, Z-axis change, fire projectiles, etc.
 	PlayerEntities playersInfo;
@@ -266,7 +263,7 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		f32 currentPosition[3];
 		ComputeTrajectoryPosition(currentPosition, es, arg.ServerTime, _protocol);
 
-		if(es->clientNum == trackedPlayerIndex)
+		if(!rtcw && es->clientNum == trackedPlayerIndex)
 		{
 			// Store the projectile fired by the tracked player, if any.
 			const s32 eventType = es->event & (~ID_ES_EVENT_BITS);
@@ -306,6 +303,24 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 		}
 
 		player.LastUpdateTime = arg.ServerTime;
+	}
+
+	if(rtcw)
+	{
+		// Find a new projectile being fired.
+		for(u32 i = 0; i < arg.ChangedEntityCount; ++i)
+		{
+			if(!arg.ChangedEntities[i].IsNewEntity)
+			{
+				continue;
+			}
+
+			const idEntityStateBase* const es = arg.ChangedEntities[i].Entity;
+			if(es->eType == idEntityTypeMissileId && IsTrackedProjectileIdWeapon(es->weapon, _protocol))
+			{
+				AddProjectile(es->weapon, es->pos.trBase, arg.ServerTime);
+			}
+		}
 	}
 
 	// Find a player getting mid-aired.
@@ -369,7 +384,11 @@ void udtMidAirPatternAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackA
 			}
 		}
 
-		const u32 victimAirTimeMs = (u32)udt_max<s32>(0, _players[targetIdx].LastUpdateTime - _players[targetIdx].LastZDirChangeTime);
+		// this is not strictly necessary but we can be a bit more lenient for Wolfenstein
+		const s32 lastAirTimeMs = rtcw ?
+			_players[targetIdx].LastGroundContactTime :
+			_players[targetIdx].LastZDirChangeTime;
+		const u32 victimAirTimeMs = (u32)udt_max<s32>(0, _players[targetIdx].LastUpdateTime - lastAirTimeMs);
 		if(extraInfo.MinAirTimeMs > 0 && victimAirTimeMs < extraInfo.MinAirTimeMs)
 		{
 			continue;
@@ -426,9 +445,19 @@ udtMidAirPatternAnalyzer::ProjectileInfo* udtMidAirPatternAnalyzer::FindBestProj
 	{
 		targetTravelSpeed = _bfgSpeed == -1.0f ? 2000.0f : _bfgSpeed;
 	}
-	else
+	else if(udtWeaponId == (s32)udtWeapon::Panzerfaust)
+	{
+		targetTravelSpeed = _panzerSpeed == -1.0f ? 2500.0f : _panzerSpeed;
+	}
+	else if(udtWeaponId == (s32)udtWeapon::RocketLauncher)
 	{
 		targetTravelSpeed = _rocketSpeed == -1.0f ? 1000.0f : _rocketSpeed;
+	}
+	else
+	{
+		// woopsie!
+		assert(0);
+		return NULL;
 	}
 
 	f32 smallestScale = 9999.0f;
