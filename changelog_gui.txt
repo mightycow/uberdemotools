@@ -1,6 +1,5 @@
 0.7.3 (DD.MM.2022)
-ADD: RtCW support (dm_57, dm_58, dm_59, dm_60) with OSP and RtcwPro mods
-     Search and cut for the frag sequence pattern isn't supported
+ADD: Support for RtCW (dm_57, dm_58, dm_59, dm_60) with OSP and RtcwPro mods
 ADD: Grenade and Panzerfaust support for the mid-air pattern
 FIX: Team stats now draw the correct entries in bold
 

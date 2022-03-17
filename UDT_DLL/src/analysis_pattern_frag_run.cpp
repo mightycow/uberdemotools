@@ -3,6 +3,20 @@
 #include "utils.hpp"
 
 
+#define PlayerKill(Bit) Bit,
+#define WorldKill(Bit)
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, KillType, Bit) KillType(Bit)
+static const u32 PlayerMeanOfDeathToMeanOfDeath[] =
+{
+	UDT_MEAN_OF_DEATH_LIST(UDT_PLAYER_MOD_ITEM)
+	0
+};
+#undef UDT_PLAYER_MOD_ITEM
+#undef WorldKill
+#undef PlayerKill
+static_assert(UDT_ARRAY_LENGTH(PlayerMeanOfDeathToMeanOfDeath) == udtPlayerMeanOfDeath::Count + 1, "Invalid array size");
+
+
 static bool AreTeammates(s32 team1, s32 team2)
 {
 	return
@@ -12,46 +26,22 @@ static bool AreTeammates(s32 team1, s32 team2)
 		(team1 == (s32)udtTeam::Red || (s32)team1 == udtTeam::Blue);
 }
 
-static bool GetUDTPlayerModFromUDTMod(u32& playerMod, u32 mod)
+static bool IsAllowedUDTMeanOfDeath(s32 udtMod, u64 udtPlayerMODFlags)
 {
-	switch((udtMeanOfDeath::Id)mod)
+	u64 playerModBit = udtPlayerMeanOfDeath::Count;
+	for(u32 i = 0; i < udtPlayerMeanOfDeath::Count; ++i)
 	{
-		case udtMeanOfDeath::Shotgun: playerMod = (u32)udtPlayerMeanOfDeath::Shotgun; break;
-		case udtMeanOfDeath::Gauntlet: playerMod = (u32)udtPlayerMeanOfDeath::Gauntlet; break;
-		case udtMeanOfDeath::MachineGun: playerMod = (u32)udtPlayerMeanOfDeath::MachineGun; break;
-		case udtMeanOfDeath::Grenade: playerMod = (u32)udtPlayerMeanOfDeath::Grenade; break;
-		case udtMeanOfDeath::GrenadeSplash: playerMod = (u32)udtPlayerMeanOfDeath::GrenadeSplash; break;
-		case udtMeanOfDeath::Rocket: playerMod = (u32)udtPlayerMeanOfDeath::Rocket; break;
-		case udtMeanOfDeath::RocketSplash: playerMod = (u32)udtPlayerMeanOfDeath::RocketSplash; break;
-		case udtMeanOfDeath::Plasma: playerMod = (u32)udtPlayerMeanOfDeath::Plasma; break;
-		case udtMeanOfDeath::PlasmaSplash: playerMod = (u32)udtPlayerMeanOfDeath::PlasmaSplash; break;
-		case udtMeanOfDeath::Railgun: playerMod = (u32)udtPlayerMeanOfDeath::Railgun; break;
-		case udtMeanOfDeath::Lightning: playerMod = (u32)udtPlayerMeanOfDeath::Lightning; break;
-		case udtMeanOfDeath::BFG: playerMod = (u32)udtPlayerMeanOfDeath::BFG; break;
-		case udtMeanOfDeath::BFGSplash: playerMod = (u32)udtPlayerMeanOfDeath::BFGSplash; break;
-		case udtMeanOfDeath::TeleFrag: playerMod = (u32)udtPlayerMeanOfDeath::TeleFrag; break;
-		case udtMeanOfDeath::NailGun: playerMod = (u32)udtPlayerMeanOfDeath::NailGun; break;
-		case udtMeanOfDeath::ChainGun: playerMod = (u32)udtPlayerMeanOfDeath::ChainGun; break;
-		case udtMeanOfDeath::ProximityMine: playerMod = (u32)udtPlayerMeanOfDeath::ProximityMine; break;
-		case udtMeanOfDeath::Kamikaze: playerMod = (u32)udtPlayerMeanOfDeath::Kamikaze; break;
-		case udtMeanOfDeath::Grapple: playerMod = (u32)udtPlayerMeanOfDeath::Grapple; break;
-		case udtMeanOfDeath::Thaw: playerMod = (u32)udtPlayerMeanOfDeath::Thaw; break;
-		case udtMeanOfDeath::HeavyMachineGun: playerMod = (u32)udtPlayerMeanOfDeath::HeavyMachineGun; break;
-		default: return false;
+		if(PlayerMeanOfDeathToMeanOfDeath[i] == (u32)udtMod)
+		{
+			playerModBit = i;
+		}
 	}
-
-	return true;
-}
-
-static bool IsAllowedUDTMeanOfDeath(s32 udtMod, u32 udtPlayerMODFlags)
-{
-	u32 playerModBit;
-	if(!GetUDTPlayerModFromUDTMod(playerModBit, udtMod))
+	if(playerModBit == udtPlayerMeanOfDeath::Count)
 	{
 		return false;
 	}
 
-	const u32 playerModFlag = 1 << playerModBit;
+	const u64 playerModFlag = (u64)1 << playerModBit;
 
 	return (udtPlayerMODFlags & playerModFlag) != 0;
 }

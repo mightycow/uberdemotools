@@ -11,7 +11,7 @@
 #include <cctype>
 
 
-#define ITEM(Enum, Desc, Bit) Desc,
+#define ITEM(Enum, Desc, KillType, Bit) Desc,
 static const char* MeansOfDeathNames[udtMeanOfDeath::Count + 1]
 {
 	UDT_MEAN_OF_DEATH_LIST(ITEM)

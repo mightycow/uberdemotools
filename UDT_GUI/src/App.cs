@@ -78,7 +78,7 @@ namespace Uber.DemoTools
     {
         public Int32 PatternCutPlayerIndex = int.MinValue; // @NOTE: Some negative values have meaning already.
         public string PatternCutPlayerName = "";
-        public UInt32 FragCutAllowedMeansOfDeaths = 0;
+        public UInt64 FragCutAllowedMeansOfDeaths = 0;
         public UDT_DLL.udtProtocol ConversionOutputProtocol = UDT_DLL.udtProtocol.Invalid;
         public bool QuitAfterFirstJob = false;
         public bool ForceAnalyzeOnLoad = false;

@@ -251,7 +251,7 @@ struct udtParserPlugIn
 	N(Flamethrower, "flamethrower", 21) \
 	N(Tesla, "tesla", 22) \
 	N(Speargun, "speargun", 23) \
-	N(Knife2, "knife", 24) \
+	N(Knife2, "knife 2", 24) \
 	N(Colt, ".45ACP 1911", 25) \
 	N(Thompson, "thompson", 26) \
 	N(Garand, "garand", 27) \
@@ -262,7 +262,7 @@ struct udtParserPlugIn
 	N(VenomFull, "venom", 32) \
 	N(SpeargunCO2, "speargun", 33) \
 	N(FG42Scope, "FG42 scope", 34) \
-	N(Bar2, "BAR", 35) \
+	N(Bar2, "BAR 2", 35) \
 	N(Sten, "sten", 36) \
 	N(MedicSyringe, "syringe", 37) \
 	N(Ammo, "ammo", 38) \
@@ -274,8 +274,8 @@ struct udtParserPlugIn
 	N(Dynamite2, "dynamite 2", 44) \
 	N(Prox, "prox", 45) \
 	N(MonsterAttack1, "monster attack", 46) \
-	N(MonsterAttack2, "monster attack", 47) \
-	N(MonsterAttack3, "monster attack", 48) \
+	N(MonsterAttack2, "monster attack 2", 47) \
+	N(MonsterAttack3, "monster attack 3", 48) \
 	N(SmokeTrail, "smoke trail", 49) \
 	N(Sniper, "sniper", 50) \
 	N(Mortar, "mortar", 51) \
@@ -341,74 +341,74 @@ struct udtPowerUpMask
 #undef UDT_POWER_UP_ITEM
 
 #define UDT_MEAN_OF_DEATH_LIST(N) \
-	N(Shotgun, "shotgun", 0) \
-	N(Gauntlet, "gauntlet", 1) \
-	N(MachineGun, "machine gun", 2) \
-	N(Grenade, "grenade", 3) \
-	N(GrenadeSplash, "grenade splash", 4) \
-	N(Rocket, "rocket", 5) \
-	N(RocketSplash, "rocket splash", 6) \
-	N(Plasma, "plasma", 7) \
-	N(PlasmaSplash, "plasma splash", 8) \
-	N(Railgun, "railgun", 9) \
-	N(Lightning, "lightning", 10) \
-	N(BFG, "BFG", 11) \
-	N(BFGSplash, "BFG splash", 12) \
-	N(Water, "water", 13) \
-	N(Slime, "slime", 14) \
-	N(Lava, "lava", 15) \
-	N(Crush, "crush", 16) \
-	N(TeleFrag, "telefrag", 17) \
-	N(Fall, "fall", 18) \
-	N(Suicide, "suicide", 19) \
-	N(TargetLaser, "target laser", 20) \
-	N(TriggerHurt, "trigger hurt", 21) \
-	N(NailGun, "nailgun", 22) \
-	N(ChainGun, "chaingun", 23) \
-	N(ProximityMine, "proximity mine", 24) \
-	N(Kamikaze, "kamikaze", 25) \
-	N(Juiced, "juiced", 26) \
-	N(Grapple, "grapple", 27) \
-	N(TeamSwitch, "team switch", 28) \
-	N(Thaw, "thaw", 29) \
-	N(HeavyMachineGun, "heavy machine gun", 30) \
-	N(Knife, "knife", 31) \
-	N(Knife2, "knife", 32) \
-	N(KnifeStealth, "knife stealth", 33) \
-	N(Luger, "luger 9mm", 34) \
-	N(Colt, ".45ACP 1911", 35) \
-	N(MP40, "MP40", 36) \
-	N(Thompson, "thompson", 37) \
-	N(Sten, "sten", 38) \
-	N(Mauser, "mauser", 39) \
-	N(SniperRifle, "sniper rifle", 40) \
-	N(Garand, "garand", 41) \
-	N(SnooperScope, "snooper", 42) \
-	N(Akimbo, "dual colts", 43) \
-	N(Panzerfaust, "panzerfaust", 44) \
-	N(PanzerfaustSplash, "panzerfaust splash", 45) \
-	N(GrenadePineapple, "pineapple grenade", 46) \
-	N(Venom, "venom", 47) \
-	N(VenomFull, "venom", 48) \
-	N(Flamethrower, "flamethrower", 49) \
-	N(Kicked, "kicked", 50) \
-	N(Mortar, "mortar", 51) \
-	N(MortarSplash, "mortar splash", 52) \
-	N(Grabber, "grabber", 53) \
-	N(Dynamite, "dynamite", 54) \
-	N(DynamiteSplash, "dynamite splash", 55) \
-	N(Silencer, "silencer", 56) \
-	N(Bar, "BAR", 57) \
-	N(FG42, "FG42", 58) \
-	N(FG42Scope, "FG42 scope", 59) \
-	N(Airstrike, "support fire", 60) \
-	N(Artillery, "artillery support", 61) \
-	N(Explosive, "explosive", 62) \
-	N(Syringe, "syring", 63) \
-	N(PoisonGas, "poison gas", 64) \
-	N(GrenadeLauncher, "grenade", 65)
+	N(Shotgun, "shotgun", PlayerKill, 0) \
+	N(Gauntlet, "gauntlet", PlayerKill, 1) \
+	N(MachineGun, "machine gun", PlayerKill, 2) \
+	N(Grenade, "grenade", PlayerKill, 3) \
+	N(GrenadeSplash, "grenade splash", PlayerKill, 4) \
+	N(Rocket, "rocket", PlayerKill, 5) \
+	N(RocketSplash, "rocket splash", PlayerKill, 6) \
+	N(Plasma, "plasma", PlayerKill, 7) \
+	N(PlasmaSplash, "plasma splash", PlayerKill, 8) \
+	N(Railgun, "railgun", PlayerKill, 9) \
+	N(Lightning, "lightning", PlayerKill, 10) \
+	N(BFG, "BFG", PlayerKill, 11) \
+	N(BFGSplash, "BFG splash", PlayerKill, 12) \
+	N(Water, "water", WorldKill, 13) \
+	N(Slime, "slime", WorldKill, 14) \
+	N(Lava, "lava", WorldKill, 15) \
+	N(Crush, "crush", WorldKill, 16) \
+	N(TeleFrag, "telefrag", PlayerKill, 17) \
+	N(Fall, "fall", WorldKill, 18) \
+	N(Suicide, "suicide", PlayerKill, 19) \
+	N(TargetLaser, "target laser", WorldKill, 20) \
+	N(TriggerHurt, "trigger hurt", WorldKill, 21) \
+	N(NailGun, "nailgun", PlayerKill, 22) \
+	N(ChainGun, "chaingun", PlayerKill, 23) \
+	N(ProximityMine, "proximity mine", PlayerKill, 24) \
+	N(Kamikaze, "kamikaze", PlayerKill, 25) \
+	N(Juiced, "juiced", WorldKill, 26) \
+	N(Grapple, "grapple", PlayerKill, 27) \
+	N(TeamSwitch, "team switch", WorldKill, 28) \
+	N(Thaw, "thaw", WorldKill, 29) \
+	N(HeavyMachineGun, "heavy machine gun", PlayerKill, 30) \
+	N(Knife, "knife", PlayerKill, 31) \
+	N(Knife2, "knife 2", PlayerKill, 32) \
+	N(KnifeStealth, "knife stealth", PlayerKill, 33) \
+	N(Luger, "luger 9mm", PlayerKill, 34) \
+	N(Colt, ".45ACP 1911", PlayerKill, 35) \
+	N(MP40, "MP40", PlayerKill, 36) \
+	N(Thompson, "thompson", PlayerKill, 37) \
+	N(Sten, "sten", PlayerKill, 38) \
+	N(Mauser, "mauser", PlayerKill, 39) \
+	N(SniperRifle, "sniper rifle", PlayerKill, 40) \
+	N(Garand, "garand", PlayerKill, 41) \
+	N(SnooperScope, "snooper", PlayerKill, 42) \
+	N(Akimbo, "dual colts", PlayerKill, 43) \
+	N(Panzerfaust, "panzerfaust", PlayerKill, 44) \
+	N(PanzerfaustSplash, "panzerfaust splash", PlayerKill, 45) \
+	N(GrenadePineapple, "pineapple grenade", PlayerKill, 46) \
+	N(Venom, "venom", PlayerKill, 47) \
+	N(VenomFull, "venom", PlayerKill, 48) \
+	N(Flamethrower, "flamethrower", PlayerKill, 49) \
+	N(Kicked, "kicked", WorldKill, 50) \
+	N(Mortar, "mortar", PlayerKill, 51) \
+	N(MortarSplash, "mortar splash", PlayerKill, 52) \
+	N(Grabber, "grabber", WorldKill, 53) \
+	N(Dynamite, "dynamite", PlayerKill, 54) \
+	N(DynamiteSplash, "dynamite splash", PlayerKill, 55) \
+	N(Silencer, "silencer", PlayerKill, 56) \
+	N(Bar, "BAR", PlayerKill, 57) \
+	N(FG42, "FG42", PlayerKill, 58) \
+	N(FG42Scope, "FG42 scope", PlayerKill, 59) \
+	N(Airstrike, "support fire", PlayerKill, 60) \
+	N(Artillery, "artillery support", PlayerKill, 61) \
+	N(Explosive, "explosive", PlayerKill, 62) \
+	N(Syringe, "syringe", PlayerKill, 63) \
+	N(PoisonGas, "poison gas", PlayerKill, 64) \
+	N(GrenadeLauncher, "grenade launcher", PlayerKill, 65)
 
-#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc, Bit) Enum = Bit,
+#define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc, KillType, Bit) Enum = Bit,
 struct udtMeanOfDeath
 {
 	enum Id
@@ -419,50 +419,20 @@ struct udtMeanOfDeath
 };
 #undef UDT_MEAN_OF_DEATH_ITEM
 
-#define UDT_PLAYER_MOD_LIST(N) \
-	N(Shotgun, "shotgun", 0) \
-	N(Gauntlet, "gauntlet", 1) \
-	N(MachineGun, "machine gun", 2) \
-	N(Grenade, "grenade", 3) \
-	N(GrenadeSplash, "grenade splash", 4) \
-	N(Rocket, "rocket", 5) \
-	N(RocketSplash, "rocket splash", 6) \
-	N(Plasma, "plasma", 7) \
-	N(PlasmaSplash, "plasma splash", 8) \
-	N(Railgun, "railgun", 9) \
-	N(Lightning, "lightning", 10) \
-	N(BFG, "BFG", 11) \
-	N(BFGSplash, "BFG splash", 12) \
-	N(TeleFrag, "telefrag", 13) \
-	N(NailGun, "nailgun", 14) \
-	N(ChainGun, "chaingun", 15) \
-	N(ProximityMine, "proximity mine", 16) \
-	N(Kamikaze, "kamikaze", 17) \
-	N(Grapple, "grapple", 18) \
-	N(Thaw, "thaw", 19) \
-	N(HeavyMachineGun, "heavy machine gun", 20)
-
-#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Enum = Bit,
+#define PlayerKill(Enum) Enum,
+#define WorldKill(Enum)
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, KillType, Bit) KillType(Enum)
 struct udtPlayerMeanOfDeath
 {
 	enum Id
 	{
-		UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+		UDT_MEAN_OF_DEATH_LIST(UDT_PLAYER_MOD_ITEM)
 		Count
 	};
 };
 #undef UDT_PLAYER_MOD_ITEM
-
-#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Enum = UDT_BIT(Bit),
-struct udtPlayerMeanOfDeathMask
-{
-	enum Id
-	{
-		UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
-		AfterLast
-	};
-};
-#undef UDT_PLAYER_MOD_ITEM
+#undef WorldKill
+#undef PlayerKill
 
 #define UDT_TEAM_LIST(N) \
 	N(Free, "free") \
@@ -1479,6 +1449,13 @@ extern "C"
 	/* when udtPatternInfo::Type is udtPatternType::FragSequences. */
 	typedef struct udtFragRunPatternArg_s
 	{
+		/* All the allowed means of death. */
+		/* See udtPlayerMeanOfDeath. */
+		u64 AllowedMeansOfDeaths;
+
+		/* Ignore this. */
+		u64 Reserved1;
+
 		/* The minimum amount of frags in a sequence. */
 		u32 MinFragCount;
 
@@ -1496,13 +1473,6 @@ extern "C"
 		/* Boolean options. */
 		/* See udtFragRunPatternArgMask. */
 		u32 Flags;
-		
-		/* All the allowed weapons. */
-		/* See udtPlayerMeansOfDeathBits. */
-		u32 AllowedMeansOfDeaths;
-
-		/* Ignore this. */
-		s32 Reserved1;
 	}
 	udtFragRunPatternArg;
 	UDT_ENFORCE_API_STRUCT_SIZE(udtFragRunPatternArg)

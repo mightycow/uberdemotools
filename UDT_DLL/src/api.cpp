@@ -68,6 +68,9 @@ static_assert(sizeof(uptr) == 4, "sizeof(uptr) must be 4");
 static_assert(sizeof(void*) == 4, "sizeof(void*) must be 4");
 #endif
 
+static_assert(udtPlayerMeanOfDeath::Count < udtMeanOfDeath::Count, "Invalid MOD KillType filter");
+static_assert(udtPlayerMeanOfDeath::Count <= 64, "another API change is needed :-(");
+
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
 static const char* ErrorCodeStrings[udtErrorCode::AfterLastError + 1] =
@@ -117,21 +120,27 @@ static const char* PowerUpNames[] =
 };
 #undef UDT_POWER_UP_ITEM
 
-#define UDT_MOD_ITEM(Enum, Desc, Bit) Desc,
+#define UDT_MOD_ITEM(Enum, Desc, KillType, Bit) Desc,
 static const char* MeansOfDeathNames[] =
 {
 	UDT_MEAN_OF_DEATH_LIST(UDT_MOD_ITEM)
 	"after last MoD"
 };
 #undef UDT_MOD_ITEM
+static_assert(UDT_ARRAY_LENGTH(MeansOfDeathNames) == udtMeanOfDeath::Count + 1, "Invalid array size");
 
-#define UDT_PLAYER_MOD_ITEM(Enum, Desc, Bit) Desc,
+#define PlayerKill(Desc) Desc,
+#define WorldKill(Desc)
+#define UDT_PLAYER_MOD_ITEM(Enum, Desc, KillType, Bit) KillType(Desc)
 static const char* PlayerMeansOfDeathNames[] =
 {
-	UDT_PLAYER_MOD_LIST(UDT_PLAYER_MOD_ITEM)
+	UDT_MEAN_OF_DEATH_LIST(UDT_PLAYER_MOD_ITEM)
 	"after last player MoD"
 };
 #undef UDT_PLAYER_MOD_ITEM
+#undef WorldKill
+#undef PlayerKill
+static_assert(UDT_ARRAY_LENGTH(PlayerMeansOfDeathNames) == udtPlayerMeanOfDeath::Count + 1, "Invalid array size");
 
 #define UDT_TEAM_ITEM(Enum, Desc) Desc,
 static const char* TeamNames[] =

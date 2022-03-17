@@ -8,6 +8,7 @@
 #include "stack_trace.hpp"
 #include "path.hpp"
 #include "batch_runner.hpp"
+#include "scoped_stack_allocator.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -96,7 +97,6 @@ static const CmdLineOption cmdLineOptions[] =
 	{ "speed", "min. angular speed, in degrees per second", false, &options.FlickRail.MinSpeed, "f", NULL, OptionType::AngleRad, "600", "0", NULL },
 	{ "speed_snaps", "min. angular speed snapshot count", false, &options.FlickRail.MinSpeedSnapshotCount, "f", NULL, OptionType::Integer, "4", "2", "4" },
 	// frag runs
-	{ "mods", "allowed means of death", false, &options.FragRun.AllowedMeansOfDeaths, "s", NULL, OptionType::Integer, "-1", NULL, NULL },
 	{ "suicides", "allow self kills", false, &options.AllowSelfKills, "s", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "team_kills", "allow team kills", false, &options.AllowTeamKills, "s", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "deaths", "allow deaths", false, &options.AllowDeaths, "s", NULL, OptionType::Integer, "1", "0", "1" },
@@ -374,6 +374,63 @@ static void ParseOptions(int firstOption, int afterLastOption, char** argv, char
 	}
 }
 
+static const char* GetCamelCaseString(udtVMLinearAllocator& alloc, const char* str)
+{
+	return udtString::NewCamelCaseClone(alloc, udtString::NewConstRef(str)).GetPtr();
+}
+
+static u64 GetMeanOfDeathBitMask(udtVMLinearAllocator& alloc, const char* modRaw)
+{
+	const char** mods;
+	u32 modCount;
+	udtGetStringArray(udtStringArray::MeansOfDeath, &mods, &modCount);
+	const udtString mod = udtString::NewConstRef(modRaw);
+	for(u32 i = 0; i < modCount; ++i)
+	{
+		if(udtString::EqualsNoCase(mod, GetCamelCaseString(alloc, mods[i])))
+		{
+			return (u64)1 << (u64)i;
+		}
+	}
+
+	return 0;
+}
+
+static void ParseCommands(int firstOption, int afterLastOption, char** argv, char command)
+{
+	if(command != 's')
+	{
+		return;
+	}
+
+	const char* const cmdAdd = "mod_add=";
+	const char* const cmdRem = "mod_rem=";
+
+	udtVMLinearAllocator alloc("ParseCommands::Temp");
+	udtVMScopedStackAllocator scope(alloc);
+
+	for(int i = firstOption; i < afterLastOption; ++i)
+	{
+		const udtString arg = udtString::NewConstRef(argv[i]);
+		if(udtString::EqualsNoCase(arg, "mod_all"))
+		{
+			options.FragRun.AllowedMeansOfDeaths = u64(~0);
+		}
+		else if(udtString::EqualsNoCase(arg, "mod_none"))
+		{
+			options.FragRun.AllowedMeansOfDeaths = 0;
+		}
+		else if(udtString::StartsWithNoCase(arg, cmdAdd) && arg.GetLength() > strlen(cmdAdd))
+		{
+			options.FragRun.AllowedMeansOfDeaths |= GetMeanOfDeathBitMask(alloc, argv[i] + strlen(cmdAdd));
+		}
+		else if(udtString::StartsWithNoCase(arg, cmdRem) && arg.GetLength() > strlen(cmdRem))
+		{
+			options.FragRun.AllowedMeansOfDeaths &= ~GetMeanOfDeathBitMask(alloc, argv[i] + strlen(cmdRem));
+		}
+	}
+}
+
 struct CutByChatConfig
 {
 	udtVMArray<udtChatPatternRule> ChatRules { "CutByChatConfig::ChatRulesArray" };
@@ -501,16 +558,30 @@ static void PrintCommandHelp(char cmd)
 
 	if(cmd == 's')
 	{
+		udtVMLinearAllocator alloc("PrintCommandHelp::Temp");
+		udtVMScopedStackAllocator scope(alloc);
+
 		const char** mods;
 		u32 modCount;
 		udtGetStringArray(udtStringArray::MeansOfDeath, &mods, &modCount);
-		modCount = udt_min(modCount, 32u);
 		printf("\n");
-		printf("Means of death bit masks\n");
+		printf("Means of death commands:\n");
+		printf("    mod_all : enable  all means of death\n");
+		printf("    mod_none: disable all means of death\n");
+		printf("    mod_add : enable  the specified mean of death\n");
+		printf("    mod_rem : disable the specified mean of death\n");
+		printf("\n");
+		printf("Means of death names\n");
 		for(u32 i = 0; i < modCount; ++i)
 		{
-			printf("%12u %s\n", (unsigned int)UDT_BIT(i), mods[i]);
+			printf("    %s\n", GetCamelCaseString(alloc, mods[i]));
 		}
+		printf("\n");
+		printf("Example usage:\n");
+		printf("- only allow lightning gun deaths:\n");
+		printf("  UDT_cutter s mod_none mod_add=lightning -duration=5 -frags=3 -r $inputfolder\n");
+		printf("- allow all death causes except the lightning gun:\n");
+		printf("  UDT_cutter s mod_all mod_rem=lightning -duration=5 -frags=3 -r $inputfolder\n");
 	}
 }
 
@@ -890,7 +961,9 @@ int udt_main(int argc, char** argv)
 	const int firstOption = 2;
 	const int afterLastOption = command == 'g' ? argc : (argc - 1);
 
+	options.FragRun.AllowedMeansOfDeaths = u64(~0);
 	ParseOptions(firstOption, afterLastOption, argv, command);
+	ParseCommands(firstOption, afterLastOption, argv, command);
 
 	if(command == 'g')
 	{

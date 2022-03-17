@@ -1128,12 +1128,12 @@ namespace Uber.DemoTools
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
         public struct udtFragRunPatternArg
         {
+            public UInt64 AllowedMeansOfDeaths;
+            public UInt64 Reserved1;
             public UInt32 MinFragCount;
             public UInt32 TimeBetweenFragsSec;
             public UInt32 TimeMode; // 0=max, 1=avg
             public UInt32 Flags;
-            public UInt32 AllowedMeansOfDeaths;
-            public Int32 Reserved1;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]

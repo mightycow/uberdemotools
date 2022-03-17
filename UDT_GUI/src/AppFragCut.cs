@@ -105,26 +105,26 @@ namespace Uber.DemoTools
             RootElement = groupBox;
         }
 
-        public UInt32 GetBitMask()
+        public ulong GetBitMask()
         {
-            UInt32 result = 0;
+            ulong result = 0;
             for(var i = 0; i < _checkBoxes.Count; ++i)
             {
                 var isChecked = _checkBoxes[i].IsChecked ?? false;
                 if(isChecked)
                 {
-                    result |= (UInt32)(1 << i);
+                    result |= (ulong)1 << i;
                 }
             }
 
             return result;
         }
 
-        public void SetBitMask(UInt32 bitMask)
+        public void SetBitMask(ulong bitMask)
         {
             for(var i = 0; i < _checkBoxes.Count; ++i)
             {
-                var isChecked = (bitMask & (1 << i)) != 0;
+                var isChecked = (bitMask & ((ulong)1 << i)) != (ulong)0;
                 _checkBoxes[i].IsChecked = isChecked;
             }
         }

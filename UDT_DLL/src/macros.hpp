@@ -143,6 +143,8 @@ namespace udt { namespace impl
 // Number of elements in the specified array. Won't compile if you pass a pointer.
 #define UDT_COUNT_OF(array)    (::udt::impl::countof(array))
 
+#define UDT_ARRAY_LENGTH(array)    (sizeof(array) / sizeof((array)[0]))
+
 /*
 Static analysis annotation macros.
 */
