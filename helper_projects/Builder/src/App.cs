@@ -18,7 +18,7 @@ namespace Uber.Builder
 {
     public static class AppVersion
     {
-        public const string Version = "0.1.1";
+        public const string Version = "0.1.2";
     }
 
     public class ProfileJob
@@ -51,6 +51,7 @@ namespace Uber.Builder
         public string DLLProjectFolderPath = @"UDT_DLL\.build";
         public string DLLOutputFolderPath = @"UDT_DLL\.bin";
         public string GUIOutputFolderPath = @"UDT_GUI\.bin";
+        public string CurlFolderPath = @"libcurl";
         public string DemoFolderPath = @"demo_files";
         public string WinRARFilePath = @"C:\Program Files\WinRAR\WinRAR.exe";
         public string ResHackerFilePath = @"C:\Programs\Resource Hacker\ResourceHacker.exe";
@@ -1064,10 +1065,12 @@ namespace Uber.Builder
         {
             var workDir = Path.GetFullPath(Config.RootFolderPath);
             var libVersion = Data.DLLVersion.ToString();
+            var libChangeLogFilePath = Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.ChangeLogDLLFilePath));
             var archiveFilePath = string.Format("udt_dev_{0}_{1}.zip", libVersion, arch);
             var filePaths = new List<string>();
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLHeaderFilePath)));
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT.dll")));
+            filePaths.Add(libChangeLogFilePath);
             
             SetStatus("Creating archive {0}", archiveFilePath);
             if(!WinRAR.CreateArchive(workDir, archiveFilePath, filePaths))
@@ -1091,6 +1094,7 @@ namespace Uber.Builder
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.DLLOutputFolderPath, visualStudio.PremakeGenerator, arch, "release", "UDT.dll")));
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI.exe")));
             filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.GUIOutputFolderPath, arch, "release", "UDT_GUI_Updater.exe")));
+            filePaths.Add(Path.GetFullPath(Path.Combine(Config.RootFolderPath, Config.CurlFolderPath, arch, "libcurl.dll")));
             filePaths.Add(libChangeLogFilePath);
             filePaths.Add(guiChangeLogFilePath);
 
