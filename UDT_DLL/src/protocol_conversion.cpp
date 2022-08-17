@@ -501,43 +501,58 @@ static s32 ConvertPersistIndex3to68(s32 index)
 	return -1;
 }
 
-namespace udt_private
+static void ConvertPersist3to68(idPlayerStateBase& out, const idPlayerStateBase& in)
 {
-	static s32 ConvertEntityEventNumber3to68_helper(s32 index)
+	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
 	{
-		if(index <= 46)
-		{
-			return index;
-		}
-
-		if(index >= 47 && index <= 50)
-		{
-			return index + 1;
-		}
-
-		if(index >= 51 && index <= 62)
-		{
-			return index + 2;
-		}
-
-		if(index == 63)
-		{
-			return 74;
-		}
-
-		if(index == 64)
-		{
-			return 76;
-		}
-
-		return EV_NONE;
+		out.persistant[i] = 0;
 	}
+
+	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
+	{
+		const s32 p = ConvertPersistIndex3to68(i);
+		if(p >= 0)
+		{
+			out.persistant[p] = in.persistant[i];
+		}
+	}
+}
+
+// assumes the sequence bits (ID_ES_EVENT_BITS) have been cleared
+static s32 ConvertEntityEventNumberNoSeq3to68(s32 index)
+{
+	if(index <= 46)
+	{
+		return index;
+	}
+
+	if(index >= 47 && index <= 50)
+	{
+		return index + 1;
+	}
+
+	if(index >= 51 && index <= 62)
+	{
+		return index + 2;
+	}
+
+	if(index == 63)
+	{
+		return 74;
+	}
+
+	if(index == 64)
+	{
+		return 76;
+	}
+
+	return EV_NONE;
 }
 
 static s32 ConvertEntityEventNumber3to68(s32 eventId)
 {
 	const s32 eventSequenceBits = eventId & ID_ES_EVENT_BITS;
-	const s32 newEventId = udt_private::ConvertEntityEventNumber3to68_helper(eventId & (~ID_ES_EVENT_BITS));
+	const s32 newEventId = ConvertEntityEventNumberNoSeq3to68(eventId & (~ID_ES_EVENT_BITS));
 
 	return newEventId | eventSequenceBits;
 }
@@ -551,7 +566,7 @@ static s32 ConvertEntityType3to68(s32 index)
 
 	if(index >= 12)
 	{
-		return 13 + udt_private::ConvertEntityEventNumber3to68_helper(index - 12);
+		return 13 + ConvertEntityEventNumberNoSeq3to68(index - 12);
 	}
 
 	return 0;
@@ -563,14 +578,7 @@ void udtProtocolConverter3to68::ConvertSnapshot(idLargestClientSnapshot& outSnap
 	*GetPlayerState(&outSnapshot, udtProtocol::Dm68) = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm3);
 	const idPlayerStateBase& psIn = *GetPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm3);
 	idPlayerStateBase& psOut = *GetPlayerState((idClientSnapshotBase*)&outSnapshot, udtProtocol::Dm68);
-	psOut = psIn;
-
-	for(s32 i = 0; i < ID_MAX_PS_PERSISTANT; ++i)
-	{
-		const s32 newIndex = ConvertPersistIndex3to68(i);
-		psOut.persistant[i] = newIndex >= 0 ? psIn.persistant[newIndex] : 0;
-	}
-
+	ConvertPersist3to68(psOut, psIn);
 	psOut.events[0] = ConvertEntityEventNumber3to68(psIn.events[0]);
 	psOut.events[1] = ConvertEntityEventNumber3to68(psIn.events[1]);
 	psOut.externalEvent = ConvertEntityEventNumber3to68(psIn.externalEvent);
