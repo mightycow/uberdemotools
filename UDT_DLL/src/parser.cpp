@@ -474,6 +474,20 @@ tokenize:
 		goto tokenize;
 	}
 
+	if(!isConfigString)
+	{
+		_tokenizer.Tokenize(commandString.GetPtr());
+		udtCommandConversion outCmd;
+		_protocolConverter->ConvertCommand(outCmd, _tempAllocator, _tokenizer);
+		if(outCmd.NewString)
+		{
+			commandString = outCmd.String;
+			commandStringLength = outCmd.String.GetLength();
+			// re-run tokenization for ProcessCommandMessage's benefit
+			_tokenizer.Tokenize(commandString.GetPtr());
+		}
+	}
+
 	if(EnablePlugIns && !PlugIns.IsEmpty() && !plugInSkipsThisCommand)
 	{
 		udtCommandCallbackArg info;

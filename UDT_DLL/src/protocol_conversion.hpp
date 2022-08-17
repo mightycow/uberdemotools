@@ -5,12 +5,19 @@
 #include "linear_allocator.hpp"
 #include "math.hpp"
 #include "string.hpp"
+#include "tokenizer.hpp"
 
 
 struct udtConfigStringConversion
 {
 	udtString String; // Always valid.
 	s32 Index;        // Negative if needs to be dropped.
+	bool NewString;   // True when a new string was created.
+};
+
+struct udtCommandConversion
+{
+	udtString String; // Always valid.
 	bool NewString;   // True when a new string was created.
 };
 
@@ -26,6 +33,7 @@ struct udtProtocolConverter
 	virtual void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) = 0;
 	virtual void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) = 0;
 	virtual void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) = 0;
+	virtual void ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator& allocator, const idTokenizer& tokenizer);
 
 	const udtProtocolConversionArg* ConversionInfo;
 	f32 Offsets[3];
@@ -93,6 +101,7 @@ struct udtProtocolConverter3to68 : public udtProtocolConverter
 	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
 	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
 	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
+	void ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator& allocator, const idTokenizer& tokenizer) override;
 
 private:
 	UDT_NO_COPY_SEMANTICS(udtProtocolConverter3to68);

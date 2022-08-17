@@ -7,7 +7,8 @@ ADD: UDT_json now allows for a global protocol version override with the -p opti
 CHG: UDT_cutter: reworked help and options parsing
 CHG: The JSON exporter will not lower-case the first letter of a key when the first two are uppercase
 FIX: Invalid stats no longer get exported via the API calls, so it affects both JSON export and GUI display
-FIX: The persistant player state array was not set properly during 3->68 conversions
+FIX: The persistant player state array was not set properly during 3->68 conversions, generating invalid award events etc.
+FIX: The "scores" command gets fixed during 3->68 conversions for proper HUD display
 
 1.3.1 (02.06.2018)
 ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands

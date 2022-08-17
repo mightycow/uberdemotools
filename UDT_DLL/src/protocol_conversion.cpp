@@ -30,6 +30,12 @@ Different:
 */
 
 
+void udtProtocolConverter::ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator&, const idTokenizer& tokenizer)
+{
+	result.String = udtString::NewConstRef(tokenizer.GetOriginalCommand());
+	result.NewString = false;
+}
+
 static s32 ConvertConfigStringIndex73or90to91(s32 index)
 {
 	if(index <= 665 ||
@@ -603,5 +609,55 @@ void udtProtocolConverter3to68::ConvertConfigString(udtConfigStringConversion& r
 		ProcessConfigString(newString, allocator, udtString::NewConstRef(configString, configStringLength), &ConvertConfigStringValue3or48to68, NULL);
 		result.NewString = true;
 		result.String = newString;
+	}
+}
+
+void udtProtocolConverter3to68::ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator& allocator, const idTokenizer& tokenizer)
+{
+	// @NOTE: "tinfo" never changed
+
+	result.String = udtString::NewConstRef(tokenizer.GetOriginalCommand());
+	result.NewString = false;
+
+	// for dm3, "scores" is the same except awards are missing
+	// for dm_48, "scores" is the same as for dm_66+
+	if(udtString::EqualsNoCase(tokenizer.GetArg(0), "scores"))
+	{
+		const int numScores = udt_min(atoi(tokenizer.GetArgString(1)), 64);
+		if(tokenizer.GetArgCount() >= (u32)(4 + numScores * 6))
+		{
+			const udtString space = udtString::NewConstRef(" ");
+			const udtString zero = udtString::NewConstRef(" 0");
+			udtString cmd = udtString::NewEmpty(allocator, MAX_STRING_CHARS);
+			udtString::Append(cmd, udtString::NewConstRef("scores"));
+			int a = 1;
+
+			// number of players and both team scores
+			for(int i = 0; i < 3; ++i)
+			{
+				udtString::Append(cmd, space);
+				udtString::Append(cmd, tokenizer.GetArg(a++));
+			}
+
+			// per-player stats
+			for(int s = 0; s < numScores; ++s)
+			{
+				// base stats are unchanged
+				for(int i = 0; i < 6; ++i)
+				{
+					udtString::Append(cmd, space);
+					udtString::Append(cmd, tokenizer.GetArg(a++));
+				}
+
+				// in dm_68, we have medals too
+				for(int i = 0; i < 8; ++i)
+				{
+					udtString::Append(cmd, zero);
+				}
+			}
+
+			result.String = cmd;
+			result.NewString = true;
+		}
 	}
 }
