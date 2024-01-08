@@ -2175,7 +2175,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 				if(ReadBit())
 				{
 					bits = ReadShort();
-					for(int i = 0; i < 16; i++)
+					for(i = 0; i < 16; i++)
 					{
 						if(bits & (1 << i))
 						{
@@ -2191,7 +2191,7 @@ bool udtMessage::RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStat
 			if(ReadBit())
 			{
 				bits = ReadShort();
-				for(int i = 0; i < 16; i++)
+				for(i = 0; i < 16; i++)
 				{
 					if(bits & (1 << i))
 					{

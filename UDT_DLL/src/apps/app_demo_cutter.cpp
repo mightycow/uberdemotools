@@ -906,7 +906,7 @@ static bool KeepOnlyCuttableDemoFiles(const char* name, u64 /*size*/, void* /*us
 	return HasCuttableDemoFileExtension(name);
 }
 
-static bool LoadChatConfig(CutByChatConfig& config, const ProgramOptions& options)
+static bool LoadChatConfig(CutByChatConfig& config, const ProgramOptions& progOptions)
 {
 	if(!LoadConfig(config, options.ConfigFilePath))
 	{
@@ -914,8 +914,8 @@ static bool LoadChatConfig(CutByChatConfig& config, const ProgramOptions& option
 		return false;
 	}
 
-	if(options.StartOffsetSec > 0) config.StartOffsetSec = (int)options.StartOffsetSec;
-	if(options.EndOffsetSec > 0) config.EndOffsetSec = (int)options.EndOffsetSec;
+	if(progOptions.StartOffsetSec > 0) config.StartOffsetSec = (int)progOptions.StartOffsetSec;
+	if(progOptions.EndOffsetSec > 0) config.EndOffsetSec = (int)progOptions.EndOffsetSec;
 
 	return true;
 }
