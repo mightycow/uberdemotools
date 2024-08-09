@@ -29,6 +29,7 @@ private:
 	void ProcessTeamChatCommand(udtBaseParser& parser);
 	void ProcessCPMATeamChatCommand(udtBaseParser& parser);
 	void ProcessWolfChatCommand(udtBaseParser& parser, bool teamChat);
+	void ProcessETProChatCommand(udtBaseParser& parser, bool teamChat);
 	void ExtractPlayerIndexRelatedData(udtParseDataChat& chatEvent, const udtString& argument1, udtBaseParser& parser);
 	void ProcessQ3GlobalChat(udtParseDataChat& chatEvent, const udtString* argument1);
 	bool IsPlayerCleanName(const udtString& cleanName);

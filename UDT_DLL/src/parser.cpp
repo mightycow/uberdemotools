@@ -56,6 +56,7 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_inProtocol = inProtocol;
 	_outProtocol = outProtocol;
 	_inProtocolSizeOfEntityState = (s32)udtGetSizeOfIdEntityState(inProtocol);
+	_inProtocolSizeOfEntityShared = (s32)udtGetSizeOfIdEntityShared(inProtocol);
 	_inProtocolSizeOfClientSnapshot = (s32)udtGetSizeOfidClientSnapshot(inProtocol);
 	_protocolConverter = context->GetProtocolConverter(outProtocol, inProtocol);
 	_protocolConverter->ResetForNextDemo();
@@ -112,6 +113,7 @@ void udtBaseParser::ResetForGamestateMessage()
 	_outWriteMessage = false;
 
 	memset(_inEntityBaselines, 0, sizeof(_inEntityBaselines));
+	memset(_inEntitySharedBaselines, 0, sizeof(_inEntitySharedBaselines));
 	memset(_inSnapshots, 0, sizeof(_inSnapshots));
 	memset(_inConfigStrings, 0, sizeof(_inConfigStrings));
 	for(u32 i = 0; i < (u32)UDT_COUNT_OF(_inEntityEventTimesMs); ++i)
@@ -218,9 +220,13 @@ bool udtBaseParser::ParseServerMessage()
 		case svc_snapshot:
 			if(!ParseSnapshot()) return false;
 			break;
-
+		case svc_ettv_playerstates:
+			if (_inProtocol == udtProtocol::Dm284)
+			{
+				if (!ParsePlayerstates()) return false;
+				break;
+			}
 		case svc_download:
-		case svc_voip:
 		default:
 			_context->LogError("udtBaseParser::ParseServerMessage: Unrecognized server message command byte: %d (in file: %s)", command, GetFileNamePtr());
 			return false;
@@ -588,7 +594,52 @@ bool udtBaseParser::ParseGamestate()
 			{
 				return false;
 			}
-		} 
+
+			if(_inProtocol == udtProtocol::Dm284)
+			{
+				idLargestEntityShared nullShared;
+				idEntitySharedBase* const newShared = GetSharedBaseline(newIndex);
+				Com_Memset(&nullShared, 0, sizeof(nullShared));
+				if (!_inMsg.ReadDeltaEntityShared(&nullShared, newShared))
+				{
+					return false;
+				}
+			}
+		}
+		else if(command == svc_ettv_currentstate && _inProtocol == udtProtocol::Dm284)
+		{
+			const s32 newIndex = _inMsg.ReadBits(GENTITYNUM_BITS);
+			if (newIndex < 0 || newIndex >= MAX_GENTITIES)
+			{
+				_context->LogError("udtBaseParser::ParseGamestate: Currentstate number out of range: %d (in file: %s)", newIndex, GetFileNamePtr());
+				return false;
+			}
+
+			idEntityStateBase* const stateBaseline = GetBaseline(newIndex);
+			idEntitySharedBase* const sharedBaseline = GetSharedBaseline(newIndex);
+
+			// TODO:Krzysiek - this doesn't work properly,
+			// svc_ettv_currentstate is all entities states bundled to gamestate message
+			// so this should be the first ParsePacketEntities essentially
+			//idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (ID_MAX_PARSE_ENTITIES - 1));
+			//idEntitySharedBase* const shared = GetEntityShared(_inParseEntitiesNum & (ID_MAX_PARSE_ENTITIES - 1));
+			//_inParseEntitiesNum++;
+
+			idLargestEntityState nullState;
+			idLargestEntityShared nullShared;
+			Com_Memset(&nullState, 0, sizeof(nullState));
+			Com_Memset(&nullShared, 0, sizeof(nullShared));
+
+			bool addedOrChanged = false;
+			if (!_inMsg.ReadDeltaEntity(addedOrChanged, stateBaseline, &nullState, newIndex))
+			{
+				return false;
+			}
+			if (!_inMsg.ReadDeltaEntityShared(sharedBaseline, &nullShared))
+			{
+				return false;
+			}
+		}
 		else 
 		{
 			_context->LogError("udtBaseParser::ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileNamePtr());
@@ -723,6 +774,11 @@ bool udtBaseParser::ParseSnapshot()
 		return false;
 	}
 	_inMsg.ReadData(&newSnap.areamask, areaMaskLength);
+
+	if (_inProtocol == udtProtocol::Dm284)
+	{
+		*GetTvMaskLength(&newSnap, _inProtocol) = areaMaskLength;
+	}
 	
 	// Read the player info.
 	if(!_inMsg.ReadDeltaPlayer(oldSnap ? GetPlayerState(oldSnap, _inProtocol) : NULL, GetPlayerState(&newSnap, _inProtocol)))
@@ -832,7 +888,7 @@ bool udtBaseParser::ParseSnapshot()
 	// Write to the output message.
 	//
 
-	if(ShouldWriteMessage())
+	if(ShouldWriteMessage() && _inProtocol != udtProtocol::Dm284)
 	{
 		_outMsg.WriteByte(svc_snapshot);
 		_outMsg.WriteLong(newSnap.serverTime);
@@ -858,6 +914,106 @@ bool udtBaseParser::ParseSnapshot()
 			_outMsg.WriteDeltaPlayer(oldSnap ? GetPlayerState(&oldSnapOutProto, _outProtocol) : NULL, GetPlayerState(&newSnapOutProto, _outProtocol));
 			EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
 		}
+		++_outSnapshotsWritten;
+	}
+
+	return true;
+}
+
+bool udtBaseParser::ParsePlayerstates()
+{
+	s32 clientNum;
+	idClientSnapshotBase* oldSnap = NULL;
+	idClientSnapshotBase* newSnap = GetClientSnapshot(_inLastSnapshotMessageNumber & PACKET_MASK);
+
+	if (newSnap->deltaNum != -1)
+	{
+		oldSnap = GetClientSnapshot(newSnap->deltaNum & PACKET_MASK);
+	}
+
+	for(;;)
+	{
+		clientNum = _inMsg.ReadByte();
+
+		// end marker
+		if(clientNum == 255)
+		{
+			break;
+		}
+
+		if(_inMsg.Buffer.readcount > _inMsg.Buffer.cursize)
+		{
+			_context->LogError("udtBaseParser::ParsePlayerstates: Read past the end of the server message (in file: %s)", GetFileNamePtr());
+			return false;
+		}
+
+		if (!oldSnap || !GetTvSnapshot(oldSnap, _inProtocol, clientNum)->valid)
+		{
+			if (!_inMsg.ReadDeltaPlayer(NULL, GetTvPlayerState(newSnap, _inProtocol, clientNum)))
+			{
+				return false;
+			}
+		}
+		else
+		{
+			if (!_inMsg.ReadDeltaPlayer(GetTvPlayerState(oldSnap, _inProtocol, clientNum), GetTvPlayerState(newSnap, _inProtocol, clientNum)))
+			{
+				return false;
+			}
+		}
+
+		GetTvSnapshot(newSnap, _inProtocol, clientNum)->valid = true;
+	}
+
+	s32 oldMessageNum = newSnap->messageNum;
+	if (newSnap->messageNum - oldMessageNum >= PACKET_BACKUP)
+	{
+		oldMessageNum = newSnap->messageNum - (PACKET_BACKUP - 1);
+	}
+
+	for (; oldMessageNum < newSnap->messageNum; ++oldMessageNum)
+	{
+		for (s32 i = 0; i < ID_MAX_CLIENTS; i++)
+		{
+			GetTvSnapshot(GetClientSnapshot(oldMessageNum & PACKET_MASK), _inProtocol, i)->valid = false;
+		}
+	}
+
+	if (ShouldWriteMessage() && GetTvSnapshot(newSnap, _inProtocol, _protocolConverter->ConversionInfo->ClientNum)->valid)
+	{
+		idLargestClientSnapshot oldSnapOutProto;
+		idLargestClientSnapshot newSnapOutProto;
+		s32 deltaNum;
+
+		// did we write a snapshot already?
+		if (!_outSnapshotsWritten)
+		{
+			deltaNum = 0;
+			oldSnap = NULL;
+		}
+		else
+		{
+			deltaNum = newSnap->deltaNum == -1 ? 0 : newSnap->messageNum - newSnap->deltaNum;
+		}
+
+		_outMsg.WriteByte(svc_snapshot);
+		_outMsg.WriteLong(newSnap->serverTime);
+		_outMsg.WriteByte(deltaNum);
+		_outMsg.WriteByte(newSnap->snapFlags);
+		_outMsg.WriteByte(*GetTvMaskLength(newSnap, _inProtocol));
+		_outMsg.WriteData(&newSnap->areamask, *GetTvMaskLength(newSnap, _inProtocol));
+
+		_protocolConverter->StartSnapshot(newSnap->serverTime);
+
+		if (oldSnap && GetTvSnapshot(oldSnap, _inProtocol, _protocolConverter->ConversionInfo->ClientNum)->valid)
+		{
+			_protocolConverter->ConvertSnapshot(oldSnapOutProto, *oldSnap);
+		}
+
+		_protocolConverter->ConvertSnapshot(newSnapOutProto, *newSnap);
+		_outMsg.WriteDeltaPlayer(oldSnap ? GetPlayerState(&oldSnapOutProto, _outProtocol) : NULL, GetPlayerState(&newSnapOutProto, _outProtocol));
+		EmitPacketEntities(deltaNum ? &oldSnapOutProto : NULL, &newSnapOutProto);
+
 		++_outSnapshotsWritten;
 	}
 
@@ -924,7 +1080,15 @@ void udtBaseParser::WriteGameState()
 	
 	_outMsg.WriteByte(svc_EOF);
 
-	_outMsg.WriteLong(_inClientNum);
+	if (udtProtocol::Dm284 == _inProtocol)
+	{
+		_outMsg.WriteLong(_protocolConverter->ConversionInfo->ClientNum);
+	}
+	else
+	{
+		_outMsg.WriteLong(_inClientNum);
+	}
+
 	_outMsg.WriteLong(_inChecksumFeed);
 
 	_outMsg.WriteByte(svc_EOF);
@@ -988,6 +1152,11 @@ void udtBaseParser::WriteBigConfigStringCommand(const udtString& csIndex, const 
 
 bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
 {
+	if (_inProtocol == udtProtocol::Dm284)
+	{
+		return ParsePacketEntitiesTv(msg, oldframe, newframe);
+	}
+
 	_inChangedEntities.Clear();
 	_inRemovedEntities.Clear();
 
@@ -1099,6 +1268,131 @@ bool udtBaseParser::ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* o
 		else 
 		{
 			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES-1));
+			oldnum = oldstate->number;
+		}
+	}
+
+	return true;
+}
+
+bool udtBaseParser::ParsePacketEntitiesTv(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe)
+{
+	_inChangedEntities.Clear();
+	_inRemovedEntities.Clear();
+
+	newframe->parseEntitiesNum = _inParseEntitiesNum;
+	newframe->numEntities = 0;
+
+	// delta from the entities present in oldframe
+	s32	oldnum;
+	s32	newnum;
+	s32 oldindex = 0;
+	idEntityStateBase* oldstate = NULL;
+	idEntitySharedBase *oldshared = NULL;
+	if (!oldframe)
+	{
+		oldnum = 99999;
+	}
+	else
+	{
+		if (oldindex >= oldframe->numEntities)
+		{
+			oldnum = 99999;
+		}
+		else
+		{
+			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+			oldshared = GetEntityShared((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+			oldnum = oldstate->number;
+		}
+	}
+
+	for (;;)
+	{
+		newnum = msg.ReadBits(GENTITYNUM_BITS);
+
+		if (newnum == (MAX_GENTITIES - 1))
+		{
+			break;
+		}
+
+		if (!msg.ValidState())
+		{
+			return false;
+		}
+
+		while (oldnum < newnum)
+		{
+			//
+			// One or more entities from the old packet is unchanged.
+			//
+
+			if (!DeltaEntityTv(msg, newframe, oldnum, oldstate, oldshared, true)) return false;
+			oldindex++;
+
+			if (oldindex >= oldframe->numEntities)
+			{
+				oldnum = 99999;
+			}
+			else
+			{
+				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+				oldshared = GetEntityShared((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+				oldnum = oldstate->number;
+			}
+		}
+
+		if (oldnum == newnum)
+		{
+			//
+			// Delta from previous state.
+			//
+
+			if (!DeltaEntityTv(msg, newframe, newnum, oldstate, oldshared, false)) return false;
+			oldindex++;
+
+			if (oldindex >= oldframe->numEntities)
+			{
+				oldnum = 99999;
+			}
+			else
+			{
+				oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+				oldshared = GetEntityShared((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+				oldnum = oldstate->number;
+			}
+			continue;
+		}
+
+		if (oldnum > newnum)
+		{
+			//
+			// Delta from the baseline.
+			//
+
+			if (!DeltaEntityTv(msg, newframe, newnum, GetBaseline(newnum), GetSharedBaseline(newnum), false)) return false;
+			continue;
+		}
+	}
+
+	// Any remaining entities in the old frame are copied over.
+	while (oldnum != 99999)
+	{
+		//
+		// One or more entities from the old packet is unchanged.
+		//
+
+		if (!DeltaEntityTv(msg, newframe, oldnum, oldstate, oldshared, true)) return false;
+		oldindex++;
+
+		if (oldindex >= oldframe->numEntities)
+		{
+			oldnum = 99999;
+		}
+		else
+		{
+			oldstate = GetEntity((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
+			oldshared = GetEntityShared((oldframe->parseEntitiesNum + oldindex) & (ID_MAX_PARSE_ENTITIES - 1));
 			oldnum = oldstate->number;
 		}
 	}
@@ -1221,6 +1515,7 @@ bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 			const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, _inProtocol);
 			const bool isNewEvent = (state->eType >= entityTypeEventId) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
 			const bool isNewEntity = (u8*)old >= _inEntityBaselines && (u8*)old < _inEntityBaselines + UDT_COUNT_OF(_inEntityBaselines);
+
 			udtChangedEntity info;
 			info.Entity = state;
 			info.IsNewEvent = isNewEvent;
@@ -1235,6 +1530,67 @@ bool udtBaseParser::DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s3
 
 	// The entity was delta removed?
 	if(state->number == (MAX_GENTITIES-1)) 
+	{
+		// We have to return now.
+		_inRemovedEntities.Add(removedEntityNumber);
+		return true;
+	}
+
+	_inParseEntitiesNum++;
+	frame->numEntities++;
+
+	return true;
+}
+
+//
+// Parses deltas from the given base and adds the resulting entity to the current frame.
+//
+bool udtBaseParser::DeltaEntityTv(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, idEntitySharedBase* oldshared, bool unchanged)
+{
+	// Save the parsed entity state into the big circular buffer so
+	// it can be used as the source for a later delta.
+	idEntityStateBase* const state = GetEntity(_inParseEntitiesNum & (ID_MAX_PARSE_ENTITIES - 1));
+	idEntitySharedBase* const shared = GetEntityShared(_inParseEntitiesNum & (ID_MAX_PARSE_ENTITIES - 1));
+
+	s32 removedEntityNumber = old ? old->number : 0;
+	if (unchanged)
+	{
+		Com_Memcpy(state, old, _inProtocolSizeOfEntityState);
+		Com_Memcpy(shared, oldshared, _inProtocolSizeOfEntityShared);
+	}
+	else
+	{
+		bool addedOrChanged = false;
+		if (!msg.ReadDeltaEntity(addedOrChanged, old, state, newnum))
+		{
+			return false;
+		}
+
+		if (!msg.ReadDeltaEntityShared(oldshared, shared))
+		{
+			return false;
+		}
+
+		if (addedOrChanged)
+		{
+			const s32 entityTypeEventId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, _inProtocol);
+			const bool isNewEvent = (state->eType >= entityTypeEventId) && (_inServerTime > _inEntityEventTimesMs[newnum] + EVENT_VALID_MSEC);
+			const bool isNewEntity = (u8*)old >= _inEntityBaselines && (u8*)old < _inEntityBaselines + UDT_COUNT_OF(_inEntityBaselines);
+
+			udtChangedEntity info;
+			info.Entity = state;
+			info.IsNewEvent = isNewEvent;
+			info.IsNewEntity = isNewEntity;
+			_inChangedEntities.Add(info);
+			if (isNewEvent)
+			{
+				_inEntityEventTimesMs[newnum] = _inServerTime;
+			}
+		}
+	}
+
+	// The entity was delta removed?
+	if (state->number == (MAX_GENTITIES - 1))
 	{
 		// We have to return now.
 		_inRemovedEntities.Add(removedEntityNumber);

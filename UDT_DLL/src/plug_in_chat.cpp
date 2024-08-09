@@ -110,7 +110,7 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 			ProcessPlayerConfigString(parser, tokenizer.GetArg(2), csIndex - firstPlayerCsIndex);
 		}
 	}
-	else if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::RTCW) &&
+	else if(AreAnyProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::Wolfenstein) &&
 			tokenizer.GetArgCount() >= 2)
 	{
 		if(udtString::Equals(command, "chat") || udtString::Equals(command, "lchat"))
@@ -120,6 +120,10 @@ void udtParserPlugInChat::ProcessCommandMessage(const udtCommandCallbackArg& /*i
 		else if(udtString::Equals(command, "tchat"))
 		{
 			ProcessWolfChatCommand(parser, true);
+		}
+		else if (parser._inMod == udtMod::ETPro && udtString::Equals(command, "c"))
+		{
+			ProcessETProChatCommand(parser, false);
 		}
 	}
 	else if(tokenizer.GetArgCount() == 2 && 
@@ -425,6 +429,47 @@ void udtParserPlugInChat::ProcessWolfChatCommand(udtBaseParser& parser, bool tea
 		const udtString location = udtString::NewSubstringClone(_stringAllocator, argument1, locStart, locEnd - locStart);
 		WriteStringsToApiStruct(chatEvent.Strings[0].Location, chatEvent.Strings[1].Location, location, _stringAllocator, protocol);
 	}
+
+	ChatEvents.Add(chatEvent);
+}
+
+void udtParserPlugInChat::ProcessETProChatCommand(udtBaseParser& parser, bool teamChat)
+{
+	s32 clientNumber = -1;
+	const idTokenizer& tokenizer = parser.GetTokenizer();
+	if (!StringParseInt(clientNumber, tokenizer.GetArgString(1)) ||
+		clientNumber < 0 ||
+		clientNumber >= 64)
+	{
+		return;
+	}
+
+	udtParseDataChat chatEvent;
+	InitChatEvent(chatEvent, parser._inServerTime);
+	chatEvent.PlayerIndex = clientNumber;
+	chatEvent.TeamMessage = teamChat ? 1 : 0;
+
+	const udtProtocol::Id protocol = parser._inProtocol;
+
+	const udtString message = udtString::NewCloneFromRef(_stringAllocator, tokenizer.GetArg(2));
+	const udtString cleanMessage = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, message);
+	WriteStringToApiStruct(chatEvent.Strings[0].Message, message);
+	WriteStringToApiStruct(chatEvent.Strings[1].Message, cleanMessage);
+
+	udtString playerName;
+	const s32 firstPlayerIndex = GetIdNumber(udtMagicNumberType::ConfigStringIndex, udtConfigStringIndex::FirstPlayer, protocol);
+	if (firstPlayerIndex != -1 &&
+		ParseConfigStringValueString(playerName, _stringAllocator, "n", parser._inConfigStrings[firstPlayerIndex + clientNumber].GetPtr()))
+	{
+		const udtString cleanPlayerName = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, playerName);
+		WriteStringToApiStruct(chatEvent.Strings[0].PlayerName, playerName);
+		WriteStringToApiStruct(chatEvent.Strings[1].PlayerName, cleanPlayerName);
+	}
+
+	const udtString command = udtString::NewClone(_stringAllocator, tokenizer.GetOriginalCommand());
+	const udtString cleanCommand = udtString::NewCleanCloneFromRef(_stringAllocator, protocol, command);
+	WriteStringToApiStruct(chatEvent.Strings[0].OriginalCommand, command);
+	WriteStringToApiStruct(chatEvent.Strings[1].OriginalCommand, cleanCommand);
 
 	ChatEvents.Add(chatEvent);
 }

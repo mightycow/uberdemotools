@@ -38,8 +38,10 @@ static const u32 ProtocolFlags[udtProtocol::Count + 1] =
 	N(67, 0) \
 	N(68, 0) \
 	N(73, udtProtocolFlagsEx::QL_ClanName) \
+	N(84, 0) \
 	N(90, udtProtocolFlagsEx::QL_ClanName) \
-	N(91, udtProtocolFlagsEx::QL_Unicode)
+	N(91, udtProtocolFlagsEx::QL_Unicode) \
+	N(284, 0)
 
 #define ITEM(Number, FlagsEx) Dm##Number,
 struct udtProtocolEx
@@ -499,27 +501,29 @@ bool IsObituaryEvent(udtObituaryEvent& info, const idEntityStateBase& entity, ud
 	const s32 obituaryEvtId = GetIdNumber(udtMagicNumberType::EntityEvent, udtEntityEvent::Obituary, protocol, mod);
 	const s32 eventTypeId = GetIdNumber(udtMagicNumberType::EntityType, udtEntityType::Event, protocol, mod);
 	const s32 eventType = entity.eType & (~ID_ES_EVENT_BITS);
+
 	if(eventType != eventTypeId + obituaryEvtId)
 	{
 		return false;
 	}
 
 	// The target must always be a player.
-	const s32 targetIdx = entity.otherEntityNum;
+	const s32 targetIdx = mod != udtMod::ETPro ? entity.otherEntityNum : entity.time;
 	if(targetIdx < 0 || targetIdx >= ID_MAX_CLIENTS)
 	{
 		return false;
 	}
 
 	// The attacker can be the world, though.
-	s32 attackerIdx = entity.otherEntityNum2;
+	s32 attackerIdx = mod != udtMod::ETPro ? entity.otherEntityNum2 : entity.time2;
 	if(attackerIdx < 0 || attackerIdx >= ID_MAX_CLIENTS)
 	{
 		attackerIdx = -1;
 	}
 
 	u32 udtMod;
-	if(!GetUDTNumber(udtMod, udtMagicNumberType::MeanOfDeath, entity.eventParm, protocol))
+	const s32 modIdx = mod != udtMod::ETPro ? entity.eventParm : entity.eFlags;
+	if(!GetUDTNumber(udtMod, udtMagicNumberType::MeanOfDeath, modIdx, protocol, mod))
 	{
 		return false;
 	}
@@ -571,6 +575,13 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 	u32 firstSeparatorIdx = 0;
 	if(hasClanName ||
 	   !udtString::FindFirstCharacterListMatch(firstSeparatorIdx, clanAndPlayer, udtString::NewConstRef(" .")))
+	{
+		player = clanAndPlayer;
+		return true;
+	}
+
+	// Just return full name
+	if (AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET))
 	{
 		player = clanAndPlayer;
 		return true;

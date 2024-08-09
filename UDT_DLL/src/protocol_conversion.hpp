@@ -106,3 +106,18 @@ struct udtProtocolConverter3to68 : public udtProtocolConverter
 private:
 	UDT_NO_COPY_SEMANTICS(udtProtocolConverter3to68);
 };
+
+struct udtProtocolConverter284to84 : public udtProtocolConverter
+{
+	udtProtocolConverter284to84() {}
+
+	void ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot) override;
+	void ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState) override;
+	void ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator& allocator, s32 inIndex, const char* configString, u32 configStringLength) override;
+	void ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator& allocator, const idTokenizer& tokenizer) override;
+
+private:
+	UDT_NO_COPY_SEMANTICS(udtProtocolConverter284to84);
+
+	s32 _clientNum;
+};

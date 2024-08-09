@@ -148,6 +148,10 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	{
 		_game = udtGame::RTCW;
 	}
+	else if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::ET))
+	{
+		_game = udtGame::ET;
+	}
 	else
 	{
 		ProcessQ3ServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
@@ -157,7 +161,15 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	ProcessMapName();
 	ProcessGameTypeFromServerInfo(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
 
-	if(_game == udtGame::RTCW)
+	if(_game == udtGame::ET)
+	{
+		ProcessWolfInfoConfigString(parser._inConfigStrings[CS_ET_WOLFINFO].GetPtr());
+		ProcessWolfServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
+
+		_rtcwWinningTeam = ParseWolfTeamFromConfigString(CS_ET_MULTI_MAPWINNER, "w");
+		_rtcwDefendingTeam = ParseWolfTeamFromConfigString(CS_ET_MULTI_INFO, "d");
+	}
+	else if(_game == udtGame::RTCW)
 	{
 		ProcessWolfInfoConfigString(parser._inConfigStrings[CS_WOLF_INFO].GetPtr());
 		ProcessWolfServerInfoConfigString(parser._inConfigStrings[CS_SERVERINFO].GetPtr());
@@ -321,7 +333,29 @@ void udtGeneralAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& /*ar
 		ProcessQLServerInfoConfigString(configString);
 	}
 
-	if(_game == udtGame::RTCW && csIndex == CS_WOLF_INFO)
+	if(_game == udtGame::ET)
+	{
+		if (csIndex == CS_ET_WOLFINFO)
+		{
+			ProcessWolfInfoConfigString(configString);
+		}
+		else if (csIndex == CS_SERVERINFO)
+		{
+			ProcessWolfServerInfoConfigString(configString);
+		}
+		else if (csIndex == CS_ET_MULTI_INFO)
+		{
+			_rtcwDefendingTeam = ParseWolfTeamFromConfigString(csIndex, "d");
+		}
+		else if (csIndex == CS_ET_MULTI_MAPWINNER)
+		{
+			if (_gameState == udtGameState::InProgress)
+			{
+				_rtcwWinningTeam = ParseWolfTeamFromConfigString(csIndex, "w");
+			}
+		}
+	}
+	else if(_game == udtGame::RTCW && csIndex == CS_WOLF_INFO)
 	{
 		ProcessWolfInfoConfigString(configString);
 	}
@@ -1118,6 +1152,34 @@ void udtGeneralAnalyzer::ProcessWolfServerInfoConfigString(const char* configStr
 			_mod = udtMod::RTCWOSP;
 			_modVersion = udtString::NewSubstringClone(_stringAllocator, gameVersion, 4);
 			_gamePlay = udtGamePlay::RTCWOSP;
+		}
+	}
+
+	if(_game == udtGame::ET)
+	{
+		_gamePlay = udtGamePlay::VET;
+
+		if(ParseConfigStringValueString(gameName, *_tempAllocator, "gamename", configString))
+		{
+			if(udtString::Equals(gameName, "legacy"))
+			{
+				_mod = udtMod::Legacy;
+				_gamePlay = udtGamePlay::ET;
+			}
+			else if(udtString::Equals(gameName, "etpro"))
+			{
+				_mod = udtMod::ETPro;
+			}
+			else
+			{
+				// fall back to etmain as default since many features should work the same way between mods
+				_mod = udtMod::ETMain;
+			}
+
+			if(ParseConfigStringValueString(gameVersion, *_tempAllocator, "mod_version", configString))
+			{
+				_modVersion = udtString::NewCloneFromRef(_stringAllocator, gameVersion);
+			}
 		}
 	}
 }

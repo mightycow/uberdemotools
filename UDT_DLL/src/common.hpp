@@ -97,6 +97,11 @@ extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
 #define CS_WOLF_PAUSED           40
 #define CS_WOLF_READY            41
 
+
+#define CS_ET_MULTI_INFO       13 // defending team 0=axis, 1=allies
+#define CS_ET_MULTI_MAPWINNER  14 // winning   team 0=axis, 1=allies
+#define CS_ET_WOLFINFO 21
+
 /*
 ==============================================================
 
@@ -126,12 +131,10 @@ enum svc_ops_e
 	svc_download,				// [short] size [size bytes]
 	svc_snapshot,
 	svc_EOF,
-	// svc_extension follows a svc_EOF, followed by another svc_* ...
-	// this keeps legacy clients compatible.
-	svc_extension,
-	svc_voip,     // not wrapped in USE_VOIP, so this value is reserved.
-};
 
+	svc_ettv_playerstates,
+	svc_ettv_currentstate,
+};
 
 // snapshots are a view of the server at a given time
 struct idClientSnapshotBase
@@ -183,6 +186,11 @@ struct idClientSnapshot73 : idClientSnapshotBase
 	idPlayerState73 ps; // complete information about the current player at this time
 };
 
+struct idClientSnapshot84 : idClientSnapshotBase
+{
+	idPlayerState84 ps; // complete information about the current player at this time
+};
+
 struct idClientSnapshot90 : idClientSnapshotBase
 {
 	idPlayerState90 ps; // complete information about the current player at this time
@@ -193,7 +201,25 @@ struct idClientSnapshot91 : idClientSnapshotBase
 	idPlayerState91 ps; // complete information about the current player at this time
 };
 
-typedef idClientSnapshot60 idLargestClientSnapshot;
+struct idTvSnapshotBase
+{
+	bool valid; // cleared if delta parsing was invalid
+};
+
+struct idTvSnapshot284 : idTvSnapshotBase
+{
+	idPlayerState84 ps; // complete information about the current player at this time
+};
+
+struct idClientSnapshot284 : idClientSnapshotBase
+{
+	idPlayerState84 ps; // complete information about the current player at this time
+
+	s32 areaMaskLength;
+	idTvSnapshot284 tvsnap[ID_MAX_CLIENTS]; // complete information about other players at this time
+};
+
+typedef idClientSnapshot284 idLargestClientSnapshot;
 
 static_assert(sizeof(idClientSnapshot3 ) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 static_assert(sizeof(idClientSnapshot48) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
@@ -202,8 +228,10 @@ static_assert(sizeof(idClientSnapshot66) <= sizeof(idLargestClientSnapshot), "in
 static_assert(sizeof(idClientSnapshot67) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 static_assert(sizeof(idClientSnapshot68) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 static_assert(sizeof(idClientSnapshot73) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
+static_assert(sizeof(idClientSnapshot84) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 static_assert(sizeof(idClientSnapshot90) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 static_assert(sizeof(idClientSnapshot91) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
+static_assert(sizeof(idClientSnapshot284) <= sizeof(idLargestClientSnapshot), "incorrect idLargestClientSnapshot typedef");
 
 inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol)
 {
@@ -219,8 +247,37 @@ inline idPlayerStateBase* GetPlayerState(idClientSnapshotBase* snap, udtProtocol
 		case udtProtocol::Dm67: return &((idClientSnapshot67*)snap)->ps;
 		case udtProtocol::Dm68: return &((idClientSnapshot68*)snap)->ps;
 		case udtProtocol::Dm73: return &((idClientSnapshot73*)snap)->ps;
+		case udtProtocol::Dm84: return &((idClientSnapshot84*)snap)->ps;
 		case udtProtocol::Dm90: return &((idClientSnapshot90*)snap)->ps;
 		case udtProtocol::Dm91: return &((idClientSnapshot91*)snap)->ps;
+		case udtProtocol::Dm284: return &((idClientSnapshot284*)snap)->ps;
+		default: return NULL;
+	}
+}
+
+inline idPlayerStateBase* GetTvPlayerState(idClientSnapshotBase* snap, udtProtocol::Id protocol, s32 clientnum)
+{
+	switch (protocol)
+	{
+		case udtProtocol::Dm284: return &((idClientSnapshot284*)snap)->tvsnap[clientnum].ps;
+		default: return NULL;
+	}
+}
+
+inline idTvSnapshotBase* GetTvSnapshot(idClientSnapshotBase* snap, udtProtocol::Id protocol, s32 clientnum)
+{
+	switch (protocol)
+	{
+		case udtProtocol::Dm284: return &((idClientSnapshot284*)snap)->tvsnap[clientnum];
+		default: return NULL;
+	}
+}
+
+inline s32* GetTvMaskLength(idClientSnapshotBase* snap, udtProtocol::Id protocol)
+{
+	switch (protocol)
+	{
+		case udtProtocol::Dm284: return &((idClientSnapshot284*)snap)->areaMaskLength;
 		default: return NULL;
 	}
 }
@@ -277,7 +334,8 @@ struct udtGame
 		QL,
 		CPMA,
 		OSP,
-		RTCW
+		RTCW,
+		ET
 	};
 };
 

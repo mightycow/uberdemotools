@@ -63,6 +63,7 @@ public:
 	s32   PeekByte() { return (this->*_peekByte)(); }
 	bool  ReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to) { return (this->*_readDeltaPlayer)(from, to); }
 	bool  ReadDeltaEntity(bool& addedOrChanged, const idEntityStateBase* from, idEntityStateBase* to, s32 number) { return (this->*_readDeltaEntity)(addedOrChanged, from, to, number); }
+	bool  ReadDeltaEntityShared(const idEntitySharedBase* from, idEntitySharedBase* to) { return (this->*_readDeltaEntityShared)(from, to); }
 
 private:
 	void  ReadDeltaPlayerDM3(idPlayerStateBase* to);
@@ -89,6 +90,7 @@ private:
 	void  RealReadData(void* buffer, s32 size);
 	s32   RealPeekByte();
 	bool  RealReadDeltaEntity(bool& addedOrChanged, const idEntityStateBase* from, idEntityStateBase* to, s32 number);
+	bool  RealReadDeltaEntityShared(const idEntitySharedBase* from, idEntitySharedBase* to);
 	bool  RealReadDeltaPlayer(const idPlayerStateBase* from, idPlayerStateBase* to);
 
 	void  RealWriteBits(s32 value, s32 bits);
@@ -112,6 +114,7 @@ private:
 	typedef void  (udtMessage::*ReadDataFunc)(void*, s32);
 	typedef s32   (udtMessage::*PeekByteFunc)();
 	typedef bool  (udtMessage::*ReadDeltaEntityFunc)(bool&, const idEntityStateBase*, idEntityStateBase*, s32);
+	typedef bool  (udtMessage::*ReadDeltaEntitySharedFunc)(const idEntitySharedBase*, idEntitySharedBase*);
 	typedef bool  (udtMessage::*ReadDeltaPlayerFunc)(const idPlayerStateBase*, idPlayerStateBase*);
 
 	typedef void  (udtMessage::*WriteBitsFunc)(s32, s32);
@@ -121,25 +124,29 @@ private:
 	typedef bool  (udtMessage::*WriteDeltaEntityFunc)(const idEntityStateBase*, const idEntityStateBase*, bool);
 
 private:
-	udtProtocol::Id      _protocol;
-	const idNetField*    _entityStateFields;
-	s32                  _entityStateFieldCount;
-	const idNetField*    _playerStateFields;
-	s32                  _playerStateFieldCount;
-	size_t               _protocolSizeOfEntityState;
-	size_t               _protocolSizeOfPlayerState;
-	udtString            _fileName;
-	ReadBitsFunc         _readBits;
-	ReadBitFunc          _readBit;
-	ReadFloatFunc        _readFloat;
-	ReadStringFunc       _readString;
-	ReadDataFunc         _readData;
-	PeekByteFunc         _peekByte;
-	ReadDeltaEntityFunc  _readDeltaEntity;
-	ReadDeltaPlayerFunc  _readDeltaPlayer;
-	WriteBitsFunc        _writeBits;
-	WriteFloatFunc       _writeFloat;
-	WriteStringFunc      _writeString;
-	WriteDeltaPlayerFunc _writeDeltaPlayer;
-	WriteDeltaEntityFunc _writeDeltaEntity;
+	udtProtocol::Id           _protocol;
+	const idNetField*         _entityStateFields;
+	s32                       _entityStateFieldCount;
+	const idNetField*         _entitySharedFields;
+	s32                       _entitySharedFieldCount;
+	const idNetField*         _playerStateFields;
+	s32                       _playerStateFieldCount;
+	size_t                    _protocolSizeOfEntityShared;
+	size_t                    _protocolSizeOfEntityState;
+	size_t                    _protocolSizeOfPlayerState;
+	udtString                 _fileName;
+	ReadBitsFunc              _readBits;
+	ReadBitFunc               _readBit;
+	ReadFloatFunc             _readFloat;
+	ReadStringFunc            _readString;
+	ReadDataFunc              _readData;
+	PeekByteFunc              _peekByte;
+	ReadDeltaEntitySharedFunc _readDeltaEntityShared;
+	ReadDeltaEntityFunc       _readDeltaEntity;
+	ReadDeltaPlayerFunc       _readDeltaPlayer;
+	WriteBitsFunc             _writeBits;
+	WriteFloatFunc            _writeFloat;
+	WriteStringFunc           _writeString;
+	WriteDeltaPlayerFunc      _writeDeltaPlayer;
+	WriteDeltaEntityFunc      _writeDeltaEntity;
 };

@@ -44,5 +44,6 @@ private:
 	udtProtocolConverter48to68   _converter48to68;
 	udtProtocolConverter73to91   _converter73to91;
 	udtProtocolConverter90to91   _converter90to91;
+	udtProtocolConverter284to84   _converter284to84;
 	udtProtocolConverterIdentity _converterIdentity;
 };

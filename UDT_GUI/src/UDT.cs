@@ -756,8 +756,10 @@ namespace Uber.DemoTools
             Dm67,
             Dm68,
             Dm73,
+            Dm84,
             Dm90,
             Dm91,
+            Dm284,
             Count,
             Invalid
         }
@@ -1181,6 +1183,8 @@ namespace Uber.DemoTools
         public struct udtProtocolConversionArg
         {
             public UInt32 OutputProtocol;
+            public Int32 ClientNum;
+            public IntPtr Cut; // const udtCut*
             public Int32 Reserved1;
         }
 
@@ -2607,6 +2611,37 @@ namespace Uber.DemoTools
             return result != udtErrorCode.None;
         }
 
+        public static bool ConvertAndCutByTimeDemo(ref udtParseArg parseArg, udtProtocolConversionArg conversionArg, string filePath, int startTimeMs, int endTimeMs)
+        {
+            var resources = new ArgumentResources();
+            var filePaths = new List<string>();
+            filePaths.Add(filePath);
+
+            var multiParseArg = CreateMultiParseArg(resources, filePaths);
+
+            var cut = new UDT_DLL.udtCut();
+            cut.FilePath = IntPtr.Zero;
+            cut.GameStateIndex = parseArg.GameStateIndex;
+            cut.StartTimeMs = startTimeMs;
+            cut.EndTimeMs = endTimeMs;
+
+            var pinnedCut = new PinnedObject(cut);
+            conversionArg.Cut = pinnedCut.Address;
+
+            var result = udtErrorCode.OperationFailed;
+            try
+            {
+                result = udtConvertDemoFiles(ref parseArg, ref multiParseArg, ref conversionArg);
+            }
+            finally
+            {
+                pinnedCut.Free();
+                resources.Free();
+            }
+
+            return result != udtErrorCode.None;
+        }
+
         private static udtMultiParseArg CreateMultiParseArg(ArgumentResources resources, List<string> filePaths)
         {
             var errorCodeArray = new Int32[filePaths.Count];
@@ -3592,6 +3627,14 @@ namespace Uber.DemoTools
                 var name = buffers.GetString(player.FirstName, player.FirstNameLength, "N/A");
                 var value = string.Format("{0}, {1}, team {2}", name, time, GetTeamName(player.FirstTeam));
                 info.Generic.Add(Tuple.Create(desc, value));
+
+                var playerInfo = new PlayerInfo();
+                playerInfo.ClientNum = player.Index;
+                playerInfo.Name = value;
+                playerInfo.StartTimeMs = player.FirstSnapshotTimeMs;
+                playerInfo.EndTimeMs= player.LastSnapshotTimeMs;
+
+                info.Players.Add(playerInfo);
             }
         }
 

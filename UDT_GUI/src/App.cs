@@ -131,6 +131,22 @@ namespace Uber.DemoTools
         public readonly List<Timeout> TimeOuts = new List<Timeout>();
     }
 
+    public class PlayerInfo
+    {
+        public int ClientNum = 0;
+        public int StartTimeMs = 0;
+        public int EndTimeMs = 0;
+        public string Name = "";
+
+        public string DisplayValue
+        {
+            get
+            {
+                return string.Format("{0} - {1}", ClientNum, Name);
+            }
+        }
+    }
+
     public class DemoInfo
     {
         // Always set.
@@ -145,6 +161,7 @@ namespace Uber.DemoTools
         public List<ChatEventDisplayInfo> ChatEvents = new List<ChatEventDisplayInfo>();
         public List<FragEventDisplayInfo> FragEvents = new List<FragEventDisplayInfo>();
         public List<Tuple<string, string>> Generic = new List<Tuple<string, string>>();
+        public List<PlayerInfo> Players = new List<PlayerInfo>();
         public List<UInt32> GameStateFileOffsets = new List<UInt32>();
         public List<Tuple<int, int>> GameStateSnapshotTimesMs = new List<Tuple<int, int>>();
         public List<DemoStatsInfo> MatchStats = new List<DemoStatsInfo>();
@@ -216,6 +233,7 @@ namespace Uber.DemoTools
         private Thread _jobThread = null;
         private Window _window = null;
         private ListView _demoListView = null;
+        private ComboBox _playerIndexComboBox = null;
         private Brush _demoListViewBackground = null;
         private ListView _infoListView = null;
         private ListBox _logListBox = null;
@@ -1260,6 +1278,7 @@ namespace Uber.DemoTools
                 var extensionsQ3 = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.Quake3);
                 var extensionsQL = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.QuakeLive);
                 var extensionsRTCW = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.RTCW);
+                var extensionsET = CreateDialogExtensionListString(UDT_DLL.udtProtocolFlags.ET);
 
                 var folderPath = GetDefaultBrowsingFolder();
                 openFileDialog.CheckPathExists = true;
@@ -1267,8 +1286,9 @@ namespace Uber.DemoTools
                 openFileDialog.InitialDirectory = folderPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 openFileDialog.Filter = string.Format(
                     "All demos ({0})|{0}|Quake 3 demos ({1})|{1}" +
-                    "|Quake Live demos ({2})|{2}|Return to Castle Wolfenstein demos ({3})|{3}",
-                    extensionsAll, extensionsQ3, extensionsQL, extensionsRTCW);
+                    "|Quake Live demos ({2})|{2}|Return to Castle Wolfenstein demos ({3})|{3}" +
+                    "|Wolfenstein Enemy Territory demos ({4})|{4}",
+                    extensionsAll, extensionsQ3, extensionsQL, extensionsRTCW, extensionsET);
                 if(openFileDialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
                 {
                     return;
@@ -1617,12 +1637,30 @@ namespace Uber.DemoTools
             splitButton.Margin = new Thickness(5);
             splitButton.Click += (obj, args) => OnSplitDemoClicked();
 
+            var convert284Button = new Button();
+            convert284Button.Content = "=> *tv__84";
+            convert284Button.Width = 75;
+            convert284Button.Height = 25;
+            convert284Button.Margin = new Thickness(5);
+            convert284Button.ToolTip = "Convert ETTV *.tv_84 demos to ET *.dm_84 demos";
+            convert284Button.Click += (obj, args) => OnConvertDemoClicked(UDT_DLL.udtProtocol.Dm84);
+
+            var playerIndexComboBox = new ComboBox();
+            _playerIndexComboBox = playerIndexComboBox;
+            playerIndexComboBox.HorizontalAlignment = HorizontalAlignment.Left;
+            playerIndexComboBox.VerticalAlignment = VerticalAlignment.Center;
+            playerIndexComboBox.Margin = new Thickness(5, 0, 0, 0);
+            playerIndexComboBox.ToolTip = "Convert ETTV *.tv_84 demos to ET *.dm_84 demos of this PoV";
+            playerIndexComboBox.Width = 40;
+
             var demoButtonPanel = new StackPanel();
             demoButtonPanel.HorizontalAlignment = HorizontalAlignment.Left;
             demoButtonPanel.VerticalAlignment = VerticalAlignment.Top;
             demoButtonPanel.Margin = new Thickness(5);
             demoButtonPanel.Orientation = Orientation.Vertical;
             demoButtonPanel.Children.Add(splitButton);
+            demoButtonPanel.Children.Add(convert284Button);
+            demoButtonPanel.Children.Add(playerIndexComboBox);
 
             var demoButtonGroupBox = new GroupBox();
             demoButtonGroupBox.HorizontalAlignment = HorizontalAlignment.Left;
@@ -1787,6 +1825,17 @@ namespace Uber.DemoTools
             }
         }
 
+        private void PopulatePlayerIndexComboBox(DemoInfo demoInfo)
+        {
+            _playerIndexComboBox.Items.Clear();
+            _playerIndexComboBox.DisplayMemberPath = "DisplayValue";
+
+            foreach (var player in demoInfo.Players)
+            {
+                _playerIndexComboBox.Items.Add(player);
+            }
+        }
+
         private void OnDemoListSelectionChanged()
         {
             int idx = _demoListView.SelectedIndex;
@@ -1798,6 +1847,7 @@ namespace Uber.DemoTools
             var demoInfo = _demos[idx];
 
             PopulateInfoListView(demoInfo);
+            PopulatePlayerIndexComboBox(demoInfo);
 
             foreach(var tab in _appComponents)
             {
@@ -1948,7 +1998,8 @@ namespace Uber.DemoTools
             if( (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm3) ||
                 (outputFormat == UDT_DLL.udtProtocol.Dm68 && inputFormat == UDT_DLL.udtProtocol.Dm48) ||
                 (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm73) ||
-                (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm90))
+                (outputFormat == UDT_DLL.udtProtocol.Dm91 && inputFormat == UDT_DLL.udtProtocol.Dm90) ||
+                (outputFormat == UDT_DLL.udtProtocol.Dm84 && inputFormat == UDT_DLL.udtProtocol.Dm284))
             {
                 return true;
             }
@@ -1959,6 +2010,13 @@ namespace Uber.DemoTools
         private class DemoConvertThreadArg
         {
             public List<DemoInfo> Demos;
+        }
+
+        private class DemoConvertAndCutThreadArg
+        {
+            public DemoInfo Demo;
+            public int StartTimeMs;
+            public int EndTimeMs;
         }
 
         private void OnConvertDemosClicked(UDT_DLL.udtProtocol outputFormat)
@@ -2188,6 +2246,7 @@ namespace Uber.DemoTools
                 demos[i].GameStateFileOffsets = newDemo.GameStateFileOffsets;
                 demos[i].GameStateSnapshotTimesMs = newDemo.GameStateSnapshotTimesMs;
                 demos[i].Generic = newDemo.Generic;
+                demos[i].Players = newDemo.Players;
                 demos[i].InputIndex = newDemo.InputIndex;
                 demos[i].Protocol = newDemo.Protocol;
                 demos[i].ProtocolNumber = newDemo.ProtocolNumber;
@@ -2226,6 +2285,33 @@ namespace Uber.DemoTools
             try
             {
                 UDT_DLL.ConvertDemos(ref ParseArg, PrivateConfig.ConversionOutputProtocol, filePaths, _config.MaxThreadCount);
+            }
+            catch(Exception exception)
+            {
+                LogError("Caught an exception while converting demos: {0}", exception.Message);
+            }
+        }
+
+        private void DemoConvertAndCutThread(object arg)
+        {
+            var threadData = arg as DemoConvertAndCutThreadArg;
+            if (threadData == null)
+            {
+                LogError("Invalid thread argument type");
+                return;
+            }
+
+            InitParseArg();
+
+            var conversionArg = new UDT_DLL.udtProtocolConversionArg();
+            conversionArg.OutputProtocol = (UInt32)PrivateConfig.ConversionOutputProtocol;
+            conversionArg.ClientNum = PrivateConfig.PatternCutPlayerIndex;
+
+            ParseArg.GameStateIndex = 0;
+
+            try
+            {
+                UDT_DLL.ConvertAndCutByTimeDemo(ref ParseArg, conversionArg, threadData.Demo.FilePath, threadData.StartTimeMs, threadData.EndTimeMs);
             }
             catch(Exception exception)
             {
@@ -2565,6 +2651,57 @@ namespace Uber.DemoTools
 
             JoinJobThread();
             StartJobThread(DemoSplitThread, demo.FilePath);
+        }
+
+        private void OnConvertDemoClicked(UDT_DLL.udtProtocol outputFormat)
+        {
+            var demos = SelectedDemos;
+            var demo = SelectedDemo;
+            if (demos == null || demos.Count > 1)
+            {
+                LogError("Please select only 1 demo.");
+                return;
+            }
+
+            if (_playerIndexComboBox.SelectedValue == null)
+            {
+                LogError("Please select player's PoV to convert to.");
+                return;
+            }
+
+            if (!UDT_DLL.IsProtocolWritable(demo.ProtocolNumber))
+            {
+                LogError("The selected demo is using a protocol that UDT can't write.");
+                return;
+            }
+
+            if (!demo.Analyzed)
+            {
+                LogError("The selected demo was not analyzed.");
+                return;
+            }
+
+            if (!IsValidInputFormatForConverter(outputFormat, demo.ProtocolNumber))
+            {
+                LogError("Selected demo is either in the target format or an unsupported input format.");
+                return;
+            }
+
+            DisableUiNonThreadSafe();
+            JoinJobThread();
+            SaveBothConfigs();
+
+            var playerInfo = (PlayerInfo)_playerIndexComboBox.SelectedValue;
+
+            PrivateConfig.ConversionOutputProtocol = outputFormat;
+            PrivateConfig.PatternCutPlayerIndex = playerInfo.ClientNum;
+
+            var threadData = new DemoConvertAndCutThreadArg();
+            threadData.Demo = demo;
+            threadData.StartTimeMs = playerInfo.StartTimeMs;
+            threadData.EndTimeMs = playerInfo.EndTimeMs;
+
+            StartJobThread(DemoConvertAndCutThread, threadData);
         }
 
         private void OnRevealDemoClicked()

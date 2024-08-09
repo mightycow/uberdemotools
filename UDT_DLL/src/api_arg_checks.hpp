@@ -114,7 +114,7 @@ static bool IsValid(const udtMultiParseArg& arg)
 
 static bool IsValid(const udtProtocolConversionArg& arg)
 {
-	return arg.OutputProtocol == (u32)udtProtocol::Dm68 || arg.OutputProtocol == (u32)udtProtocol::Dm91;
+	return arg.OutputProtocol == (u32)udtProtocol::Dm68 || arg.OutputProtocol == (u32)udtProtocol::Dm91 || arg.OutputProtocol == (u32)udtProtocol::Dm84;
 }
 
 static bool HasValidOutputOption(const udtParseArg& arg)

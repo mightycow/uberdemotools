@@ -82,6 +82,25 @@ static const s16 PowerUps_57_60[] =
 };
 VALIDATE_TABLE_SIZES(PowerUps_57_60, udtPowerUpIndex::Count);
 
+// ET
+static s16 PowerUps_84_284_U2Q[udtPowerUpIndex::Count];
+static s16 PowerUps_84_284_Q2U[udtPowerUpIndex::Count * 2];
+static const s16 PowerUps_84_284[] =
+{
+	(s16)udtPowerUpIndex::Invulnerability, 1,
+	(s16)udtPowerUpIndex::Wolf_NoFatigue, 4,
+	(s16)udtPowerUpIndex::RedFlag, 5,
+	(s16)udtPowerUpIndex::BlueFlag, 6,
+	(s16)udtPowerUpIndex::ET_Ops_Disguised, 7,
+	(s16)udtPowerUpIndex::ET_Ops_Class_1, 8,
+	(s16)udtPowerUpIndex::ET_Ops_Class_2, 9,
+	(s16)udtPowerUpIndex::ET_Ops_Class_3, 10,
+	(s16)udtPowerUpIndex::ET_Adrenaline, 11,
+	(s16)udtPowerUpIndex::Wolf_Blackout, 14,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(PowerUps_84_284, udtPowerUpIndex::Count);
+
 static const s16* PowerUpTables[] =
 {
 	TABLE_ENTRY(PowerUps_3_90), // 3
@@ -94,8 +113,10 @@ static const s16* PowerUpTables[] =
 	TABLE_ENTRY(PowerUps_3_90), // 67
 	TABLE_ENTRY(PowerUps_3_90), // 68
 	TABLE_ENTRY(PowerUps_3_90), // 73
+	TABLE_ENTRY(PowerUps_84_284), // 84
 	TABLE_ENTRY(PowerUps_3_90), // 90
-	TABLE_ENTRY(PowerUps_91) // 91
+	TABLE_ENTRY(PowerUps_91), // 91
+	TABLE_ENTRY(PowerUps_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(PowerUpTables);
 
@@ -142,6 +163,25 @@ static const s16 LifeStats_57_60[] =
 };
 VALIDATE_TABLE_SIZES(LifeStats_57_60, udtLifeStatsIndex::Count);
 
+// ET - mod dependent (this is legacy mod)
+static s16 LifeStats_84_284_U2Q[udtLifeStatsIndex::Count];
+static s16 LifeStats_84_284_Q2U[udtLifeStatsIndex::Count * 2];
+static const s16 LifeStats_84_284[] =
+{
+	(s16)udtLifeStatsIndex::Health, 0,
+	(s16)udtLifeStatsIndex::Wolf_Keys, 1,
+	(s16)udtLifeStatsIndex::ET_DeadYaw, 2,
+	(s16)udtLifeStatsIndex::MaxHealth, 3,
+	(s16)udtLifeStatsIndex::Wolf_PlayerClass, 4,
+	(s16)udtLifeStatsIndex::ET_XP, 5,
+	(s16)udtLifeStatsIndex::ET_PSFlags, 6,
+	(s16)udtLifeStatsIndex::ET_AirLeft, 7,
+	(s16)udtLifeStatsIndex::ET_SprintTime, 8,
+	(s16)udtLifeStatsIndex::ET_Antiwarp, 9,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(LifeStats_84_284, udtLifeStatsIndex::Count);
+
 static const s16* LifeStatsTables[] =
 {
 	TABLE_ENTRY(LifeStats_3_68), // 3
@@ -154,8 +194,10 @@ static const s16* LifeStatsTables[] =
 	TABLE_ENTRY(LifeStats_3_68), // 67
 	TABLE_ENTRY(LifeStats_3_68), // 68
 	TABLE_ENTRY(LifeStats_73p), // 73
+	TABLE_ENTRY(LifeStats_84_284), // 84
 	TABLE_ENTRY(LifeStats_73p), // 90
-	TABLE_ENTRY(LifeStats_73p) // 91
+	TABLE_ENTRY(LifeStats_73p), // 91
+	TABLE_ENTRY(LifeStats_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(LifeStatsTables);
 
@@ -238,6 +280,26 @@ static const s16 PersStats_57_60[] =
 };
 VALIDATE_TABLE_SIZES(PersStats_57_60, udtPersStatsIndex::Count);
 
+// ET
+static s16 PersStats_84_284_U2Q[udtPersStatsIndex::Count];
+static s16 PersStats_84_284_Q2U[udtPersStatsIndex::Count * 2];
+static const s16 PersStats_84_284[] =
+{
+	(s16)udtPersStatsIndex::Score, 0,
+	(s16)udtPersStatsIndex::ET_Hits, 1,
+	(s16)udtPersStatsIndex::Rank, 2,
+	(s16)udtPersStatsIndex::Team, 3,
+	(s16)udtPersStatsIndex::SpawnCount, 4,
+	(s16)udtPersStatsIndex::LastAttacker, 5,
+	(s16)udtPersStatsIndex::Deaths, 6,
+	(s16)udtPersStatsIndex::Wolf_RespawnsLeft, 7,
+	(s16)udtPersStatsIndex::ET_RespawnsPenalty, 8,
+	(s16)udtPersStatsIndex::ET_ReviveCount, 9,
+	(s16)udtPersStatsIndex::ET_HWeaponUse, 12,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(PersStats_84_284, udtPersStatsIndex::Count);
+
 static const s16* PersStatsTables[] =
 {
 	TABLE_ENTRY(PersStats_3), // 3
@@ -250,8 +312,10 @@ static const s16* PersStatsTables[] =
 	TABLE_ENTRY(PersStats_48_68), // 67
 	TABLE_ENTRY(PersStats_48_68), // 68
 	TABLE_ENTRY(PersStats_73p), // 73
+	TABLE_ENTRY(PersStats_84_284), // 84
 	TABLE_ENTRY(PersStats_73p), // 90
-	TABLE_ENTRY(PersStats_73p) // 91
+	TABLE_ENTRY(PersStats_73p), // 91
+	TABLE_ENTRY(PersStats_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(PersStatsTables);
 
@@ -298,12 +362,12 @@ static const s16 EntityTypes_48p[] =
 };
 VALIDATE_TABLE_SIZES(EntityTypes_48p, udtEntityType::Count);
 
-#if 0 // ET
-static s16 EntityTypes_84_U2Q[udtEntityType::Count];
-static s16 EntityTypes_84_Q2U[udtEntityType::Count * 2];
-static const s16 EntityTypes_84[] =
+// ET
+static s16 EntityTypes_84_284_U2Q[udtEntityType::Count];
+static s16 EntityTypes_84_284_Q2U[udtEntityType::Count * 2];
+static const s16 EntityTypes_84_284[] =
 {
-	(s16)udtEntityType::Event, 61,
+	(s16)udtEntityType::Event, 62,
 	(s16)udtEntityType::General, 0,
 	(s16)udtEntityType::Player, 1,
 	(s16)udtEntityType::Item, 2,
@@ -312,15 +376,12 @@ static const s16 EntityTypes_84[] =
 	(s16)udtEntityType::Beam, 5,
 	(s16)udtEntityType::Portal, 6,
 	(s16)udtEntityType::Speaker, 7,
-	(s16)udtEntityType::PushTrigger, 8,
 	(s16)udtEntityType::TeleportTrigger, 9,
 	(s16)udtEntityType::Invisible, 10,
-	(s16)udtEntityType::Grapple, 11,
-	(s16)udtEntityType::Team, 12,
+	(s16)udtEntityType::ET_Corpse, 41,
 	TABLE_END
 };
-VALIDATE_TABLE_SIZES(EntityTypes_84, udtEntityType::Count);
-#endif
+VALIDATE_TABLE_SIZES(EntityTypes_84_284, udtEntityType::Count);
 
 static s16 EntityTypes_57_60_U2Q[udtEntityType::Count];
 static s16 EntityTypes_57_60_Q2U[udtEntityType::Count * 2];
@@ -355,8 +416,10 @@ static const s16* EntityTypeTables[] =
 	TABLE_ENTRY(EntityTypes_48p), // 67
 	TABLE_ENTRY(EntityTypes_48p), // 68
 	TABLE_ENTRY(EntityTypes_48p), // 73
+	TABLE_ENTRY(EntityTypes_84_284), // 84
 	TABLE_ENTRY(EntityTypes_48p), // 90
-	TABLE_ENTRY(EntityTypes_48p) // 91
+	TABLE_ENTRY(EntityTypes_48p), // 91
+	TABLE_ENTRY(EntityTypes_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(EntityTypeTables);
 
@@ -467,6 +530,30 @@ static const s16 EntityFlagBits_57_60[] =
 };
 VALIDATE_TABLE_SIZES(EntityFlagBits_57_60, udtEntityFlag::Count);
 
+// ET
+static s16 EntityFlagBits_84_284_U2Q[udtEntityFlag::Count];
+static s16 EntityFlagBits_84_284_Q2U[udtEntityFlag::Count * 2];
+static const s16 EntityFlagBits_84_284[] =
+{
+	(s16)udtEntityFlag::Dead, 0,
+	(s16)udtEntityFlag::TeleportBit, 2,
+	(s16)udtEntityFlag::ET_Ready, 3,
+	(s16)udtEntityFlag::Wolf_Crouching, 4,
+	(s16)udtEntityFlag::ET_MG42Active, 5,
+	(s16)udtEntityFlag::NoDraw, 6,
+	(s16)udtEntityFlag::Firing, 7,
+	(s16)udtEntityFlag::Chatting, 9,
+	(s16)udtEntityFlag::ConnectionInterrupted, 10,
+	(s16)udtEntityFlag::Wolf_Headshot, 12,
+	(s16)udtEntityFlag::HasVoted, 14,
+	(s16)udtEntityFlag::ET_MountedTank, 15,
+	(s16)udtEntityFlag::Wolf_Zooming, 18,
+	(s16)udtEntityFlag::ET_Prone, 19,
+	(s16)udtEntityFlag::ET_AAGunActive, 22,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(EntityFlagBits_84_284, udtEntityFlag::Count);
+
 static const s16* EntityFlagBitTables[] =
 {
 	TABLE_ENTRY(EntityFlagBits_3), // 3
@@ -479,8 +566,10 @@ static const s16* EntityFlagBitTables[] =
 	TABLE_ENTRY(EntityFlagBits_66_90), // 67
 	TABLE_ENTRY(EntityFlagBits_66_90), // 68
 	TABLE_ENTRY(EntityFlagBits_66_90), // 73
+	TABLE_ENTRY(EntityFlagBits_84_284), // 84
 	TABLE_ENTRY(EntityFlagBits_66_90), // 90
-	TABLE_ENTRY(EntityFlagBits_91) // 91
+	TABLE_ENTRY(EntityFlagBits_91), // 91
+	TABLE_ENTRY(EntityFlagBits_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(EntityFlagBitTables);
 
@@ -565,18 +654,6 @@ static const s16 EntityEvents_73p[] =
 };
 VALIDATE_TABLE_SIZES(EntityEvents_73p, udtEntityEvent::Count);
 
-#if 0 // ET
-static s16 EntityEvents_84_U2Q[udtEntityEvent::Count];
-static s16 EntityEvents_84_Q2U[udtEntityEvent::Count * 2];
-static const s16 EntityEvents_84[] =
-{
-	(s16)udtEntityEvent::Obituary, 70,
-	(s16)udtEntityEvent::BulletHitFlesh, 57,
-	TABLE_END
-};
-VALIDATE_TABLE_SIZES(EntityEvents_84, udtEntityEvent::Count);
-#endif
-
 static s16 EntityEvents_57_58_U2Q[udtEntityEvent::Count];
 static s16 EntityEvents_57_58_Q2U[udtEntityEvent::Count * 2];
 static const s16 EntityEvents_57_58[] =
@@ -620,6 +697,19 @@ static const s16 EntityEvents_60[] =
 };
 VALIDATE_TABLE_SIZES(EntityEvents_60, udtEntityEvent::Count);
 
+// ET - mod dependent (this is legacy mod)
+static s16 EntityEvents_84_284_U2Q[udtEntityEvent::Count];
+static s16 EntityEvents_84_284_Q2U[udtEntityEvent::Count * 2];
+static const s16 EntityEvents_84_284[] =
+{
+	(s16)udtEntityEvent::BulletHitFlesh, 56,
+	(s16)udtEntityEvent::BulletHitWall, 57,
+	(s16)udtEntityEvent::Obituary, 68,
+	(s16)udtEntityEvent::Wolf_Bullet, 61,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(EntityEvents_84_284, udtEntityEvent::Count);
+
 static const s16* EntityEventTables[] =
 {
 	TABLE_ENTRY(EntityEvents_3), // 3
@@ -632,8 +722,10 @@ static const s16* EntityEventTables[] =
 	TABLE_ENTRY(EntityEvents_48_68), // 67
 	TABLE_ENTRY(EntityEvents_48_68), // 68
 	TABLE_ENTRY(EntityEvents_73p), // 73
+	TABLE_ENTRY(EntityEvents_84_284), // 84
 	TABLE_ENTRY(EntityEvents_73p), // 90
-	TABLE_ENTRY(EntityEvents_73p) // 91
+	TABLE_ENTRY(EntityEvents_73p), // 91
+	TABLE_ENTRY(EntityEvents_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(EntityEventTables);
 
@@ -736,10 +828,10 @@ static const s16 ConfigStringIndices_73_90[] =
 };
 VALIDATE_TABLE_SIZES(ConfigStringIndices_73_90, udtConfigStringIndex::Count);
 
-#if 0 // ET
-static s16 ConfigStringIndices_84_U2Q[udtConfigStringIndex::Count];
-static s16 ConfigStringIndices_84_Q2U[udtConfigStringIndex::Count * 2];
-static const s16 ConfigStringIndices_84[] =
+// ET
+static s16 ConfigStringIndices_84_284_U2Q[udtConfigStringIndex::Count];
+static s16 ConfigStringIndices_84_284_Q2U[udtConfigStringIndex::Count * 2];
+static const s16 ConfigStringIndices_84_284[] =
 {
 	(s16)udtConfigStringIndex::FirstPlayer, 689,
 	(s16)udtConfigStringIndex::Intermission, 12,
@@ -748,10 +840,12 @@ static const s16 ConfigStringIndices_84[] =
 	(s16)udtConfigStringIndex::ServerInfo, 0,
 	(s16)udtConfigStringIndex::SystemInfo, 1,
 	(s16)udtConfigStringIndex::GameVersion, 10,
+	(s16)udtConfigStringIndex::Wolf_Info, 21,
+	(s16)udtConfigStringIndex::ET_ServerToggles, 32,
+	(s16)udtConfigStringIndex::ET_ModInfo, 40, // Legacy mod
 	TABLE_END
 };
-VALIDATE_TABLE_SIZES(ConfigStringIndices_84, udtConfigStringIndex::Count);
-#endif
+VALIDATE_TABLE_SIZES(ConfigStringIndices_84_284, udtConfigStringIndex::Count);
 
 static s16 ConfigStringIndices_91_U2Q[udtConfigStringIndex::Count];
 static s16 ConfigStringIndices_91_Q2U[udtConfigStringIndex::Count * 2];
@@ -817,8 +911,10 @@ static const s16* ConfigStringIndexTables[] =
 	TABLE_ENTRY(ConfigStringIndices_48_68), // 67
 	TABLE_ENTRY(ConfigStringIndices_48_68), // 68
 	TABLE_ENTRY(ConfigStringIndices_73_90), // 73
+	TABLE_ENTRY(ConfigStringIndices_84_284), // 84
 	TABLE_ENTRY(ConfigStringIndices_73_90), // 90
-	TABLE_ENTRY(ConfigStringIndices_91) // 91
+	TABLE_ENTRY(ConfigStringIndices_91), // 91
+	TABLE_ENTRY(ConfigStringIndices_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(ConfigStringIndexTables);
 
@@ -858,8 +954,10 @@ static const s16* TeamTables[] =
 	TABLE_ENTRY(TeamsQuake), // 67
 	TABLE_ENTRY(TeamsQuake), // 68
 	TABLE_ENTRY(TeamsQuake), // 73
+	TABLE_ENTRY(TeamsWolf), // 84
 	TABLE_ENTRY(TeamsQuake), // 90
-	TABLE_ENTRY(TeamsQuake) // 91
+	TABLE_ENTRY(TeamsQuake), // 91
+	TABLE_ENTRY(TeamsWolf), // 284
 };
 VALIDATE_TABLE_SIZE(TeamTables);
 
@@ -928,6 +1026,22 @@ static const s16 GameTypes_57_60[] =
 };
 VALIDATE_TABLE_SIZES(GameTypes_57_60, udtGameType::Count);
 
+// ET
+static s16 GameTypes_84_284_U2Q[udtGameType::Count];
+static s16 GameTypes_84_284_Q2U[udtGameType::Count * 2];
+static const s16 GameTypes_84_284[] =
+{
+	(s16)udtGameType::SP, 0,
+	(s16)udtGameType::Wolf_COOP, 1,
+	(s16)udtGameType::Wolf_Wolf, 2,
+	(s16)udtGameType::Wolf_Stopwatch, 3,
+	(s16)udtGameType::Wolf_Campaign, 4,
+	(s16)udtGameType::Wolf_LMS, 5,
+	(s16)udtGameType::Wolf_Mapvote, 6,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(GameTypes_84_284, udtGameType::Count);
+
 static const s16* GameTypeTables[] =
 {
 	TABLE_ENTRY(GameTypes_3), // 3
@@ -940,8 +1054,10 @@ static const s16* GameTypeTables[] =
 	TABLE_ENTRY(GameTypes_48_68), // 67
 	TABLE_ENTRY(GameTypes_48_68), // 68
 	TABLE_ENTRY(GameTypes_73p), // 73
+	TABLE_ENTRY(GameTypes_84_284), // 84
 	TABLE_ENTRY(GameTypes_73p), // 90
-	TABLE_ENTRY(GameTypes_73p) // 91
+	TABLE_ENTRY(GameTypes_73p), // 91
+	TABLE_ENTRY(GameTypes_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(GameTypeTables);
 
@@ -968,8 +1084,10 @@ static const s16* FlagStatusTables[] =
 	TABLE_ENTRY(FlagStatus), // 67
 	TABLE_ENTRY(FlagStatus), // 68
 	TABLE_ENTRY(FlagStatus), // 73
+	TABLE_ENTRY(FlagStatus), // 84 - not relevant but no need to make a new table for it
 	TABLE_ENTRY(FlagStatus), // 90
-	TABLE_ENTRY(FlagStatus) // 91
+	TABLE_ENTRY(FlagStatus), // 91
+	TABLE_ENTRY(FlagStatus) // 284 - not relevant but no need to make a new table for it
 };
 VALIDATE_TABLE_SIZE(FlagStatusTables);
 
@@ -1067,6 +1185,71 @@ static const s16 Weapons_57_60[] =
 };
 VALIDATE_TABLE_SIZES(Weapons_57_60, udtWeapon::Count);
 
+// ET - mod dependent
+static s16 Weapons_84_284_U2Q[udtWeapon::Count];
+static s16 Weapons_84_284_Q2U[udtWeapon::Count * 2];
+static const s16 Weapons_84_284[] =
+{
+	(s16)udtWeapon::Knife, 1,
+	(s16)udtWeapon::Luger, 2,
+	(s16)udtWeapon::MP40, 3,
+	(s16)udtWeapon::GrenadeLauncher, 4,
+	(s16)udtWeapon::Panzerfaust, 5,
+	(s16)udtWeapon::Flamethrower, 6,
+	(s16)udtWeapon::Colt, 7,
+	(s16)udtWeapon::Thompson, 8,
+	(s16)udtWeapon::GrenadePineapple, 9,
+	(s16)udtWeapon::Sten, 10,
+	(s16)udtWeapon::MedicSyringe, 11,
+	(s16)udtWeapon::Ammo, 12,
+	(s16)udtWeapon::Artillery, 13,
+	(s16)udtWeapon::Silencer, 14,
+	(s16)udtWeapon::Dynamite, 15,
+	(s16)udtWeapon::SmokeTrail, 16,
+	(s16)udtWeapon::MapMortar, 17,
+	(s16)udtWeapon::VeryBigExplosion, 18,
+	(s16)udtWeapon::Medkit, 19,
+	(s16)udtWeapon::Binoculars, 20,
+	(s16)udtWeapon::Pliers, 21,
+	(s16)udtWeapon::SmokeMarker, 22,
+	(s16)udtWeapon::Kar98, 23,
+	(s16)udtWeapon::Carbine, 24,
+	(s16)udtWeapon::Garand, 25,
+	(s16)udtWeapon::Landmine, 26,
+	(s16)udtWeapon::Satchel, 27,
+	(s16)udtWeapon::SatchelDet, 28,
+	(s16)udtWeapon::SmokeGrenade, 29,
+	(s16)udtWeapon::MobileMg42, 30,
+	(s16)udtWeapon::K43, 31,
+	(s16)udtWeapon::FG42, 32,
+	(s16)udtWeapon::DummyMg42, 33,
+	(s16)udtWeapon::Mortar, 34,
+	(s16)udtWeapon::AkimboColt, 35,
+	(s16)udtWeapon::AkimboLuger, 36,
+	(s16)udtWeapon::Gpg40, 37,
+	(s16)udtWeapon::M7, 38,
+	(s16)udtWeapon::SilencedColt, 39,
+	(s16)udtWeapon::GarandScope, 40,
+	(s16)udtWeapon::K43Scope, 41,
+	(s16)udtWeapon::FG42Scope, 42,
+	(s16)udtWeapon::MortarSet, 43,
+	(s16)udtWeapon::MedicAdrenaline, 44,
+	(s16)udtWeapon::AkimboSilencedColt, 45,
+	(s16)udtWeapon::AkimboSilencedLuger, 46,
+	(s16)udtWeapon::MobileMg42Set, 47,
+	// Legacy mod weapons:
+	(s16)udtWeapon::KnifeKabar, 46,
+	(s16)udtWeapon::MobileBrowning, 46,
+	(s16)udtWeapon::MobileBrowningSet, 46,
+	(s16)udtWeapon::Mortar2, 46,
+	(s16)udtWeapon::Mortar2Set, 46,
+	(s16)udtWeapon::Bazooka, 46,
+	(s16)udtWeapon::MP34, 46,
+	(s16)udtWeapon::Airstrike, 46,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(Weapons_84_284, udtWeapon::Count);
+
 static const s16* WeaponTables[] =
 {
 	TABLE_ENTRY(Weapons_3_68), // 3
@@ -1079,8 +1262,10 @@ static const s16* WeaponTables[] =
 	TABLE_ENTRY(Weapons_3_68), // 67
 	TABLE_ENTRY(Weapons_3_68), // 68
 	TABLE_ENTRY(Weapons_73p), // 73
+	TABLE_ENTRY(Weapons_84_284), // 84
 	TABLE_ENTRY(Weapons_73p), // 90
-	TABLE_ENTRY(Weapons_73p) // 91
+	TABLE_ENTRY(Weapons_73p), // 91
+	TABLE_ENTRY(Weapons_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(WeaponTables);
 
@@ -1217,6 +1402,81 @@ static const s16 MeansOfDeath_57_60[] =
 };
 VALIDATE_TABLE_SIZES(MeansOfDeath_57_60, udtMeanOfDeath::Count);
 
+// ET
+static s16 MeansOfDeath_84_284_U2Q[udtMeanOfDeath::Count];
+static s16 MeansOfDeath_84_284_Q2U[udtMeanOfDeath::Count * 2];
+static const s16 MeansOfDeath_84_284[] =
+{
+	(s16)udtMeanOfDeath::MachineGun, 1, // crew-served MG
+	(s16)udtMeanOfDeath::Browning, 2, // tank-mounted browning
+	(s16)udtMeanOfDeath::Mg42, 3, // tank-mounted MG42
+	(s16)udtMeanOfDeath::Grenade, 4,
+	(s16)udtMeanOfDeath::Knife, 5,
+	(s16)udtMeanOfDeath::Luger, 6,
+	(s16)udtMeanOfDeath::Colt, 7,
+	(s16)udtMeanOfDeath::MP40, 8,
+	(s16)udtMeanOfDeath::Thompson, 9,
+	(s16)udtMeanOfDeath::Sten, 10,
+	(s16)udtMeanOfDeath::Garand, 11,
+	(s16)udtMeanOfDeath::Silencer, 12, // silenced luger
+	(s16)udtMeanOfDeath::FG42, 13,
+	(s16)udtMeanOfDeath::FG42Scope, 14,
+	(s16)udtMeanOfDeath::Panzerfaust, 15,
+	(s16)udtMeanOfDeath::GrenadeLauncher, 16, // axis grenade
+	(s16)udtMeanOfDeath::Flamethrower, 17,
+	(s16)udtMeanOfDeath::GrenadePineapple, 18, // allied grenade
+	(s16)udtMeanOfDeath::MapMortar, 19,
+	(s16)udtMeanOfDeath::MapMortarSplash, 20,
+	(s16)udtMeanOfDeath::Kicked, 21,
+	(s16)udtMeanOfDeath::Dynamite, 22,
+	(s16)udtMeanOfDeath::Airstrike, 23,
+	(s16)udtMeanOfDeath::Syringe, 24,
+	(s16)udtMeanOfDeath::Ammo, 25,
+	(s16)udtMeanOfDeath::Artillery, 26,
+	(s16)udtMeanOfDeath::Water, 27,
+	(s16)udtMeanOfDeath::Slime, 28,
+	(s16)udtMeanOfDeath::Lava, 29,
+	(s16)udtMeanOfDeath::Crush, 30,
+	(s16)udtMeanOfDeath::TeleFrag, 31,
+	(s16)udtMeanOfDeath::Fall, 32,
+	(s16)udtMeanOfDeath::Suicide, 33,
+	(s16)udtMeanOfDeath::TargetLaser, 34,
+	(s16)udtMeanOfDeath::TriggerHurt, 35,
+	(s16)udtMeanOfDeath::Explosive, 36,
+	(s16)udtMeanOfDeath::Carbine, 37, // allied rifle
+	(s16)udtMeanOfDeath::Kar98, 38, // axis rifle
+	(s16)udtMeanOfDeath::Gpg40, 39, // axis riflegrenade
+	(s16)udtMeanOfDeath::M7, 40, // // allied riflegrenade
+	(s16)udtMeanOfDeath::Landmine, 41,
+	(s16)udtMeanOfDeath::Satchel, 42,
+	(s16)udtMeanOfDeath::SmokeBomb, 43,
+	(s16)udtMeanOfDeath::MobileMg42, 44,
+	(s16)udtMeanOfDeath::SilencedColt, 45,
+	(s16)udtMeanOfDeath::GarandScope, 46,
+	(s16)udtMeanOfDeath::CrushConstruction, 47,
+	(s16)udtMeanOfDeath::CrushConstructionDeath, 48,
+	(s16)udtMeanOfDeath::CrushConstructionDeathNoAttacker, 49,
+	(s16)udtMeanOfDeath::K43, 50,
+	(s16)udtMeanOfDeath::K43Scope, 51,
+	(s16)udtMeanOfDeath::Mortar, 52, // allied mortar
+	(s16)udtMeanOfDeath::AkimboColt, 53,
+	(s16)udtMeanOfDeath::AkimboLuger, 54,
+	(s16)udtMeanOfDeath::AkimboSilencedColt, 55,
+	(s16)udtMeanOfDeath::AkimboSilencedLuger, 56,
+	(s16)udtMeanOfDeath::SmokeGrenade, 57,
+	(s16)udtMeanOfDeath::SwapPlaces, 58,
+	(s16)udtMeanOfDeath::SwitchTeam, 59,
+	(s16)udtMeanOfDeath::Shove, 60,
+	(s16)udtMeanOfDeath::KnifeKabar, 61, // allied knife
+	(s16)udtMeanOfDeath::MobileBrowning, 62, // allied machinegun
+	(s16)udtMeanOfDeath::Mortar2, 63, // axis mortar
+	(s16)udtMeanOfDeath::Bazooka, 64, // allied panzerfaust
+	(s16)udtMeanOfDeath::Backstab, 65,
+	(s16)udtMeanOfDeath::MP43, 66, // allied Sten alternative
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(MeansOfDeath_84_284, udtMeanOfDeath::Count);
+
 static const s16* MeanOfDeathTables[] =
 {
 	TABLE_ENTRY(MeansOfDeath_3_68), // 3
@@ -1229,8 +1489,10 @@ static const s16* MeanOfDeathTables[] =
 	TABLE_ENTRY(MeansOfDeath_3_68), // 67
 	TABLE_ENTRY(MeansOfDeath_3_68), // 68
 	TABLE_ENTRY(MeansOfDeath_73p), // 73
+	TABLE_ENTRY(MeansOfDeath_84_284), // 84
 	TABLE_ENTRY(MeansOfDeath_73p), // 90
-	TABLE_ENTRY(MeansOfDeath_73p) // 91
+	TABLE_ENTRY(MeansOfDeath_73p), // 91
+	TABLE_ENTRY(MeansOfDeath_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(MeanOfDeathTables);
 
@@ -1423,6 +1685,95 @@ static const s16 Items_57_60[] =
 };
 VALIDATE_TABLE_SIZES(Items_57_60, udtItem::Count);
 
+// ET
+static s16 Items_84_284_U2Q[udtItem::Count];
+static s16 Items_84_284_Q2U[udtItem::Count * 2];
+static const s16 Items_84_284[] =
+{
+	(s16)udtItem::ItemHealthSmall, 1,
+	(s16)udtItem::ItemHealth, 2,
+	(s16)udtItem::ItemHealthLarge, 3,
+	(s16)udtItem::ItemHealthCabinet, 4,
+	(s16)udtItem::ItemHealthTurkey, 5,
+	(s16)udtItem::IteamHealthBreadAndMeat, 6,
+	(s16)udtItem::IteamHealthWall, 7,
+	(s16)udtItem::WeaponKnife, 8,
+	(s16)udtItem::WeaponKnifeKabar, 9,
+	(s16)udtItem::WeaponLuger, 10,
+	(s16)udtItem::WeaponAkimboLuger, 11,
+	(s16)udtItem::WeaponAkimboSilencedLuger, 12,
+	(s16)udtItem::WeaponThompson, 13,
+	(s16)udtItem::WeaponDummyMg42, 14,
+	(s16)udtItem::WeaponSten, 15,
+	(s16)udtItem::WeaponMP34, 16,
+	(s16)udtItem::WeaponColt, 17,
+	(s16)udtItem::WeaponAkimboColt, 18,
+	(s16)udtItem::WeaponAkimboSilencedColt, 19,
+	(s16)udtItem::WeaponMP40, 20,
+	(s16)udtItem::WeaponPanzerfaust, 21,
+	(s16)udtItem::WeaponBazooka, 22,
+	(s16)udtItem::WeaponGrenadeLauncher, 23,
+	(s16)udtItem::WeaponGrenadePineapple, 24,
+	(s16)udtItem::WeaponSmokeMarker, 25,
+	(s16)udtItem::WeaponSmokeTrail, 26,
+	(s16)udtItem::WeaponMedicHeal, 27,
+	(s16)udtItem::WeaponDynamite, 28,
+	(s16)udtItem::WeaponFlamethrower, 29,
+	(s16)udtItem::WeaponMapMortar, 30,
+	(s16)udtItem::WeaponPliers, 31,
+	(s16)udtItem::WeaponArtillery, 32,
+	(s16)udtItem::WeaponAirstrike, 33,
+	(s16)udtItem::WeaponMedicSyringe, 34,
+	(s16)udtItem::WeaponMedicAdrenaline, 35,
+	(s16)udtItem::WeaponMagicAmmo, 36,
+	(s16)udtItem::WeaponMagicAmmo2, 37,
+	(s16)udtItem::WeaponBinoculars, 38,
+	(s16)udtItem::WeaponK43, 39,
+	(s16)udtItem::WeaponK43Scope, 40,
+	(s16)udtItem::WeaponKar98, 41,
+	(s16)udtItem::WeaponGpg40, 42,
+	(s16)udtItem::WeaponM7, 43,
+	(s16)udtItem::WeaponCarbine, 44,
+	(s16)udtItem::WeaponGarand, 45,
+	(s16)udtItem::WeaponGarandScope, 46,
+	(s16)udtItem::WeaponFG42, 47,
+	(s16)udtItem::WeaponFG42Scope, 48,
+	(s16)udtItem::WeaponMortar, 49,
+	(s16)udtItem::WeaponMortarSet, 50,
+	(s16)udtItem::WeaponMortar2, 51,
+	(s16)udtItem::WeaponMortar2Set, 52,
+	(s16)udtItem::WeaponLandmine, 53,
+	(s16)udtItem::WeaponSatchel, 54,
+	(s16)udtItem::WeaponSatchelDet, 55,
+	(s16)udtItem::WeaponSmokeBomb, 56,
+	(s16)udtItem::WeaponMobileMg42, 57,
+	(s16)udtItem::WeaponMobileMg42Set, 58,
+	(s16)udtItem::WeaponBrowningSet, 59,
+	(s16)udtItem::WeaponBrowning, 60,
+	(s16)udtItem::WeaponSilencer, 61,
+	(s16)udtItem::WeaponSilencedColt, 62,
+	(s16)udtItem::AmmoSyringe, 63,
+	(s16)udtItem::AmmoSmokeGrenade, 64,
+	(s16)udtItem::AmmoDynamite, 65,
+	(s16)udtItem::AmmoDisguise, 66,
+	(s16)udtItem::AmmoAirstrike, 67,
+	(s16)udtItem::AmmoLandmine, 68,
+	(s16)udtItem::AmmoSatchelCharge, 69,
+	(s16)udtItem::Ammo9mmSmall, 70,
+	(s16)udtItem::Ammo9mm, 71,
+	(s16)udtItem::Ammo9mmLarge, 72,
+	(s16)udtItem::Ammo45CalSmall, 73,
+	(s16)udtItem::Ammo45Cal, 74,
+	(s16)udtItem::Ammo45CalLarge, 75,
+	(s16)udtItem::Ammo30CalSmall, 76,
+	(s16)udtItem::Ammo30Cal, 77,
+	(s16)udtItem::Ammo30CalLarge, 78,
+	(s16)udtItem::FlagRed, 79,
+	(s16)udtItem::FlagBlue, 80,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(Items_84_284, udtItem::Count);
+
 static const s16* ItemTables[] =
 {
 	TABLE_ENTRY(Items_3_68), // 3
@@ -1435,8 +1786,10 @@ static const s16* ItemTables[] =
 	TABLE_ENTRY(Items_3_68), // 67
 	TABLE_ENTRY(Items_3_68), // 68
 	TABLE_ENTRY(Items_73), // 73
+	TABLE_ENTRY(Items_84_284), // 84
 	TABLE_ENTRY(Items_90p), // 90
-	TABLE_ENTRY(Items_90p) // 91
+	TABLE_ENTRY(Items_90p), // 91
+	TABLE_ENTRY(Items_84_284) // 284
 };
 VALIDATE_TABLE_SIZE(ItemTables);
 
@@ -1455,6 +1808,21 @@ static const s16 PMTypes[] =
 };
 VALIDATE_TABLE_SIZES(PMTypes, udtPlayerMovementType::Count);
 
+// ET
+static s16 PMTypes_84_284_U2Q[udtPlayerMovementType::Count];
+static s16 PMTypes_84_284_Q2U[udtPlayerMovementType::Count * 2];
+static const s16 PMTypes_84_284[] =
+{
+	(s16)udtPlayerMovementType::Normal, 0,
+	(s16)udtPlayerMovementType::NoClip, 1,
+	(s16)udtPlayerMovementType::Spectator, 2,
+	(s16)udtPlayerMovementType::Dead, 3,
+	(s16)udtPlayerMovementType::Freeze, 4,
+	(s16)udtPlayerMovementType::Intermission, 5,
+	TABLE_END
+};
+VALIDATE_TABLE_SIZES(PMTypes_84_284, udtPlayerMovementType::Count);
+
 static const s16* PMTypeTables[] =
 {
 	TABLE_ENTRY(PMTypes), // 3
@@ -1467,8 +1835,10 @@ static const s16* PMTypeTables[] =
 	TABLE_ENTRY(PMTypes), // 67
 	TABLE_ENTRY(PMTypes), // 68
 	TABLE_ENTRY(PMTypes), // 73
+	TABLE_ENTRY(PMTypes_84_284), // 84
 	TABLE_ENTRY(PMTypes), // 90
-	TABLE_ENTRY(PMTypes) // 91
+	TABLE_ENTRY(PMTypes), // 91
+	TABLE_ENTRY(PMTypes_84_284), // 284
 };
 VALIDATE_TABLE_SIZE(PMTypeTables);
 
@@ -1608,6 +1978,150 @@ static s32 GetIdEntityEventRtcwPro(s32 et)
 
 #undef ID_ENTITY_EVENT_60_RTCW_PRO_LIST
 
+#define ID_ENTITY_EVENT_84_ETMAIN_LIST(N) \
+	N(Obituary, 70)
+
+static s32 GetUDTEntityEventETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case IdValue: return (s32)udtEntityEvent::UDTEnum;
+	switch (et)
+	{
+		ID_ENTITY_EVENT_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+static s32 GetIdEntityEventETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case udtEntityEvent::UDTEnum: return IdValue;
+	switch ((udtEntityEvent::Id)et)
+	{
+		ID_ENTITY_EVENT_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+#undef ID_ENTITY_EVENT_84_ETMAIN_LIST
+
+#define ID_ENTITY_TYPE_84_ETMAIN_LIST(N) \
+	N(Event, 61)
+
+static s32 GetUDTEntityTypeETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case IdValue: return (s32)udtEntityType::UDTEnum;
+	switch (et)
+	{
+		ID_ENTITY_TYPE_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+static s32 GetIdEntityTypeETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case udtEntityType::UDTEnum: return IdValue;
+	switch ((udtEntityType::Id)et)
+	{
+		ID_ENTITY_TYPE_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+#undef ID_ENTITY_TYPE_84_ETMAIN_LIST
+
+#define ID_MEANSOFDEATH_84_ETMAIN_LIST(N) \
+	N(MachineGun, 1) \
+	N(Browning, 2) \
+	N(Mg42, 3) \
+	N(Grenade, 4) \
+	N(Rocket, 5) \
+	N(Knife, 6) \
+	N(Luger, 7) \
+	N(Colt, 8) \
+	N(MP40, 9) \
+	N(Thompson, 10) \
+	N(Sten, 11) \
+	N(Garand, 12) \
+	N(SnooperScope, 13) \
+	N(Silencer, 14) \
+	N(FG42, 15) \
+	N(FG42Scope, 16) \
+	N(Panzerfaust, 17) \
+	N(GrenadeLauncher, 18) \
+	N(Flamethrower, 19) \
+	N(GrenadePineapple, 20) \
+	N(Cross, 21) \
+	N(MapMortar, 22) \
+	N(MapMortarSplash, 23) \
+	N(Kicked, 24) \
+	N(Grabber, 25) \
+	N(Dynamite, 26) \
+	N(Airstrike, 27) \
+	N(Syringe, 28) \
+	N(Ammo, 29) \
+	N(Artillery, 30) \
+	N(Water, 31) \
+	N(Slime, 32) \
+	N(Lava, 33) \
+	N(Crush, 34) \
+	N(TeleFrag, 35) \
+	N(Fall, 36) \
+	N(Suicide, 37) \
+	N(TargetLaser, 38) \
+	N(TriggerHurt, 39) \
+	N(Explosive, 40) \
+	N(Carbine, 41) \
+	N(Kar98, 42) \
+	N(Gpg40, 43) \
+	N(M7, 44) \
+	N(Landmine, 45) \
+	N(Satchel, 46) \
+	N(Tripmine, 47) \
+	N(SmokeBomb, 48) \
+	N(MobileMg42, 49) \
+	N(SilencedColt, 50) \
+	N(GarandScope, 51) \
+	N(CrushConstruction, 52) \
+	N(CrushConstructionDeath, 53) \
+	N(CrushConstructionDeathNoAttacker, 54) \
+	N(K43, 55) \
+	N(K43Scope, 56) \
+	N(Mortar, 57) \
+	N(AkimboColt, 58) \
+	N(AkimboLuger, 59) \
+	N(AkimboSilencedColt, 60) \
+	N(AkimboSilencedLuger, 61) \
+	N(SmokeGrenade, 62) \
+	N(SwapPlaces, 63) \
+	N(SwitchTeam, 64)
+
+static s32 GetUDTMeansOfDeathETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case IdValue: return (s32)udtMeanOfDeath::UDTEnum;
+	switch (et)
+	{
+		ID_MEANSOFDEATH_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+static s32 GetIdMeansOfDeathETMain(s32 et)
+{
+#define ITEM(UDTEnum, IdValue) case udtMeanOfDeath::UDTEnum: return IdValue;
+	switch ((udtMeanOfDeath::Id)et)
+	{
+		ID_MEANSOFDEATH_84_ETMAIN_LIST(ITEM)
+	default: return UDT_S32_MIN;
+	}
+#undef ITEM
+}
+
+#undef ID_MEANSOFDEATH_84_ETMAIN_LIST
+
 struct idGameType68_CPMA
 {
 	enum Id
@@ -1704,6 +2218,36 @@ bool GetIdNumber(s32& idNumber, udtMagicNumberType::Id numberType, u32 udtNumber
 		return false;
 	}
 
+	if (numberType == udtMagicNumberType::EntityEvent &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetIdEntityEventETMain((s32)udtNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) idNumber = result;
+		return success;
+	}
+
+	if (numberType == udtMagicNumberType::EntityType &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetIdEntityTypeETMain((s32)udtNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) idNumber = result;
+		return success;
+	}
+
+	if (numberType == udtMagicNumberType::MeanOfDeath &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetIdMeansOfDeathETMain((s32)udtNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) idNumber = result;
+		return success;
+	}
+
 	if(numberType == udtMagicNumberType::EntityEvent &&
 	   AreAllProtocolFlagsSet(protocol, udtProtocolFlags::RTCW) &&
 	   mod == udtMod::RTCWPro)
@@ -1773,6 +2317,36 @@ bool GetUDTNumber(u32& udtNumber, udtMagicNumberType::Id numberType, s32 idNumbe
 	   (u32)protocol >= (u32)udtProtocol::Count)
 	{
 		return false;
+	}
+
+	if (numberType == udtMagicNumberType::EntityEvent &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetUDTEntityEventETMain(idNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) udtNumber = (u32)result;
+		return success;
+	}
+
+	if (numberType == udtMagicNumberType::EntityType &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetUDTEntityTypeETMain(idNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) udtNumber = (u32)result;
+		return success;
+	}
+
+	if (numberType == udtMagicNumberType::MeanOfDeath &&
+		AreAllProtocolFlagsSet(protocol, udtProtocolFlags::ET) &&
+		(mod == udtMod::ETMain || mod == udtMod::ETPro))
+	{
+		const s32 result = GetUDTMeansOfDeathETMain(idNumber);
+		const bool success = result != UDT_S32_MIN;
+		if (success) udtNumber = (u32)result;
+		return success;
 	}
 
 	if(numberType == udtMagicNumberType::EntityEvent &&

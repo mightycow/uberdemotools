@@ -70,14 +70,19 @@ private:
 	bool                  ParseCommandString();
 	bool                  ParseGamestate();
 	bool                  ParseSnapshot();
+	bool                  ParsePlayerstates();
 	bool                  ParsePacketEntities(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
+	bool                  ParsePacketEntitiesTv(udtMessage& msg, idClientSnapshotBase* oldframe, idClientSnapshotBase* newframe);
 	void                  EmitPacketEntities(idClientSnapshotBase* from, idClientSnapshotBase* to);
 	bool                  DeltaEntity(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, bool unchanged);
+	bool                  DeltaEntityTv(udtMessage& msg, idClientSnapshotBase *frame, s32 newnum, idEntityStateBase* old, idEntitySharedBase* oldshared, bool unchanged);
 	void                  ResetForGamestateMessage();
 
 public:
 	idEntityStateBase*    GetEntity(s32 idx) const { return (idEntityStateBase*)&_inParseEntities[idx * _inProtocolSizeOfEntityState]; }
+	idEntitySharedBase*   GetEntityShared(s32 idx) const { return (idEntitySharedBase*)&_inParseEntitiesShared[idx * _inProtocolSizeOfEntityShared]; }
 	idEntityStateBase*    GetBaseline(s32 idx) const { return (idEntityStateBase*)&_inEntityBaselines[idx * _inProtocolSizeOfEntityState]; }
+	idEntitySharedBase*   GetSharedBaseline(s32 idx) const { return (idEntitySharedBase*)&_inEntitySharedBaselines[idx * _inProtocolSizeOfEntityShared]; }
 	idClientSnapshotBase* GetClientSnapshot(s32 idx) const { return (idClientSnapshotBase*)&_inSnapshots[idx * _inProtocolSizeOfClientSnapshot]; }
 	const idTokenizer&    GetTokenizer() { return _tokenizer; }
 	const char*           GetFileNamePtr() { return _inFileName.GetPtrSafe("N/A"); }
@@ -103,6 +108,7 @@ public:
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _inProtocol;
 	s32 _inProtocolSizeOfEntityState;
+	s32 _inProtocolSizeOfEntityShared;
 	s32 _inProtocolSizeOfClientSnapshot;
 	udtProtocol::Id _outProtocol;
 	udtProtocolConverter* _protocolConverter;
@@ -129,7 +135,9 @@ public:
 	s32 _inLastSnapshotMessageNumber;
 	u8 _inMsgData[ID_MAX_MSG_LENGTH];
 	u8 _inEntityBaselines[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol. Must be zeroed initially.
+	u8 _inEntitySharedBaselines[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityShared)]; // Type depends on protocol. Must be zeroed initially.
 	u8 _inParseEntities[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityState)]; // Type depends on protocol.
+	u8 _inParseEntitiesShared[ID_MAX_PARSE_ENTITIES * sizeof(idLargestEntityShared)]; // Type depends on protocol.
 	u8 _inSnapshots[PACKET_BACKUP * sizeof(idLargestClientSnapshot)]; // Type depends on protocol.
 	s32 _inEntityEventTimesMs[MAX_GENTITIES]; // The server time, in ms, of the last event for a given entity.
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.

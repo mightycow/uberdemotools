@@ -308,8 +308,10 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 		HANDLER("rrscores", ParseQLScoresRROld),
 		HANDLER("scores_rr", ParseQLScoresRR),
 		HANDLER("print", ParsePrint),
-		HANDLER("ws", ParseWolfWeapStats),
-		HANDLER("sc", ParseWolfSC)
+		HANDLER("ws", ParseWeapStats),
+		HANDLER("sc", ParseSC),
+		HANDLER("sc0", ParseScores),
+		HANDLER("sc1", ParseScores)
 	};
 #undef HANDLER
 	/*
@@ -527,9 +529,41 @@ void udtParserPlugInStats::ParseScores()
 	{
 		ParseWolfScores();
 	}
+	else if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::ET))
+	{
+		ParseETScores();
+	}
 	else
 	{
 		ParseQ3Scores();
+	}
+}
+
+void udtParserPlugInStats::ParseSC()
+{
+	if (AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
+	{
+		ParseWolfSC();
+	}
+	else
+	{
+		ParseETSC();
+	}
+}
+
+void udtParserPlugInStats::ParseWeapStats()
+{
+	if (AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::RTCW))
+	{
+		ParseWolfWeapStats();
+	}
+	else if (_analyzer.Mod() == udtMod::Legacy)
+	{
+		ParseLegacyWeapStats();
+	}
+	else
+	{
+		ParseETMainWeapStats();
 	}
 }
 
@@ -2531,6 +2565,57 @@ void udtParserPlugInStats::ParseCPMAPrintStatsTeam(const udtString& message)
 	}
 }
 
+void udtParserPlugInStats::ParseETScores()
+{
+	// scores command can come in 2 parts (sc0 and sc1)
+	// if the sc0 exceeds command length limit
+	const bool firstPart = udtString::EqualsNoCase(_tokenizer->GetArg(0), "sc0");
+	s32 offset = firstPart ? 4 : 2;
+
+	s32 scoreCount = GetValue(offset - 1);
+	if (scoreCount < 0)
+	{
+		return;
+	}
+
+	scoreCount = udt_min(scoreCount, 64);
+
+	static const udtStatsField teamFields[] =
+	{
+		TEAM_FIELD(Score, 0)
+	};
+
+	ParseTeamFields(0, teamFields, (s32)UDT_COUNT_OF(teamFields), 1);
+	ParseTeamFields(1, teamFields, (s32)UDT_COUNT_OF(teamFields), 2);
+
+	if ((s32)_tokenizer->GetArgCount() != 4 + (scoreCount * 7))
+	{
+		return;
+	}
+
+	static const udtStatsField playerFields[] =
+	{
+		PLAYER_FIELD(Score, 0),
+		PLAYER_FIELD(Ping, 1),
+		PLAYER_FIELD(Time, 2)
+		// skipped 3: powerups
+		// skipped 4: scoreflags
+		// skipped 5: respawnsleft
+	};
+
+	for (s32 i = 0; i < scoreCount; ++i)
+	{
+		const s32 clientNumber = GetValue(offset);
+		if (clientNumber >= 0 && clientNumber < 64)
+		{
+			_playerIndices[i] = (u8)clientNumber;
+			ParsePlayerFields(clientNumber, playerFields, (s32)UDT_COUNT_OF(playerFields), offset + 1);
+		}
+
+		offset += 7;
+	}
+}
+
 void udtParserPlugInStats::ParseWolfScores()
 {
 	if(_tokenizer->GetArgCount() < 2)
@@ -2660,6 +2745,184 @@ void udtParserPlugInStats::ParseWolfWeapStats()
 		SetPlayerField(clientNumber, udtPlayerStatsField::DamageReceived, GetValue(token++));
 		SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamage, GetValue(token++));
 		SetPlayerField(clientNumber, udtPlayerStatsField::GibbedBodies, GetValue(token++));
+	}
+}
+
+void udtParserPlugInStats::ParseLegacyWeapStats()
+{
+	if (_tokenizer->GetArgCount() < 1 + 3)
+	{
+		return;
+	}
+
+	s32 token = 1;
+	const s32 clientNumber = GetValue(token++);
+	token++; // skipped: rounds
+	const u32 weaponMask = (u32)GetValue(token++);
+	if (weaponMask == 0)
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Hits, Offset + 0), \
+	PLAYER_FIELD(Weapon##Shots, Offset + 1), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 2), \
+	PLAYER_FIELD(Weapon##Deaths, Offset + 3), \
+	PLAYER_FIELD(Weapon##Headshots, Offset + 4)
+
+		const udtStatsField weaponFields[] =
+		{
+			WEAPON_FIELDS(Knife, 0),
+			WEAPON_FIELDS(KnifeKabar, 0),
+			WEAPON_FIELDS(Luger, 0),
+			WEAPON_FIELDS(Colt, 0),
+			WEAPON_FIELDS(MP40, 0),
+			WEAPON_FIELDS(Thompson, 0),
+			WEAPON_FIELDS(Sten, 0),
+			WEAPON_FIELDS(FG42, 0),
+			WEAPON_FIELDS(Panzerfaust, 0),
+			WEAPON_FIELDS(Bazooka, 0),
+			WEAPON_FIELDS(Flamethrower, 0),
+			WEAPON_FIELDS(Grenade, 0),
+			WEAPON_FIELDS(Mortar, 0),
+			WEAPON_FIELDS(Mortar2, 0),
+			WEAPON_FIELDS(Dynamite, 0),
+			WEAPON_FIELDS(Airstrike, 0),
+			WEAPON_FIELDS(Artillery, 0),
+			WEAPON_FIELDS(Satchel, 0),
+			WEAPON_FIELDS(RifleGrenade, 0),
+			WEAPON_FIELDS(Landmine, 0),
+			WEAPON_FIELDS(MG42, 0),
+			WEAPON_FIELDS(Browning, 0),
+			WEAPON_FIELDS(Garand, 0),
+			WEAPON_FIELDS(K43, 0),
+			WEAPON_FIELDS(Garand, 0),
+			WEAPON_FIELDS(K43, 0),
+			WEAPON_FIELDS(MP34, 0),
+			WEAPON_FIELDS(Syringe, 0)
+		};
+
+#undef WEAPON_FIELDS
+
+	bool hasStats = false;
+	for (u32 i = 0, fieldIndex = 0; i < 28; ++i, fieldIndex += 5)
+	{
+		if ((weaponMask & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32 hits = GetValue(token + 0);
+		const s32 atts = GetValue(token + 1);
+		const s32 kills = GetValue(token + 2);
+		const s32 deaths = GetValue(token + 3);
+		// skipped: headshots
+		ParsePlayerFields(clientNumber, weaponFields + fieldIndex, 5, token);
+		token += 5;
+		if (atts > 0 || hits > 0 || kills > 0 || deaths > 0)
+		{
+			hasStats = true;
+		}
+	}
+
+	if (hasStats)
+	{
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageGiven, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageReceived, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamage, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamageReceived, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::GibbedBodies, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::Suicides, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamKills, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamGibbedBodies, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TimePlayed, GetValue(token++));
+	}
+}
+
+void udtParserPlugInStats::ParseETMainWeapStats()
+{
+	if (_tokenizer->GetArgCount() < 1 + 3)
+	{
+		return;
+	}
+
+	s32 token = 1;
+	const s32 clientNumber = GetValue(token++);
+	token++; // skipped: rounds
+	const u32 weaponMask = (u32)GetValue(token++);
+	if (weaponMask == 0)
+	{
+		return;
+	}
+
+#define WEAPON_FIELDS(Weapon, Offset) \
+	PLAYER_FIELD(Weapon##Hits, Offset + 0), \
+	PLAYER_FIELD(Weapon##Shots, Offset + 1), \
+	PLAYER_FIELD(Weapon##Kills, Offset + 2), \
+	PLAYER_FIELD(Weapon##Deaths, Offset + 3), \
+	PLAYER_FIELD(Weapon##Headshots, Offset + 4)
+
+	const udtStatsField weaponFields[] =
+	{
+		WEAPON_FIELDS(Knife, 0),
+		WEAPON_FIELDS(Luger, 0),
+		WEAPON_FIELDS(Colt, 0),
+		WEAPON_FIELDS(MP40, 0),
+		WEAPON_FIELDS(Thompson, 0),
+		WEAPON_FIELDS(Sten, 0),
+		WEAPON_FIELDS(FG42, 0),
+		WEAPON_FIELDS(Panzerfaust, 0),
+		WEAPON_FIELDS(Flamethrower, 0),
+		WEAPON_FIELDS(Grenade, 0),
+		WEAPON_FIELDS(Mortar, 0),
+		WEAPON_FIELDS(Dynamite, 0),
+		WEAPON_FIELDS(Airstrike, 0),
+		WEAPON_FIELDS(Artillery, 0),
+		WEAPON_FIELDS(Syringe, 0),
+		WEAPON_FIELDS(Smoke, 0),
+		WEAPON_FIELDS(Satchel, 0),
+		WEAPON_FIELDS(RifleGrenade, 0),
+		WEAPON_FIELDS(Landmine, 0),
+		WEAPON_FIELDS(MG42, 0),
+		WEAPON_FIELDS(Garand, 0),
+		WEAPON_FIELDS(K43, 0)
+	};
+
+#undef WEAPON_FIELDS
+
+	bool hasStats = false;
+	for (u32 i = 0, fieldIndex = 0; i < 22; ++i, fieldIndex += 5)
+	{
+		if ((weaponMask & (1 << i)) == 0)
+		{
+			continue;
+		}
+
+		const s32 hits = GetValue(token + 0);
+		const s32 atts = GetValue(token + 1);
+		const s32 kills = GetValue(token + 2);
+		const s32 deaths = GetValue(token + 3);
+		// skipped: headshots
+		ParsePlayerFields(clientNumber, weaponFields + fieldIndex, 5, token);
+		token += 5;
+		if (atts > 0 || hits > 0 || kills > 0 || deaths > 0)
+		{
+			hasStats = true;
+		}
+	}
+
+	if (hasStats)
+	{
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageGiven, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::DamageReceived, GetValue(token++));
+		SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamage, GetValue(token++));
+
+		if (_analyzer.Mod() == udtMod::ETPro)
+		{
+			SetPlayerField(clientNumber, udtPlayerStatsField::TeamDamageReceived, GetValue(token++));
+			SetPlayerField(clientNumber, udtPlayerStatsField::GibbedBodies, GetValue(token++));
+		}
 	}
 }
 
@@ -2864,6 +3127,225 @@ void udtParserPlugInStats::ParseWolfSCStatsTeam(const udtString& cleanMessage)
 	{
 		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
 		if(header.TeamField < 0)
+		{
+			continue;
+		}
+
+		s32 value = 0;
+		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+		StringParseInt(value, section.GetPtr());
+		SetTeamField(teamIndex, (udtTeamStatsField::Id)header.TeamField, value);
+	}
+}
+
+void udtParserPlugInStats::ParseETSC()
+{
+	if (_tokenizer->GetArgCount() != 2)
+	{
+		return;
+	}
+
+	udtVMScopedStackAllocator allocatorScope(*TempAllocator);
+
+	const udtString message = _tokenizer->GetArg(1);
+	udtString cleanMessage = udtString::NewCloneFromRef(*TempAllocator, message);
+	udtString::CleanUp(cleanMessage, _protocol);
+
+	// atoi() - legacy mod after v2.82.1-140-g9f3f7f2
+	if (udtString::IsNullOrEmpty(cleanMessage) ||
+		(_analyzer.Mod() == udtMod::Legacy && (udtString::StartsWith(cleanMessage, "----") || atoi(cleanMessage.GetPtr()))))
+	{
+		return;
+	}
+
+	if (udtString::StartsWith(cleanMessage, "GUID") || // Legacy mod
+		udtString::StartsWith(cleanMessage, "TEAM")) // VET
+	{
+		ParseETSCHeader(cleanMessage);
+	}
+	else if (udtString::StartsWith(cleanMessage, "          Allies") || // Legacy mod
+		udtString::StartsWith(cleanMessage, "          Axis") || // Legacy mod
+		udtString::StartsWith(cleanMessage, "----")) // VET
+	{
+		ParseETSCStatsTeam(cleanMessage);
+	}
+	else
+	{
+		ParseETSCStatsPlayer(cleanMessage);
+	}
+}
+
+void udtParserPlugInStats::ParseETSCHeader(const udtString& cleanMessage)
+{
+	udtString message = cleanMessage;
+
+	struct Field
+	{
+		const char* Name;
+		s16 PlayerField;
+		s16 TeamField;
+	};
+
+#define FIELD(Name, Field) { Name, (s16)udtPlayerStatsField::Field, (s16)udtTeamStatsField::Field }
+	static const Field fields[] =
+	{
+		{ "Player", -1, -666 },
+		FIELD("TmX", TimePlayedAxis),
+		FIELD("TmL", TimePlayedAllies),
+		FIELD("TmP", TimePlayed),
+		FIELD("Kll", Kills), // VET
+		FIELD("Dth", Deaths), // VET
+		FIELD("Sui", Suicides), // VET
+		FIELD("SK", Suicides),
+		FIELD("TK", TeamKills), // VET
+		FIELD("Eff", Efficiency), // VET
+		FIELD("Gib", GibbedBodies),
+		FIELD("DG", DamageGiven), // VET
+		FIELD("DR", DamageReceived), // VET
+		FIELD("TDG", TeamDamage),
+		FIELD("TD", TeamDamage), // VET
+		FIELD("TDR", TeamDamageReceived),
+		FIELD("Score", Score) // VET
+	};
+#undef FIELD
+
+	idTokenizer* const tokenizer = _plugInTokenizer;
+	tokenizer->Tokenize(message.GetPtr());
+
+	const u32 tokenCount = tokenizer->GetArgCount();
+	const u32 fieldCount = (u32)UDT_COUNT_OF(fields);
+	const u32 offset = _analyzer.Mod() == udtMod::Legacy ? 4 : 3;
+	u32& headerCount = _wolfSCStats.HeaderCount;
+	headerCount = 0;
+	for (u32 t = 0; t < tokenCount; ++t)
+	{
+		const udtString token = tokenizer->GetArg(t);
+		for (u32 f = 0; f < fieldCount; ++f)
+		{
+			if (udtString::Equals(token, fields[f].Name))
+			{
+				udtWolfSCStats::Header& header = _wolfSCStats.Headers[headerCount++];
+				header.PlayerField = fields[f].PlayerField;
+				header.TeamField = fields[f].TeamField;
+
+				u16 startOffset = 0;
+				u16 length = 0;
+				if (t == 0)
+				{
+					length = (u16)tokenizer->GetArgOffset(1);
+				}
+				else if (t < offset && t + 1 < tokenCount)
+				{
+					const u16 endOffset = (u16)tokenizer->GetArgOffset(t + 1) - 1;
+					startOffset = (u16)tokenizer->GetArgOffset(t);
+					length = endOffset - startOffset;
+				}
+				else if (t + 1 < tokenCount)
+				{
+					const u16 endOffset = (u16)tokenizer->GetArgOffset(t) + (u16)tokenizer->GetArgLength(t);
+					startOffset = (u16)tokenizer->GetArgOffset(t - 1) + (u16)tokenizer->GetArgLength(t - 1);
+					length = endOffset - startOffset;
+				}
+				else
+				{
+					startOffset = (u16)tokenizer->GetArgOffset(t - 1) + (u16)tokenizer->GetArgLength(t - 1);
+					length = (u16)message.GetLength() - startOffset;
+				}
+				header.StringStart = startOffset;
+				header.StringLength = length;
+
+				break;
+			}
+		}
+	}
+}
+
+void udtParserPlugInStats::ParseETSCStatsPlayer(const udtString& message)
+{
+	const u32 headerCount = _wolfSCStats.HeaderCount;
+	if (headerCount < 2)
+	{
+		return;
+	}
+
+	u32 nameLength = 0;
+	udtString playerName;
+	for (u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if (header.PlayerField == -1)
+		{
+			nameLength = header.StringLength;
+			playerName = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+			udtString::CleanUp(playerName, _protocol);
+			udtString::TrimTrailingCharacter(playerName, ' ');
+			break;
+		}
+	}
+
+	s32 clientNumber = -1;
+	for (u32 i = 0; i < 64; ++i)
+	{
+		if (_playerStats[i].CleanName == UDT_U32_MAX)
+		{
+			continue;
+		}
+
+		// compare names only up to header.StringLength because they can be truncated in sc stats
+		const udtString cleanName = udtString::NewConstRef(_stringAllocator.GetStringAt(_playerStats[i].CleanName),
+			_playerStats[i].CleanNameLength > nameLength ? nameLength : _playerStats[i].CleanNameLength);
+
+		if (udtString::EqualsNoCase(playerName, cleanName))
+		{
+			clientNumber = (s32)i;
+			break;
+		}
+	}
+
+	if (clientNumber == -1)
+	{
+		return;
+	}
+
+	for (u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if (header.PlayerField < 0)
+		{
+			continue;
+		}
+
+		s32 value = 0;
+		const udtString section = udtString::NewSubstringClone(*TempAllocator, message, header.StringStart, header.StringLength);
+		StringParseInt(value, section.GetPtr());
+		SetPlayerField(clientNumber, (udtPlayerStatsField::Id)header.PlayerField, value);
+	}
+}
+
+void udtParserPlugInStats::ParseETSCStatsTeam(const udtString& cleanMessage)
+{
+	const u32 headerCount = _wolfSCStats.HeaderCount;
+	if (headerCount < 2)
+	{
+		return;
+	}
+
+	udtString message = cleanMessage;
+	udtString::TrimLeadingCharacter(message, ' '); // Legacy mod
+	udtString::TrimLeadingCharacter(message, '-'); // VET
+
+	_wolfSCStats.TeamIndex = udtString::StartsWithNoCase(message, "Axis") ? 0 : udtString::StartsWithNoCase(message, "Allies") ? 1 : 2;
+
+	if (_analyzer.Mod() == udtMod::Legacy)
+	{
+		message = cleanMessage;
+	}
+
+	const s32 teamIndex = (s32)_wolfSCStats.TeamIndex;
+	for (u32 i = 0; i < headerCount; ++i)
+	{
+		const udtWolfSCStats::Header& header = _wolfSCStats.Headers[i];
+		if (header.TeamField < 0)
 		{
 			continue;
 		}

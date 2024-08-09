@@ -661,3 +661,42 @@ void udtProtocolConverter3to68::ConvertCommand(udtCommandConversion& result, udt
 		}
 	}
 }
+
+void udtProtocolConverter284to84::ConvertSnapshot(idLargestClientSnapshot& outSnapshot, const idClientSnapshotBase& inSnapshot)
+{
+	(idClientSnapshotBase&)outSnapshot = inSnapshot;
+	outSnapshot.ps = *(idPlayerState84*)GetTvPlayerState((idClientSnapshotBase*)&inSnapshot, udtProtocol::Dm284, ConversionInfo->ClientNum);
+}
+
+void udtProtocolConverter284to84::ConvertEntityState(idLargestEntityState& outEntityState, const idEntityStateBase& inEntityState)
+{
+	idEntityState84& out = (idEntityState84&)outEntityState;
+	idEntityState84& in = (idEntityState84&)inEntityState;
+	out = in;
+	(idEntityStateBase&)outEntityState = inEntityState;
+}
+
+void udtProtocolConverter284to84::ConvertConfigString(udtConfigStringConversion& result, udtVMLinearAllocator&, s32 inIndex, const char* configString, u32 configStringLength)
+{
+	result.String = udtString::NewConstRef(configString, configStringLength);
+	result.Index = inIndex;
+	result.NewString = false;
+}
+
+void udtProtocolConverter284to84::ConvertCommand(udtCommandConversion& result, udtVMLinearAllocator&, const idTokenizer& tokenizer)
+{
+	result.String = udtString::NewConstRef(tokenizer.GetOriginalCommand());
+	result.NewString = false;
+
+	char clientNum[3];
+	sprintf(clientNum, "%d", ConversionInfo->ClientNum);
+
+	// TODO:Krzysiek - remove commands not meant for that client
+	if (udtString::EqualsNoCase(tokenizer.GetArg(0), "bstats") ||
+		udtString::EqualsNoCase(tokenizer.GetArg(0), "bstatsb") ||
+		(udtString::EqualsNoCase(tokenizer.GetArg(0), "gstats") && !udtString::Equals(tokenizer.GetArg(1), clientNum)))
+	{
+		result.String = udtString::NewNull();
+		result.NewString = true;
+	}
+}

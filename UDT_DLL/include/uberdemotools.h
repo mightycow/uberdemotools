@@ -146,8 +146,10 @@ struct udtErrorCode
 	N(67, ".dm_67", "Quake 3 1.31",      udtProtocolFlags::Quake3) \
 	N(68, ".dm_68", "Quake 3 1.32",      udtProtocolFlags::Quake3) \
 	N(73, ".dm_73", "Quake Live",        udtProtocolFlags::QuakeLive) \
+	N(84, ".dm_84", "ET 2.6b",           udtProtocolFlags::ET) \
 	N(90, ".dm_90", "Quake Live",        udtProtocolFlags::QuakeLive) \
-	N(91, ".dm_91", "Quake Live",        udtProtocolFlags::QuakeLive)
+	N(91, ".dm_91", "Quake Live",        udtProtocolFlags::QuakeLive) \
+	N(284, ".tv_84", "ETTV",             udtProtocolFlags::ET) \
 
 #define UDT_PROTOCOL_ITEM(Number, Ext, Desc, Flags) Dm##Number,
 struct udtProtocol
@@ -283,7 +285,37 @@ struct udtParserPlugIn
 	N(Medkit, "medkit", 53) \
 	N(Pliers, "pliers", 54) \
 	N(SmokeGrenade, "smoke grenade", 55) \
-	N(Binoculars, "binoculars", 56)
+	N(Binoculars, "binoculars", 56) \
+	N(MapMortar, "map mortar", 57) \
+	N(SmokeMarker, "smoke marker", 58) \
+	N(Kar98, "kar98", 59) \
+	N(Landmine, "landmine", 60) \
+	N(Satchel, "satchel", 61) \
+	N(SatchelDet, "satchel detonator", 62) \
+	N(MobileMg42, "mobile mg42", 63) \
+	N(K43, "k43", 64) \
+	N(DummyMg42, "dummy mg42", 65) \
+	N(AkimboColt, "akimbo colt", 66) \
+	N(AkimboLuger, "akimbo luger", 67) \
+	N(Gpg40, "gpg40", 68) \
+	N(M7, "m7", 69) \
+	N(SilencedColt, "silenced colt", 70) \
+	N(GarandScope, "garand scope", 71) \
+	N(K43Scope, "k43 scope", 72) \
+	N(MortarSet, "mortar set", 73) \
+	N(MedicAdrenaline, "medic adrenaline", 74) \
+	N(AkimboSilencedColt, "akimbo silenced colt", 75) \
+	N(AkimboSilencedLuger, "akimbo silenced luger", 76) \
+	N(MobileMg42Set, "mobile mg42 set", 77) \
+	N(KnifeKabar, "knife kabar", 78) \
+	N(MobileBrowning, "mobile browning", 79) \
+	N(MobileBrowningSet, "mobile browning set", 80) \
+	N(Mortar2, "mortar2", 81) \
+	N(Mortar2Set, "mortar2 set", 82) \
+	N(Bazooka, "bazooka", 83) \
+	N(MP34, "mp34", 84) \
+	N(Airstrike, "airstrike", 85) \
+	N(Carbine, "carbine", 86)
 
 #define UDT_WEAPON_ITEM(Enum, Desc, Bit) Enum = Bit,
 struct udtWeapon
@@ -316,7 +348,13 @@ struct udtWeapon
 	N(Wolf_Breather, "breather", 16) \
 	N(Wolf_NoFatigue, "stamina", 17) \
 	N(Wolf_Ready, "ready", 18) \
-	N(Wolf_Blackout, "speclock", 19)
+	N(Wolf_Blackout, "speclock", 19) \
+	N(ET_Ops_Disguised, "Covert ops disguised", 20) \
+	N(ET_Ops_Class_1, "Covert ops class 1", 21) \
+	N(ET_Ops_Class_2, "Covert ops class 2", 22) \
+	N(ET_Ops_Class_3, "Covert ops class 3", 23) \
+	N(ET_Adrenaline, "Adrenaline", 24)
+
 
 #define UDT_POWER_UP_ITEM(Enum, Desc, Bit) Enum = Bit,
 struct udtPowerUp
@@ -406,7 +444,43 @@ struct udtPowerUpMask
 	N(Explosive, "explosive", PlayerKill, 62) \
 	N(Syringe, "syringe", PlayerKill, 63) \
 	N(PoisonGas, "poison gas", PlayerKill, 64) \
-	N(GrenadeLauncher, "grenade launcher", PlayerKill, 65)
+	N(GrenadeLauncher, "grenade launcher", PlayerKill, 65) \
+	N(Browning, "tank-mounted browning", PlayerKill, 66) \
+	N(Mg42, "tank-mounted mg42", PlayerKill, 67) \
+	N(MapMortar, "map mortar", PlayerKill, 68) \
+	N(MapMortarSplash, "map mortar splash", PlayerKill, 69) \
+	N(Ammo, "ammo", PlayerKill, 70) \
+	N(Carbine, "carbine", PlayerKill, 71) \
+	N(Kar98, "kar98", PlayerKill, 72) \
+	N(Gpg40, "gpg40", PlayerKill, 73) \
+	N(M7, "M7", PlayerKill, 74) \
+	N(Landmine, "Landmine", PlayerKill, 75) \
+	N(Satchel, "satchel", PlayerKill, 76) \
+	N(SmokeBomb, "smoke bomb", PlayerKill, 77) \
+	N(MobileMg42, "mobile mg42", PlayerKill, 78) \
+	N(SilencedColt, "silenced colt", PlayerKill, 79) \
+	N(GarandScope, "garand scope", PlayerKill, 80) \
+	N(CrushConstruction, "crush construction", PlayerKill, 81) \
+	N(CrushConstructionDeath, "crush construction death", PlayerKill, 82) \
+	N(CrushConstructionDeathNoAttacker, "crush construction death no attacker", PlayerKill, 83) \
+	N(K43, "k43", PlayerKill, 84) \
+	N(K43Scope, "k43 scope", PlayerKill, 85) \
+	N(AkimboColt, "akimbo colt", PlayerKill, 86) \
+	N(AkimboLuger, "akimbo luger", PlayerKill, 87) \
+	N(AkimboSilencedColt, "akimbo silenced colt", PlayerKill, 88) \
+	N(AkimboSilencedLuger, "akimbo silenced luger", PlayerKill, 89) \
+	N(SmokeGrenade, "smoke grenade", PlayerKill, 90) \
+	N(SwapPlaces, "swap places", PlayerKill, 91) \
+	N(SwitchTeam, "switch team", PlayerKill, 92) \
+	N(Shove, "shove", PlayerKill, 93) \
+	N(KnifeKabar, "knife kabar", PlayerKill, 94) \
+	N(MobileBrowning, "mobile browning", PlayerKill, 95) \
+	N(Mortar2, "Mortar2", PlayerKill, 96) \
+	N(Bazooka, "bazooka", PlayerKill, 97) \
+	N(Backstab, "backstab", PlayerKill, 98) \
+	N(MP43, "mp43", PlayerKill, 99) \
+	N(Cross, "cross", PlayerKill, 100) \
+	N(Tripmine, "tripmine", PlayerKill, 101)
 
 #define UDT_MEAN_OF_DEATH_ITEM(Enum, Desc, KillType, Bit) Enum = Bit,
 struct udtMeanOfDeath
@@ -581,9 +655,13 @@ struct udtMatchStatsDataType
 	N(DamageGiven, "damage given", BiggerWins, Positive) \
 	N(DamageReceived, "damage received", SmallerWins, Positive) \
 	N(TeamDamage, "team damage", SmallerWins, Positive) \
+	N(TeamDamageReceived, "team damage received", SmallerWins, Positive) \
 	N(Efficiency, "efficiency", BiggerWins, Positive) \
 	N(Headshots, "headshots", BiggerWins, Positive) \
 	N(Revives, "revives", BiggerWins, Positive) \
+	N(TimePlayedAxis, "time played as axis", BiggerWins, Positive) \
+	N(TimePlayedAllies, "time played as allies", BiggerWins, Positive) \
+	N(TimePlayed, "time played", BiggerWins, Positive) \
 	N(TeleFrags, "telefrags", BiggerWins, Positive) \
 	N(ArmorTaken, "armor taken", BiggerWins, Positive) \
 	N(HealthTaken, "health taken", BiggerWins, Positive) \
@@ -611,6 +689,7 @@ struct udtMatchStatsDataType
 	N(RespawnsLeft, "respawns left", NeitherWins, WolfRespawnsLeft) \
 	N(PlayerClass, "player class", NeitherWins, WolfClass) \
 	N(GibbedBodies, "gibbed bodies", BiggerWins, Positive) \
+	N(TeamGibbedBodies, "team gibbed bodies", BiggerWins, Positive) \
 	N(GauntletKills, "gauntlet kills", BiggerWins, Positive) \
 	N(GauntletAccuracy, "gauntlet accuracy", BiggerWins, Percentage) \
 	N(GauntletShots, "gauntlet shots", BiggerWins, Positive) \
@@ -724,6 +803,13 @@ struct udtMatchStatsDataType
 	N(KnifeDeaths, "knife deaths", SmallerWins, Positive) \
 	N(KnifeHeadshots, "knife headshots", BiggerWins, Positive) \
 	N(KnifeAccuracy, "knife accuracy", BiggerWins, Percentage) \
+	N(KnifeKabarKills, "knife kabar kills", BiggerWins, Positive) \
+	N(KnifeKabarShots, "knife kabar attacks", BiggerWins, Positive) \
+	N(KnifeKabarHits, "knife kabar hits", BiggerWins, Positive) \
+	N(KnifeKabarDamage, "knife kabar damage", BiggerWins, Positive) \
+	N(KnifeKabarDeaths, "knife kabar deaths", SmallerWins, Positive) \
+	N(KnifeKabarHeadshots, "knife kabar headshots", BiggerWins, Positive) \
+	N(KnifeKabarAccuracy, "knife kabar accuracy", BiggerWins, Percentage) \
 	N(LugerKills, "luger kills", BiggerWins, Positive) \
 	N(LugerShots, "luger shots", BiggerWins, Positive) \
 	N(LugerHits, "luger hits", BiggerWins, Positive) \
@@ -773,6 +859,13 @@ struct udtMatchStatsDataType
 	N(PanzerfaustDeaths, "panzerfaust deaths", SmallerWins, Positive) \
 	N(PanzerfaustHeadshots, "panzerfaust headshots", BiggerWins, Positive) \
 	N(PanzerfaustAccuracy, "panzerfaust accuracy", BiggerWins, Percentage) \
+	N(BazookaKills, "bazooka kills", BiggerWins, Positive) \
+	N(BazookaShots, "bazooka shots", BiggerWins, Positive) \
+	N(BazookaHits, "bazooka hits", BiggerWins, Positive) \
+	N(BazookaDamage, "bazooka damage", BiggerWins, Positive) \
+	N(BazookaDeaths, "bazooka deaths", SmallerWins, Positive) \
+	N(BazookaHeadshots, "bazooka headshots", BiggerWins, Positive) \
+	N(BazookaAccuracy, "bazooka accuracy", BiggerWins, Percentage) \
 	N(FlamethrowerKills, "flamethrower kills", BiggerWins, Positive) \
 	N(FlamethrowerShots, "flamethrower shots", BiggerWins, Positive) \
 	N(FlamethrowerHits, "flamethrower hits", BiggerWins, Positive) \
@@ -794,6 +887,13 @@ struct udtMatchStatsDataType
 	N(MortarDeaths, "mortar deaths", SmallerWins, Positive) \
 	N(MortarHeadshots, "mortar headshots", BiggerWins, Positive) \
 	N(MortarAccuracy, "mortar accuracy", BiggerWins, Percentage) \
+	N(Mortar2Kills, "mortar2 kills", BiggerWins, Positive) \
+	N(Mortar2Shots, "mortar2 shots", BiggerWins, Positive) \
+	N(Mortar2Hits, "mortar2 hits", BiggerWins, Positive) \
+	N(Mortar2Damage, "mortar2 damage", BiggerWins, Positive) \
+	N(Mortar2Deaths, "mortar2 deaths", SmallerWins, Positive) \
+	N(Mortar2Headshots, "mortar2 headshots", BiggerWins, Positive) \
+	N(Mortar2Accuracy, "mortar2 accuracy", BiggerWins, Percentage) \
 	N(DynamiteKills, "dynamite kills", BiggerWins, Positive) \
 	N(DynamiteShots, "dynamite shots", BiggerWins, Positive) \
 	N(DynamiteHits, "dynamite hits", BiggerWins, Positive) \
@@ -815,6 +915,27 @@ struct udtMatchStatsDataType
 	N(ArtilleryDeaths, "artillery deaths", SmallerWins, Positive) \
 	N(ArtilleryHeadshots, "artillery headshots", BiggerWins, Positive) \
 	N(ArtilleryAccuracy, "artillery accuracy", BiggerWins, Percentage) \
+	N(SatchelKills, "satchel kills", BiggerWins, Positive) \
+	N(SatchelShots, "satchel shots", BiggerWins, Positive) \
+	N(SatchelHits, "satchel hits", BiggerWins, Positive) \
+	N(SatchelDamage, "satchel damage", BiggerWins, Positive) \
+	N(SatchelDeaths, "satchel deaths", SmallerWins, Positive) \
+	N(SatchelHeadshots, "satchel headshots", BiggerWins, Positive) \
+	N(SatchelAccuracy, "satchel accuracy", BiggerWins, Percentage) \
+	N(RifleGrenadeKills, "grenade launcher kills", BiggerWins, Positive) \
+	N(RifleGrenadeShots, "grenade launcher shots", BiggerWins, Positive) \
+	N(RifleGrenadeHits, "grenade launcher hits", BiggerWins, Positive) \
+	N(RifleGrenadeDamage, "grenade launcher damage", BiggerWins, Positive) \
+	N(RifleGrenadeDeaths, "grenade launcher deaths", SmallerWins, Positive) \
+	N(RifleGrenadeHeadshots, "grenade launcher headshots", BiggerWins, Positive) \
+	N(RifleGrenadeAccuracy, "grenade launcher accuracy", BiggerWins, Percentage) \
+	N(LandmineKills, "landmine kills", BiggerWins, Positive) \
+	N(LandmineShots, "landmine shots", BiggerWins, Positive) \
+	N(LandmineHits, "landmine hits", BiggerWins, Positive) \
+	N(LandmineDamage, "landmine damage", BiggerWins, Positive) \
+	N(LandmineDeaths, "landmine deaths", SmallerWins, Positive) \
+	N(LandmineHeadshots, "landmine headshots", BiggerWins, Positive) \
+	N(LandmineAccuracy, "landmine accuracy", BiggerWins, Percentage) \
 	N(SyringeKills, "syringe kills", BiggerWins, Positive) \
 	N(SyringeShots, "syringe shots", BiggerWins, Positive) \
 	N(SyringeHits, "syringe hits", BiggerWins, Positive) \
@@ -836,6 +957,13 @@ struct udtMatchStatsDataType
 	N(MG42Deaths, "MG42 deaths", SmallerWins, Positive) \
 	N(MG42Headshots, "MG42 headshots", BiggerWins, Positive) \
 	N(MG42Accuracy, "MG42 accuracy", BiggerWins, Percentage) \
+	N(BrowningKills, "browning kills", BiggerWins, Positive) \
+	N(BrowningShots, "browning shots", BiggerWins, Positive) \
+	N(BrowningHits, "browning hits", BiggerWins, Positive) \
+	N(BrowningDamage, "browning damage", BiggerWins, Positive) \
+	N(BrowningDeaths, "browning deaths", SmallerWins, Positive) \
+	N(BrowningHeadshots, "browning headshots", BiggerWins, Positive) \
+	N(BrowningAccuracy, "browning accuracy", BiggerWins, Percentage) \
 	N(RifleKills, "rifle kills", BiggerWins, Positive) \
 	N(RifleShots, "rifle shots", BiggerWins, Positive) \
 	N(RifleHits, "rifle hits", BiggerWins, Positive) \
@@ -843,6 +971,34 @@ struct udtMatchStatsDataType
 	N(RifleDeaths, "rifle deaths", SmallerWins, Positive) \
 	N(RifleHeadshots, "rifle headshots", BiggerWins, Positive) \
 	N(RifleAccuracy, "rifle accuracy", BiggerWins, Percentage) \
+	N(Kar98Kills, "kar98 kills", BiggerWins, Positive) \
+	N(Kar98Shots, "kar98 shots", BiggerWins, Positive) \
+	N(Kar98Hits, "kar98 hits", BiggerWins, Positive) \
+	N(Kar98Damage, "kar98 damage", BiggerWins, Positive) \
+	N(Kar98Deaths, "kar98 deaths", SmallerWins, Positive) \
+	N(Kar98Headshots, "kar98 headshots", BiggerWins, Positive) \
+	N(Kar98Accuracy, "kar98 accuracy", BiggerWins, Percentage) \
+	N(GarandKills, "garand kills", BiggerWins, Positive) \
+	N(GarandShots, "garand shots", BiggerWins, Positive) \
+	N(GarandHits, "garand hits", BiggerWins, Positive) \
+	N(GarandDamage, "garand damage", BiggerWins, Positive) \
+	N(GarandDeaths, "garand deaths", SmallerWins, Positive) \
+	N(GarandHeadshots, "garand headshots", BiggerWins, Positive) \
+	N(GarandAccuracy, "garand accuracy", BiggerWins, Percentage) \
+	N(K43Kills, "k43 rifle kills", BiggerWins, Positive) \
+	N(K43Shots, "k43 rifle shots", BiggerWins, Positive) \
+	N(K43Hits, "k43 rifle hits", BiggerWins, Positive) \
+	N(K43Damage, "k43 rifle damage", BiggerWins, Positive) \
+	N(K43Deaths, "k43 rifle deaths", SmallerWins, Positive) \
+	N(K43Headshots, "k43 rifle headshots", BiggerWins, Positive) \
+	N(K43Accuracy, "k43 rifle accuracy", BiggerWins, Percentage) \
+	N(MP34Kills, "mp34 kills", BiggerWins, Positive) \
+	N(MP34Shots, "mp34 shots", BiggerWins, Positive) \
+	N(MP34Hits, "mp34 hits", BiggerWins, Positive) \
+	N(MP34Damage, "mp34 damage", BiggerWins, Positive) \
+	N(MP34Deaths, "mp34 deaths", SmallerWins, Positive) \
+	N(MP34Headshots, "mp34 headshots", BiggerWins, Positive) \
+	N(MP34Accuracy, "mp34 accuracy", BiggerWins, Percentage) \
 	N(VenomKills, "venom kills", BiggerWins, Positive) \
 	N(VenomShots, "venom shots", BiggerWins, Positive) \
 	N(VenomHits, "venom hits", BiggerWins, Positive) \
@@ -902,7 +1058,11 @@ struct udtPlayerStatsField
 	N(GibbedBodies, "gibbed bodies", BiggerWins, Positive) \
 	N(Headshots, "headshots", BiggerWins, Positive) \
 	N(Revives, "revives", BiggerWins, Positive) \
-	N(Accuracy, "accuracy", BiggerWins, Percentage)
+	N(Accuracy, "accuracy", BiggerWins, Percentage) \
+	N(TeamDamageReceived, "team damage received", SmallerWins, Positive) \
+	N(TimePlayedAxis, "time played as axis", BiggerWins, Positive) \
+	N(TimePlayedAllies, "time played as allies", BiggerWins, Positive) \
+	N(TimePlayed, "time played", BiggerWins, Percentage)
 
 #define UDT_TEAM_STATS_ITEM(Enum, Desc, Comp, Type) Enum,
 struct udtTeamStatsField
@@ -953,7 +1113,12 @@ struct udtGameTypeMask
 	N(Wolf_Objective, "MP", "Objective", udtGameTypeMask::Team) \
 	N(Wolf_Stopwatch, "SW", "Stopwatch", udtGameTypeMask::Team | udtGameTypeMask::RoundBased) \
 	N(Wolf_Checkpoint, "CP", "Checkpoint", udtGameTypeMask::Team) \
-	N(Wolf_CaptureAndHold, "CPH", "Capture and Hold", udtGameTypeMask::Team)
+	N(Wolf_CaptureAndHold, "CPH", "Capture and Hold", udtGameTypeMask::Team) \
+	N(Wolf_COOP, "COOP", "Co-Operative", udtGameTypeMask::None) \
+	N(Wolf_Wolf, "Wolf", "Wolf", udtGameTypeMask::Team) \
+	N(Wolf_Campaign, "Campaign", "Campaign", udtGameTypeMask::Team) \
+	N(Wolf_LMS, "LMS", "Last Man Standing", udtGameTypeMask::Team) \
+	N(Wolf_Mapvote, "MAPVOTE", "Map vote", udtGameTypeMask::Team)
 	
 #define UDT_GAME_TYPE_ITEM(Enum, ShortDesc, Desc, Flags) Enum,
 struct udtGameType
@@ -975,6 +1140,9 @@ struct udtGameType
 	N(Defrag, "DeFRaG") \
 	N(RTCWPro, "RtcwPro") \
 	N(RTCWOSP, "OSP") \
+	N(Legacy, "Legacy") \
+	N(ETPro, "ETPro") \
+	N(ETMain, "ETMain") \
 	N(Unknown, "Unknown")
 
 #define UDT_MOD_NAME_ITEM(Enum, Name) Enum,
@@ -999,7 +1167,9 @@ struct udtMod
 	N(DQL,   "QL",    "Default Quake Live") \
 	N(VRTCW, "VRTCW", "Vanilla Return to Castle Wolfenstein") \
 	N(RTCWPRO, "RtcwPro", "Return to Castle Wolfenstein RtcwPro") \
-	N(RTCWOSP, "RtCW OSP", "Return to Castle Wolfenstein OSP")
+	N(RTCWOSP, "RtCW OSP", "Return to Castle Wolfenstein OSP") \
+	N(VET, "VET", "Vanilla Wolfenstein Enemy Territory") \
+	N(ET, "ET", "Wolfenstein Enemy Territory")
 
 #define UDT_GAMEPLAY_ITEM(Enum, ShortName, LongName) Enum,
 struct udtGamePlay
@@ -1069,7 +1239,7 @@ struct udtPerfStatsField
 
 #define    UDT_MAX_MERGE_DEMO_COUNT             8
 #define    UDT_TEAM_STATS_MASK_BYTE_COUNT       8
-#define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    40
+#define    UDT_PLAYER_STATS_MASK_BYTE_COUNT    50
 
 
 #if defined(__cplusplus)
@@ -1571,6 +1741,13 @@ extern "C"
 	{
 		/* Of type udtProtocol::Id. */
 		u32 OutputProtocol;
+
+		/* Convert to this clientnum pov */
+		u32 ClientNum;
+
+		/* Pointer to cut time. */
+		/* May be NULL. */
+		const udtCut* Cut;
 
 		/* Ignore this. */
 		s32 Reserved1;
@@ -2493,6 +2670,10 @@ extern "C"
 
 	/* Returns zero if not a valid protocol. */
 	/* The protocol argument is of type udtProtocol::Id. */
+	UDT_API(u32) udtGetSizeOfIdEntityShared(u32 protocol);
+
+	/* Returns zero if not a valid protocol. */
+	/* The protocol argument is of type udtProtocol::Id. */
 	UDT_API(u32) udtGetSizeOfIdPlayerState(u32 protocol);
 
 	/* Returns zero if not a valid protocol. */
@@ -2634,6 +2815,8 @@ extern "C"
 #define	ID_MAX_CLIENTS	           64 /* max player count */
 #define ID_MAX_MSG_LENGTH       32768 /* max length of a message, which may be fragmented into multiple packets */
                                       /* Q3 16384 - RtCW/ET 32768 */
+#define ID_ET_MAX_PS_EVENTS         4
+#define ID_ET_MAX_PS_WEAPONS       64
 
 	typedef f32   idVec;
 	typedef idVec idVec2[2];
@@ -2766,6 +2949,28 @@ extern "C"
 		s32 apos_gravity; /* part of idEntityStateBase::apos trajectory */
 	};
 
+	struct idEntityState84 : idEntityStateBase
+	{
+		int dl_intensity;
+		int eventSequence;
+		int events[ID_ET_MAX_PS_EVENTS];
+		int eventParms[ID_ET_MAX_PS_EVENTS];
+		int density;
+		int dmgFlags;
+		int onFireStart;
+		int onFireEnd;
+
+		int nextWeapon;
+		int teamNum;
+
+		int effect1Time;
+		int effect2Time;
+		int effect3Time;
+
+		int animMovetype;
+		int aiState;
+	};
+
 	struct idEntityState90 : idEntityStateBase
 	{
 		s32 pos_gravity;  /* part of idEntityStateBase::pos trajectory */
@@ -2794,8 +2999,32 @@ extern "C"
 	static_assert(sizeof(idEntityState67) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
 	static_assert(sizeof(idEntityState68) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
 	static_assert(sizeof(idEntityState73) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
+	static_assert(sizeof(idEntityState84) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
 	static_assert(sizeof(idEntityState90) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
 	static_assert(sizeof(idEntityState91) <= sizeof(idLargestEntityState), "incorrect idLargestEntityState typedef");
+
+#endif
+
+	typedef struct idEntitySharedBase_s
+	{
+		idVec3 currentOrigin;
+		idVec3 currentAngles;
+		s32 svFlags;
+		idVec3 mins;
+		idVec3 maxs;
+		s32 singleClient;
+	}
+	idEntitySharedBase;
+
+#if defined(__cplusplus)
+
+	struct idEntityShared284 : idEntitySharedBase
+	{
+	};
+
+	typedef idEntityShared284 idLargestEntityShared;
+
+	static_assert(sizeof(idEntityShared284) <= sizeof(idLargestEntityState), "incorrect idLargestEntityShared typedef");
 
 #endif
 
@@ -2834,8 +3063,8 @@ extern "C"
 		idVec3 grapplePoint; /* location of grapple to pull towards if PMF_GRAPPLE_PULL */
 		s32 eFlags;          /* copied to entityState_t->eFlags */
 		s32 eventSequence;   /* pmove generated events */
-		s32 events[ID_MAX_PS_EVENTS];
-		s32 eventParms[ID_MAX_PS_EVENTS];
+		s32 events[ID_ET_MAX_PS_EVENTS];
+		s32 eventParms[ID_ET_MAX_PS_EVENTS];
 		s32 externalEvent;   /* events set on player from another source */
 		s32 externalEventParm;
 		s32 externalEventTime;
@@ -2851,7 +3080,7 @@ extern "C"
 		s32 stats[ID_MAX_PS_STATS];
 		s32 persistant[ID_MAX_PS_PERSISTANT]; /* stats that aren't cleared on death */
 		s32 powerups[ID_MAX_PS_POWERUPS];     /* level.time that the powerup runs out */
-		s32 ammo[64];    /* ID_MAX_PS_WEAPONS, 16 for all Quake protocols, 64 for RTCW */
+		s32 ammo[ID_ET_MAX_PS_WEAPONS];    /* ID_MAX_PS_WEAPONS, 16 for all Quake protocols, 64 for RTCW */
 		s32 generic1;
 		s32 loopSound;
 		s32 jumppad_ent; /* jumppad entity hit this frame */
@@ -2918,6 +3147,46 @@ extern "C"
 
 	struct idPlayerState73 : idPlayerStateBase
 	{
+	};
+
+	struct idPlayerState84 : idPlayerStateBase
+	{
+		int weaponDelay;
+		int grenadeTimeLeft;
+		float leanf;
+		int weapons[2];
+		int weapAnim;
+
+		idVec3 mins, maxs;
+		float crouchMaxZ;
+		float crouchViewHeight, standViewHeight, deadViewHeight;
+		float runSpeedScale, sprintSpeedScale, crouchSpeedScale;
+		int viewlocked;
+		int viewlocked_entNum;
+		float friction;
+
+		int nextWeapon;
+
+		int teamNum;
+
+		int onFireStart;
+
+		int classWeaponTime;
+
+		int curWeapHeat;
+
+		int aimSpreadScale;
+
+		int serverCursorHint;
+		int serverCursorHintVal;
+
+		int identifyClient;
+		int identifyClientHealth;
+
+		int aiState;
+
+		s32 ammoclip[64];
+		s32 holdable[16];
 	};
 
 	struct idPlayerState90 : idPlayerStateBase
@@ -3142,7 +3411,8 @@ extern "C"
 	N(PowerUpBattleSuit) \
 	N(PowerUpRegen) \
 	N(QL_Overtime) \
-	N(QL_GameOver)
+	N(QL_GameOver) \
+	N(Wolf_Bullet)
 
 	struct udtEntityEvent
 	{
@@ -3167,7 +3437,8 @@ extern "C"
 	N(TeleportTrigger) \
 	N(Invisible) \
 	N(Grapple) \
-	N(Team)
+	N(Team) \
+	N(ET_Corpse)
 
 	struct udtEntityType
 	{
@@ -3215,7 +3486,9 @@ extern "C"
 	N(OSP_GamePlay) \
 	N(Wolf_Info) \
 	N(Wolf_Paused) \
-	N(Wolf_Ready)
+	N(Wolf_Ready) \
+	N(ET_ModInfo) \
+	N(ET_ServerToggles) \
 	
 	struct udtConfigStringIndex
 	{
@@ -3248,7 +3521,13 @@ extern "C"
 	N(Wolf_ClientsReady) \
 	N(Wolf_PlayerClass) \
 	N(Wolf_RedScore) \
-	N(Wolf_BlueScore)
+	N(Wolf_BlueScore) \
+	N(ET_DeadYaw) \
+	N(ET_XP) \
+	N(ET_PSFlags) \
+	N(ET_AirLeft) \
+	N(ET_SprintTime) \
+	N(ET_Antiwarp)
 
 	struct udtLifeStatsIndex
 	{
@@ -3276,7 +3555,11 @@ extern "C"
 	N(Assists) \
 	N(Humiliations) \
 	N(Wolf_RespawnsLeft) \
-	N(Wolf_AccuracyHits)
+	N(Wolf_AccuracyHits) \
+	N(ET_Hits) \
+	N(ET_RespawnsPenalty) \
+	N(ET_ReviveCount) \
+	N(ET_HWeaponUse)
 
 	struct udtPersStatsIndex
 	{
@@ -3308,7 +3591,12 @@ extern "C"
 	N(Spectator) \
 	N(Wolf_Crouching) \
 	N(Wolf_Headshot) \
-	N(Wolf_Zooming)
+	N(Wolf_Zooming) \
+	N(ET_Prone) \
+	N(ET_MG42Active) \
+	N(ET_MountedTank) \
+	N(ET_AAGunActive) \
+	N(ET_Ready) \
 
 	struct udtEntityFlag
 	{
@@ -3398,6 +3686,80 @@ extern "C"
 			WeaponRailgun,
 			WeaponRocketLauncher,
 			WeaponShotgun,
+			ItemHealthCabinet,
+			ItemHealthTurkey,
+			IteamHealthBreadAndMeat,
+			IteamHealthWall,
+			WeaponKnife,
+			WeaponKnifeKabar,
+			WeaponLuger,
+			WeaponAkimboLuger,
+			WeaponAkimboSilencedLuger,
+			WeaponThompson,
+			WeaponDummyMg42,
+			WeaponSten,
+			WeaponMP34,
+			WeaponColt,
+			WeaponAkimboColt,
+			WeaponAkimboSilencedColt,
+			WeaponMP40,
+			WeaponPanzerfaust,
+			WeaponBazooka,
+			WeaponGrenadePineapple,
+			WeaponSmokeMarker,
+			WeaponSmokeTrail,
+			WeaponMedicHeal,
+			WeaponDynamite,
+			WeaponFlamethrower,
+			WeaponMapMortar,
+			WeaponPliers,
+			WeaponArtillery,
+			WeaponAirstrike,
+			WeaponMedicSyringe,
+			WeaponMedicAdrenaline,
+			WeaponMagicAmmo,
+			WeaponMagicAmmo2,
+			WeaponBinoculars,
+			WeaponK43,
+			WeaponK43Scope,
+			WeaponKar98,
+			WeaponGpg40,
+			WeaponM7,
+			WeaponCarbine,
+			WeaponGarand,
+			WeaponGarandScope,
+			WeaponFG42,
+			WeaponFG42Scope,
+			WeaponMortar,
+			WeaponMortarSet,
+			WeaponMortar2,
+			WeaponMortar2Set,
+			WeaponLandmine,
+			WeaponSatchel,
+			WeaponSatchelDet,
+			WeaponSmokeBomb,
+			WeaponMobileMg42,
+			WeaponMobileMg42Set,
+			WeaponBrowning,
+			WeaponBrowningSet,
+			WeaponSilencer,
+			WeaponSilencedColt,
+			AmmoSyringe,
+			AmmoSmokeGrenade,
+			AmmoDynamite,
+			AmmoDisguise,
+			AmmoAirstrike,
+			AmmoLandmine,
+			AmmoSatchelCharge,
+			Ammo9mmSmall,
+			Ammo9mm,
+			Ammo9mmLarge,
+			Ammo45CalSmall,
+			Ammo45Cal,
+			Ammo45CalLarge,
+			Ammo30CalSmall,
+			Ammo30Cal,
+			Ammo30CalLarge,
 			Count,
 			AmmoFirst = AmmoBFG,
 			AmmoLast = AmmoSlugs,

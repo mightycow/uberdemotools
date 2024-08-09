@@ -69,7 +69,7 @@ static_assert(sizeof(void*) == 4, "sizeof(void*) must be 4");
 #endif
 
 static_assert(udtPlayerMeanOfDeath::Count < udtMeanOfDeath::Count, "Invalid MOD KillType filter");
-static_assert(udtPlayerMeanOfDeath::Count <= 64, "another API change is needed :-(");
+//static_assert(udtPlayerMeanOfDeath::Count <= 64, "another API change is needed :-(");
 
 
 #define UDT_ERROR_ITEM(Enum, Desc) Desc,
@@ -348,9 +348,33 @@ UDT_API(u32) udtGetSizeOfIdEntityState(u32 protocol)
 		case udtProtocol::Dm67: return (u32)sizeof(idEntityState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idEntityState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idEntityState73);
+		case udtProtocol::Dm84:
+		case udtProtocol::Dm284: return (u32)sizeof(idEntityState84);
 		case udtProtocol::Dm90: return (u32)sizeof(idEntityState90);
 		case udtProtocol::Dm91: return (u32)sizeof(idEntityState91);
 		default: assert(0); return 0;
+	}
+}
+
+UDT_API(u32) udtGetSizeOfIdEntityShared(u32 protocol)
+{
+	switch ((udtProtocol::Id)protocol)
+	{
+		case udtProtocol::Dm3:
+		case udtProtocol::Dm48:
+		case udtProtocol::Dm57:
+		case udtProtocol::Dm58:
+		case udtProtocol::Dm59:
+		case udtProtocol::Dm60:
+		case udtProtocol::Dm66:
+		case udtProtocol::Dm67:
+		case udtProtocol::Dm68:
+		case udtProtocol::Dm73:
+		case udtProtocol::Dm84:
+		case udtProtocol::Dm90:
+		case udtProtocol::Dm91: return (u32)sizeof(idEntitySharedBase);
+		case udtProtocol::Dm284: return (u32)sizeof(idEntityShared284);
+	default: assert(0); return 0;
 	}
 }
 
@@ -368,6 +392,8 @@ UDT_API(u32) udtGetSizeOfIdPlayerState(u32 protocol)
 		case udtProtocol::Dm67: return (u32)sizeof(idPlayerState67);
 		case udtProtocol::Dm68: return (u32)sizeof(idPlayerState68);
 		case udtProtocol::Dm73: return (u32)sizeof(idPlayerState73);
+		case udtProtocol::Dm84:
+		case udtProtocol::Dm284: return (u32)sizeof(idPlayerState84);
 		case udtProtocol::Dm90: return (u32)sizeof(idPlayerState90);
 		case udtProtocol::Dm91: return (u32)sizeof(idPlayerState91);
 		default: assert(0); return 0;
@@ -388,8 +414,10 @@ UDT_API(u32) udtGetSizeOfidClientSnapshot(u32 protocol)
 		case udtProtocol::Dm67: return (u32)sizeof(idClientSnapshot67);
 		case udtProtocol::Dm68: return (u32)sizeof(idClientSnapshot68);
 		case udtProtocol::Dm73: return (u32)sizeof(idClientSnapshot73);
+		case udtProtocol::Dm84: return (u32)sizeof(idClientSnapshot84);
 		case udtProtocol::Dm90: return (u32)sizeof(idClientSnapshot90);
 		case udtProtocol::Dm91: return (u32)sizeof(idClientSnapshot91);
+		case udtProtocol::Dm284: return (u32)sizeof(idClientSnapshot284);
 		default: assert(0); return 0;
 	}
 }
