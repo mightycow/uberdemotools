@@ -32,3 +32,7 @@ private:
 
 	udtTimerImpl* _data;
 };
+
+#if defined(_DEBUG)
+void MicroSleep(u64 ms);
+#endif

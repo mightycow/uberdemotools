@@ -291,3 +291,23 @@ void udtTimer::SetElapsedUs(u64 uElapsedUs)
 
 
 #endif
+
+
+#if defined(_DEBUG)
+
+
+#include <immintrin.h>
+
+
+void MicroSleep(u64 microSeconds)
+{
+	udtTimer timer;
+	timer.Start();
+	while(timer.GetElapsedUs() < microSeconds)
+	{
+		_mm_pause();
+	}
+}
+
+
+#endif
