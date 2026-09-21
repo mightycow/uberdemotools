@@ -76,6 +76,8 @@ void udtParserPlugInGameState::StartDemoAnalysis()
 
 	ClearGameState();
 	ClearPlayerInfos();
+
+	_prevServerTime = UDT_S32_MIN;
 }
 
 void udtParserPlugInGameState::FinishDemoAnalysis()
@@ -99,6 +101,8 @@ void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbac
 	_currentGameState.FirstMatchIndex = _matches.GetSize();
 	_currentGameState.FirstKeyValuePairIndex = _keyValuePairs.GetSize();
 	_currentGameState.FirstPlayerIndex = _players.GetSize();
+	
+	_prevServerTime = UDT_S32_MIN;
 
 	const udtString systemInfoString = parser.GetConfigString(CS_SYSTEMINFO);
 	const udtString serverInfoString = parser.GetConfigString(CS_SERVERINFO);
@@ -119,14 +123,31 @@ void udtParserPlugInGameState::ProcessSnapshotMessage(const udtSnapshotCallbackA
 {
 	_analyzer.ProcessSnapshotMessage(info, parser);
 
-	_currentGameState.FirstSnapshotTimeMs = udt_min(_currentGameState.FirstSnapshotTimeMs, parser._inServerTime);
-	_currentGameState.LastSnapshotTimeMs = udt_max(_currentGameState.LastSnapshotTimeMs, parser._inServerTime);
-
-	for(s32 i = 0; i < 64; ++i)
+	const s32 serverTime = parser._inServerTime;
+	if(_prevServerTime != UDT_S32_MIN && serverTime < _prevServerTime)
 	{
-		_playerInfos[i].FirstSnapshotTimeMs = udt_min(_playerInfos[i].FirstSnapshotTimeMs, parser._inServerTime);
-		_playerInfos[i].LastSnapshotTimeMs = udt_max(_playerInfos[i].LastSnapshotTimeMs, parser._inServerTime);
+		_currentGameState.FirstSnapshotTimeMs = serverTime;
+		_currentGameState.LastSnapshotTimeMs = serverTime;
+
+		for(s32 i = 0; i < 64; ++i)
+		{
+			_playerInfos[i].FirstSnapshotTimeMs = serverTime;
+			_playerInfos[i].LastSnapshotTimeMs = serverTime;
+		}
 	}
+	else
+	{
+		_currentGameState.FirstSnapshotTimeMs = udt_min(_currentGameState.FirstSnapshotTimeMs, serverTime);
+		_currentGameState.LastSnapshotTimeMs = udt_max(_currentGameState.LastSnapshotTimeMs, serverTime);
+
+		for(s32 i = 0; i < 64; ++i)
+		{
+			_playerInfos[i].FirstSnapshotTimeMs = udt_min(_playerInfos[i].FirstSnapshotTimeMs, serverTime);
+			_playerInfos[i].LastSnapshotTimeMs = udt_max(_playerInfos[i].LastSnapshotTimeMs, serverTime);
+		}
+	}
+
+	_prevServerTime = serverTime;
 }
 
 void udtParserPlugInGameState::ProcessCommandMessage(const udtCommandCallbackArg& info, udtBaseParser& parser)

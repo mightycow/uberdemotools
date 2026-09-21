@@ -11,6 +11,7 @@ FIX: The persistant player state array was not set properly during 3->68 convers
 FIX: The "scores" command gets fixed during 3->68 conversions for proper HUD display
 FIX: UDT_cutter, UDT_merger, UDT_splitter: fixed -q command-line parsing
 FIX: Stats analyzer: no longer crashing with minqlxtended demos with commands and snapshots before the first gamestate
+FIX: Gamestate analyzer: ignoring minqlxtended' early snapshots before the time rewind when computing the time ranges
 
 1.3.1 (02.06.2018)
 ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands

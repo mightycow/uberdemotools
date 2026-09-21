@@ -50,4 +50,5 @@ private:
 	udtParseDataGameState _currentGameState;
 	udtParseDataGameStateBuffers _buffers;
 	udtProtocol::Id _protocol;
+	s32 _prevServerTime; // UDT_S32_MIN when there hasn't been a snapshot yet for the current gamestate.
 };
