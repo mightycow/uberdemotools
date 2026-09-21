@@ -2,5 +2,7 @@
 .bin/
 .build
 .build/
+.vs
+.vs/
 *.suo
 *.user
