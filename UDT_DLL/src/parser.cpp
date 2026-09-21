@@ -73,6 +73,7 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_configStringAllocator.Clear();
 	_tempAllocator.Clear();
 	_privateTempAllocator.Clear();
+	_inValidGameStateRanges.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
 	if(gameStateIndex == 0)
@@ -83,6 +84,8 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	{
 		_inGameStateFileOffsets.Resize(gameStateIndex);
 	}
+
+	_inGameStateStartServerTimeMs.Clear();
 
 	if(enablePlugIns)
 	{
@@ -253,14 +256,16 @@ bool udtBaseParser::ParseServerMessage()
 		const s32 gameTime = _inServerTime;
 
 		if(_inGameStateIndex == cut.GameStateIndex && !_outWriteMessage &&
-		   gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs)
+			gameTime >= cut.StartTimeMs && gameTime <= cut.EndTimeMs &&
+			_snapshotPosition == udtSnapshotPosition::InValidRange)
 		{
 			const bool wroteMessage = _outWriteMessage;
 			_outWriteMessage = true;
 			_outWriteFirstMessage = _outWriteMessage && !wroteMessage;
 		}
 		else if((_inGameStateIndex == cut.GameStateIndex && _outWriteMessage && gameTime > cut.EndTimeMs) ||
-				(_inGameStateIndex > cut.GameStateIndex && _outWriteMessage))
+				(_inGameStateIndex > cut.GameStateIndex && _outWriteMessage) ||
+				(_outWriteMessage && _snapshotPosition == udtSnapshotPosition::AfterValidRange))
 		{
 			WriteLastMessage();
 			_outWriteMessage = false;
@@ -341,6 +346,8 @@ void udtBaseParser::FinishParsing(bool /*success*/)
 			PlugIns[i]->FinishProcessingDemo();
 		}
 	}
+
+	_inGameStateStartServerTimeMs.Add(_startServerTimeMs);
 }
 
 void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData)
@@ -622,6 +629,19 @@ bool udtBaseParser::ParseGamestate()
 
 	++_inGameStateIndex;
 	_inGameStateFileOffsets.Add(_inFileOffset);
+	if(_inGameStateIndex > 0)
+	{
+		_inGameStateStartServerTimeMs.Add(_startServerTimeMs);
+	}
+	_startServerTimeMs = UDT_S32_MAX;
+	if((u32)_inGameStateIndex < _inValidGameStateRanges.GetSize())
+	{
+		_snapshotPosition = udtSnapshotPosition::BeforeValidRange;
+	}
+	else
+	{
+		_snapshotPosition = udtSnapshotPosition::InValidRange;
+	}
 
 	_analyzer->ResetForNextDemo();
 	_analyzer->ProcessGamestateMessage(udtGamestateCallbackArg(), *this);
@@ -646,6 +666,20 @@ bool udtBaseParser::ParseSnapshot()
 	}
 
 	_inServerTime = _inMsg.ReadLong();
+	_startServerTimeMs = udt_min(_startServerTimeMs, _inServerTime);
+	if((u32)_inGameStateIndex < _inValidGameStateRanges.GetSize())
+	{
+		const s32 startMs = _inValidGameStateRanges[_inGameStateIndex].StartTimeMs;
+		const s32 endMs = _inValidGameStateRanges[_inGameStateIndex].EndTimeMs;
+		if(_snapshotPosition == udtSnapshotPosition::BeforeValidRange && _inServerTime == startMs)
+		{
+			_snapshotPosition = udtSnapshotPosition::InValidRange;
+		}
+		else if(_snapshotPosition == udtSnapshotPosition::InValidRange && _inServerTime > endMs)
+		{
+			_snapshotPosition = udtSnapshotPosition::AfterValidRange;
+		}
+	}
 
 	idLargestClientSnapshot newSnap;
 	Com_Memset(&newSnap, 0, sizeof(newSnap));
@@ -832,7 +866,7 @@ bool udtBaseParser::ParseSnapshot()
 	// Write to the output message.
 	//
 
-	if(ShouldWriteMessage())
+	if(ShouldWriteMessage() && _snapshotPosition == udtSnapshotPosition::InValidRange)
 	{
 		_outMsg.WriteByte(svc_snapshot);
 		_outMsg.WriteLong(newSnap.serverTime);
@@ -1267,4 +1301,14 @@ const udtGameInfo udtBaseParser::GetGameInfo() const
 void udtBaseParser::AddPlugIn(udtBaseParserPlugIn* plugIn)
 {
 	PlugIns.Add(plugIn);
+}
+
+void udtBaseParser::AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs)
+{
+	udtGameStateRange range;
+	memset(&range, 0, sizeof(range));
+	range.StartTimeMs = startTimeMs;
+	range.EndTimeMs = endTimeMs;
+
+	_inValidGameStateRanges.Add(range);
 }

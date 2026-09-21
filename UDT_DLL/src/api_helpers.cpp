@@ -187,8 +187,16 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	{
 		sections.Add(plugIn.CutSections[i]);
 	}
+
+	// Save the gamestate ranges in a temporary array.
+	udtVMArray<s32> startTimes("CutByPattern::StartTimesArray");
+	udtVMArray<s32>& parserStartTimes = context->Parser._inGameStateStartServerTimeMs;
+	for(u32 i = 0, count = parserStartTimes.GetSize(); i < count; ++i)
+	{
+		startTimes.Add(parserStartTimes[i]);
+	}
 	
-	// This will clear the plug-in's section list.
+	// This will clear the plug-in's data.
 	if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
 	{
 		return false;
@@ -205,6 +213,11 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		context->Parser.AddCut(
 			section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, 
 			&CallbackCutDemoFileNameCreation, section.VeryShortDesc, &cutCbInfo);
+	}
+
+	for(u32 i = 0, count = startTimes.GetSize(); i < count; ++i)
+	{
+		context->Parser.AddValidGameStateRange(startTimes[i], UDT_S32_MAX);
 	}
 
 	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);

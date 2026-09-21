@@ -54,7 +54,8 @@ public:
 
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
 	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath);
-	void    AddPlugIn(udtBaseParserPlugIn* plugIn);
+	void	AddPlugIn(udtBaseParserPlugIn* plugIn);
+	void	AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs);
 
 	const udtString       GetConfigString(s32 csIndex) const;
 	const udtGameInfo     GetGameInfo() const;
@@ -94,12 +95,31 @@ public:
 		s32 EndTimeMs;
 	};
 
+	// Ignore all snapshots until start time is reached.
+	// After that, ignore all snapshots after end time is reached.
+	struct udtGameStateRange
+	{
+		s32 StartTimeMs;
+		s32 EndTimeMs;
+	};
+
+	struct udtSnapshotPosition
+	{
+		enum Id
+		{
+			BeforeValidRange,
+			InValidRange,
+			AfterValidRange
+		};
+	};
+
 public:
 	// General.
 	udtVMLinearAllocator _persistentAllocator { "Parser::Persistent" }; // Memory we need to be able to access to during the entire parsing phase.
 	udtVMLinearAllocator _configStringAllocator { "Parser::ConfigStrings" }; // Gets cleated every time a new gamestate message is encountered.
 	udtVMLinearAllocator _tempAllocator { "Parser::Temp" };
 	udtVMLinearAllocator _privateTempAllocator { "Parser::PrivateTemp" };
+	udtVMArray<udtGameStateRange> _inValidGameStateRanges { "Parser::ValidGameStateRangeArray" };
 	udtContext* _context; // This instance does *NOT* have ownership of the context.
 	udtProtocol::Id _inProtocol;
 	s32 _inProtocolSizeOfEntityState;
@@ -135,12 +155,15 @@ public:
 	char _inBigConfigString[BIG_INFO_STRING]; // For handling the bcs0, bcs1 and bcs2 server commands.
 	udtString _inConfigStrings[2 * MAX_CONFIGSTRINGS]; // Apparently some Quake 3 mods have bumped the original MAX_CONFIGSTRINGS value up?
 	udtVMArray<u32> _inGameStateFileOffsets { "Parser::GameStateFileOffsetsArray" };
+	udtVMArray<s32> _inGameStateStartServerTimeMs { "Parser::GameStateStartServerTimeArray" };
 	udtVMArray<udtChangedEntity> _inChangedEntities { "Parser::ChangedEntitiesArray" }; // The entities that were read (added or changed) in the last call to ParsePacketEntities.
 	udtVMArray<s32> _inRemovedEntities { "Parser::RemovedEntitiesArray" }; // The entities that were removed in the last call to ParsePacketEntities.
 	udtVMArray<idEntityStateBase*> _inEntities { "Parser::EntitiesArray" }; // All entities that were read in the last call to ParsePacketEntities.
 	udtVMArray<u8> _inEntityFlags { "Parser::EntityFlagsArray" };
 	udtMod::Id _inMod;
 	udtString _inModVersion;
+	s32 _startServerTimeMs;
+	udtSnapshotPosition::Id _snapshotPosition;
 
 	// Output.
 	udtFileStream _outFile;

@@ -882,6 +882,41 @@ UDT_API(s32) udtSplitDemoFile(udtParserContext* context, const udtParseArg* info
 	return (s32)udtErrorCode::None;
 }
 
+static bool ParseDemoForGameStateRanges(udtProtocol::Id protocol, udtParserContext* context, SingleThreadProgressContext* progressContext, const udtParseArg* info, const char* demoFilePath)
+{
+	context->ResetForNextDemo(true);
+	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, progressContext, info->ProtocolCb))
+	{
+		return false;
+	}
+
+	udtFileStream file;
+	if(!file.Open(demoFilePath, udtFileOpenMode::Read))
+	{
+		return false;
+	}
+
+	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+	{
+		return false;
+	}
+
+	if(!context->Parser.Init(&context->Context, protocol, protocol, info->GameStateIndex))
+	{
+		return false;
+	}
+
+	CallbackCutDemoFileStreamCreationInfo streamInfo;
+	streamInfo.OutputFolderPath = info->OutputFolderPath;
+
+	context->Parser.SetFilePath(demoFilePath);
+	context->Context.LogInfo("Analyzing for a timed cut: %s", demoFilePath);
+
+	RunParser(context->Parser, file, info->CancelOperation);
+
+	return context->Parser._inGameStateStartServerTimeMs.GetSize() > 0;
+}
+
 UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* info, const udtCutByTimeArg* cutInfo, const char* demoFilePath)
 {
 	if(context == NULL || info == NULL || demoFilePath == NULL || cutInfo == NULL || 
@@ -899,16 +934,31 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	udtTimer progressTimer;
 	progressTimer.Start();
 
+	const u64 fileByteCount = udtFileStream::GetFileLength(demoFilePath);
 	SingleThreadProgressContext progressContext;
 	progressContext.Timer = &progressTimer;
 	progressContext.UserCallback = info->ProgressCb;
 	progressContext.UserData = info->ProgressContext;
-	progressContext.CurrentJobByteCount = 0;
+	progressContext.CurrentJobByteCount = fileByteCount;
 	progressContext.ProcessedByteCount = 0;
-	progressContext.TotalByteCount = udtFileStream::GetFileLength(demoFilePath);
+	progressContext.TotalByteCount = fileByteCount * 2;
 	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
 
-	context->ResetForNextDemo(false);
+	udtVMArray<s32> gameStateRanges("udtCutDemoFileByTime::GameStateRangeArray");
+	if(ParseDemoForGameStateRanges(protocol, context, &progressContext, info, demoFilePath))
+	{
+		udtBaseParser& parser = context->Parser;
+		udtVMArray<s32>& ranges = parser._inGameStateStartServerTimeMs;
+		for(u32 i = 0, count = ranges.GetSize(); i < count; ++i)
+		{
+			gameStateRanges.Add(ranges[i]);
+		}
+	}
+
+	progressContext.CurrentJobByteCount = fileByteCount;
+	progressContext.ProcessedByteCount = fileByteCount;
+
+	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext, info->ProtocolCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -949,6 +999,11 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileNameCreation, NULL, &streamInfo);
 			}
 		}
+	}
+
+	for(u32 i = 0, count = gameStateRanges.GetSize(); i < count; ++i)
+	{
+		context->Parser.AddValidGameStateRange(gameStateRanges[i], UDT_S32_MAX);
 	}
 
 	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
