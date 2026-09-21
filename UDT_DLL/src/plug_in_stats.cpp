@@ -182,6 +182,8 @@ void udtParserPlugInStats::FinishDemoAnalysis()
 
 void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg& arg, udtBaseParser& parser)
 {
+	_tokenizer = &parser.GetTokenizer(); // minqlxtended
+
 	if(_analyzer.GameStateIndex() >= 0 && 
 	   (_analyzer.IsMatchInProgress() || _analyzer.IsInIntermission()))
 	{
@@ -193,7 +195,6 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 	}
 	_analyzer.ProcessGamestateMessage(arg, parser);
 
-	_tokenizer = &parser.GetTokenizer();
 	_plugInTokenizer = &parser._context->Tokenizer;
 	_protocol = parser._inProtocol;
 	_followedClientNumber = -1;
@@ -241,6 +242,8 @@ void udtParserPlugInStats::ProcessGamestateMessage(const udtGamestateCallbackArg
 
 void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& arg, udtBaseParser& parser)
 {
+	_tokenizer = &parser.GetTokenizer(); // minqlxtended
+
 	// We can't add a match right after it ends because some scores and stats info will be sent after it ended.
 	// So we add stats when a match starts (that isn't the first one) or the demo ended.
 	_analyzer.ProcessCommandMessage(arg, parser);
@@ -330,6 +333,8 @@ void udtParserPlugInStats::ProcessCommandMessage(const udtCommandCallbackArg& ar
 
 void udtParserPlugInStats::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
+	_tokenizer = &parser.GetTokenizer(); // minqlxtended
+
 	idPlayerStateBase* const ps = GetPlayerState(arg.Snapshot, _protocol);
 	if(ps != NULL)
 	{ 
