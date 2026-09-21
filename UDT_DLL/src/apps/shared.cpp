@@ -111,11 +111,30 @@ static void FindExecutableFileName(const char* exeFilePath)
 	}
 }
 
+static LONG WINAPI ExceptionHandler(EXCEPTION_POINTERS* info)
+{
+	if(info != NULL && info->ExceptionRecord != NULL)
+	{
+		EXCEPTION_RECORD* const rec = info->ExceptionRecord;
+		printf("UDT crashed! Code: %08X, Address: %p, Flags: %08X\n",
+			(unsigned int)rec->ExceptionCode,
+			(void*)rec->ExceptionAddress,
+			(unsigned int)rec->ExceptionFlags);
+	}
+	else
+	{
+		printf("UDT crashed!\n");
+	}
+
+	return EXCEPTION_CONTINUE_SEARCH;
+}
+
 #if defined(UDT_MINGWIN)
 extern "C"
 #endif
 int wmain(int argc, wchar_t** argvWide)
 {
+	AddVectoredExceptionHandler(0, &ExceptionHandler);
 	udtSetCrashHandler(&CrashHandler);
 	udtInitLibrary();
 
@@ -152,7 +171,7 @@ int wmain(int argc, wchar_t** argvWide)
 			printf("UDT library version: %s\n", udtGetVersionString());
 			return 0;
 		}
-	}	   
+	}
 
 #if !defined(UDT_DONT_RESET_CD)
 	ResetCurrentDirectory(argv[0]);
