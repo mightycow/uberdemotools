@@ -51,7 +51,25 @@ int udt_main(int argc, char** argv)
 		return 0;
 	}
 
-	if(!MergeDemos(argv + 1, argc - 1))
+	char** filePaths = argv + 1;
+	int fileCount = argc - 1;
+	if(fileCount <= 0)
+	{
+		PrintHelp();
+		return 0;
+	}
+	if(udtString::EqualsNoCase(udtString::NewConstRef(filePaths[0]), "-q"))
+	{
+		filePaths++;
+		fileCount--;
+	}
+	if(fileCount <= 0)
+	{
+		PrintHelp();
+		return 0;
+	}
+
+	if(!MergeDemos(filePaths, fileCount))
 	{
 		return 1;
 	}

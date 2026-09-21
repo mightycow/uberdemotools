@@ -267,6 +267,11 @@ static void ParseOptions(int firstOption, int afterLastOption, char** argv, char
 		u32 optionIndex = 0;
 
 		const udtString arg = udtString::NewConstRef(argv[i]);
+		if(udtString::EqualsNoCase(arg, "-q"))
+		{
+			continue; // We already handled it.
+		}
+
 		for(u32 j = 0; j < UDT_COUNT_OF(cmdLineOptions); ++j)
 		{
 			const CmdLineOption& option = cmdLineOptions[j];

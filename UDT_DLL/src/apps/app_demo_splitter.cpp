@@ -52,13 +52,19 @@ int udt_main(int argc, char** argv)
 		return 0;
 	}
 
-	if(!udtFileStream::Exists(argv[1]))
+	const char* filePath = argv[1];
+	if(argc >= 3 && udtString::EqualsNoCase(udtString::NewConstRef(filePath), "-q"))
+	{
+		filePath = argv[2];
+	}
+
+	if(!udtFileStream::Exists(filePath))
 	{
 		fprintf(stderr, "Invalid demo file path.\n");
 		return 1;
 	}
 
-	if(!RunDemoSplitter(argv[1]))
+	if(!RunDemoSplitter(filePath))
 	{
 		return 1;
 	}

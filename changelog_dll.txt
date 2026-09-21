@@ -1,4 +1,4 @@
-1.4.0 (DD.MM.2022)
+1.4.0 (DD.MM.202X)
 ADD: Support for RtCW (dm_57, dm_58, dm_59, dm_60) with OSP and RtcwPro mods
 ADD: Grenade and Panzerfaust support for the mid-air pattern
 ADD: UDT_cutter: support for these patterns: multi-frag rails, flick rails, mid-airs, frag sequences, flag captures
@@ -9,6 +9,7 @@ CHG: The JSON exporter will not lower-case the first letter of a key when the fi
 FIX: Invalid stats no longer get exported via the API calls, so it affects both JSON export and GUI display
 FIX: The persistant player state array was not set properly during 3->68 conversions, generating invalid award events etc.
 FIX: The "scores" command gets fixed during 3->68 conversions for proper HUD display
+FIX: UDT_cutter, UDT_merger, UDT_splitter: fixed -q command-line parsing
 
 1.3.1 (02.06.2018)
 ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands
