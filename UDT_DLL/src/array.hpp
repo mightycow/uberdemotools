@@ -20,7 +20,7 @@ struct udtVMArray
 		HandleAlignment();
 	}
 	
-	udtVMArray() : 
+	udtVMArray() :
 		_size(0)
 	{
 		HandleAlignment();
