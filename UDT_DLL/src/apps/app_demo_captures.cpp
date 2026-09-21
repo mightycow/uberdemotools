@@ -105,6 +105,7 @@ public:
 			fprintf(stderr, "Failed to create a parser context.\n");
 			return false;
 		}
+		context->Context.SetCallbacks(_parseArg.ParseArg.MessageCb, NULL, NULL, NULL);
 
 		BatchRunner runner(_parseArg.ParseArg, files, fileCount, UDT_CAPTURES_BATCH_SIZE);
 		const u32 batchCount = runner.GetBatchCount();
@@ -142,6 +143,7 @@ public:
 			return false;
 		}
 
+		context->Context.LogInfo("Successfully wrote to file '%s'.", outputFilePath);
 		udtDestroyContext(context);
 
 		return true;

@@ -765,7 +765,7 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 	udtString newFilePath = udtString::NewEmpty(tempAllocator, UDT_MAX_PATH_LENGTH);
 	sprintf(newFilePath.GetWritePtr(), "%s_SPLIT_%u%s", outputFilePathStart.GetPtr(), index + 1, udtGetFileExtensionByProtocol((u32)protocol));
 
-	context.LogInfo("Writing demo %s...", newFilePath.GetPtr());
+	context.LogInfo("Writing split demo: %s", newFilePath.GetPtr());
 
 	udtFileStream outputFile;
 	if(!outputFile.Open(newFilePath.GetPtr(), udtFileOpenMode::Write))

@@ -74,8 +74,8 @@ void CallbackConsoleMessage(s32 logLevel, const char* message)
 
 void CallbackConsoleProgress(f32 progress, void*)
 {
-	char title[256];
-	sprintf(title, "%.1f%% - %s", 100.0f * progress, ExecutableFileName);
+	char title[1024];
+	sprintf(title, "%4.1f%% - %s", 100.0f * progress, ExecutableFileName);
 	SetConsoleTitleA(title);
 }
 

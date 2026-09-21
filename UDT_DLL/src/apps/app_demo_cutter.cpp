@@ -779,6 +779,7 @@ static bool CutByTime(const char* filePath, const char* outputFolder, s32 startS
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = outputFolder;
+	info.MinProgressTimeMs = 50; // 20 Hz updates in the terminal
 	
 	udtCut cut;
 	memset(&cut, 0, sizeof(cut));
