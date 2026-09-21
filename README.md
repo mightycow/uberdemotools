@@ -22,7 +22,7 @@ Permanent links to the latest builds
 | OS      | GUI | Command-Line Tools | 2D Viewer |
 |:--------|:---:|:------------------:|:---------:|
 | Windows | [x64](https://udt.playmorepromode.com/redirections/windows_gui_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_gui_x86.html) | [x64](https://udt.playmorepromode.com/redirections/windows_console_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_console_x86.html) | [x64](https://udt.playmorepromode.com/redirections/windows_viewer_x64.html) - [x86](https://udt.playmorepromode.com/redirections/windows_viewer_x86.html) |
-| Linux   | Not Available    | [x64](url=https://udt.playmorepromode.com/redirections/linux_console_x64.html) - [x86](url=https://udt.playmorepromode.com/redirections/linux_console_x86.html) | [x64](https://udt.playmorepromode.com/redirections/linux_viewer_x64.html) - [x86](https://udt.playmorepromode.com/redirections/linux_viewer_x86.html) |
+| Linux   | Not Available    | [x64](https://udt.playmorepromode.com/redirections/linux_console_x64.html) - [x86](https://udt.playmorepromode.com/redirections/linux_console_x86.html) | [x64](https://udt.playmorepromode.com/redirections/linux_viewer_x64.html) - [x86](https://udt.playmorepromode.com/redirections/linux_viewer_x86.html) |
 
 Alternatively, you can browse [this folder](https://udt.playmorepromode.com) where you can also find older releases.  
 The zip files are Windows releases.  
@@ -215,6 +215,7 @@ In alphabetical order:
 * Sab0o
 * santile
 * Terifire
+* Tibnet
 
 License
 -------
@@ -222,7 +223,7 @@ License
 The entire source code in this release is covered by the GPL.  
 See [COPYING.txt](https://github.com/mightycow/uberdemotools/blob/master/UDT_DLL/COPYING.txt) for the GNU GENERAL PUBLIC LICENSE.
 
-Uber Demo Tools (UDT) is Copyright (C) 2011-2022 Gian 'myT' Schellenbaum.  
+Uber Demo Tools (UDT) is Copyright (C) 2011-2026 Gian 'myT' Schellenbaum.  
 It is based on the Quake III Arena source code and the Challenge Quake 3 source code.
 
 The Quake III Arena source code is Copyright (C) 1999-2005 Id Software, Inc.  
