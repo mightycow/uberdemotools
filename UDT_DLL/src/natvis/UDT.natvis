@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="udtString">
+		<DisplayString Condition="Length == 0"></DisplayString>
+		<DisplayString Condition="Length != 0 &amp;&amp; ReservedBytes == 0">{(const char*)Allocator,[Length]s8}</DisplayString>
+		<DisplayString Condition="Length != 0 &amp;&amp; ReservedBytes != 0">{(const char*)Allocator->_addressSpaceStart + Offset,[Length]s8}</DisplayString>
+	</Type>	
+	<Type Name="udtVMArray&lt;*&gt;">
+		<Intrinsic Name="size" Expression="_size"/>
+		<DisplayString>{{ size={_size} }}</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>_size</Size>
+				<ValuePointer>($T1*)_allocator._addressSpaceStart</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+</AutoVisualizer>
