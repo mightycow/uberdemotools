@@ -386,9 +386,14 @@ static const char* GetCamelCaseString(udtVMLinearAllocator& alloc, const char* s
 
 static u64 GetMeanOfDeathBitMask(udtVMLinearAllocator& alloc, const char* modRaw)
 {
-	const char** mods;
-	u32 modCount;
+	const char** mods = NULL;
+	u32 modCount = 0;
 	udtGetStringArray(udtStringArray::MeansOfDeath, &mods, &modCount);
+	if(mods == NULL || modCount == 0)
+	{
+		return 0;
+	}
+
 	const udtString mod = udtString::NewConstRef(modRaw);
 	for(u32 i = 0; i < modCount; ++i)
 	{
@@ -566,8 +571,8 @@ static void PrintCommandHelp(char cmd)
 		udtVMLinearAllocator alloc("PrintCommandHelp::Temp");
 		udtVMScopedStackAllocator scope(alloc);
 
-		const char** mods;
-		u32 modCount;
+		const char** mods = NULL;
+		u32 modCount = 0;
 		udtGetStringArray(udtStringArray::MeansOfDeath, &mods, &modCount);
 		printf("\n");
 		printf("Means of death commands:\n");
@@ -575,11 +580,14 @@ static void PrintCommandHelp(char cmd)
 		printf("    mod_none: disable all means of death\n");
 		printf("    mod_add : enable  the specified mean of death\n");
 		printf("    mod_rem : disable the specified mean of death\n");
-		printf("\n");
-		printf("Means of death names\n");
-		for(u32 i = 0; i < modCount; ++i)
+		if(mods != NULL && modCount > 0)
 		{
-			printf("    %s\n", GetCamelCaseString(alloc, mods[i]));
+			printf("\n");
+			printf("Means of death names\n");
+			for(u32 i = 0; i < modCount; ++i)
+			{
+				printf("    %s\n", GetCamelCaseString(alloc, mods[i]));
+			}
 		}
 		printf("\n");
 		printf("Example usage:\n");
@@ -925,7 +933,6 @@ static bool LoadChatConfig(CutByChatConfig& config, const ProgramOptions& progOp
 
 	return true;
 }
-
 
 int udt_main(int argc, char** argv)
 {

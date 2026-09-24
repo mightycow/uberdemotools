@@ -7,7 +7,7 @@ if %choice%==1 (
 ) else if %choice%==2 (
 	set vs_target=Debug
 ) else (
-    echo Invalid choice
+	echo Invalid choice
 	exit
 )
 
@@ -20,6 +20,6 @@ if %choice%==1 (
 ) else if %choice%==2 (
 	set vs_arch=x64
 ) else (
-    echo Invalid choice
+	echo Invalid choice
 	exit
 )
