@@ -42,7 +42,7 @@ static int StableSortByGameStateIndexAscending(const void* aPtr, const void* bPt
 	return byGameState != 0 ? byGameState : byPreviousOrder;
 }
 
-static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSection>& source)
+static void AppendCutSections(udtVMArray<udtCutSection>& dest, const udtVMArray<CutSection>& source)
 {
 	for(u32 i = 0, cutCount = source.GetSize(); i < cutCount; ++i)
 	{
