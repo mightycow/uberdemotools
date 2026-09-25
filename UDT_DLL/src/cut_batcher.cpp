@@ -44,12 +44,22 @@ static void GenerateNonOverlappingLists(udtCutArrayArray& dst, u32& dstSize, con
 			udtCutArray& cutList = dst[dstIdx];
 			cutList.Add(src[s]);
 		}
-		else if(dstSize < 64) // @TODO: how to extract that constant?
+		else if(dstSize < UDT_ARRAY_LENGTH(dst))
 		{
 			udtCutArray& cutList = dst[dstSize++];
 			cutList.Add(src[s]);
 		}
 	}
+}
+
+static void RemoveInvalidCuts(udtCutArray& cuts)
+{
+	if(cuts.IsEmpty())
+	{
+		return;
+	}
+
+	// @TODO:
 }
 
 static int CompareCuts(const void* aPtr, const void* bPtr)
@@ -72,8 +82,28 @@ static int CompareCuts(const void* aPtr, const void* bPtr)
 	return 0;
 }
 
+udtCutBatcher::udtCutBatcher()
+{
+	Clear();
+}
+
+void udtCutBatcher::Clear()
+{
+	Cuts.Clear();
+	BatchCount = 0;
+}
+
 void udtCutBatcher::Process()
 {
+	RemoveInvalidCuts(Cuts);
+	if(Cuts.IsEmpty())
+	{
+		udtCutArray& batch = Batches[0];
+		batch.Resize(0);
+		BatchCount = 1;
+		return;
+	}
+
 	qsort(Cuts.GetStartAddress(), (size_t)Cuts.GetSize(), sizeof(decltype(Cuts)::Type), &CompareCuts);
 	if(HasOverlappingCuts(Cuts))
 	{

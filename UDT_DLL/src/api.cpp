@@ -998,8 +998,25 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 			{
 				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileNameCreation, NULL, &streamInfo);
 			}
+
+			udtParserCut c = {};
+			c.GameStateIndex = cut.GameStateIndex;
+			c.StartTimeMs = cut.StartTimeMs;
+			c.EndTimeMs = cut.EndTimeMs;
+			if(cut.FilePath != NULL)
+			{
+				c.FilePath = cut.FilePath;
+			}
+			else
+			{
+				c.StreamCreator = &CallbackCutDemoFileNameCreation;
+				c.VeryShortDesc = NULL;
+				c.UserData = &streamInfo;
+			}
+			context->CutBatcher.Cuts.Add(c);
 		}
 	}
+	context->CutBatcher.Process();
 
 	for(u32 i = 0, count = gameStateRanges.GetSize(); i < count; ++i)
 	{

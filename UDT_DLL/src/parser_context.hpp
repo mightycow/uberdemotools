@@ -4,6 +4,7 @@
 #include "context.hpp"
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
+#include "cut_batcher.hpp"
 #include "array.hpp"
 #include "modifier_context.hpp"
 #include "json_writer_context.hpp"
@@ -54,6 +55,7 @@ private:
 public:
 	udtContext Context;
 	udtBaseParser Parser;
+	udtCutBatcher CutBatcher;
 	udtModifierContext ModifierContext;
 	udtJSONWriterContext JSONWriterContext;
 	udtVMLinearAllocator PlugInAllocator { "ParserContext::PlugIn" };

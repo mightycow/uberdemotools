@@ -102,6 +102,7 @@ void udtParserContext_s::ResetForNextDemo(bool keepPlugInData)
 
 	Context.Reset();
 	PlugInTempAllocator.Clear();
+	CutBatcher.Clear();
 }
 
 bool udtParserContext_s::CopyBuffersStruct(u32 plugInId, void* buffersStruct)

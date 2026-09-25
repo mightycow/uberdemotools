@@ -11,6 +11,9 @@ typedef udtCutArray udtCutArrayArray[64];
 
 struct udtCutBatcher
 {
+	udtCutBatcher();
+
+	void Clear();
 	void Process();
 
 	// Input.
