@@ -306,7 +306,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	// Sort cuts by increasing order: gamestate index -> start time -> end time -> pattern mask
 	//
-	qsort(_tempCutSections.GetStartAddress(), (size_t)_tempCutSections.GetSize(), sizeof(udtCutSection), &CompareCuts);
+	qsort(_tempCutSections.GetStartAddress(), (size_t)_tempCutSections.GetSize(), sizeof(decltype(_tempCutSections)::Type), &CompareCuts);
 
 	//
 	// Merge the sections if asked for it.
@@ -318,9 +318,8 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	else
 	{
 		const u32 count = _tempCutSections.GetSize();
-		using CutType = decltype(_tempCutSections)::Type;
 		CutSections.Resize(count);
-		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), (size_t)count * sizeof(CutType));
+		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), (size_t)count * sizeof(decltype(_tempCutSections)::Type));
 	}
 }
 

@@ -165,6 +165,11 @@ struct udtVMArray
 		return _size;
 	}
 
+	uptr GetUsedByteCount()
+	{
+		return (size_t)_size * sizeof(T);
+	}
+
 	uptr GetReservedByteCount() const
 	{
 		return _allocator.GetCommittedByteCount();

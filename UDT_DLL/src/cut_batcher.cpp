@@ -1,11 +1,15 @@
 #include "cut_batcher.hpp"
 
 
-bool CutList_HasOverlappingCuts(const udtCutArray& sortedCutList)
+// Assumes a sorted source list.
+static bool HasOverlappingCuts(const udtCutArray& sortedCutList)
 {
 	for(u32 i = 1, count = sortedCutList.GetSize(); i < count; ++i)
 	{
-		if(sortedCutList[i].StartTimeMs < sortedCutList[i - 1].EndTimeMs)
+		const udtParserCut& prev = sortedCutList[i - 1];
+		const udtParserCut& curr = sortedCutList[i];
+		if(curr.GameStateIndex == prev.GameStateIndex &&
+			curr.StartTimeMs < prev.EndTimeMs)
 		{
 			return true;
 		}
@@ -14,7 +18,8 @@ bool CutList_HasOverlappingCuts(const udtCutArray& sortedCutList)
 	return false;
 }
 
-void CutList_GenerateNonOverlappingLists(udtCutArrayArray& dst, u32& dstSize, const udtCutArray& src)
+// Assumes a sorted source list.
+static void GenerateNonOverlappingLists(udtCutArrayArray& dst, u32& dstSize, const udtCutArray& src)
 {
 	// This is an implementation of the interval partitioning algorithm.
 	dstSize = 0;
@@ -44,5 +49,41 @@ void CutList_GenerateNonOverlappingLists(udtCutArrayArray& dst, u32& dstSize, co
 			udtCutArray& cutList = dst[dstSize++];
 			cutList.Add(src[s]);
 		}
+	}
+}
+
+static int CompareCuts(const void* aPtr, const void* bPtr)
+{
+	const udtParserCut& a = *(udtParserCut*)aPtr;
+	const udtParserCut& b = *(udtParserCut*)bPtr;
+
+	const s32 g = a.GameStateIndex - b.GameStateIndex;
+	if(g < 0) return -1;
+	if(g > 0) return 1;
+
+	const s32 s = a.StartTimeMs - b.StartTimeMs;
+	if(s < 0) return -1;
+	if(s > 0) return 1;
+
+	const s32 e = a.EndTimeMs - b.EndTimeMs;
+	if(e < 0) return -1;
+	if(e > 0) return 1;
+
+	return 0;
+}
+
+void udtCutBatcher::Process()
+{
+	qsort(Cuts.GetStartAddress(), (size_t)Cuts.GetSize(), sizeof(decltype(Cuts)::Type), &CompareCuts);
+	if(HasOverlappingCuts(Cuts))
+	{
+		GenerateNonOverlappingLists(Batches, BatchCount, Cuts);
+	}
+	else
+	{
+		udtCutArray& batch = Batches[0];
+		batch.Resize(Cuts.GetSize());
+		memcpy(batch.GetStartAddress(), Cuts.GetStartAddress(), Cuts.GetUsedByteCount());
+		BatchCount = 1;
 	}
 }
