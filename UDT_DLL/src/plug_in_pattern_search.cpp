@@ -293,20 +293,20 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
-	udtVMArray<udtCutSection> tempCutSections("CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
+	_tempCutSections.Clear();
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
 		udtPatternSearchAnalyzerBase* const analyzer = _analyzers[i];
 		for(u32 j = 0, cutCount = analyzer->CutSections.GetSize(); j < cutCount; ++j)
 		{
-			tempCutSections.Add(_analyzers[i]->CutSections[j]);
+			_tempCutSections.Add(_analyzers[i]->CutSections[j]);
 		}
 	}
 
 	//
 	// Sort cuts by increasing order: gamestate index -> start time -> end time -> pattern mask
 	//
-	qsort(tempCutSections.GetStartAddress(), (size_t)tempCutSections.GetSize(), sizeof(udtCutSection), &CompareCuts);
+	qsort(_tempCutSections.GetStartAddress(), (size_t)_tempCutSections.GetSize(), sizeof(udtCutSection), &CompareCuts);
 
 	//
 	// Merge the sections if asked for it.
@@ -314,13 +314,13 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	CutSections.Clear();
 	if((GetInfo().Flags & (u32)udtPatternSearchArgMask::MergeCutSections) != 0)
 	{
-		MergeRanges(CutSections, tempCutSections);
+		MergeRanges(CutSections, _tempCutSections);
 	}
 	else
 	{
-		for(u32 i = 0, count = tempCutSections.GetSize(); i < count; ++i)
+		for(u32 i = 0, count = _tempCutSections.GetSize(); i < count; ++i)
 		{
-			CutSections.Add(tempCutSections[i]);
+			CutSections.Add(_tempCutSections[i]);
 		}
 	}
 }

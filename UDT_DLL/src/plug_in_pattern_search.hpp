@@ -44,6 +44,7 @@ private:
 
 	udtVMArray<udtPatternSearchAnalyzerBase*> _analyzers { "CutByPatternPlugIn::AnalyzersArray" };
 	udtVMArray<udtPatternType::Id> _analyzerTypes { "CutByPatternPlugIn::AnalyzerTypesArray" };
+	udtVMArray<udtCutSection> _tempCutSections { "CutByPatternPlugIn::TempCutSectionsArray" };
 	udtVMLinearAllocator _analyzerAllocator { "CutByPatternPlugIn::AnalyzerData" };
 	udtVMScopedStackAllocator _analyzerAllocatorScope;
 

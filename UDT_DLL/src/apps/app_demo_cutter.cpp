@@ -947,6 +947,7 @@ int udt_main(int argc, char** argv)
 	{
 		udtParseArg parse = {};
 		parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
+		parse.MessageCb = &CallbackConsoleMessage;
 
 		s32 errorCode = 0;
 		const char* filePath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\duel.dm_68";
