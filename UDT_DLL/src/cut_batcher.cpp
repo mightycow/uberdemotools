@@ -19,35 +19,44 @@ static bool HasOverlappingCuts(const udtCutArray& sortedCutList)
 }
 
 // Assumes a sorted source list.
-static void GenerateNonOverlappingLists(udtCutArrayArray& dst, u32& dstSize, const udtCutArray& src)
+static void GenerateNonOverlappingLists(udtCutArrayArray& dstArray, u32& dstSize, const udtCutArray& srcList)
 {
 	// This is an implementation of the interval partitioning algorithm.
 	dstSize = 0;
-	for(u32 s = 0, srcSize = src.GetSize(); s < srcSize; ++s)
+	for(u32 s = 0, srcSize = srcList.GetSize(); s < srcSize; ++s)
 	{
 		u32 dstIdx = UDT_U32_MAX;
+		s32 dstGSIndex = UDT_S32_MAX;
 		s32 dstEndTimeMs = UDT_S32_MAX;
 		for(u32 d = 0; d < dstSize; ++d)
 		{
-			udtCutArray& cutList = dst[d];
+			udtCutArray& cutList = dstArray[d];
 			assert(cutList.GetSize() > 0);
-			const s32 endTimeMs = cutList[cutList.GetSize() - 1].EndTimeMs;
-			if(endTimeMs < dstEndTimeMs)
+			const udtParserCut& lastCut = cutList[cutList.GetSize() - 1];
+			const s32 gsIndex = lastCut.GameStateIndex;
+			const s32 endTimeMs = lastCut.EndTimeMs;
+			if((gsIndex < dstGSIndex) ||
+				(gsIndex == dstGSIndex && endTimeMs < dstEndTimeMs))
 			{
 				dstIdx = d;
+				dstGSIndex = gsIndex;
 				dstEndTimeMs = endTimeMs;
 			}
 		}
 
-		if(dstIdx < dstSize && src[s].StartTimeMs >= dstEndTimeMs)
+		const udtParserCut& src = srcList[s];
+		const bool batchFound = dstIdx < dstSize;
+		const bool validOption1 = src.GameStateIndex > dstGSIndex;
+		const bool validOption2 = src.GameStateIndex == dstGSIndex && src.StartTimeMs >= dstEndTimeMs;
+		if(batchFound && (validOption1 || validOption2))
 		{
-			udtCutArray& cutList = dst[dstIdx];
-			cutList.Add(src[s]);
+			udtCutArray& cutList = dstArray[dstIdx];
+			cutList.Add(src);
 		}
-		else if(dstSize < UDT_ARRAY_LENGTH(dst))
+		else if(dstSize < UDT_ARRAY_LENGTH(dstArray))
 		{
-			udtCutArray& cutList = dst[dstSize++];
-			cutList.Add(src[s]);
+			udtCutArray& cutList = dstArray[dstSize++];
+			cutList.Add(src);
 		}
 	}
 }
