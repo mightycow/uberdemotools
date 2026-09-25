@@ -942,6 +942,47 @@ int udt_main(int argc, char** argv)
 		return 0;
 	}
 
+	// @TODO: remove...
+	if(1)
+	{
+		udtParseArg parse = {};
+		parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
+
+		s32 errorCode = 0;
+		const char* filePath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\duel.dm_68";
+		udtMultiParseArg multiParse = {};
+		multiParse.FileCount = 1;
+		multiParse.FilePaths = &filePath;
+		multiParse.OutputErrorCodes = &errorCode;
+
+		udtMatchPatternArg matchPattern = {};
+		matchPattern.MatchStartOffsetMs = 0;
+		matchPattern.MatchEndOffsetMs = 0;
+
+		udtFragRunPatternArg fragRunPattern = {};
+		fragRunPattern.AllowedMeansOfDeaths = u64(~0);
+		fragRunPattern.MinFragCount = 2;
+		fragRunPattern.TimeBetweenFragsSec = 15;
+
+		udtPatternInfo patterns[2] = {};
+		patterns[0].Type = udtPatternType::Matches;
+		patterns[0].TypeSpecificInfo = &matchPattern;
+		patterns[1].Type = udtPatternType::FragSequences;
+		patterns[1].TypeSpecificInfo = &fragRunPattern;
+
+		udtPatternSearchArg pattern = {};
+		pattern.PlayerIndex = udtPlayerIndex::FirstPersonPlayer;
+		pattern.StartOffsetSec = 10;
+		pattern.EndOffsetSec = 10;
+		pattern.PatternCount = 2;
+		pattern.Patterns = patterns;
+		pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
+
+		udtCutDemoFilesByPattern(&parse, &multiParse, &pattern);
+
+		return 0;
+	}
+
 	const udtString commandString = udtString::NewConstRef(argv[1]);
 	if(commandString.GetLength() != 1)
 	{
