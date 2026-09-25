@@ -41,14 +41,6 @@ static int CompareCuts(const void* aPtr, const void* bPtr)
 	return 0;
 }
 
-static void AppendCutSections(udtVMArray<udtCutSection>& dest, const udtVMArray<udtCutSection>& source)
-{
-	for(u32 i = 0, cutCount = source.GetSize(); i < cutCount; ++i)
-	{
-		dest.Add(source[i]);
-	}
-}
-
 static bool MatchesRule(udtVMLinearAllocator& allocator, const udtString& configStringName, const udtStringMatchingRule& rule, udtProtocol::Id protocol)
 {
 	udtString name = udtString::NewCloneFromRef(allocator, configStringName);
@@ -312,25 +304,24 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	}
 
 	//
-	// Sort all the cuts in this order: gamestate index, start time, end time, pattern mask
+	// Sort cuts by increasing order: gamestate index -> start time -> end time -> pattern mask
 	//
-	const u32 cutCount = tempCutSections.GetSize();
-	qsort(tempCutSections.GetStartAddress(), (size_t)cutCount, sizeof(udtCutSection), &CompareCuts);
+	qsort(tempCutSections.GetStartAddress(), (size_t)tempCutSections.GetSize(), sizeof(udtCutSection), &CompareCuts);
 
 	//
-	// Create a new list with the sorted data using the final data format
-	// and merge the sections if asked for it.
+	// Merge the sections if asked for it.
 	//
+	CutSections.Clear();
 	if((GetInfo().Flags & (u32)udtPatternSearchArgMask::MergeCutSections) != 0)
 	{
-		udtVMArray<udtCutSection> cutSections("CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
-		AppendCutSections(cutSections, tempCutSections);
-		MergeRanges(CutSections, cutSections);
+		MergeRanges(CutSections, tempCutSections);
 	}
 	else
 	{
-		CutSections.Clear();
-		AppendCutSections(CutSections, tempCutSections);
+		for(u32 i = 0, count = tempCutSections.GetSize(); i < count; ++i)
+		{
+			CutSections.Add(tempCutSections[i]);
+		}
 	}
 }
 
