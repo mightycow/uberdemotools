@@ -311,17 +311,16 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	// Merge the sections if asked for it.
 	//
-	CutSections.Clear();
 	if((GetInfo().Flags & (u32)udtPatternSearchArgMask::MergeCutSections) != 0)
 	{
 		MergeRanges(CutSections, _tempCutSections);
 	}
 	else
 	{
-		for(u32 i = 0, count = _tempCutSections.GetSize(); i < count; ++i)
-		{
-			CutSections.Add(_tempCutSections[i]);
-		}
+		const u32 count = _tempCutSections.GetSize();
+		using CutType = decltype(_tempCutSections)::Type;
+		CutSections.Resize(count);
+		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), (size_t)count * sizeof(CutType));
 	}
 }
 

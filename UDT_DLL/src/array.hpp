@@ -13,6 +13,8 @@
 template<typename T>
 struct udtVMArray
 {
+	using Type = T;
+
 	udtVMArray(const char* allocatorName)
 		: _allocator(allocatorName)
 		, _size(0)
