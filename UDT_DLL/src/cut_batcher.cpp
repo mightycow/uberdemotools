@@ -114,9 +114,7 @@ void udtCutBatcher::Process()
 	RemoveInvalidCuts(Cuts);
 	if(Cuts.IsEmpty())
 	{
-		udtCutArray& batch = Batches[0];
-		batch.Resize(0);
-		BatchCount = 1;
+		BatchCount = 0;
 		return;
 	}
 
