@@ -994,7 +994,7 @@ void TestMultiTimedCut()
 	info.MinProgressTimeMs = 50;
 
 	int i = 0;
-	udtCut cuts[5] = {};
+	udtCut cuts[7] = {};
 	cuts[i].GameStateIndex = 1;
 	cuts[i].StartTimeMs = ServerTime(0, 45);
 	cuts[i].EndTimeMs = ServerTime(10, 45);
@@ -1002,6 +1002,14 @@ void TestMultiTimedCut()
 	cuts[i].GameStateIndex = 0;
 	cuts[i].StartTimeMs = ServerTime(0, 19);
 	cuts[i].EndTimeMs = ServerTime(3, 32);
+	i++;
+	cuts[i].GameStateIndex = 0;
+	cuts[i].StartTimeMs = ServerTime(1, 50);
+	cuts[i].EndTimeMs = ServerTime(1, 0); // invalid on purpose
+	i++;
+	cuts[i].GameStateIndex = 0;
+	cuts[i].StartTimeMs = ServerTime(2, 50);
+	cuts[i].EndTimeMs = ServerTime(2, 0); // invalid on purpose
 	i++;
 	cuts[i].GameStateIndex = 1;
 	cuts[i].StartTimeMs = ServerTime(1, 51);

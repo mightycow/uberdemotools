@@ -68,7 +68,14 @@ static void RemoveInvalidCuts(udtCutArray& cuts)
 		return;
 	}
 
-	// @TODO:
+	for(s32 i = (s32)cuts.GetSize() - 1; i >= 0; --i)
+	{
+		const udtParserCut& cut = cuts[i];
+		if(cut.GameStateIndex < 0 || cut.EndTimeMs <= cut.StartTimeMs)
+		{
+			cuts.Remove((u32)i);
+		}
+	}
 }
 
 static int CompareCuts(const void* aPtr, const void* bPtr)
