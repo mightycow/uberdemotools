@@ -955,7 +955,6 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		}
 	}
 
-	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext, info->ProtocolCb))
 	{
 		return (s32)udtErrorCode::OperationFailed;
@@ -1017,6 +1016,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 			return (s32)udtErrorCode::OperationFailed;
 		}
 
+		context->ResetForNextDemo(false);
 		if(!context->Parser.Init(&context->Context, protocol, protocol, info->GameStateIndex))
 		{
 			return (s32)udtErrorCode::OperationFailed;
