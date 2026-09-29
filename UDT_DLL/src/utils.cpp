@@ -365,14 +365,6 @@ bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperatio
 
 	while(runner.ParseNextMessage())
 	{
-		//MicroSleep(1);
-		
-		int x = 0;
-		for(int i = 0; i < 50000; i++)
-		{
-			x++;
-		}
-		x--;
 	}
 
 	runner.FinishParsing();
