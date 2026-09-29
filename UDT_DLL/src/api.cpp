@@ -1025,7 +1025,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		context->Parser.SetFilePath(demoFilePath);
 
 		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
-		for(u32 c = 0; c < cutInfo->CutCount; ++c)
+		for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
 		{
 			context->Parser._cuts.Add(cutBatch[c]);
 		}

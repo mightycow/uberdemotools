@@ -171,15 +171,10 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		return true;
 	}
 
-	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
-
-	const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
-	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
-	UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
 	// Save the cut sections in a temporary array.
 	udtVMArray<udtCutSection> sections("CutByPattern::SectionsArray");
@@ -195,14 +190,6 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	{
 		startTimes.Add(parserStartTimes[i]);
 	}
-	
-	// This will clear the plug-in's data.
-	if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
-	{
-		return false;
-	}
-
-	context->Parser.SetFilePath(demoFilePath);
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
@@ -210,23 +197,63 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
 	{
 		const udtCutSection& section = sections[i];
-		context->Parser.AddCut(
-			section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, 
-			&CallbackCutDemoFileNameCreation, section.VeryShortDesc, &cutCbInfo);
+		udtBaseParser::udtCutInfo cut = {};
+		cut.GameStateIndex = section.GameStateIndex;
+		cut.StartTimeMs = section.StartTimeMs;
+		cut.EndTimeMs = section.EndTimeMs;
+		cut.StreamCreator = &CallbackCutDemoFileNameCreation;
+		cut.VeryShortDesc = section.VeryShortDesc;
+		cut.UserData = &cutCbInfo;
+		context->CutBatcher.Cuts.Add(cut);
 	}
+	context->CutBatcher.Process();
 
-	for(u32 i = 0, count = startTimes.GetSize(); i < count; ++i)
+	const u32 batchCount = context->CutBatcher.BatchCount;
+	if(batchCount > 1)
 	{
-		context->Parser.AddValidGameStateRange(startTimes[i], UDT_S32_MAX);
+		context->Context.LogInfo("Processing %d times because of overlapping cuts: %s", (int)batchCount, demoFilePath);
 	}
 
-	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
+	for(u32 b = 0; b < batchCount; ++b)
+	{
+		const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
+		const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
+		UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
-	context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
-	const bool result = RunParser(context->Parser, file, info->CancelOperation);
-	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
+		context->ResetForNextDemo(true);
 
-	return result;
+		// This will clear the plug-in's data.
+		if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
+		{
+			return false;
+		}
+
+		context->Parser.SetFilePath(demoFilePath);
+
+		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
+		for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
+		{
+			context->Parser._cuts.Add(cutBatch[c]);
+		}
+
+		for(u32 i = 0, count = startTimes.GetSize(); i < count; ++i)
+		{
+			context->Parser.AddValidGameStateRange(startTimes[i], UDT_S32_MAX);
+		}
+
+		context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
+
+		//context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
+		const bool result = RunParser(context->Parser, file, info->CancelOperation);
+		//context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
+
+		if(!result)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, udtPatternSearchContext* searchContext)
