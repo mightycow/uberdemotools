@@ -969,7 +969,7 @@ void TestMultiPatternCut()
 	pattern.EndOffsetSec = 10;
 	pattern.PatternCount = 2;
 	pattern.Patterns = patterns;
-	pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
+	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
 
 	udtCutDemoFilesByPattern(&parse, &multiParse, &pattern);
 }
@@ -1039,8 +1039,8 @@ int udt_main(int argc, char** argv)
 	// @TODO: remove...
 	if(1)
 	{
-		//TestMultiPatternCut();
-		TestMultiTimedCut();
+		TestMultiPatternCut();
+		//TestMultiTimedCut();
 		return 0;
 	}
 
