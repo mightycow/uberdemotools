@@ -52,8 +52,6 @@ public:
 	bool	ParseNextMessage(const udtMessage& inMsg, s32 inServerMessageSequence, u32 fileOffset); // Returns true if should continue parsing.
 	void	FinishParsing(bool success);
 
-	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData = NULL);
-	void	AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath);
 	void	AddPlugIn(udtBaseParserPlugIn* plugIn);
 	void	AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs);
 

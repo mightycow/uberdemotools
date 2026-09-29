@@ -325,9 +325,17 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 
 	context->Parser.SetFilePath(demoFilePath);
 
-	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo = {};
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
-	context->Parser.AddCut(0, UDT_S32_MIN, UDT_S32_MAX, &CallbackConvertedDemoFileNameCreation, "", &cutCbInfo);
+
+	udtBaseParser::udtCutInfo cut = {};
+	cut.GameStateIndex = 0;
+	cut.StartTimeMs = UDT_S32_MIN;
+	cut.EndTimeMs = UDT_S32_MAX;
+	cut.StreamCreator = &CallbackConvertedDemoFileNameCreation;
+	cut.VeryShortDesc = "";
+	cut.UserData = &cutCbInfo;
+	context->Parser._cuts.Add(cut);
 	
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{
