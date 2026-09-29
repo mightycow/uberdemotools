@@ -243,9 +243,9 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 		context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
 
-		//context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
+		context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
 		const bool result = RunParser(context->Parser, file, info->CancelOperation);
-		//context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
+		context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
 
 		if(!result)
 		{
