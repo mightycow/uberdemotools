@@ -940,6 +940,8 @@ void TestMultiPatternCut()
 	udtParseArg parse = {};
 	parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
 	parse.MessageCb = &CallbackConsoleMessage;
+	parse.ProgressCb = &CallbackConsoleProgress;
+	parse.MinProgressTimeMs = 50;
 
 	s32 errorCode = 0;
 	const char* filePath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\duel.dm_68";
@@ -986,8 +988,7 @@ void TestMultiTimedCut()
 	const char* filePath = "C:\\Code\\UberDemoTools\\demo_files\\dm_68_cpma\\3_matches_2_gamestates.dm_68";
 	const char* outputPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
 
-	udtParseArg info;
-	memset(&info, 0, sizeof(info));
+	udtParseArg info = {};
 	info.MessageCb = &CallbackConsoleMessage;
 	info.ProgressCb = &CallbackConsoleProgress;
 	info.OutputFolderPath = outputPath;
