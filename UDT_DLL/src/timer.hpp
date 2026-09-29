@@ -34,5 +34,5 @@ private:
 };
 
 #if defined(_DEBUG)
-void MicroSleep(u64 ms);
+void MicroSleep(u64 us);
 #endif

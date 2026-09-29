@@ -955,9 +955,6 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		}
 	}
 
-	progressContext.CurrentJobByteCount = fileByteCount;
-	progressContext.ProcessedByteCount = fileByteCount;
-
 	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext, info->ProtocolCb))
 	{
@@ -970,64 +967,82 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		return (s32)udtErrorCode::OperationFailed;
 	}
 
-	if(info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
-	if(!context->Parser.Init(&context->Context, protocol, protocol, info->GameStateIndex))
-	{
-		return (s32)udtErrorCode::OperationFailed;
-	}
-
 	CallbackCutDemoFileStreamCreationInfo streamInfo;
 	streamInfo.OutputFolderPath = info->OutputFolderPath;
-
-	context->Parser.SetFilePath(demoFilePath);
 
 	for(u32 i = 0; i < cutInfo->CutCount; ++i)
 	{
 		const udtCut& cut = cutInfo->Cuts[i];
-		if(cut.StartTimeMs < cut.EndTimeMs)
+		if(cut.StartTimeMs >= cut.EndTimeMs)
 		{
-			if(cut.FilePath != NULL)
-			{
-				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, cut.FilePath);
-			}
-			else
-			{
-				context->Parser.AddCut(info->GameStateIndex, cut.StartTimeMs, cut.EndTimeMs, &CallbackCutDemoFileNameCreation, NULL, &streamInfo);
-			}
-
-			udtParserCut c = {};
-			c.GameStateIndex = cut.GameStateIndex;
-			c.StartTimeMs = cut.StartTimeMs;
-			c.EndTimeMs = cut.EndTimeMs;
-			if(cut.FilePath != NULL)
-			{
-				c.FilePath = cut.FilePath;
-			}
-			else
-			{
-				c.StreamCreator = &CallbackCutDemoFileNameCreation;
-				c.VeryShortDesc = NULL;
-				c.UserData = &streamInfo;
-			}
-			context->CutBatcher.Cuts.Add(c);
+			continue;
 		}
+
+		udtParserCut c = {};
+		c.GameStateIndex = cut.GameStateIndex;
+		c.StartTimeMs = cut.StartTimeMs;
+		c.EndTimeMs = cut.EndTimeMs;
+		if(cut.FilePath != NULL)
+		{
+			c.FilePath = cut.FilePath;
+		}
+		else
+		{
+			c.StreamCreator = &CallbackCutDemoFileNameCreation;
+			c.VeryShortDesc = NULL;
+			c.UserData = &streamInfo;
+		}
+		context->CutBatcher.Cuts.Add(c);
 	}
 	context->CutBatcher.Process();
 
-	for(u32 i = 0, count = gameStateRanges.GetSize(); i < count; ++i)
+	const u32 batchCount = context->CutBatcher.BatchCount;
+	if(batchCount > 1)
 	{
-		context->Parser.AddValidGameStateRange(gameStateRanges[i], UDT_S32_MAX);
+		context->Context.LogInfo("Processing %d times because of overlapping cuts: %s", (int)batchCount, demoFilePath);
 	}
 
-	context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
-
-	if(!RunParser(context->Parser, file, info->CancelOperation))
+	progressContext.CurrentJobByteCount = fileByteCount;
+	progressContext.ProcessedByteCount = fileByteCount;
+	progressContext.TotalByteCount = fileByteCount * (1 + batchCount);
+	for(u32 b = 0; b < batchCount; ++b)
 	{
-		return (s32)udtErrorCode::OperationFailed;
+		if(b == 0 && info->FileOffset > 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		if(b != 0 && file.Seek((s32)info->FileOffset, udtSeekOrigin::Start) != 0)
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		if(!context->Parser.Init(&context->Context, protocol, protocol, info->GameStateIndex))
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		context->Parser.SetFilePath(demoFilePath);
+
+		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
+		for(u32 c = 0; c < cutInfo->CutCount; ++c)
+		{
+			context->Parser._cuts.Add(cutBatch[c]);
+		}
+
+		for(u32 i = 0, count = gameStateRanges.GetSize(); i < count; ++i)
+		{
+			context->Parser.AddValidGameStateRange(gameStateRanges[i], UDT_S32_MAX);
+		}
+
+		context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
+
+		if(!RunParser(context->Parser, file, info->CancelOperation))
+		{
+			return (s32)udtErrorCode::OperationFailed;
+		}
+
+		progressContext.ProcessedByteCount += fileByteCount;
 	}
 
 	return (s32)udtErrorCode::None;

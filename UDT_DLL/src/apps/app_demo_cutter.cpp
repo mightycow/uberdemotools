@@ -1036,17 +1036,17 @@ void TestMultiTimedCut()
 
 int udt_main(int argc, char** argv)
 {
-	if(argc < 3)
-	{
-		PrintHelp();
-		return 0;
-	}
-
 	// @TODO: remove...
 	if(1)
 	{
 		//TestMultiPatternCut();
 		TestMultiTimedCut();
+		return 0;
+	}
+
+	if(argc < 3)
+	{
+		PrintHelp();
 		return 0;
 	}
 
