@@ -176,13 +176,6 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		return false;
 	}
 
-	// Save the cut sections in a temporary array.
-	udtVMArray<udtCutSection> sections("CutByPattern::SectionsArray");
-	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
-	{
-		sections.Add(plugIn.CutSections[i]);
-	}
-
 	// Save the gamestate ranges in a temporary array.
 	udtVMArray<s32> startTimes("CutByPattern::StartTimesArray");
 	udtVMArray<s32>& parserStartTimes = context->Parser._inGameStateStartServerTimeMs;
@@ -194,9 +187,9 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
 
-	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
+	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
-		const udtCutSection& section = sections[i];
+		const udtCutSection& section = plugIn.CutSections[i];
 		udtBaseParser::udtCutInfo cut = {};
 		cut.GameStateIndex = section.GameStateIndex;
 		cut.StartTimeMs = section.StartTimeMs;
