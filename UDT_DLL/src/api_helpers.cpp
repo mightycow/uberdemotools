@@ -216,7 +216,13 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 	for(u32 b = 0; b < batchCount; ++b)
 	{
-		const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
+		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
+		const s32 gsIndex = cutBatch[0].GameStateIndex;
+		if((u32)gsIndex >= context->Parser._inGameStateFileOffsets.GetSize())
+		{
+			return false;
+		}
+
 		const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
 		UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
@@ -230,7 +236,6 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 		context->Parser.SetFilePath(demoFilePath);
 
-		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
 		for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
 		{
 			context->Parser._cuts.Add(cutBatch[c]);
@@ -243,10 +248,11 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 		context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
 
+		// We assume 1 parse for cut by pattern and don't re-adjust progress because batch processing is the norm.
+		// We assume 2 parses for cut by time and do re-adjust progress because cut by time works on a single demo.
 		context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
 		const bool result = RunParser(context->Parser, file, info->CancelOperation);
 		context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
-
 		if(!result)
 		{
 			return false;
