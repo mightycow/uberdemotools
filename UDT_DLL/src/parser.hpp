@@ -53,7 +53,6 @@ public:
 	void	FinishParsing(bool success);
 
 	void	AddPlugIn(udtBaseParserPlugIn* plugIn);
-	void	AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs);
 
 	const udtString       GetConfigString(s32 csIndex) const;
 	const udtGameInfo     GetGameInfo() const;

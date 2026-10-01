@@ -48,6 +48,8 @@ public:
 	void UpdatePlugInBufferStructs();
 	u32  GetDemoCount() const { return DemoCount; }
 	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
+	void SaveDetectedGameStateRanges();
+	void SetValidGameStateRanges();
 
 private:
 	void DestroyPlugIns();
@@ -61,6 +63,7 @@ public:
 	udtVMLinearAllocator PlugInAllocator { "ParserContext::PlugIn" };
 	udtVMArray<AddOnItem> PlugIns { "ParserContext::PlugInsArray" }; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
 	udtVMArray<u32> InputIndices { "ParserContext::InputIndicesArray" };
+	udtVMArray<s32> GameStateRanges { "ParserContext::GameStateRangeArray" };
 	udtVMLinearAllocator PlugInTempAllocator { "ParserContext::PlugInTemp" };
 #if defined(UDT_WINDOWS)
 	udtReadOnlySequentialFileStream DemoReader;

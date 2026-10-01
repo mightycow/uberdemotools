@@ -143,6 +143,29 @@ void udtParserContext_s::GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInI
 	}
 }
 
+void udtParserContext_s::SaveDetectedGameStateRanges()
+{
+	const udtVMArray<s32>& ranges = Parser._inGameStateStartServerTimeMs;
+	GameStateRanges.Clear();
+	for(u32 i = 0, count = ranges.GetSize(); i < count; ++i)
+	{
+		GameStateRanges.Add(ranges[i]);
+	}
+}
+
+void udtParserContext_s::SetValidGameStateRanges()
+{
+	udtVMArray<udtBaseParser::udtGameStateRange>& ranges = Parser._inValidGameStateRanges;
+	ranges.Clear();
+	for(u32 i = 0, count = GameStateRanges.GetSize(); i < count; ++i)
+	{
+		udtBaseParser::udtGameStateRange range = {};
+		range.StartTimeMs = GameStateRanges[i];
+		range.EndTimeMs = UDT_S32_MAX;
+		ranges.Add(range);
+	}
+}
+
 void udtParserContext_s::DestroyPlugIns()
 {
 	for(u32 i = 0, count = PlugIns.GetSize(); i < count; ++i)

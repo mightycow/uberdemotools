@@ -1278,13 +1278,3 @@ void udtBaseParser::AddPlugIn(udtBaseParserPlugIn* plugIn)
 {
 	PlugIns.Add(plugIn);
 }
-
-void udtBaseParser::AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs)
-{
-	udtGameStateRange range;
-	memset(&range, 0, sizeof(range));
-	range.StartTimeMs = startTimeMs;
-	range.EndTimeMs = endTimeMs;
-
-	_inValidGameStateRanges.Add(range);
-}
