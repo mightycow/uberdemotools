@@ -1035,14 +1035,33 @@ void TestMultiTimedCut()
 	udtDestroyContext(context);
 }
 
+void TestTimedCutMinqlx(int* argc, char*** argv)
+{
+	// t -g=0 -s=42 -e=653 -o=cut tenbit/20260914-183300_slot03_tenbit.dm_91
+	static char* args[] =
+	{
+		(*argv)[0],
+		"t",
+		"-g=0",
+		"-s=42",
+		"-e=653",
+		"-o=cut",
+		"tenbit/20260914-183300_slot03_tenbit.dm_91"
+	};
+
+	*argc = UDT_ARRAY_LENGTH(args);
+	*argv = args;
+}
+
 int udt_main(int argc, char** argv)
 {
 	// @TODO: remove...
 	if(1)
 	{
-		TestMultiPatternCut();
+		//TestMultiPatternCut();
 		//TestMultiTimedCut();
-		return 0;
+		TestTimedCutMinqlx(&argc, &argv);
+		//return 0;
 	}
 
 	if(argc < 3)
