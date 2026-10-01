@@ -1035,6 +1035,7 @@ void TestMultiTimedCut()
 	udtDestroyContext(context);
 }
 
+// @TODO: (re)move
 void TestTimedCutMinqlx(int* argc, char*** argv)
 {
 	// t -g=0 -s=42 -e=653 -o=cut tenbit/20260914-183300_slot03_tenbit.dm_91
@@ -1053,6 +1054,49 @@ void TestTimedCutMinqlx(int* argc, char*** argv)
 	*argv = args;
 }
 
+// @TODO: (re)move
+void TestPatternCutMinqlx()
+{
+	udtParseArg parse = {};
+	parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
+	parse.MessageCb = &CallbackConsoleMessage;
+	parse.ProgressCb = &CallbackConsoleProgress;
+	parse.MinProgressTimeMs = 50;
+
+	s32 errorCode = 0;
+	const char* filePath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\tenbit\\20260914-183300_slot03_tenbit.dm_91";
+	udtMultiParseArg multiParse = {};
+	multiParse.FileCount = 1;
+	multiParse.FilePaths = &filePath;
+	multiParse.OutputErrorCodes = &errorCode;
+
+	udtMatchPatternArg matchPattern = {};
+	matchPattern.MatchStartOffsetMs = 0;
+	matchPattern.MatchEndOffsetMs = 0;
+
+	udtFlickRailPatternArg flickPattern = {};
+	flickPattern.MinAngleDelta = 0.001f;
+	flickPattern.MinSpeed = 0.001f;
+	flickPattern.MinAngleDeltaSnapshotCount = 2;
+	flickPattern.MinSpeedSnapshotCount = 2;
+
+	udtPatternInfo patterns[2] = {};
+	patterns[0].Type = udtPatternType::Matches;
+	patterns[0].TypeSpecificInfo = &matchPattern;
+	patterns[1].Type = udtPatternType::FlickRailFrags;
+	patterns[1].TypeSpecificInfo = &flickPattern;
+
+	udtPatternSearchArg pattern = {};
+	pattern.PlayerIndex = udtPlayerIndex::FirstPersonPlayer;
+	pattern.StartOffsetSec = 10;
+	pattern.EndOffsetSec = 10;
+	pattern.PatternCount = 2;
+	pattern.Patterns = patterns;
+	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
+
+	udtCutDemoFilesByPattern(&parse, &multiParse, &pattern);
+}
+
 int udt_main(int argc, char** argv)
 {
 	// @TODO: remove...
@@ -1060,8 +1104,9 @@ int udt_main(int argc, char** argv)
 	{
 		//TestMultiPatternCut();
 		//TestMultiTimedCut();
-		TestTimedCutMinqlx(&argc, &argv);
-		//return 0;
+		//TestTimedCutMinqlx(&argc, &argv);
+		TestPatternCutMinqlx();
+		return 0;
 	}
 
 	if(argc < 3)
