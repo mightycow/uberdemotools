@@ -304,7 +304,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	}
 
 	//
-	// Sort cuts by increasing order: gamestate index -> start time -> end time -> pattern mask
+	// Sort cuts in increasing order: gamestate index -> start time -> end time -> pattern mask
 	//
 	qsort(_tempCutSections.GetStartAddress(), (size_t)_tempCutSections.GetSize(), sizeof(decltype(_tempCutSections)::Type), &CompareCuts);
 
