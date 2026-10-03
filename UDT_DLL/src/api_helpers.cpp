@@ -193,7 +193,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		cut.UserData = &cutCbInfo;
 		context->CutBatcher.Cuts.Add(cut);
 	}
-	context->CutBatcher.Process();
+	context->CutBatcher.CreateBatches();
 
 	const u32 batchCount = context->CutBatcher.BatchCount;
 	if(batchCount > 1)

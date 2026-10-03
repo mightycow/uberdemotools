@@ -983,7 +983,7 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 		}
 		context->CutBatcher.Cuts.Add(c);
 	}
-	context->CutBatcher.Process();
+	context->CutBatcher.CreateBatches();
 
 	const u32 batchCount = context->CutBatcher.BatchCount;
 	if(batchCount > 1)

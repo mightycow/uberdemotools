@@ -13,9 +13,9 @@ struct udtCutBatcher
 {
 	udtCutBatcher();
 
-	void Process();
+	void CreateBatches();
 
-	// Input.
+	// Input. Can be unsorted, have overlaps and have invalid ranges.
 	udtCutArray Cuts { "CutBatcher::CutsArray" };
 
 	// Output.

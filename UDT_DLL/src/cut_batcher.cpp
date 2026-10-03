@@ -104,7 +104,7 @@ udtCutBatcher::udtCutBatcher()
 	BatchCount = 0;
 }
 
-void udtCutBatcher::Process()
+void udtCutBatcher::CreateBatches()
 {
 	BatchCount = 0;
 	RemoveInvalidCuts(Cuts);
