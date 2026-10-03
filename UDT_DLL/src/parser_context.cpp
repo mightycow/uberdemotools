@@ -102,7 +102,6 @@ void udtParserContext_s::ResetForNextDemo(bool keepPlugInData)
 
 	Context.Reset();
 	PlugInTempAllocator.Clear();
-	CutBatcher.Clear();
 }
 
 bool udtParserContext_s::CopyBuffersStruct(u32 plugInId, void* buffersStruct)
@@ -153,7 +152,7 @@ void udtParserContext_s::SaveDetectedGameStateRanges()
 	}
 }
 
-void udtParserContext_s::SetValidGameStateRanges()
+void udtParserContext_s::SetParserCuttableGameStateRanges()
 {
 	udtVMArray<udtBaseParser::udtGameStateRange>& ranges = Parser._inValidGameStateRanges;
 	ranges.Clear();
@@ -163,6 +162,23 @@ void udtParserContext_s::SetValidGameStateRanges()
 		range.StartTimeMs = GameStateRanges[i];
 		range.EndTimeMs = UDT_S32_MAX;
 		ranges.Add(range);
+	}
+}
+
+void udtParserContext_s::SetParserCutsFromBatchAtIndex(u32 batchIndex)
+{
+	if(batchIndex >= CutBatcher.BatchCount)
+	{
+		assert(!"Invalid batch index");
+		return;
+	}
+
+	const udtCutArray& cutBatch = CutBatcher.Batches[batchIndex];
+	assert(!cutBatch.IsEmpty());
+	Parser._cuts.Clear();
+	for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
+	{
+		Parser._cuts.Add(cutBatch[c]);
 	}
 }
 

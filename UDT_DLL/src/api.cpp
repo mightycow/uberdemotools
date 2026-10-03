@@ -943,7 +943,6 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 	progressContext.MinProgressTimeMs = info->MinProgressTimeMs;
 
 	ParseDemoForGameStateRanges(protocol, context, &progressContext, info, demoFilePath);
-
 	context->SaveDetectedGameStateRanges();
 
 	if(!context->Context.SetCallbacks(info->MessageCb, &SingleThreadProgressCallback, &progressContext, info->ProtocolCb))
@@ -1015,13 +1014,8 @@ UDT_API(s32) udtCutDemoFileByTime(udtParserContext* context, const udtParseArg* 
 
 		context->Parser.SetFilePath(demoFilePath);
 
-		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
-		for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
-		{
-			context->Parser._cuts.Add(cutBatch[c]);
-		}
-
-		context->SetValidGameStateRanges();
+		context->SetParserCutsFromBatchAtIndex(b);
+		context->SetParserCuttableGameStateRanges();
 
 		context->Context.LogInfo("Processing for a timed cut: %s", demoFilePath);
 

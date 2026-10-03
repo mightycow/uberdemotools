@@ -1102,10 +1102,10 @@ int udt_main(int argc, char** argv)
 	// @TODO: remove...
 	if(1)
 	{
-		//TestMultiPatternCut();
+		TestMultiPatternCut();
 		//TestMultiTimedCut();
 		//TestTimedCutMinqlx(&argc, &argv);
-		TestPatternCutMinqlx();
+		//TestPatternCutMinqlx();
 		return 0;
 	}
 

@@ -204,6 +204,7 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 	for(u32 b = 0; b < batchCount; ++b)
 	{
 		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
+		assert(!cutBatch.IsEmpty());
 		const s32 gsIndex = cutBatch[0].GameStateIndex;
 		if((u32)gsIndex >= context->Parser._inGameStateFileOffsets.GetSize())
 		{
@@ -214,8 +215,6 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
 
 		context->ResetForNextDemo(true);
-
-		// This will clear the plug-in's data.
 		if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
 		{
 			return false;
@@ -223,12 +222,8 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 
 		context->Parser.SetFilePath(demoFilePath);
 
-		for(u32 c = 0, count = cutBatch.GetSize(); c < count; ++c)
-		{
-			context->Parser._cuts.Add(cutBatch[c]);
-		}
-
-		context->SetValidGameStateRanges();
+		context->SetParserCutsFromBatchAtIndex(b);
+		context->SetParserCuttableGameStateRanges();
 
 		context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
 

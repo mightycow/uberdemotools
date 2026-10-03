@@ -100,21 +100,16 @@ static int CompareCuts(const void* aPtr, const void* bPtr)
 
 udtCutBatcher::udtCutBatcher()
 {
-	Clear();
-}
-
-void udtCutBatcher::Clear()
-{
 	Cuts.Clear();
 	BatchCount = 0;
 }
 
 void udtCutBatcher::Process()
 {
+	BatchCount = 0;
 	RemoveInvalidCuts(Cuts);
 	if(Cuts.IsEmpty())
 	{
-		BatchCount = 0;
 		return;
 	}
 

@@ -49,7 +49,8 @@ public:
 	u32  GetDemoCount() const { return DemoCount; }
 	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
 	void SaveDetectedGameStateRanges();
-	void SetValidGameStateRanges();
+	void SetParserCuttableGameStateRanges();
+	void SetParserCutsFromBatchAtIndex(u32 batchIndex);
 
 private:
 	void DestroyPlugIns();
