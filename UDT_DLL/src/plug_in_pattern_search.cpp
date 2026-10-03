@@ -319,7 +319,7 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	{
 		const u32 count = _tempCutSections.GetSize();
 		CutSections.Resize(count);
-		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), (size_t)count * sizeof(decltype(_tempCutSections)::Type));
+		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), _tempCutSections.GetUsedByteCount());
 	}
 }
 
