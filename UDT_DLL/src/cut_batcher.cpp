@@ -113,7 +113,7 @@ void udtCutBatcher::CreateBatches()
 		return;
 	}
 
-	qsort(Cuts.GetStartAddress(), (size_t)Cuts.GetSize(), sizeof(decltype(Cuts)::Type), &CompareCuts);
+	qsort(Cuts.GetStartAddress(), (size_t)Cuts.GetSize(), decltype(Cuts)::TypeSize, &CompareCuts);
 	if(HasOverlappingCuts(Cuts))
 	{
 		GenerateNonOverlappingLists(Batches, BatchCount, Cuts);

@@ -14,6 +14,7 @@ template<typename T>
 struct udtVMArray
 {
 	using Type = T;
+	static const constexpr size_t TypeSize = sizeof(T);
 
 	udtVMArray(const char* allocatorName)
 		: _allocator(allocatorName)
