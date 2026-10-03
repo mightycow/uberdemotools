@@ -125,4 +125,9 @@ void udtCutBatcher::CreateBatches()
 		memcpy(batch.GetStartAddress(), Cuts.GetStartAddress(), Cuts.GetUsedByteCount());
 		BatchCount = 1;
 	}
+
+	Cuts.Clear();
+
+	assert(BatchCount > 0);
+	assert(Batches[0].GetSize() > 0);
 }
