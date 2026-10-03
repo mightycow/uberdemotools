@@ -24,4 +24,7 @@
 	<Type Name="udtCutSection">
 		<DisplayString>{{ {GameStateIndex}, {StartTimeMs / 60000}:{(StartTimeMs / 1000) % 60} -> {EndTimeMs / 60000}:{(EndTimeMs / 1000) % 60} }}</DisplayString>
 	</Type>
+	<Type Name="udtParserCut">
+		<DisplayString>{{ {GameStateIndex}, {StartTimeMs / 60000}:{(StartTimeMs / 1000) % 60} -> {EndTimeMs / 60000}:{(EndTimeMs / 1000) % 60} }}</DisplayString>
+	</Type>
 </AutoVisualizer>
