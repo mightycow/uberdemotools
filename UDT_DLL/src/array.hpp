@@ -13,6 +13,9 @@
 template<typename T>
 struct udtVMArray
 {
+	using Type = T;
+	static const constexpr size_t TypeSize = sizeof(T);
+
 	udtVMArray(const char* allocatorName)
 		: _allocator(allocatorName)
 		, _size(0)
@@ -161,6 +164,11 @@ struct udtVMArray
 	u32 GetSize() const
 	{
 		return _size;
+	}
+
+	uptr GetUsedByteCount()
+	{
+		return (size_t)_size * sizeof(T);
 	}
 
 	uptr GetReservedByteCount() const

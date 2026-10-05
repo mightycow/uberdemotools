@@ -17,37 +17,28 @@ static const size_t SizeOfAllAnalyzers = UDT_PATTERN_LIST(UDT_PATTERN_ITEM) 0;
 #undef UDT_PATTERN_ITEM
 
 
-struct CutSection : public udtCutSection
+static int CompareCuts(const void* aPtr, const void* bPtr)
 {
-	// qsort isn't guaranteed to be stable, so we work around that.
-	int Order;
-};
+	const udtCutSection& a = *(udtCutSection*)aPtr;
+	const udtCutSection& b = *(udtCutSection*)bPtr;
 
-static int SortByStartTimeAscending(const void* aPtr, const void* bPtr)
-{
-	const u64 a = ((CutSection*)aPtr)->StartTimeMs;
-	const u64 b = ((CutSection*)bPtr)->StartTimeMs;
+	const s32 g = a.GameStateIndex - b.GameStateIndex;
+	if(g < 0) return -1;
+	if(g > 0) return 1;
 
-	return (int)(a - b);
-}
+	const s32 s = a.StartTimeMs - b.StartTimeMs;
+	if(s < 0) return -1;
+	if(s > 0) return 1;
 
-static int StableSortByGameStateIndexAscending(const void* aPtr, const void* bPtr)
-{
-	const CutSection& a = *(CutSection*)aPtr;
-	const CutSection& b = *(CutSection*)bPtr;
+	const s32 e = a.EndTimeMs - b.EndTimeMs;
+	if(e < 0) return -1;
+	if(e > 0) return 1;
 
-	const int byGameState = a.GameStateIndex - b.GameStateIndex;
-	const int byPreviousOrder = a.Order - b.Order;
+	const s32 p = (s32)a.PatternTypes - (s32)b.PatternTypes;
+	if(p < 0) return -1;
+	if(p > 0) return 1;
 
-	return byGameState != 0 ? byGameState : byPreviousOrder;
-}
-
-static void AppendCutSections(udtVMArray<udtCutSection>& dest, udtVMArray<CutSection>& source)
-{
-	for(u32 i = 0, cutCount = source.GetSize(); i < cutCount; ++i)
-	{
-		dest.Add(source[i]);
-	}
+	return 0;
 }
 
 static bool MatchesRule(udtVMLinearAllocator& allocator, const udtString& configStringName, const udtStringMatchingRule& rule, udtProtocol::Id protocol)
@@ -302,49 +293,33 @@ void udtPatternSearchPlugIn::FinishDemoAnalysis()
 	//
 	// Create a list with all the cut sections.
 	//
-	udtVMArray<CutSection> tempCutSections("CutByPatternPlugIn::FinishDemoAnalysis::TempCutSectionsArray");
+	_tempCutSections.Clear();
 	for(u32 i = 0, analyzerCount = _analyzers.GetSize(); i < analyzerCount; ++i)
 	{
 		udtPatternSearchAnalyzerBase* const analyzer = _analyzers[i];
 		for(u32 j = 0, cutCount = analyzer->CutSections.GetSize(); j < cutCount; ++j)
 		{
-			const udtCutSection cut = _analyzers[i]->CutSections[j];
-			CutSection newCut;
-			newCut.udtCutSection::operator=(cut);
-			tempCutSections.Add(newCut);
+			_tempCutSections.Add(_analyzers[i]->CutSections[j]);
 		}
 	}
 
 	//
-	// Apply sorting pass #1.
+	// Sort cuts in increasing order: gamestate index -> start time -> end time -> pattern mask
 	//
-	const u32 cutCount = tempCutSections.GetSize();
-	qsort(tempCutSections.GetStartAddress(), (size_t)cutCount, sizeof(CutSection), &SortByStartTimeAscending);
+	qsort(_tempCutSections.GetStartAddress(), (size_t)_tempCutSections.GetSize(), decltype(_tempCutSections)::TypeSize, &CompareCuts);
 
 	//
-	// Apply sorting pass #2, which must be stable with respect to 
-	// the sorting of pass #1.
-	//
-	for(u32 i = 0; i < cutCount; ++i)
-	{
-		tempCutSections[i].Order = (int)i;
-	}
-	qsort(tempCutSections.GetStartAddress(), (size_t)cutCount, sizeof(CutSection), &StableSortByGameStateIndexAscending);
-
-	//
-	// Create a new list with the sorted data using the final data format
-	// and merge the sections if asked for it.
+	// Merge the sections if asked for it.
 	//
 	if((GetInfo().Flags & (u32)udtPatternSearchArgMask::MergeCutSections) != 0)
 	{
-		udtVMArray<udtCutSection> cutSections("CutByPatternPlugIn::FinishDemoAnalysis::MergedCutSectionsArray");
-		AppendCutSections(cutSections, tempCutSections);
-		MergeRanges(CutSections, cutSections);
+		MergeRanges(CutSections, _tempCutSections);
 	}
 	else
 	{
-		CutSections.Clear();
-		AppendCutSections(CutSections, tempCutSections);
+		const u32 count = _tempCutSections.GetSize();
+		CutSections.Resize(count);
+		memcpy(CutSections.GetStartAddress(), _tempCutSections.GetStartAddress(), _tempCutSections.GetUsedByteCount());
 	}
 }
 
