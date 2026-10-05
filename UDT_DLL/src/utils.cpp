@@ -352,7 +352,12 @@ s32 GetErrorCode(bool success, const s32* cancel)
 		return (s32)udtErrorCode::None;
 	}
 
-	return (s32)((cancel != NULL && *cancel != 0) ? udtErrorCode::OperationCanceled : udtErrorCode::OperationFailed);
+	if(cancel != NULL && *cancel != 0)
+	{
+		return (s32)udtErrorCode::OperationCanceled;
+	}
+
+	return (s32)udtErrorCode::OperationFailed;
 }
 
 bool RunParser(udtBaseParser& parser, udtStream& file, const s32* cancelOperation)
