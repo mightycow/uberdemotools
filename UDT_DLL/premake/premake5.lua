@@ -7,6 +7,7 @@ path_inc = path_root.."/include"
 path_libs = path_root.."/libs"
 path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
+path_natvis = path_root.."/src/natvis"
 
 local function SetTargetAndLink(option) 
 
@@ -42,7 +43,7 @@ local function ApplyProjectSettings()
 
 	location ( path_build.."/".._ACTION )
 
-	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h" }
+	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_natvis.."/*.natvis" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
 	rtti "Off"
