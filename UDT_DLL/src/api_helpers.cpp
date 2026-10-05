@@ -171,62 +171,74 @@ static bool CutByPattern(udtParserContext* context, const udtParseArg* info, con
 		return true;
 	}
 
-	context->ResetForNextDemo(true);
 	if(!context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb))
 	{
 		return false;
 	}
 
-	const s32 gsIndex = plugIn.CutSections[0].GameStateIndex;
-	const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
-	UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
-
-	// Save the cut sections in a temporary array.
-	udtVMArray<udtCutSection> sections("CutByPattern::SectionsArray");
-	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
-	{
-		sections.Add(plugIn.CutSections[i]);
-	}
-
-	// Save the gamestate ranges in a temporary array.
-	udtVMArray<s32> startTimes("CutByPattern::StartTimesArray");
-	udtVMArray<s32>& parserStartTimes = context->Parser._inGameStateStartServerTimeMs;
-	for(u32 i = 0, count = parserStartTimes.GetSize(); i < count; ++i)
-	{
-		startTimes.Add(parserStartTimes[i]);
-	}
-	
-	// This will clear the plug-in's data.
-	if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
-	{
-		return false;
-	}
-
-	context->Parser.SetFilePath(demoFilePath);
+	context->SaveDetectedGameStateRanges();
 
 	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
 
-	for(u32 i = 0, count = sections.GetSize(); i < count; ++i)
+	for(u32 i = 0, count = plugIn.CutSections.GetSize(); i < count; ++i)
 	{
-		const udtCutSection& section = sections[i];
-		context->Parser.AddCut(
-			section.GameStateIndex, section.StartTimeMs, section.EndTimeMs, 
-			&CallbackCutDemoFileNameCreation, section.VeryShortDesc, &cutCbInfo);
+		const udtCutSection& section = plugIn.CutSections[i];
+		udtBaseParser::udtCutInfo cut = {};
+		cut.GameStateIndex = section.GameStateIndex;
+		cut.StartTimeMs = section.StartTimeMs;
+		cut.EndTimeMs = section.EndTimeMs;
+		cut.StreamCreator = &CallbackCutDemoFileNameCreation;
+		cut.VeryShortDesc = section.VeryShortDesc;
+		cut.UserData = &cutCbInfo;
+		context->CutBatcher.Cuts.Add(cut);
+	}
+	context->CutBatcher.CreateBatches();
+
+	const u32 batchCount = context->CutBatcher.BatchCount;
+	if(batchCount > 1)
+	{
+		context->Context.LogInfo("Processing %d times because of overlapping cuts: %s", (int)batchCount, demoFilePath);
 	}
 
-	for(u32 i = 0, count = startTimes.GetSize(); i < count; ++i)
+	for(u32 b = 0; b < batchCount; ++b)
 	{
-		context->Parser.AddValidGameStateRange(startTimes[i], UDT_S32_MAX);
+		udtCutArray& cutBatch = context->CutBatcher.Batches[b];
+		assert(!cutBatch.IsEmpty());
+		const s32 gsIndex = cutBatch[0].GameStateIndex;
+		if((u32)gsIndex >= context->Parser._inGameStateFileOffsets.GetSize())
+		{
+			return false;
+		}
+
+		const u32 fileOffset = context->Parser._inGameStateFileOffsets[gsIndex];
+		UDT_INIT_DEMO_FILE_READER_AT(file, demoFilePath, context, fileOffset);
+
+		context->ResetForNextDemo(true);
+		if(!context->Parser.Init(&context->Context, protocol, protocol, gsIndex, false))
+		{
+			return false;
+		}
+
+		context->Parser.SetFilePath(demoFilePath);
+
+		context->SetParserCutsFromBatchAtIndex(b);
+		context->SetParserCuttableGameStateRanges();
+
+		context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
+
+		// We assume 1 parse for cut by pattern and don't re-adjust progress because batch processing is the norm.
+		// We assume 2 parses for cut by time and do re-adjust progress because cut by time works on a single demo.
+		context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
+		const bool result = RunParser(context->Parser, file, info->CancelOperation);
+		context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
+		if(!result)
+		{
+			return false;
+		}
 	}
 
-	context->Context.LogInfo("Processing demo for applying cut(s): %s", demoFilePath);
-
-	context->Context.SetCallbacks(info->MessageCb, NULL, NULL, info->ProtocolCb);
-	const bool result = RunParser(context->Parser, file, info->CancelOperation);
-	context->Context.SetCallbacks(info->MessageCb, info->ProgressCb, info->ProgressContext, info->ProtocolCb);
-
-	return result;
+	return true;
 }
 
 static bool FindPatterns(udtParserContext* context, u32 demoIndex, const udtParseArg* info, const char* demoFilePath, udtPatternSearchContext* searchContext)
@@ -298,9 +310,17 @@ static bool ConvertDemoFile(udtParserContext* context, const udtParseArg* info, 
 
 	context->Parser.SetFilePath(demoFilePath);
 
-	CallbackCutDemoFileStreamCreationInfo cutCbInfo;
+	CallbackCutDemoFileStreamCreationInfo cutCbInfo = {};
 	cutCbInfo.OutputFolderPath = info->OutputFolderPath;
-	context->Parser.AddCut(0, UDT_S32_MIN, UDT_S32_MAX, &CallbackConvertedDemoFileNameCreation, "", &cutCbInfo);
+
+	udtBaseParser::udtCutInfo cut = {};
+	cut.GameStateIndex = 0;
+	cut.StartTimeMs = UDT_S32_MIN;
+	cut.EndTimeMs = UDT_S32_MAX;
+	cut.StreamCreator = &CallbackConvertedDemoFileNameCreation;
+	cut.VeryShortDesc = "";
+	cut.UserData = &cutCbInfo;
+	context->Parser._cuts.Add(cut);
 	
 	if(!RunParser(context->Parser, file, info->CancelOperation))
 	{

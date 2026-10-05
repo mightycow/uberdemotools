@@ -4,6 +4,7 @@
 #include "context.hpp"
 #include "parser.hpp"
 #include "parser_plug_in.hpp"
+#include "cut_batcher.hpp"
 #include "array.hpp"
 #include "modifier_context.hpp"
 #include "json_writer_context.hpp"
@@ -47,6 +48,9 @@ public:
 	void UpdatePlugInBufferStructs();
 	u32  GetDemoCount() const { return DemoCount; }
 	void GetPlugInById(udtBaseParserPlugIn*& plugIn, u32 plugInId);
+	void SaveDetectedGameStateRanges();
+	void SetParserCuttableGameStateRanges();
+	void SetParserCutsFromBatchAtIndex(u32 batchIndex);
 
 private:
 	void DestroyPlugIns();
@@ -54,11 +58,13 @@ private:
 public:
 	udtContext Context;
 	udtBaseParser Parser;
+	udtCutBatcher CutBatcher;
 	udtModifierContext ModifierContext;
 	udtJSONWriterContext JSONWriterContext;
 	udtVMLinearAllocator PlugInAllocator { "ParserContext::PlugIn" };
 	udtVMArray<AddOnItem> PlugIns { "ParserContext::PlugInsArray" }; // There is only 1 (shared) plug-in instance for each plug-in ID passed.
 	udtVMArray<u32> InputIndices { "ParserContext::InputIndicesArray" };
+	udtVMArray<s32> GameStateRanges { "ParserContext::GameStateRangeArray" };
 	udtVMLinearAllocator PlugInTempAllocator { "ParserContext::PlugInTemp" };
 #if defined(UDT_WINDOWS)
 	udtReadOnlySequentialFileStream DemoReader;

@@ -14,6 +14,7 @@ FIX: Stats analyzer: no longer crashing with minqlxtended demos with commands an
 FIX: Gamestate analyzer: ignoring minqlxtended' early snapshots before the time rewind when computing the time ranges
 FIX: Demo cutting will now ignore minqlxtended' early snapshots before the time rewind
 FIX: UDT_cutter: progress was stuck at 0% in Cut by Time mode
+FIX: Demo cutting now correctly handles overlapping cuts by doing as many passes as necessary
 
 1.3.1 (02.06.2018)
 ADD: Support for CPMA 1.50+ 1v1/hm end-game stats commands

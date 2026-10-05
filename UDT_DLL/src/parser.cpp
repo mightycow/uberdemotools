@@ -350,30 +350,6 @@ void udtBaseParser::FinishParsing(bool /*success*/)
 	_inGameStateStartServerTimeMs.Add(_startServerTimeMs);
 }
 
-void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, udtDemoNameCreator streamCreator, const char* veryShortDesc, void* userData)
-{
-	udtCutInfo cut;
-	memset(&cut, 0, sizeof(cut));
-	cut.VeryShortDesc = veryShortDesc;
-	cut.GameStateIndex = gsIndex;
-	cut.StartTimeMs = startTimeMs;
-	cut.EndTimeMs = endTimeMs;
-	cut.StreamCreator = streamCreator;
-	cut.UserData = userData;
-	_cuts.Add(cut);
-}
-
-void udtBaseParser::AddCut(s32 gsIndex, s32 startTimeMs, s32 endTimeMs, const char* filePath)
-{
-	udtCutInfo cut;
-	memset(&cut, 0, sizeof(cut));
-	cut.GameStateIndex = gsIndex;
-	cut.StartTimeMs = startTimeMs;
-	cut.EndTimeMs = endTimeMs;
-	cut.FilePath = filePath;
-	_cuts.Add(cut);
-}
-
 bool udtBaseParser::ShouldWriteMessage() const
 {
 	return _outWriteMessage && !AreAllProtocolFlagsSet(_outProtocol, udtProtocolFlags::ReadOnly);
@@ -1301,14 +1277,4 @@ const udtGameInfo udtBaseParser::GetGameInfo() const
 void udtBaseParser::AddPlugIn(udtBaseParserPlugIn* plugIn)
 {
 	PlugIns.Add(plugIn);
-}
-
-void udtBaseParser::AddValidGameStateRange(s32 startTimeMs, s32 endTimeMs)
-{
-	udtGameStateRange range;
-	memset(&range, 0, sizeof(range));
-	range.StartTimeMs = startTimeMs;
-	range.EndTimeMs = endTimeMs;
-
-	_inValidGameStateRanges.Add(range);
 }
