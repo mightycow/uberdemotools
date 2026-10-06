@@ -16,13 +16,27 @@ local function SetTargetAndLink(option)
 
 end
 
+local function GetAction()
+
+	if os.host() == "windows" then
+		if os.target() == "linux" then
+			return "gmake_linux"
+		elseif os.target() == "windows" then
+			return "gmake_windows"
+		end
+	end
+
+	return _ACTION
+
+end
+
 local function ApplyTargetAndLinkSettings() 
 
 	filter { "configurations:Debug", "platforms:x64" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/debug" )
+		SetTargetAndLink ( path_bin.."/"..GetAction().."/x64/debug" )
 
 	filter { "configurations:Release", "platforms:x64" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
+		SetTargetAndLink ( path_bin.."/"..GetAction().."/x64/release" )
 
 end
 
@@ -35,7 +49,7 @@ local function ApplyProjectSettings()
 
 	language "C++"
 
-	location ( path_build.."/".._ACTION )
+	location ( path_build.."/"..GetAction() )
 
 	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_natvis.."/*.natvis" }
 	includedirs { path_src_core, path_src_apps, path_inc }
@@ -135,7 +149,7 @@ local function ApplyTutorialProjectSettings()
 	filter { }
 	kind "ConsoleApp"
 	language "C++"
-	location ( path_build.."/".._ACTION )
+	location ( path_build.."/"..GetAction() )
 	includedirs { path_src_apps, path_inc }
 	rtti "Off"
 	exceptionhandling "On"
@@ -169,7 +183,7 @@ os.mkdir(path_bin)
 
 workspace "UDT"
 
-	location ( path_build.."/".._ACTION )
+	location ( path_build.."/"..GetAction() )
 	platforms { "x64" }
 	configurations { "Debug", "Release" }
 
@@ -241,7 +255,7 @@ workspace "UDT"
 		filter { }
 		kind "ConsoleApp"
 		language "C"
-		location ( path_build.."/".._ACTION )
+		location ( path_build.."/"..GetAction() )
 		files { path_src_apps.."/app_c89.c" }
 		includedirs { path_src_apps, path_inc }
 		rtti "Off"

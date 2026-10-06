@@ -9,14 +9,14 @@ if %choice%==1 (
 ) else if %choice%==2 (
 	set gmake_target=debug
 ) else (
-    echo Invalid choice
+	echo Invalid choice
 	exit
 )
 
 set gmake_arch=x64
-
 set gmake_config=%gmake_target%_%gmake_arch%
-cd ..\.build\gmake
+
+cd ..\.build\gmake_windows
 
 @echo on
 mingw32-make.exe clean

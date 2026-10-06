@@ -14,15 +14,10 @@ if %choice%==1 (
 )
 
 set gmake_arch=x64
-
 set gmake_config=%gmake_target%_%gmake_arch%
-cd ..\.build\gmake
-
-::set zigcc=CC="zig cc" CXX="zig c++"
-::set zigcc=SHELL=cmd.exe CC="zig cc" CXX="zig c++"
-::set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu"
 set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar"
-::set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar" LINKCMD="zig c++ -target x86_64-linux-gnu -shared"
+
+cd ..\.build\gmake_linux
 
 @echo on
 mingw32-make.exe %zigcc% clean
