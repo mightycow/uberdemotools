@@ -47,9 +47,14 @@ bool GetDirectoryFileList(udtFileListQuery& query)
 		// allocations necessary for sub-folder paths.
 
 		udtString fileName = udtString::NewFromUTF16(query.TempAllocator, findData.cFileName);
+		if(udtString::StartsWith(fileName, "."))
+		{
+			continue;
+		}
+
 		if((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
 		{
-			if(query.Recursive && !udtString::Equals(fileName, ".") && !udtString::Equals(fileName, "..") != 0)
+			if(query.Recursive)
 			{
 				folders.Add(fileName);
 			}
@@ -136,9 +141,14 @@ bool GetDirectoryFileList(udtFileListQuery& query)
 	struct dirent* dirEntry;
 	while((dirEntry = readdir(dirHandle)) != NULL)
 	{
+		if(udtString::StartsWith(udtString::NewConstRef(dirEntry->d_name), "."))
+		{
+			continue;
+		}
+
 		if((dirEntry->d_type & DT_DIR) != 0)
 		{
-			if(query.Recursive && strcmp(dirEntry->d_name, ".") != 0 && strcmp(dirEntry->d_name, "..") != 0)
+			if(query.Recursive)
 			{
 				folders.Add(udtString::NewClone(query.TempAllocator, dirEntry->d_name));
 			}

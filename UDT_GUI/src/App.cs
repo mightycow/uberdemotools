@@ -980,7 +980,15 @@ namespace Uber.DemoTools
                     {
                         var searchPattern = "*" + demoExtension;
                         var demoPaths = Directory.GetFiles(folderPath, searchPattern, searchOption);
-                        filteredFilePaths.AddRange(demoPaths);
+                        foreach(var demoPath in demoPaths)
+                        {
+                            if(Path.GetFileName(demoPath).StartsWith("."))
+                            {
+                                continue;
+                            }
+
+                            filteredFilePaths.Add(demoPath);
+                        }
                     }
                 }
             }

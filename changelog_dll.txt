@@ -6,6 +6,7 @@ ADD: udtParseArg now contains a protocol callback allowing API users to determin
 ADD: UDT_json now allows for a global protocol version override with the -p option
 CHG: UDT_cutter: reworked help and options parsing
 CHG: The JSON exporter will not lower-case the first letter of a key when the first two are uppercase
+CHG: Now ignoring all files whose names start with "." (including AppleDouble metadata files)
 FIX: Invalid stats no longer get exported via the API calls, so it affects both JSON export and GUI display
 FIX: The persistant player state array was not set properly during 3->68 conversions, generating invalid award events etc.
 FIX: The "scores" command gets fixed during 3->68 conversions for proper HUD display
