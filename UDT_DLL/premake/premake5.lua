@@ -18,14 +18,8 @@ end
 
 local function ApplyTargetAndLinkSettings() 
 
-	filter { "configurations:Debug", "platforms:x86" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/debug" )
-
 	filter { "configurations:Debug", "platforms:x64" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/debug" )
-
-	filter { "configurations:Release", "platforms:x86" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
 
 	filter { "configurations:Release", "platforms:x64" }
 		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
@@ -173,10 +167,10 @@ end
 
 os.mkdir(path_bin)
 
-solution "UDT"
+workspace "UDT"
 
 	location ( path_build.."/".._ACTION )
-	platforms { "x86", "x64" }
+	platforms { "x64" }
 	configurations { "Debug", "Release" }
 
 	project "UDT"
@@ -308,8 +302,6 @@ solution "UDT"
 		ApplyProjectSettings()
 		filter "system:windows"
 			links { "OpenGL32", "glew32", "glfw3dll" }
-			filter "platforms:x86"
-				libdirs ( path_libs.."/x86" )
 			filter "platforms:x64"
 				libdirs ( path_libs.."/x64" )
 
@@ -334,4 +326,6 @@ local function GMakeOverride(base, prj, cfg)
 	end
 end
 
-premake.override(premake.modules.gmake, "header", GMakeOverride)
+if _ACTION == "gmake" then
+	premake.override(premake.modules.gmake, "header", GMakeOverride)
+end

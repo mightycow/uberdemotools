@@ -9,22 +9,11 @@ if %choice%==1 (
 ) else if %choice%==2 (
 	set gmake_target=debug
 ) else (
-    echo Invalid choice
+	echo Invalid choice
 	exit
 )
 
-echo Which architecture?
-echo 1. x86
-echo 2. x64
-set /p choice=
-if %choice%==1 (
-	set gmake_arch=x32
-) else if %choice%==2 (
-	set gmake_arch=x64
-) else (
-    echo Invalid choice
-	exit
-)
+set gmake_arch=x64
 
 set gmake_config=%gmake_target%_%gmake_arch%
 cd ..\.build\gmake

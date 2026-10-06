@@ -12,15 +12,19 @@ set /p choice=
 if %choice%==1 (
 	set vs_generator=vs2010
 	set vs_version=10.0
+	set "vs_path=%VS100COMNTOOLS%"
 ) else if %choice%==2 (
 	set vs_generator=vs2012
 	set vs_version=11.0
+	set "vs_path=%VS110COMNTOOLS%"
 ) else if %choice%==3 (
 	set vs_generator=vs2013
 	set vs_version=12.0
+	set "vs_path=%VS120COMNTOOLS%"
 ) else if %choice%==4 (
 	set vs_generator=vs2015
 	set vs_version=14.0
+	set "vs_path=%VS140COMNTOOLS%"
 ) else if %choice%==5 (
 	set vs_generator=vs2017
 	set vs_version=15.0
