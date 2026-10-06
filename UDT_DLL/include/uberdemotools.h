@@ -2873,7 +2873,7 @@ extern "C"
 		/* for weapons that don't fire immediately when 'fire' is hit (grenades, venom, ...) */
 		int weaponDelay;
 		/* for delayed grenade throwing. this is set to a #define for grenade */
-		/* lifetime when the attack button goes down, then when attack is released * /
+		/* lifetime when the attack button goes down, then when attack is released */
 		/* this is the amount of time left before the grenade goes off */
 		/* (or if it gets to 0 while in player's hand, it explodes) */
 		int grenadeTimeLeft;
