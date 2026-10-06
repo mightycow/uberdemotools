@@ -106,6 +106,7 @@ public:
 			return false;
 		}
 		context->Context.SetCallbacks(_parseArg.ParseArg.MessageCb, NULL, NULL, NULL);
+		context->Context.LogInfo("Starting analysis of %d files...", (int)fileCount);
 
 		BatchRunner runner(_parseArg.ParseArg, files, fileCount, UDT_CAPTURES_BATCH_SIZE);
 		const u32 batchCount = runner.GetBatchCount();
@@ -491,6 +492,8 @@ int udt_main(int argc, char** argv)
 
 	if(query.Files.GetSize() == 0)
 	{
+		fprintf(stderr, "Input folder path is invalid or empty.\n");
+		PrintHelp();
 		return 0;
 	}
 
