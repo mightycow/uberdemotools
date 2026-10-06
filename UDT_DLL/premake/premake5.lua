@@ -65,9 +65,12 @@ local function ApplyProjectSettings()
 		minimalrebuild "Off"
 		optimize "Full"
 		omitframepointer "On"
-		linktimeoptimization "On"
 		runtimechecks "Off"
 
+	filter { "configurations:Release", "action:vs*" }
+		linktimeoptimization "On"
+
+	filter { }
 	ApplyTargetAndLinkSettings()
 
 	filter "system:windows"
@@ -319,3 +322,16 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		includedirs { path_src_core.."/viewer" }
 		ApplyProjectSettings()
+
+local function GMakeOverride(base, prj, cfg)
+	-- run original generator
+	base(prj, cfg)
+
+	-- make absolutely sure we use a Windows shell and not some random shell on the system called sh.exe
+	if prj.system == "windows" then
+		_p("SHELL := cmd.exe")
+		_p("SHELLTYPE := windows")
+	end
+end
+
+premake.override(premake.modules.gmake, "header", GMakeOverride)
