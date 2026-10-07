@@ -160,7 +160,7 @@ struct Platform
 
 	bool Init()
 	{
-		if(!LoadGLFW())
+		if(1 || !LoadGLFW())
 		{
 			Platform_PrintError("Failed to load all required GLFW function pointers");
 			return false;
@@ -240,12 +240,15 @@ struct Platform
 			nvgDeleteGL2(_sharedReadOnly.NVGContext);
 		}
 		
-		if(_window != nullptr)
+		if(ext_glfwDestroyWindow != nullptr && _window != nullptr)
 		{
 			glfwDestroyWindow(_window);
 		}
 		
-		glfwTerminate();
+		if(ext_glfwTerminate != NULL)
+		{
+			glfwTerminate();
+		}
 
 		UnloadGLFW();
 	}
@@ -368,8 +371,8 @@ struct Platform
 		glfwSwapBuffers(window);
 	}
 
-	PlatformReadOnly _sharedReadOnly;
-	PlatformReadWrite _sharedReadWrite;
+	PlatformReadOnly _sharedReadOnly = {};
+	PlatformReadWrite _sharedReadWrite = {};
 	Viewer* _viewer = nullptr;
 	GLFWwindow* _window = nullptr;
 };
