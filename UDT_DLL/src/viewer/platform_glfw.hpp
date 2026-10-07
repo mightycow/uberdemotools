@@ -22,6 +22,7 @@
 #	define GL_GLEXT_PROTOTYPES
 #	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
+#	include <dlfcn.h>
 #endif
 
 #if defined(UDT_MSVC)
@@ -42,6 +43,7 @@
 #	pragma GCC diagnostic pop
 #endif
 
+#include "platform_glfw_load.hpp"
 
 static void GlobalErrorCallback(int error, const char* desc)
 {
@@ -158,11 +160,17 @@ struct Platform
 
 	bool Init()
 	{
+		if(!LoadGLFW())
+		{
+			Platform_PrintError("Failed to load all required GLFW function pointers");
+			return false;
+		}
+
 		int glfwMajor, glfwMinor, glfwRevision;
 		glfwGetVersion(&glfwMajor, &glfwMinor, &glfwRevision);
 		if(glfwMajor < 3)
 		{
-			Platform_PrintError("The glfw version must be 3.0 or higher");
+			Platform_PrintError("The GLFW version must be 3.0 or higher");
 			return false;
 		}
 	
@@ -238,6 +246,8 @@ struct Platform
 		}
 		
 		glfwTerminate();
+
+		UnloadGLFW();
 	}
 	
 	void KeyCallback(int action, int key)
