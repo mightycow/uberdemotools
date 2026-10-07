@@ -18,12 +18,12 @@ end
 
 local function GetAction()
 
-	if os.host() == "windows" then
-		if os.target() == "linux" then
-			return "gmake_linux"
-		elseif os.target() == "windows" then
-			return "gmake_windows"
-		end
+	if _ACTION == "gmake" and os.host() == "windows" and os.target() == "windows" then
+		return "gmake_windows"
+	end
+
+	if _ACTION == "gmake" and os.host() == "windows" and os.target() == "linux" then
+		return "gmake_linux"
 	end
 
 	return _ACTION
@@ -317,7 +317,8 @@ workspace "UDT"
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
 			ApplyProjectSettings()
-			links { "OpenGL32", "glew32", "glfw3dll" }
+			--links { "OpenGL32", "glew32", "glfw3dll" }
+			links { "glfw3dll" }
 			libdirs ( path_libs.."/x64" )
 
 	end
