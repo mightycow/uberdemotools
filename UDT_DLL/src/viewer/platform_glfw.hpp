@@ -174,13 +174,13 @@ struct Platform
 			return false;
 		}
 	
+		glfwSetErrorCallback(&GlobalErrorCallback);
 		if(!glfwInit())
 		{
 			Platform_PrintError("glfwInit failed");
 			return false;
 		}
 	
-		glfwSetErrorCallback(&GlobalErrorCallback);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 		glfwWindowHint(GLFW_SAMPLES, 4);
