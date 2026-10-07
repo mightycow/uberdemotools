@@ -19,10 +19,10 @@
 #	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
 #else
-#	define GL_GLEXT_PROTOTYPES
+#define GLFW_INCLUDE_NONE
+#	include <dlfcn.h>
 #	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
-#	include <dlfcn.h>
 #endif
 
 #if defined(UDT_MSVC)
@@ -160,7 +160,7 @@ struct Platform
 
 	bool Init()
 	{
-		if(1 || !LoadGLFW())
+		if(!LoadGLFW())
 		{
 			Platform_PrintError("Failed to load all required GLFW function pointers");
 			return false;
