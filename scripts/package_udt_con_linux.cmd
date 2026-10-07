@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 PATH=%PATH%;C:\Programs\7-zip
 
-set "LIST_FILE=package_udt_con_bin_linux.lst"
+set "LIST_FILE=package_udt_con_linux.lst"
 set "TAR_FILE=udt_con_linux.tar"
 set "GZ_FILE=udt_con_linux.tar.gz"
 
