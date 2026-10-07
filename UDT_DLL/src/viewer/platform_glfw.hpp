@@ -16,12 +16,11 @@
 
 #if defined(UDT_WINDOWS)
 #	include <Windows.h>
-#	include "GL/glew.h"
+#	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
 #else
 #	define GL_GLEXT_PROTOTYPES
-#	include "GL/gl.h"
-#	include "GL/glext.h"
+#	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
 #endif
 
@@ -191,9 +190,8 @@ struct Platform
 			glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		}
 		glfwMakeContextCurrent(window);
-#if defined(UDT_WINDOWS)
-		glewInit();
-#endif
+		gladLoadGL(glfwGetProcAddress);
+
 		glfwSetKeyCallback(window, &GlobalKeyCallback);
 		glfwSetCursorPosCallback(window, &GlobalCursorPosCallback);
 		glfwSetMouseButtonCallback(window, &GlobalMouseButtonCallback);

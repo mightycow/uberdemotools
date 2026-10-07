@@ -317,7 +317,6 @@ workspace "UDT"
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
 			ApplyProjectSettings()
-			--links { "OpenGL32", "glew32", "glfw3dll" }
 			links { "glfw3dll" }
 			libdirs ( path_libs.."/x64" )
 
