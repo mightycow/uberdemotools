@@ -302,6 +302,7 @@ workspace "UDT"
 			links { "D3D11" }
 		filter "system:not windows"
 			links { "GL", "glfw" }
+			includedirs { path_src_core.."/viewer/linux" }
 		filter "action:gmake"
 			buildoptions { "-g" } -- Generate debug symbols.
 			linkoptions { "-rdynamic" } -- Embed the debug symbols in the executable.
