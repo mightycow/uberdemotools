@@ -328,6 +328,13 @@ workspace "UDT"
 		includedirs { path_src_core.."/viewer" }
 		ApplyProjectSettings()
 
+	project "tests"
+
+		kind "ConsoleApp"
+		defines { "UDT_CREATE_DLL" }
+		files { path_src_apps.."/tests*" }
+		ApplyProjectSettings()
+
 local function GMakeOverride(base, prj, cfg)
 	-- run original generator
 	base(prj, cfg)
