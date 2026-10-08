@@ -12,8 +12,7 @@ mkdir __temp
 mkdir __temp\viewer_data
 
 :: populate temp folder with everything
-:: @TODO: use the Linux build
-..\UDT_DLL\.bin\vs2022\x64\release\viewer_data_gen.exe -o=__temp\viewer_data ..\viewer_data
+wsl -d Debian ../UDT_DLL/.bin/gmake_linux/x64/release/viewer_data_gen -o=__temp/viewer_data ../viewer_data
 copy /Y ..\UDT_DLL\.bin\gmake_linux\x64\release\UDT_viewer __temp
 copy /Y ..\changelog_viewer.txt __temp
 copy /Y ..\viewer_data\map_aliases.txt __temp\viewer_data
