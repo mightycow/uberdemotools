@@ -46,3 +46,6 @@ struct TestRegisterer
 	static TestRegisterer UDT_CONCAT(g_registerer_, __LINE__)(UDT_CONCAT(&TestFunction_, __LINE__), s_fileTitle, TestTitle); \
 	static bool UDT_CONCAT(TestFunction_, __LINE__)()
 
+void Pause();
+void InitContext(const char* repoPath);
+void MakeDirectoryEmpty(const char* dirPath);

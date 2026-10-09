@@ -1,4 +1,5 @@
 #include "tests.hpp"
+#include "string.hpp"
 #include <stdio.h>
 #include <Windows.h>
 
@@ -50,11 +51,27 @@ static int CompareTests(const void* aPtr, const void* bPtr)
 #if defined(UDT_MINGWIN)
 extern "C"
 #endif
-int wmain(int, wchar_t**)
+int wmain(int argc, wchar_t** argvWide)
 #else
-int main(int, char**)
+int main(int argc, char** argv)
 #endif
 {
+	if(argc == 2)
+	{
+#if defined(UDT_WINDOWS)
+		char repoPath[1024];
+		char* utf8String = repoPath;
+		wchar_t* const utf16String = argvWide[1];
+		if(!WideCharToMultiByte(CP_UTF8, 0, utf16String, -1, utf8String, (int)UDT_COUNT_OF(repoPath) - 1, nullptr, nullptr))
+		{
+			utf8String = NULL;
+		}
+		InitContext(utf8String);
+#else
+		InitContext(argv[1]);
+#endif
+	}
+
 	printf("%d test%s total\n", s_tests.testCount, s_tests.testCount > 1 ? "s" : "");
 
 	qsort(&s_tests.tests[0], (size_t)s_tests.testCount, sizeof(s_tests.tests[0]), &CompareTests);
@@ -96,7 +113,7 @@ int main(int, char**)
 	}
 
 	printf("\n");
-	system("pause");
+	Pause();
 
 	return 0;
 }

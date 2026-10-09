@@ -333,7 +333,10 @@ workspace "UDT"
 		kind "ConsoleApp"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/tests*" }
+		files { path_src_apps.."/json.h" }
 		ApplyProjectSettings()
+		filter "system:windows"
+			links { "Shlwapi" }
 
 local function GMakeOverride(base, prj, cfg)
 	-- run original generator
