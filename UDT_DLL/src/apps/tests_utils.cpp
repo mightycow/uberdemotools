@@ -17,7 +17,17 @@ static void CreateTempDir(char* dir, const char* name)
 
 void MakeDirectoryEmpty(const char* dirPath)
 {
-	// @TODO:
+	char dirDoubleTerm[1024];
+	sprintf(dirDoubleTerm, "%s\\*", dirPath);
+	dirDoubleTerm[strlen(dirDoubleTerm) + 1] = '\0';
+
+	SHFILEOPSTRUCTA fileOp = {};
+	fileOp.wFunc = FO_DELETE;
+	fileOp.pFrom = dirDoubleTerm;
+	fileOp.pTo = NULL;
+	fileOp.fFlags = FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT;
+	fileOp.fAnyOperationsAborted = FALSE,
+	SHFileOperationA(&fileOp);
 }
 
 #else
@@ -38,7 +48,9 @@ static void CreateTempDir(char* dir, const char* name)
 
 void MakeDirectoryEmpty(const char* dirPath)
 {
-	// @TODO:
+	// @TODO: validate
+	char cmd[1024];
+	sprintf(cmd, "rm -r %s/*", dirPath);
 }
 
 #endif
