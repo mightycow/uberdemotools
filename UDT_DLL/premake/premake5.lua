@@ -100,6 +100,7 @@ local function ApplyProjectSettings()
 	filter "action:vs*"
 		symbols "Full"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		debugdir "$(TargetDir)"
 
 	filter { "action:vs*", "kind:ConsoleApp" }
 		entrypoint "wmainCRTStartup"

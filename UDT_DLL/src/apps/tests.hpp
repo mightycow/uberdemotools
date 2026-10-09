@@ -5,9 +5,9 @@
 
 struct TestContext
 {
-	char RepoDir[512];
-	char InTempDir[512];
-	char OutTempDir[512];
+	char RepoDir[1024];
+	char InTempDir[1024];
+	char OutTempDir[1024];
 };
 
 extern TestContext g_testContext;

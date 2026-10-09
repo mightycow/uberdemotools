@@ -1,5 +1,6 @@
 #include "tests.hpp"
 #include "string.hpp"
+#include "file_system.hpp"
 #include <stdio.h>
 #include <Windows.h>
 
@@ -71,6 +72,21 @@ int main(int argc, char** argv)
 		InitContext(argv[1]);
 #endif
 	}
+	else
+	{
+		InitContext(NULL);
+	}
+
+	udtInitLibrary();
+	if(!IsValidDirectory(g_testContext.InTempDir))
+	{
+		return 666;
+	}
+	if(!IsValidDirectory(g_testContext.OutTempDir))
+	{
+		return 666;
+	}
+	udtShutDownLibrary();
 
 	printf("%d test%s total\n", s_tests.testCount, s_tests.testCount > 1 ? "s" : "");
 

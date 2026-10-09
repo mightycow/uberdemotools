@@ -15,6 +15,11 @@ static void CreateTempDir(char* dir, const char* name)
 	CreateDirectoryA(dir, NULL);
 }
 
+static void GetAbsoluteDirPath(char* dir, const char* relPath)
+{
+	GetFullPathNameA(relPath, 1024, dir, NULL);
+}
+
 void MakeDirectoryEmpty(const char* dirPath)
 {
 	char dirDoubleTerm[1024];
@@ -46,6 +51,11 @@ static void CreateTempDir(char* dir, const char* name)
 	mkdtemp(dir)
 }
 
+static void GetAbsoluteDirPath(char* dir, const char* relPath)
+{
+	realpath(relPath, dir);
+}
+
 void MakeDirectoryEmpty(const char* dirPath)
 {
 	// @TODO: validate
@@ -63,7 +73,12 @@ void Pause()
 
 void InitContext(const char* repoPath)
 {
-	Q_strncpyz(g_testContext.RepoDir, repoPath, (s32)sizeof(g_testContext.RepoDir));
+	if(repoPath == NULL)
+	{
+		repoPath = "../../../../..";
+	}
+	GetAbsoluteDirPath(g_testContext.RepoDir, repoPath);
+
 	CreateTempDir(g_testContext.InTempDir, "udt_in");
 	MakeDirectoryEmpty(g_testContext.InTempDir);
 	CreateTempDir(g_testContext.OutTempDir, "udt_out");
