@@ -19,7 +19,7 @@ struct TestGlobals
 	int passCount;
 };
 
-TestContext g_testContext;
+TestContext ctx;
 static TestGlobals s_tests;
 
 void RegisterTest(udtTestFunction function, const char* section, const char* name)
@@ -78,11 +78,11 @@ int main(int argc, char** argv)
 	}
 
 	udtInitLibrary();
-	if(!IsValidDirectory(g_testContext.InTempDir))
+	if(!IsValidDirectory(ctx.InTempDir))
 	{
 		return 666;
 	}
-	if(!IsValidDirectory(g_testContext.OutTempDir))
+	if(!IsValidDirectory(ctx.OutTempDir))
 	{
 		return 666;
 	}
@@ -95,16 +95,16 @@ int main(int argc, char** argv)
 	for(int i = 0; i < s_tests.testCount; i++)
 	{
 		Test& test = s_tests.tests[i];
-		printf("%03d. %s -> %s", i + 1, test.section, test.name);
+		printf("%03d. %s/%s\n", i + 1, test.section, test.name);
 		const bool passed = (*test.function)();
 		if(passed)
 		{
-			printf(" -> OK\n");
+			printf("%03d. OK\n", i + 1);
 			s_tests.passCount++;
 		}
 		else
 		{
-			printf(" -> failed\n");
+			printf("%03d. failed\n", i + 1);
 		}
 		test.passed = passed;
 	}
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 			const Test& test = s_tests.tests[i];
 			if(!test.passed)
 			{
-				printf("%03d. %s -> %s\n", i + 1, test.section, test.name);
+				printf("%03d. %s/%s\n", i + 1, test.section, test.name);
 			}
 		}
 	}

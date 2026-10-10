@@ -3,10 +3,12 @@
 
 UDT_TEST_FILE("API");
 
+#if 0
 UDT_TEST("@TODO:")
 {
 	return true;
 }
+#endif
 
 #if 0
 

@@ -5,12 +5,12 @@
 
 struct TestContext
 {
-	char RepoDir[1024];
+	char DemoDir[1024];
 	char InTempDir[1024];
 	char OutTempDir[1024];
 };
 
-extern TestContext g_testContext;
+extern TestContext ctx;
 
 typedef bool (*udtTestFunction)();
 

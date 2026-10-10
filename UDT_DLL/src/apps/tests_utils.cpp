@@ -20,6 +20,11 @@ static void GetAbsoluteDirPath(char* dir, const char* relPath)
 	GetFullPathNameA(relPath, 1024, dir, NULL);
 }
 
+void SetCD(const char* dirPath)
+{
+	SetCurrentDirectoryA(dirPath);
+}
+
 void MakeDirectoryEmpty(const char* dirPath)
 {
 	char dirDoubleTerm[1024];
@@ -38,6 +43,7 @@ void MakeDirectoryEmpty(const char* dirPath)
 #else
 
 #include <stdlib.h>
+#include <unistd.h>
 
 static void CreateTempDir(char* dir, const char* name)
 {
@@ -54,6 +60,11 @@ static void CreateTempDir(char* dir, const char* name)
 static void GetAbsoluteDirPath(char* dir, const char* relPath)
 {
 	realpath(relPath, dir);
+}
+
+void SetCD(const char* dirPath)
+{
+	chdir(dirPath);
 }
 
 void MakeDirectoryEmpty(const char* dirPath)
@@ -77,10 +88,12 @@ void InitContext(const char* repoPath)
 	{
 		repoPath = "../../../../..";
 	}
-	GetAbsoluteDirPath(g_testContext.RepoDir, repoPath);
+	char repoDir[1024];
+	GetAbsoluteDirPath(repoDir, repoPath);
+	sprintf(ctx.DemoDir, "%s/demo_files", repoDir);
 
-	CreateTempDir(g_testContext.InTempDir, "udt_in");
-	MakeDirectoryEmpty(g_testContext.InTempDir);
-	CreateTempDir(g_testContext.OutTempDir, "udt_out");
-	MakeDirectoryEmpty(g_testContext.OutTempDir);
+	CreateTempDir(ctx.InTempDir, "udt_in");
+	MakeDirectoryEmpty(ctx.InTempDir);
+	CreateTempDir(ctx.OutTempDir, "udt_out");
+	MakeDirectoryEmpty(ctx.OutTempDir);
 }
