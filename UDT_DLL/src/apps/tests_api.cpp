@@ -5,31 +5,19 @@
 UDT_TEST_FILE("API");
 
 #if 0
-UDT_TEST("HW_exception")
+
+UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
 {
-	volatile int div = 0;
-	volatile int x = 42 / div;
-	printf("%d", x);
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
 
-	return true;
-}
-#endif
-
-#if 0
-
-// @TODO: (re)move
-void TestMultiPatternCut()
-{
 	udtParseArg parse = {};
-	parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
-	parse.MessageCb = &CallbackConsoleMessage;
-	parse.ProgressCb = &CallbackConsoleProgress;
-	parse.MinProgressTimeMs = 50;
+	parse.OutputFolderPath = ctx.OutTempDir.Path;
 
 	constexpr int fileCount = 2;
 	s32 errorCodes[fileCount] = {};
 	const char* filePaths[fileCount] =
 	{
+		// @TODO: fix paths
 		"C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\duel.dm_68",
 		"C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\2v2_xscores_2.dm_68"
 	};
@@ -61,14 +49,20 @@ void TestMultiPatternCut()
 	pattern.Patterns = patterns;
 	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
 
-	udtCutDemoFilesByPattern(&parse, &multiParse, &pattern);
+	UDT_ENSURE(udtCutDemoFilesByPattern(&parse, &multiParse, &pattern) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	ctx.OutTempDir.ListFiles();
+	UDT_ENSURE(ctx.OutTempDir.GetNewFiles().GetSize() == 8);
+	
+	// @TODO: validate the files and/or cut locations
+
+	return true;
 }
 
-// @TODO: (re)move
-s32 ServerTime(s32 minute, s32 seconds)
-{
-	return 1000 * (minute * 60 + seconds);
-}
+#endif
+
+#if 0
 
 // @TODO: (re)move
 void TestMultiTimedCut()
