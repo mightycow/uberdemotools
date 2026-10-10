@@ -94,6 +94,12 @@ int main(int argc, char** argv)
 
 	for(int i = 0; i < s_tests.testCount; i++)
 	{
+		MakeDirectoryEmpty(ctx.OutTempDir.Path);
+		MakeDirectoryEmpty(ctx.InTempDir.Path);
+		ctx.OutTempDir.ListFiles();
+		ctx.InTempDir.ListFiles();
+		ctx.TempAllocator.Clear();
+
 		Test& test = s_tests.tests[i];
 		printf("%03d. %s/%s\n", i + 1, test.section, test.name);
 		const bool passed = (*test.function)();
@@ -127,6 +133,9 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+
+	MakeDirectoryEmpty(ctx.OutTempDir.Path);
+	MakeDirectoryEmpty(ctx.InTempDir.Path);
 
 	printf("\n");
 	Pause();

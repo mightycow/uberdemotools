@@ -1,6 +1,7 @@
 #include "tests.hpp"
 #include "common.hpp"
 #include <stdio.h>
+#include <stdarg.h>
 
 #if defined(UDT_WINDOWS)
 
@@ -40,6 +41,34 @@ void MakeDirectoryEmpty(const char* dirPath)
 	SHFileOperationA(&fileOp);
 }
 
+const char* RunAndCaptureOutput(const char* format, ...)
+{
+	char cmd[4096];
+	va_list argList;
+	va_start(argList, format);
+	vsprintf(cmd, format, argList);
+	va_end(argList);
+
+	FILE* const pipe = _popen(cmd, "r");
+	if(pipe == nullptr)
+	{
+		return NULL;
+	}
+
+	udtVMLinearAllocator& alloc = ctx.TempAllocator;
+	const uptr startOffset = alloc.GetCurrentByteCount();
+	while(fgets(cmd, sizeof(cmd), pipe) != nullptr)
+	{
+		// @TODO: @FIXME: we move/jump past the null terminator...
+		const uptr size = (uptr)strlen(cmd) + 1;
+		u8* const dest = alloc.AllocateAndGetAddress(size);
+		memcpy(dest, cmd, (size_t)size);
+	}
+	_pclose(pipe);
+
+	return (const char*)(alloc.GetStartAddress() + startOffset);
+}
+
 #else
 
 #include <stdlib.h>
@@ -74,6 +103,11 @@ void MakeDirectoryEmpty(const char* dirPath)
 	sprintf(cmd, "rm -r %s/*", dirPath);
 }
 
+bool RunAndCaptureOutput(const char* format, ...)
+{
+	// @TODO:
+}
+
 #endif
 
 void Pause()
@@ -98,6 +132,7 @@ void InitContext(const char* repoPath)
 	MakeDirectoryEmpty(ctx.OutTempDir.Path);
 	ctx.InTempDir.Init();
 	ctx.OutTempDir.Init();
+	ctx.TempAllocator.Init(1 << 20);
 }
 
 void Directory::Init()

@@ -24,7 +24,8 @@ UDT_TEST("timed_cut/minqlx_time_rewind")
 	ctx.OutTempDir.ListFiles();
 	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
 	UDT_ENSURE(newFiles.GetSize() == 1);
-	printf("yay %s\n", newFiles[0].Path.GetPtr());
+	const char* out = RunAndCaptureOutput("UDT_json -c -a=g %s", newFiles[0].Path.GetPtr());
+	__debugbreak();
 
 	return true;
 }

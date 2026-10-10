@@ -3,6 +3,7 @@
 #include "uberdemotools.h"
 #include "array.hpp"
 #include "file_system.hpp"
+#include "linear_allocator.hpp"
 
 struct Directory
 {
@@ -23,6 +24,7 @@ struct TestContext
 	char DemoDir[1024];
 	Directory InTempDir;
 	Directory OutTempDir;
+	udtVMLinearAllocator TempAllocator { "TestContext::TempAllocator" };
 };
 
 extern TestContext ctx;
@@ -69,3 +71,4 @@ inline int ServerTime(int minutes, int seconds)
 void Pause();
 void InitContext(const char* repoPath);
 void MakeDirectoryEmpty(const char* dirPath);
+const char* RunAndCaptureOutput(const char* format, ...);
