@@ -78,11 +78,11 @@ int main(int argc, char** argv)
 	}
 
 	udtInitLibrary();
-	if(!IsValidDirectory(ctx.InTempDir))
+	if(!IsValidDirectory(ctx.InTempDir.Path))
 	{
 		return 666;
 	}
-	if(!IsValidDirectory(ctx.OutTempDir))
+	if(!IsValidDirectory(ctx.OutTempDir.Path))
 	{
 		return 666;
 	}

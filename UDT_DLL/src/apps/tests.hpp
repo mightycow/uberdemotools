@@ -2,12 +2,27 @@
 
 #include "uberdemotools.h"
 #include "array.hpp"
+#include "file_system.hpp"
+
+struct Directory
+{
+	void Init();
+	void ListFiles();
+	udtVMArray<udtFileInfo>& GetFileList();
+	udtVMArray<udtFileInfo>& GetNewFiles();
+
+	char Path[1024];
+	udtFileListQuery Queries[2];
+	bool QueriesValid[2];
+	udtVMArray<udtFileInfo> NewFiles;
+	int WriteIndex;
+};
 
 struct TestContext
 {
 	char DemoDir[1024];
-	char InTempDir[1024];
-	char OutTempDir[1024];
+	Directory InTempDir;
+	Directory OutTempDir;
 };
 
 extern TestContext ctx;
@@ -45,6 +60,11 @@ struct TestRegisterer
 	static bool UDT_CONCAT(TestFunction_, __LINE__)(); \
 	static TestRegisterer UDT_CONCAT(g_registerer_, __LINE__)(UDT_CONCAT(&TestFunction_, __LINE__), s_fileTitle, TestTitle); \
 	static bool UDT_CONCAT(TestFunction_, __LINE__)()
+
+inline int ServerTime(int minutes, int seconds)
+{
+	return (minutes * 60 + seconds) * 1000;
+}
 
 void Pause();
 void InitContext(const char* repoPath);

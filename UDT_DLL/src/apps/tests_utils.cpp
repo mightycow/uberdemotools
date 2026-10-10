@@ -92,8 +92,68 @@ void InitContext(const char* repoPath)
 	GetAbsoluteDirPath(repoDir, repoPath);
 	sprintf(ctx.DemoDir, "%s/demo_files", repoDir);
 
-	CreateTempDir(ctx.InTempDir, "udt_in");
-	MakeDirectoryEmpty(ctx.InTempDir);
-	CreateTempDir(ctx.OutTempDir, "udt_out");
-	MakeDirectoryEmpty(ctx.OutTempDir);
+	CreateTempDir(ctx.InTempDir.Path, "udt_in");
+	MakeDirectoryEmpty(ctx.InTempDir.Path);
+	CreateTempDir(ctx.OutTempDir.Path, "udt_out");
+	MakeDirectoryEmpty(ctx.OutTempDir.Path);
+	ctx.InTempDir.Init();
+	ctx.OutTempDir.Init();
+}
+
+void Directory::Init()
+{
+	WriteIndex = 0;
+	QueriesValid[0] = false;
+	QueriesValid[1] = false;
+	for(size_t i = 0; i < UDT_COUNT_OF(Queries); ++i)
+	{
+		Queries[i].FileFilter = NULL;
+		Queries[i].UserData = nullptr;
+		Queries[i].Recursive = false;
+		Queries[i].FolderPath = udtString::NewConstRef(Path);
+	}
+}
+
+void Directory::ListFiles()
+{
+	GetDirectoryFileList(Queries[WriteIndex]);
+	QueriesValid[WriteIndex] = true;
+	WriteIndex ^= 1;
+
+	NewFiles.Clear();
+	if(QueriesValid[0] && QueriesValid[1])
+	{
+		const udtVMArray<udtFileInfo>& oldList = Queries[WriteIndex].Files;
+		const udtVMArray<udtFileInfo>& newList = Queries[WriteIndex ^ 1].Files;
+		for(int n = 0, nc = newList.GetSize(); n < nc; ++n)
+		{
+			const udtFileInfo& newFile = newList[n];
+
+			bool oldFound = false;
+			for(int o = 0, oc = oldList.GetSize(); o < oc; ++o)
+			{
+				const udtFileInfo& oldFile = oldList[n];
+				if(udtString::Equals(newFile.Name, oldFile.Name))
+				{
+					oldFound = true;
+					break;
+				}
+			}
+
+			if(!oldFound)
+			{
+				NewFiles.Add(newFile);
+			}
+		}
+	}
+}
+
+udtVMArray<udtFileInfo>& Directory::GetFileList()
+{
+	return Queries[WriteIndex ^ 1].Files;
+}
+
+udtVMArray<udtFileInfo>& Directory::GetNewFiles()
+{
+	return NewFiles;
 }
