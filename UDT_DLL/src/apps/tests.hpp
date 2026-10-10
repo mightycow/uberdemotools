@@ -71,4 +71,4 @@ inline int ServerTime(int minutes, int seconds)
 void Pause();
 void InitContext(const char* repoPath);
 void MakeDirectoryEmpty(const char* dirPath);
-const char* RunAndCaptureOutput(const char* format, ...);
+const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...);

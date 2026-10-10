@@ -10,15 +10,21 @@ extern "C"
 
 UDT_TEST_FILE("CLI");
 
-static void Run(const char* format, ...)
+static void Run(const char* exeName, const char* argsFormat, ...)
 {
+	char args[1024];
 	char cmd[1024];
 	va_list argList;
-	va_start(argList, format);
-	vsprintf(cmd, format, argList);
+	va_start(argList, argsFormat);
+	vsprintf(args, argsFormat, argList);
+	va_end(argList);
+#if defined(_WIN32)
+	sprintf(cmd, "%s.exe %s", exeName, args);
+#else
+	sprintf(cmd, "./%s %s", exeName, args);
+#endif
 	printf("> %s\n", cmd);
 	system(cmd);
-	va_end(argList);
 }
 
 static bool ValidateCutGameStateRange(const char* jsonString, int startSec, int endSec)
@@ -44,11 +50,11 @@ UDT_TEST("timed_cut/minqlx_time_rewind")
 {
 	// @TODO: handle local executable paths: ./UDT_cutter ./UDT_json
 	ctx.OutTempDir.ListFiles();
-	Run("./UDT_cutter t -g=0 -s=42 -e=653 -o=%s %s/wrong_cut_time_42_653.dm_91", ctx.OutTempDir.Path, ctx.DemoDir);
+	Run("UDT_cutter", "t -g=0 -s=42 -e=653 \"-o=%s\" \"%s/wrong_cut_time_42_653.dm_91\"", ctx.OutTempDir.Path, ctx.DemoDir);
 	ctx.OutTempDir.ListFiles();
 	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
 	UDT_ENSURE(newFiles.GetSize() == 1);
-	const char* const jsonString = RunAndCaptureOutput("./UDT_json -c -a=g %s", newFiles[0].Path.GetPtr());
+	const char* const jsonString = RunAndCaptureOutput("UDT_json", "-c -a=g \"%s\"", newFiles[0].Path.GetPtr());
 	UDT_ENSURE(jsonString != nullptr);
 	UDT_ENSURE(json_valid(jsonString));
 	json_parse(jsonString);

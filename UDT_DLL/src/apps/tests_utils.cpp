@@ -91,13 +91,19 @@ void Pause()
 	(void)getchar();
 }
 
-const char* RunAndCaptureOutput(const char* format, ...)
+const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...)
 {
+	char args[4096];
 	char cmd[4096];
 	va_list argList;
-	va_start(argList, format);
-	vsprintf(cmd, format, argList);
+	va_start(argList, argsFormat);
+	vsprintf(args, argsFormat, argList);
 	va_end(argList);
+#if defined(_WIN32)
+	sprintf(cmd, "%s.exe %s", exeName, args);
+#else
+	sprintf(cmd, "./%s %s", exeName, args);
+#endif
 
 	FILE* const pipe = udt_popen(cmd, "r");
 	if(pipe == nullptr)
