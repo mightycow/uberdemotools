@@ -48,6 +48,7 @@ UDT_TEST("timed_cut/minqlx_time_rewind")
 	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
 	UDT_ENSURE(newFiles.GetSize() == 1);
 	const char* const jsonString = RunAndCaptureOutput("UDT_json -c -a=g %s", newFiles[0].Path.GetPtr());
+	UDT_ENSURE(jsonString != nullptr);
 	UDT_ENSURE(json_valid(jsonString));
 	json_parse(jsonString);
 	UDT_ENSURE(ValidateCutGameStateRange(jsonString, 42, 653));

@@ -4,6 +4,14 @@
 #include <stdarg.h>
 
 #if defined(UDT_WINDOWS)
+#define udt_popen _popen
+#define udt_pclose _pclose
+#else
+#define udt_popen popen
+#define udt_pclose pclose
+#endif
+
+#if defined(UDT_WINDOWS)
 
 #include <Windows.h>
 #include <Shlwapi.h>
@@ -41,41 +49,6 @@ void MakeDirectoryEmpty(const char* dirPath)
 	SHFileOperationA(&fileOp);
 }
 
-const char* RunAndCaptureOutput(const char* format, ...)
-{
-	char cmd[4096];
-	va_list argList;
-	va_start(argList, format);
-	vsprintf(cmd, format, argList);
-	va_end(argList);
-
-	FILE* const pipe = _popen(cmd, "r");
-	if(pipe == nullptr)
-	{
-		return NULL;
-	}
-
-	// @NOTE: we don't use alloc.AllocateAndGetAddress
-	// because the allocator forces some alignment constraints that would break up the string.
-	udtVMLinearAllocator& alloc = ctx.TempAllocator;
-	const uptr startOffset = alloc.GetCurrentByteCount();
-	uptr writeOffset = startOffset;
-	while(fgets(cmd, sizeof(cmd), pipe) != nullptr)
-	{
-		const uptr size = (uptr)strlen(cmd);
-		alloc.Allocate(size);
-		u8* const dest = alloc.GetAddressAt(writeOffset);
-		memcpy(dest, cmd, (size_t)size);
-		writeOffset += size;
-	}
-	_pclose(pipe);
-	alloc.Allocate(1);
-	alloc.GetAddressAt(writeOffset)[0] = '\0';
-	const char* const stdOut = (const char*)(alloc.GetStartAddress() + startOffset);
-
-	return stdOut;
-}
-
 #else
 
 #include <stdlib.h>
@@ -90,7 +63,7 @@ static void CreateTempDir(char* dir, const char* name)
 	}
 
 	sprintf(dir, "%s/%s_XXXXXX", tempDir, name);
-	mkdtemp(dir)
+	mkdtemp(dir);
 }
 
 static void GetAbsoluteDirPath(char* dir, const char* relPath)
@@ -110,17 +83,47 @@ void MakeDirectoryEmpty(const char* dirPath)
 	sprintf(cmd, "rm -r %s/*", dirPath);
 }
 
-bool RunAndCaptureOutput(const char* format, ...)
-{
-	// @TODO:
-}
-
 #endif
 
 void Pause()
 {
 	printf("Press any key to continue . . .\n");
 	(void)getchar();
+}
+
+const char* RunAndCaptureOutput(const char* format, ...)
+{
+	char cmd[4096];
+	va_list argList;
+	va_start(argList, format);
+	vsprintf(cmd, format, argList);
+	va_end(argList);
+
+	FILE* const pipe = udt_popen(cmd, "r");
+	if(pipe == nullptr)
+	{
+		return NULL;
+	}
+
+	// @NOTE: we don't use alloc.AllocateAndGetAddress
+	// because the allocator forces some alignment constraints that would break up the string.
+	udtVMLinearAllocator& alloc = ctx.TempAllocator;
+	const uptr startOffset = alloc.GetCurrentByteCount();
+	uptr writeOffset = startOffset;
+	while(fgets(cmd, sizeof(cmd), pipe) != nullptr)
+	{
+		const uptr size = (uptr)strlen(cmd);
+		alloc.Allocate(size);
+		u8* const dest = alloc.GetAddressAt(writeOffset);
+		memcpy(dest, cmd, (size_t)size);
+		writeOffset += size;
+	}
+	udt_pclose(pipe);
+	alloc.Allocate(1);
+	alloc.GetAddressAt(writeOffset)[0] = '\0';
+	const char* const stdOut = (const char*)(alloc.GetStartAddress() + startOffset);
+
+	return stdOut;
 }
 
 void InitContext(const char* repoPath)

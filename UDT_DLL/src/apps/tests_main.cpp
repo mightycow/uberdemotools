@@ -3,7 +3,9 @@
 #include "file_system.hpp"
 #include <stdio.h>
 #include <exception>
+#if defined(UDT_WINDOWS)
 #include <Windows.h>
+#endif
 
 struct Test
 {

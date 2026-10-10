@@ -31,4 +31,5 @@ mingw32-make.exe %zigcc% config=%gmake_config% UDT_splitter
 mingw32-make.exe %zigcc% config=%gmake_config% UDT_timeshifter
 mingw32-make.exe %zigcc% config=%gmake_config% UDT_viewer
 mingw32-make.exe %zigcc% config=%gmake_config% viewer_data_gen
+mingw32-make.exe %zigcc% config=%gmake_config% tests
 pause

@@ -154,8 +154,12 @@ local function ApplyProjectSettings(optionsSet)
 		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
 		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
-	filter "action:gmake"
-		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" }
+	filter { "action:gmake", "files:**.cpp" }
+		buildoptions { "-std=c++11" }
+		linkoptions { "" }
+
+	filter { "action:gmake" }
+		buildoptions { "-Wno-invalid-offsetof -Wno-narrowing" }
 		linkoptions { "" }
 
 	filter { "action:gmake", "configurations:Debug" }

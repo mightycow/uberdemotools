@@ -28,4 +28,7 @@ mingw32-make.exe config=%gmake_config% UDT_json
 mingw32-make.exe config=%gmake_config% UDT_merger
 mingw32-make.exe config=%gmake_config% UDT_splitter
 mingw32-make.exe config=%gmake_config% UDT_timeshifter
+mingw32-make.exe config=%gmake_config% UDT_viewer
+mingw32-make.exe config=%gmake_config% viewer_data_gen
+mingw32-make.exe config=%gmake_config% tests
 pause
