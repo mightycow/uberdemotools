@@ -13,6 +13,19 @@ if %choice%==1 (
 	exit
 )
 
+echo Clean?
+echo y. Yes
+echo *. No
+set /p choice=
+if %choice%==y (
+	set gmake_clean=1
+) else if %choice%==2 (
+	set gmake_clean=0
+) else (
+	echo Invalid choice
+	exit
+)
+
 set gmake_arch=x64
 set gmake_config=%gmake_target%_%gmake_arch%
 set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar"
@@ -20,7 +33,9 @@ set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -targe
 cd ..\.build\gmake_linux
 
 @echo on
-mingw32-make.exe %zigcc% clean
+if %gmake_clean%==1 (
+	mingw32-make.exe %zigcc% clean
+)
 mingw32-make.exe %zigcc% config=%gmake_config% UDT
 mingw32-make.exe %zigcc% config=%gmake_config% UDT_captures
 mingw32-make.exe %zigcc% config=%gmake_config% UDT_converter

@@ -13,13 +13,28 @@ if %choice%==1 (
 	exit
 )
 
+echo Clean?
+echo y. Yes
+echo *. No
+set /p choice=
+if %choice%==y (
+	set gmake_clean=1
+) else if %choice%==2 (
+	set gmake_clean=0
+) else (
+	echo Invalid choice
+	exit
+)
+
 set gmake_arch=x64
 set gmake_config=%gmake_target%_%gmake_arch%
 
 cd ..\.build\gmake_windows
 
 @echo on
-mingw32-make.exe clean
+if %gmake_clean%==1 (
+	mingw32-make.exe clean
+)
 mingw32-make.exe config=%gmake_config% UDT
 mingw32-make.exe config=%gmake_config% UDT_captures
 mingw32-make.exe config=%gmake_config% UDT_converter
