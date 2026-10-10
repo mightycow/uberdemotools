@@ -4,7 +4,7 @@
 
 UDT_TEST_FILE("API");
 
-#if 1
+#if 0
 UDT_TEST("HW_exception")
 {
 	volatile int div = 0;

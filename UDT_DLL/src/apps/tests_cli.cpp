@@ -42,12 +42,13 @@ static bool ValidateCutGameStateRange(const char* jsonString, int startSec, int 
 
 UDT_TEST("timed_cut/minqlx_time_rewind")
 {
+	// @TODO: handle local executable paths: ./UDT_cutter ./UDT_json
 	ctx.OutTempDir.ListFiles();
-	Run("UDT_cutter t -g=0 -s=42 -e=653 -o=%s %s/wrong_cut_time_42_653.dm_91", ctx.OutTempDir.Path, ctx.DemoDir);
+	Run("./UDT_cutter t -g=0 -s=42 -e=653 -o=%s %s/wrong_cut_time_42_653.dm_91", ctx.OutTempDir.Path, ctx.DemoDir);
 	ctx.OutTempDir.ListFiles();
 	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
 	UDT_ENSURE(newFiles.GetSize() == 1);
-	const char* const jsonString = RunAndCaptureOutput("UDT_json -c -a=g %s", newFiles[0].Path.GetPtr());
+	const char* const jsonString = RunAndCaptureOutput("./UDT_json -c -a=g %s", newFiles[0].Path.GetPtr());
 	UDT_ENSURE(jsonString != nullptr);
 	UDT_ENSURE(json_valid(jsonString));
 	json_parse(jsonString);

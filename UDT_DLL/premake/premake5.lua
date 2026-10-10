@@ -155,7 +155,7 @@ local function ApplyProjectSettings(optionsSet)
 		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
 	filter { "action:gmake", "files:**.cpp" }
-		buildoptions { "-std=c++11" }
+		buildoptions { "-std=c++11 -Wno-extern-c-compat" }
 		linkoptions { "" }
 
 	filter { "action:gmake" }
@@ -163,12 +163,12 @@ local function ApplyProjectSettings(optionsSet)
 		linkoptions { "" }
 
 	filter { "action:gmake", "configurations:Debug" }
-		buildoptions { "" }
-		linkoptions { "" }
+		buildoptions { "-fno-sanitize=alignment" }
+		linkoptions { "-fno-sanitize=alignment" }
 
 	filter { "action:gmake", "configurations:Release" }
-		buildoptions { "" }
-		linkoptions { "" }
+		buildoptions { "-fno-sanitize=all" }
+		linkoptions { "-fno-sanitize=all" }
 
 end
 
