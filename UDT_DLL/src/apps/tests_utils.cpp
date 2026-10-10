@@ -55,18 +55,25 @@ const char* RunAndCaptureOutput(const char* format, ...)
 		return NULL;
 	}
 
+	// @NOTE: we don't use alloc.AllocateAndGetAddress
+	// because the allocator forces some alignment constraints that would break up the string.
 	udtVMLinearAllocator& alloc = ctx.TempAllocator;
 	const uptr startOffset = alloc.GetCurrentByteCount();
+	uptr writeOffset = startOffset;
 	while(fgets(cmd, sizeof(cmd), pipe) != nullptr)
 	{
-		// @TODO: @FIXME: we move/jump past the null terminator...
-		const uptr size = (uptr)strlen(cmd) + 1;
-		u8* const dest = alloc.AllocateAndGetAddress(size);
+		const uptr size = (uptr)strlen(cmd);
+		alloc.Allocate(size);
+		u8* const dest = alloc.GetAddressAt(writeOffset);
 		memcpy(dest, cmd, (size_t)size);
+		writeOffset += size;
 	}
 	_pclose(pipe);
+	alloc.Allocate(1);
+	alloc.GetAddressAt(writeOffset)[0] = '\0';
+	const char* const stdOut = (const char*)(alloc.GetStartAddress() + startOffset);
 
-	return (const char*)(alloc.GetStartAddress() + startOffset);
+	return stdOut;
 }
 
 #else
