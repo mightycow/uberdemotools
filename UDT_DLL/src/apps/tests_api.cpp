@@ -1,11 +1,16 @@
 #include "tests.hpp"
 #include "uberdemotools.h"
+#include <stdio.h>
 
 UDT_TEST_FILE("API");
 
-#if 0
-UDT_TEST("@TODO:")
+#if 1
+UDT_TEST("HW_exception")
 {
+	volatile int div = 0;
+	volatile int x = 42 / div;
+	printf("%d", x);
+
 	return true;
 }
 #endif

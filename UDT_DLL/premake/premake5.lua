@@ -9,6 +9,25 @@ path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
 path_natvis = path_root.."/src/natvis"
 
+local function SetAdd(set, key)
+	if set ~= nil then
+		set[key] = true
+	end
+end
+
+local function SetRemove(set, key)
+	if set ~= nil then
+		set[key] = nil
+	end
+end
+
+local function SetContains(set, key)
+	if set ~= nil then
+		return set[key] ~= nil
+	end
+	return false
+end
+
 local function SetTargetAndLink(option) 
 
 	targetdir(option)
@@ -40,7 +59,7 @@ local function ApplyTargetAndLinkSettings()
 
 end
 
-local function ApplyProjectSettings() 
+local function ApplyProjectSettings(optionsSet) 
 
 	--
 	-- General
@@ -55,7 +74,11 @@ local function ApplyProjectSettings()
 	includedirs { path_src_core, path_src_apps, path_inc }
 
 	rtti "Off"
-	exceptionhandling "Off"
+	if SetContains(optionsSet, "exceptions") then
+		exceptionhandling "SEH"
+	else
+		exceptionhandling "Off"
+	end
 	characterset "Unicode"
 	staticruntime "On"
 	manifest "Off"
@@ -335,7 +358,7 @@ workspace "UDT"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/tests*" }
 		files { path_src_apps.."/json.h" }
-		ApplyProjectSettings()
+		ApplyProjectSettings( { exceptions=true } )
 		filter "system:windows"
 			links { "Shlwapi" }
 

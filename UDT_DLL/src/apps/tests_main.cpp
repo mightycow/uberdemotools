@@ -2,6 +2,7 @@
 #include "string.hpp"
 #include "file_system.hpp"
 #include <stdio.h>
+#include <exception>
 #include <Windows.h>
 
 struct Test
@@ -102,7 +103,19 @@ int main(int argc, char** argv)
 
 		Test& test = s_tests.tests[i];
 		printf("%03d. %s/%s\n", i + 1, test.section, test.name);
-		const bool passed = (*test.function)();
+		bool passed = false;
+		try
+		{
+			passed = (*test.function)();
+		}
+		catch(std::exception& e)
+		{
+			printf("%03d. Crash: %s\n", i + 1, e.what());
+		}
+		catch(...)
+		{
+			printf("%03d. Crash: unknown\n", i + 1);
+		}
 		if(passed)
 		{
 			printf("%03d. OK\n", i + 1);
