@@ -29,22 +29,23 @@ if %choice%==y (
 set gmake_arch=x64
 set gmake_config=%gmake_target%_%gmake_arch%
 set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar"
+set gmake_options=--jobs=8 %zigcc% config=%gmake_config%
 
 cd ..\.build\gmake_linux
 
 @echo on
 if %gmake_clean%==1 (
-	mingw32-make.exe %zigcc% clean
+	mingw32-make.exe %gmake_options% clean
 )
-mingw32-make.exe %zigcc% config=%gmake_config% UDT
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_captures
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_converter
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_cutter
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_json
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_merger
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_splitter
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_timeshifter
-mingw32-make.exe %zigcc% config=%gmake_config% UDT_viewer
-mingw32-make.exe %zigcc% config=%gmake_config% viewer_data_gen
-mingw32-make.exe %zigcc% config=%gmake_config% tests
+mingw32-make.exe %gmake_options% UDT
+mingw32-make.exe %gmake_options% UDT_captures
+mingw32-make.exe %gmake_options% UDT_converter
+mingw32-make.exe %gmake_options% UDT_cutter
+mingw32-make.exe %gmake_options% UDT_json
+mingw32-make.exe %gmake_options% UDT_merger
+mingw32-make.exe %gmake_options% UDT_splitter
+mingw32-make.exe %gmake_options% UDT_timeshifter
+mingw32-make.exe %gmake_options% UDT_viewer
+mingw32-make.exe %gmake_options% viewer_data_gen
+mingw32-make.exe %gmake_options% tests
 pause
