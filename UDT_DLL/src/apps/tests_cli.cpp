@@ -127,8 +127,7 @@ UDT_TEST("cut/time/enemy_has_no_name_512_537.dm_68")
 	const char* playerNames[ID_MAX_CLIENTS] =
 	{
 		"#ugq",
-		//"sim the sppoky ghost",
-		"ghost", // @TODO:
+		"sim the sppoky ghost", // <-- "sim" with the old QL clan parsing enabled
 		"venim",
 		"oranje",
 		"rush",

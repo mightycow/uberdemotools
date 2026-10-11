@@ -563,6 +563,15 @@ bool GetClanAndPlayerName(udtString& clan, udtString& player, bool& hasClan, udt
 
 	// "xcn" was for the full clan name, "c" for the country.
 	const bool hasClanName = AreAllProtocolFlagsSet(protocol, udtProtocolFlagsEx::QL_ClanName);
+	if(!hasClanName)
+	{
+		hasClan = false;
+		clan = udtString::NewEmptyConstant();
+		player = clanAndPlayer;
+
+		return true;
+	}
+
 	if(hasClanName &&
 	   ParseConfigStringValueString(clan, allocator, "cn", configString))
 	{
