@@ -21,7 +21,7 @@ UDT_ARCH=x64
 UDT_CONFIG="$UDT_TARGET"_"$UDT_ARCH"
 echo Selected config: $UDT_CONFIG
 
-UDT_OPTIONS=--jobs=8 config=$UDT_CONFIG
+UDT_OPTIONS=--jobs=4 config=$UDT_CONFIG
 
 make clean
 make UDT $UDT_OPTIONS

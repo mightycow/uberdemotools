@@ -28,7 +28,7 @@ if %choice%==y (
 
 set gmake_arch=x64
 set gmake_config=%gmake_target%_%gmake_arch%
-set gmake_options=--jobs=8 config=%gmake_config%
+set gmake_options=--jobs=4 config=%gmake_config%
 
 cd ..\.build\gmake_windows
 

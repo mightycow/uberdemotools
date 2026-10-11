@@ -163,8 +163,8 @@ local function ApplyProjectSettings(optionsSet)
 		linkoptions { "" }
 
 	filter { "action:gmake", "configurations:Debug" }
-		--buildoptions { "-fno-sanitize=alignment" }
-		--linkoptions { "-fno-sanitize=alignment" }
+		buildoptions { "-fno-sanitize=alignment" }
+		linkoptions { "-fno-sanitize=alignment" }
 		symbols "On" -- I think that's "-g -O0" for build and "-g" for link?
 		optimize "Off"
 		buildoptions { "-gdwarf-4", "-fstandalone-debug" }
