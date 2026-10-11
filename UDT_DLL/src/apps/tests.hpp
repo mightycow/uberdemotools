@@ -51,7 +51,7 @@ struct TestRegisterer
 #if defined(_MSC_VER)
 #define UDT_BREAK() if(IsDebuggerAttached()) __debugbreak()
 #else
-#define UDT_BREAK() (void)
+#define UDT_BREAK() do {} while(0)
 #endif
 
 #define UDT_ENSURE(Condition) \

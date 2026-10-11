@@ -58,6 +58,7 @@ bool IsDebuggerAttached()
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 static void CreateTempDir(char* dir, const char* name)
 {
@@ -67,8 +68,8 @@ static void CreateTempDir(char* dir, const char* name)
 		tempDir = "/tmp";
 	}
 
-	sprintf(dir, "%s/%s_XXXXXX", tempDir, name);
-	mkdtemp(dir);
+	sprintf(dir, "%s/%s", tempDir, name);
+	mkdir(dir, S_IRWXU);
 }
 
 static void GetAbsoluteDirPath(char* dir, const char* relPath)
@@ -83,9 +84,9 @@ void SetCD(const char* dirPath)
 
 void MakeDirectoryEmpty(const char* dirPath)
 {
-	// @TODO: validate
 	char cmd[1024];
-	sprintf(cmd, "rm -r %s/*", dirPath);
+	sprintf(cmd, "rm -rf %s/*", dirPath);
+	system(cmd);
 }
 
 #endif
