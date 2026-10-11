@@ -49,6 +49,11 @@ void MakeDirectoryEmpty(const char* dirPath)
 	SHFileOperationA(&fileOp);
 }
 
+bool IsDebuggerAttached()
+{
+	return IsDebuggerPresent();
+}
+
 #else
 
 #include <stdlib.h>

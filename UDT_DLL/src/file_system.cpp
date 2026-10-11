@@ -24,6 +24,10 @@ bool IsValidDirectory(const char* folderPath)
 
 bool GetDirectoryFileList(udtFileListQuery& query)
 {
+	query.Files.Clear();
+	query.TempAllocator.Clear();
+	query.PersistAllocator.Clear();
+
 	const udtString folderPath = query.FolderPath;
 
 	udtString queryPath;

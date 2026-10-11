@@ -48,9 +48,16 @@ struct TestRegisterer
 #define UDT_CONCAT_NE(x, y)    x ## y                 // no   expansion
 #define UDT_CONCAT(x, y)       UDT_CONCAT_NE(x, y)    // with expansion
 
+#if defined(_MSC_VER)
+#define UDT_BREAK() if(IsDebuggerAttached()) __debugbreak()
+#else
+#define UDT_BREAK() (void)
+#endif
+
 #define UDT_ENSURE(Condition) \
 	if(!(Condition)) \
 	{ \
+		UDT_BREAK(); \
 		fprintf(stderr, "    false: '%s' at line %d\n", #Condition, __LINE__); \
 		return false; \
 	}
@@ -68,6 +75,12 @@ inline int ServerTime(int minutes, int seconds)
 	return (minutes * 60 + seconds) * 1000;
 }
 
+inline int ServerTimeSec(int minutes, int seconds)
+{
+	return minutes * 60 + seconds;
+}
+
+bool IsDebuggerAttached();
 void Pause();
 void InitContext(const char* repoPath);
 void MakeDirectoryEmpty(const char* dirPath);
