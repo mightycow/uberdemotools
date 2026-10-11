@@ -8,6 +8,39 @@
 #include <stdio.h>
 
 
+// structures for explicitly unaligned reads and writes
+#pragma pack(push, 1)
+struct s16u { s16 v; };
+struct s32u { s32 v; };
+struct s64u { s64 v; };
+struct u16u { u16 v; };
+struct u32u { u32 v; };
+struct u64u { u64 v; };
+struct f32u { f32 v; };
+struct f64u { f64 v; };
+#pragma pack(pop)
+
+// unaligned writes
+#define uwrite_s16(Address) (((s16u*)(Address))->v)
+#define uwrite_s32(Address) (((s32u*)(Address))->v)
+#define uwrite_s64(Address) (((s64u*)(Address))->v)
+#define uwrite_u16(Address) (((u16u*)(Address))->v)
+#define uwrite_u32(Address) (((u32u*)(Address))->v)
+#define uwrite_u64(Address) (((u64u*)(Address))->v)
+#define uwrite_f32(Address) (((f32u*)(Address))->v)
+#define uwrite_f64(Address) (((f64u*)(Address))->v)
+
+// unaligned reads
+#define uread_s16(Address) (((const s16u*)(Address))->v)
+#define uread_s32(Address) (((const s32u*)(Address))->v)
+#define uread_s64(Address) (((const s64u*)(Address))->v)
+#define uread_u16(Address) (((const u16u*)(Address))->v)
+#define uread_u32(Address) (((const u32u*)(Address))->v)
+#define uread_u64(Address) (((const u64u*)(Address))->v)
+#define uread_f32(Address) (((const f32u*)(Address))->v)
+#define uread_f64(Address) (((const f64u*)(Address))->v)
+
+
 // safe strncpy that ensures a trailing zero
 extern void Q_strncpyz(char* dest, const char* src, s32 destsize);
 
