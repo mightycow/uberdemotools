@@ -133,6 +133,10 @@ bool IsValidDirectory(const char* folderPath)
 
 bool GetDirectoryFileList(udtFileListQuery& query)
 {
+	query.Files.Clear();
+	query.TempAllocator.Clear();
+	query.PersistAllocator.Clear();
+
 	DIR* const dirHandle = opendir(query.FolderPath.GetPtr());
 	if(dirHandle == NULL)
 	{

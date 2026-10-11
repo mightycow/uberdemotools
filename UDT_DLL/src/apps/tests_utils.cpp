@@ -175,6 +175,12 @@ void Directory::ListFiles()
 {
 	GetDirectoryFileList(Queries[WriteIndex]);
 	QueriesValid[WriteIndex] = true;
+#if defined(_DEBUG) && defined(UDT_DEBUG_VERBOSE)
+	for(int n = 0, nc = Queries[WriteIndex].Files.GetSize(); n < nc; ++n)
+	{
+		printf("NOW: %s\n", Queries[WriteIndex].Files[n].Name.GetPtrOrEmpty());
+	}
+#endif
 	WriteIndex ^= 1;
 
 	NewFiles.Clear();
@@ -199,6 +205,9 @@ void Directory::ListFiles()
 
 			if(!oldFound)
 			{
+#if defined(_DEBUG) && defined(UDT_DEBUG_VERBOSE)
+				printf("NEW: %s\n", newFile.Name.GetPtrOrEmpty());
+#endif
 				NewFiles.Add(newFile);
 			}
 		}
