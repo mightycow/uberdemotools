@@ -341,6 +341,7 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 			if(!threadInfo.Threads[i].Finished)
 			{
 				threadIdx = i;
+				break;
 			}
 		}
 
