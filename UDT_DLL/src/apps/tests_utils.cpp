@@ -212,6 +212,14 @@ clean_up:
 	return success;
 }
 
+static int CompareFiles(const void* aPtr, const void* bPtr)
+{
+	const udtFileInfo& a = *(udtFileInfo*)aPtr;
+	const udtFileInfo& b = *(udtFileInfo*)bPtr;
+
+	return strcmp(a.Name.GetPtrOrEmpty(), b.Name.GetPtrOrEmpty());
+}
+
 bool AreDirectoriesEqual(const char* dirPathA, const char* dirPathB)
 {
 	udtFileListQuery queryA;
@@ -233,7 +241,9 @@ bool AreDirectoriesEqual(const char* dirPathA, const char* dirPathB)
 		return false;
 	}
 
-	// @TODO: sort the files or do we always trust the FS to have the same order?
+	// we cannot trust the file system to always give us files ordered by names
+	qsort(queryA.Files.GetStartAddress(), (size_t)queryA.Files.GetSize(), decltype(queryA.Files)::TypeSize, &CompareFiles);
+	qsort(queryB.Files.GetStartAddress(), (size_t)queryB.Files.GetSize(), decltype(queryB.Files)::TypeSize, &CompareFiles);
 
 	for(u32 i = 0, count = queryA.Files.GetSize(); i < count; ++i)
 	{
