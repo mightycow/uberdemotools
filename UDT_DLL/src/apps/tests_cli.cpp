@@ -76,6 +76,30 @@ static bool ValidatePlayerNames(const char* jsonString, const char** cleanPlayer
 	return true;
 }
 
+UDT_TEST("cut/chat/demo_pack_1/1T")
+{
+	Run("UDT_cutter", "c -s=10 -e=10 -t=1 \"-c=%s/cut_by_chat_waxed.cfg\" \"-o=%s\" \"%s/demo_pack_1\"",
+		ctx.DemoDir, ctx.OutTempDir.Path, ctx.DemoDir);
+	ctx.OutTempDir.ListFiles();
+	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
+	UDT_ENSURE(newFiles.GetSize() == 6);
+	UDT_ENSURE(AreDirectoriesEqual(ctx.OutTempDir.Path, fmt("%s/demo_pack_1_cut_by_waxed_output", ctx.DemoDir)));
+
+	return true;
+}
+
+UDT_TEST("cut/chat/demo_pack_1/16T")
+{
+	Run("UDT_cutter", "c -s=10 -e=10 -t=16 \"-c=%s/cut_by_chat_waxed.cfg\" \"-o=%s\" \"%s/demo_pack_1\"",
+		ctx.DemoDir, ctx.OutTempDir.Path, ctx.DemoDir);
+	ctx.OutTempDir.ListFiles();
+	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
+	UDT_ENSURE(newFiles.GetSize() == 6);
+	UDT_ENSURE(AreDirectoriesEqual(ctx.OutTempDir.Path, fmt("%s/demo_pack_1_cut_by_waxed_output", ctx.DemoDir)));
+
+	return true;
+}
+
 UDT_TEST("cut/time/wrong_cut_time_42_653.dm_91")
 {
 	Run("UDT_cutter", "t -g=0 -s=42 -e=653 \"-o=%s\" \"%s/wrong_cut_time_42_653.dm_91\"", ctx.OutTempDir.Path, ctx.DemoDir);

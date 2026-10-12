@@ -80,8 +80,11 @@ inline int ServerTimeSec(int minutes, int seconds)
 	return minutes * 60 + seconds;
 }
 
+const char* fmt(const char* msg, ...);
 bool IsDebuggerAttached();
 void Pause();
 void InitContext(const char* repoPath);
 void MakeDirectoryEmpty(const char* dirPath);
 const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...);
+bool AreFilesEqual(const char* filePathA, const char* filePathB);
+bool AreDirectoriesEqual(const char* dirPathA, const char* dirPathB);

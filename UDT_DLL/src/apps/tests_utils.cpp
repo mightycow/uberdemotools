@@ -63,7 +63,7 @@ bool IsDebuggerAttached()
 static void CreateTempDir(char* dir, const char* name)
 {
 	const char* tempDir = getenv("TMPDIR");
-	if(tempDir == nullptr)
+	if(tempDir == NULL)
 	{
 		tempDir = "/tmp";
 	}
@@ -91,6 +91,26 @@ void MakeDirectoryEmpty(const char* dirPath)
 
 #endif
 
+const char* fmt(const char* msg, ...)
+{
+	const int MaxBuffers = 16;
+	const int BufferSize = 1024;
+	struct Buffer { char buffer[BufferSize]; };
+	static thread_local Buffer g_fmtBuffers[MaxBuffers];
+	static thread_local int g_fmtBufferIndex = 0;
+
+	g_fmtBufferIndex = (g_fmtBufferIndex + 1) % MaxBuffers;
+	Buffer& buffer = g_fmtBuffers[g_fmtBufferIndex];
+
+	va_list argList;
+	va_start(argList, msg);
+	vsnprintf(buffer.buffer, BufferSize - 1, msg, argList);
+	va_end(argList);
+	buffer.buffer[BufferSize - 1] = '\0';
+
+	return buffer.buffer;
+}
+
 void Pause()
 {
 	printf("Press any key to continue . . .\n");
@@ -112,7 +132,7 @@ const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...
 #endif
 
 	FILE* const pipe = udt_popen(cmd, "r");
-	if(pipe == nullptr)
+	if(pipe == NULL)
 	{
 		return NULL;
 	}
@@ -122,7 +142,7 @@ const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...
 	udtVMLinearAllocator& alloc = ctx.TempAllocator;
 	const uptr startOffset = alloc.GetCurrentByteCount();
 	uptr writeOffset = startOffset;
-	while(fgets(cmd, sizeof(cmd), pipe) != nullptr)
+	while(fgets(cmd, sizeof(cmd), pipe) != NULL)
 	{
 		const uptr size = (uptr)strlen(cmd);
 		alloc.Allocate(size);
@@ -136,6 +156,110 @@ const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...
 	const char* const stdOut = (const char*)(alloc.GetStartAddress() + startOffset);
 
 	return stdOut;
+}
+
+bool AreFilesEqual(const char* filePathA, const char* filePathB)
+{
+	static u8 bufferA[4096];
+	static u8 bufferB[4096];
+	bool success = false;
+	FILE* fileA = NULL;
+	FILE* fileB = NULL;
+	size_t readA = 0;
+	size_t readB = 0;
+
+	fileA = fopen(filePathA, "rb");
+	if(fileA == NULL)
+	{
+		goto clean_up;
+	}
+
+	fileB = fopen(filePathB, "rb");
+	if(fileB == NULL)
+	{
+		goto clean_up;
+	}
+
+	for(;;)
+	{
+		readA = fread(bufferA, 1, sizeof(bufferA), fileA);
+		readB = fread(bufferB, 1, sizeof(bufferB), fileB);
+		if(readA != readB)
+		{
+			goto clean_up;
+		}
+		if(readA > 0 && memcmp(bufferA, bufferB, readA) != 0)
+		{
+			goto clean_up;
+		}
+		if(readA < sizeof(bufferA))
+		{
+			success = true;
+			break;
+		}
+	}
+
+clean_up:
+	if(fileA != NULL)
+	{
+		fclose(fileA);
+	}
+	if(fileB != NULL)
+	{
+		fclose(fileB);
+	}
+
+	return success;
+}
+
+bool AreDirectoriesEqual(const char* dirPathA, const char* dirPathB)
+{
+	udtFileListQuery queryA;
+	queryA.FileFilter = NULL;
+	queryA.FolderPath = udtString::NewConstRef(dirPathA);
+	queryA.Recursive = false;
+	queryA.UserData = NULL;
+	GetDirectoryFileList(queryA);
+
+	udtFileListQuery queryB;
+	queryB.FileFilter = NULL;
+	queryB.FolderPath = udtString::NewConstRef(dirPathB);
+	queryB.Recursive = false;
+	queryB.UserData = NULL;
+	GetDirectoryFileList(queryB);
+
+	if(queryA.Files.GetSize() != queryB.Files.GetSize())
+	{
+		return false;
+	}
+
+	// @TODO: sort the files or do we always trust the FS to have the same order?
+
+	for(u32 i = 0, count = queryA.Files.GetSize(); i < count; ++i)
+	{
+		const udtFileInfo& fileA = queryA.Files[i];
+		const udtFileInfo& fileB = queryB.Files[i];
+		if(fileA.Size != fileB.Size)
+		{
+			return false;
+		}
+		if(!udtString::Equals(fileA.Name, fileB.Name))
+		{
+			return false;
+		}
+	}
+
+	for(u32 i = 0, count = queryA.Files.GetSize(); i < count; ++i)
+	{
+		const udtFileInfo& fileA = queryA.Files[i];
+		const udtFileInfo& fileB = queryB.Files[i];
+		if(!AreFilesEqual(fileA.Path.GetPtrOrEmpty(), fileB.Path.GetPtrOrEmpty()))
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 void InitContext(const char* repoPath)
@@ -165,7 +289,7 @@ void Directory::Init()
 	for(size_t i = 0; i < UDT_COUNT_OF(Queries); ++i)
 	{
 		Queries[i].FileFilter = NULL;
-		Queries[i].UserData = nullptr;
+		Queries[i].UserData = NULL;
 		Queries[i].Recursive = false;
 		Queries[i].FolderPath = udtString::NewConstRef(Path);
 	}
