@@ -134,7 +134,7 @@ namespace udt { namespace impl
 namespace udt { namespace impl
 {
 	template<typename T, unsigned int N>
-	unsigned int countof(T(&)[N])
+	constexpr unsigned int countof(T(&)[N])
 	{
 		return N;
 	}
