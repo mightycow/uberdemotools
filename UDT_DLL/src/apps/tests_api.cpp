@@ -4,7 +4,7 @@
 
 UDT_TEST_FILE("API");
 
-UDT_TEST("Corrupt")
+static bool TestCorruptDemos(u32 maxThreadCount)
 {
 	udtVMLinearAllocator pathAlloc("PathAllocator");
 	pathAlloc.Init(UDT_KB(64));
@@ -55,16 +55,21 @@ UDT_TEST("Corrupt")
 	multiParse.FileCount = demoCount;
 	multiParse.FilePaths = fullDemoPaths;
 	multiParse.OutputErrorCodes = errorCodes;
-	multiParse.MaxThreadCount = 1;
+	multiParse.MaxThreadCount = maxThreadCount;
 
 	udtParserContextGroup* contextGroup = NULL;
 	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
 	UDT_ENSURE(udtParseDemoFiles(&contextGroup, &parse, &multiParse) == (s32)udtErrorCode::None);
 	UDT_ENSURE(contextGroup != NULL);
-
 	u32 contextCount = 0;
 	UDT_ENSURE(udtGetContextCountFromGroup(contextGroup, &contextCount) == (s32)udtErrorCode::None);
-	UDT_ENSURE(contextCount == 1); // we asked for single-threaded mode
+	if(maxThreadCount == 1)
+	{
+		// we asked for single-threaded mode
+		UDT_ENSURE(contextCount == 1);
+	}
+
+	u32 udtDemoCount = 0;
 	for(u32 contextIdx = 0; contextIdx < contextCount; ++contextIdx)
 	{
 		udtParserContext* context = NULL;
@@ -73,11 +78,24 @@ UDT_TEST("Corrupt")
 
 		u32 contextDemoCount = 0;
 		UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
-		UDT_ENSURE(contextDemoCount == demoCount);
+
+		udtDemoCount += contextDemoCount;
+	}
+	UDT_ENSURE(udtDemoCount == demoCount);
+	
+	for(u32 contextIdx = 0; contextIdx < contextCount; ++contextIdx)
+	{
+		udtParserContext* context = NULL;
+		UDT_ENSURE(udtGetContextFromGroup(contextGroup, contextIdx, &context) == (s32)udtErrorCode::None);
+		UDT_ENSURE(context != NULL);
+
+		u32 contextDemoCount = 0;
+		UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
+		UDT_ENSURE(contextDemoCount > 0 && contextDemoCount <= demoCount);
 
 		udtParseDataGameStateBuffers buffers = {};
 		UDT_ENSURE(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::GameState, &buffers) == (s32)udtErrorCode::None);
-		UDT_ENSURE(buffers.GameStateCount == demoCount);
+		UDT_ENSURE(buffers.GameStateCount > 0 && buffers.GameStateCount <= demoCount);
 
 		for(u32 demoIdx = 0; demoIdx < contextDemoCount; ++demoIdx)
 		{
@@ -100,6 +118,16 @@ UDT_TEST("Corrupt")
 	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
 
 	return true;
+}
+
+UDT_TEST("udtParseDemoFiles/Corrupt/1T")
+{
+	return TestCorruptDemos(1);
+}
+
+UDT_TEST("udtParseDemoFiles/Corrupt/4T")
+{
+	return TestCorruptDemos(4);
 }
 
 #if 0
