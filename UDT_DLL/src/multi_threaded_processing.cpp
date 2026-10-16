@@ -371,7 +371,10 @@ bool udtMultiThreadedParsing::Process(udtTimer& jobTimer,
 			progress = udt_min(progress, threadInfo.Threads[i].Progress);
 		}
 
-		(*parseInfo->ProgressCb)(progress, parseInfo->ProgressContext);
+		if(parseInfo->ProgressCb != NULL)
+		{
+			(*parseInfo->ProgressCb)(progress, parseInfo->ProgressContext);
+		}
 	}
 	
 	// If the above code is correct and never fails, this is redundant.
