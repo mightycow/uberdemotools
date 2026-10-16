@@ -4,6 +4,104 @@
 
 UDT_TEST_FILE("API");
 
+UDT_TEST("Corrupt")
+{
+	udtVMLinearAllocator pathAlloc("PathAllocator");
+	pathAlloc.Init(UDT_KB(64));
+
+	struct DemoInfo
+	{
+		const char* relativePath;
+		s32 firstTimeMs;
+		s32 lastTimeMs;
+	};
+
+	const DemoInfo demos[] =
+	{
+		{ "invalid_area_mask_length.dm_68", 33037, 33169 }, // 0:33 -> 0:33
+		{ "invalid_command_byte.dm_68", UDT_S32_MAX, UDT_S32_MIN }, // corrupted gamestate... should be dropped!
+		{ "invalid_command_byte_2.dm_68", 29968, 30034 }, // 0:29 -> 0:30
+		{ "invalid_entity_state_field_count.dm_68", 32575, 44488 }, // 0:32 -> 0:44
+		{ "invalid_entity_state_field_count_2.dm_68", 54652, 67555 }, // 0:54 -> 1:07
+		{ "truncated.dm_68", 41716, 49504 }, // 0:41 -> 0:49
+		{ "truncated.dm_73", 897175, 1222500 } // 14:57 -> 20:22
+	};
+	const constexpr u32 demoCount = (u32)UDT_COUNT_OF(demos);
+	udtString fullDemoStrings[demoCount] = {};
+	const char* fullDemoPaths[demoCount] = {};
+	s32 errorCodes[demoCount] = {};
+
+	for(u32 i = 0; i < demoCount; ++i)
+	{
+		char path[512];
+		sprintf(path, "%s/%s", ctx.DemoDir, demos[i].relativePath);
+		fullDemoStrings[i] = udtString::NewClone(pathAlloc, path);
+	}
+
+	// only grab pointers when all allocations are done since relocations can happen
+	for(u32 i = 0; i < demoCount; ++i)
+	{
+		fullDemoPaths[i] = fullDemoStrings[i].GetPtrOrEmpty();
+	}
+
+	const u32 plugIns[] = { udtParserPlugIn::GameState };
+
+	udtParseArg parse = {};
+	parse.PlugInCount = UDT_COUNT_OF(plugIns);
+	parse.PlugIns = plugIns;
+	parse.OutputFolderPath = ctx.OutTempDir.Path;
+
+	udtMultiParseArg multiParse = {};
+	multiParse.FileCount = demoCount;
+	multiParse.FilePaths = fullDemoPaths;
+	multiParse.OutputErrorCodes = errorCodes;
+	multiParse.MaxThreadCount = 1;
+
+	udtParserContextGroup* contextGroup = NULL;
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtParseDemoFiles(&contextGroup, &parse, &multiParse) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextGroup != NULL);
+
+	u32 contextCount = 0;
+	UDT_ENSURE(udtGetContextCountFromGroup(contextGroup, &contextCount) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextCount == 1); // we asked for single-threaded mode
+	for(u32 contextIdx = 0; contextIdx < contextCount; ++contextIdx)
+	{
+		udtParserContext* context = NULL;
+		UDT_ENSURE(udtGetContextFromGroup(contextGroup, contextIdx, &context) == (s32)udtErrorCode::None);
+		UDT_ENSURE(context != NULL);
+
+		u32 contextDemoCount = 0;
+		UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
+		UDT_ENSURE(contextDemoCount == demoCount);
+
+		udtParseDataGameStateBuffers buffers = {};
+		UDT_ENSURE(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::GameState, &buffers) == (s32)udtErrorCode::None);
+		UDT_ENSURE(buffers.GameStateCount == demoCount);
+
+		for(u32 demoIdx = 0; demoIdx < contextDemoCount; ++demoIdx)
+		{
+			u32 demoInputIdx = 0;
+			UDT_ENSURE(udtGetDemoInputIndex(context, demoIdx, &demoInputIdx) == (s32)udtErrorCode::None);
+			UDT_ENSURE(demoInputIdx < demoCount);
+
+			// @TODO: "invalid_command_byte.dm_68" should return Count 0
+			const udtParseDataBufferRange range = buffers.GameStateRanges[demoIdx];
+			UDT_ENSURE(range.Count == 1);
+
+			const udtParseDataGameState gs = buffers.GameStates[range.FirstIndex];
+			const DemoInfo& d = demos[demoInputIdx];
+			UDT_ENSURE(d.firstTimeMs == gs.FirstSnapshotTimeMs);
+			UDT_ENSURE(d.lastTimeMs == gs.LastSnapshotTimeMs);
+		}
+	}
+
+	UDT_ENSURE(udtDestroyContextGroup(contextGroup) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	return true;
+}
+
 #if 0
 
 UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
