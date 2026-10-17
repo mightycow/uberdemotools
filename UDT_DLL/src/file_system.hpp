@@ -17,6 +17,21 @@ typedef bool (*KeepFileCallback)(const char* name, u64 size, void* userData); //
 
 struct udtFileListQuery
 {
+	udtFileListQuery()
+	{
+		FolderPath = udtString::NewEmptyConstant();
+		FileFilter = NULL;
+		UserData = NULL;
+		Recursive = false;
+	}
+
+	void Clear()
+	{
+		Files.Clear();
+		TempAllocator.Clear();
+		PersistAllocator.Clear();
+	}
+
 	udtVMArray<udtFileInfo> Files { "FileListQuery::FilesArray" };      // Output.
 	udtVMLinearAllocator PersistAllocator { "FileListQuery::Persist" }; // Output.
 	udtVMLinearAllocator TempAllocator { "FileListQuery::Temp" };       // Private data.

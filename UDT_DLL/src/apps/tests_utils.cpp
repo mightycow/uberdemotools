@@ -307,6 +307,7 @@ void Directory::Init()
 
 void Directory::ListFiles()
 {
+	Queries[WriteIndex].Clear();
 	GetDirectoryFileList(Queries[WriteIndex]);
 	QueriesValid[WriteIndex] = true;
 #if defined(_DEBUG) && defined(UDT_DEBUG_VERBOSE)
