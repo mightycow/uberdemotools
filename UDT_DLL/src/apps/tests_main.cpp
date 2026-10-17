@@ -24,10 +24,17 @@ struct TestGlobals
 
 TestContext ctx;
 static TestGlobals s_tests;
+static int s_soloIndex = -1;
 
-void RegisterTest(udtTestFunction function, const char* section, const char* name)
+void RegisterTest(udtTestFunction function, const char* section, const char* name, bool solo)
 {
 	assert((size_t)s_tests.testCount < UDT_COUNT_OF(s_tests.tests));
+
+	if(solo)
+	{
+		s_soloIndex = s_tests.testCount;
+	}
+
 	Test& test = s_tests.tests[s_tests.testCount++];
 	test.function = function;
 	test.section = section;
@@ -90,6 +97,48 @@ int main(int argc, char** argv)
 		return 666;
 	}
 	udtShutDownLibrary();
+
+	if(s_soloIndex >= 0)
+	{
+		MakeDirectoryEmpty(ctx.OutTempDir.Path);
+		MakeDirectoryEmpty(ctx.InTempDir.Path);
+		ctx.OutTempDir.ListFiles();
+		ctx.InTempDir.ListFiles();
+		ctx.TempAllocator.Clear();
+
+		Test& test = s_tests.tests[s_soloIndex];
+		printf("SOLO TEST: %s/%s\n\n", test.section, test.name);
+		bool passed = false;
+		try
+		{
+			passed = (*test.function)();
+		}
+		catch(std::exception& e)
+		{
+			printf("Test crashed: %s\n", e.what());
+		}
+		catch(...)
+		{
+			printf("Test crashed: unknown\n");
+		}
+		if(passed)
+		{
+			printf("Test OK\n");
+			s_tests.passCount++;
+		}
+		else
+		{
+			printf("Test failed\n");
+		}
+
+		MakeDirectoryEmpty(ctx.OutTempDir.Path);
+		MakeDirectoryEmpty(ctx.InTempDir.Path);
+
+		printf("\n");
+		Pause();
+
+		return 0;
+	}
 
 	printf("%d test%s total\n", s_tests.testCount, s_tests.testCount > 1 ? "s" : "");
 

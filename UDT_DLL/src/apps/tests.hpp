@@ -31,13 +31,13 @@ extern TestContext ctx;
 
 typedef bool (*udtTestFunction)();
 
-void RegisterTest(udtTestFunction test, const char* section, const char* name);
+void RegisterTest(udtTestFunction test, const char* section, const char* name, bool solo);
 
 struct TestRegisterer
 {
-	TestRegisterer(udtTestFunction test, const char* section, const char* name)
+	TestRegisterer(udtTestFunction test, const char* section, const char* name, bool solo)
 	{
-		RegisterTest(test, section, name);
+		RegisterTest(test, section, name, solo);
 	}
 };
 
@@ -65,10 +65,16 @@ struct TestRegisterer
 #define UDT_TEST_FILE(FileTitle) \
 	static const char* s_fileTitle = FileTitle
 
-#define UDT_TEST(TestTitle) \
+#define UDT_TEST_IMPL(TestTitle, Solo) \
 	static bool UDT_CONCAT(TestFunction_, __LINE__)(); \
-	static TestRegisterer UDT_CONCAT(g_registerer_, __LINE__)(UDT_CONCAT(&TestFunction_, __LINE__), s_fileTitle, TestTitle); \
+	static TestRegisterer UDT_CONCAT(g_registerer_, __LINE__)(UDT_CONCAT(&TestFunction_, __LINE__), s_fileTitle, TestTitle, Solo); \
 	static bool UDT_CONCAT(TestFunction_, __LINE__)()
+
+#define UDT_TEST(TestTitle) \
+	UDT_TEST_IMPL(TestTitle, false)
+
+#define UDT_TEST_SOLO(TestTitle) \
+	UDT_TEST_IMPL(TestTitle, true)
 
 inline int ServerTime(int minutes, int seconds)
 {
