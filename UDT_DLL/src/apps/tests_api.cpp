@@ -1,6 +1,7 @@
 #include "tests.hpp"
 #include "uberdemotools.h"
 #include "utils.hpp"
+#include "path.hpp"
 #include <stdio.h>
 
 #if 1
@@ -24,6 +25,11 @@ static void CallbackConsoleMessage(s32 logLevel, const char* message)
 
 	const bool useStdOut = logLevel == 0 || logLevel == 1;
 	fprintf(useStdOut ? stdout : stderr, "%s%s\n", logLevels[logLevel], message);
+}
+
+static bool KeepOnlyDemoFiles(const char* name, u64 /*size*/, void* /*userData*/)
+{
+	return udtPath::HasValidDemoFileExtension(name);
 }
 
 struct Cut
@@ -452,6 +458,116 @@ UDT_TEST("udtCutDemoFileByTime/OverlappingCuts")
 	UDT_ENSURE(ValidateDemoCutRanges(newFiles, expectedCuts, UDT_COUNT_OF(expectedCuts)));
 
 	return true;
+}
+
+// this doesn't validate a specific thing other than we don't crash, trip up sanitizers, ...
+static bool ParseAllDemos(u32 maxThreadCount)
+{
+	udtFileListQuery query;
+	query.FileFilter = &KeepOnlyDemoFiles;
+	query.FolderPath = udtString::NewConstRef(ctx.DemoDir);
+	query.Recursive = true;
+	query.UserData = NULL;
+	GetDirectoryFileList(query);
+
+	const u32 demoCount = query.Files.GetSize();
+	query.TempAllocator.Clear();
+	const uptr filePathsOffset = query.PersistAllocator.Allocate((uptr)demoCount * sizeof(const char*));
+	const uptr errorCodesOffset = query.PersistAllocator.Allocate((uptr)demoCount * sizeof(s32));
+
+	// only grab pointers when all allocations are done since relocations can happen
+	const char** const filePaths = (const char**)query.PersistAllocator.GetAddressAt(filePathsOffset);;
+	s32* errorCodes = (s32*)query.PersistAllocator.GetAddressAt(errorCodesOffset);
+	for(u32 i = 0; i < demoCount; ++i)
+	{
+		filePaths[i] = query.Files[i].Path.GetPtrOrEmpty();
+	}
+
+	const u32 plugIns[] =
+	{
+		udtParserPlugIn::Chat,
+		udtParserPlugIn::GameState,
+		udtParserPlugIn::Obituaries,
+		udtParserPlugIn::Stats,
+		udtParserPlugIn::RawCommands,
+		udtParserPlugIn::RawConfigStrings,
+		udtParserPlugIn::Captures,
+		udtParserPlugIn::Scores
+	};
+
+	udtParseArg parse = {};
+	parse.MessageCb = &CallbackConsoleMessage;
+	parse.PlugInCount = UDT_COUNT_OF(plugIns);
+	parse.PlugIns = plugIns;
+	parse.OutputFolderPath = ctx.OutTempDir.Path;
+
+	udtMultiParseArg multiParse = {};
+	multiParse.FileCount = demoCount;
+	multiParse.FilePaths = filePaths;
+	multiParse.OutputErrorCodes = errorCodes;
+	multiParse.MaxThreadCount = maxThreadCount;
+
+	udtParserContextGroup* contextGroup = NULL;
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtParseDemoFiles(&contextGroup, &parse, &multiParse) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextGroup != NULL);
+	u32 contextCount = 0;
+	UDT_ENSURE(udtGetContextCountFromGroup(contextGroup, &contextCount) == (s32)udtErrorCode::None);
+	if(maxThreadCount == 1)
+	{
+		// we asked for single-threaded mode
+		UDT_ENSURE(contextCount == 1);
+	}
+
+	u32 udtDemoCount = 0;
+	for(u32 contextIdx = 0; contextIdx < contextCount; ++contextIdx)
+	{
+		udtParserContext* context = NULL;
+		UDT_ENSURE(udtGetContextFromGroup(contextGroup, contextIdx, &context) == (s32)udtErrorCode::None);
+		UDT_ENSURE(context != NULL);
+
+		u32 contextDemoCount = 0;
+		UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
+
+		udtDemoCount += contextDemoCount;
+	}
+	UDT_ENSURE(udtDemoCount == demoCount);
+
+	for(u32 contextIdx = 0; contextIdx < contextCount; ++contextIdx)
+	{
+		udtParserContext* context = NULL;
+		UDT_ENSURE(udtGetContextFromGroup(contextGroup, contextIdx, &context) == (s32)udtErrorCode::None);
+		UDT_ENSURE(context != NULL);
+
+		u32 contextDemoCount = 0;
+		UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
+		UDT_ENSURE(contextDemoCount > 0 && contextDemoCount <= demoCount);
+
+		udtParseDataGameStateBuffers buffers = {};
+		UDT_ENSURE(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::GameState, &buffers) == (s32)udtErrorCode::None);
+
+		for(u32 demoIdx = 0; demoIdx < contextDemoCount; ++demoIdx)
+		{
+			u32 demoInputIdx = 0;
+			UDT_ENSURE(udtGetDemoInputIndex(context, demoIdx, &demoInputIdx) == (s32)udtErrorCode::None);
+			UDT_ENSURE(demoInputIdx < demoCount);
+		}
+	}
+
+	UDT_ENSURE(udtDestroyContextGroup(contextGroup) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	return true;
+}
+
+UDT_TEST("udtParseDemoFiles/All/1T")
+{
+	return ParseAllDemos(1);
+}
+
+UDT_TEST("udtParseDemoFiles/All/4T")
+{
+	return ParseAllDemos(4);
 }
 
 #endif
