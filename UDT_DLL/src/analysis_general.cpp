@@ -944,18 +944,19 @@ void udtGeneralAnalyzer::ProcessScores2(const char* configString)
 		return;
 	}
 
-	// This is for a work around for demos sending a score of -9999 on match start.
-	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
-
-	s32 score = 0;
-	if(_matchStartTime != UDT_S32_MIN &&
-		matchTime >= 1000 &&
-	   _gameState == udtGameState::InProgress &&
-	   StringParseInt(score, configString) &&
-	   score == -9999)
+	// This is a work-around for demos sending a score of -9999 on match start.
+	if(_matchStartTime != UDT_S32_MIN)
 	{
-		// The player left.
-		_forfeited = true;
+		const s32 matchTime = _parser->_inServerTime - _matchStartTime;
+		s32 score = 0;
+		if(matchTime >= 1000 &&
+			_gameState == udtGameState::InProgress &&
+			StringParseInt(score, configString) &&
+			score == -9999)
+		{
+			// The player left.
+			_forfeited = true;
+		}
 	}
 }
 
@@ -966,17 +967,18 @@ void udtGeneralAnalyzer::ProcessScores2Player(const char* configString)
 		return;
 	}
 
-	// This is for a work around for QL demos clearing the 2nd place player's name on match start.
-	const s32 matchTime = _parser->_inServerTime - _matchStartTime;
-
-	// The 2nd place player's name gets cleared during a game?
-	if(_matchStartTime != UDT_S32_MIN &&
-	   matchTime >= 1000 &&
-	   _gameState == udtGameState::InProgress &&
-	   configString[0] == '\0')
+	// This is a work-around for QL demos clearing the 2nd place player's name on match start.
+	if(_matchStartTime != UDT_S32_MIN)
 	{
-		// The player left.
-		_forfeited = true;
+		// The 2nd place player's name gets cleared during a game?
+		const s32 matchTime = _parser->_inServerTime - _matchStartTime;
+		if(matchTime >= 1000 &&
+			_gameState == udtGameState::InProgress &&
+			configString[0] == '\0')
+		{
+			// The player left.
+			_forfeited = true;
+		}
 	}
 }
 
