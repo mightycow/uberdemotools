@@ -1,8 +1,124 @@
 #include "tests.hpp"
 #include "uberdemotools.h"
+#include "utils.hpp"
 #include <stdio.h>
 
 UDT_TEST_FILE("API");
+
+static void CallbackConsoleMessage(s32 logLevel, const char* message)
+{
+	const char* logLevels[4] =
+	{
+		"",
+		"Warning: ",
+		"Error: ",
+		"Fatal: "
+	};
+
+	if(logLevel < 0 || logLevel >= 3)
+	{
+		logLevel = 3;
+	}
+
+	const bool useStdOut = logLevel == 0 || logLevel == 1;
+	fprintf(useStdOut ? stdout : stderr, "%s%s\n", logLevels[logLevel], message);
+}
+
+struct Cut
+{
+	Cut(const char* start, const char* end)
+	{
+		StringParseSeconds(StartTimeSec, start);
+		StringParseSeconds(EndTimeSec, end);
+		Found = 0;
+	}
+
+	s32 StartTimeSec;
+	s32 EndTimeSec;
+	s32 Found;
+};
+
+static bool ValidateDemoCutRange(const char* demoPath, Cut* cuts, u32 cutCount)
+{
+	const u32 plugIns[] = { udtParserPlugIn::GameState };
+
+	udtParseArg parse = {};
+	parse.MessageCb = &CallbackConsoleMessage;
+	parse.PlugInCount = UDT_COUNT_OF(plugIns);
+	parse.PlugIns = plugIns;
+	parse.OutputFolderPath = ctx.OutTempDir.Path;
+
+	s32 errorCode = 0;
+	udtMultiParseArg multiParse = {};
+	multiParse.FileCount = 1;
+	multiParse.FilePaths = &demoPath;
+	multiParse.OutputErrorCodes = &errorCode;
+	multiParse.MaxThreadCount = 1;
+
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
+
+	udtParserContextGroup* contextGroup = NULL;
+	UDT_ENSURE(udtParseDemoFiles(&contextGroup, &parse, &multiParse) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextGroup != NULL);
+
+	u32 contextCount = 0;
+	UDT_ENSURE(udtGetContextCountFromGroup(contextGroup, &contextCount) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextCount == 1);
+
+	udtParserContext* context = NULL;
+	UDT_ENSURE(udtGetContextFromGroup(contextGroup, 0, &context) == (s32)udtErrorCode::None);
+	UDT_ENSURE(context != NULL);
+
+	u32 contextDemoCount = 0;
+	UDT_ENSURE(udtGetDemoCountFromContext(context, &contextDemoCount) == (s32)udtErrorCode::None);
+	UDT_ENSURE(contextDemoCount == 1);
+
+	udtParseDataGameStateBuffers buffers = {};
+	UDT_ENSURE(udtGetContextPlugInBuffers(context, (u32)udtParserPlugIn::GameState, &buffers) == (s32)udtErrorCode::None);
+	UDT_ENSURE(buffers.GameStateCount >= 1);
+
+	const udtParseDataBufferRange range = buffers.GameStateRanges[0];
+	UDT_ENSURE(range.Count >= 1);
+
+	const udtParseDataGameState gs = buffers.GameStates[range.FirstIndex];
+	const s32 firstSec = gs.FirstSnapshotTimeMs / 1000;
+	const s32 lastSec = gs.LastSnapshotTimeMs / 1000;
+	for(u32 i = 0; i < cutCount; ++i)
+	{
+		Cut& cut = cuts[i];
+		if(cut.StartTimeSec == firstSec &&
+			(cut.EndTimeSec == lastSec || cut.EndTimeSec == lastSec - 1))
+		{
+			cut.Found++;
+		}
+	}
+	
+	UDT_ENSURE(udtDestroyContextGroup(contextGroup) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	return true;
+}
+
+static bool ValidateDemoCutRanges(const udtVMArray<udtFileInfo>& files, Cut* cuts, u32 cutCount)
+{
+	for(u32 i = 0; i < cutCount; ++i)
+	{
+		cuts[i].Found = 0;
+	}
+
+	for(u32 i = 0, count = files.GetSize(); i < count; ++i)
+	{
+		const udtString path = files[i].Path;
+		ValidateDemoCutRange(path.GetPtrOrEmpty(), cuts, cutCount);
+	}
+
+	for(u32 i = 0; i < cutCount; ++i)
+	{
+		UDT_ENSURE(cuts[i].Found == 1);
+	}
+
+	return true;
+}
 
 static bool TestCorruptDemos(u32 maxThreadCount)
 {
@@ -47,6 +163,7 @@ static bool TestCorruptDemos(u32 maxThreadCount)
 	const u32 plugIns[] = { udtParserPlugIn::GameState };
 
 	udtParseArg parse = {};
+	parse.MessageCb = &CallbackConsoleMessage;
 	parse.PlugInCount = UDT_COUNT_OF(plugIns);
 	parse.PlugIns = plugIns;
 	parse.OutputFolderPath = ctx.OutTempDir.Path;
@@ -130,6 +247,67 @@ UDT_TEST("udtParseDemoFiles/Corrupt/4T")
 	return TestCorruptDemos(4);
 }
 
+UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
+{
+	udtParseArg parse = {};
+	parse.MessageCb = &CallbackConsoleMessage;
+	parse.OutputFolderPath = ctx.OutTempDir.Path;
+
+	char filePath[512];
+	sprintf(filePath, "%s/wrong_cut_time_42_653.dm_91", ctx.DemoDir);
+	const char* filePathPtr = filePath;
+	s32 errorCode = 0;
+	udtMultiParseArg multiParse = {};
+	multiParse.FileCount = 1;
+	multiParse.FilePaths = &filePathPtr;
+	multiParse.OutputErrorCodes = &errorCode;
+
+	udtMatchPatternArg matchPattern = {};
+	matchPattern.MatchStartOffsetMs = 0;
+	matchPattern.MatchEndOffsetMs = 0;
+
+	// let's match every rail shot
+	udtFlickRailPatternArg flickPattern = {};
+	flickPattern.MinAngleDelta = 0.001f;
+	flickPattern.MinSpeed = 0.001f;
+	flickPattern.MinAngleDeltaSnapshotCount = 2;
+	flickPattern.MinSpeedSnapshotCount = 2;
+
+	udtPatternInfo patterns[2] = {};
+	patterns[0].Type = udtPatternType::Matches; // there is 1 match
+	patterns[0].TypeSpecificInfo = &matchPattern;
+	patterns[1].Type = udtPatternType::FlickRailFrags; // tenbit get 5 rails frags
+	patterns[1].TypeSpecificInfo = &flickPattern;
+
+	udtPatternSearchArg pattern = {};
+	pattern.PlayerIndex = udtPlayerIndex::FirstPersonPlayer;
+	pattern.StartOffsetSec = 10;
+	pattern.EndOffsetSec = 10;
+	pattern.PatternCount = 2;
+	pattern.Patterns = patterns;
+	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections; // no merging, please
+
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtCutDemoFilesByPattern(&parse, &multiParse, &pattern) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	Cut cuts[] =
+	{
+		Cut("0:34", "10:54"),
+		Cut("3:54", "4:14"),
+		Cut("6:20", "6:40"),
+		Cut("6:40", "7:00"),
+		Cut("7:33", "7:53"),
+		Cut("9:17", "9:37")
+	};
+	ctx.OutTempDir.ListFiles();
+	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
+	UDT_ENSURE(newFiles.GetSize() == 6);
+	UDT_ENSURE(ValidateDemoCutRanges(newFiles, cuts, UDT_COUNT_OF(cuts)));
+
+	return true;
+}
+
 #if 0
 
 UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
@@ -137,6 +315,7 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
 	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
 
 	udtParseArg parse = {};
+	parse.MessageCb = &CallbackConsoleMessage;
 	parse.OutputFolderPath = ctx.OutTempDir.Path;
 
 	constexpr int fileCount = 2;
@@ -241,49 +420,6 @@ void TestMultiTimedCut()
 	udtParserContext* const context = udtCreateContext();
 	udtCutDemoFileByTime(context, &info, &cutInfo, filePath);
 	udtDestroyContext(context);
-}
-
-// @TODO: (re)move
-void TestPatternCutMinqlx()
-{
-	udtParseArg parse = {};
-	parse.OutputFolderPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
-	parse.MessageCb = &CallbackConsoleMessage;
-	parse.ProgressCb = &CallbackConsoleProgress;
-	parse.MinProgressTimeMs = 50;
-
-	s32 errorCode = 0;
-	const char* filePath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\tenbit\\20260914-183300_slot03_tenbit.dm_91";
-	udtMultiParseArg multiParse = {};
-	multiParse.FileCount = 1;
-	multiParse.FilePaths = &filePath;
-	multiParse.OutputErrorCodes = &errorCode;
-
-	udtMatchPatternArg matchPattern = {};
-	matchPattern.MatchStartOffsetMs = 0;
-	matchPattern.MatchEndOffsetMs = 0;
-
-	udtFlickRailPatternArg flickPattern = {};
-	flickPattern.MinAngleDelta = 0.001f;
-	flickPattern.MinSpeed = 0.001f;
-	flickPattern.MinAngleDeltaSnapshotCount = 2;
-	flickPattern.MinSpeedSnapshotCount = 2;
-
-	udtPatternInfo patterns[2] = {};
-	patterns[0].Type = udtPatternType::Matches;
-	patterns[0].TypeSpecificInfo = &matchPattern;
-	patterns[1].Type = udtPatternType::FlickRailFrags;
-	patterns[1].TypeSpecificInfo = &flickPattern;
-
-	udtPatternSearchArg pattern = {};
-	pattern.PlayerIndex = udtPlayerIndex::FirstPersonPlayer;
-	pattern.StartOffsetSec = 10;
-	pattern.EndOffsetSec = 10;
-	pattern.PatternCount = 2;
-	pattern.Patterns = patterns;
-	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
-
-	udtCutDemoFilesByPattern(&parse, &multiParse, &pattern);
 }
 
 #endif
