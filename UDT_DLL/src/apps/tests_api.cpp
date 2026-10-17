@@ -267,7 +267,7 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
 	parse.OutputFolderPath = ctx.OutTempDir.Path;
 
 	char filePath[512];
-	sprintf(filePath, "%s/wrong_cut_time_42_653.dm_91", ctx.DemoDir);
+	sprintf(filePath, "%s/minqlx_wrong_cut_time_42_653.dm_91", ctx.DemoDir);
 	const char* filePathPtr = filePath;
 	s32 errorCode = 0;
 	udtMultiParseArg multiParse = {};

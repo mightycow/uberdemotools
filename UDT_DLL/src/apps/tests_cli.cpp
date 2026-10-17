@@ -102,9 +102,9 @@ UDT_TEST("cut/chat/demo_pack_1/16T")
 	return true;
 }
 
-UDT_TEST("cut/time/wrong_cut_time_42_653.dm_91")
+UDT_TEST("cut/time/minqlx_wrong_cut_time_42_653.dm_91")
 {
-	Run("UDT_cutter", "t -g=0 -s=42 -e=653 \"-o=%s\" \"%s/wrong_cut_time_42_653.dm_91\"", ctx.OutTempDir.Path, ctx.DemoDir);
+	Run("UDT_cutter", "t -g=0 -s=42 -e=653 \"-o=%s\" \"%s/minqlx_wrong_cut_time_42_653.dm_91\"", ctx.OutTempDir.Path, ctx.DemoDir);
 	ctx.OutTempDir.ListFiles();
 	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
 	UDT_ENSURE(newFiles.GetSize() == 1);
