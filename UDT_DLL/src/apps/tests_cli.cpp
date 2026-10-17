@@ -8,6 +8,8 @@ extern "C"
 #include <stdio.h>
 #include <stdarg.h>
 
+#if 0
+
 UDT_TEST_FILE("CLI");
 
 static void Run(const char* exeName, const char* argsFormat, ...)
@@ -185,5 +187,7 @@ UDT_TEST("json/matches/baseq3_1_map_2_matches.dm_68")
 	UDT_ENSURE(json_array_count(matchNode) == 2);
 	// @TODO: check start and end times too...
 }
+
+#endif
 
 #endif

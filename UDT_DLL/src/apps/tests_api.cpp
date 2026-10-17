@@ -308,12 +308,12 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
 	return true;
 }
 
-#if 0
-
-UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
+UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/CPMA")
 {
-	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
-
+	char filePath0[512];
+	char filePath1[512];
+	sprintf(filePath0, "%s/dm_68_cpma/duel.dm_68", ctx.DemoDir);
+	sprintf(filePath1, "%s/dm_68_cpma/2v2_xscores_2.dm_68", ctx.DemoDir);
 	udtParseArg parse = {};
 	parse.MessageCb = &CallbackConsoleMessage;
 	parse.OutputFolderPath = ctx.OutTempDir.Path;
@@ -322,9 +322,8 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
 	s32 errorCodes[fileCount] = {};
 	const char* filePaths[fileCount] =
 	{
-		// @TODO: fix paths
-		"C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\duel.dm_68",
-		"C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\dm_68_cpma\\2v2_xscores_2.dm_68"
+		filePath0,
+		filePath1
 	};
 	udtMultiParseArg multiParse = {};
 	multiParse.FileCount = fileCount;
@@ -348,24 +347,34 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts")
 
 	udtPatternSearchArg pattern = {};
 	pattern.PlayerIndex = udtPlayerIndex::FirstPersonPlayer;
-	pattern.StartOffsetSec = 10;
-	pattern.EndOffsetSec = 10;
+	pattern.StartOffsetSec = 12;
+	pattern.EndOffsetSec = 8;
 	pattern.PatternCount = 2;
 	pattern.Patterns = patterns;
 	//pattern.Flags = udtPatternSearchArgMask::MergeCutSections;
 
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
 	UDT_ENSURE(udtCutDemoFilesByPattern(&parse, &multiParse, &pattern) == (s32)udtErrorCode::None);
 	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
 
+	Cut cuts[] =
+	{
+		Cut("15:11", "25:25"),
+		Cut("15:53", "16:41"),
+		Cut("21:27", "21:59"),
+		Cut("24:09", "24:43"),
+		Cut("23:47", "39:01"),
+		Cut("27:22", "27:48"),
+		Cut("29:16", "29:59"),
+		Cut("37:42", "38:07")
+	};
 	ctx.OutTempDir.ListFiles();
-	UDT_ENSURE(ctx.OutTempDir.GetNewFiles().GetSize() == 8);
-	
-	// @TODO: validate the files and/or cut locations
+	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
+	UDT_ENSURE(newFiles.GetSize() == UDT_COUNT_OF(cuts));
+	UDT_ENSURE(ValidateDemoCutRanges(newFiles, cuts, UDT_COUNT_OF(cuts)));
 
 	return true;
 }
-
-#endif
 
 #if 0
 
