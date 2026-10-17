@@ -3,6 +3,8 @@
 #include "utils.hpp"
 #include <stdio.h>
 
+#if 1
+
 UDT_TEST_FILE("API");
 
 static void CallbackConsoleMessage(s32 logLevel, const char* message)
@@ -87,7 +89,7 @@ static bool ValidateDemoCutRange(const char* demoPath, Cut* cuts, u32 cutCount)
 	{
 		Cut& cut = cuts[i];
 		if(cut.StartTimeSec == firstSec &&
-			(cut.EndTimeSec == lastSec || cut.EndTimeSec == lastSec - 1))
+			(cut.EndTimeSec == lastSec || cut.EndTimeSec - 1 == lastSec))
 		{
 			cut.Found++;
 		}
@@ -112,12 +114,17 @@ static bool ValidateDemoCutRanges(const udtVMArray<udtFileInfo>& files, Cut* cut
 		ValidateDemoCutRange(path.GetPtrOrEmpty(), cuts, cutCount);
 	}
 
+	bool success = true;
 	for(u32 i = 0; i < cutCount; ++i)
 	{
 		UDT_ENSURE(cuts[i].Found == 1);
+		if(cuts[i].Found != 1)
+		{
+			success = false;
+		}
 	}
 
-	return true;
+	return success;
 }
 
 static bool TestCorruptDemos(u32 maxThreadCount)
@@ -293,7 +300,7 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
 
 	Cut cuts[] =
 	{
-		Cut("0:34", "10:54"),
+		Cut("0:34", "10:55"),
 		Cut("3:54", "4:14"),
 		Cut("6:20", "6:40"),
 		Cut("6:40", "7:00"),
@@ -376,20 +383,16 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/CPMA")
 	return true;
 }
 
-#if 0
-
-// @TODO: (re)move
-void TestMultiTimedCut()
+UDT_TEST("udtCutDemoFileByTime/OverlappingCuts")
 {
-	const char* filePath = "C:\\Code\\UberDemoTools\\demo_files\\dm_68_cpma\\3_matches_2_gamestates.dm_68";
-	const char* outputPath = "C:\\Code\\UberDemoTools\\UDT_DLL\\.bin\\vs2022\\x64\\debug\\cut";
+	char filePath[512];
+	sprintf(filePath, "%s/dm_68_cpma/3_matches_2_gamestates.dm_68", ctx.DemoDir);
 
 	udtParseArg info = {};
 	info.MessageCb = &CallbackConsoleMessage;
-	info.ProgressCb = &CallbackConsoleProgress;
-	info.OutputFolderPath = outputPath;
-	info.MinProgressTimeMs = 50;
+	info.OutputFolderPath = ctx.OutTempDir.Path;
 
+	// not in order on purpose, should be sorted
 	int i = 0;
 	udtCut cuts[7] = {};
 	cuts[i].GameStateIndex = 1;
@@ -402,11 +405,11 @@ void TestMultiTimedCut()
 	i++;
 	cuts[i].GameStateIndex = 0;
 	cuts[i].StartTimeMs = ServerTime(1, 50);
-	cuts[i].EndTimeMs = ServerTime(1, 0); // invalid on purpose
+	cuts[i].EndTimeMs = ServerTime(1, 0); // invalid on purpose, should be filtered out
 	i++;
 	cuts[i].GameStateIndex = 0;
 	cuts[i].StartTimeMs = ServerTime(2, 50);
-	cuts[i].EndTimeMs = ServerTime(2, 0); // invalid on purpose
+	cuts[i].EndTimeMs = ServerTime(2, 0); // invalid on purpose, should be filtered out
 	i++;
 	cuts[i].GameStateIndex = 1;
 	cuts[i].StartTimeMs = ServerTime(1, 51);
@@ -420,15 +423,35 @@ void TestMultiTimedCut()
 	cuts[i].StartTimeMs = ServerTime(4, 38);
 	cuts[i].EndTimeMs = ServerTime(4, 58);
 	i++;
-	assert((size_t)i == UDT_ARRAY_LENGTH(cuts));
+	UDT_ENSURE(i == (int)UDT_COUNT_OF(cuts));
 
 	udtCutByTimeArg cutInfo = {};
 	cutInfo.CutCount = i;
 	cutInfo.Cuts = cuts;
 
+	UDT_ENSURE(udtInitLibrary() == (s32)udtErrorCode::None);
 	udtParserContext* const context = udtCreateContext();
-	udtCutDemoFileByTime(context, &info, &cutInfo, filePath);
-	udtDestroyContext(context);
+	UDT_ENSURE(context != NULL);
+	UDT_ENSURE(udtCutDemoFileByTime(context, &info, &cutInfo, filePath) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtDestroyContext(context) == (s32)udtErrorCode::None);
+	UDT_ENSURE(udtShutDownLibrary() == (s32)udtErrorCode::None);
+
+	Cut expectedCuts[] =
+	{
+		// GS 0
+		Cut("0:19", "3:32"),
+		Cut("4:38", "4:58"),
+		// GS 1
+		Cut("0:45", "10:45"),
+		Cut("1:51", "2:11"),
+		Cut("9:06", "9:26")
+	};
+	ctx.OutTempDir.ListFiles();
+	const auto& newFiles = ctx.OutTempDir.GetNewFiles();
+	UDT_ENSURE(newFiles.GetSize() == UDT_COUNT_OF(expectedCuts));
+	UDT_ENSURE(ValidateDemoCutRanges(newFiles, expectedCuts, UDT_COUNT_OF(expectedCuts)));
+
+	return true;
 }
 
 #endif

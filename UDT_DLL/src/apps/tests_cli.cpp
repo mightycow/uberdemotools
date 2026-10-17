@@ -8,7 +8,7 @@ extern "C"
 #include <stdio.h>
 #include <stdarg.h>
 
-#if 0
+#if 1
 
 UDT_TEST_FILE("CLI");
 
