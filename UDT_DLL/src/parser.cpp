@@ -27,6 +27,7 @@ udtBaseParser::udtBaseParser()
 	_inChecksumFeed = -1;
 	_inParseEntitiesNum = 0;
 	_inGameStateIndex = -1;
+	_inLastParsedGameStateValid = true;
 	_inServerTime = UDT_S32_MIN;
 	_inLastSnapshotMessageNumber = UDT_S32_MIN;
 
@@ -76,6 +77,7 @@ bool udtBaseParser::Init(udtContext* context, udtProtocol::Id inProtocol, udtPro
 	_inValidGameStateRanges.Clear();
 
 	_inGameStateIndex = gameStateIndex - 1;
+	_inLastParsedGameStateValid = true;
 	if(gameStateIndex == 0)
 	{
 		_inGameStateFileOffsets.Clear();
@@ -211,15 +213,24 @@ bool udtBaseParser::ParseServerMessage()
 			break;
 
 		case svc_serverCommand:
-			if(!ParseCommandString()) return false;
+			if(!ParseCommandString())
+			{
+				return false;
+			}
 			break;
 
 		case svc_gamestate:
-			if(!ParseGamestate()) return false;
+			if(!ParseGamestate())
+			{
+				return false;
+			}
 			break;
 
 		case svc_snapshot:
-			if(!ParseSnapshot()) return false;
+			if(!ParseSnapshot())
+			{
+				return false;
+			}
 			break;
 
 		case svc_download:
@@ -513,6 +524,9 @@ tokenize:
 
 bool udtBaseParser::ParseGamestate()
 {
+	// Let's be optimistic since gamestates are rarely corrupted.
+	_inLastParsedGameStateValid = true;
+
 	// @TODO: Reset some data, but not for the 1st gamestate message.
 	ResetForGamestateMessage();
 
@@ -543,6 +557,7 @@ bool udtBaseParser::ParseGamestate()
 			if(index < 0 || index >= MAX_CONFIGSTRINGS) 
 			{
 				_context->LogError("udtBaseParser::ParseGamestate: Config string index out of range: %d (in file: %s)", index, GetFileNamePtr());
+				_inLastParsedGameStateValid = false;
 				return false;
 			}
 
@@ -558,6 +573,7 @@ bool udtBaseParser::ParseGamestate()
 			if(newIndex < 0 || newIndex >= MAX_GENTITIES) 
 			{
 				_context->LogError("udtBaseParser::ParseGamestate: Baseline number out of range: %d (in file: %s)", newIndex, GetFileNamePtr());
+				_inLastParsedGameStateValid = false;
 				return false;
 			}
 			
@@ -569,12 +585,15 @@ bool udtBaseParser::ParseGamestate()
 			bool addedOrChanged = false;
 			if(!_inMsg.ReadDeltaEntity(addedOrChanged, &nullState, newState, newIndex))
 			{
+				_context->LogError("udtBaseParser::ParseGamestate: ReadDeltaEntity failed (in file: %s)", GetFileNamePtr());
+				_inLastParsedGameStateValid = false;
 				return false;
 			}
 		} 
 		else 
 		{
 			_context->LogError("udtBaseParser::ParseGamestate: Unrecognized command byte: %d (in file: %s)", command, GetFileNamePtr());
+			_inLastParsedGameStateValid = false;
 			return false;
 		}
 	}

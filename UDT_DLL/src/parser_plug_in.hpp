@@ -62,8 +62,9 @@ struct udtCommandCallbackArg
 
 struct udtBaseParserPlugIn
 {
-	udtBaseParserPlugIn() 
+	udtBaseParserPlugIn()
 		: TempAllocator(NULL)
+		, Context(NULL)
 		, DemoCount(0)
 		, StartItemCount(0)
 	{
@@ -74,8 +75,9 @@ struct udtBaseParserPlugIn
 	}
 
 	// Call once.
-	void Init(u32 demoCount, udtVMLinearAllocator& tempAllocator)
+	void Init(u32 demoCount, udtVMLinearAllocator& tempAllocator, udtParserContext* context)
 	{
+		Context = context;
 		DemoCount = demoCount;
 		TempAllocator = &tempAllocator;
 		InitAllocators(demoCount);
@@ -124,7 +126,8 @@ protected:
 
 	udtVMLinearAllocator* TempAllocator; // Don't create your own temp allocator, use this one.
 	udtVMArray<udtParseDataBufferRange> BufferRanges { "BaseParserPlugIn::BufferRangesArray" };
-	
+	udtParserContext* Context; // Can be NULL.
+
 private:
 	u32 DemoCount;
 	u32 StartItemCount;

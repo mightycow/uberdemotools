@@ -233,14 +233,22 @@ static bool TestCorruptDemos(u32 maxThreadCount)
 			UDT_ENSURE(udtGetDemoInputIndex(context, demoIdx, &demoInputIdx) == (s32)udtErrorCode::None);
 			UDT_ENSURE(demoInputIdx < demoCount);
 
-			// @TODO: "invalid_command_byte.dm_68" should return Count 0
+			// @NOTE: "invalid_command_byte.dm_68" should return Count 0
 			const udtParseDataBufferRange range = buffers.GameStateRanges[demoIdx];
-			UDT_ENSURE(range.Count == 1);
-
-			const udtParseDataGameState gs = buffers.GameStates[range.FirstIndex];
-			const DemoInfo& d = demos[demoInputIdx];
-			UDT_ENSURE(d.firstTimeMs == gs.FirstSnapshotTimeMs);
-			UDT_ENSURE(d.lastTimeMs == gs.LastSnapshotTimeMs);
+			if(demos[demoInputIdx].firstTimeMs != UDT_S32_MAX)
+			{
+				// valid gamestate, let's check it
+				UDT_ENSURE(range.Count == 1);
+				const udtParseDataGameState gs = buffers.GameStates[range.FirstIndex];
+				const DemoInfo& d = demos[demoInputIdx];
+				UDT_ENSURE(d.firstTimeMs == gs.FirstSnapshotTimeMs);
+				UDT_ENSURE(d.lastTimeMs == gs.LastSnapshotTimeMs);
+			}
+			else
+			{
+				// corrupted gamestate gets dropped
+				UDT_ENSURE(range.Count == 0);
+			}
 		}
 	}
 

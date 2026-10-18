@@ -33,7 +33,7 @@ udtMatchPatternAnalyzer::~udtMatchPatternAnalyzer()
 
 void udtMatchPatternAnalyzer::InitAllocators(u32 /*demoCount*/)
 {
-	_statsAnalyzer.Init(1, _tempAllocator);
+	_statsAnalyzer.Init(1, _tempAllocator, NULL);
 }
 
 void udtMatchPatternAnalyzer::StartAnalysis()
