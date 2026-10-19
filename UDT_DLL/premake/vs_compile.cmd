@@ -15,19 +15,20 @@ if not exist "%vs_where_path%" (
 :: that comma is from hell
 set "vs_where_range=[!vs_version!,)"
 
+:: find latest C++ build tools that can handle the VS solution version
 for /f "usebackq tokens=*" %%i in (`"%vs_where_path%" -version !vs_where_range! -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do (
-	set "InstallDir=%%i"
+	set "vs_install_dir=%%i"
 )
 
 :: run the environment initialization script
-if exist "%InstallDir%\Common7\Tools\vsdevcmd.bat" (
-	call "%InstallDir%\Common7\Tools\vsdevcmd.bat"
+if exist "%vs_install_dir%\Common7\Tools\vsdevcmd.bat" (
+	call "%vs_install_dir%\Common7\Tools\vsdevcmd.bat"
 ) else (
 	echo Error: vsdevcmd.bat not found in the resolved installation directory.
 	exit /b 1
 )
 
 :: compile..
-"%InstallDir%\Common7\IDE\devenv.com" ..\.build\%vs_generator%\UDT.sln /Rebuild "%vs_target%|%vs_arch%"
+"%vs_install_dir%\Common7\IDE\devenv.com" ..\.build\%vs_generator%\UDT.sln /Rebuild "%vs_target%|%vs_arch%"
 
 pause
