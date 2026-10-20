@@ -45,8 +45,12 @@
 #	define UDT_X64
 #endif
 
-#if defined(UDT_X86) || defined(UDT_X64)
-#	define UDT_ARCH_X86
+#if !defined(UDT_X64)
+#	if defined(UDT_X86)
+#		error "32-bit x86 support has been dropped."
+#	else
+#		error "The targeted ISA is not supported."
+#	endif
 #endif
 
 #if defined(UDT_MSVC)
@@ -69,15 +73,14 @@
 	typedef uint32_t u32;
 	typedef uint64_t u64;
 #else
-#	error Sorry, your compiler is not supported.
+#	error "Your compiler is not supported."
 #endif
 
-#if defined(UDT_X86)
-	typedef s32 sptr;
-	typedef u32 uptr;
-#else
+#if defined(UDT_X64)
 	typedef s64 sptr;
 	typedef u64 uptr;
+#else
+#	error "The header is missing sptr/uptr typedefs for the targeted ISA."
 #endif
 
 typedef float  f32;

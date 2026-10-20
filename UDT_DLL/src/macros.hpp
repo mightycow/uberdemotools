@@ -115,14 +115,7 @@ namespace udt { namespace impl
 // Useful as a macro argument :p
 #define UDT_NOTHING
 
-// Determine if we can use Microsoft's inline assembler.
-// x86 only for MSVC, x86 and x64 for ICC.
-#if (defined(UDT_X86) && (defined(UDT_MSVC) || defined(UDT_ICC))) || \
-	(defined(UDT_X64) && defined(UDT_ICC))
-#	define UDT_MSVC_INLINE_ASM 1
-#endif
-
-// MMX/SSE s32rinsics support.
+// MMX/SSE intrinsics support.
 #if defined(UDT_MSVC) || defined(UDT_ICC) || defined(UDT_GCC)
 #	define UDT_INTRINSICS
 #endif
