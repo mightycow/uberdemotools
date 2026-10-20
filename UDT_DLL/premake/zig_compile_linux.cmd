@@ -29,7 +29,7 @@ if %choice%==y (
 set gmake_arch=x64
 set gmake_config=%gmake_target%_%gmake_arch%
 set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar"
-set gmake_options=--jobs=4 %zigcc% config=%gmake_config%
+set gmake_options=--jobs=1 %zigcc% config=%gmake_config%
 
 cd ..\.build\gmake_linux
 
