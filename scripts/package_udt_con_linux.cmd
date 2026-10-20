@@ -18,6 +18,7 @@ for /f "usebackq delims=" %%i in ("%LIST_FILE%") do (
 	set "FILE_NAME=%%~nxi"
 
 	pushd "!FILE_DIR!"
+	echo %~dp0%ZIP_FILE% ^<- !FILE_NAME!
 	7za.exe a -ttar "%~dp0%TAR_FILE%" "!FILE_NAME!" >nul
 	popd
 )
