@@ -9,6 +9,110 @@ path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
 path_natvis = path_root.."/src/natvis"
 
+newoption {
+	trigger     = "preset",
+	value       = "PRESET",
+	description = "Select a build preset configuration",
+	allowed = {
+		{ "win_vs",       "Host: Windows, Target: Windows, Toolchain: Visual Studio" },
+		{ "win_mingw",    "Host: Windows, Target: Windows, Toolchain: MinGW with GCC" },
+		{ "win_zig",      "Host: Windows, Target: Windows, Toolchain: ninja with Zig" },
+		{ "win2lin_zig",  "Host: Windows, Target: Linux,   Toolchain: ninja with Zig" },
+		{ "lin_gmake",    "Host: Linux,   Target: Linux,   Toolchain: gmake with GCC" }
+	}
+}
+
+local presets = {
+	["win_vs"] = {
+		target_os = "windows",
+		toolset   = "msc",
+		folder    = _ACTION
+	},
+	["win_mingw"] = {
+		target_os = "windows",
+		toolset   = "gcc",
+		folder    = "win_mingw"
+	},
+	["win_zig"] = {
+		target_os = "windows",
+		toolset   = "clang",
+		folder    = "win_zig"
+	},
+	["win2lin_zig"] = {
+		target_os = "linux",
+		toolset   = "clang",
+		folder    = "win2lin_zig"
+	},
+	["lin_gmake"] = {
+		target_os = "linux",
+		toolset   = "gcc",
+		folder    = "lin_gmake"
+	}
+}
+
+local preset_name = _OPTIONS["preset"]
+local preset = presets[preset_name]
+if preset == nil then
+	local s =
+		"Invalid preset specified: " ..
+		tostring(preset_name)
+	local preset_definition = premake.option.list["preset"]
+	if preset_definition and preset_definition.allowed then
+		s = s .. "\nPresets:"
+		for _, entry in ipairs(preset_definition.allowed) do
+			local value = entry[1]       -- The preset value name (e.g., "win2lin_zig")
+			local description = entry[2] -- The descriptive text
+			s = s .. string.format("\n%16s -> %s", value, description)
+		end
+	end
+	error(s)
+end
+
+system(preset.target_os)
+toolset(preset.toolset)
+
+if preset_name == "win2lin_zig" then
+	local function zigw2l_gettoolname(cfg, tool)
+		local target = " -target x86_64-linux-gnu"
+		if tool == "cc"  then return "zig cc" .. target end
+		if tool == "cxx" then return "zig c++" .. target end
+		if tool == "ld"  then return "zig c++" .. target end
+		if tool == "ar"  then return "zig ar" end
+		return nil
+	end
+	
+	local function zigw2l_getlinker(cfg, tool)
+		local target = " -target x86_64-linux-gnu"
+		return "zig c++" .. target
+	end
+
+	premake.tools.clang.gettoolname = zigw2l_gettoolname
+	premake.tools.clang.getlinker = zigw2l_getlinker
+end
+
+if preset_name == "win_zig" then
+	local function zig_gettoolname(cfg, tool)
+		local target = " -target x86_64-windows-gnu"
+		if tool == "cc"  then return "zig cc" .. target end
+		if tool == "cxx" then return "zig c++" .. target end
+		if tool == "ld"  then return "zig c++" .. target end
+		if tool == "ar"  then return "zig ar" end
+		return nil
+	end
+	
+	local function zig_getlinker(cfg, tool)
+		local target = " -target x86_64-windows-gnu"
+		return "zig c++" .. target
+	end
+
+	premake.tools.clang.gettoolname = zig_gettoolname
+	premake.tools.clang.getlinker = zig_getlinker
+end
+
+local function GetAction()
+	return preset.folder
+end
+
 local function SetAdd(set, key)
 	if set ~= nil then
 		set[key] = true
@@ -32,20 +136,6 @@ local function SetTargetAndLink(option)
 
 	targetdir(option)
 	libdirs(option)
-
-end
-
-local function GetAction()
-
-	if _ACTION == "gmake" and os.host() == "windows" and os.target() == "windows" then
-		return "gmake_windows"
-	end
-
-	if _ACTION == "gmake" and os.host() == "windows" and os.target() == "linux" then
-		return "gmake_linux"
-	end
-
-	return _ACTION
 
 end
 
@@ -104,6 +194,10 @@ local function ApplyProjectSettings(optionsSet)
 	filter { }
 	ApplyTargetAndLinkSettings()
 
+	if preset_name == "win_zig" then
+		linkoptions { "-municode" }
+	end
+
 	filter "system:windows"
 		defines { "WIN32" }
 		links { "Winmm" }
@@ -146,7 +240,7 @@ local function ApplyProjectSettings(optionsSet)
 		linkoptions { "" }
 
 	--
-	-- GCC
+	-- GCC/Clang/Zig
 	--
 
 	filter { "action:gmake", "system:windows" }
@@ -154,18 +248,22 @@ local function ApplyProjectSettings(optionsSet)
 		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
 		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
+	filter "toolset:clang"
+		buildoptions { "-Wno-extern-c-compat" }
+		-- "-fstandalone-debug" to always export all symbols in debug builds
+
 	filter { "action:gmake", "files:**.cpp" }
-		buildoptions { "-std=c++11 -Wno-extern-c-compat" }
+		buildoptions { "-std=c++11" }
 		linkoptions { "" }
 
-	filter { "action:gmake" }
-		buildoptions { "-Wno-invalid-offsetof -Wno-narrowing" }
+	filter "action:gmake"
+		buildoptions { "-Wno-invalid-offsetof", "-Wno-narrowing" }
 		linkoptions { "" }
 
 	filter { "action:gmake", "configurations:Debug" }
 		symbols "On" -- I think that's "-g -O0" for build and "-g" for link?
 		optimize "Off"
-		buildoptions { "-gdwarf-4", "-fstandalone-debug" }
+		buildoptions { "-gdwarf-4" }
 		linkoptions { "-Wl,--eh-frame-hdr", "-rdynamic", "-Wl,--export-dynamic" }
 
 	filter { "action:gmake", "configurations:Release" }
@@ -379,6 +477,6 @@ local function GMakeOverride(base, prj, cfg)
 	end
 end
 
-if _ACTION == "gmake" then
+if preset_name == "win_mingw" then
 	premake.override(premake.modules.gmake, "header", GMakeOverride)
 end

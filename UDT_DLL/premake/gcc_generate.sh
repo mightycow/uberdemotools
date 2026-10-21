@@ -1,2 +1,2 @@
 #!/bin/bash
-./premake5 gmake
+./premake5 gmake --preset=lin_gmake

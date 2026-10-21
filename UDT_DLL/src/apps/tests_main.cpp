@@ -2,6 +2,7 @@
 #include "string.hpp"
 #include "file_system.hpp"
 #include <stdio.h>
+#include <stdlib.h>
 #include <exception>
 #if defined(UDT_WINDOWS)
 #include <Windows.h>

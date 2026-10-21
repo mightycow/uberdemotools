@@ -1,51 +1,65 @@
 @echo off
 
 echo Which target?
-echo 1. Release
-echo 2. Debug
+echo R: Release
+echo D: Debug
 set /p choice=
-if %choice%==1 (
-	set gmake_target=release
-) else if %choice%==2 (
-	set gmake_target=debug
+if %choice%==r (
+	set ninja_target=Release_x64
+) else if %choice%==d (
+	set ninja_target=Debug_x64
 ) else (
 	echo Invalid choice
-	exit
+	exit /b 1
 )
 
 echo Clean?
-echo y. Yes
-echo *. No
+echo Y: Yes
+echo N: No
 set /p choice=
 if %choice%==y (
-	set gmake_clean=1
-) else if %choice%==2 (
-	set gmake_clean=0
+	set ninja_clean=1
+) else if %choice%==n (
+	set ninja_clean=0
 ) else (
 	echo Invalid choice
-	exit
+	exit /b 1
 )
 
-set gmake_arch=x64
-set gmake_config=%gmake_target%_%gmake_arch%
-set zigcc=SHELL=cmd.exe CC="zig cc -target x86_64-linux-gnu" CXX="zig c++ -target x86_64-linux-gnu" LD="zig c++ -target x86_64-linux-gnu" AR="zig ar"
-set gmake_options=--jobs=1 %zigcc% config=%gmake_config%
+echo Verbose?
+echo Y: Yes
+echo N: No
+set /p choice=
+if %choice%==y (
+	set "ninja_verbose=--verbose"
+) else if %choice%==n (
+	set "ninja_verbose="
+) else (
+	echo Invalid choice
+	exit /b 1
+)
 
-cd ..\.build\gmake_linux
+set "ninja=ninja %ninja_verbose%"
 
+PATH=%PATH%;C:\Programs\ninja
+
+pushd ..\.build\win2lin_zig
 @echo on
-if %gmake_clean%==1 (
-	mingw32-make.exe %gmake_options% clean
+if %ninja_clean%==1 (
+	:: @NOTE: clean is not a target but a command
+	ninja -t clean
 )
-mingw32-make.exe %gmake_options% UDT
-mingw32-make.exe %gmake_options% UDT_captures
-mingw32-make.exe %gmake_options% UDT_converter
-mingw32-make.exe %gmake_options% UDT_cutter
-mingw32-make.exe %gmake_options% UDT_json
-mingw32-make.exe %gmake_options% UDT_merger
-mingw32-make.exe %gmake_options% UDT_splitter
-mingw32-make.exe %gmake_options% UDT_timeshifter
-mingw32-make.exe %gmake_options% UDT_viewer
-mingw32-make.exe %gmake_options% viewer_data_gen
-mingw32-make.exe %gmake_options% tests
+%ninja% UDT_%ninja_target%
+%ninja% UDT_captures_%ninja_target%
+%ninja% UDT_converter_%ninja_target%
+%ninja% UDT_cutter_%ninja_target%
+%ninja% UDT_json_%ninja_target%
+%ninja% UDT_merger_%ninja_target%
+%ninja% UDT_splitter_%ninja_target%
+%ninja% UDT_timeshifter_%ninja_target%
+%ninja% UDT_viewer_%ninja_target%
+%ninja% viewer_data_gen_%ninja_target%
+%ninja% tests_%ninja_target%
+popd
+
 pause
