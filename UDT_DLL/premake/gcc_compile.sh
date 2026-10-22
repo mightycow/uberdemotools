@@ -1,11 +1,9 @@
 #!/bin/bash
 set -e
 
-cd ../.build/lin_gmake
-
 UDT_TARGET=""
 options=("Release", "Debug")
-PS3="Select the target"
+PS3="Select the target: "
 select opt in "${options[@]}" "Quit"; do 
 	case "$REPLY" in
 	1 ) UDT_TARGET=release;;
@@ -23,18 +21,7 @@ echo Selected config: $UDT_CONFIG
 
 UDT_OPTIONS="--jobs=8 config=$UDT_CONFIG"
 
+pushd ../.build/lin_gmake
 make clean $UDT_OPTIONS
-make UDT $UDT_OPTIONS
-make UDT_captures $UDT_OPTIONS
-make UDT_converter $UDT_OPTIONS
-make UDT_cutter $UDT_OPTIONS
-make UDT_json $UDT_OPTIONS
-make UDT_merger $UDT_OPTIONS
-make UDT_splitter $UDT_OPTIONS
-make UDT_timeshifter $UDT_OPTIONS
-make UDT_viewer $UDT_OPTIONS
-make viewer_data_gen $UDT_OPTIONS
-make tests $UDT_OPTIONS
-#make tut_multi_rail $UDT_OPTIONS
-#make tut_players $UDT_OPTIONS
-#make UDT_c89 $UDT_OPTIONS
+make all $UDT_OPTIONS
+popd
