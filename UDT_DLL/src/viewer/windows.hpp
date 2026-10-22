@@ -112,6 +112,7 @@ void Platform_FatalError(const char* format, ...)
 	exit(666);
 }
 
+#if defined(_MSC_VER)
 static int Win32ExceptionFilter()
 {
 	return EXCEPTION_EXECUTE_HANDLER;
@@ -125,3 +126,4 @@ static int Win32ExceptionHandler(int code)
 	
 	return 666;
 }
+#endif

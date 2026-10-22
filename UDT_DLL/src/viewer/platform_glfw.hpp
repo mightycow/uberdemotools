@@ -529,8 +529,14 @@ shut_down:
 	return result;
 }
 
+#if defined(_MSC_VER)
 int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 {
+	if(IsDebuggerPresent())
+	{
+		return Main();
+	}
+
 	__try
 	{
 		return Main();
@@ -540,6 +546,12 @@ int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 		return Win32ExceptionHandler((int)GetExceptionCode());
 	}
 }
+#else
+int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
+{
+	return Main();
+}
+#endif
 
 #else
 

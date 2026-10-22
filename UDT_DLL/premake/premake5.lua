@@ -427,10 +427,9 @@ workspace "UDT"
 		files { path_src_core.."/viewer/*.hpp" }
 		ApplyProjectSettings()
 		filter "system:windows"
-			links { "D3D11" }
+			links { "D3D11", "Gdi32" }
 		filter "action:gmake"
-			buildoptions { "-g" } -- Generate debug symbols.
-			linkoptions { "-rdynamic" } -- Embed the debug symbols in the executable.
+			symbols "On"
 
 	if os.target() == "windows" then
 

@@ -191,7 +191,7 @@ struct Platform
 		windowClass.hInstance = _instance;
 		windowClass.lpszClassName = WINDOW_CLASS_NAME;
 		windowClass.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-		windowClass.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+		windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
 		windowClass.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 		if(RegisterClassW(&windowClass) == 0)
 		{
@@ -760,6 +760,7 @@ shut_down:
 
 // @NOTE: the command line argument of wWinMain does *not* contain the path to the executable.
 // To get that, we call GetCommandLineW instead.
+#if defined(_MSC_VER)
 int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 {
 	if(IsDebuggerPresent())
@@ -776,3 +777,9 @@ int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
 		return Win32ExceptionHandler((int)GetExceptionCode());
 	}
 }
+#else
+int CALLBACK wWinMain(HINSTANCE instance, HINSTANCE, LPWSTR, int)
+{
+	return Main(instance);
+}
+#endif
