@@ -1,10 +1,11 @@
 #!/bin/bash
 
-PackageBinaries () {
-  rm --force udt_con.tar.bz2
-  BIN_PATH=../UDT_DLL/.bin/gmake/"$1"/release/
-  tar cvf udt_con.tar.bz2 --bzip2 -p --xform s:$BIN_PATH:: "$BIN_PATH"UDT_cutter "$BIN_PATH"UDT_splitter "$BIN_PATH"UDT_timeshifter "$BIN_PATH"UDT_merger "$BIN_PATH"UDT_json "$BIN_PATH"UDT_captures "$BIN_PATH"UDT_converter --xform s:_dll:: ../changelog_dll.txt
-}
+BIN_PATH=../UDT_DLL/.bin/lin_gmake/x64/release
+CHG_PATH=$(pwd)/..
+AR_NAME=udt_con.tar.bz2
+AR_PATH=$(pwd)/$AR_NAME
 
-PackageBinaries x64
-
+rm --force $AR_NAME
+tar cvf "$AR_PATH" --bzip2 -p \
+	-C "$BIN_PATH" UDT_cutter UDT_splitter UDT_timeshifter UDT_merger UDT_json UDT_captures UDT_converter \
+	-C "$CHG_PATH" --xform s:_dll:: changelog_dll.txt
