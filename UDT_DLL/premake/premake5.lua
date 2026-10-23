@@ -149,7 +149,7 @@ local function ApplyTargetAndLinkSettings()
 
 end
 
-local function ApplyProjectSettings(optionsSet) 
+local function ApplyProjectSettings(optionsSet)
 
 	--
 	-- General
@@ -176,6 +176,14 @@ local function ApplyProjectSettings(optionsSet)
 	vectorextensions "SSE2"
 	floatingpoint "Fast"
 	multiprocessorcompile "On"
+
+	if SetContains(optionsSet, "executable") then
+		filter "system:not windows"
+			files { path_src_core.."/linux/**.cpp" }
+			files { path_src_core.."/linux/**.hpp" }
+			files { path_src_core.."/linux/**.h" }
+		filter {}
+	end
 
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -243,32 +251,47 @@ local function ApplyProjectSettings(optionsSet)
 	-- GCC/Clang/Zig
 	--
 
-	filter { "action:gmake", "system:windows" }
+	filter { "toolset:gcc or clang", "system:windows" }
 		buildoptions { "" }
 		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
 		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
-	filter "toolset:clang"
+	filter "toolset:gcc or clang"
 		buildoptions { "-Wno-extern-c-compat" }
 		-- "-fstandalone-debug" to always export all symbols in debug builds
 
-	filter { "action:gmake", "files:**.cpp" }
+	filter { "toolset:gcc or clang", "files:**.cpp" }
 		buildoptions { "-std=c++11" }
-		linkoptions { "" }
 
-	filter "action:gmake"
+	filter "toolset:gcc or clang"
 		buildoptions { "-Wno-invalid-offsetof", "-Wno-narrowing" }
-		linkoptions { "" }
 
-	filter { "action:gmake", "configurations:Debug" }
+	filter { "toolset:gcc or clang", "configurations:Debug" }
 		symbols "On" -- I think that's "-g -O0" for build and "-g" for link?
 		optimize "Off"
+
+	filter { "toolset:clang", "configurations:Debug" }
+		buildoptions { "-fsanitize=address,undefined" }
+		linkoptions { "-fsanitize=address,undefined" }
+
+	-- "-rdynamic" is only for ELF executables
+	filter { "toolset:gcc or clang", "configurations:Debug", "system:not windows" }
 		buildoptions { "-gdwarf-4" }
 		linkoptions { "-Wl,--eh-frame-hdr", "-rdynamic", "-Wl,--export-dynamic" }
 
-	filter { "action:gmake", "configurations:Release" }
+	filter { "toolset:clang", "configurations:Release" }
 		buildoptions { "-fno-sanitize=all" }
 		linkoptions { "-fno-sanitize=all" }
+
+end
+
+local function ApplyCLIProjectSettings()
+
+	kind "ConsoleApp"
+	defines { "UDT_CREATE_DLL" }
+	files { path_src_apps.."/shared.cpp" }
+	files { path_src_apps.."/shared.hpp" }
+	ApplyProjectSettings( { executable=true } )
 
 end
 
@@ -323,59 +346,38 @@ workspace "UDT"
 
 	project "UDT_cutter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_cutter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 		
 	project "UDT_splitter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_splitter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 		
 	project "UDT_timeshifter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_time_shifter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 
 	project "UDT_merger"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_merger.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 
 	project "UDT_json"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_json.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 
 	project "UDT_captures"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_captures.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 
 	project "UDT_converter"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/app_demo_converter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
+		ApplyCLIProjectSettings()
 
 	-- This project exists only to test the API in C89 mode to ensure nothing got messed up for C programmers.
 	project "UDT_c89"
@@ -425,7 +427,7 @@ workspace "UDT"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_core.."/viewer/*.cpp" }
 		files { path_src_core.."/viewer/*.hpp" }
-		ApplyProjectSettings()
+		ApplyProjectSettings( { executable=true } )
 		filter "system:windows"
 			links { "D3D11", "Gdi32" }
 		filter "action:gmake"
@@ -440,7 +442,7 @@ workspace "UDT"
 			defines { "UDT_CREATE_DLL", "UDT_VIEWER_WINDOWS_GLFW" }
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
-			ApplyProjectSettings()
+			ApplyProjectSettings( { executable=true } )
 			libdirs ( path_libs.."/x64" )
 
 	end
@@ -453,7 +455,7 @@ workspace "UDT"
 		files { path_src_core.."/viewer_data_gen/*.hpp" }
 		files { path_src_apps.."/shared.cpp" }
 		includedirs { path_src_core.."/viewer" }
-		ApplyProjectSettings()
+		ApplyProjectSettings( { executable=true } )
 
 	project "tests"
 
@@ -461,7 +463,7 @@ workspace "UDT"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_apps.."/tests*" }
 		files { path_src_apps.."/json.h" }
-		ApplyProjectSettings( { exceptions=true } )
+		ApplyProjectSettings( { exceptions=true, executable=true } )
 		filter "system:windows"
 			links { "Shlwapi" }
 

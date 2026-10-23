@@ -557,31 +557,11 @@ int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
 #include <pthread.h>
 #include "linux.hpp"
-
-static void SignalHandler(int signal)
-{
-	const char* message = "Unknown signal received, closing now.";
-	if(signal == SIGSEGV)
-	{
-		message = "Segmentation fault (SIGSEGV) detected.";
-	}
-	else if(signal == SIGFPE)
-	{
-		message = "Erroneous arithmetic operation (SIGFPE) detected.";
-	}
-	else if(signal == SIGBUS)
-	{
-		message = "Bus error (SIGBUS) detected.";
-	}
-
-	Platform_FatalError(message);
-}
+#include "linux/signals.hpp"
 
 int main(int argc, char** argv)
 {
-	signal(SIGSEGV, &SignalHandler);
-	signal(SIGFPE, &SignalHandler);
-	signal(SIGBUS, &SignalHandler);
+	InitSignalHandlers();
 
 	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();

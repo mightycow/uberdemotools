@@ -7,6 +7,7 @@
 #	include "scoped_stack_allocator.hpp"
 #	include <Windows.h>
 #else
+#	include "linux/signals.hpp"
 #	include <sys/resource.h>
 #	include <string.h>
 #	include <errno.h>
@@ -224,6 +225,7 @@ int main(int argc, char** argv)
 #if defined(_DEBUG)
 	EnableCoreDumps();
 #endif
+	InitSignalHandlers();
 
 	if(argc == 2)
 	{

@@ -7,6 +7,9 @@
 #if defined(UDT_WINDOWS)
 #include <Windows.h>
 #endif
+#if defined(__linux__)
+#include "linux/signals.hpp"
+#endif
 
 struct Test
 {
@@ -68,6 +71,10 @@ int wmain(int argc, wchar_t** argvWide)
 int main(int argc, char** argv)
 #endif
 {
+#if defined(__linux__)
+	InitSignalHandlers();
+#endif
+
 	if(argc == 2)
 	{
 #if defined(UDT_WINDOWS)
