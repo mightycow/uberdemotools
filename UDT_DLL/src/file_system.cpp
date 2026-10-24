@@ -19,89 +19,84 @@ bool IsValidDirectory(const char* folderPath)
 	wchar_t* const wideFolderPath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(folderPath));
 	const DWORD attribs = GetFileAttributesW(wideFolderPath);
 
-	return (attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY));
+	return attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
 
 bool GetDirectoryFileList(udtFileListQuery& query)
 {
-	const udtString folderPath = query.FolderPath;
-
-	udtString queryPath;
-	if(!udtPath::Combine(queryPath, query.TempAllocator, folderPath, "*"))
-	{
-		return false;
-	}
-
-	wchar_t* const wideQueryPath = udtString::ConvertToUTF16(query.TempAllocator, queryPath);
-	WIN32_FIND_DATAW findData;
-	const HANDLE findHandle = FindFirstFileW(wideQueryPath, &findData);
-	if(findHandle == INVALID_HANDLE_VALUE)
-	{
-		return false;
-	}
-
 	udtVMArray<udtString> folders("FileListQuery::FoldersArray");
-	do
+	folders.Add(query.FolderPath);
+
+	int errorCount = 0;
+	while(!folders.IsEmpty())
 	{
-		// @NOTE: we can't create a temp alloc scope here because of
-		// allocations necessary for sub-folder paths.
+		const udtString folderPath = folders[folders.GetSize() - 1];
+		folders.Remove(folders.GetSize() - 1);
 
-		udtString fileName = udtString::NewFromUTF16(query.TempAllocator, findData.cFileName);
-		if(udtString::StartsWith(fileName, "."))
+		udtString queryPath;
+		if(!udtPath::Combine(queryPath, query.TempAllocator, folderPath, "*"))
 		{
+			errorCount++;
 			continue;
 		}
 
-		if((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+		wchar_t* const wideQueryPath = udtString::ConvertToUTF16(query.TempAllocator, queryPath);
+		WIN32_FIND_DATAW findData;
+		const HANDLE findHandle = FindFirstFileW(wideQueryPath, &findData);
+		if(findHandle == INVALID_HANDLE_VALUE)
 		{
-			if(query.Recursive)
+			errorCount++;
+			continue;
+		}
+
+		do
+		{
+			udtString fileName = udtString::NewFromUTF16(query.TempAllocator, findData.cFileName);
+			if(udtString::StartsWith(fileName, "."))
 			{
-				folders.Add(fileName);
+				continue;
 			}
-			continue;
-		}
 
-		const u64 fileSize = (u64)findData.nFileSizeLow + ((u64)findData.nFileSizeHigh << 32);
-		if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.GetPtr(), fileSize, query.UserData))
-		{
-			continue;
-		}
+			if((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+			{
+				if(query.Recursive)
+				{
+					udtString subFolderPath;
+					if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, fileName))
+					{
+						errorCount++;
+						continue;
+					}
+					folders.Add(subFolderPath);
+				}
+				continue;
+			}
 
-		udtString filePath;
-		if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, fileName))
-		{
-			return false;
-		}
+			const u64 fileSize = (u64)findData.nFileSizeLow + ((u64)findData.nFileSizeHigh << 32);
+			if(query.FileFilter != NULL && !(*query.FileFilter)(fileName.GetPtr(), fileSize, query.UserData))
+			{
+				continue;
+			}
 
-		udtFileInfo info;
-		info.Name = udtString::NewCloneFromRef(query.PersistAllocator, fileName);
-		info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
-		info.Size = fileSize;
-		query.Files.Add(info);
+			udtString filePath;
+			if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, fileName))
+			{
+				errorCount++;
+				continue;
+			}
+
+			udtFileInfo info;
+			info.Name = udtString::NewCloneFromRef(query.PersistAllocator, fileName);
+			info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
+			info.Size = fileSize;
+			query.Files.Add(info);
+		}
+		while(FindNextFileW(findHandle, &findData) != 0);
+
+		FindClose(findHandle);
 	}
-	while(FindNextFileW(findHandle, &findData) != 0);
 
-	FindClose(findHandle);
-
-	if(query.Recursive)
-	{
-		for(u32 i = 0, count = folders.GetSize(); i < count; ++i)
-		{
-			udtString subFolderPath;
-			if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, folders[i]))
-			{
-				return false;
-			}
-
-			query.FolderPath = subFolderPath;
-			if(!GetDirectoryFileList(query))
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+	return errorCount == 0;
 }
 
 
@@ -129,78 +124,75 @@ bool IsValidDirectory(const char* folderPath)
 
 bool GetDirectoryFileList(udtFileListQuery& query)
 {
-	DIR* const dirHandle = opendir(query.FolderPath.GetPtr());
-	if(dirHandle == NULL)
-	{
-		return false;
-	}
-
 	udtVMArray<udtString> folders("FileListQuery::FoldersArray");
-	const udtString folderPath = query.FolderPath;
-	
-	struct dirent* dirEntry;
-	while((dirEntry = readdir(dirHandle)) != NULL)
+	folders.Add(query.FolderPath);
+
+	int errorCount = 0;
+	while(!folders.IsEmpty())
 	{
-		if(udtString::StartsWith(udtString::NewConstRef(dirEntry->d_name), "."))
+		const udtString folderPath = folders[folders.GetSize() - 1];
+		folders.Remove(folders.GetSize() - 1);
+
+		DIR* const dirHandle = opendir(folderPath.GetPtr());
+		if(dirHandle == NULL)
 		{
+			errorCount++;
 			continue;
 		}
 
-		if((dirEntry->d_type & DT_DIR) != 0)
+		struct dirent* dirEntry;
+		while((dirEntry = readdir(dirHandle)) != NULL)
 		{
-			if(query.Recursive)
+			if(udtString::StartsWith(udtString::NewConstRef(dirEntry->d_name), "."))
 			{
-				folders.Add(udtString::NewClone(query.TempAllocator, dirEntry->d_name));
+				continue;
 			}
-			continue;
-		}
-		
-		if((dirEntry->d_type & DT_REG) == 0)
-		{
-			// Not a regular file.
-			continue;
-		}
-		
-		udtString filePath;
-		if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, dirEntry->d_name))
-		{
-			return false;
-		}
-		
-		const u64 fileSize = udtFileStream::GetFileLength(filePath.GetPtr());
-		if(query.FileFilter != NULL && !(*query.FileFilter)(dirEntry->d_name, fileSize, query.UserData))
-		{
-			continue;
+
+			if((dirEntry->d_type & DT_DIR) != 0)
+			{
+				if(query.Recursive)
+				{
+					udtString subFolderPath;
+					if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, dirEntry->d_name))
+					{
+						errorCount++;
+						continue;
+					}
+					folders.Add(subFolderPath);
+				}
+				continue;
+			}
+
+			if((dirEntry->d_type & DT_REG) == 0)
+			{
+				// Not a regular file.
+				continue;
+			}
+
+			udtString filePath;
+			if(!udtPath::Combine(filePath, query.TempAllocator, folderPath, dirEntry->d_name))
+			{
+				errorCount++;
+				continue;
+			}
+
+			const u64 fileSize = udtFileStream::GetFileLength(filePath.GetPtr());
+			if(query.FileFilter != NULL && !(*query.FileFilter)(dirEntry->d_name, fileSize, query.UserData))
+			{
+				continue;
+			}
+
+			udtFileInfo info;
+			info.Name = udtString::NewClone(query.PersistAllocator, dirEntry->d_name);
+			info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
+			info.Size = fileSize;
+			query.Files.Add(info);
 		}
 
-		udtFileInfo info;
-		info.Name = udtString::NewClone(query.PersistAllocator, dirEntry->d_name);
-		info.Path = udtString::NewCloneFromRef(query.PersistAllocator, filePath);
-		info.Size = fileSize;
-		query.Files.Add(info);
+		closedir(dirHandle);
 	}
 
-	closedir(dirHandle);
-
-	if(query.Recursive)
-	{
-		for(u32 i = 0, count = folders.GetSize(); i < count; ++i)
-		{
-			udtString subFolderPath;
-			if(!udtPath::Combine(subFolderPath, query.TempAllocator, folderPath, folders[i]))
-			{
-				return false;
-			}
-
-			query.FolderPath = subFolderPath;
-			if(!GetDirectoryFileList(query))
-			{
-				return false;
-			}
-		}
-	}
-
-	return true;
+	return errorCount == 0;
 }
 
 
