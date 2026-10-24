@@ -1,3 +1,3 @@
 #pragma once
 
-void InitSignalHandlers();
+void InitSignalHandlers(const char* fullExePath);

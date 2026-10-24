@@ -561,7 +561,7 @@ int CALLBACK wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int)
 
 int main(int argc, char** argv)
 {
-	InitSignalHandlers();
+	InitSignalHandlers(argv[0]);
 
 	udtSetCrashHandler(&udtCrashHandler);
 	udtInitLibrary();

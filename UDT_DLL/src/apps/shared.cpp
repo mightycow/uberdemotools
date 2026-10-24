@@ -225,7 +225,7 @@ int main(int argc, char** argv)
 #if defined(_DEBUG)
 	EnableCoreDumps();
 #endif
-	InitSignalHandlers();
+	InitSignalHandlers(argv[0]);
 
 	if(argc == 2)
 	{

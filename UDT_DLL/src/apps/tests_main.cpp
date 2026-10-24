@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 #endif
 {
 #if defined(__linux__)
-	InitSignalHandlers();
+	InitSignalHandlers(argv[0]);
 #endif
 
 	if(argc == 2)
