@@ -24,27 +24,22 @@ newoption {
 
 local presets = {
 	["win_vs"] = {
-		target_os = "windows",
 		toolset   = "msc",
 		folder    = _ACTION
 	},
 	["win_mingw"] = {
-		target_os = "windows",
 		toolset   = "gcc",
 		folder    = "win_mingw"
 	},
 	["win_zig"] = {
-		target_os = "windows",
 		toolset   = "clang",
 		folder    = "win_zig"
 	},
 	["win2lin_zig"] = {
-		target_os = "linux",
 		toolset   = "clang",
 		folder    = "win2lin_zig"
 	},
 	["lin_gmake"] = {
-		target_os = "linux",
 		toolset   = "gcc",
 		folder    = "lin_gmake"
 	}
@@ -68,7 +63,6 @@ if preset == nil then
 	error(s)
 end
 
-system(preset.target_os)
 toolset(preset.toolset)
 
 if preset_name == "win2lin_zig" then
