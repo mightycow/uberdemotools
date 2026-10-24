@@ -1,21 +1,13 @@
-#include "sblz/sblz.h"
-#include <execinfo.h>
-#include <unistd.h>
+#include <execinfo.h> // backtrace
+#include <unistd.h> // fork, pipe, ...
 #include <signal.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <stdlib.h>
+#include <sys/wait.h> // waitpid
+#include <stdlib.h> // EXIT_SUCCESS, ...
 #include <stdint.h>
 
-static char s_fileBuffer[16384];
-static char s_mangled[4096];
-static char s_demangled[4096];
 static char s_addr2line[4096];
 static char s_exePath[4096];
-static int s_fd = -1;
 
 static void Write(const char* msg)
 {
@@ -244,56 +236,7 @@ static void CrashSignalHandler(int signum, siginfo_t* info, void* context)
 			_exit(EXIT_FAILURE);
 		}
 
-		backtrace_symbols_fd(addresses, addressCount, s_fd);
-		lseek(s_fd, 0, SEEK_SET);
-		const ssize_t fileByteCount = read(s_fd, s_fileBuffer, sizeof(s_fileBuffer));
-		close(s_fd);
-		s_fd = -1;
-
-		if(fileByteCount > 0 && (size_t)fileByteCount < sizeof(s_fileBuffer))
-		{
-			s_fileBuffer[fileByteCount] = '\0';
-
-			Write("\nbacktrace_symbols_fd call stack:\n");
-			Write(s_fileBuffer);
-
-			Write("\nDemangled call stack:\n");
-			const char* s = s_fileBuffer;
-			char* d = s_mangled;
-			bool symbol = false;
-			while(*s != '\0')
-			{
-				const char c = *s++;
-				if(c == '(')
-				{
-					d = s_mangled;
-					symbol = true;
-				}
-				else if(c == ')' || c == '+' || c == '\n' || c == '\r')
-				{
-					if(symbol)
-					{
-						symbol = false;
-						*d++ = '\0';
-						if(s_mangled[0] != '\0')
-						{
-							const bool demangled = sblz::itanium::Demangle(s_mangled, s_demangled, sizeof(s_demangled));
-							Write(demangled ? s_demangled : s_mangled);
-							WriteNewLine();
-						}
-					}
-				}
-				else
-				{
-					if(symbol)
-					{
-						*d++ = c;
-					}
-				}
-			}
-		}
-
-		Write("\naddr2line call stack:\n");
+		Write("\nCall stack:\n");
 		for(int i = 0; i < addressCount; ++i)
 		{
 			if(!ExecAddr2Line(s_addr2line, sizeof(s_addr2line), (uint64_t)addresses[i]))
@@ -367,9 +310,4 @@ void InitSignalHandlers(const char* fullExePath)
 	sigaction(SIGILL,  &action, NULL); // illegal instruction
 
 	strcpy(s_exePath, fullExePath);
-
-	// pre-create a unique temp file and make sure it's gone when the process is closed
-	char filePathTemplate[] = "/tmp/udt_backtrace_XXXXXX";
-	s_fd = mkstemp(filePathTemplate);
-	unlink(filePathTemplate); // makes sure it's always removed on exit
 }
