@@ -447,11 +447,11 @@ UDT_API(s32) udtCrash(u32 crashType)
 			break;
 
 		case udtCrashType::ReadAccess:
-			printf("Bullshit: %d\n", *(volatile int*)0xDEADBEEF);
+			printf("Bullshit: %d\n", *(volatile int*)0xDEADBEEFull);
 			break;
 
 		case udtCrashType::WriteAccess:
-			*(volatile int*)0xDEADBEEF = 1337;
+			*(volatile int*)(uint64_t)0xDEADBEEFull = 1337;
 			break;
 
 		default:

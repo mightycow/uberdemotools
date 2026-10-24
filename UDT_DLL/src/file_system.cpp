@@ -19,7 +19,7 @@ bool IsValidDirectory(const char* folderPath)
 	wchar_t* const wideFolderPath = udtString::ConvertToUTF16(allocator, udtString::NewConstRef(folderPath));
 	const DWORD attribs = GetFileAttributesW(wideFolderPath);
 
-	return (attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY));
+	return attribs != INVALID_FILE_ATTRIBUTES && (attribs & FILE_ATTRIBUTE_DIRECTORY) != 0;
 }
 
 bool GetDirectoryFileList(udtFileListQuery& query)
