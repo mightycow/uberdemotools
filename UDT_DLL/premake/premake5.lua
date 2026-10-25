@@ -288,27 +288,22 @@ solution "UDT"
 		files { path_src_core.."/viewer/*.hpp" }
 		ApplyProjectSettings()
 		filter "system:windows"
-			links { "D3D11" }
-		filter "system:not windows"
-			links { "GL", "glfw" }
+			links { "D3D11", "Gdi32" }
 		filter "action:gmake"
-			buildoptions { "-g" } -- Generate debug symbols.
-			linkoptions { "-rdynamic" } -- Embed the debug symbols in the executable.
+			symbols "On"
 
-	-- OpenGL version of the Windows viewer for testing purposes
-	project "UDT_viewer_glfw"
+	if os.target() == "windows" then
 
-		kind "WindowedApp"
-		defines { "UDT_CREATE_DLL", "UDT_VIEWER_WINDOWS_GLFW" }
-		files { path_src_core.."/viewer/*.cpp" }
-		files { path_src_core.."/viewer/*.hpp" }
-		ApplyProjectSettings()
-		filter "system:windows"
-			links { "OpenGL32", "glew32", "glfw3dll" }
-			filter "platforms:x86"
-				libdirs ( path_libs.."/x86" )
-			filter "platforms:x64"
-				libdirs ( path_libs.."/x64" )
+		-- OpenGL version of the Windows viewer for testing purposes
+		project "UDT_viewer_glfw"
+
+			kind "WindowedApp"
+			defines { "UDT_CREATE_DLL", "UDT_VIEWER_WINDOWS_GLFW" }
+			files { path_src_core.."/viewer/*.cpp" }
+			files { path_src_core.."/viewer/*.hpp" }
+			ApplyProjectSettings()
+
+	end
 
 	project "viewer_data_gen"
 

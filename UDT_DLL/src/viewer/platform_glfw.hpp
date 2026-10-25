@@ -16,13 +16,13 @@
 
 #if defined(UDT_WINDOWS)
 #	include <Windows.h>
-#	include "GL/glew.h"
+#	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
 #else
-#	define GL_GLEXT_PROTOTYPES
-#	include <GL/gl.h>
-#	include <GL/glext.h>
-#	include <GLFW/glfw3.h>
+#	define GLFW_INCLUDE_NONE
+#	include <dlfcn.h>
+#	include "glad/gl.h"
+#	include "GLFW/glfw3.h"
 #endif
 
 #if defined(UDT_MSVC)
@@ -43,6 +43,7 @@
 #	pragma GCC diagnostic pop
 #endif
 
+#include "platform_glfw_load.hpp"
 
 static void GlobalErrorCallback(int error, const char* desc)
 {
@@ -159,21 +160,27 @@ struct Platform
 
 	bool Init()
 	{
+		if(!LoadGLFW())
+		{
+			Platform_PrintError("Failed to load all required GLFW function pointers");
+			return false;
+		}
+
 		int glfwMajor, glfwMinor, glfwRevision;
 		glfwGetVersion(&glfwMajor, &glfwMinor, &glfwRevision);
 		if(glfwMajor < 3)
 		{
-			Platform_PrintError("The glfw version must be 3.0 or higher");
+			Platform_PrintError("The GLFW version must be 3.0 or higher");
 			return false;
 		}
 	
+		glfwSetErrorCallback(&GlobalErrorCallback);
 		if(!glfwInit())
 		{
 			Platform_PrintError("glfwInit failed");
 			return false;
 		}
 	
-		glfwSetErrorCallback(&GlobalErrorCallback);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 		glfwWindowHint(GLFW_SAMPLES, 4);
@@ -191,9 +198,8 @@ struct Platform
 			glfwSetWindowSizeLimits(window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
 		}
 		glfwMakeContextCurrent(window);
-#if defined(UDT_WINDOWS)
-		glewInit();
-#endif
+		gladLoadGL(glfwGetProcAddress);
+
 		glfwSetKeyCallback(window, &GlobalKeyCallback);
 		glfwSetCursorPosCallback(window, &GlobalCursorPosCallback);
 		glfwSetMouseButtonCallback(window, &GlobalMouseButtonCallback);
@@ -234,12 +240,17 @@ struct Platform
 			nvgDeleteGL2(_sharedReadOnly.NVGContext);
 		}
 		
-		if(_window != nullptr)
+		if(ext_glfwDestroyWindow != nullptr && _window != nullptr)
 		{
 			glfwDestroyWindow(_window);
 		}
 		
-		glfwTerminate();
+		if(ext_glfwTerminate != NULL)
+		{
+			glfwTerminate();
+		}
+
+		UnloadGLFW();
 	}
 	
 	void KeyCallback(int action, int key)
@@ -360,8 +371,8 @@ struct Platform
 		glfwSwapBuffers(window);
 	}
 
-	PlatformReadOnly _sharedReadOnly;
-	PlatformReadWrite _sharedReadWrite;
+	PlatformReadOnly _sharedReadOnly = {};
+	PlatformReadWrite _sharedReadWrite = {};
 	Viewer* _viewer = nullptr;
 	GLFWwindow* _window = nullptr;
 };
