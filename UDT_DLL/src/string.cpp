@@ -43,6 +43,8 @@ udtString udtString::NewClone(udtVMLinearAllocator& allocator, const char* input
 
 udtString udtString::NewCloneFromRef(udtVMLinearAllocator& allocator, const udtString& input)
 {
+	UDT_ASSERT_OR_RETURN_VALUE(input.GetPtr() != NULL, udtString::NewEmptyConstant());
+
 	// @NOTE: Can't forward the call to the other version because if 
 	// allocator is the same as input.Allocator, then input might get relocated
 	// after a call to allocator.Allocate.

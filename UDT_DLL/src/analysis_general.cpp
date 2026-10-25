@@ -140,6 +140,8 @@ void udtGeneralAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg& 
 	}
 
 	_game = udtGame::Q3;
+	_mod = udtMod::None;
+	_modVersion = udtString::NewEmptyConstant();
 	if(AreAllProtocolFlagsSet(_protocol, udtProtocolFlags::QuakeLive))
 	{
 		_game = udtGame::QL;
