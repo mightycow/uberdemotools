@@ -1336,15 +1336,13 @@ void udtMessage::RealWriteBits(s32 value, s32 signedBits)
 		} 
 		else if(bits == 16) 
 		{
-			unsigned short* sp = (unsigned short*)&Buffer.data[Buffer.cursize];
-			*sp = (unsigned short)value;
+			uwrite_u16(&Buffer.data[Buffer.cursize]) = (u16)value;
 			Buffer.cursize += 2;
 			Buffer.bit += 16;
 		} 
 		else if(bits == 32) 
 		{
-			u32* ip = (u32*)&Buffer.data[Buffer.cursize];
-			*ip = value;
+			uwrite_u32(&Buffer.data[Buffer.cursize]) = (u32)value;
 			Buffer.cursize += 4;
 			Buffer.bit += 32;
 		} 
@@ -1422,13 +1420,13 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 			}
 			else if(bits == 16)
 			{
-				value = s32(*(const u16*)&bufferData[Buffer.readcount]);
+				value = (s32)uread_u16(&bufferData[Buffer.readcount]);
 				Buffer.readcount += 2;
 				Buffer.bit += 16;
 			}
 			else if(bits == 32)
 			{
-				value = s32(*(const u32*)&bufferData[Buffer.readcount]);
+				value = (s32)uread_u32(&bufferData[Buffer.readcount]);
 				Buffer.readcount += 4;
 				Buffer.bit += 32;
 			}
@@ -1448,7 +1446,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 				return -1;
 			}
 
-			u64 readBits = *(const u64*)&bufferData[Buffer.readcount];
+			u64 readBits = uread_u64(&bufferData[Buffer.readcount]);
 			const u64 bitPosition = (u64)Buffer.bit & 7;
 			const u64 diff = 64 - (u64)bits;
 			readBits >>= bitPosition;
@@ -1464,8 +1462,8 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		const s32 nbits = bits & 7;
 		s32 bitIndex = Buffer.bit;
 		if(nbits)
-		{		
-			const s16 allBits = *(const s16*)(bufferData + (bitIndex >> 3)) >> (bitIndex & 7);
+		{
+			const s16 allBits = uread_s16(bufferData + (bitIndex >> 3)) >> (bitIndex & 7);
 			value = allBits & ((1 << nbits) - 1);
 			bitIndex += nbits;
 			bits -= nbits;
@@ -1475,7 +1473,7 @@ s32 udtMessage::RealReadBits(s32 signedBits)
 		{
 			for(s32 i = 0; i < bits; i += 8)
 			{
-				const u16 code = ((*(const u32*)(bufferData + (bitIndex >> 3))) >> ((u32)bitIndex & 7)) & 0x7FF;
+				const u16 code = (uread_u32(bufferData + (bitIndex >> 3)) >> ((u32)bitIndex & 7)) & 0x7FF;
 				const u16 entry = HuffmanDecoderTable[code];
 				value |= (s32(entry & 0xFF) << (i + nbits));
 				bitIndex += s32(entry >> 8);

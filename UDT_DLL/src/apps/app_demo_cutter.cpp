@@ -20,8 +20,14 @@
 
 struct ProgramOptions
 {
+	udtMultiRailPatternArg MultiRail;
+	udtFlickRailPatternArg FlickRail;
+	udtMidAirPatternArg MidAir;
+	udtFragRunPatternArg FragRun;
+	udtFlagCapturePatternArg FlagCapture;
 	const char* ConfigFilePath;
 	const char* OutputFolderPath;
+	bool Recursive;
 	u32 MaxThreadCount;
 	u32 GameStateIndex;
 	s32 StartTimeSec;
@@ -29,19 +35,15 @@ struct ProgramOptions
 	s32 StartOffsetSec;
 	s32 EndOffsetSec;
 	s32 PlayerIndex;
-	bool Recursive;
-	udtMultiRailPatternArg MultiRail;
-	udtFlickRailPatternArg FlickRail;
-	udtMidAirPatternArg MidAir;
+	// mid-air
 	s32 AllowRL;
 	s32 AllowBFG;
 	s32 AllowGL;
 	s32 AllowPF;
-	udtFragRunPatternArg FragRun;
+	// frag run
 	s32 AllowSelfKills;
 	s32 AllowTeamKills;
 	s32 AllowDeaths;
-	udtFlagCapturePatternArg FlagCapture;
 };
 
 static ProgramOptions options;
