@@ -1,4 +1,5 @@
 #include "cut_batcher.hpp"
+#include <stdlib.h>
 
 
 // Assumes a sorted source list.

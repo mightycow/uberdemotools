@@ -2,6 +2,7 @@
 #include "scoped_stack_allocator.hpp"
 #include "string.hpp"
 #include "utils.hpp"
+#include <stdlib.h>
 
 
 /*
