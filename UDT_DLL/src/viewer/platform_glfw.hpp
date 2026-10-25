@@ -19,7 +19,7 @@
 #	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
 #else
-#define GLFW_INCLUDE_NONE
+#	define GLFW_INCLUDE_NONE
 #	include <dlfcn.h>
 #	include "glad/gl.h"
 #	include "GLFW/glfw3.h"
