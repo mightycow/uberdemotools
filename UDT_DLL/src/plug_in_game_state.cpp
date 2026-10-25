@@ -1,6 +1,7 @@
 #include "plug_in_game_state.hpp"
 #include "utils.hpp"
 #include "scoped_stack_allocator.hpp"
+#include "parser_context.hpp"
 
 
 static const char* FilteredKeys[] =
@@ -82,15 +83,18 @@ void udtParserPlugInGameState::StartDemoAnalysis()
 
 void udtParserPlugInGameState::FinishDemoAnalysis()
 {
+	assert(Context != NULL);
 	_analyzer.FinishDemoAnalysis();
-
-	AddCurrentGameState();
+	if(Context != NULL && Context->Parser._inLastParsedGameStateValid)
+	{
+		AddCurrentGameState();
+	}
 }
 
 void udtParserPlugInGameState::ProcessGamestateMessage(const udtGamestateCallbackArg& info, udtBaseParser& parser)
 {
 	_analyzer.ProcessGamestateMessage(info, parser);
-	if(_analyzer.GameStateIndex() > 0)
+	if(_analyzer.GameStateIndex() > 0 && parser._inLastParsedGameStateValid)
 	{
 		AddCurrentGameState();
 	}
@@ -240,7 +244,10 @@ void udtParserPlugInGameState::AddCurrentGameState()
 {
 	AddCurrentMatchIfValid(true);
 	AddCurrentPlayersIfValid();
-	_gameStates.Add(_currentGameState);
+	if(Context != NULL && Context->Parser._inLastParsedGameStateValid)
+	{
+		_gameStates.Add(_currentGameState);
+	}
 
 	ClearGameState();
 	ClearPlayerInfos();

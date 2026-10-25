@@ -161,6 +161,7 @@ public:
 	udtString _inModVersion;
 	s32 _startServerTimeMs;
 	udtSnapshotPosition::Id _snapshotPosition;
+	bool _inLastParsedGameStateValid;
 
 	// Output.
 	udtFileStream _outFile;
