@@ -437,7 +437,6 @@ workspace "UDT"
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
 			ApplyProjectSettings( { executable=true } )
-			libdirs ( path_libs.."/x64" )
 
 	end
 
