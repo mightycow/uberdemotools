@@ -4,6 +4,7 @@ ADD: Grenade and Panzerfaust support for the mid-air pattern
 ADD: UDT_cutter: support for these patterns: multi-frag rails, flick rails, mid-airs, frag sequences, flag captures
 ADD: udtParseArg now contains a protocol callback allowing API users to determine the protocol based on the file path
 ADD: UDT_json now allows for a global protocol version override with the -p option
+REM: Dropped 32-bit support
 CHG: UDT_cutter: reworked help and options parsing
 CHG: The JSON exporter will not lower-case the first letter of a key when the first two are uppercase
 CHG: Now ignoring all files whose names start with "." (including AppleDouble metadata files)
