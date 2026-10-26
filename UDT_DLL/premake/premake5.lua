@@ -1,4 +1,4 @@
--- premake version: 5.0.0
+-- premake version: 5.0.0-beta8
 
 path_root = ".."
 path_src_core = path_root.."/src"
