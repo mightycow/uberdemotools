@@ -160,7 +160,6 @@ namespace Uber.DemoTools.Updater
         {
             public string DllVersion;
             public string GuiVersion;
-            public string ArchName;
             public int ParentProcessId;
             public bool NoMessageBoxIfCurrent;
         }
@@ -175,7 +174,6 @@ namespace Uber.DemoTools.Updater
         {
             _curDllVersion = arg.DllVersion;
             _curGuiVersion = arg.GuiVersion;
-            _archName = arg.ArchName;
             _parentProcessId = arg.ParentProcessId;
             _noMessageBoxIfCurrent = arg.NoMessageBoxIfCurrent;
         }
@@ -265,7 +263,7 @@ namespace Uber.DemoTools.Updater
             CURL.Perform();
 
             var htmlData = receiver.Data;
-            var regEx = new Regex("\"(udt_gui_(.+)_dll_(.+)_" + _archName + ".zip)\"");
+            var regEx = new Regex("\"(udt_gui_(.+)_dll_(.+)" + ".zip)\"");
             var match = regEx.Match(htmlData);
             if(!match.Success)
             {
@@ -534,7 +532,6 @@ namespace Uber.DemoTools.Updater
         private readonly List<FileOperation> _undoFileOps = new List<FileOperation>();
         private string _curDllVersion;
         private string _curGuiVersion;
-        private string _archName;
         private string _newDllVersion;
         private string _newGuiVersion;
         private string _downloadUrl;
@@ -551,7 +548,7 @@ namespace Uber.DemoTools.Updater
 
         static void RealMain(string[] arguments)
         {
-            if(arguments.Length != 5)
+            if(arguments.Length != 4)
             {
                 OnArgumentError();
                 return;
@@ -566,14 +563,8 @@ namespace Uber.DemoTools.Updater
                 }
             }
 
-            if(arguments[2] != "x86" && arguments[2] != "x64")
-            {
-                OnArgumentError();
-                return;
-            }
-
             var processId = 0;
-            if(!int.TryParse(arguments[3], out processId))
+            if(!int.TryParse(arguments[2], out processId))
             {
                 OnArgumentError();
                 return;
@@ -582,9 +573,8 @@ namespace Uber.DemoTools.Updater
             var updaterArg = new Updater.UpdaterArg();
             updaterArg.DllVersion = arguments[0];
             updaterArg.GuiVersion = arguments[1];
-            updaterArg.ArchName = arguments[2];
             updaterArg.ParentProcessId = processId;
-            updaterArg.NoMessageBoxIfCurrent = arguments[4] == UpdaterHelper.NoMessageBoxIfCurrentArg;
+            updaterArg.NoMessageBoxIfCurrent = arguments[3] == UpdaterHelper.NoMessageBoxIfCurrentArg;
             Updater.UpdateUDT(updaterArg);
         }
 

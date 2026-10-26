@@ -772,12 +772,7 @@ namespace Uber.DemoTools
             window.MinWidth = 1024;
             window.MinHeight = 768;
 
-#if UDT_X64
-            const string arch = "x64";
-#else
-            const string arch = "x86";
-#endif
-            LogInfo("UDT {0} is now operational!", arch);
+            LogInfo("UDT is now operational!");
             LogInfo("GUI version: " + GuiVersion);
             LogInfo("DLL version: " + DllVersion);
             if(displayVersionWarning)
@@ -1327,16 +1322,10 @@ namespace Uber.DemoTools
 
         private void CheckForUpdate(bool fromStartUp)
         {
-#if UDT_X64
-            const string arch = "x64";
-#else
-            const string arch = "x86";
-#endif
-
             try
             {
                 var startUpArg = fromStartUp ? Updater.UpdaterHelper.NoMessageBoxIfCurrentArg : "blabla";
-                var arguments = string.Join(" ", DllVersion, GuiVersion, arch, Process.GetCurrentProcess().Id.ToString(), startUpArg);
+                var arguments = string.Join(" ", DllVersion, GuiVersion, Process.GetCurrentProcess().Id.ToString(), startUpArg);
                 Process.Start("UDT_GUI_Updater.exe", arguments);
             }
             catch(Exception exception)
@@ -1351,15 +1340,9 @@ namespace Uber.DemoTools
 #if DEBUG
         private void CheckForUpdateFromFakeOldVersion()
         {
-#if UDT_X64
-            const string arch = "x64";
-#else
-            const string arch = "x86";
-#endif
-
             try
             {
-                var arguments = string.Join(" ", "0.1.0", "0.1.0", arch, Process.GetCurrentProcess().Id.ToString(), "blabla");
+                var arguments = string.Join(" ", "0.1.0", "0.1.0", Process.GetCurrentProcess().Id.ToString(), "blabla");
                 Process.Start("UDT_GUI_Updater.exe", arguments);
             }
             catch(Exception exception)
