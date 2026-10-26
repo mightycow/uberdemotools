@@ -715,20 +715,12 @@ namespace Uber.DemoTools
 
     public unsafe class UDT_DLL
     {
-#if UDT_X64
-        // All x64 numbers are selected to keep memory usage below 100 MB with 4 threads.
+        // All numbers are selected to keep memory usage below 100 MB with 4 threads.
         private const int MaxBatchSizeParsing = 512;
         private const int MaxBatchSizeJSONExport = 256;
         private const int MaxBatchSizeCutting = 2048;
         private const int MaxBatchSizeConverting = 2048;
         private const int MaxBatchSizeTimeShifting = 2048;
-#else
-        private const int MaxBatchSizeParsing = 256;
-        private const int MaxBatchSizeJSONExport = 128;
-        private const int MaxBatchSizeCutting = 1024;
-        private const int MaxBatchSizeConverting = 1024;
-        private const int MaxBatchSizeTimeShifting = 1024;
-#endif
 
         private const string _dllPath = "UDT.dll";
 
