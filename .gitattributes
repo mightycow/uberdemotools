@@ -1,0 +1,5 @@
+# DOS/Windows line endings for all auto-detected text files by default
+* text=auto eol=crlf
+
+# Unix line endings for all shell scripts
+*.sh text eol=lf
