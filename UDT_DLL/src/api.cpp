@@ -440,6 +440,8 @@ UDT_API(s32) udtCrash(u32 crashType)
 		return udtErrorCode::InvalidArgument;
 	}
 
+	// Triggering a page fault with a canonical 64-bit kernel address.
+	volatile char* volatile badAddress = (volatile char*)0xFFFFD00D8BADF00Dull;
 	switch((udtCrashType::Id)crashType)
 	{
 		case udtCrashType::FatalError:
@@ -447,14 +449,14 @@ UDT_API(s32) udtCrash(u32 crashType)
 			break;
 
 		case udtCrashType::ReadAccess:
-			printf("Bullshit: %d\n", *(int*)0);
+			{
+				volatile char sink = *badAddress;
+				(void)sink;
+			}
 			break;
 
 		case udtCrashType::WriteAccess:
-			{
-				volatile int* x = NULL;
-				*x = 1337;
-			}
+			*badAddress = 42;
 			break;
 
 		default:

@@ -168,6 +168,15 @@ local function ApplyTutorialProjectSettings()
 
 end
 
+local function ApplyExeProjectSettings()
+
+	filter "system:not windows"
+		files { path_src_core.."/linux/**.cpp" }
+		files { path_src_core.."/linux/**.hpp" }
+		files { path_src_core.."/linux/**.h" }
+
+end
+
 os.mkdir(path_bin)
 
 solution "UDT"
@@ -189,6 +198,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_cutter.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 		
 	project "UDT_splitter"
 
@@ -197,6 +207,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_splitter.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 		
 	project "UDT_timeshifter"
 
@@ -205,6 +216,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_time_shifter.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "UDT_merger"
 	
@@ -213,6 +225,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_merger.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "UDT_json"
 	
@@ -221,6 +234,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_json.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "UDT_captures"
 	
@@ -229,6 +243,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_captures.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "UDT_converter"
 	
@@ -237,6 +252,7 @@ solution "UDT"
 		files { path_src_apps.."/app_demo_converter.cpp" }
 		files { path_src_apps.."/shared.cpp" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()
 
 	-- This project exists only to test the API in C89 mode to ensure nothing got messed up for C programmers.
 	project "UDT_c89"
@@ -267,18 +283,21 @@ solution "UDT"
 			--buildoptions { "/Za" } -- /Za: disable language extensions
 		filter "action:gmake"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
+		ApplyExeProjectSettings()
 
 	project "tut_multi_rail"
 	
 		filter { }
 		files { path_src_apps.."/tut_multi_rail.cpp" }
 		ApplyTutorialProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "tut_players"
 	
 		filter { }
 		files { path_src_apps.."/tut_players.cpp" }
 		ApplyTutorialProjectSettings()
+		ApplyExeProjectSettings()
 
 	project "UDT_viewer"
 
@@ -291,6 +310,7 @@ solution "UDT"
 			links { "D3D11", "Gdi32" }
 		filter "action:gmake"
 			symbols "On"
+		ApplyExeProjectSettings()
 
 	if os.target() == "windows" then
 
@@ -302,6 +322,7 @@ solution "UDT"
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
 			ApplyProjectSettings()
+			ApplyExeProjectSettings()
 
 	end
 
@@ -314,3 +335,4 @@ solution "UDT"
 		files { path_src_apps.."/shared.cpp" }
 		includedirs { path_src_core.."/viewer" }
 		ApplyProjectSettings()
+		ApplyExeProjectSettings()

@@ -6,6 +6,11 @@
 #	include "thread_local_allocators.hpp"
 #	include "scoped_stack_allocator.hpp"
 #	include <Windows.h>
+#else
+#	include "linux/signals.hpp"
+#	include <sys/resource.h>
+#	include <string.h>
+#	include <errno.h>
 #endif
 
 #include <stdio.h>
@@ -201,8 +206,27 @@ static void FindExecutableFileName(const char* exeFilePath)
 	}
 }
 
+#if defined(_DEBUG)
+static void EnableCoreDumps()
+{
+	rlimit limits = {};
+	limits.rlim_cur = RLIM_INFINITY;
+	limits.rlim_max = RLIM_INFINITY;
+
+	if(setrlimit(RLIMIT_CORE, &limits) != 0)
+	{
+		fprintf(stderr, "Failed to set core dump limit: %s\n", strerror(errno));
+	}
+}
+#endif
+
 int main(int argc, char** argv)
 {
+#if defined(_DEBUG)
+	EnableCoreDumps();
+#endif
+	InitSignalHandlers(argv[0], (const void*)&main);
+
 	if(argc == 2)
 	{
 		if(udtString::Equals(udtString::NewConstRef(argv[1]), "--help"))
