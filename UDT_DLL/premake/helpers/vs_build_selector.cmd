@@ -11,15 +11,4 @@ if %choice%==1 (
 	exit
 )
 
-echo Which architecture?
-echo 1. x86
-echo 2. x64
-set /p choice=
-if %choice%==1 (
-	set vs_arch=Win32
-) else if %choice%==2 (
-	set vs_arch=x64
-) else (
-	echo Invalid choice
-	exit
-)
+set vs_arch=x64

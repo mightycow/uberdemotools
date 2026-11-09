@@ -1,0 +1,43 @@
+@echo off
+
+if not defined UDT_VM_NAME set "UDT_VM_NAME=Debian"
+
+PATH=%PATH%;C:\Programs\7-zip
+
+set "TAR_FILE=udt_viewer_linux.tar"
+set "GZ_FILE=udt_viewer_linux.tar.gz"
+
+@echo on
+
+if exist "%TAR_FILE%" del "%TAR_FILE%"
+if exist "%GZ_FILE%" del "%GZ_FILE%"
+
+del /Q __temp\viewer_data\*.*
+rd /S /Q __temp
+mkdir __temp
+mkdir __temp\viewer_data
+
+:: populate temp folder with everything
+wsl -d %UDT_VM_NAME% ../UDT_DLL/.bin/lin_gmake/x64/release/viewer_data_gen -o=__temp/viewer_data ../viewer_data
+if errorlevel 1 exit /b 1
+copy /Y ..\UDT_DLL\.bin\lin_gmake\x64\release\UDT_viewer __temp
+copy /Y ..\changelog_viewer.txt __temp
+copy /Y ..\viewer_data\map_aliases.txt __temp\viewer_data
+copy /Y ..\viewer_data\deja_vu_sans.ttf __temp\viewer_data
+copy /Y ..\viewer_data\blender_icons.png __temp\viewer_data
+copy /Y ..\viewer_data\maps\*.png __temp\viewer_data
+
+:: temp -> .tar
+pushd __temp
+7za.exe a -ttar "%~dp0%TAR_FILE%" . >nul
+popd
+
+:: .tar -> .tar.gz
+7za.exe a -tgzip -mx=9 "%GZ_FILE%" "%TAR_FILE%"
+
+:: nuke .tar
+if exist "%TAR_FILE%" del "%TAR_FILE%"
+
+rd /S /Q __temp
+
+pause

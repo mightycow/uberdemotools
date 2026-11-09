@@ -9,6 +9,123 @@ path_build = path_root.."/.build"
 path_bin = path_root.."/.bin"
 path_natvis = path_root.."/src/natvis"
 
+newoption {
+	trigger     = "preset",
+	value       = "PRESET",
+	description = "Select a build preset configuration",
+	allowed = {
+		{ "win_vs",       "Host: Windows, Target: Windows, Toolchain: Visual Studio" },
+		{ "win_mingw",    "Host: Windows, Target: Windows, Toolchain: MinGW with GCC" },
+		{ "win_zig",      "Host: Windows, Target: Windows, Toolchain: ninja with Zig" },
+		{ "win2lin_zig",  "Host: Windows, Target: Linux,   Toolchain: ninja with Zig" },
+		{ "lin_gmake",    "Host: Linux,   Target: Linux,   Toolchain: gmake with GCC" }
+	}
+}
+
+local presets = {
+	["win_vs"] = {
+		toolset   = "msc",
+		folder    = _ACTION
+	},
+	["win_mingw"] = {
+		toolset   = "gcc",
+		folder    = "win_mingw"
+	},
+	["win_zig"] = {
+		toolset   = "clang",
+		folder    = "win_zig"
+	},
+	["win2lin_zig"] = {
+		toolset   = "clang",
+		folder    = "win2lin_zig"
+	},
+	["lin_gmake"] = {
+		toolset   = "gcc",
+		folder    = "lin_gmake"
+	}
+}
+
+local preset_name = _OPTIONS["preset"]
+local preset = presets[preset_name]
+if preset == nil then
+	local s =
+		"Invalid preset specified: " ..
+		tostring(preset_name)
+	local preset_definition = premake.option.list["preset"]
+	if preset_definition and preset_definition.allowed then
+		s = s .. "\nPresets:"
+		for _, entry in ipairs(preset_definition.allowed) do
+			local value = entry[1]       -- The preset value name (e.g., "win2lin_zig")
+			local description = entry[2] -- The descriptive text
+			s = s .. string.format("\n%16s -> %s", value, description)
+		end
+	end
+	error(s)
+end
+
+toolset(preset.toolset)
+
+if preset_name == "win2lin_zig" then
+	local function zigw2l_gettoolname(cfg, tool)
+		local target = " -target x86_64-linux-gnu"
+		if tool == "cc"  then return "zig cc" .. target end
+		if tool == "cxx" then return "zig c++" .. target end
+		if tool == "ld"  then return "zig c++" .. target end
+		if tool == "ar"  then return "zig ar" end
+		return nil
+	end
+	
+	local function zigw2l_getlinker(cfg, tool)
+		local target = " -target x86_64-linux-gnu"
+		return "zig c++" .. target
+	end
+
+	premake.tools.clang.gettoolname = zigw2l_gettoolname
+	premake.tools.clang.getlinker = zigw2l_getlinker
+end
+
+if preset_name == "win_zig" then
+	local function zig_gettoolname(cfg, tool)
+		local target = " -target x86_64-windows-gnu"
+		if tool == "cc"  then return "zig cc" .. target end
+		if tool == "cxx" then return "zig c++" .. target end
+		if tool == "ld"  then return "zig c++" .. target end
+		if tool == "ar"  then return "zig ar" end
+		return nil
+	end
+	
+	local function zig_getlinker(cfg, tool)
+		local target = " -target x86_64-windows-gnu"
+		return "zig c++" .. target
+	end
+
+	premake.tools.clang.gettoolname = zig_gettoolname
+	premake.tools.clang.getlinker = zig_getlinker
+end
+
+local function GetAction()
+	return preset.folder
+end
+
+local function SetAdd(set, key)
+	if set ~= nil then
+		set[key] = true
+	end
+end
+
+local function SetRemove(set, key)
+	if set ~= nil then
+		set[key] = nil
+	end
+end
+
+local function SetContains(set, key)
+	if set ~= nil then
+		return set[key] ~= nil
+	end
+	return false
+end
+
 local function SetTargetAndLink(option) 
 
 	targetdir(option)
@@ -18,21 +135,15 @@ end
 
 local function ApplyTargetAndLinkSettings() 
 
-	filter { "configurations:Debug", "platforms:x86" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/debug" )
-
 	filter { "configurations:Debug", "platforms:x64" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/debug" )
-
-	filter { "configurations:Release", "platforms:x86" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x86/release" )
+		SetTargetAndLink ( path_bin.."/"..GetAction().."/x64/debug" )
 
 	filter { "configurations:Release", "platforms:x64" }
-		SetTargetAndLink ( path_bin.."/".._ACTION.."/x64/release" )
+		SetTargetAndLink ( path_bin.."/"..GetAction().."/x64/release" )
 
 end
 
-local function ApplyProjectSettings() 
+local function ApplyProjectSettings(optionsSet)
 
 	--
 	-- General
@@ -41,13 +152,17 @@ local function ApplyProjectSettings()
 
 	language "C++"
 
-	location ( path_build.."/".._ACTION )
+	location ( path_build.."/"..GetAction() )
 
 	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_natvis.."/*.natvis" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
 	rtti "Off"
-	exceptionhandling "Off"
+	if SetContains(optionsSet, "exceptions") then
+		exceptionhandling "SEH"
+	else
+		exceptionhandling "Off"
+	end
 	characterset "Unicode"
 	staticruntime "On"
 	manifest "Off"
@@ -55,6 +170,14 @@ local function ApplyProjectSettings()
 	vectorextensions "SSE2"
 	floatingpoint "Fast"
 	multiprocessorcompile "On"
+
+	if SetContains(optionsSet, "executable") then
+		filter "system:not windows"
+			files { path_src_core.."/linux/**.cpp" }
+			files { path_src_core.."/linux/**.hpp" }
+			files { path_src_core.."/linux/**.h" }
+		filter {}
+	end
 
 	filter "configurations:Debug"
 		defines { "DEBUG", "_DEBUG" }
@@ -65,10 +188,17 @@ local function ApplyProjectSettings()
 		minimalrebuild "Off"
 		optimize "Full"
 		omitframepointer "On"
-		linktimeoptimization "On"
 		runtimechecks "Off"
 
+	filter { "configurations:Release", "action:vs*" }
+		linktimeoptimization "On"
+
+	filter { }
 	ApplyTargetAndLinkSettings()
+
+	if preset_name == "win_zig" then
+		linkoptions { "-municode" }
+	end
 
 	filter "system:windows"
 		defines { "WIN32" }
@@ -89,6 +219,7 @@ local function ApplyProjectSettings()
 	filter "action:vs*"
 		symbols "Full"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
+		debugdir "$(TargetDir)"
 
 	filter { "action:vs*", "kind:ConsoleApp" }
 		entrypoint "wmainCRTStartup"
@@ -111,25 +242,51 @@ local function ApplyProjectSettings()
 		linkoptions { "" }
 
 	--
-	-- GCC
+	-- GCC/Clang/Zig
 	--
 
-	filter { "action:gmake", "system:windows" }
+	filter { "toolset:gcc or clang", "system:windows" }
 		buildoptions { "" }
 		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
 		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
-	filter "action:gmake"
-		buildoptions { "-std=c++11 -Wno-invalid-offsetof -Wno-narrowing" }
-		linkoptions { "" }
+	filter "toolset:gcc or clang"
+		buildoptions { "-Wno-extern-c-compat" }
+		-- "-fstandalone-debug" to always export all symbols in debug builds
 
-	filter { "action:gmake", "configurations:Debug" }
-		buildoptions { "" }
-		linkoptions { "" }
+	filter { "toolset:gcc or clang", "files:**.cpp" }
+		buildoptions { "-std=c++11" }
 
-	filter { "action:gmake", "configurations:Release" }
-		buildoptions { "" }
-		linkoptions { "" }
+	filter "toolset:gcc or clang"
+		buildoptions { "-Wno-invalid-offsetof", "-Wno-narrowing" }
+
+	filter { "toolset:gcc or clang", "configurations:Debug" }
+		symbols "On" -- I think that's "-g -O0" for build and "-g" for link?
+		optimize "Off"
+
+	filter { "toolset:clang", "configurations:Debug" }
+		buildoptions { "-fsanitize=address,undefined" }
+		linkoptions { "-fsanitize=address,undefined" }
+
+	-- "-rdynamic" is only for ELF executables
+	filter { "toolset:gcc or clang", "configurations:Debug", "system:not windows" }
+		buildoptions { "-gdwarf-4" }
+		linkoptions { "-Wl,--eh-frame-hdr", "-rdynamic", "-Wl,--export-dynamic" }
+
+	filter { "toolset:clang", "configurations:Release" }
+		buildoptions { "-fno-sanitize=all" }
+		linkoptions { "-fno-sanitize=all" }
+
+end
+
+local function ApplyCLIProjectSettings(sourceFileName)
+
+	kind "ConsoleApp"
+	defines { "UDT_CREATE_DLL" }
+	files { path_src_apps.."/"..sourceFileName }
+	files { path_src_apps.."/shared.cpp" }
+	files { path_src_apps.."/shared.hpp" }
+	ApplyProjectSettings( { executable=true } )
 
 end
 
@@ -138,7 +295,7 @@ local function ApplyTutorialProjectSettings()
 	filter { }
 	kind "ConsoleApp"
 	language "C++"
-	location ( path_build.."/".._ACTION )
+	location ( path_build.."/"..GetAction() )
 	includedirs { path_src_apps, path_inc }
 	rtti "Off"
 	exceptionhandling "On"
@@ -168,21 +325,12 @@ local function ApplyTutorialProjectSettings()
 
 end
 
-local function ApplyExeProjectSettings()
-
-	filter "system:not windows"
-		files { path_src_core.."/linux/**.cpp" }
-		files { path_src_core.."/linux/**.hpp" }
-		files { path_src_core.."/linux/**.h" }
-
-end
-
 os.mkdir(path_bin)
 
-solution "UDT"
+workspace "UDT"
 
-	location ( path_build.."/".._ACTION )
-	platforms { "x86", "x64" }
+	location ( path_build.."/"..GetAction() )
+	platforms { "x64" }
 	configurations { "Debug", "Release" }
 
 	project "UDT"
@@ -193,66 +341,31 @@ solution "UDT"
 
 	project "UDT_cutter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_cutter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_cutter.cpp")
 		
 	project "UDT_splitter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_splitter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_splitter.cpp")
 		
 	project "UDT_timeshifter"
 
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_time_shifter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_time_shifter.cpp")
 
 	project "UDT_merger"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_merger.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_merger.cpp")
 
 	project "UDT_json"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_json.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_json.cpp")
 
 	project "UDT_captures"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_captures.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_captures.cpp")
 
 	project "UDT_converter"
 	
-		kind "ConsoleApp"
-		defines { "UDT_CREATE_DLL" }
-		files { path_src_apps.."/app_demo_converter.cpp" }
-		files { path_src_apps.."/shared.cpp" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyCLIProjectSettings("app_demo_converter.cpp")
 
 	-- This project exists only to test the API in C89 mode to ensure nothing got messed up for C programmers.
 	project "UDT_c89"
@@ -260,7 +373,7 @@ solution "UDT"
 		filter { }
 		kind "ConsoleApp"
 		language "C"
-		location ( path_build.."/".._ACTION )
+		location ( path_build.."/"..GetAction() )
 		files { path_src_apps.."/app_c89.c" }
 		includedirs { path_src_apps, path_inc }
 		rtti "Off"
@@ -283,21 +396,18 @@ solution "UDT"
 			--buildoptions { "/Za" } -- /Za: disable language extensions
 		filter "action:gmake"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
-		ApplyExeProjectSettings()
 
 	project "tut_multi_rail"
 	
 		filter { }
 		files { path_src_apps.."/tut_multi_rail.cpp" }
 		ApplyTutorialProjectSettings()
-		ApplyExeProjectSettings()
 
 	project "tut_players"
 	
 		filter { }
 		files { path_src_apps.."/tut_players.cpp" }
 		ApplyTutorialProjectSettings()
-		ApplyExeProjectSettings()
 
 	project "UDT_viewer"
 
@@ -305,12 +415,11 @@ solution "UDT"
 		defines { "UDT_CREATE_DLL" }
 		files { path_src_core.."/viewer/*.cpp" }
 		files { path_src_core.."/viewer/*.hpp" }
-		ApplyProjectSettings()
+		ApplyProjectSettings( { executable=true } )
 		filter "system:windows"
 			links { "D3D11", "Gdi32" }
 		filter "action:gmake"
 			symbols "On"
-		ApplyExeProjectSettings()
 
 	if os.target() == "windows" then
 
@@ -321,8 +430,7 @@ solution "UDT"
 			defines { "UDT_CREATE_DLL", "UDT_VIEWER_WINDOWS_GLFW" }
 			files { path_src_core.."/viewer/*.cpp" }
 			files { path_src_core.."/viewer/*.hpp" }
-			ApplyProjectSettings()
-			ApplyExeProjectSettings()
+			ApplyProjectSettings( { executable=true } )
 
 	end
 
@@ -334,5 +442,19 @@ solution "UDT"
 		files { path_src_core.."/viewer_data_gen/*.hpp" }
 		files { path_src_apps.."/shared.cpp" }
 		includedirs { path_src_core.."/viewer" }
-		ApplyProjectSettings()
-		ApplyExeProjectSettings()
+		ApplyProjectSettings( { executable=true } )
+
+local function GMakeOverride(base, prj, cfg)
+	-- run original generator
+	base(prj, cfg)
+
+	-- make absolutely sure we use a Windows shell and not some random shell on the system called sh.exe
+	if prj.system == "windows" then
+		_p("SHELL := cmd.exe")
+		_p("SHELLTYPE := windows")
+	end
+end
+
+if preset_name == "win_mingw" then
+	premake.override(premake.modules.gmake, "header", GMakeOverride)
+end
