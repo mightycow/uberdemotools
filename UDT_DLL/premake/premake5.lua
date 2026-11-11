@@ -154,7 +154,12 @@ local function ApplyProjectSettings(optionsSet)
 
 	location ( path_build.."/"..GetAction() )
 
-	files { path_src_core.."/*.cpp", path_src_core.."/*.hpp", path_inc.."/*.h", path_natvis.."/*.natvis" }
+	if SetContains(optionsSet, "executable") then
+		links { "UDT_staticlib" }
+	else
+		files { path_src_core.."/*.cpp", path_natvis.."/*.natvis" }
+	end
+	files { path_src_core.."/*.hpp", path_inc.."/*.h" }
 	includedirs { path_src_core, path_src_apps, path_inc }
 
 	rtti "Off"
@@ -336,6 +341,12 @@ workspace "UDT"
 	project "UDT"
 	
 		kind "SharedLib"
+		defines { "UDT_CREATE_DLL" }
+		ApplyProjectSettings()
+
+	project "UDT_staticlib"
+	
+		kind "StaticLib"
 		defines { "UDT_CREATE_DLL" }
 		ApplyProjectSettings()
 
