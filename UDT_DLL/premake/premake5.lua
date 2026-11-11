@@ -14,34 +14,34 @@ newoption {
 	value       = "PRESET",
 	description = "Select a build preset configuration",
 	allowed = {
-		{ "win_vs",       "Host: Windows, Target: Windows, Toolchain: Visual Studio" },
-		{ "win_mingw",    "Host: Windows, Target: Windows, Toolchain: MinGW with GCC" },
-		{ "win_zig",      "Host: Windows, Target: Windows, Toolchain: ninja with Zig" },
-		{ "win2lin_zig",  "Host: Windows, Target: Linux,   Toolchain: ninja with Zig" },
-		{ "lin_gmake",    "Host: Linux,   Target: Linux,   Toolchain: gmake with GCC" }
+		{ "win_win_vs",        "Host: Windows, Target: Windows, Toolchain: Visual Studio" },
+		{ "win_win_mingw_gcc", "Host: Windows, Target: Windows, Toolchain: MinGW + GCC" },
+		{ "win_win_ninja_zig", "Host: Windows, Target: Windows, Toolchain: Ninja + Zig" },
+		{ "win_lin_ninja_zig", "Host: Windows, Target: Linux,   Toolchain: Ninja + Zig" },
+		{ "lin_lin_gmake_gcc", "Host: Linux,   Target: Linux,   Toolchain: gmake + GCC" }
 	}
 }
 
 local presets = {
-	["win_vs"] = {
-		toolset   = "msc",
-		folder    = _ACTION
+	["win_win_vs"] = {
+		toolset = "msc",
+		folder  = "win_win_".._ACTION
 	},
-	["win_mingw"] = {
-		toolset   = "gcc",
-		folder    = "win_mingw"
+	["win_win_mingw_gcc"] = {
+		toolset = "gcc",
+		folder  = "win_win_mingw_gcc"
 	},
-	["win_zig"] = {
-		toolset   = "clang",
-		folder    = "win_zig"
+	["win_win_ninja_zig"] = {
+		toolset = "clang",
+		folder  = "win_win_ninja_zig"
 	},
-	["win2lin_zig"] = {
-		toolset   = "clang",
-		folder    = "win2lin_zig"
+	["win_lin_ninja_zig"] = {
+		toolset = "clang",
+		folder  = "win_lin_ninja_zig"
 	},
-	["lin_gmake"] = {
-		toolset   = "gcc",
-		folder    = "lin_gmake"
+	["lin_lin_gmake_gcc"] = {
+		toolset = "gcc",
+		folder  = "lin_lin_gmake_gcc"
 	}
 }
 
@@ -55,9 +55,9 @@ if preset == nil then
 	if preset_definition and preset_definition.allowed then
 		s = s .. "\nPresets:"
 		for _, entry in ipairs(preset_definition.allowed) do
-			local value = entry[1]       -- The preset value name (e.g., "win2lin_zig")
+			local value = entry[1]       -- The preset value name (e.g., "win_lin_ninja_zig")
 			local description = entry[2] -- The descriptive text
-			s = s .. string.format("\n%16s -> %s", value, description)
+			s = s .. string.format("\n%20s -> %s", value, description)
 		end
 	end
 	error(s)
@@ -65,7 +65,7 @@ end
 
 toolset(preset.toolset)
 
-if preset_name == "win2lin_zig" then
+if preset_name == "win_lin_ninja_zig" then
 	local function zigw2l_gettoolname(cfg, tool)
 		local target = " -target x86_64-linux-gnu"
 		if tool == "cc"  then return "zig cc" .. target end
@@ -84,7 +84,7 @@ if preset_name == "win2lin_zig" then
 	premake.tools.clang.getlinker = zigw2l_getlinker
 end
 
-if preset_name == "win_zig" then
+if preset_name == "win_win_ninja_zig" then
 	local function zig_gettoolname(cfg, tool)
 		local target = " -target x86_64-windows-gnu"
 		if tool == "cc"  then return "zig cc" .. target end
@@ -196,7 +196,7 @@ local function ApplyProjectSettings(optionsSet)
 	filter { }
 	ApplyTargetAndLinkSettings()
 
-	if preset_name == "win_zig" then
+	if preset_name == "win_win_ninja_zig" then
 		linkoptions { "-municode" }
 	end
 
@@ -465,6 +465,6 @@ local function GMakeOverride(base, prj, cfg)
 	end
 end
 
-if preset_name == "win_mingw" then
+if preset_name == "win_win_mingw_gcc" then
 	premake.override(premake.modules.gmake, "header", GMakeOverride)
 end

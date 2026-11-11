@@ -1,30 +1,30 @@
 # [UDT](https://github.com/mightycow/uberdemotools) - Uber Demo Tools
 
-Here you'll learn the few steps required to build the UDT binaries for your platform and compiler.
-
-## Building the library, command-line tools and viewer
+## Building the library, CLI tools and viewer
 
 This is all done through scripts that you can invoke from your command prompt or shell.
 
-For each toolchain, there are 2 scripts:
+For each toolchain, there is a single script that handles the following duties:
 
-1. A script that generates project files whose file name contains `generate` by invoking a local version of Premake.
-2. A script that compiles the code whose file name contains `compile`.
+1. Generating project files by invoking a local version of Premake.
+2. Compiling all the projects.
+3. Running the test suite.
 
 | Data | Location |
 | :--- | :--- |
-| Build scripts | `UDT_DLL\premake` |
-| Output files | `UDT_DLL\.bin\${toolchainfolder}` |
-| Temporary build files | `UDT_DLL\.build\${toolchainfolder}` |
-| Visual Studio solution file | `UDT_DLL\.build\vs${year}\UDT.sln` |
+| Build scripts | `UDT_DLL/premake` |
+| Output files | `UDT_DLL/.bin/${toolchainfolder}` |
+| Temporary build files | `UDT_DLL/.build/${toolchainfolder}` |
+| Visual Studio solution file | `UDT_DLL/.build/win_win_vs${year}/UDT.sln` |
 
-| Host | Target | Toolchain | Scripts | Folder | Notes |
+| Host | Target | Toolchain | Script | Folder | Notes |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Windows | Windows | Visual C++ | `vs_generate.cmd`<br>`vs_compile.cmd` | `vs${year}` | VC++ **2017** or later |
-| Windows | Windows | MingW + GCC | `mingw_generate.cmd`<br>`mingw_compile.cmd` | `win_mingw` | Can use WinLibs |
-| Windows | Windows | Ninja + Zig | `zig_generate_windows.cmd`<br>`zig_compile_windows.cmd` | `win_zig` | Clang |
-| Windows | Linux | Ninja + Zig | `zig_generate_linux.cmd`<br>`zig_compile_linux.cmd` | `win2lin_zig` | Clang |
-| Linux | Linux | gmake + GCC | `gcc_generate.sh`<br>`gcc_compile.sh` | `lin_gmake` | |
+| Windows | Windows | Visual C++ | `win_win_vs.cmd` | `win_win_vs${year}` | VC++ **2017** or later |
+| Windows | Windows | MingW + GCC | `win_win_mingw_gcc.cmd` | `win_win_mingw_gcc` | Can use WinLibs |
+| Windows | Windows | Ninja + Zig | `win_win_ninja_zig.cmd` | `win_win_ninja_zig` | Clang |
+| Windows | Linux | Ninja + Zig | `win_lin_ninja_zig.cmd` | `win_lin_ninja_zig` | Clang |
+| WSL | Linux | gmake + GCC | `wsl_lin_gmake_gcc.cmd` | `lin_lin_gmake_gcc` | |
+| Linux | Linux | gmake + GCC | `lin_lin_gmake_gcc.sh` | `lin_lin_gmake_gcc` | |
 
 Notes:
 
