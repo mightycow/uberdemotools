@@ -29,7 +29,6 @@ private:
 	udtdSnapshotData _newOldSnap;
 	udtdSnapshotData _newCurSnap;
 	udtVMLinearAllocator _tempAllocator { "UDTDemoEntityTimeShifterPlugIn::Temp" };
-	const udtTimeShiftArg* _info;
 	udtProtocol::Id _protocol;
 	s32 _backupSnapIndex;
 	s32 _parsedSnapIndex;

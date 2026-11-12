@@ -68,7 +68,7 @@ static_assert(sizeof(uptr) == 4, "sizeof(uptr) must be 4");
 static_assert(sizeof(void*) == 4, "sizeof(void*) must be 4");
 #endif
 
-static_assert(udtPlayerMeanOfDeath::Count < udtMeanOfDeath::Count, "Invalid MOD KillType filter");
+static_assert((u32)udtPlayerMeanOfDeath::Count < (u32)udtMeanOfDeath::Count, "Invalid MOD KillType filter");
 static_assert(udtPlayerMeanOfDeath::Count <= 64, "another API change is needed :-(");
 
 
@@ -764,8 +764,16 @@ static bool CreateDemoFileSplit(udtVMLinearAllocator& tempAllocator, udtContext&
 		udtPath::Combine(outputFilePathStart, tempAllocator, udtString::NewConstRef(outputFolderPath), fileName);
 	}
 
+	// GCC thinks commandString.GetWritePtr() will return NULL... it won't
+#if defined(UDT_GCC) || defined(UDT_CLANG)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wformat-overflow"
+#endif
 	udtString newFilePath = udtString::NewEmpty(tempAllocator, UDT_MAX_PATH_LENGTH);
 	sprintf(newFilePath.GetWritePtr(), "%s_SPLIT_%u%s", outputFilePathStart.GetPtr(), index + 1, udtGetFileExtensionByProtocol((u32)protocol));
+#if defined(UDT_GCC) || defined(UDT_CLANG)
+#	pragma GCC diagnostic pop
+#endif
 
 	context.LogInfo("Writing split demo: %s", newFilePath.GetPtr());
 
@@ -907,9 +915,6 @@ static bool ParseDemoForGameStateRanges(udtProtocol::Id protocol, udtParserConte
 	{
 		return false;
 	}
-
-	CallbackCutDemoFileStreamCreationInfo streamInfo;
-	streamInfo.OutputFolderPath = info->OutputFolderPath;
 
 	context->Parser.SetFilePath(demoFilePath);
 	context->Context.LogInfo("Analyzing for a timed cut: %s", demoFilePath);

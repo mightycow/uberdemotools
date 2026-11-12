@@ -20,9 +20,14 @@
 #define NANOVG_D3D11_H
 
 // Hide nameless struct/union warning for D3D headers
-#pragma warning (disable : 4201)
+#if defined(_MSC_VER)
+#	pragma warning(push)
+#	pragma warning(disable : 4201)
+#endif
 #include <d3d11.h>
-#pragma warning (default : 4201)
+#if defined(_MSC_VER)
+#	pragma warning(pop)
+#endif
 
 #ifdef __cplusplus
 extern "C" {

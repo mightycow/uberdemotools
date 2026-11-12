@@ -103,6 +103,14 @@ if preset_name == "win_win_ninja_zig" then
 	premake.tools.clang.getlinker = zig_getlinker
 end
 
+if preset_name == "win_win_ninja_zig" or preset_name == "win_lin_ninja_zig" then
+	-- Clear the hardcoded "-L/usr/lib64" flag to get rid of the annoying warning.
+	-- Premake's clang toolset inherits linker flags from premake.tools.gcc.
+	if premake.tools.gcc and premake.tools.gcc.libraryDirectories then
+		premake.tools.gcc.libraryDirectories.architecture.x86_64 = {}
+	end
+end
+
 local function GetAction()
 	return preset.folder
 end
@@ -229,22 +237,12 @@ local function ApplyProjectSettings(optionsSet)
 	filter { "action:vs*", "kind:ConsoleApp" }
 		entrypoint "wmainCRTStartup"
 
-	--[[
-	filter { "action:vs*", "kind:WindowedApp" }
-		flags "WinMain"
-	--]]
-
 	filter { "action:vs*", "configurations:Debug" }
 		buffersecuritycheck "On"
 
 	filter { "action:vs*", "configurations:Release" }
 		buffersecuritycheck "Off"
 		buildoptions { "/GL" }
-		linkoptions { "/OPT:REF", "/OPT:ICF" }
-
-	filter "action:vs2015"
-		buildoptions { "/wd4577" --[[ noexcept --]] }
-		linkoptions { "" }
 
 	--
 	-- GCC/Clang/Zig
@@ -253,17 +251,15 @@ local function ApplyProjectSettings(optionsSet)
 	filter { "toolset:gcc or clang", "system:windows" }
 		buildoptions { "" }
 		linkoptions { "-municode" } -- This is to define the Unicode wmain entry point on MingW to get access to the UTF16 Unicode command-line.
-		defines { "_WIN32_WINNT=0x0601", "WINVER=0x0601", "NTDDI_VERSION=0x06010000" } -- We build on and target Windows 7 at a minimum.
 
-	filter "toolset:gcc or clang"
+	filter "toolset:clang"
 		buildoptions { "-Wno-extern-c-compat" }
-		-- "-fstandalone-debug" to always export all symbols in debug builds
 
 	filter { "toolset:gcc or clang", "files:**.cpp" }
-		buildoptions { "-std=c++11" }
+		buildoptions { "-std=c++11", "-Wno-invalid-offsetof" }
 
 	filter "toolset:gcc or clang"
-		buildoptions { "-Wno-invalid-offsetof", "-Wno-narrowing" }
+		buildoptions { "-Wno-narrowing" }
 
 	filter { "toolset:gcc or clang", "configurations:Debug" }
 		symbols "On" -- I think that's "-g -O0" for build and "-g" for link?
@@ -325,8 +321,11 @@ local function ApplyTutorialProjectSettings()
 	filter "action:vs*"
 		defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 
-	filter "action:gmake"
+	filter "toolset:gcc or clang"
 		buildoptions { "-std=c++11 -pedantic" }
+
+	filter "toolset:clang"
+		buildoptions { "-Wno-extern-c-compat" }
 
 end
 
@@ -405,8 +404,10 @@ workspace "UDT"
 		filter "action:vs*"
 			defines { "_CRT_SECURE_NO_WARNINGS", "WIN32" }
 			--buildoptions { "/Za" } -- /Za: disable language extensions
-		filter "action:gmake"
+		filter "toolset:gcc"
 			buildoptions { "-std=c89 -pedantic" } -- -ansi is used to force ISO C90 mode in GCC
+		filter "toolset:clang"
+			buildoptions { "-Wno-extern-c-compat" }
 
 	project "tut_multi_rail"
 	
@@ -429,7 +430,7 @@ workspace "UDT"
 		ApplyProjectSettings( { executable=true } )
 		filter "system:windows"
 			links { "D3D11", "Gdi32" }
-		filter "action:gmake"
+		filter "toolset:gcc or clang"
 			symbols "On"
 
 	if os.target() == "windows" then

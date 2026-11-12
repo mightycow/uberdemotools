@@ -14,8 +14,8 @@ UDT_TEST_FILE("CLI");
 
 static void Run(const char* exeName, const char* argsFormat, ...)
 {
-	char args[1024];
-	char cmd[1024];
+	static char cmd[8096];
+	static char args[2048];
 	va_list argList;
 	va_start(argList, argsFormat);
 	vsprintf(args, argsFormat, argList);

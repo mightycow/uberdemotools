@@ -51,7 +51,7 @@ struct udtProtocolEx
 	};
 };
 #undef ITEM
-static_assert(udtProtocolEx::Count == udtProtocol::Count, "UDT_PROTOCOL_LIST_EX is invalid");
+static_assert((u32)udtProtocolEx::Count == (u32)udtProtocol::Count, "UDT_PROTOCOL_LIST_EX is invalid");
 
 #define ITEM(Number, FlagsEx) FlagsEx,
 static const u32 ProtocolFlagsEx[udtProtocol::Count + 1] =
@@ -721,6 +721,7 @@ void PlayerStateToEntityState(idEntityStateBase& es, s32& lastEventSequence, con
 
 	if(ps.eventSequence != lastEventSequence)
 	{
+		// @TODO: fix for RtCW/ET since MAX_EVENTS was 4 for both
 		const s32 seq = (ps.eventSequence & 1) ^ 1;
 		es.event = ps.events[seq];
 		es.eventParm = ps.eventParms[seq];

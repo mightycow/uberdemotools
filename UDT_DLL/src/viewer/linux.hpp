@@ -6,7 +6,7 @@ void Platform_DebugPrint(const char* format, ...)
 	vsprintf(msg, format, args);
 	va_end(args);
 	printf("\n");
-	printf(msg);
+	printf("%s", msg);
 	printf("\n");
 }
 
@@ -79,7 +79,7 @@ void Platform_PrintError(const char* format, ...)
 	vsprintf(msg, format, args);
 	va_end(args);
 	fprintf(stderr, "Error: ");
-	fprintf(stderr, msg);
+	fprintf(stderr, "%s", msg);
 	fprintf(stderr, "\n");
 }
 
@@ -104,7 +104,7 @@ void Platform_FatalError(const char* format, ...)
 	va_end(args);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Fatal error: ");
-	fprintf(stderr, msg);
+	fprintf(stderr, "%s", msg);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Full stack trace:\n");
 	PrintStackTrace(0);

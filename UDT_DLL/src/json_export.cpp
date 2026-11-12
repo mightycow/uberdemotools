@@ -18,9 +18,9 @@ struct udtJSONExporter
 {
 public:
 	udtJSONExporter(udtJSONWriter& writer, udtVMLinearAllocator& tempAllocator, udtProtocol::Id protocol)
-		: Writer(writer)
+		: Protocol(protocol)
+		, Writer(writer)
 		, TempAllocator(tempAllocator)
-		, Protocol(protocol)
 		, StringBuffer(NULL)
 		, StringBufferSize(0)
 	{

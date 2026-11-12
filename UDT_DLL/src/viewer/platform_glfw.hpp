@@ -25,23 +25,11 @@
 #	include "GLFW/glfw3.h"
 #endif
 
-#if defined(UDT_MSVC)
-#	pragma warning(push, 0)
-#elif defined(UDT_GCC)
-#	pragma GCC diagnostic push
-#	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
-#	pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-
+#include "warning_push.hpp"
 #define NANOVG_GL2_IMPLEMENTATION
 #include "nanovg/nanovg_gl.h"
 #include "nanovg/nanovg.c"
-
-#if defined(UDT_MSVC)
-#	pragma warning(pop)
-#elif defined(UDT_GCC)
-#	pragma GCC diagnostic pop
-#endif
+#include "warning_pop.hpp"
 
 #include "platform_glfw_load.hpp"
 

@@ -129,7 +129,7 @@ static bool LoadGLFW()
 	}
 
 #define LOAD_FUNC(name) \
-	ext_##name = (PFN_##name)GET_PROC(s_glfwInstance, #name); \
+	ext_##name = (PFN_##name)(uptr)GET_PROC(s_glfwInstance, #name); \
 	if(ext_##name == nullptr) return false
 
 	LOAD_FUNC(glfwInit);

@@ -74,6 +74,10 @@ struct CmdLineOption
 	const char* Max;
 };
 
+#if defined(__clang__) || defined(__GNUC__)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+#endif
 static const CmdLineOption cmdLineOptions[] =
 {
 	// general (mostly)
@@ -119,6 +123,9 @@ static const CmdLineOption cmdLineOptions[] =
 	{ "base", "allow pick-ups from the original flag spot", false, &options.FlagCapture.AllowBaseToBase, "p", NULL, OptionType::Integer, "1", "0", "1" },
 	{ "non_base", "allow pick-ups *not* from the original flag spot", false, &options.FlagCapture.AllowMissingToBase, "p", NULL, OptionType::Integer, "1", "0", "1" }
 };
+#if defined(__clang__) || defined(__GNUC__)
+#	pragma GCC diagnostic pop
+#endif
 
 struct OptionRangeInt
 {

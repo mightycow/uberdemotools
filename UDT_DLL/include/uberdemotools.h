@@ -21,6 +21,11 @@
 #	define UDT_GCC_VER __GNUC__
 #endif
 
+#if defined(__clang__)
+#	define UDT_CLANG
+#	define UDT_CLANG_VER __clang_version__
+#endif
+
 #if defined(__ICC) || defined(__INTEL_COMPILER)
 #	define UDT_ICC
 #endif
@@ -2632,7 +2637,7 @@ extern "C"
 #define	ID_MAX_PS_STATS		       16
 #define	ID_MAX_PS_PERSISTANT       16
 #define	ID_MAX_PS_POWERUPS         16
-#define	ID_MAX_PS_EVENTS	        2
+#define	ID_MAX_PS_EVENTS	        4 /* Q3/QL 2 - RtCW/ET 4 */
 #define	ID_MAX_PARSE_ENTITIES    2048
 #define	ID_MAX_CLIENTS	           64 /* max player count */
 #define ID_MAX_MSG_LENGTH       32768 /* max length of a message, which may be fragmented into multiple packets */

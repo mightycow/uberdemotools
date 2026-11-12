@@ -31,7 +31,7 @@ static void WriteNewLine()
 
 static void WriteAddress(uint64_t address)
 {
-	if(address == NULL)
+	if(address == 0)
 	{
 		Write("0");
 		return;

@@ -436,8 +436,17 @@ tokenize:
 			_protocolConverter->ConvertConfigString(outCs, _tempAllocator, csIndex, csStringTemp, csStringLength);
 			if(outCs.NewString || outCs.Index != csIndex)
 			{
+				// GCC thinks commandString.GetWritePtr() will return NULL... it won't
+#if defined(UDT_GCC) || defined(UDT_CLANG)
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wformat-overflow"
+#endif
+				
 				commandString = udtString::NewEmpty(_privateTempAllocator, 2 * BIG_INFO_STRING);
 				sprintf(commandString.GetWritePtr(), "cs %d \"%s\"", outCs.Index, outCs.String.GetPtr());
+#if defined(UDT_GCC) || defined(UDT_CLANG)
+#	pragma GCC diagnostic pop
+#endif
 				commandStringLength = (s32)strlen(commandString.GetPtr());
 				csStringLength = outCs.String.GetLength();
 			}

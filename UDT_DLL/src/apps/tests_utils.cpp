@@ -84,7 +84,7 @@ void SetCD(const char* dirPath)
 
 void MakeDirectoryEmpty(const char* dirPath)
 {
-	char cmd[1024];
+	char cmd[2048];
 	sprintf(cmd, "rm -rf %s/*", dirPath);
 	system(cmd);
 }
@@ -119,8 +119,8 @@ void Pause()
 
 const char* RunAndCaptureOutput(const char* exeName, const char* argsFormat, ...)
 {
-	char args[4096];
 	char cmd[4096];
+	char args[2048];
 	va_list argList;
 	va_start(argList, argsFormat);
 	vsprintf(args, argsFormat, argList);
@@ -278,7 +278,7 @@ void InitContext(const char* repoPath)
 	{
 		repoPath = "../../../../..";
 	}
-	char repoDir[1024];
+	char repoDir[512];
 	GetAbsoluteDirPath(repoDir, repoPath);
 	sprintf(ctx.DemoDir, "%s/demo_files", repoDir);
 

@@ -20,18 +20,11 @@
 #include <assert.h>
 #include <math.h>
 
-#if defined(UDT_MSVC)
-#	pragma warning(push, 0)
-#endif
-
+#include "warning_push.hpp"
 #define NANOVG_D3D11_IMPLEMENTATION
 #include "nanovg/nanovg_d3d11.h"
 #include "nanovg/nanovg.c"
-
-#if defined(UDT_MSVC)
-#	pragma warning(pop)
-#endif
-
+#include "warning_pop.hpp"
 
 #define  WINDOW_CLASS_NAME  L"UDT_Viewer"
 #define  TIMER_MAIN_ID      1

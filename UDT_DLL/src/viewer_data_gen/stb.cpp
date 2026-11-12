@@ -1,7 +1,4 @@
-#include "uberdemotools.h"
-#if defined(UDT_MSVC)
-#	pragma warning(push, 0)
-#endif
+#include "warning_push.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"

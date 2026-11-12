@@ -162,7 +162,7 @@ static bool TestCorruptDemos(u32 maxThreadCount)
 
 	for(u32 i = 0; i < demoCount; ++i)
 	{
-		char path[512];
+		char path[2048];
 		sprintf(path, "%s/%s", ctx.DemoDir, demos[i].relativePath);
 		fullDemoStrings[i] = udtString::NewClone(pathAlloc, path);
 	}
@@ -274,7 +274,7 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
 	parse.MessageCb = &CallbackConsoleMessage;
 	parse.OutputFolderPath = ctx.OutTempDir.Path;
 
-	char filePath[512];
+	char filePath[2048];
 	sprintf(filePath, "%s/minqlx_wrong_cut_time_42_653.dm_91", ctx.DemoDir);
 	const char* filePathPtr = filePath;
 	s32 errorCode = 0;
@@ -331,8 +331,8 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/minqlx")
 
 UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/CPMA")
 {
-	char filePath0[512];
-	char filePath1[512];
+	char filePath0[2048];
+	char filePath1[2048];
 	sprintf(filePath0, "%s/dm_68_cpma/duel.dm_68", ctx.DemoDir);
 	sprintf(filePath1, "%s/dm_68_cpma/2v2_xscores_2.dm_68", ctx.DemoDir);
 	udtParseArg parse = {};
@@ -399,7 +399,7 @@ UDT_TEST("udtCutDemoFilesByPattern/OverlappingCuts/CPMA")
 
 UDT_TEST("udtCutDemoFileByTime/OverlappingCuts")
 {
-	char filePath[512];
+	char filePath[2048];
 	sprintf(filePath, "%s/dm_68_cpma/3_matches_2_gamestates.dm_68", ctx.DemoDir);
 
 	udtParseArg info = {};

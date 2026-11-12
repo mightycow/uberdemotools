@@ -121,7 +121,7 @@ void udtContext::LogErrorAndCrash(UDT_PRINTF_FORMAT_ARG const char* format, ...)
 #	endif
 #endif
 
-	FatalError(__FILE__, __LINE__, __FUNCTION__, msg);
+	FatalError(__FILE__, __LINE__, __FUNCTION__, "%s", msg);
 }
 
 void udtContext::NotifyProgress(f32 progress) const
