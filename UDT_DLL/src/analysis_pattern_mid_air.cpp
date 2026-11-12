@@ -25,9 +25,9 @@ static s32 GetEntityStateGravity(const idEntityStateBase* ent, udtProtocol::Id p
 
 	switch(protocol)
 	{
-		case udtProtocol::Dm73: ((const idEntityState73*)ent)->pos_gravity;
-		case udtProtocol::Dm90: ((const idEntityState90*)ent)->pos_gravity;
-		case udtProtocol::Dm91: ((const idEntityState91*)ent)->pos_gravity;
+		case udtProtocol::Dm73: return ((const idEntityState73*)ent)->pos_gravity;
+		case udtProtocol::Dm90: return ((const idEntityState90*)ent)->pos_gravity;
+		case udtProtocol::Dm91: return ((const idEntityState91*)ent)->pos_gravity;
 		default: return DEFAULT_GRAVITY;
 	}
 }

@@ -16,6 +16,7 @@ FIX: Stats analyzer: no longer crashing with minqlxtended demos with commands an
 FIX: Gamestate analyzer: ignoring minqlxtended' early snapshots before the time rewind when computing the time ranges
 FIX: Gamestate analyzer: Quake Live clan name extraction logic was always active and could truncate player names
 FIX: Gamestate analyzer: corrupted gamestates are rejected
+FIX: Mid-air analyzer: Quake Live entity gravity always evaluated to 800
 FIX: Demo cutting will now ignore minqlxtended' early snapshots before the time rewind
 FIX: UDT_cutter: progress was stuck at 0% in Cut by Time mode
 FIX: Demo cutting now correctly handles overlapping cuts by doing as many passes as necessary
