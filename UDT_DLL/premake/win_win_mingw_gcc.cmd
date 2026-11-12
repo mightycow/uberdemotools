@@ -20,6 +20,11 @@ call "%~dp0helpers\pick_clean.cmd" || goto :Exit
 
 @echo off
 
+:: UDT and UDT_staticlib both try to create the output directory at the same time
+:: -> 1 mkdir call fails -> the whole thing stops
+set "output_path=%~dp0..\.bin\win_win_mingw_gcc\x64\%target%"
+if not exist %output_path% mkdir %output_path%
+
 :: gmake_jobs = max(core_count - 2, 1)
 set /a gmake_jobs=%NUMBER_OF_PROCESSORS% - 2
 if %gmake_jobs% lss 1 set gmake_jobs=1
