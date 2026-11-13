@@ -323,6 +323,11 @@ void udtVMLinearAllocator::SetAlignment(u32 alignment)
 	_alignment = alignment;
 }
 
+u32 udtVMLinearAllocator::GetAlignment() const
+{
+	return _alignment;
+}
+
 void udtVMLinearAllocator::SetName(const char* name)
 {
 	_name = name;

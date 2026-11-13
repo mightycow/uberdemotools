@@ -1,3 +1,6 @@
+0.1.3 (DD.MM.202X)
+FIX: Unaligned memory moves (C++ undefined behavior)
+
 0.1.2 (22.07.2016)
 ADD: Configuration file viewerconfig.cfg
 ADD: Options: static/dynamic entities depth scale and global entities scale

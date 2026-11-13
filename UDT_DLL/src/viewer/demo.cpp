@@ -45,6 +45,13 @@ struct ItemClass
 	};
 };
 
+static u32 AlignUp(u32 byteCount, u32 alignment)
+{
+	const u32 mask = alignment - 1;
+
+	return (byteCount + mask) & (~mask);
+}
+
 #if defined(UDT_GCC)
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wtype-limits"
@@ -350,8 +357,8 @@ Demo::Demo()
 {
 	_snapshots[0].SetName("Demo::SnapshotOffsetArray0");
 	_snapshots[1].SetName("Demo::SnapshotOffsetArray1");
-	_snapshotAllocators[0].SetAlignment(1);
-	_snapshotAllocators[1].SetAlignment(1);
+	_snapshotAllocators[0].SetAlignment(4);
+	_snapshotAllocators[1].SetAlignment(4);
 	_snapshotAllocators[0].SetName("Demo::Persist0");
 	_snapshotAllocators[1].SetName("Demo::Persist1");
 }
@@ -623,7 +630,7 @@ bool Demo::GetSnapshotData(Snapshot& snapshot, u32 index) const
 
 	u8 staticItemBits[MaxItemMaskByteCount];
 	const u32 staticItemCount = _staticItems.GetSize();
-	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
+	const u32 staticItemByteCount = GetStaticItemByteCount();
 	Read(offset, staticItemBits, staticItemByteCount);
 	snapshot.StaticItemCount = 0;
 	for(u32 i = 0; i < staticItemCount; ++i)
@@ -693,8 +700,7 @@ bool Demo::GetDynamicItemsOnly(Snapshot& snapshot, u32 index) const
 	Read(offset, snapshot.DisplayTimeMs);
 	snapshot.ServerTimeMs = snapshots[index].ServerTimeMs;
 
-	const u32 staticItemCount = _staticItems.GetSize();
-	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
+	const u32 staticItemByteCount = GetStaticItemByteCount();
 	offset += staticItemByteCount;
 
 	u32 playerCount = 0;
@@ -722,7 +728,7 @@ void Demo::WriteSnapshot(const Snapshot& snapshot)
 	u8 staticItemBits[MaxItemMaskByteCount];
 	memset(staticItemBits, 0, sizeof(staticItemBits));
 	const u32 staticItemCount = _staticItems.GetSize();
-	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
+	const u32 staticItemByteCount = GetStaticItemByteCount();
 	for(u32 i = 0; i < snapshot.StaticItemCount; ++i)
 	{
 		const auto& snapItem = snapshot.StaticItems[i];
@@ -759,8 +765,9 @@ void Demo::WriteSnapshot(const Snapshot& snapshot)
 
 void Demo::Read(uptr& offset, void* data, u32 byteCount) const
 {
-	memcpy(data, _snapshotAllocators[_readIndex].GetAddressAt(offset), (size_t)byteCount);
-	offset += (uptr)byteCount;
+	const udtVMLinearAllocator& alloc = _snapshotAllocators[_readIndex];
+	memcpy(data, alloc.GetAddressAt(offset), (size_t)byteCount);
+	offset += (uptr)AlignUp(byteCount, (u32)alloc.GetAlignment());
 }
 
 void Demo::Write(const void* data, u32 byteCount)
@@ -1437,7 +1444,7 @@ void Demo::FixStaticItems()
 			if(IsBitSet(snapData + 4, i))
 			{
 				lastSnapUp = s;
-				lastTimeUp = *(s32*)snapData;
+				lastTimeUp = uread_s32(snapData);
 				continue;
 			}
 
@@ -1451,7 +1458,7 @@ void Demo::FixStaticItems()
 			for(u32 s2 = s + 1; s2 < snapshotCount; ++s2)
 			{
 				const u8* const snapData2 = snapDataAllocator.GetAddressAt(snapshots[s2].Offset);
-				const s32 time = *(s32*)snapData2;
+				const s32 time = uread_s32(snapData2);
 				if(time - lastTimeUp >= (s32)spawnTimeMs)
 				{
 					break;
@@ -1605,8 +1612,7 @@ void Demo::FixPlayers(const Snapshot& prevSnap, Snapshot& currSnap, Snapshot& sn
 
 void Demo::FixLGEndPoints()
 {
-	const u32 staticItemCount = _staticItems.GetSize();
-	const u32 staticItemByteCount = (staticItemCount + 7) / 8;
+	const u32 staticItemByteCount = GetStaticItemByteCount();
 	const auto& snapshots = _snapshots[_readIndex];
 	const u32 snapshotCount = snapshots.GetSize();
 	for(u32 s = 1; s < snapshotCount - 1; ++s)
@@ -1645,7 +1651,7 @@ void Demo::FixLGEndPoints()
 
 bool Demo::FindPlayer(const Player*& playerOut, u32 snapshotIndex, u8 idClientNumber)
 {
-	const u32 staticItemByteCount = (_staticItems.GetSize() + 7) / 8;
+	const u32 staticItemByteCount = GetStaticItemByteCount();
 	uptr offset = _snapshots[_readIndex][snapshotIndex].Offset + staticItemByteCount + 4;
 	u32 playerCount;
 	Read(offset, playerCount);
@@ -1936,4 +1942,9 @@ bool Demo::ProcessTimeOut(s32& timeOffsetMs, s32 serverTimeMs)
 	timeOffsetMs = localTimeOffsetMs;
 
 	return false;
+}
+
+u32 Demo::GetStaticItemByteCount() const
+{
+	return AlignUp((_staticItems.GetSize() + 7) / 8, _snapshotAllocators[0].GetAlignment());
 }

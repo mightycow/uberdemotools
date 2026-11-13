@@ -53,6 +53,7 @@ public:
 	char*       GetWriteStringAt(uptr offset) const;
 	u8*         GetAddressAt(uptr offset) const;
 	void        SetAlignment(u32 alignment);
+	u32         GetAlignment() const;
 	void        SetName(const char* name);
 
 private:

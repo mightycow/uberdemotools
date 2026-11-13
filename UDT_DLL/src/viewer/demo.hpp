@@ -7,8 +7,6 @@
 #include "timer.hpp"
 
 
-#pragma pack(push, 1)
-
 struct PlayerFlags
 {
 	enum Id
@@ -144,8 +142,6 @@ struct Snapshot
 	s32 ServerTimeMs;
 };
 
-#pragma pack(pop)
-
 struct ChatMessage
 {
 	u32 Location;
@@ -274,6 +270,7 @@ private:
 	void ReportProgress(f32 subProgress);
 	void NextStep();
 	bool ProcessTimeOut(s32& timeOffsetMs, s32 serverTimeMs); // Returns true if in a time-out.
+	u32  GetStaticItemByteCount() const;
 
 	enum Constants
 	{
