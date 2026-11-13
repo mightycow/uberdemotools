@@ -1081,9 +1081,12 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		ProcessPlayer(followedPlayer, snapshot.ServerTimeMs, true);
 	}
 	const u32 playerCount = _tempPlayers.GetSize();
-	assert(playerCount <= 64);
+	assert(playerCount <= (u32)UDT_COUNT_OF(newSnap.Players));
 	newSnap.PlayerCount = playerCount;
-	memcpy(newSnap.Players, _tempPlayers.GetStartAddress(), playerCount * sizeof(Player));
+	if(playerCount > 0)
+	{
+		memcpy(newSnap.Players, _tempPlayers.GetStartAddress(), playerCount * sizeof(Player));
+	}
 
 	//
 	// Dynamic items.
@@ -1221,8 +1224,12 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		}
 	}
 	const u32 dynItemCount = _tempDynamicItems.GetSize();
+	assert(dynItemCount <= (u32)UDT_COUNT_OF(newSnap.DynamicItems));
 	newSnap.DynamicItemCount = dynItemCount;
-	memcpy(newSnap.DynamicItems, _tempDynamicItems.GetStartAddress(), dynItemCount * (u32)sizeof(DynamicItem));
+	if(dynItemCount > 0)
+	{
+		memcpy(newSnap.DynamicItems, _tempDynamicItems.GetStartAddress(), dynItemCount* (u32)sizeof(DynamicItem));
+	}
 
 	//
 	// Beams.
@@ -1259,8 +1266,12 @@ bool Demo::ProcessMessage_FinalPass(const udtCuMessageOutput& message)
 		_tempBeams.Add(_beams[i].Base);
 	}
 	const u32 railBeamCount = _tempBeams.GetSize();
+	assert(railBeamCount <= (u32)UDT_COUNT_OF(newSnap.RailBeams));
 	newSnap.RailBeamCount = railBeamCount;
-	memcpy(newSnap.RailBeams, _tempBeams.GetStartAddress(), railBeamCount * (u32)sizeof(RailBeam));
+	if(railBeamCount > 0)
+	{
+		memcpy(newSnap.RailBeams, _tempBeams.GetStartAddress(), railBeamCount* (u32)sizeof(RailBeam));
+	}
 
 	//
 	// Core.
