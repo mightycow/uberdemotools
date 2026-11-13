@@ -65,9 +65,10 @@ end
 
 toolset(preset.toolset)
 
+-- glibc 2.19 --> runs on Debian 8 (2015)
 if preset_name == "win_lin_ninja_zig" then
 	local function zigw2l_gettoolname(cfg, tool)
-		local target = " -target x86_64-linux-gnu"
+		local target = " -target x86_64-linux-gnu.2.19"
 		if tool == "cc"  then return "zig cc" .. target end
 		if tool == "cxx" then return "zig c++" .. target end
 		if tool == "ld"  then return "zig c++" .. target end
@@ -76,7 +77,7 @@ if preset_name == "win_lin_ninja_zig" then
 	end
 	
 	local function zigw2l_getlinker(cfg, tool)
-		local target = " -target x86_64-linux-gnu"
+		local target = " -target x86_64-linux-gnu.2.19"
 		return "zig c++" .. target
 	end
 
