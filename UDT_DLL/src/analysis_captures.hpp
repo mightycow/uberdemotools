@@ -121,6 +121,7 @@ private:
 	udtString _mapName;
 	s32 _gameStateIndex;
 	s32 _demoTakerIndex;
+	s32 _followedPlayerIndex;
 	PlayerInfo _players[64];
 	udtString _playerNames[64];     // For QL only.
 	udtString _playerClanNames[64]; // For QL only.

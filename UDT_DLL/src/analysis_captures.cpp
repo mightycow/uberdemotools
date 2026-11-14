@@ -84,6 +84,7 @@ void udtCapturesAnalyzer::StartDemoAnalysis()
 	_mapName = udtString::NewNull();
 	_gameStateIndex = -1;
 	_demoTakerIndex = -1;
+	_followedPlayerIndex = -1;
 	_firstSnapshot = true;
 	_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageDummy;
 	_processCommand = &udtCapturesAnalyzer::ProcessCommandMessageDummy;
@@ -110,6 +111,9 @@ void udtCapturesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&
 	udtVMScopedStackAllocator allocScope(*_tempAllocator);
 
 	const udtProtocol::Id protocol = parser._inProtocol;
+	_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageDummy;
+	_processCommand = &udtCapturesAnalyzer::ProcessCommandMessageDummy;
+	_processSnapshot = &udtCapturesAnalyzer::ProcessSnapshotMessageDummy;
 	if(AreAllProtocolFlagsSet(protocol, udtProtocolFlags::QuakeLive))
 	{
 		_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageQLorOSP;
@@ -137,12 +141,6 @@ void udtCapturesAnalyzer::ProcessGamestateMessage(const udtGamestateCallbackArg&
 			}
 		}
 	}
-	else
-	{
-		_processGamestate = &udtCapturesAnalyzer::ProcessGamestateMessageDummy;
-		_processCommand = &udtCapturesAnalyzer::ProcessCommandMessageDummy;
-		_processSnapshot = &udtCapturesAnalyzer::ProcessSnapshotMessageDummy;
-	}
 
 	udtString mapName;
 	if(ParseConfigStringValueString(mapName, *_tempAllocator, "mapname", parser.GetConfigString(CS_SERVERINFO).GetPtr()))
@@ -164,6 +162,8 @@ void udtCapturesAnalyzer::ProcessCommandMessage(const udtCommandCallbackArg& arg
 
 void udtCapturesAnalyzer::ProcessSnapshotMessage(const udtSnapshotCallbackArg& arg, udtBaseParser& parser)
 {
+	_followedPlayerIndex = GetPlayerState(arg.Snapshot, parser._inProtocol)->clientNum;
+
 	(this->*_processSnapshot)(arg, parser);
 
 	_firstSnapshot = false;
@@ -805,6 +805,16 @@ void udtCapturesAnalyzer::ProcessPrintCommandQLorOSP(const udtCommandCallbackArg
 		flags |= (u32)udtParseDataCaptureMask::PlayerIndexValid;
 	}
 
+	if(playerIndex == _followedPlayerIndex)
+	{
+		flags |= (u32)udtParseDataCaptureMask::FirstPersonPlayer;
+	}
+
+	if(playerIndex == _demoTakerIndex)
+	{
+		flags |= (u32)udtParseDataCaptureMask::DemoTaker;
+	}
+
 	udtParseDataCapture capture;
 	capture.CaptureTimeMs = time;
 	capture.Distance = distance;
@@ -812,7 +822,7 @@ void udtCapturesAnalyzer::ProcessPrintCommandQLorOSP(const udtCommandCallbackArg
 	capture.GameStateIndex = _gameStateIndex;
 	WriteStringToApiStruct(capture.MapName, _mapName);
 	capture.PickUpTimeMs = time - captureDuration;
-	capture.PlayerIndex = -1;
+	capture.PlayerIndex = playerIndex;
 	WriteStringToApiStruct(capture.PlayerName, cleanPlayerName);
 	Captures.Add(capture);
 }

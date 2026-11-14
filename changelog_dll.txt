@@ -17,8 +17,10 @@ FIX: Gamestate analyzer: ignoring minqlxtended' early snapshots before the time 
 FIX: Gamestate analyzer: Quake Live clan name extraction logic was always active and could truncate player names
 FIX: Gamestate analyzer: corrupted gamestates are rejected
 FIX: Mid-air analyzer: Quake Live entity gravity always evaluated to 800
+FIX: Captures analyzer: QL/OSP captures never had the FirstPersonPlayer/DemoTaker flags set
 FIX: Demo cutting will now ignore minqlxtended' early snapshots before the time rewind
 FIX: UDT_cutter: progress was stuck at 0% in Cut by Time mode
+FIX: UDT_captures: nothing was ever found for QL/OSP demos because the DemoTaker flag was never set
 FIX: Demo cutting now correctly handles overlapping cuts by doing as many passes as necessary
 FIX: udtParseArg::ProgressCb was called in multi-threaded jobs even when NULL
 FIX: Several signed integer overflows
