@@ -18,10 +18,10 @@ mkdir __temp
 mkdir __temp\viewer_data
 
 :: populate temp folder with everything
-wsl -d %UDT_VM_NAME% ../UDT_DLL/.bin/lin_gmake/x64/release/viewer_data_gen -o=__temp/viewer_data ../viewer_data
+wsl -d %UDT_VM_NAME% ../UDT_DLL/.bin/win_lin_ninja_zig/x64/release/viewer_data_gen -o=__temp/viewer_data ../viewer_data
 if errorlevel 1 exit /b 1
-copy /Y ..\UDT_DLL\.bin\lin_gmake\x64\release\UDT_viewer __temp
-copy /Y ..\changelog_viewer.txt __temp
+copy /Y ..\UDT_DLL\.bin\win_lin_ninja_zig\x64\release\UDT_viewer __temp
+copy /Y ..\changelog_viewer.txt __temp\changelog.txt
 copy /Y ..\viewer_data\map_aliases.txt __temp\viewer_data
 copy /Y ..\viewer_data\deja_vu_sans.ttf __temp\viewer_data
 copy /Y ..\viewer_data\blender_icons.png __temp\viewer_data

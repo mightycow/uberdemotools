@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BIN_PATH=../UDT_DLL/.bin/lin_gmake/x64/release
+BIN_PATH=../UDT_DLL/.bin/lin_lin_gmake_gcc/x64/release
 AR_NAME=udt_viewer.tar.bz2
 AR_PATH=$(pwd)/$AR_NAME
 

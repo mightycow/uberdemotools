@@ -1,7 +1,7 @@
 @echo off
 
-call ..\UDT_DLL\premake\helpers\vs_version_selector.cmd
-set bin_path=..\UDT_DLL\.bin\%vs_generator%\x64\release
+call ..\UDT_DLL\premake\helpers\pick_vs_version.cmd
+set bin_path=..\UDT_DLL\.bin\win_win_%vs_generator%\x64\release
 
 PATH=%PATH%;C:\Programs\7-zip
 

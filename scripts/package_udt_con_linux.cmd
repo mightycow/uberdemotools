@@ -23,6 +23,9 @@ for /f "usebackq delims=" %%i in ("%LIST_FILE%") do (
 	popd
 )
 
+:: rename changelog
+7za.exe rn "%~dp0%TAR_FILE%" changelog_dll.txt changelog.txt >nul
+
 :: .tar -> .tar.gz
 7za.exe a -tgzip -mx=9 "%GZ_FILE%" "%TAR_FILE%"
 
