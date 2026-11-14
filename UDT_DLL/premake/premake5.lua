@@ -433,6 +433,8 @@ workspace "UDT"
 			links { "D3D11", "Gdi32" }
 		filter "toolset:gcc or clang"
 			symbols "On"
+		filter "toolset:msc"
+			files { path_src_core.."/viewer/icon/UDT.rc" }
 
 	if os.target() == "windows" then
 
