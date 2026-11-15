@@ -1544,13 +1544,30 @@ namespace Uber.DemoTools
             configStringGridView.Columns.Add(new GridViewColumn { Header = "Name", Width = 150, DisplayMemberBinding = new Binding("Description") });
             configStringGridView.Columns.Add(new GridViewColumn { Header = "Value", Width = 400, DisplayMemberBinding = new Binding("Value") });
 
+            var copyMenuItem = new MenuItem();
+            copyMenuItem.Header = "Copy to Clipboard";
+            copyMenuItem.Command = ApplicationCommands.Copy;
+            copyMenuItem.Click += (obj, args) => CopyGeneralInfoSelection(false);
+
+            var copyValueMenuItem = new MenuItem();
+            copyValueMenuItem.Header = "Copy Values to Clipboard";
+            copyValueMenuItem.Command = ApplicationCommands.Paste;
+            copyValueMenuItem.Click += (obj, args) => CopyGeneralInfoSelection(true);
+
+            var contextMenu = new ContextMenu();
+            contextMenu.Items.Add(copyMenuItem);
+            contextMenu.Items.Add(copyValueMenuItem);
+
             var infoListView = new ListView();
             _infoListView = infoListView;
             infoListView.HorizontalAlignment = HorizontalAlignment.Stretch;
             infoListView.VerticalAlignment = VerticalAlignment.Stretch;
             infoListView.Margin = new Thickness(5);
             infoListView.View = configStringGridView;
-            infoListView.SelectionMode = SelectionMode.Single;
+            infoListView.SelectionMode = SelectionMode.Extended;
+            infoListView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, (s, e) => CopyGeneralInfoSelection(false)));
+            infoListView.CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, (s, e) => CopyGeneralInfoSelection(true)));
+            infoListView.ContextMenu = contextMenu;
 
             var infoPanelGroupBox = new GroupBox();
             infoPanelGroupBox.Header = "Demo Information";
@@ -3130,6 +3147,33 @@ namespace Uber.DemoTools
                 _demoListView.SelectedItems.Add(selectedItem);
             }
             _demoListView.Refresh();
+        }
+
+        private void CopyGeneralInfoSelection(bool valuesOnly)
+        {
+            var stringBuilder = new StringBuilder();
+
+            var items = CreateSortedList(_infoListView.SelectedItems, _infoListView.Items);
+            foreach(var item in items)
+            {
+                if(item is ConfigStringDisplayInfo)
+                {
+                    var di = item as ConfigStringDisplayInfo;
+                    var value = di.Value.Trim();
+                    if(valuesOnly)
+                    {
+                        stringBuilder.AppendLine(value);
+                    }
+                    else
+                    {
+                        var key = di.Description.Trim();
+                        var line = string.Format("\"{0}\": \"{1}\"", key, value);
+                        stringBuilder.AppendLine(line);
+                    }
+                }
+            }
+
+            Clipboard.SetDataObject(stringBuilder.ToString(), true);
         }
 
         private void CopyLogSelection()
