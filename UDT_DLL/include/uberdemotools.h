@@ -2254,7 +2254,8 @@ extern "C"
 			FirstPersonPlayer = UDT_BIT(2), /* Flag captured by a player being spectated by whoever recorded the demo. */
 			PlayerIndexValid = UDT_BIT(3),  /* The PlayerIndex field is valid. */
 			PlayerNameValid = UDT_BIT(4),   /* The PlayerName and PlayerNameLength fields are valid. */
-			DistanceValid = UDT_BIT(5)      /* The Distance field is valid. */
+			DistanceValid = UDT_BIT(5),     /* The Distance field is valid. */
+			WarmUp = UDT_BIT(6)             /* The capture happened during warm-up or countdown. */
 		};
 	};
 #endif

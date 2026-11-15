@@ -547,6 +547,9 @@ void udtCapturesAnalyzer::ProcessSnapshotMessageCPMA(const udtSnapshotCallbackAr
 					capture.Distance = -1.0f;
 				}
 
+				// @NOTE: We don't need any check to set udtParseDataCaptureMask::WarmUp for CPMA.
+				// CPMA doesn't allow flag pickups/captures during warm-up.
+
 				Captures.Add(capture);
 				flagStatus.InstantCapture = false;
 			}
@@ -814,6 +817,20 @@ void udtCapturesAnalyzer::ProcessPrintCommandQLorOSP(const udtCommandCallbackArg
 	{
 		flags |= (u32)udtParseDataCaptureMask::DemoTaker;
 	}
+
+	if(AreAllProtocolFlagsSet(parser._inProtocol, udtProtocolFlags::QuakeLive))
+	{
+		// Quake Live
+		const char* const configString = parser._inConfigStrings[CS_SERVERINFO].GetPtr();
+		udtString gameStateString;
+		if(ParseConfigStringValueString(gameStateString, *_tempAllocator, "g_gameState", configString) &&
+			!udtString::Equals(gameStateString, "IN_PROGRESS"))
+		{
+			flags |= (u32)udtParseDataCaptureMask::WarmUp;
+		}
+	}
+	// @NOTE: We don't need any check to set udtParseDataCaptureMask::WarmUp for OSP.
+	// OSP doesn't allow flag pickups/captures during warm-up.
 
 	udtParseDataCapture capture;
 	capture.CaptureTimeMs = time;

@@ -217,7 +217,8 @@ private:
 		for(u32 i = 0; i < captureCount; ++i)
 		{
 			const udtParseDataCapture& capture = captures[i];
-			if((capture.Flags & (u32)udtParseDataCaptureMask::DemoTaker) == 0)
+			if((capture.Flags & (u32)udtParseDataCaptureMask::DemoTaker) == 0 ||
+				(capture.Flags & (u32)udtParseDataCaptureMask::WarmUp) != 0)
 			{
 				continue;
 			}
