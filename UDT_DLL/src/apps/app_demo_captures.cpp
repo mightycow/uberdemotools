@@ -103,6 +103,7 @@ public:
 		if(context == NULL)
 		{
 			fprintf(stderr, "Failed to create a parser context.\n");
+			jsonFile.Write("{}", 2, 1);
 			return false;
 		}
 		context->Context.SetCallbacks(_parseArg.ParseArg.MessageCb, NULL, NULL, NULL);
@@ -120,6 +121,7 @@ public:
 		if(_captures.IsEmpty())
 		{
 			fprintf(stderr, "Not a single capture was found.\n");
+			jsonFile.Write("{}", 2, 1);
 			return false;
 		}
 

@@ -22,6 +22,7 @@ FIX: Demo cutting will now ignore minqlxtended' early snapshots before the time 
 FIX: UDT_cutter: progress was stuck at 0% in Cut by Time mode
 FIX: UDT_captures: nothing was ever found for QL/OSP demos because the DemoTaker flag was never set
 FIX: UDT_captures: Quake Live flag captures that happen during warm-up are filtered out
+FIX: UDT_captures: now outputting a valid empty JSON object when no capture is found
 FIX: Demo cutting now correctly handles overlapping cuts by doing as many passes as necessary
 FIX: udtParseArg::ProgressCb was called in multi-threaded jobs even when NULL
 FIX: Several signed integer overflows
